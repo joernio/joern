@@ -10,7 +10,9 @@
     "com.google.errorprone:error_prone_annotations": -1035138750,
     "com.google.guava:guava": 1943808618,
     "com.google.j2objc:j2objc-annotations": 2003271689,
+    "com.google.protobuf:protobuf-java": 1237026331,
     "com.googlecode.plist:dd-plist": -594010571,
+    "com.lihaoyi:os-lib_3": 899915638,
     "com.lihaoyi:requests_3": -1275628490,
     "com.lihaoyi:ujson_3": 1587972631,
     "com.lihaoyi:upickle_3": -1467042423,
@@ -19,9 +21,13 @@
     "com.squareup.tools.build:maven-archeologist": 943047605,
     "com.typesafe:config": 324143406,
     "io.joern:eclipse-cdt-core": -500108536,
-    "io.shiftleft:codepropertygraph_3": -654345414,
+    "io.joern:flatgraph-core_3": -299976332,
+    "io.joern:flatgraph-domain-classes-generator_3": 1040736120,
+    "io.joern:flatgraph-help_3": -1498345706,
+    "io.joern:flatgraph-odb-convert_3": 599666178,
     "net.java.dev.javacc:javacc": -1966826500,
     "net.lingala.zip4j:zip4j": 967189992,
+    "net.sf.trove4j:core": 1808260229,
     "org.antlr:antlr4": 1718243761,
     "org.antlr:antlr4-runtime": 1843802748,
     "org.apache.commons:commons-compress": -1310119682,
@@ -45,7 +51,9 @@
     "org.scala-lang.modules:scala-parallel-collections_3": -115965401,
     "org.scala-lang.modules:scala-parser-combinators_3": -1229494994,
     "org.scala-lang.modules:scala-xml_3": -2041798718,
-    "org.slf4j:slf4j-api": 587728310,
+    "org.scala-lang:scala-library": 1230160761,
+    "org.scala-lang:scala3-library_3": 1771369610,
+    "org.slf4j:slf4j-api": 2099238394,
     "repositories": 1380688576
   },
   "__RESOLVED_ARTIFACTS_HASH": {
@@ -57,14 +65,10 @@
     "com.github.javaparser:javaparser-symbol-solver-core:jar:sources": -2137537229,
     "com.github.luben:zstd-jni": -201271141,
     "com.github.luben:zstd-jni:jar:sources": 2122765034,
-    "com.github.pathikrit:better-files_3": -1056027453,
-    "com.github.pathikrit:better-files_3:jar:sources": -1753499885,
-    "com.github.scopt:scopt_3": -692911460,
+    "com.github.scopt:scopt_3": 148843063,
     "com.github.scopt:scopt_3:jar:sources": 776003799,
-    "com.github.sh4869:semver-parser-scala_3": -423474458,
+    "com.github.sh4869:semver-parser-scala_3": -1402857073,
     "com.github.sh4869:semver-parser-scala_3:jar:sources": 1515822071,
-    "com.github.tototoshi:scala-csv_3": -130344230,
-    "com.github.tototoshi:scala-csv_3:jar:sources": 99062729,
     "com.google.code.findbugs:jsr305": 870839855,
     "com.google.code.findbugs:jsr305:jar:sources": -935881202,
     "com.google.code.gson:gson": 1550101141,
@@ -78,31 +82,33 @@
     "com.google.guava:listenablefuture": 1079558157,
     "com.google.j2objc:j2objc-annotations": -1008747351,
     "com.google.j2objc:j2objc-annotations:jar:sources": -1518668002,
-    "com.google.protobuf:protobuf-java": 1272252895,
-    "com.google.protobuf:protobuf-java:jar:sources": -86916801,
+    "com.google.protobuf:protobuf-java": 1198356280,
+    "com.google.protobuf:protobuf-java:jar:sources": 2013970572,
     "com.googlecode.plist:dd-plist": -216330262,
     "com.googlecode.plist:dd-plist:jar:sources": -1633100160,
     "com.h2database:h2-mvstore": -1004445531,
     "com.h2database:h2-mvstore:jar:sources": 1948738169,
     "com.ibm.icu:icu4j": -929741173,
     "com.ibm.icu:icu4j:jar:sources": -1959435318,
-    "com.lihaoyi:geny_3": 1074501011,
+    "com.lihaoyi:geny_3": -420413792,
     "com.lihaoyi:geny_3:jar:sources": 1575781288,
-    "com.lihaoyi:requests_3": 1994335674,
+    "com.lihaoyi:os-lib_3": 695712032,
+    "com.lihaoyi:os-lib_3:jar:sources": 1732147675,
+    "com.lihaoyi:requests_3": -1758082529,
     "com.lihaoyi:requests_3:jar:sources": -476359424,
-    "com.lihaoyi:ujson_3": 106030058,
+    "com.lihaoyi:ujson_3": 1749570655,
     "com.lihaoyi:ujson_3:jar:sources": 195752142,
-    "com.lihaoyi:upack_3": 582664171,
+    "com.lihaoyi:upack_3": -1320201794,
     "com.lihaoyi:upack_3:jar:sources": -440068608,
-    "com.lihaoyi:upickle-core_3": -1160606444,
+    "com.lihaoyi:upickle-core_3": 918154501,
     "com.lihaoyi:upickle-core_3:jar:sources": 174541473,
-    "com.lihaoyi:upickle-implicits_3": -1277658446,
+    "com.lihaoyi:upickle-implicits_3": -1821519721,
     "com.lihaoyi:upickle-implicits_3:jar:sources": -1242861604,
-    "com.lihaoyi:upickle_3": 1932908449,
+    "com.lihaoyi:upickle_3": -1227213762,
     "com.lihaoyi:upickle_3:jar:sources": -590395021,
-    "com.michaelpollmeier:scala-repl-pp-shaded-libs_3": 319576595,
+    "com.michaelpollmeier:scala-repl-pp-shaded-libs_3": 568625696,
     "com.michaelpollmeier:scala-repl-pp-shaded-libs_3:jar:sources": 822914801,
-    "com.michaelpollmeier:scala-repl-pp_3.3.6": -1500908702,
+    "com.michaelpollmeier:scala-repl-pp_3.3.6": -859517320,
     "com.michaelpollmeier:scala-repl-pp_3.3.6:jar:sources": -178813958,
     "com.michaelpollmeier:versionsort": -622706408,
     "com.michaelpollmeier:versionsort:jar:sources": 1574286880,
@@ -124,26 +130,20 @@
     "commons-codec:commons-codec:jar:sources": 963281664,
     "commons-io:commons-io": -807333807,
     "commons-io:commons-io:jar:sources": -1339271077,
+    "io.get-coursier:interface": 1635041630,
+    "io.get-coursier:interface:jar:sources": -37171318,
     "io.joern:eclipse-cdt-core": 956507630,
     "io.joern:eclipse-cdt-core:jar:sources": -1789927640,
-    "io.joern:flatgraph-core_3": -1124218583,
-    "io.joern:flatgraph-core_3:jar:sources": -353561467,
-    "io.joern:flatgraph-formats_3": -20891640,
-    "io.joern:flatgraph-formats_3:jar:sources": 1177602871,
-    "io.joern:flatgraph-help_3": 231487949,
-    "io.joern:flatgraph-help_3:jar:sources": -45666947,
-    "io.joern:flatgraph-odb-convert_3": -618988788,
-    "io.joern:flatgraph-odb-convert_3:jar:sources": -1707489562,
-    "io.shiftleft:codepropertygraph-domain-classes_3": -1096538913,
-    "io.shiftleft:codepropertygraph-domain-classes_3:jar:sources": -2007593206,
-    "io.shiftleft:codepropertygraph-protos_3": -159030545,
-    "io.shiftleft:codepropertygraph-protos_3:jar:sources": -1389727909,
-    "io.shiftleft:codepropertygraph_3": 2013292434,
-    "io.shiftleft:codepropertygraph_3:jar:sources": -550398619,
-    "io.shiftleft:overflowdb-core_3": -2146004891,
+    "io.joern:flatgraph-core_3": 1753885189,
+    "io.joern:flatgraph-core_3:jar:sources": -755678090,
+    "io.joern:flatgraph-domain-classes-generator_3": 1301386557,
+    "io.joern:flatgraph-domain-classes-generator_3:jar:sources": 1912497518,
+    "io.joern:flatgraph-help_3": 1715122948,
+    "io.joern:flatgraph-help_3:jar:sources": -1070617857,
+    "io.joern:flatgraph-odb-convert_3": 805764456,
+    "io.joern:flatgraph-odb-convert_3:jar:sources": 793830638,
+    "io.shiftleft:overflowdb-core_3": -1655377345,
     "io.shiftleft:overflowdb-core_3:jar:sources": 422126785,
-    "io.spray:spray-json_3": -1381838919,
-    "io.spray:spray-json_3:jar:sources": 690403605,
     "javax.inject:javax.inject": 698155243,
     "javax.inject:javax.inject:jar:sources": 1222576539,
     "junit:junit": -598348821,
@@ -278,15 +278,15 @@
     "org.jline:jline:jar:sources": 2039073485,
     "org.jruby:jruby-complete": 1795657309,
     "org.jruby:jruby-complete:jar:sources": 777557139,
-    "org.json4s:json4s-ast_3": 2140402885,
+    "org.json4s:json4s-ast_3": -507419474,
     "org.json4s:json4s-ast_3:jar:sources": 2122540071,
-    "org.json4s:json4s-core_3": -2076411236,
+    "org.json4s:json4s-core_3": 1015651488,
     "org.json4s:json4s-core_3:jar:sources": 2040071554,
-    "org.json4s:json4s-native-core_3": -701276423,
+    "org.json4s:json4s-native-core_3": 253674937,
     "org.json4s:json4s-native-core_3:jar:sources": 2061583826,
-    "org.json4s:json4s-native_3": 1824356623,
+    "org.json4s:json4s-native_3": 102813134,
     "org.json4s:json4s-native_3:jar:sources": 735918075,
-    "org.json4s:json4s-scalap_3": -592834336,
+    "org.json4s:json4s-scalap_3": -1857539469,
     "org.json4s:json4s-scalap_3:jar:sources": -1220218122,
     "org.jspecify:jspecify": 117231129,
     "org.jspecify:jspecify:jar:sources": -2134060298,
@@ -302,26 +302,28 @@
     "org.projectlombok:lombok:jar:sources": -1275591244,
     "org.scala-lang.modules:scala-asm": 1549099613,
     "org.scala-lang.modules:scala-asm:jar:sources": -297752178,
-    "org.scala-lang.modules:scala-parallel-collections_3": 1365732738,
+    "org.scala-lang.modules:scala-parallel-collections_3": 614781201,
     "org.scala-lang.modules:scala-parallel-collections_3:jar:sources": 1784693268,
-    "org.scala-lang.modules:scala-parser-combinators_3": -1628125065,
+    "org.scala-lang.modules:scala-parser-combinators_3": 420193852,
     "org.scala-lang.modules:scala-parser-combinators_3:jar:sources": -1426101912,
-    "org.scala-lang.modules:scala-xml_3": 1977037784,
-    "org.scala-lang.modules:scala-xml_3:jar:sources": 1267522254,
-    "org.scala-lang:scala-library": -1079389784,
-    "org.scala-lang:scala-library:jar:sources": 9987806,
-    "org.scala-lang:scala3-compiler_3": 795841343,
+    "org.scala-lang.modules:scala-xml_3": -623661362,
+    "org.scala-lang.modules:scala-xml_3:jar:sources": 80523494,
+    "org.scala-lang:scala3-compiler_3": -1701485851,
     "org.scala-lang:scala3-compiler_3:jar:sources": 587398519,
     "org.scala-lang:scala3-interfaces": -1987336517,
     "org.scala-lang:scala3-interfaces:jar:sources": 584925716,
-    "org.scala-lang:scala3-library_3": -1955571523,
-    "org.scala-lang:scala3-library_3:jar:sources": -1763140974,
-    "org.scala-lang:tasty-core_3": 1611782094,
+    "org.scala-lang:tasty-core_3": -2024482235,
     "org.scala-lang:tasty-core_3:jar:sources": -2112484512,
     "org.scala-sbt:compiler-interface": 1644257825,
     "org.scala-sbt:compiler-interface:jar:sources": -1000760605,
     "org.scala-sbt:util-interface": -1512942967,
     "org.scala-sbt:util-interface:jar:sources": 1440568996,
+    "org.scalameta:scalafmt-dynamic_2.13": -518206696,
+    "org.scalameta:scalafmt-dynamic_2.13:jar:sources": 756436738,
+    "org.scalameta:scalafmt-interfaces": -2021536197,
+    "org.scalameta:scalafmt-interfaces:jar:sources": -969147004,
+    "org.scalameta:scalafmt-sysops_2.13": -1460516322,
+    "org.scalameta:scalafmt-sysops_2.13:jar:sources": -455309676,
     "org.slf4j:slf4j-api": -1521593912,
     "org.slf4j:slf4j-api:jar:sources": -1050183387
   },
@@ -332,7 +334,6 @@
     "com.lihaoyi:ujson_3:4.0.2": "com.lihaoyi:ujson_3:4.1.0",
     "org.apache.commons:commons-lang3:3.14.0": "org.apache.commons:commons-lang3:3.17.0",
     "org.apache.commons:commons-text:1.12.0": "org.apache.commons:commons-text:1.13.0",
-    "org.scala-lang.modules:scala-xml_3:2.2.0": "org.scala-lang.modules:scala-xml_3:2.3.0",
     "org.slf4j:slf4j-api:2.0.7": "org.slf4j:slf4j-api:2.0.17"
   },
   "artifacts": {
@@ -364,13 +365,6 @@
       },
       "version": "1.5.7-2"
     },
-    "com.github.pathikrit:better-files_3": {
-      "shasums": {
-        "jar": "136c1770a63aa33b2710745bf7f8441cbbe0eeef0cab6b832bd0a46804158989",
-        "sources": "5a3d4cc0c63605353b1c528abfdc180ae4d74b6c50d6693eee4389dcec923e61"
-      },
-      "version": "3.9.2"
-    },
     "com.github.scopt:scopt_3": {
       "shasums": {
         "jar": "7cfb80743b761b3df8630a818265eb91fd93cd77b32ed5ebd6fba1bb7cff6a3f",
@@ -384,13 +378,6 @@
         "sources": "47684593a4db721b1533d66ebce3d34cd2af0ba07a92758efdda3a57d7b96633"
       },
       "version": "0.0.6"
-    },
-    "com.github.tototoshi:scala-csv_3": {
-      "shasums": {
-        "jar": "8f8cf4ddc9665ec76ac3b51c641a215d8485830dd15f355369bc14f9ea95ca70",
-        "sources": "47b3f971143e6121c11005dde1ecc6ba33d94bcf3791b065a8cb817f686093fa"
-      },
-      "version": "2.0.0"
     },
     "com.google.code.findbugs:jsr305": {
       "shasums": {
@@ -442,10 +429,10 @@
     },
     "com.google.protobuf:protobuf-java": {
       "shasums": {
-        "jar": "dcbc32c81c8689c39e6672896258f76e660d781bb2526c6c069d5c91055ef153",
-        "sources": "36b6a8d40ce26455f004f488d6ebfdd559f5ad126d7eebce7e351d5f77c777d2"
+        "jar": "ae0459030b54a6f3058ad349aa01fc2edcbb2d4a84b73699675bbd125df2e96d",
+        "sources": "240db630888d78b6d67c0977416c8a48dd4bce42fb48424d054b128b72420b20"
       },
-      "version": "3.20.1"
+      "version": "4.34.1"
     },
     "com.googlecode.plist:dd-plist": {
       "shasums": {
@@ -474,6 +461,13 @@
         "sources": "d5709469c3f2602122dbc7d94b627de2def7e40e99f08bb9b61b95dc93dbeb51"
       },
       "version": "1.1.1"
+    },
+    "com.lihaoyi:os-lib_3": {
+      "shasums": {
+        "jar": "e12acedbf641c7ef5ee2a9bac636096df78ffd1d22cf1871033203ee59b6e214",
+        "sources": "14ea39fe58765b2d750e25e30370de581d2a5ccc58e6b0181aecff0c71d0a61e"
+      },
+      "version": "0.11.4"
     },
     "com.lihaoyi:requests_3": {
       "shasums": {
@@ -601,6 +595,13 @@
       },
       "version": "2.16.1"
     },
+    "io.get-coursier:interface": {
+      "shasums": {
+        "jar": "7592fe49c789b55429483185ac22ac6da43680a39c53b818c50bca0fb7dd6a78",
+        "sources": "0ada36c8a3b6c77f7797c7751a8aa2fb40e01bbe50b87dc75b6e098da2086f91"
+      },
+      "version": "1.0.28"
+    },
     "io.joern:eclipse-cdt-core": {
       "shasums": {
         "jar": "14f94a408d2e780378e7d4c9c431dd44f408d56704fd58a216c620abd5aed250",
@@ -610,52 +611,31 @@
     },
     "io.joern:flatgraph-core_3": {
       "shasums": {
-        "jar": "13c99870907a35115be3af6e9f415e712f42e4f970ad3489624dc30f024c1ab0",
-        "sources": "e4c81ece9df28236e5d1a1fd5f44ccd73547377683467e2bca835ae96e23af80"
+        "jar": "aaee2aa044223e2225ac6d67e1cba8c6628961638e94bf2faffbb6be406d9885",
+        "sources": "4440b7804c08d4e2bed1e7166736ddf778878c04de5fa64b2e9a58ae6945e439"
       },
-      "version": "0.1.32"
+      "version": "0.1.31"
     },
-    "io.joern:flatgraph-formats_3": {
+    "io.joern:flatgraph-domain-classes-generator_3": {
       "shasums": {
-        "jar": "9616ab31473bd39d049ec99746d16a9933e0c1f295e406405ba48ca94d6d445f",
-        "sources": "195d864fddd066537bdc2feb50b5bdff4a7927a5cf317bf63ff965b3c5697b24"
+        "jar": "9ce9480526043121e6d3ba21b67a5ed3944ad6dd4f36c1a8b6506c4793568977",
+        "sources": "1506ced55181b6e635fe46df7c7119b1a5c8e7358cdd2539fb4acbedcebde3c0"
       },
-      "version": "0.1.32"
+      "version": "0.1.31"
     },
     "io.joern:flatgraph-help_3": {
       "shasums": {
-        "jar": "13c92bc1774c7fde55f093b4dc1119d57ace7cc0b6fd52d029ef45b5f52fea7b",
-        "sources": "d78eb23d7fd85f805616ab0c986cf5d94680a6c8e7e1f3ba1815230f8c2c9532"
+        "jar": "3e1ff963cc9a87ff100a6311a4ef753d954340c3e600b6d580682616504229f8",
+        "sources": "7d8ea575fe7ad98af7e660e592a8348167dfe7cbf82a85f1ada72b159b210622"
       },
-      "version": "0.1.32"
+      "version": "0.1.31"
     },
     "io.joern:flatgraph-odb-convert_3": {
       "shasums": {
-        "jar": "d74f2c74ab9ec71b34e6a98ce2b320db025a87d087496edeaae6b3c0588edd46",
-        "sources": "f64ec8310a480f75ae3917a43b0e74cf7fb1b65cd1cdfd521ea6287baa637329"
+        "jar": "99512d443f609a5028ec1c1e060f8a997bae1c2dbbcb203b1880c87a16326944",
+        "sources": "0af913bac0c502ed4d615cd85c9f77abda6d7ceaf30ae8e5bd6c9aacc6222ba3"
       },
-      "version": "0.1.32"
-    },
-    "io.shiftleft:codepropertygraph-domain-classes_3": {
-      "shasums": {
-        "jar": "8a76b66f8d3efa144f1eb54ac36a8bd8b7d9858f9f7aa0ddb0b5709fc1e9c3db",
-        "sources": "497f85d2767969eff4e9bd82fc97d4c55c8e365ed763ecc450661b8d32dc590b"
-      },
-      "version": "1.7.70"
-    },
-    "io.shiftleft:codepropertygraph-protos_3": {
-      "shasums": {
-        "jar": "54a954c4bf65ee334a9c34cfe15287cdbbba84a88b29aa91e982290ac6f70c69",
-        "sources": "cdd9ceff57af23b98ac983ed1eb6d24b02c23739be5205a1b561eca26f637167"
-      },
-      "version": "1.7.70"
-    },
-    "io.shiftleft:codepropertygraph_3": {
-      "shasums": {
-        "jar": "6f7fea5a0feeab64cd69fd1afa45b1e230b5922416e35f8da2f087bfc713578e",
-        "sources": "769b421790a17a7ae550ff09621ed104a25656b45a0ce2f9316bf335c9c4594c"
-      },
-      "version": "1.7.70"
+      "version": "0.1.31"
     },
     "io.shiftleft:overflowdb-core_3": {
       "shasums": {
@@ -663,13 +643,6 @@
         "sources": "8862b5cbd71a65c155ac1c4b51ed9ff6b5a233351a22d57251a08ff4dfd094f7"
       },
       "version": "1.194"
-    },
-    "io.spray:spray-json_3": {
-      "shasums": {
-        "jar": "b92a3ad0ad4a39f1f59c94e8583d078a7335f744ae467812f9bf29f10b774fb7",
-        "sources": "b5b916e3f67947679d7a0f5536dc6f71efb0c316d3ac2653a51e651db662d08a"
-      },
-      "version": "1.3.6"
     },
     "javax.inject:javax.inject": {
       "shasums": {
@@ -1240,17 +1213,10 @@
     },
     "org.scala-lang.modules:scala-xml_3": {
       "shasums": {
-        "jar": "3220723238102107ab83182468e5dbe351b081a0601386710ef46c81a95d38d0",
-        "sources": "d76b5646ed58104dfbc9705d70031c35b3aad49c23f652e9d83a45398e9292f2"
+        "jar": "25dd83bf334e49b24bc7632d15584236dcd30d0cd2be4ea8e10f7bb25fbe3ef3",
+        "sources": "94d96cc94ead3fabb70f0122bff4f498c708c84a9dfc38ef8c3d0e5313cb052b"
       },
-      "version": "2.3.0"
-    },
-    "org.scala-lang:scala-library": {
-      "shasums": {
-        "jar": "1ebb2b6f9e4eb4022497c19b1e1e825019c08514f962aaac197145f88ed730f1",
-        "sources": "c02edc324e7db59c52115214a6ef36e2d78d0a50dff635eda4dcee5502b1dea5"
-      },
-      "version": "2.13.16"
+      "version": "2.2.0"
     },
     "org.scala-lang:scala3-compiler_3": {
       "shasums": {
@@ -1265,13 +1231,6 @@
         "sources": "e787f2dd1178de6b8f94b6c376dd36295e7f550e265927a04d82ddd973ba5e02"
       },
       "version": "3.3.6"
-    },
-    "org.scala-lang:scala3-library_3": {
-      "shasums": {
-        "jar": "73089d33f763b94758170e0a66be978f9397c14b7795e343898aa89b3d7b6639",
-        "sources": "8fa31d20f0ee9a66d1ef5fd3d406561473a66ae2639f7bed6f44f94e628635de"
-      },
-      "version": "3.7.4"
     },
     "org.scala-lang:tasty-core_3": {
       "shasums": {
@@ -1294,6 +1253,27 @@
       },
       "version": "1.10.4"
     },
+    "org.scalameta:scalafmt-dynamic_2.13": {
+      "shasums": {
+        "jar": "f953acd468bf2f897f70964f1bc7a5dffdeb45db581799dc959fa32f7fb3b405",
+        "sources": "03bd706d0db6afb090256459e0764d28ebad37b160f18773895b2a6640e34a61"
+      },
+      "version": "3.9.6"
+    },
+    "org.scalameta:scalafmt-interfaces": {
+      "shasums": {
+        "jar": "3d67252a6511aad53ea54b9207d8bff86bcc9f63b33b79b00285404c2df60b9a",
+        "sources": "3d2340fb6dfa6c539f08ff3b4c98f1f09c441161b8500236802b13248951c57c"
+      },
+      "version": "3.9.6"
+    },
+    "org.scalameta:scalafmt-sysops_2.13": {
+      "shasums": {
+        "jar": "a3d36a31a694b81fd8e284fe93f2a0a55d2c31cef5386edac1e59a2daa3d586a",
+        "sources": "0884531fa8e15877cea5a99847f7297b0f796adb28eaf14f3e231a21cce1e608"
+      },
+      "version": "3.9.6"
+    },
     "org.slf4j:slf4j-api": {
       "shasums": {
         "jar": "7b751d952061954d5abfed7181c1f645d336091b679891591d63329c622eb832",
@@ -1309,18 +1289,8 @@
       "org.checkerframework:checker-qual",
       "org.javassist:javassist"
     ],
-    "com.github.pathikrit:better-files_3": [
-      "org.scala-lang:scala3-library_3"
-    ],
-    "com.github.scopt:scopt_3": [
-      "org.scala-lang:scala3-library_3"
-    ],
     "com.github.sh4869:semver-parser-scala_3": [
-      "org.scala-lang.modules:scala-parser-combinators_3",
-      "org.scala-lang:scala3-library_3"
-    ],
-    "com.github.tototoshi:scala-csv_3": [
-      "org.scala-lang:scala3-library_3"
+      "org.scala-lang.modules:scala-parser-combinators_3"
     ],
     "com.google.code.gson:gson": [
       "com.google.errorprone:error_prone_annotations"
@@ -1332,42 +1302,32 @@
       "com.google.j2objc:j2objc-annotations",
       "org.jspecify:jspecify"
     ],
-    "com.lihaoyi:geny_3": [
-      "org.scala-lang:scala3-library_3"
+    "com.lihaoyi:os-lib_3": [
+      "com.lihaoyi:geny_3"
     ],
     "com.lihaoyi:requests_3": [
-      "com.lihaoyi:geny_3",
-      "org.scala-lang:scala3-library_3"
+      "com.lihaoyi:geny_3"
     ],
     "com.lihaoyi:ujson_3": [
-      "com.lihaoyi:upickle-core_3",
-      "org.scala-lang:scala3-library_3"
+      "com.lihaoyi:upickle-core_3"
     ],
     "com.lihaoyi:upack_3": [
-      "com.lihaoyi:upickle-core_3",
-      "org.scala-lang:scala3-library_3"
+      "com.lihaoyi:upickle-core_3"
     ],
     "com.lihaoyi:upickle-core_3": [
-      "com.lihaoyi:geny_3",
-      "org.scala-lang:scala3-library_3"
+      "com.lihaoyi:geny_3"
     ],
     "com.lihaoyi:upickle-implicits_3": [
-      "com.lihaoyi:upickle-core_3",
-      "org.scala-lang:scala3-library_3"
+      "com.lihaoyi:upickle-core_3"
     ],
     "com.lihaoyi:upickle_3": [
       "com.lihaoyi:ujson_3",
       "com.lihaoyi:upack_3",
-      "com.lihaoyi:upickle-implicits_3",
-      "org.scala-lang:scala3-library_3"
-    ],
-    "com.michaelpollmeier:scala-repl-pp-shaded-libs_3": [
-      "org.scala-lang:scala3-library_3"
+      "com.lihaoyi:upickle-implicits_3"
     ],
     "com.michaelpollmeier:scala-repl-pp_3.3.6": [
       "com.michaelpollmeier:scala-repl-pp-shaded-libs_3",
-      "org.scala-lang:scala3-compiler_3",
-      "org.scala-lang:scala3-library_3"
+      "org.scala-lang:scala3-compiler_3"
     ],
     "com.squareup.moshi:moshi": [
       "com.squareup.okio:okio"
@@ -1394,6 +1354,9 @@
       "org.apache.maven:maven-model",
       "org.apache.maven:maven-model-builder"
     ],
+    "io.get-coursier:interface": [
+      "org.slf4j:slf4j-api"
+    ],
     "io.joern:eclipse-cdt-core": [
       "org.eclipse.platform:org.eclipse.core.runtime",
       "org.slf4j:slf4j-api"
@@ -1401,57 +1364,27 @@
     "io.joern:flatgraph-core_3": [
       "com.github.luben:zstd-jni",
       "com.lihaoyi:ujson_3",
-      "org.scala-lang:scala3-library_3",
       "org.slf4j:slf4j-api"
     ],
-    "io.joern:flatgraph-formats_3": [
+    "io.joern:flatgraph-domain-classes-generator_3": [
       "com.github.scopt:scopt_3",
-      "com.github.tototoshi:scala-csv_3",
-      "io.joern:flatgraph-core_3",
-      "io.spray:spray-json_3",
+      "com.lihaoyi:os-lib_3",
       "org.apache.commons:commons-text",
-      "org.scala-lang.modules:scala-xml_3",
-      "org.scala-lang:scala3-library_3"
+      "org.scalameta:scalafmt-dynamic_2.13"
     ],
     "io.joern:flatgraph-help_3": [
       "io.joern:flatgraph-core_3",
-      "net.oneandone.reflections8:reflections8",
-      "org.scala-lang:scala3-library_3"
+      "net.oneandone.reflections8:reflections8"
     ],
     "io.joern:flatgraph-odb-convert_3": [
       "io.joern:flatgraph-core_3",
-      "io.shiftleft:overflowdb-core_3",
-      "org.scala-lang:scala3-library_3"
-    ],
-    "io.shiftleft:codepropertygraph-domain-classes_3": [
-      "io.joern:flatgraph-core_3",
-      "io.joern:flatgraph-help_3",
-      "org.scala-lang:scala3-library_3"
-    ],
-    "io.shiftleft:codepropertygraph-protos_3": [
-      "com.google.protobuf:protobuf-java",
-      "org.scala-lang:scala3-library_3"
-    ],
-    "io.shiftleft:codepropertygraph_3": [
-      "com.github.pathikrit:better-files_3",
-      "com.github.scopt:scopt_3",
-      "io.joern:flatgraph-formats_3",
-      "io.joern:flatgraph-help_3",
-      "io.joern:flatgraph-odb-convert_3",
-      "io.shiftleft:codepropertygraph-domain-classes_3",
-      "io.shiftleft:codepropertygraph-protos_3",
-      "org.scala-lang:scala3-library_3",
-      "org.slf4j:slf4j-api"
+      "io.shiftleft:overflowdb-core_3"
     ],
     "io.shiftleft:overflowdb-core_3": [
       "com.h2database:h2-mvstore",
       "net.sf.trove4j:core",
       "org.msgpack:msgpack-core",
-      "org.scala-lang:scala3-library_3",
       "org.slf4j:slf4j-api"
-    ],
-    "io.spray:spray-json_3": [
-      "org.scala-lang:scala3-library_3"
     ],
     "net.java.dev.javacc:javacc": [
       "junit:junit"
@@ -1610,38 +1543,20 @@
       "org.jline:jline-native",
       "org.jline:jline-terminal"
     ],
-    "org.json4s:json4s-ast_3": [
-      "org.scala-lang:scala3-library_3"
-    ],
     "org.json4s:json4s-core_3": [
       "com.thoughtworks.paranamer:paranamer",
       "org.json4s:json4s-ast_3",
-      "org.json4s:json4s-scalap_3",
-      "org.scala-lang:scala3-library_3"
+      "org.json4s:json4s-scalap_3"
     ],
     "org.json4s:json4s-native-core_3": [
-      "org.json4s:json4s-ast_3",
-      "org.scala-lang:scala3-library_3"
+      "org.json4s:json4s-ast_3"
     ],
     "org.json4s:json4s-native_3": [
       "org.json4s:json4s-core_3",
-      "org.json4s:json4s-native-core_3",
-      "org.scala-lang:scala3-library_3"
-    ],
-    "org.json4s:json4s-scalap_3": [
-      "org.scala-lang:scala3-library_3"
+      "org.json4s:json4s-native-core_3"
     ],
     "org.osgi:org.osgi.service.prefs": [
       "org.osgi:osgi.annotation"
-    ],
-    "org.scala-lang.modules:scala-parallel-collections_3": [
-      "org.scala-lang:scala3-library_3"
-    ],
-    "org.scala-lang.modules:scala-parser-combinators_3": [
-      "org.scala-lang:scala3-library_3"
-    ],
-    "org.scala-lang.modules:scala-xml_3": [
-      "org.scala-lang:scala3-library_3"
     ],
     "org.scala-lang:scala3-compiler_3": [
       "org.jline:jline-reader",
@@ -1649,18 +1564,17 @@
       "org.jline:jline-terminal-jni",
       "org.scala-lang.modules:scala-asm",
       "org.scala-lang:scala3-interfaces",
-      "org.scala-lang:scala3-library_3",
       "org.scala-lang:tasty-core_3",
       "org.scala-sbt:compiler-interface"
     ],
-    "org.scala-lang:scala3-library_3": [
-      "org.scala-lang:scala-library"
-    ],
-    "org.scala-lang:tasty-core_3": [
-      "org.scala-lang:scala3-library_3"
-    ],
     "org.scala-sbt:compiler-interface": [
       "org.scala-sbt:util-interface"
+    ],
+    "org.scalameta:scalafmt-dynamic_2.13": [
+      "com.typesafe:config",
+      "io.get-coursier:interface",
+      "org.scalameta:scalafmt-interfaces",
+      "org.scalameta:scalafmt-sysops_2.13"
     ]
   },
   "packages": {
@@ -1737,17 +1651,11 @@
       "com.github.luben.zstd",
       "com.github.luben.zstd.util"
     ],
-    "com.github.pathikrit:better-files_3": [
-      "better.files"
-    ],
     "com.github.scopt:scopt_3": [
       "scopt"
     ],
     "com.github.sh4869:semver-parser-scala_3": [
       "com.github.sh4869.semver_parser"
-    ],
-    "com.github.tototoshi:scala-csv_3": [
-      "com.github.tototoshi.csv"
     ],
     "com.google.code.findbugs:jsr305": [
       "javax.annotation",
@@ -1836,6 +1744,9 @@
     ],
     "com.lihaoyi:geny_3": [
       "geny"
+    ],
+    "com.lihaoyi:os-lib_3": [
+      "os"
     ],
     "com.lihaoyi:requests_3": [
       "requests"
@@ -1943,6 +1854,124 @@
       "org.apache.commons.io.monitor",
       "org.apache.commons.io.output",
       "org.apache.commons.io.serialization"
+    ],
+    "io.get-coursier:interface": [
+      "coursierapi",
+      "coursierapi.error",
+      "coursierapi.internal.jniutils",
+      "coursierapi.shaded.commonscompress",
+      "coursierapi.shaded.commonscompress.archivers",
+      "coursierapi.shaded.commonscompress.archivers.tar",
+      "coursierapi.shaded.commonscompress.archivers.zip",
+      "coursierapi.shaded.commonscompress.compressors",
+      "coursierapi.shaded.commonscompress.compressors.bzip2",
+      "coursierapi.shaded.commonscompress.compressors.deflate64",
+      "coursierapi.shaded.commonscompress.compressors.lzw",
+      "coursierapi.shaded.commonscompress.compressors.xz",
+      "coursierapi.shaded.commonscompress.compressors.zstandard",
+      "coursierapi.shaded.commonscompress.utils",
+      "coursierapi.shaded.commonsio",
+      "coursierapi.shaded.commonsio.build",
+      "coursierapi.shaded.commonsio.file",
+      "coursierapi.shaded.commonsio.file.attribute",
+      "coursierapi.shaded.commonsio.filefilter",
+      "coursierapi.shaded.commonsio.function",
+      "coursierapi.shaded.commonsio.input",
+      "coursierapi.shaded.commonsio.output",
+      "coursierapi.shaded.compress",
+      "coursierapi.shaded.compress.snappy",
+      "coursierapi.shaded.concurrentrefhashmap",
+      "coursierapi.shaded.coursier",
+      "coursierapi.shaded.coursier.cache",
+      "coursierapi.shaded.coursier.cache.internal",
+      "coursierapi.shaded.coursier.cache.loggers",
+      "coursierapi.shaded.coursier.cache.shaded.dirs",
+      "coursierapi.shaded.coursier.cache.shaded.dirs.impl",
+      "coursierapi.shaded.coursier.cache.shaded.dirs.jni",
+      "coursierapi.shaded.coursier.complete",
+      "coursierapi.shaded.coursier.core",
+      "coursierapi.shaded.coursier.core.compatibility",
+      "coursierapi.shaded.coursier.core.shaded.fastparse",
+      "coursierapi.shaded.coursier.core.shaded.fastparse.internal",
+      "coursierapi.shaded.coursier.core.shaded.sourcecode",
+      "coursierapi.shaded.coursier.credentials",
+      "coursierapi.shaded.coursier.error",
+      "coursierapi.shaded.coursier.error.conflict",
+      "coursierapi.shaded.coursier.graph",
+      "coursierapi.shaded.coursier.internal",
+      "coursierapi.shaded.coursier.internal.api",
+      "coursierapi.shaded.coursier.ivy",
+      "coursierapi.shaded.coursier.jniutils",
+      "coursierapi.shaded.coursier.jvm",
+      "coursierapi.shaded.coursier.jvm.util",
+      "coursierapi.shaded.coursier.maven",
+      "coursierapi.shaded.coursier.params",
+      "coursierapi.shaded.coursier.params.rule",
+      "coursierapi.shaded.coursier.parse",
+      "coursierapi.shaded.coursier.paths",
+      "coursierapi.shaded.coursier.util",
+      "coursierapi.shaded.coursier.util.shaded.org.jsoup",
+      "coursierapi.shaded.coursier.util.shaded.org.jsoup.helper",
+      "coursierapi.shaded.coursier.util.shaded.org.jsoup.internal",
+      "coursierapi.shaded.coursier.util.shaded.org.jsoup.nodes",
+      "coursierapi.shaded.coursier.util.shaded.org.jsoup.parser",
+      "coursierapi.shaded.coursier.util.shaded.org.jsoup.select",
+      "coursierapi.shaded.dependency",
+      "coursierapi.shaded.dependency.parser",
+      "coursierapi.shaded.isterminal",
+      "coursierapi.shaded.jsoniter",
+      "coursierapi.shaded.lang3",
+      "coursierapi.shaded.lang3.function",
+      "coursierapi.shaded.org.fusesource.jansi.internal",
+      "coursierapi.shaded.plexus.archiver",
+      "coursierapi.shaded.plexus.archiver.tar",
+      "coursierapi.shaded.plexus.archiver.util",
+      "coursierapi.shaded.plexus.archiver.zip",
+      "coursierapi.shaded.plexus.components.io.attributes",
+      "coursierapi.shaded.plexus.components.io.filemappers",
+      "coursierapi.shaded.plexus.components.io.fileselectors",
+      "coursierapi.shaded.plexus.components.io.resources",
+      "coursierapi.shaded.plexus.util",
+      "coursierapi.shaded.plexus.util.cli",
+      "coursierapi.shaded.scala",
+      "coursierapi.shaded.scala.cli.commands",
+      "coursierapi.shaded.scala.cli.config",
+      "coursierapi.shaded.scala.collection",
+      "coursierapi.shaded.scala.collection.concurrent",
+      "coursierapi.shaded.scala.collection.convert",
+      "coursierapi.shaded.scala.collection.generic",
+      "coursierapi.shaded.scala.collection.immutable",
+      "coursierapi.shaded.scala.collection.mutable",
+      "coursierapi.shaded.scala.concurrent",
+      "coursierapi.shaded.scala.concurrent.duration",
+      "coursierapi.shaded.scala.concurrent.impl",
+      "coursierapi.shaded.scala.math",
+      "coursierapi.shaded.scala.ref",
+      "coursierapi.shaded.scala.reflect",
+      "coursierapi.shaded.scala.runtime",
+      "coursierapi.shaded.scala.sys",
+      "coursierapi.shaded.scala.sys.process",
+      "coursierapi.shaded.scala.util",
+      "coursierapi.shaded.scala.util.control",
+      "coursierapi.shaded.scala.util.hashing",
+      "coursierapi.shaded.scala.util.matching",
+      "coursierapi.shaded.scala.xml",
+      "coursierapi.shaded.scala.xml.dtd",
+      "coursierapi.shaded.scala.xml.dtd.impl",
+      "coursierapi.shaded.scala.xml.factory",
+      "coursierapi.shaded.scala.xml.parsing",
+      "coursierapi.shaded.windowsansi",
+      "coursierapi.shaded.xz",
+      "coursierapi.shaded.xz.check",
+      "coursierapi.shaded.xz.common",
+      "coursierapi.shaded.xz.delta",
+      "coursierapi.shaded.xz.index",
+      "coursierapi.shaded.xz.lz",
+      "coursierapi.shaded.xz.lzma",
+      "coursierapi.shaded.xz.rangecoder",
+      "coursierapi.shaded.xz.simple",
+      "coursierapi.shaded.zstd",
+      "coursierapi.shaded.zstd.util"
     ],
     "io.joern:eclipse-cdt-core": [
       "org.eclipse.cdt.core",
@@ -2175,12 +2204,10 @@
       "flatgraph.traversal",
       "flatgraph.util"
     ],
-    "io.joern:flatgraph-formats_3": [
-      "flatgraph.formats",
-      "flatgraph.formats.dot",
-      "flatgraph.formats.graphml",
-      "flatgraph.formats.graphson",
-      "flatgraph.formats.neo4jcsv"
+    "io.joern:flatgraph-domain-classes-generator_3": [
+      "flatgraph.algorithm",
+      "flatgraph.codegen",
+      "flatgraph.schema"
     ],
     "io.joern:flatgraph-help_3": [
       "flatgraph.help"
@@ -2188,32 +2215,11 @@
     "io.joern:flatgraph-odb-convert_3": [
       "flatgraph.convert"
     ],
-    "io.shiftleft:codepropertygraph-domain-classes_3": [
-      "io.shiftleft.codepropertygraph.generated",
-      "io.shiftleft.codepropertygraph.generated.accessors",
-      "io.shiftleft.codepropertygraph.generated.edges",
-      "io.shiftleft.codepropertygraph.generated.neighboraccessors",
-      "io.shiftleft.codepropertygraph.generated.nodes",
-      "io.shiftleft.codepropertygraph.generated.traversals"
-    ],
-    "io.shiftleft:codepropertygraph-protos_3": [
-      "io.shiftleft.proto.cpg"
-    ],
-    "io.shiftleft:codepropertygraph_3": [
-      "io.shiftleft",
-      "io.shiftleft.codepropertygraph",
-      "io.shiftleft.codepropertygraph.cpgloading",
-      "io.shiftleft.passes",
-      "io.shiftleft.utils"
-    ],
     "io.shiftleft:overflowdb-core_3": [
       "overflowdb",
       "overflowdb.misc",
       "overflowdb.storage",
       "overflowdb.util"
-    ],
-    "io.spray:spray-json_3": [
-      "spray.json"
     ],
     "javax.inject:javax.inject": [
       "javax.inject"
@@ -4419,38 +4425,6 @@
       "scala.xml.parsing",
       "scala.xml.transform"
     ],
-    "org.scala-lang:scala-library": [
-      "scala",
-      "scala.annotation",
-      "scala.annotation.meta",
-      "scala.annotation.unchecked",
-      "scala.beans",
-      "scala.collection",
-      "scala.collection.concurrent",
-      "scala.collection.convert",
-      "scala.collection.convert.impl",
-      "scala.collection.generic",
-      "scala.collection.immutable",
-      "scala.collection.mutable",
-      "scala.compat",
-      "scala.concurrent",
-      "scala.concurrent.duration",
-      "scala.concurrent.impl",
-      "scala.io",
-      "scala.jdk",
-      "scala.jdk.javaapi",
-      "scala.math",
-      "scala.ref",
-      "scala.reflect",
-      "scala.reflect.macros.internal",
-      "scala.runtime",
-      "scala.sys",
-      "scala.sys.process",
-      "scala.util",
-      "scala.util.control",
-      "scala.util.hashing",
-      "scala.util.matching"
-    ],
     "org.scala-lang:scala3-compiler_3": [
       "dotty.tools",
       "dotty.tools.backend",
@@ -4502,26 +4476,6 @@
     "org.scala-lang:scala3-interfaces": [
       "dotty.tools.dotc.interfaces"
     ],
-    "org.scala-lang:scala3-library_3": [
-      "scala",
-      "scala.annotation",
-      "scala.annotation.internal",
-      "scala.annotation.unchecked",
-      "scala.caps",
-      "scala.compiletime",
-      "scala.compiletime.ops",
-      "scala.compiletime.testing",
-      "scala.deriving",
-      "scala.quoted",
-      "scala.quoted.runtime",
-      "scala.reflect",
-      "scala.runtime",
-      "scala.runtime.coverage",
-      "scala.runtime.function",
-      "scala.runtime.stdLibPatches",
-      "scala.util",
-      "scala.util.control"
-    ],
     "org.scala-lang:tasty-core_3": [
       "dotty.tools.tasty",
       "dotty.tools.tasty.util"
@@ -4534,6 +4488,18 @@
     ],
     "org.scala-sbt:util-interface": [
       "xsbti"
+    ],
+    "org.scalameta:scalafmt-dynamic_2.13": [
+      "org.scalafmt.dynamic",
+      "org.scalafmt.dynamic.exceptions",
+      "org.scalafmt.dynamic.utils"
+    ],
+    "org.scalameta:scalafmt-interfaces": [
+      "org.scalafmt.interfaces"
+    ],
+    "org.scalameta:scalafmt-sysops_2.13": [
+      "org.scalafmt",
+      "org.scalafmt.sysops"
     ],
     "org.slf4j:slf4j-api": [
       "org.slf4j",
@@ -4552,14 +4518,10 @@
       "com.github.javaparser:javaparser-symbol-solver-core:jar:sources",
       "com.github.luben:zstd-jni",
       "com.github.luben:zstd-jni:jar:sources",
-      "com.github.pathikrit:better-files_3",
-      "com.github.pathikrit:better-files_3:jar:sources",
       "com.github.scopt:scopt_3",
       "com.github.scopt:scopt_3:jar:sources",
       "com.github.sh4869:semver-parser-scala_3",
       "com.github.sh4869:semver-parser-scala_3:jar:sources",
-      "com.github.tototoshi:scala-csv_3",
-      "com.github.tototoshi:scala-csv_3:jar:sources",
       "com.google.code.findbugs:jsr305",
       "com.google.code.findbugs:jsr305:jar:sources",
       "com.google.code.gson:gson",
@@ -4583,6 +4545,8 @@
       "com.ibm.icu:icu4j:jar:sources",
       "com.lihaoyi:geny_3",
       "com.lihaoyi:geny_3:jar:sources",
+      "com.lihaoyi:os-lib_3",
+      "com.lihaoyi:os-lib_3:jar:sources",
       "com.lihaoyi:requests_3",
       "com.lihaoyi:requests_3:jar:sources",
       "com.lihaoyi:ujson_3",
@@ -4619,26 +4583,20 @@
       "commons-codec:commons-codec:jar:sources",
       "commons-io:commons-io",
       "commons-io:commons-io:jar:sources",
+      "io.get-coursier:interface",
+      "io.get-coursier:interface:jar:sources",
       "io.joern:eclipse-cdt-core",
       "io.joern:eclipse-cdt-core:jar:sources",
       "io.joern:flatgraph-core_3",
       "io.joern:flatgraph-core_3:jar:sources",
-      "io.joern:flatgraph-formats_3",
-      "io.joern:flatgraph-formats_3:jar:sources",
+      "io.joern:flatgraph-domain-classes-generator_3",
+      "io.joern:flatgraph-domain-classes-generator_3:jar:sources",
       "io.joern:flatgraph-help_3",
       "io.joern:flatgraph-help_3:jar:sources",
       "io.joern:flatgraph-odb-convert_3",
       "io.joern:flatgraph-odb-convert_3:jar:sources",
-      "io.shiftleft:codepropertygraph-domain-classes_3",
-      "io.shiftleft:codepropertygraph-domain-classes_3:jar:sources",
-      "io.shiftleft:codepropertygraph-protos_3",
-      "io.shiftleft:codepropertygraph-protos_3:jar:sources",
-      "io.shiftleft:codepropertygraph_3",
-      "io.shiftleft:codepropertygraph_3:jar:sources",
       "io.shiftleft:overflowdb-core_3",
       "io.shiftleft:overflowdb-core_3:jar:sources",
-      "io.spray:spray-json_3",
-      "io.spray:spray-json_3:jar:sources",
       "javax.inject:javax.inject",
       "javax.inject:javax.inject:jar:sources",
       "junit:junit",
@@ -4803,20 +4761,22 @@
       "org.scala-lang.modules:scala-parser-combinators_3:jar:sources",
       "org.scala-lang.modules:scala-xml_3",
       "org.scala-lang.modules:scala-xml_3:jar:sources",
-      "org.scala-lang:scala-library",
-      "org.scala-lang:scala-library:jar:sources",
       "org.scala-lang:scala3-compiler_3",
       "org.scala-lang:scala3-compiler_3:jar:sources",
       "org.scala-lang:scala3-interfaces",
       "org.scala-lang:scala3-interfaces:jar:sources",
-      "org.scala-lang:scala3-library_3",
-      "org.scala-lang:scala3-library_3:jar:sources",
       "org.scala-lang:tasty-core_3",
       "org.scala-lang:tasty-core_3:jar:sources",
       "org.scala-sbt:compiler-interface",
       "org.scala-sbt:compiler-interface:jar:sources",
       "org.scala-sbt:util-interface",
       "org.scala-sbt:util-interface:jar:sources",
+      "org.scalameta:scalafmt-dynamic_2.13",
+      "org.scalameta:scalafmt-dynamic_2.13:jar:sources",
+      "org.scalameta:scalafmt-interfaces",
+      "org.scalameta:scalafmt-interfaces:jar:sources",
+      "org.scalameta:scalafmt-sysops_2.13",
+      "org.scalameta:scalafmt-sysops_2.13:jar:sources",
       "org.slf4j:slf4j-api",
       "org.slf4j:slf4j-api:jar:sources"
     ],
@@ -4829,14 +4789,10 @@
       "com.github.javaparser:javaparser-symbol-solver-core:jar:sources",
       "com.github.luben:zstd-jni",
       "com.github.luben:zstd-jni:jar:sources",
-      "com.github.pathikrit:better-files_3",
-      "com.github.pathikrit:better-files_3:jar:sources",
       "com.github.scopt:scopt_3",
       "com.github.scopt:scopt_3:jar:sources",
       "com.github.sh4869:semver-parser-scala_3",
       "com.github.sh4869:semver-parser-scala_3:jar:sources",
-      "com.github.tototoshi:scala-csv_3",
-      "com.github.tototoshi:scala-csv_3:jar:sources",
       "com.google.code.findbugs:jsr305",
       "com.google.code.findbugs:jsr305:jar:sources",
       "com.google.code.gson:gson",
@@ -4860,6 +4816,8 @@
       "com.ibm.icu:icu4j:jar:sources",
       "com.lihaoyi:geny_3",
       "com.lihaoyi:geny_3:jar:sources",
+      "com.lihaoyi:os-lib_3",
+      "com.lihaoyi:os-lib_3:jar:sources",
       "com.lihaoyi:requests_3",
       "com.lihaoyi:requests_3:jar:sources",
       "com.lihaoyi:ujson_3",
@@ -4896,26 +4854,20 @@
       "commons-codec:commons-codec:jar:sources",
       "commons-io:commons-io",
       "commons-io:commons-io:jar:sources",
+      "io.get-coursier:interface",
+      "io.get-coursier:interface:jar:sources",
       "io.joern:eclipse-cdt-core",
       "io.joern:eclipse-cdt-core:jar:sources",
       "io.joern:flatgraph-core_3",
       "io.joern:flatgraph-core_3:jar:sources",
-      "io.joern:flatgraph-formats_3",
-      "io.joern:flatgraph-formats_3:jar:sources",
+      "io.joern:flatgraph-domain-classes-generator_3",
+      "io.joern:flatgraph-domain-classes-generator_3:jar:sources",
       "io.joern:flatgraph-help_3",
       "io.joern:flatgraph-help_3:jar:sources",
       "io.joern:flatgraph-odb-convert_3",
       "io.joern:flatgraph-odb-convert_3:jar:sources",
-      "io.shiftleft:codepropertygraph-domain-classes_3",
-      "io.shiftleft:codepropertygraph-domain-classes_3:jar:sources",
-      "io.shiftleft:codepropertygraph-protos_3",
-      "io.shiftleft:codepropertygraph-protos_3:jar:sources",
-      "io.shiftleft:codepropertygraph_3",
-      "io.shiftleft:codepropertygraph_3:jar:sources",
       "io.shiftleft:overflowdb-core_3",
       "io.shiftleft:overflowdb-core_3:jar:sources",
-      "io.spray:spray-json_3",
-      "io.spray:spray-json_3:jar:sources",
       "javax.inject:javax.inject",
       "javax.inject:javax.inject:jar:sources",
       "junit:junit",
@@ -5080,20 +5032,22 @@
       "org.scala-lang.modules:scala-parser-combinators_3:jar:sources",
       "org.scala-lang.modules:scala-xml_3",
       "org.scala-lang.modules:scala-xml_3:jar:sources",
-      "org.scala-lang:scala-library",
-      "org.scala-lang:scala-library:jar:sources",
       "org.scala-lang:scala3-compiler_3",
       "org.scala-lang:scala3-compiler_3:jar:sources",
       "org.scala-lang:scala3-interfaces",
       "org.scala-lang:scala3-interfaces:jar:sources",
-      "org.scala-lang:scala3-library_3",
-      "org.scala-lang:scala3-library_3:jar:sources",
       "org.scala-lang:tasty-core_3",
       "org.scala-lang:tasty-core_3:jar:sources",
       "org.scala-sbt:compiler-interface",
       "org.scala-sbt:compiler-interface:jar:sources",
       "org.scala-sbt:util-interface",
       "org.scala-sbt:util-interface:jar:sources",
+      "org.scalameta:scalafmt-dynamic_2.13",
+      "org.scalameta:scalafmt-dynamic_2.13:jar:sources",
+      "org.scalameta:scalafmt-interfaces",
+      "org.scalameta:scalafmt-interfaces:jar:sources",
+      "org.scalameta:scalafmt-sysops_2.13",
+      "org.scalameta:scalafmt-sysops_2.13:jar:sources",
       "org.slf4j:slf4j-api",
       "org.slf4j:slf4j-api:jar:sources"
     ]
@@ -5102,6 +5056,11 @@
     "com.h2database:h2-mvstore:jar:sources": {
       "java.sql.Driver": [
         "org.h2.Driver"
+      ]
+    },
+    "io.get-coursier:interface": {
+      "coursierapi.shaded.coursier.jniutils.NativeApi": [
+        "coursierapi.internal.jniutils.ApiInternalNativeApi"
       ]
     },
     "org.apache.logging.log4j:log4j-api": {
@@ -5482,6 +5441,16 @@
     "org.scala-lang:scala3-compiler_3:jar:sources": {
       "javax.script.ScriptEngineFactory": [
         "dotty.tools.repl.ScriptEngine$Factory"
+      ]
+    },
+    "org.scalameta:scalafmt-dynamic_2.13": {
+      "org.scalafmt.interfaces.Scalafmt": [
+        "org.scalafmt.dynamic.ScalafmtDynamic"
+      ]
+    },
+    "org.scalameta:scalafmt-dynamic_2.13:jar:sources": {
+      "org.scalafmt.interfaces.Scalafmt": [
+        "org.scalafmt.dynamic.ScalafmtDynamic"
       ]
     }
   },

@@ -6,8 +6,7 @@ scala_library(
     exports = [
         "@maven//:io_joern_flatgraph_core_3",
         "@maven//:io_joern_flatgraph_help_3",
-        "@maven//:io_shiftleft_codepropertygraph_3",
-        "@maven//:io_shiftleft_codepropertygraph_protos_3",
+        "@codepropertygraph//codepropertygraph",
     ],
     deps = [
     ],
