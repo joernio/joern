@@ -80,7 +80,7 @@ object ExternalCommand {
     }
   }
 
-  /** Executes a command and returns the started [[Process]].
+  /** Executes a command and returns the started `java.lang.Process`.
     *
     * Callers are responsible for destroying the process when done (e.g. via `destroyForcibly().waitFor()`). The
     * process's stdout and stderr are merged into a single stream accessible via `process.getInputStream`.
@@ -90,7 +90,7 @@ object ExternalCommand {
     * @param workingDir
     *   The directory to execute the command in
     * @return
-    *   The started Process whose merged stdout/stderr can be read via `getInputStream`
+    *   the started `java.lang.Process` whose merged stdout/stderr can be read via `getInputStream`
     */
   def processFromCommand(command: Seq[String], workingDir: String): Process = {
     val builder = new ProcessBuilder(command*)

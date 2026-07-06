@@ -95,7 +95,7 @@ object PostFrontendValidator {
   * faster checking code, then enable in sptests and prod.
   *
   * NOTE: All validation checks with a level lower or equal to [[fatalValidationLevel]] will result in an exception. See
-  * [[ValidationLevel]] and [[ErrorType]] for the highest validation level.
+  * [[ValidationLevel]] and [[PostFrontendValidator.ErrorType]] for the highest validation level.
   */
 class PostFrontendValidator(cpg: Cpg, fatalValidationLevel: ValidationLevel) extends AbstractValidator(cpg) {
   import PostFrontendValidator.logger

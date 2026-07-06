@@ -59,8 +59,8 @@ private[x2cpg] trait MethodAstBuilder[Node, NodeProcessor] {
 
   /** Creates an AST for a static initialiser method (e.g. a class-level `static { … }` block or module-level init).
     *
-    * The method is given the [[io.joern.x2cpg.Defines.StaticInitMethodName]] name and a `STATIC` modifier. Its body
-    * wraps `initAsts` in a block.
+    * The method is given the `Defines.StaticInitMethodName` name and a `STATIC` modifier. Its body wraps `initAsts` in
+    * a block.
     *
     * @param node
     *   the source AST node that triggered the static init (used for position)
@@ -69,11 +69,11 @@ private[x2cpg] trait MethodAstBuilder[Node, NodeProcessor] {
     * @param fullName
     *   fully-qualified name of the synthesised method
     * @param signature
-    *   optional method signature; defaults to [[io.shiftleft.codepropertygraph.generated.PropertyDefaults.Signature]]
+    *   optional method signature; defaults to `PropertyDefaults.Signature`
     * @param returnType
     *   fully-qualified return type name
     * @param fileName
-    *   optional source file name; defaults to [[io.shiftleft.codepropertygraph.generated.PropertyDefaults.Filename]]
+    *   optional source file name; defaults to `PropertyDefaults.Filename`
     */
   def staticInitMethodAst(
     node: Node,
