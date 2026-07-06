@@ -355,11 +355,15 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  AssocItemList
   private def visitImpl(impl: Impl): Seq[Ast] = {
     if (impl.forKwToken.isDefined) {
-      val typeDecl = typeDeclForTraitImpl(impl)
-      methodAstParentStack.push(typeDecl)
-      val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn => visitFn(fn) }
-      methodAstParentStack.pop()
-      Ast(typeDecl).withChildren(methodAsts) :: Nil
+      impl.typ match {
+        case implTrait :: implType :: Nil =>
+          val typeDecl = typeDeclForTraitImpl(impl, implTrait, implType)
+          methodAstParentStack.push(typeDecl)
+          val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn => visitFn(fn) }
+          methodAstParentStack.pop()
+          Ast(typeDecl).withChildren(methodAsts) :: Nil
+        case _ => notHandledYet(impl) :: Nil
+      }
     } else {
       methodAstParentStack.push(typeDeclForImpl(impl))
       val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn => visitFn(fn) }

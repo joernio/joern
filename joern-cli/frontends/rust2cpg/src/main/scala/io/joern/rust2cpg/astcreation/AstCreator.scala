@@ -161,9 +161,13 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     )
   }
 
-  protected def typeDeclForTraitImpl(impl: RustNodeSyntax.Impl): NewTypeDecl = {
-    val implTypeFullName  = typeFullNameForType(impl.typ.last)
-    val traitTypeFullName = typeFullNameForType(impl.typ.head)
+  protected def typeDeclForTraitImpl(
+    impl: RustNodeSyntax.Impl,
+    implTrait: RustNodeSyntax.Type,
+    implType: RustNodeSyntax.Type
+  ): NewTypeDecl = {
+    val implTypeFullName  = typeFullNameForType(implType)
+    val traitTypeFullName = typeFullNameForType(implTrait)
     val name              = implTypeFullName.split(RustFullNames.PathSep).lastOption.getOrElse(implTypeFullName)
     typeDeclNode(
       node = impl,
