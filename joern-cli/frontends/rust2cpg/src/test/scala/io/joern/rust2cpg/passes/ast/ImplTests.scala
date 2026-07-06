@@ -234,4 +234,156 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.call.nameExact("new").argument shouldBe empty
     }
   }
+
+  "an impl block for a trait" should {
+    val cpg = code("""
+        |trait Bar {
+        |  fn do_stuff(&self) -> i32;
+        |}
+        |struct Foo;
+        |impl Bar for Foo {
+        |  fn do_stuff(&self) -> i32 { 1 }
+        |}
+        |""".stripMargin)
+
+    "have correct typeDecl fullnames" in {
+      inside(cpg.typeDecl.nameExact("Foo").fullName.sorted.l) { case traitImplFullName :: typeFullName :: Nil =>
+        typeFullName shouldBe "rust2cpgtest::Foo"
+        traitImplFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>"
+      }
+    }
+
+    "have correct inheritsFromTypeFullName" in {
+      cpg.typeDecl
+        .fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>")
+        .inheritsFromTypeFullName
+        .l shouldBe List("rust2cpgtest::Bar")
+    }
+
+    "have correct methodFullName" in {
+      cpg.typeDecl
+        .fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>")
+        .method
+        .fullName
+        .l shouldBe List("<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff")
+    }
+
+    "have correct self properties" in {
+      inside(cpg.method.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff").parameter.l) {
+        case self :: Nil =>
+          self.name shouldBe "self"
+          self.index shouldBe 0
+          self.order shouldBe 0
+          self.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
+          // TODO(rust_ast_gen): resolve self/Self.
+          pendingUntilFixed(self.typeFullName shouldBe "&rust2cpgtest::Foo")
+      }
+    }
+
+    "have correct return typeFullName" in {
+      cpg.method
+        .fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff")
+        .methodReturn
+        .typeFullName
+        .l shouldBe List("i32")
+    }
+  }
+
+  "a call to a trait method" should {
+    val cpg = code("""
+        |trait Bar { fn do_stuff(&self) -> i32; }
+        |struct Foo;
+        |impl Bar for Foo { fn do_stuff(&self) -> i32 { 1 } }
+        |fn run(f: Foo) { f.do_stuff(); }
+        |""".stripMargin)
+
+    "have correct methodFullName" in {
+      inside(cpg.call.nameExact("do_stuff").l) { case call :: Nil =>
+        call.methodFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("do_stuff").argument.l) { case (base: Call) :: Nil =>
+        base.name shouldBe Operators.addressOf
+        base.code shouldBe "&f"
+        base.argumentIndex shouldBe 0
+        base.typeFullName shouldBe "&rust2cpgtest::Foo"
+        inside(base.argument.l) { case (inner: Identifier) :: Nil =>
+          inner.name shouldBe "f"
+          inner.typeFullName shouldBe "rust2cpgtest::Foo"
+        }
+      }
+    }
+  }
+
+  "a call to a trait method via fully-qualified syntax" should {
+    val cpg = code("""
+        |trait Bar { fn do_stuff(&self) -> i32; }
+        |struct Foo;
+        |impl Bar for Foo { fn do_stuff(&self) -> i32 { 1 } }
+        |fn run(f: Foo) { Foo::do_stuff(&f); }
+        |""".stripMargin)
+
+    "have correct methodFullName" in {
+      inside(cpg.call.nameExact("do_stuff").l) { case call :: Nil =>
+        // TODO(rust_ast_gen): resolve to the impl method, not the trait method here.
+        pendingUntilFixed(call.methodFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff")
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("do_stuff").argument.l) { case (base: Call) :: Nil =>
+        base.name shouldBe Operators.addressOf
+        base.code shouldBe "&*&f"
+        base.argumentIndex shouldBe 0
+        base.typeFullName shouldBe "&rust2cpgtest::Foo"
+        inside(base.argument.l) { case (deref: Call) :: Nil =>
+          deref.name shouldBe Operators.indirection
+          deref.code shouldBe "*&f"
+          deref.typeFullName shouldBe "rust2cpgtest::Foo"
+          inside(deref.argument.l) { case (inner: Call) :: Nil =>
+            inner.name shouldBe Operators.addressOf
+            inner.code shouldBe "&f"
+            inner.typeFullName shouldBe "&rust2cpgtest::Foo"
+          }
+        }
+      }
+    }
+  }
+}
+
+class ImplTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
+
+  "an impl block for the `Default` trait resolved against the sysroot" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Default for Foo {
+        |  fn default() -> Foo { Foo }
+        |}
+        |fn run() {
+        |  Foo::default();
+        |}
+        |""".stripMargin)
+
+    "have correct fullName for the impl" in {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo as core::default::Default>").l) { case typeDecl :: Nil =>
+        typeDecl.inheritsFromTypeFullName shouldBe List("core::default::Default")
+        typeDecl.method.fullName.l shouldBe List("<rust2cpgtest::Foo as core::default::Default>::default")
+      }
+    }
+
+    "have correct fulName for the trait call" in {
+      inside(cpg.call.nameExact("default").l) { case call :: Nil =>
+        // TODO(rust_ast_gen): resolve to the impl method, not the trait method here.
+        pendingUntilFixed(call.methodFullName shouldBe "<rust2cpgtest::Foo as core::default::Default>::default")
+      }
+    }
+
+    "have no arguments" in {
+      cpg.call.nameExact("default").argument shouldBe empty
+    }
+  }
 }
