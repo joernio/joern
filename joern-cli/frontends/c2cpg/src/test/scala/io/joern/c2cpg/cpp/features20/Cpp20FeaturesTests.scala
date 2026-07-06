@@ -382,7 +382,14 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         "X4.f:int()<const>",
         "foo:void()"
       )
-      cpg.method.nameExact("foo").local.typeFullName.l shouldBe List("X4")
+      inside(cpg.method.nameExact("foo").local.l) { case List(x4, tmp) =>
+        tmp.name shouldBe "<tmp>0" // from the constructor block for `constexpr X4 x4`
+        tmp.typeFullName shouldBe "X4"
+        tmp.referencingIdentifiers.inCall.code.l shouldBe List("&<tmp>0", "<tmp>0 = <operator>.alloc")
+        x4.name shouldBe "x4"
+        x4.typeFullName shouldBe "X4"
+        x4.referencingIdentifiers.inCall.code.l shouldBe List("x4.f()", "x4 = X4.X4()")
+      }
     }
 
     "handle explicit(bool)" in {

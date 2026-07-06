@@ -810,15 +810,15 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val elements = tupleExpr.elements.children.toList
     val equalityAsts = elements.zipWithIndex.map { case (element, idx) =>
       val currentPath = subjectFieldPath :+ s"$idx"
-      val subjectCode = (subjectBase :: currentPath).mkString(".")
-      val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
       element.expression match {
         case inner: TupleExprSyntax =>
           astForExpressionTuplePattern(inner, subjectBase, currentPath, node)
         case _ =>
-          val rhsAst = astForNode(element)
-          val eqCode = s"$subjectCode == ${code(element.expression)}"
-          val eqNode = createStaticCallNode(node, eqCode, Operators.equals, Operators.equals, Defines.Bool)
+          val subjectCode = (subjectBase :: currentPath).mkString(".")
+          val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
+          val rhsAst      = astForNode(element)
+          val eqCode      = s"$subjectCode == ${code(element.expression)}"
+          val eqNode      = createStaticCallNode(node, eqCode, Operators.equals, Operators.equals, Defines.Bool)
           callAst(eqNode, List(subjectAst, rhsAst))
       }
     }
@@ -938,26 +938,31 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   ): List[Ast] = {
     tuplePat.elements.children.toList.zipWithIndex.flatMap { case (element, idx) =>
       val currentPath = subjectFieldPath :+ s"$idx"
-      val subjectCode = (subjectBase :: currentPath).mkString(".")
-      val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
       element.pattern match {
         case inner: TuplePatternSyntax =>
           astsForBindingTuplePattern(inner, subjectBase, currentPath, node)
-        case isType: IsTypePatternSyntax =>
-          astForIsTypePatternInTupleContext(isType, subjectAst, subjectCode, node)
-        case ep: ExpressionPatternSyntax =>
-          astForExpressionPatternInTupleContext(ep, subjectAst, subjectCode, node)
-        case _: WildcardPatternSyntax =>
-          List.empty
         case vb: ValueBindingPatternSyntax =>
           vb.pattern match {
             case inner: TuplePatternSyntax =>
               astsForBindingTuplePattern(inner, subjectBase, currentPath, node)
             case _ =>
+              val subjectCode = (subjectBase :: currentPath).mkString(".")
+              val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
               astForBindingInTupleContext(code(vb.pattern), subjectAst, subjectCode, tuplePat)
           }
-        case _ =>
-          astForBindingInTupleContext(code(element.pattern), subjectAst, subjectCode, tuplePat)
+        case _: WildcardPatternSyntax =>
+          List.empty
+        case other =>
+          val subjectCode = (subjectBase :: currentPath).mkString(".")
+          val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
+          other match {
+            case isType: IsTypePatternSyntax =>
+              astForIsTypePatternInTupleContext(isType, subjectAst, subjectCode, node)
+            case ep: ExpressionPatternSyntax =>
+              astForExpressionPatternInTupleContext(ep, subjectAst, subjectCode, node)
+            case _ =>
+              astForBindingInTupleContext(code(other), subjectAst, subjectCode, tuplePat)
+          }
       }
     }
   }
@@ -1002,23 +1007,28 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   ): List[Ast] = {
     tupleExpr.elements.children.toList.zipWithIndex.flatMap { case (element, idx) =>
       val currentPath = subjectFieldPath :+ s"$idx"
-      val subjectCode = (subjectBase :: currentPath).mkString(".")
-      val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
       element.expression match {
         case inner: TupleExprSyntax =>
           astsForBindingTupleExpr(inner, subjectBase, currentPath, node, allBindings)
-        case _ if allBindings || isBindingExpression(element.expression) =>
-          val varName = extractBindingName(element.expression)
-          astForBindingInTupleContext(varName, subjectAst, subjectCode, tupleExpr)
-        case p: PatternExprSyntax =>
-          astsForPatternInTupleContext(p.pattern, subjectAst, subjectCode, node)
         case _: DiscardAssignmentExprSyntax =>
           List.empty
-        case _ =>
-          val rhsAst = astForNode(element)
-          val eqCode = s"$subjectCode == ${code(element.expression)}"
-          val eqNode = createStaticCallNode(node, eqCode, Operators.equals, Operators.equals, Defines.Bool)
-          List(callAst(eqNode, List(subjectAst, rhsAst)))
+        case expr =>
+          val subjectCode = (subjectBase :: currentPath).mkString(".")
+          val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
+          if (allBindings || isBindingExpression(expr)) {
+            val varName = extractBindingName(expr)
+            astForBindingInTupleContext(varName, subjectAst, subjectCode, tupleExpr)
+          } else {
+            expr match {
+              case p: PatternExprSyntax =>
+                astsForPatternInTupleContext(p.pattern, subjectAst, subjectCode, node)
+              case _ =>
+                val rhsAst = astForNode(element)
+                val eqCode = s"$subjectCode == ${code(expr)}"
+                val eqNode = createStaticCallNode(node, eqCode, Operators.equals, Operators.equals, Defines.Bool)
+                List(callAst(eqNode, List(subjectAst, rhsAst)))
+            }
+          }
       }
     }
   }
