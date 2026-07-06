@@ -102,7 +102,7 @@ class ClosureTests extends PhpCode2CpgFixture {
         use2.code shouldBe "&$use2"
         use2.closureBindingId shouldBe Some(s"$expectedName:use2")
 
-        echoCall.code shouldBe "sink($value,$use1)"
+        echoCall.code shouldBe "sink($value, $use1)"
       }
     }
 

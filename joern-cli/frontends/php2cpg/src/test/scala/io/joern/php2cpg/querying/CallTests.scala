@@ -371,8 +371,9 @@ class CallTests extends PhpCode2CpgFixture {
     val cpg = code("""<?php
         |foo(bar: $x);
         |""".stripMargin)
-
-    inside(cpg.call.nameExact("foo").argument.l) { case List(xArg: Identifier) =>
+    val call = cpg.call.nameExact("foo").loneElement
+    call.code shouldBe "foo(bar: $x)"
+    inside(call.argument.l) { case List(xArg: Identifier) =>
       xArg.name shouldBe "x"
       xArg.code shouldBe "$x"
       xArg.argumentName shouldBe Some("bar")
@@ -383,8 +384,9 @@ class CallTests extends PhpCode2CpgFixture {
     val cpg = code("""<?php
         |foo($a, nameA: $b, nameB: $c);
         |""".stripMargin)
-
-    inside(cpg.call.nameExact("foo").argument.l) { case List(aArg: Identifier, bArg: Identifier, cArg: Identifier) =>
+    val call = cpg.call.nameExact("foo").loneElement
+    call.code shouldBe "foo($a, nameA: $b, nameB: $c)"
+    inside(call.argument.l) { case List(aArg: Identifier, bArg: Identifier, cArg: Identifier) =>
       aArg.name shouldBe "a"
       aArg.code shouldBe "$a"
       aArg.argumentName shouldBe None
