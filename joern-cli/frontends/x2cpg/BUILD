@@ -39,6 +39,10 @@ scala_library(
         "@maven//:org_apache_commons_commons_exec",
         "@maven//:org_gradle_gradle_tooling_api",
         "@maven//:org_apache_maven_maven_artifact",
+        "@maven//:com_github_scopt_scopt_3",
+    ],
+    exports = [
+        "@maven//:com_github_scopt_scopt_3",
     ],
 )
 
