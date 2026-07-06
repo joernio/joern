@@ -189,9 +189,9 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
   /** Creates an AST for a C-style `for` loop (`for (init; condition; update) body`).
     *
     * Multiple init, condition, or update expressions are each wrapped in a synthetic block. The resulting blocks and
-    * body are placed at explicit orders so that [[io.joern.x2cpg.passes.cfg.CfgCreator]] can reconstruct the correct
-    * CFG edges. Condition, init, update, and body roots receive the corresponding CFG-typed edges (`CONDITION`,
-    * `FOR_INIT`, `FOR_UPDATE`, `FOR_BODY`).
+    * body are placed at explicit orders so that [[io.joern.x2cpg.passes.controlflow.cfgcreation.CfgCreator]] can
+    * reconstruct the correct CFG edges. Condition, init, update, and body roots receive the corresponding CFG-typed
+    * edges (`CONDITION`, `FOR_INIT`, `FOR_UPDATE`, `FOR_BODY`).
     *
     * @param node
     *   the source AST node representing the `for` statement (used for position and code)
@@ -236,9 +236,9 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
   /** Wires the children of a C-style `for` loop onto a `forNode` created by [[forAstInit]].
     *
     * Multiple init, condition, or update expressions are each wrapped in a synthetic block. The resulting blocks and
-    * body are placed at explicit orders so that [[io.joern.x2cpg.passes.cfg.CfgCreator]] can reconstruct the correct
-    * CFG edges. Condition, init, update, and body roots receive the corresponding CFG-typed edges (`CONDITION`,
-    * `FOR_INIT`, `FOR_UPDATE`, `FOR_BODY`).
+    * body are placed at explicit orders so that [[io.joern.x2cpg.passes.controlflow.cfgcreation.CfgCreator]] can
+    * reconstruct the correct CFG edges. Condition, init, update, and body roots receive the corresponding CFG-typed
+    * edges (`CONDITION`, `FOR_INIT`, `FOR_UPDATE`, `FOR_BODY`).
     *
     * @param forNode
     *   the `for` control-structure node created by [[forAstInit]]

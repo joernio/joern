@@ -183,13 +183,13 @@ object GsonTypeInfoReader {
     filename.contains("/.build/") || filename.contains("\\.build\\") || filename.contains("/Build/")
   }
 
-  /** Collects type information from Swift AST JSON, emitting each [[TypeInfo]] via the provided callback as it is
+  /** Collects type information from Swift AST JSON, emitting each `TypeInfo` via the provided callback as it is
     * discovered during streaming token-by-token parsing. No intermediate collection is built.
     *
     * @param reader
     *   The reader providing the JSON input
     * @param emit
-    *   Called once for each [[TypeInfo]] extracted from the JSON stream
+    *   Called once for each `TypeInfo` extracted from the JSON stream
     */
   def collectTypeInfo(reader: Reader, emit: TypeInfo => Unit): Unit = {
     val jsonReader   = new JsonReader(reader)

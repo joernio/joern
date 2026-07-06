@@ -11,7 +11,7 @@ import java.nio.file.Paths
 /** Abstract base for all language-specific CPG AST creators.
   *
   * Mixes in builder traits for annotations, calls, methods, and control structures. Each concrete frontend subclasses
-  * this and implements [[createAst]], populating [[diffGraph]] with the CPG nodes and edges derived from `filename`.
+  * this and implements `createAst`, populating `diffGraph` with the CPG nodes and edges derived from `filename`.
   *
   * @tparam Node
   *   the parser's AST node type
@@ -33,21 +33,20 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit va
 
   /** Entry point: build the CPG diffgraph for `filename`.
     *
-    * Implementations traverse the parsed AST, create CPG nodes and edges, and add them to [[diffGraph]].
+    * Implementations traverse the parsed AST, create CPG nodes and edges, and add them to `diffGraph`.
     *
     * @return
-    *   the populated [[DiffGraphBuilder]] ready to be applied to the CPG
+    *   the populated `DiffGraphBuilder` ready to be applied to the CPG
     */
   def createAst(): DiffGraphBuilder
 
   /** Creates a global namespace block for the source file being processed.
     *
-    * Uses [[io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName]] as the name and
-    * derives the full name from `filename` via [[io.joern.x2cpg.passes.frontend.MetaDataPass]]. The block is placed at
-    * order 1 by convention.
+    * Uses `NamespaceTraversal.globalNamespaceName` as the name and derives the full name from `filename` via
+    * `MetaDataPass`. The block is placed at order 1 by convention.
     *
     * @return
-    *   a new [[NewNamespaceBlock]] representing the file's top-level scope
+    *   a new `NewNamespaceBlock` representing the file's top-level scope
     */
   def globalNamespaceBlock(): NewNamespaceBlock = {
     val name     = NamespaceTraversal.globalNamespaceName
@@ -59,7 +58,7 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit va
       .order(1)
   }
 
-  /** Wraps a sequence of ASTs in a [[NewBlock]] when there is more than one element.
+  /** Wraps a sequence of ASTs in a `NewBlock` when there is more than one element.
     *
     *   - Empty sequence → an empty block node.
     *   - Exactly one AST → returned as-is (no wrapper).
@@ -91,7 +90,7 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit va
 
   /** Assigns monotonically increasing `argumentIndex` values to a sequence of argument ASTs.
     *
-    * Only AST roots that implement [[ExpressionNew]] are updated; other roots are silently skipped. Indices start at
+    * Only AST roots that implement `ExpressionNew` are updated; other roots are silently skipped. Indices start at
     * `start` (default 1) and increment by 1 per argument.
     *
     * @param arguments
