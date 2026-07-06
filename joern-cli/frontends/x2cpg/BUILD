@@ -24,25 +24,27 @@ scala_library(
         # is a big no no since that way it gets distributed with each
         # and every frontend.
         "src/main/resources/php_known_function_signatures.txt",
-    ],
+    ] + glob([
+        "src/main/resources/io/joern/x2cpg/utils/dependency/*",
+    ]),
     scalacopts = [
     ],
     visibility = ["//visibility:public"],
+    exports = [
+        "@maven//:com_github_scopt_scopt_3",
+    ],
     deps = [
         ":x2cpg_java",
         "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
         "//semanticcpg",
+        "@maven//:com_github_scopt_scopt_3",
         "@maven//:com_lihaoyi_geny_3",
         "@maven//:com_lihaoyi_ujson_3",
         "@maven//:com_michaelpollmeier_versionsort",
         "@maven//:com_typesafe_config",
         "@maven//:org_apache_commons_commons_exec",
-        "@maven//:org_gradle_gradle_tooling_api",
         "@maven//:org_apache_maven_maven_artifact",
-        "@maven//:com_github_scopt_scopt_3",
-    ],
-    exports = [
-        "@maven//:com_github_scopt_scopt_3",
+        "@maven//:org_gradle_gradle_tooling_api",
     ],
 )
 
@@ -50,12 +52,15 @@ scala_test(
     name = "tests",
     srcs = glob(["src/test/scala/**/*.scala"]),
     # TODO tests should not depend on main resources
-    data = glob([
+    data = [
+        "//joern-cli/frontends/x2cpg/src/test/resources/code:x2cpg-test-resource-code",
+    ] + glob([
         "src/test/resources/**/*",
         "src/main/resources/**/*",
     ]),
     env = {
         "FILE_IN_PROJECT_ROOT": "joern-cli/frontends/x2cpg",
+        "GRADLE_USER_HOME": "/tmp/gradleTestHome",
     },
     scalacopts = [
     ],

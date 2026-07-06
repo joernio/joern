@@ -4,9 +4,9 @@ scala_library(
     name = "io_shiftleft_codepropertygraph_with_deps",
     visibility = ["//visibility:public"],
     exports = [
+        "@codepropertygraph//codepropertygraph",
         "@maven//:io_joern_flatgraph_core_3",
         "@maven//:io_joern_flatgraph_help_3",
-        "@codepropertygraph//codepropertygraph",
     ],
     deps = [
     ],

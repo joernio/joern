@@ -43,14 +43,6 @@ bazel_dep(name = "rules_jvm_external", version = "7.0")
 maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
 maven.install(
     name = "maven",
-    excluded_artifacts = [
-        # Exclude any scala libraries which might come in transitively.
-        # rules_scala will add the correct scala library for the configured Scala version.
-        # That way we do not have conflicts between different scala library versions on
-        # the build classpath.
-        "org.scala-lang:scala3-library_3",
-        "org.scala-lang:scala-library",
-    ],
     artifacts = [
         "org.slf4j:slf4j-api:2.0.7",
         "com.github.javaparser:javaparser-symbol-solver-core:3.28.0",
@@ -93,6 +85,14 @@ maven.install(
         "com.squareup.tools.build:maven-archeologist:0.0.10",
         "com.lihaoyi:requests_3:0.8.0",
         "com.github.sh4869:semver-parser-scala_3:0.0.6",
+    ],
+    excluded_artifacts = [
+        # Exclude any scala libraries which might come in transitively.
+        # rules_scala will add the correct scala library for the configured Scala version.
+        # That way we do not have conflicts between different scala library versions on
+        # the build classpath.
+        "org.scala-lang:scala3-library_3",
+        "org.scala-lang:scala-library",
     ],
     fetch_sources = True,
     lock_file = "//:maven_install.json",

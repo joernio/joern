@@ -4,7 +4,7 @@ import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.slf4j.LoggerFactory
 
 import java.io.FileNotFoundException
-import java.nio.file.{FileVisitOption, FileVisitResult, FileVisitor, Files, Path, Paths}
+import java.nio.file.{FileVisitOption, FileVisitResult, FileVisitor, Files, LinkOption, Path, Paths}
 import java.nio.file.attribute.BasicFileAttributes
 import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.util.matching.Regex
@@ -304,7 +304,7 @@ object SourceFiles {
     // otherwise fall back to toAbsolutePath.normalize()
     def resolvePath(p: String): Path = {
       val pathObj = Paths.get(p)
-      Try(pathObj.toRealPath()).getOrElse(pathObj.toAbsolutePath.normalize())
+      Try(pathObj.toRealPath(LinkOption.NOFOLLOW_LINKS)).getOrElse(pathObj.toAbsolutePath.normalize())
     }
 
     // Convert to absolute, normalized paths for proper comparison
