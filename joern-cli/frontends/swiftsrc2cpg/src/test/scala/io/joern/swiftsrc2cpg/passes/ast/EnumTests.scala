@@ -3,9 +3,7 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
-
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 class EnumTests extends SwiftSrc2CpgSuite {
@@ -360,6 +358,16 @@ class EnumTests extends SwiftSrc2CpgSuite {
         |}""".stripMargin)
       val List(enumDecl) = cpg.typeDecl.nameExact("SE0155").l
       enumDecl.member.name.l shouldBe List("emptyArgs")
+    }
+
+    "nested enum should not produce dangling TypeRefs" in {
+      val cpg = code("""
+          |class Foo: FooParent {
+          |  enum SE0155: SParent {
+          |    case emptyArgs()
+          |  }
+          |}""".stripMargin)
+      cpg.typeRef.filter(_.astIn.isEmpty) shouldBe empty
     }
 
   }

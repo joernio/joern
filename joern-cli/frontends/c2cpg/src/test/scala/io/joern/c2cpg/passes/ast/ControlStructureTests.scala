@@ -425,4 +425,26 @@ class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
     }
   }
 
+  "while loop with const assigment" should {
+    val cpg = code(
+      """
+        |void main() {
+        |  while (const char* c = read()) {
+        |    foo(c);
+        |  }
+        |}
+        |""".stripMargin,
+      fileName = "test.cpp"
+    )
+
+    "emit a condition edge with correct content`" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.WHILE).l) {
+        case List(whileNode: ControlStructure) =>
+          inside(whileNode.condition.l) { case List(expr: Expression) =>
+            expr.code shouldBe "const char* c = read() != 0"
+          }
+      }
+    }
+  }
+
 }
