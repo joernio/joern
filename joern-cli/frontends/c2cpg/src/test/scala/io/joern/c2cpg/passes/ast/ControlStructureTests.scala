@@ -379,4 +379,50 @@ class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
     }
   }
 
+  "control structures with semicolon body (empty body via null statement)" should {
+    val cpg = code(
+      """
+        |void checkSemicolon(int a, int b) {
+        |  if (a == b); {
+        |    something();
+        |  }
+        |  for (int i = 0; i < 10; i++); {
+        |    something();
+        |  }
+        |  while (a < b); {
+        |    something();
+        |  }
+        |}
+        |""".stripMargin,
+      fileName = "test.c"
+    )
+
+    "emit an empty block as true body for `if (cond);`" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l) {
+        case List(ifNode: ControlStructure) =>
+          inside(ifNode.trueBodyOut.l) { case List(emptyBlock: Block) =>
+            emptyBlock.astChildren.l shouldBe List.empty
+          }
+      }
+    }
+
+    "emit an empty block as for-body for `for (...);`" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.FOR).l) {
+        case List(forNode: ControlStructure) =>
+          inside(forNode.forBodyOut.l) { case List(emptyBlock: Block) =>
+            emptyBlock.astChildren.l shouldBe List.empty
+          }
+      }
+    }
+
+    "emit an empty block as true body for `while (cond);`" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.WHILE).l) {
+        case List(whileNode: ControlStructure) =>
+          inside(whileNode.trueBodyOut.l) { case List(emptyBlock: Block) =>
+            emptyBlock.astChildren.l shouldBe List.empty
+          }
+      }
+    }
+  }
+
 }
