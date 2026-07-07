@@ -233,11 +233,19 @@ trait AstForStatementsCreator { this: AstCreator =>
     Ast(labelNode) +: nestedStmts
   }
 
+  // For control structures like `while (cond);` or `for (...);`, CDT parses the body as IASTNullStatement.
+  // nullSafeAst returns Seq.empty for null statements, which would leave required body edges missing.
+  // This helper emits an empty block instead so validators find a proper body node.
+  private def nullSafeBodyAst(body: IASTStatement): Seq[Ast] = body match {
+    case _: IASTNullStatement => Seq(blockAst(blockNode(body), List.empty))
+    case _                    => nullSafeAst(body)
+  }
+
   private def astForDoStatement(doStmt: IASTDoStatement): Ast = {
     val doNode = doWhileAstInit(doStmt)
     scope.pushNewBlockScope(doNode)
     val conditionAst = wrapInNullComparison(doStmt.getCondition, astForConditionExpression(doStmt.getCondition))
-    val bodyAst      = nullSafeAst(doStmt.getBody)
+    val bodyAst      = nullSafeBodyAst(doStmt.getBody)
     scope.popScope()
     doWhileAstFinish(doNode, Some(conditionAst), bodyAst)
   }
@@ -331,7 +339,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val compareAst =
       wrapInNullComparison(forStmt.getConditionExpression, astForConditionExpression(forStmt.getConditionExpression))
     val updateAst = nullSafeAst(forStmt.getIterationExpression)
-    val bodyAsts  = nullSafeAst(forStmt.getBody)
+    val bodyAsts  = nullSafeBodyAst(forStmt.getBody)
     scope.popScope()
 
     forAstFinish(forNode, localAsts, initAsts, Seq(compareAst), Seq(updateAst), bodyAsts)
@@ -505,7 +513,7 @@ trait AstForStatementsCreator { this: AstCreator =>
   private def astForWhile(whileStmt: IASTWhileStatement): Ast = {
     val code       = s"while (${nullSafeCode(whileStmt.getCondition)})"
     val compareAst = wrapInNullComparison(whileStmt.getCondition, astForConditionExpression(whileStmt.getCondition))
-    val bodyAst    = nullSafeAst(whileStmt.getBody)
+    val bodyAst    = nullSafeBodyAst(whileStmt.getBody)
     whileAst(whileStmt, Some(compareAst), bodyAst, Some(code))
   }
 
