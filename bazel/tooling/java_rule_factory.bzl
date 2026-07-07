@@ -6,10 +6,18 @@ load(
     _java_test = "java_test",
 )
 
-def make_java_rules(java_common_opts):
-    def java_binary(javacopts = [], **kwargs):
+def make_java_rules(java_common_opts,
+        common_java_binary_runtime_deps,
+        common_java_test_runtime_deps):
+    def java_binary(javacopts = [], runtime_deps = [], ignore_common_runtime_deps = False, **kwargs):
+        runtime_deps_combined = []
+        if (not ignore_common_runtime_deps):
+            runtime_deps_combined += common_java_binary_runtime_deps
+        runtime_deps_combined += runtime_deps
+
         _java_binary(
             javacopts = java_common_opts + javacopts,
+            runtime_deps = runtime_deps_combined,
             **kwargs
         )
 
@@ -19,9 +27,15 @@ def make_java_rules(java_common_opts):
             **kwargs
         )
 
-    def java_test(javacopts = [], **kwargs):
+    def java_test(javacopts = [], runtime_deps = [], ignore_common_runtime_deps = False, **kwargs):
+        runtime_deps_combined = []
+        if (not ignore_common_runtime_deps):
+            runtime_deps_combined += common_java_test_runtime_deps
+        runtime_deps_combined += runtime_deps
+
         _java_test(
             javacopts = java_common_opts + javacopts,
+            runtime_deps = runtime_deps_combined,
             **kwargs
         )
 
