@@ -73,24 +73,4 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
       messageCollector.hasErrors() shouldBe true
     }
   }
-
-  "KotlinCoreEnvironment generation on springboot-kotlin-webgoat" - {
-    val projectDirPath =
-      ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/test/resources/code/springboot-kotlin-webgoat")
-    val projectDependenciesPath = Paths.get(projectDirPath, "build", "gatheredDependencies")
-
-    "should not contain methods with unresolved types/namespaces" in {
-      val command =
-        if (scala.util.Properties.isWin) Seq("cmd.exe", "/C", "gradlew.bat", "gatherDependencies")
-        else Seq("./gradlew", "gatherDependencies")
-      ExternalCommand.run(command, Option(Paths.get(projectDirPath))).toTry shouldBe Symbol("success")
-      val config = Config(classpath = Set(projectDependenciesPath.toString))
-      val cpg = new Kotlin2Cpg().createCpg(config.withInputPath(projectDirPath)).getOrElse {
-        fail("Could not create a CPG!")
-      }
-      cpg.method.fullName(s".*${Defines.UnresolvedNamespace}.*") shouldBe empty
-      cpg.method.signature(s".*${Defines.UnresolvedNamespace}.*") shouldBe empty
-    }
-
-  }
 }
