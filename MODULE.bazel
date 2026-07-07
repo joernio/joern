@@ -3,7 +3,7 @@ module(name = "joern")
 bazel_dep(name = "rules_scala", version = "7.2.4")
 bazel_dep(name = "codepropertygraph")
 
-CODEPROPERTYGRAPH_VERSION = "f0e4c312e378e406923f9a55490742e4c43c4770"
+CODEPROPERTYGRAPH_VERSION = "daefb4aa74a9e41f96eeca11ae79fae4f4600a8e"
 
 BAZEL_TOOLING_VERSION = "a07fda4f8bc736081ad9921831bc9973e77e6e19"
 
