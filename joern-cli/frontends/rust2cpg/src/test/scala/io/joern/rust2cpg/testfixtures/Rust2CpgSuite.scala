@@ -6,10 +6,14 @@ import io.shiftleft.semanticcpg.utils.FileUtil.*
 
 import java.nio.file.Paths
 
-class Rust2CpgSuite(withPostProcessing: Boolean = false, noSysRoot: Boolean = false)
+class Rust2CpgSuite(withPostProcessing: Boolean = false, noSysRoot: Boolean = false, noResolveCfg: Boolean = false)
     extends Code2CpgFixture(() =>
       RustDefaultTestCpg()
-        .withConfig(Config().withNoSysRoot(noSysRoot))
+        .withConfig(
+          Config()
+            .withNoSysRoot(noSysRoot)
+            .withNoResolveCfg(noResolveCfg)
+        )
         .withPostProcessingPasses(withPostProcessing)
     ) {
 
