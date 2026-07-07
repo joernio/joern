@@ -1,6 +1,7 @@
 package io.joern.kotlin2cpg.dependency
 
 import io.joern.kotlin2cpg.{Config, Kotlin2Cpg, Main}
+import io.joern.x2cpg.utils.JoernRunfilesLocator
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.matchers.should.Matchers
@@ -16,7 +17,13 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
     "handling a project with a nested structure" should {
       val projectDir: Path =
         Paths
-          .get(ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/test/resources/code/gradle-nested-module-test"))
+          .get(
+            JoernRunfilesLocator
+              .resolve("joern/joern-cli/frontends/x2cpg/src/test/resources/code/gradle-nested-module-test")
+              .getOrElse(
+                ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/test/resources/code/gradle-nested-module-test")
+              )
+          )
           .toAbsolutePath
           .normalize()
 

@@ -25,13 +25,15 @@ scala_library(
 scala_test(
     name = "tests",
     srcs = glob(["src/test/scala/**/*.scala"]),
-    data = glob([
-        "src/test/resources/code/ktmin/dependencies/*",
+    data = [
+        "//joern-cli/frontends/x2cpg/src/test/resources/code:x2cpg-test-resource-code",
+    ] + glob([
+        "src/test/resources/code/**/*",
         "src/test/resources/jars/*",
-        "src/test/resources/code/springboot-kotlin-webgoat/*",
     ]),
     env = {
         "FILE_IN_PROJECT_ROOT": "joern-cli/frontends/kotlin2cpg",
+        "GRADLE_USER_HOME": "/tmp/gradleTestHome",
     },
     jvm_flags = ["-ea"],
     resources = [

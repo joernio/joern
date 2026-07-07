@@ -6,6 +6,7 @@ import io.joern.kotlin2cpg.Kotlin2Cpg
 import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import io.joern.x2cpg.Defines
 import FileUtil.*
+import io.joern.x2cpg.utils.JoernRunfilesLocator
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.ProjectRoot
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
@@ -39,7 +40,9 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
   }
 
   "KotlinCoreEnvironment generation on simple test code which calls external libraries" - {
-    val projectDirPath          = ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/test/resources/code/ktmin")
+    val projectDirPath = JoernRunfilesLocator
+      .resolve("joern/joern-cli/frontends/kotlin2cpg/src/test/resources/code/ktmin")
+      .getOrElse(ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/test/resources/code/ktmin"))
     val projectDependenciesPath = Paths.get(projectDirPath, "dependencies")
 
     "should not receive a compiler error message when the dependencies of the project have been provided" in {

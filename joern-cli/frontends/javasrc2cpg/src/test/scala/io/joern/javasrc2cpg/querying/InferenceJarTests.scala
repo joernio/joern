@@ -3,6 +3,7 @@ package io.joern.javasrc2cpg.querying
 import io.joern.javasrc2cpg.JavaSrc2Cpg.DefaultConfig
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.x2cpg.Defines
+import io.joern.x2cpg.utils.JoernRunfilesLocator
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.ProjectRoot
 
@@ -18,8 +19,10 @@ class InferenceJarTests extends JavaSrcCode2CpgFixture {
       |""".stripMargin
 
   "CPG for code where inference jar for dependencies is provided" should {
-    val inferenceJarPath = ProjectRoot.relativise("joern-cli/frontends/javasrc2cpg/src/test/resources/Deps.jar")
-    lazy val cpg         = code(_code).withConfig(DefaultConfig.withInferenceJarPaths(Set(inferenceJarPath)))
+    val inferenceJarPath = JoernRunfilesLocator
+      .resolve("joern/joern-cli/frontends/javasrc2cpg/src/test/resources/Deps.jar")
+      .getOrElse(ProjectRoot.relativise("joern-cli/frontends/javasrc2cpg/src/test/resources/Deps.jar"))
+    lazy val cpg = code(_code).withConfig(DefaultConfig.withInferenceJarPaths(Set(inferenceJarPath)))
 
     "resolve the type for Deps" in {
       val call = cpg.method.name("test1").call.name("foo").head
