@@ -669,9 +669,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForCallArg(arg: PhpArgument): Ast = {
     arg match {
-      case PhpArg(expr, _, _, _, _) =>
+      case PhpArg(expr, Some(parameterName), _, _, _) =>
+        val argAst = astForExpr(expr)
+        argAst.root.collect { case i: ExpressionNew => i.argumentName(parameterName) }
+        argAst
+      case PhpArg(expr, None, _, _, _) =>
         astForExpr(expr)
-
       case _: PhpVariadicPlaceholder =>
         val identifier = identifierNode(arg, "...", "...", TypeConstants.VariadicPlaceholder)
         val local      = handleVariableOccurrence(arg, "...")

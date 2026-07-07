@@ -253,12 +253,15 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
 
   protected def getArgsCode(call: PhpCallExpr, arguments: Seq[Ast]): String = {
     arguments
-      .zip(call.args.collect { case x: PhpArg => x.unpack })
+      .zip(call.args.collect { case PhpArg(_, parameterName, _, unpack, _) =>
+        val nameCode = parameterName.map(name => s"$name: ").getOrElse("")
+        (nameCode, unpack)
+      })
       .map {
-        case (arg, true)  => s"...${arg.rootCodeOrEmpty}"
-        case (arg, false) => arg.rootCodeOrEmpty
+        case (arg, (parameterName, true))  => s"$parameterName...${arg.rootCodeOrEmpty}"
+        case (arg, (parameterName, false)) => s"$parameterName${arg.rootCodeOrEmpty}"
       }
-      .mkString(",")
+      .mkString(", ")
   }
 
   protected def getCallName(call: PhpCallExpr, nameAst: Option[Ast]): String = {
