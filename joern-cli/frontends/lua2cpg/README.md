@@ -46,3 +46,24 @@ This E2 smoke proves bytecode artifact/profile/prototype/constant/diagnostic
 CPG evidence only. It does not claim parser AST semantics, dataflow, QueryDB,
 sanitizer, report construction, schema extension, distribution acceptance, or
 official frontend acceptance.
+
+## Intraprocedural Semantics Smoke
+
+```bash
+sbt 'lua2cpg/testOnly io.joern.lua2cpg.IntraproceduralSemanticsSmokeTest'
+sbt 'lua2cpg/stage'
+git status --short
+```
+
+Expected result:
+
+- `IntraproceduralSemanticsSmokeTest` succeeds.
+- `lua2cpg/stage` succeeds.
+- `git status --short` is clean after the smoke.
+
+This E3 smoke proves bytecode-local intraprocedural CPG evidence through
+`CALL`, `IDENTIFIER`, `LITERAL`, `METHOD`, and `REACHING_DEF` evidence over
+committed focused `.luac` fixtures. It does not claim interprocedural
+arg/return, module require/export resolution, source parser AST semantics,
+QueryDB, sanitizer classification, report construction, schema extension
+acceptance, distribution acceptance, or official frontend acceptance.
