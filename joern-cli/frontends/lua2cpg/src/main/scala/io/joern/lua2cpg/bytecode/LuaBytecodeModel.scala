@@ -43,23 +43,11 @@ final case class LuaPrototype(
   upvalueNames: Vector[LuaByteStringText]
 )
 
-final case class LuaInstruction(
-  pc: Int,
-  opcode: LuaOpcode,
-  mode: LuaInstructionMode,
-  a: Int,
-  b: Int,
-  c: Option[Int]
-)
+final case class LuaInstruction(pc: Int, opcode: LuaOpcode, mode: LuaInstructionMode, a: Int, b: Int, c: Option[Int])
 
 final case class LuaConstant(index: Int, luaType: String, value: LuaConstantValue)
 
-final case class LuaDiagnostic(
-  kind: String,
-  message: String,
-  severity: String,
-  successFactsAllowed: Boolean
-)
+final case class LuaDiagnostic(kind: String, message: String, severity: String, successFactsAllowed: Boolean)
 
 final case class LuaLocal(name: LuaByteStringText, startPc: Long, endPc: Long)
 

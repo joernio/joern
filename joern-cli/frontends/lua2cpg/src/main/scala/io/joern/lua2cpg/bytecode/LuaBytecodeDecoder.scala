@@ -5,15 +5,15 @@ import java.nio.ByteOrder
 import java.nio.charset.StandardCharsets
 
 object LuaBytecodeDecoder {
-  private val LuaMagic: Array[Byte]     = Array(0x1b.toByte, 0x4c.toByte, 0x75.toByte, 0x61.toByte)
-  private val Lua51Version: Int         = 0x51
-  private val DefaultInputKind: String  = "lua-bytecode"
-  private val SuccessDiagnosticKind     = "accepted"
-  private val SeverityInfo              = "info"
-  private val SeverityError             = "error"
-  private val NumberModeFloating        = "floating"
-  private val NumberModeIntegral        = "integral"
-  private val LuaByteStringCharset      = StandardCharsets.ISO_8859_1
+  private val LuaMagic: Array[Byte]    = Array(0x1b.toByte, 0x4c.toByte, 0x75.toByte, 0x61.toByte)
+  private val Lua51Version: Int        = 0x51
+  private val DefaultInputKind: String = "lua-bytecode"
+  private val SuccessDiagnosticKind    = "accepted"
+  private val SeverityInfo             = "info"
+  private val SeverityError            = "error"
+  private val NumberModeFloating       = "floating"
+  private val NumberModeIntegral       = "integral"
+  private val LuaByteStringCharset     = StandardCharsets.ISO_8859_1
 
   def decode(path: String, bytes: Array[Byte]): LuaBytecodeDecodeResult = {
     val reader = new Reader(bytes)
@@ -21,16 +21,16 @@ object LuaBytecodeDecoder {
   }
 
   private final class Reader(bytes: Array[Byte]) {
-    private var index: Int             = 0
-    private var version: Int           = 0
-    private var format: Int            = 0
-    private var endianFlag: Int        = 1
-    private var byteOrder: ByteOrder   = ByteOrder.LITTLE_ENDIAN
-    private var intSize: Int           = 4
-    private var sizeTSize: Int         = 8
-    private var instructionSize: Int   = 4
-    private var luaNumberSize: Int     = 8
-    private var integralFlag: Int      = 0
+    private var index: Int                       = 0
+    private var version: Int                     = 0
+    private var format: Int                      = 0
+    private var endianFlag: Int                  = 1
+    private var byteOrder: ByteOrder             = ByteOrder.LITTLE_ENDIAN
+    private var intSize: Int                     = 4
+    private var sizeTSize: Int                   = 8
+    private var instructionSize: Int             = 4
+    private var luaNumberSize: Int               = 8
+    private var integralFlag: Int                = 0
     private var currentProfileId: Option[String] = None
 
     def decode(path: String): LuaBytecodeDecodeResult = {
@@ -98,19 +98,22 @@ object LuaBytecodeDecoder {
       parentPrototypeId: Option[String],
       ordinalPath: Vector[Int]
     ): LuaPrototype = {
-      val sourceName    = readString()
-      val firstLine     = readUInt()
-      val lastLine      = readUInt()
-      val upvalueCount  = readByte()
-      val numParams     = readByte()
-      val isVararg      = (readByte() & 0x02) != 0
-      val maxStack      = readByte()
-      val instructions  = readVector(readUInt(), pc => decodeInstruction(pc))
-      val constants     = readVector(readUInt(), constantIndex => decodeConstant(constantIndex))
-      val nested = readVector(readUInt(), childOrdinal => {
-        val childId = s"$prototypeId.$childOrdinal"
-        decodePrototype(childId, Some(prototypeId), ordinalPath :+ childOrdinal)
-      })
+      val sourceName   = readString()
+      val firstLine    = readUInt()
+      val lastLine     = readUInt()
+      val upvalueCount = readByte()
+      val numParams    = readByte()
+      val isVararg     = (readByte() & 0x02) != 0
+      val maxStack     = readByte()
+      val instructions = readVector(readUInt(), pc => decodeInstruction(pc))
+      val constants    = readVector(readUInt(), constantIndex => decodeConstant(constantIndex))
+      val nested = readVector(
+        readUInt(),
+        childOrdinal => {
+          val childId = s"$prototypeId.$childOrdinal"
+          decodePrototype(childId, Some(prototypeId), ordinalPath :+ childOrdinal)
+        }
+      )
       val lineNumbers  = readVector(readUInt(), _ => readUInt())
       val locals       = readVector(readUInt(), _ => LuaLocal(readString(), readUInt(), readUInt()))
       val upvalueNames = readVector(readUInt(), _ => readString())
@@ -136,9 +139,9 @@ object LuaBytecodeDecoder {
     }
 
     private def decodeInstruction(pc: Int): LuaInstruction = {
-      val raw         = readUInt32()
-      val opcodeCode  = bits(raw, 0, 6).toInt
-      val opcode      = LuaOpcode.fromCode(opcodeCode).getOrElse {
+      val raw        = readUInt32()
+      val opcodeCode = bits(raw, 0, 6).toInt
+      val opcode = LuaOpcode.fromCode(opcodeCode).getOrElse {
         reject("malformed-constant", s"invalid opcode $opcodeCode at pc $pc")
       }
       val a = bits(raw, 6, 8).toInt
@@ -271,12 +274,8 @@ object LuaBytecodeDecoder {
           inputKind = DefaultInputKind,
           profileId = currentProfileId,
           accepted = false,
-          diagnostic = LuaDiagnostic(
-            kind = kind,
-            message = message,
-            severity = SeverityError,
-            successFactsAllowed = false
-          )
+          diagnostic =
+            LuaDiagnostic(kind = kind, message = message, severity = SeverityError, successFactsAllowed = false)
         ),
         profile = currentProfileId.map(_ => buildProfile()),
         root = None
