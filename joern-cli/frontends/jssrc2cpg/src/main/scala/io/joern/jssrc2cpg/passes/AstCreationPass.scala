@@ -70,7 +70,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
               (true, parseResult.filename)
           }
         case Failure(exception) =>
-          val pathOfFailedFile = jsonFilename.replaceAll("\\.[^.]*$", "")
+          val pathOfFailedFile = BabelJsonParser.stripExtension(jsonFilename)
           logger.warn(s"Failed to read json parse result for: '$pathOfFailedFile'", exception)
           (false, pathOfFailedFile)
       }
