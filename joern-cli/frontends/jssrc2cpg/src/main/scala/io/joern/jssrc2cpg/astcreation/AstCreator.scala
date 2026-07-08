@@ -46,12 +46,14 @@ class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val
   // TypeDecls with their bindings (with their refs) for lambdas and methods are not put in the AST
   // where the respective nodes are defined. Instead, we put them under the parent TYPE_DECL in which they are defined.
   // To achieve this we need this extra stack.
-  protected val methodAstParentStack          = new Stack[NewNode]()
-  protected val typeRefIdStack                = new Stack[NewTypeRef]
-  protected val dynamicInstanceTypeStack      = new Stack[String]
-  protected val localAstParentStack           = new Stack[NewBlock]()
-  protected val rootTypeDecl                  = new Stack[NewTypeDecl]()
-  protected val functionNodeToNameAndFullName = mutable.HashMap.empty[BabelNodeInfo, (String, String)]
+  protected val methodAstParentStack     = new Stack[NewNode]()
+  protected val typeRefIdStack           = new Stack[NewTypeRef]
+  protected val dynamicInstanceTypeStack = new Stack[String]
+  protected val localAstParentStack      = new Stack[NewBlock]()
+  protected val rootTypeDecl             = new Stack[NewTypeDecl]()
+  // Keyed by the function node's source range (start:end) rather than the BabelNodeInfo itself: the latter holds a
+  // ujson.Value whose hashCode/equals are structural, so hashing a key would recurse over the entire function subtree.
+  protected val functionNodeToNameAndFullName = mutable.HashMap.empty[String, (String, String)]
   protected val usedVariableNames             = mutable.HashMap.empty[String, Int]
   protected val seenAliasTypes                = mutable.HashSet.empty[NewTypeDecl]
   protected val functionFullNames             = mutable.HashSet.empty[String]

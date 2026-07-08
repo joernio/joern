@@ -39,6 +39,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     } yield s"$nodeStart:$nodeEnd"
   }
 
+  /** A cheap, stable key identifying a function node within a file, used to memoize its (name, fullName). We rely on
+    * the node's source range, falling back to its rendered JSON when offsets are unavailable.
+    */
+  protected def functionNodeKey(node: BabelNodeInfo): String =
+    range(node.json).getOrElse(node.json.render())
+
   // Binary search: find first line whose end-position >= position
   private def getLineOfSource(position: Int): Int = {
     var lo = 0
@@ -175,7 +181,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     // functionNode.getName is not necessarily unique and thus the full name calculated based on the scope
     // is not necessarily unique. Specifically we have this problem with lambda functions which are defined
     // in the same scope.
-    functionNodeToNameAndFullName.get(func) match {
+    val funcKey = functionNodeKey(func)
+    functionNodeToNameAndFullName.get(funcKey) match {
       case Some(nameAndFullName) => nameAndFullName
       case None =>
         val intendedName   = calcMethodName(func)
@@ -194,7 +201,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           }
         }
         functionFullNames.add(fullName)
-        functionNodeToNameAndFullName(func) = (name, fullName)
+        functionNodeToNameAndFullName(funcKey) = (name, fullName)
         (name, fullName)
     }
   }

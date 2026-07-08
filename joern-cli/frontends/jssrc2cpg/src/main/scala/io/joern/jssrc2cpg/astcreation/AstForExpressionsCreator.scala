@@ -34,8 +34,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .get("callee")
       .map(createBabelNodeInfo)
       .flatMap {
-        case callee if callee.node.isInstanceOf[FunctionLike] => functionNodeToNameAndFullName.get(callee)
-        case _                                                => None
+        case callee if callee.node.isInstanceOf[FunctionLike] =>
+          functionNodeToNameAndFullName.get(functionNodeKey(callee))
+        case _ => None
       }
       .foreach { case (name, fullName) => callNode_.name(name).methodFullName(fullName) }
     callAst(
@@ -409,8 +410,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .get("callee")
       .map(createBabelNodeInfo)
       .flatMap {
-        case callee if callee.node.isInstanceOf[FunctionLike] => functionNodeToNameAndFullName.get(callee)
-        case _                                                => None
+        case callee if callee.node.isInstanceOf[FunctionLike] =>
+          functionNodeToNameAndFullName.get(functionNodeKey(callee))
+        case _ => None
       }
       .foreach { case (name, fullName) => callNode_.name(name).methodFullName(fullName) }
     callAst(
