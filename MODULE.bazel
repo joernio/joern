@@ -3,12 +3,21 @@ module(name = "joern")
 bazel_dep(name = "rules_scala", version = "7.2.4")
 bazel_dep(name = "codepropertygraph")
 
-CODEPROPERTYGRAPH_VERSION = "f0e4c312e378e406923f9a55490742e4c43c4770"
+CODEPROPERTYGRAPH_VERSION = "daefb4aa74a9e41f96eeca11ae79fae4f4600a8e"
+
+BAZEL_TOOLING_VERSION = "a07fda4f8bc736081ad9921831bc9973e77e6e19"
 
 git_override(
     module_name = "codepropertygraph",
     commit = "{}".format(CODEPROPERTYGRAPH_VERSION),
     remote = "git@github.com:ShiftLeftSecurity/codepropertygraph.git",
+)
+
+bazel_dep(name = "bazel_tooling")
+git_override(
+    module_name = "bazel_tooling",
+    commit = "{}".format(BAZEL_TOOLING_VERSION),
+    remote = "git@github.com:joernio/bazel_tooling.git",
 )
 
 scala_config = use_extension(
@@ -25,16 +34,6 @@ scala_deps = use_extension(
 )
 scala_deps.scala()
 scala_deps.scalatest()
-
-# We always want to keep bazel_tooling in sync with the main Joern
-# module. The only reason this is even its on module is that we have
-# the same access patterns to its exported symbols and targets in Joern
-# as in other upstream projects.
-bazel_dep(name = "bazel_tooling")
-local_path_override(
-    module_name = "bazel_tooling",
-    path = "bazel/tooling",
-)
 
 register_toolchains("@bazel_tooling//scala_toolchain:plus_one_toolchain")
 
