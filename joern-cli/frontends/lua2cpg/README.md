@@ -27,3 +27,22 @@ Expected result:
 This E1 smoke proves only the runnable Lua frontend entry and file inventory.
 It does not claim Lua parsing, bytecode decode, AST semantics, dataflow,
 QueryDB, sanitizer, or report construction.
+
+## Bytecode Model Smoke
+
+```bash
+sbt 'lua2cpg/testOnly io.joern.lua2cpg.BytecodeModelSmokeTest'
+sbt 'lua2cpg/stage'
+git status --short
+```
+
+Expected result:
+
+- `BytecodeModelSmokeTest` succeeds.
+- `lua2cpg/stage` succeeds.
+- `git status --short` is clean after the smoke.
+
+This E2 smoke proves bytecode artifact/profile/prototype/constant/diagnostic
+CPG evidence only. It does not claim parser AST semantics, dataflow, QueryDB,
+sanitizer, report construction, schema extension, distribution acceptance, or
+official frontend acceptance.
