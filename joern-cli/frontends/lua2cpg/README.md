@@ -91,3 +91,38 @@ taint paths over committed fixtures.
 It does not claim QueryDB readiness, source parser AST semantics, sanitizer
 classification, report construction, schema extension acceptance, distribution
 acceptance, or official frontend acceptance.
+
+## Rules, Sanitizer, And Report Smoke
+
+```bash
+JAVA_TOOL_OPTIONS='-Dsbt.watch.mode=polling -Dsbt.io.jdktimestamps=true' \
+  sbt 'lua2cpg/testOnly io.joern.lua2cpg.RulesSanitizerReportSmokeTest'
+git status --short
+```
+
+Expected result:
+
+- `RulesSanitizerReportSmokeTest` succeeds.
+- `git status --short` is clean after the smoke.
+
+This E5 smoke proves source/sink rule matches, sanitizer calls and
+classification, report classification, vulnerability report construction, and
+explainable E5 boundaries through schema-safe CPG `CALL` markers over committed
+focused `.luac` fixtures.
+
+Reviewer traversal surface:
+
+```scala
+cpg.call.nameExact("lua.rule.match").code.l
+cpg.call.nameExact("lua.source.endpoint").code.l
+cpg.call.nameExact("lua.sink.endpoint").code.l
+cpg.call.nameExact("lua.sanitizer.call").code.l
+cpg.call.nameExact("lua.sanitizer.classification").code.l
+cpg.call.nameExact("lua.report.classification").code.l
+cpg.call.nameExact("lua.report.vulnerability").code.l
+cpg.call.nameExact("lua.e5.boundary").code.l
+```
+
+This phase does not claim QueryDB inclusion, schema extension acceptance,
+distribution acceptance, source parser AST support, production security-query
+readiness, or official frontend acceptance.
