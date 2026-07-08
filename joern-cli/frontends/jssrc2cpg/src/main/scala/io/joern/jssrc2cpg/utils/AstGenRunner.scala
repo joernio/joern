@@ -127,15 +127,19 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
 
   override protected def fileFilter(file: String, out: Path): Boolean = {
     Try {
-      file.stripSuffix(".json").replace(out.toString, config.inputPath) match {
+      val filePath = file.stripSuffix(".json").replace(out.toString, config.inputPath)
+      // The minified and transpiled checks both need the file's lines; read them at most once per invocation and only
+      // when a check actually forces this lazy val (i.e. for existing .js files).
+      lazy val fileLines = IOUtils.readLinesInFile(Paths.get(filePath))
+      filePath match {
         // We are not interested in JS / TS type definition files at this stage.
         // TODO: maybe we can enable that later on and use the type definitions there
         //  for enhancing the CPG with additional type information for functions
-        case filePath if TypeDefinitionFileExtensions.exists(filePath.endsWith)    => false
-        case filePath if isIgnoredByUserConfig(filePath)                           => false
-        case filePath if isIgnoredByDefault(filePath)                              => false
-        case filePath if isTranspiledFile(filePath) && !hasEjsSourceFile(filePath) => false
-        case _                                                                     => true
+        case _ if TypeDefinitionFileExtensions.exists(filePath.endsWith)               => false
+        case _ if isIgnoredByUserConfig(filePath)                                      => false
+        case _ if isIgnoredByDefault(filePath, fileLines)                              => false
+        case _ if isTranspiledFile(filePath, fileLines) && !hasEjsSourceFile(filePath) => false
+        case _                                                                         => true
       }
     } match {
       case Success(result) => result
@@ -145,10 +149,10 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
     }
   }
 
-  private def isMinifiedFile(filePath: String): Boolean = filePath match {
+  private def isMinifiedFile(filePath: String, fileLines: => Seq[String]): Boolean = filePath match {
     case p if MinifiedPathRegex.matches(p) => true
     case p if Files.exists(Paths.get(p)) && p.endsWith(".js") =>
-      val lines             = IOUtils.readLinesInFile(Paths.get(filePath))
+      val lines             = fileLines
       val linesOfCode       = lines.size
       val longestLineLength = if (lines.isEmpty) 0 else lines.map(_.length).max
       if (longestLineLength >= LineLengthThreshold && linesOfCode <= 50) {
@@ -158,10 +162,10 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
     case _ => false
   }
 
-  private def isIgnoredByDefault(filePath: String): Boolean = {
+  private def isIgnoredByDefault(filePath: String, fileLines: => Seq[String]): Boolean = {
     lazy val isIgnored     = IgnoredFilesRegex.exists(_.matches(filePath))
     lazy val isIgnoredTest = IgnoredTestsRegex.exists(_.matches(filePath))
-    lazy val isMinified    = isMinifiedFile(filePath)
+    lazy val isMinified    = isMinifiedFile(filePath, fileLines)
     if (isIgnored || isIgnoredTest || isMinified) {
       logger.debug(s"'$filePath' ignored by default")
       true
@@ -170,14 +174,14 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
     }
   }
 
-  private def isTranspiledFile(filePath: String): Boolean = {
+  private def isTranspiledFile(filePath: String, fileLines: => Seq[String]): Boolean = {
     val file = Paths.get(filePath)
     // We ignore files iff:
     // - they are *.js files and
     // - they contain a //sourceMappingURL comment or have an associated source map file and
     // - a file with the same name is located directly next to them
     lazy val isJsFile            = Files.exists(file) && file.extension().contains(".js")
-    lazy val hasSourceMapComment = IOUtils.readLinesInFile(file).exists(_.contains("//sourceMappingURL"))
+    lazy val hasSourceMapComment = fileLines.exists(_.contains("//sourceMappingURL"))
     lazy val hasSourceMapFile    = Files.exists(Paths.get(s"$filePath.map"))
     lazy val hasSourceMap        = hasSourceMapComment || hasSourceMapFile
     lazy val hasFileWithSameName =
@@ -222,7 +226,7 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
     val tmpJsFiles = ejsFiles.flatMap { ejsFilePath =>
       val ejsFile             = Paths.get(ejsFilePath)
       val maybeTranspiledFile = Paths.get(s"${ejsFilePath.stripSuffix(".ejs")}.js")
-      if (!isTranspiledFile(maybeTranspiledFile.toString)) {
+      if (!isTranspiledFile(maybeTranspiledFile.toString, IOUtils.readLinesInFile(maybeTranspiledFile))) {
         val sourceFileContent = IOUtils.readEntireFile(ejsFile)
         val preprocessContent = new EjsPreprocessor().preprocess(sourceFileContent)
         (out / in.relativize(ejsFile).toString).getParent
