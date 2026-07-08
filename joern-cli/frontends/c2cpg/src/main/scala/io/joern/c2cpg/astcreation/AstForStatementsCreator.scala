@@ -8,7 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTGotoStatement
-import org.eclipse.cdt.internal.core.dom.parser.c.CASTIfStatement
+import org.eclipse.cdt.internal.core.dom.parser.c.{CASTIfStatement, CASTWhileStatement}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTIfStatement, CPPASTNamespaceAlias, CPPASTSimpleDeclaration}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
@@ -511,10 +511,17 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astForWhile(whileStmt: IASTWhileStatement): Ast = {
-    val code       = s"while (${nullSafeCode(whileStmt.getCondition)})"
-    val compareAst = wrapInNullComparison(whileStmt.getCondition, astForConditionExpression(whileStmt.getCondition))
-    val bodyAst    = nullSafeBodyAst(whileStmt.getBody)
-    whileAst(whileStmt, Some(compareAst), bodyAst, Some(code))
+    val (conditionNode, conditionAst) = whileStmt match {
+      case statement: CASTWhileStatement =>
+        val node = statement.getCondition
+        (node, wrapInNullComparison(node, astForConditionExpression(node)))
+      case statement: ICPPASTWhileStatement =>
+        val node = Option(statement.getCondition).getOrElse(statement.getConditionDeclaration)
+        (node, wrapInNullComparison(node, astForNode(node)))
+    }
+    val code    = s"while (${nullSafeCode(conditionNode)})"
+    val bodyAst = nullSafeBodyAst(whileStmt.getBody)
+    whileAst(whileStmt, Some(conditionAst), bodyAst, Some(code))
   }
 
   private def wrapInNullComparison(node: IASTNode, conditionAst: Ast): Ast = {

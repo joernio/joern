@@ -24,25 +24,14 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForAssociatedTypeDeclSyntax(node: AssociatedTypeDeclSyntax): Ast = {
     // TODO:
     // - handle genericWhereClause
-    val attributes = astForDeclAttributes(node)
-    val modifiers  = modifiersForDecl(node)
-    val aliasName  = node.initializer.map(i => nameFromTypeSyntaxAst(i.value))
-
+    val attributesAsts                   = astForDeclAttributes(node)
+    val modifiersAsts                    = modifierAstsForDecl(node)
+    val aliasName                        = node.initializer.map(i => nameFromTypeSyntaxAst(i.value))
     val TypeInfo(typeName, typeFullName) = typeNameInfoForDeclSyntax(node)
-
     val typeDeclNode_ = typeDeclNode(node, typeName, typeFullName, parserResult.filename, code(node), alias = aliasName)
 
-    attributes.foreach { ast =>
-      Ast.storeInDiffGraph(ast, diffGraph)
-      ast.root.foreach(r => diffGraph.addEdge(typeDeclNode_, r, EdgeTypes.AST))
-    }
-
-    modifiers.foreach { mod =>
-      diffGraph.addEdge(typeDeclNode_, mod, EdgeTypes.AST)
-    }
-
     createDeclConstructor(node, typeDeclNode_, List.empty)
-    Ast(typeDeclNode_)
+    Ast(typeDeclNode_).withChildren(attributesAsts).withChildren(modifiersAsts)
   }
 
   private def isConstructor(node: SwiftNode): Boolean = node match {
@@ -64,11 +53,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case _: AssociatedTypeDeclSyntax => None
     }
     val allMembers = memberBlock.map(_.members.children.map(_.decl)).getOrElse(Seq.empty)
-    if (withConstructor) {
-      allMembers
-    } else {
-      allMembers.filterNot(isConstructor)
-    }
+    if (withConstructor) { allMembers }
+    else { allMembers.filterNot(isConstructor) }
   }
 
   private def isInitializedMember(node: DeclSyntax): Boolean = node match {
@@ -134,27 +120,29 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     typeDeclNode: NewTypeDecl,
     methodBlockContent: List[DeclSyntax]
   ): Unit = {
-    val constructorName = Defines.ConstructorMethodName
-    val signature       = s"()->${typeDeclNode.fullName}"
-    val methodFullName  = s"${typeDeclNode.fullName}.$constructorName:$signature"
-
-    val methodNode_ =
-      methodNode(node, constructorName, constructorName, methodFullName, Some(signature), parserResult.filename)
-    val modifiers = Seq(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR))
-
-    val methodReturnNode_ = methodReturnNode(node, typeDeclNode.fullName)
+    val fileName         = parserResult.filename
+    val modifiers        = Seq(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR))
+    val constructorName  = Defines.ConstructorMethodName
+    val typeDeclFullName = typeDeclNode.fullName
+    val signature        = s"()->$typeDeclFullName"
+    val methodFullName   = s"$typeDeclFullName.$constructorName:$signature"
+    val methodNode_      = methodNode(node, constructorName, constructorName, methodFullName, Some(signature), fileName)
 
     val blockNode = NewBlock()
     methodAstParentStack.push(methodNode_)
     scope.pushNewMethodScope(methodFullName, constructorName, blockNode, typeRefIdStack.headOption)
     localAstParentStack.push(blockNode)
-    val methodBlockContentAsts = methodBlockContent.map(m => astForDeclMember(m, typeDeclNode))
-    val parameterNode =
-      parameterInNode(node, "self", "self", 0, false, EvaluationStrategies.BY_SHARING, typeDeclNode.fullName)
-    scope.addVariable("self", parameterNode, typeDeclNode.fullName, VariableScopeManager.ScopeType.MethodScope)
+
+    val methodBlockContentAsts = methodBlockContent.map(methodNode => astForDeclMember(methodNode, typeDeclNode))
+    val evaluationStrategy     = EvaluationStrategies.BY_SHARING
+    val parameterNode          = parameterInNode(node, "self", "self", 0, false, evaluationStrategy, typeDeclFullName)
+    scope.addVariable("self", parameterNode, typeDeclFullName, VariableScopeManager.ScopeType.MethodScope)
+
     localAstParentStack.pop()
     methodAstParentStack.pop()
     scope.popScope()
+
+    val methodReturnNode_ = methodReturnNode(node, typeDeclFullName)
     val mAst = methodAstWithAnnotations(
       methodNode_,
       Seq(Ast(parameterNode)),
@@ -209,9 +197,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         val declElements = declSyntaxFromIfConfigDeclSyntax(ifConfigDecl)
         declElements.foldLeft(Ast()) { (ast, decl) => ast.merge(astForDeclMember(decl, typeDeclNode)) }
       case typeDeclLike: TypeDeclLike =>
-        Ast(refForTypeDeclSyntax(typeDeclLike))
+        astForTypeDeclSyntax(typeDeclLike)
       case extensionDecl: ExtensionDeclSyntax =>
-        Ast(refForExtensionDeclSyntax(extensionDecl))
+        astForExtensionDeclSyntax(extensionDecl)
       case _: (ImportDeclSyntax | MacroDeclSyntax | MacroExpansionDeclSyntax | OperatorDeclSyntax |
             PoundSourceLocationSyntax | PrecedenceGroupDeclSyntax | SubscriptDeclSyntax | TypeAliasDeclSyntax |
             AssociatedTypeDeclSyntax) =>
@@ -247,20 +235,22 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def findDeclConstructor(
     decl: TypeDeclLike | TypeAliasDeclSyntax | AssociatedTypeDeclSyntax
-  ): Option[DeclSyntax] =
+  ): Option[DeclSyntax] = {
     declMembers(decl).find(isConstructor)
+  }
 
   private def createDeclConstructor(
     node: TypeDeclLike | TypeAliasDeclSyntax | AssociatedTypeDeclSyntax,
     typeDeclNode: NewTypeDecl,
     constructorContent: List[DeclSyntax]
-  ): Unit =
+  ): Unit = {
     findDeclConstructor(node) match {
       case Some(constructor: InitializerDeclSyntax) =>
         astForFunctionLike(constructor, methodBlockContent = constructorContent, Some(typeDeclNode))
       case _ =>
         createFakeConstructor(node, typeDeclNode, methodBlockContent = constructorContent)
     }
+  }
 
   private def isClassMethodOrUninitializedMember(node: DeclSyntax): Boolean = {
     node match {
@@ -289,14 +279,11 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def createStaticConstructor(node: SwiftNode, inits: List[DeclSyntax], typeDeclNode: NewTypeDecl): Unit = {
+    val fileName        = parserResult.filename
     val constructorName = io.joern.x2cpg.Defines.StaticInitMethodName
     val signature       = s"()->${typeDeclNode.fullName}"
     val methodFullName  = s"${typeDeclNode.fullName}.$constructorName:$signature"
-
-    val methodNode_ =
-      methodNode(node, constructorName, constructorName, methodFullName, Some(signature), parserResult.filename)
-    val modifiers =
-      Seq(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), NewModifier().modifierType(ModifierTypes.STATIC))
+    val methodNode_     = methodNode(node, constructorName, constructorName, methodFullName, Some(signature), fileName)
 
     val blockNode = NewBlock()
     methodAstParentStack.push(methodNode_)
@@ -309,8 +296,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     methodAstParentStack.pop()
     localAstParentStack.pop()
 
-    val bodyAst           = blockAst(blockNode, initAsts)
+    val modifiers =
+      Seq(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), NewModifier().modifierType(ModifierTypes.STATIC))
     val methodReturnNode_ = methodReturnNode(node, typeDeclNode.fullName)
+    val bodyAst           = blockAst(blockNode, initAsts)
     val mAst              = methodAst(methodNode_, Nil, bodyAst, methodReturnNode_, modifiers)
 
     val functionBindingAst = createFunctionBinding(methodNode_)
@@ -318,32 +307,27 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     diffGraph.addEdge(typeDeclNode, methodNode_, EdgeTypes.AST)
   }
 
-  private def refForTypeDeclSyntax(node: TypeDeclLike): NewTypeRef = {
+  private def astForTypeDeclSyntax(node: TypeDeclLike): Ast = {
     // TODO:
     // - handle genericParameterClause
     // - handle genericWhereClause
-    val attributes = astForDeclAttributes(node)
-    val modifiers  = modifiersForDecl(node)
-    val inherits   = inheritsFrom(node)
-
+    val attributesAsts                   = astForDeclAttributes(node)
+    val modifiersAsts                    = modifierAstsForDecl(node)
+    val inherits                         = inheritsFrom(node)
+    val fileName                         = parserResult.filename
     val TypeInfo(typeName, typeFullName) = typeNameInfoForDeclSyntax(node)
 
-    val typeDeclNode_ =
-      typeDeclNode(node, typeName, typeFullName, parserResult.filename, code(node), inherits = inherits)
+    val typeDeclNode_ = typeDeclNode(node, typeName, typeFullName, fileName, code(node), inherits = inherits)
+    val typeDeclAst   = Ast(typeDeclNode_).withChildren(attributesAsts).withChildren(modifiersAsts)
 
-    attributes.foreach { ast =>
-      Ast.storeInDiffGraph(ast, diffGraph)
-      ast.root.foreach(r => diffGraph.addEdge(typeDeclNode_, r, EdgeTypes.AST))
+    val typeRefNodeMaybe = typeRefIdStack.headOption match {
+      // We only create a TypeRef for top-level types to be able to capture global variables.
+      case None => Some(typeRefNode(node, code(node), typeFullName))
+      case _    => None
     }
-
-    modifiers.foreach { mod =>
-      diffGraph.addEdge(typeDeclNode_, mod, EdgeTypes.AST)
-    }
-
-    val typeRefNode_ = typeRefNode(node, code(node), typeFullName)
 
     methodAstParentStack.push(typeDeclNode_)
-    typeRefIdStack.push(typeRefNode_)
+    typeRefNodeMaybe.foreach(typeRefIdStack.push)
     scope.pushNewTypeDeclScope(typeName, typeFullName)
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
@@ -368,14 +352,14 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       .foreach(m => astForDeclMember(m, typeDeclNode_))
 
     methodAstParentStack.pop()
-    typeRefIdStack.pop()
+    typeRefNodeMaybe.foreach(_ => typeRefIdStack.pop())
     scope.popScope()
     scope.popScope()
 
-    Ast.storeInDiffGraph(Ast(typeDeclNode_), diffGraph)
+    Ast.storeInDiffGraph(typeDeclAst, diffGraph)
     diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
 
-    typeRefNode_
+    typeRefNodeMaybe.map(Ast(_)).getOrElse(Ast())
   }
 
   private def astForDeinitializerDeclSyntax(node: DeinitializerDeclSyntax): Ast = {
@@ -399,18 +383,15 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       if (initAsts.isEmpty) {
         Ast()
       } else {
-        val attributeAsts = node.attributes.children.map(astForNode)
-        val modifiers     = modifiersForDecl(node)
-
-        val patternAst = astForNode(binding.name)
-        modifiers.foreach { mod =>
-          patternAst.root.foreach { r => diffGraph.addEdge(r, mod, EdgeTypes.AST) }
-        }
-        attributeAsts.foreach { attrAst =>
-          Ast.storeInDiffGraph(attrAst, diffGraph)
-          patternAst.root.foreach { r => attrAst.root.foreach { attr => diffGraph.addEdge(r, attr, EdgeTypes.AST) } }
-        }
-        createAssignmentCallAst(binding, patternAst, initAsts.head, code(binding).stripSuffix(","))
+        val attributesAsts = node.attributes.children.map(astForNode)
+        val modifiersAsts  = modifierAstsForDecl(node)
+        val patternAst     = astForNode(binding.name)
+        createAssignmentCallAst(
+          binding,
+          patternAst.withChildren(attributesAsts).withChildren(modifiersAsts),
+          initAsts.head,
+          code(binding).stripSuffix(",")
+        )
       }
     }
 
@@ -442,14 +423,15 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         clause match {
           case Some(value) =>
             value.inheritedTypes.children.map(c => AstCreatorHelper.cleanType(code(c.`type`))).distinct.sorted
-          case None => Seq.empty
+          case None =>
+            Seq.empty
         }
     }
     inheritFullNames.foreach(registerType)
     inheritFullNames
   }
 
-  private def refForExtensionDeclSyntax(node: ExtensionDeclSyntax): NewTypeRef = {
+  private def astForExtensionDeclSyntax(node: ExtensionDeclSyntax): Ast = {
     val TypeInfo(typeName, typeFullName) = typeNameInfoForDeclSyntax(node)
     val (extendedTypeName, extendedTypeFullName) = fullnameProvider.typeFullname(node) match {
       case Some(tpe) =>
@@ -462,14 +444,20 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case None => (typeName, typeFullName)
     }
 
-    val typeRefNode_ = typeRefNode(node, code(node), extendedTypeFullName)
+    val typeRefNodeMaybe = typeRefIdStack.headOption match {
+      // We only create a TypeRef for top-level extensions to be able to capture global variables.
+      // Nested extensions (or extensions inside other types) are not allowed in Swift
+      // so this check here is sufficient.
+      case None => Some(typeRefNode(node, code(node), extendedTypeFullName))
+      case _    => None
+    }
 
     val inherits = inheritsFrom(node)
     if (inherits.nonEmpty) {
       accumulator.addExtensionInherits(extendedTypeFullName, inherits)
     }
 
-    typeRefIdStack.push(typeRefNode_)
+    typeRefNodeMaybe.foreach(typeRefIdStack.push)
     scope.pushNewTypeDeclScope(extendedTypeName, extendedTypeFullName)
 
     scope.restoreMembersForExtension(extendedTypeFullName)
@@ -500,7 +488,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val functionDeclLikes = memberBlock.members.children.map(_.decl).collect { case f: FunctionDeclLike => f }.toList
     val functionDeclLikesAsts = functionDeclLikes.map(astForFunctionInExtension)
 
-    typeRefIdStack.pop()
+    typeRefNodeMaybe.foreach(_ => typeRefIdStack.pop())
     scope.popScope()
 
     functionDeclLikesAsts.foreach { ast =>
@@ -508,21 +496,22 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       ast.root.foreach(r => diffGraph.addEdge(methodAstParentStack.head, r, EdgeTypes.AST))
     }
 
-    typeRefNode_
+    typeRefNodeMaybe.map(Ast(_)).getOrElse(Ast())
   }
 
-  private def modifiersForDecl(
-    node: TypeDeclLike | EnumCaseDeclSyntax | AssociatedTypeDeclSyntax | TypeAliasDeclSyntax
-  ): Seq[NewModifier] = {
+  private def modifierAstsForDecl(
+    node: TypeDeclLike | EnumCaseDeclSyntax | AssociatedTypeDeclSyntax | TypeAliasDeclSyntax | VariableDeclSyntax
+  ): Seq[Ast] = {
     val modifierList = node match {
-      case c: ClassDeclSyntax          => c.modifiers.children
-      case p: ProtocolDeclSyntax       => p.modifiers.children
-      case s: StructDeclSyntax         => s.modifiers.children
-      case e: EnumDeclSyntax           => e.modifiers.children
-      case ec: EnumCaseDeclSyntax      => ec.modifiers.children
-      case a: ActorDeclSyntax          => a.modifiers.children
-      case t: TypeAliasDeclSyntax      => t.modifiers.children
-      case a: AssociatedTypeDeclSyntax => a.modifiers.children
+      case classDeclSyntax: ClassDeclSyntax         => classDeclSyntax.modifiers.children
+      case protocolDeclSyntax: ProtocolDeclSyntax   => protocolDeclSyntax.modifiers.children
+      case structDeclSyntax: StructDeclSyntax       => structDeclSyntax.modifiers.children
+      case enumDeclSyntax: EnumDeclSyntax           => enumDeclSyntax.modifiers.children
+      case caseDeclSyntax: EnumCaseDeclSyntax       => caseDeclSyntax.modifiers.children
+      case actorDeclSyntax: ActorDeclSyntax         => actorDeclSyntax.modifiers.children
+      case aliasDeclSyntax: TypeAliasDeclSyntax     => aliasDeclSyntax.modifiers.children
+      case typeDeclSyntax: AssociatedTypeDeclSyntax => typeDeclSyntax.modifiers.children
+      case variableDeclSyntax: VariableDeclSyntax   => variableDeclSyntax.modifiers.children
     }
     val modifiers = modifierList.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
     val allModifier = if (modifiers.isEmpty) {
@@ -530,9 +519,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     } else {
       modifiers
     }
-    allModifier.zipWithIndex.map { case (m, index) =>
-      m.order(index)
-    }
+    allModifier.map(Ast(_))
   }
 
   private def modifiersForFunctionLike(node: FunctionDeclLike): Seq[NewModifier] = {
@@ -557,8 +544,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       m.order(index)
     }
   }
-
-  case class AstAndMethod(ast: Ast, method: NewMethod, methodBlock: Ast)
 
   private def paramTypeString(node: FunctionParameterSyntax | ClosureParameterSyntax): String = {
     node match {
@@ -802,10 +787,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       return Ast()
     }
 
-    val methodInfo                                                    = methodInfoForFunctionDeclLike(node)
-    val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
     val filename                                                      = parserResult.filename
     val (attributes, modifiers)                                       = attributeAstsAndModifierForFunctionLike(node)
+    val methodInfo                                                    = methodInfoForFunctionDeclLike(node)
+    val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
     val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
     val methodFullNameAndSignatureExt                                 = methodInfo.fullNameAndSignatureExt
     val isStatic = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
@@ -943,26 +928,15 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     // TODO:
     // - handle genericParameterClause
     // - handle genericWhereClause
-    val attributes = astForDeclAttributes(node)
-    val modifiers  = modifiersForDecl(node)
-    val aliasName  = nameFromTypeSyntaxAst(node.initializer.value)
-
+    val fileName                         = parserResult.filename
+    val attributesAsts                   = astForDeclAttributes(node)
+    val modifiersAsts                    = modifierAstsForDecl(node)
+    val aliasName                        = nameFromTypeSyntaxAst(node.initializer.value)
     val TypeInfo(typeName, typeFullName) = typeNameInfoForDeclSyntax(node)
 
-    val typeDeclNode_ =
-      typeDeclNode(node, typeName, typeFullName, parserResult.filename, code(node), alias = Option(aliasName))
-
-    attributes.foreach { ast =>
-      Ast.storeInDiffGraph(ast, diffGraph)
-      ast.root.foreach(r => diffGraph.addEdge(typeDeclNode_, r, EdgeTypes.AST))
-    }
-
-    modifiers.foreach { mod =>
-      diffGraph.addEdge(typeDeclNode_, mod, EdgeTypes.AST)
-    }
-
+    val typeDeclNode_ = typeDeclNode(node, typeName, typeFullName, fileName, code(node), alias = Option(aliasName))
     createDeclConstructor(node, typeDeclNode_, List.empty)
-    Ast(typeDeclNode_)
+    Ast(typeDeclNode_).withChildren(attributesAsts).withChildren(modifiersAsts)
   }
 
   private def astForAccessor(
@@ -972,17 +946,15 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     fullNameSubscriptPrefix: String = "",
     additionalParameter: Seq[SwiftNode] = Seq.empty
   ): Unit = {
+    val filename   = parserResult.filename
     val attributes = node.attributes.children.map(astForNode)
     val modifiers  = modifiersForFunctionLike(node)
-
-    val filename          = parserResult.filename
-    val parameters        = node.parameters.toSeq
-    val accessorSpecifier = code(node.accessorSpecifier)
+    val isStatic   = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
+    val parameters = node.parameters.toSeq
 
     val methodInfo = methodInfoForAccessorDecl(node, variableName, tpe, fullNameSubscriptPrefix)
     val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
     val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
-    val isStatic = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
 
     accumulator.addMemberPropertyFullName(methodFullName, methodFullNameAndSignature)
 
@@ -1000,6 +972,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.addVariable("self", selfParameterNode, selfTpe, VariableScopeManager.ScopeType.MethodScope)
     val selfParameterNodeAst = Ast(selfParameterNode)
 
+    val accessorSpecifier = code(node.accessorSpecifier)
     val parameterAsts = if (parameters.isEmpty && accessorSpecifier == "set") {
       val name          = "newValue" // Swift default parameter name for set accessors
       val parameterNode = parameterInNode(node, name, name, 1, false, EvaluationStrategies.BY_VALUE, Some(tpe))
@@ -1050,10 +1023,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     tpe: String,
     binding: PatternBindingSyntax
   ): Unit = {
-    val modifiers = Seq(NewModifier().modifierType(ModifierTypes.VIRTUAL))
-
-    val filename = parserResult.filename
-
+    val filename   = parserResult.filename
+    val modifiers  = Seq(NewModifier().modifierType(ModifierTypes.VIRTUAL))
     val methodInfo = methodInfoForAccessorDecl(binding, variableName, tpe)
     val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
     val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
@@ -1067,9 +1038,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.pushNewMethodScope(methodFullNameAndSignature, methodName, block, capturingRefNode)
     localAstParentStack.push(block)
 
-    val selfTpe = fullNameOfEnclosingTypeDecl()
-    val selfParameterNode =
-      parameterInNode(node, "self", "self", 0, false, EvaluationStrategies.BY_SHARING, selfTpe)
+    val selfTpe           = fullNameOfEnclosingTypeDecl()
+    val selfParameterNode = parameterInNode(node, "self", "self", 0, false, EvaluationStrategies.BY_SHARING, selfTpe)
     scope.addVariable("self", selfParameterNode, selfTpe, VariableScopeManager.ScopeType.MethodScope)
     val selfParameterNodeAst = Ast(selfParameterNode)
 
@@ -1109,9 +1079,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     tpe: String,
     binding: PatternBindingSyntax
   ): Unit = {
+    val filename  = parserResult.filename
     val modifiers = Seq(NewModifier().modifierType(ModifierTypes.VIRTUAL))
-
-    val filename = parserResult.filename
 
     val methodInfo = methodInfoForAccessorDecl(binding, variableName, tpe)
     val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
@@ -1170,12 +1139,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     fullNameSubscriptPrefix: String = "",
     additionalParameter: Seq[SwiftNode] = Seq.empty
   ): Unit = {
+    val filename   = parserResult.filename
     val attributes = node.attributes.children.map(astForNode)
     val modifiers  = modifiersForFunctionLike(node)
-
-    val filename          = parserResult.filename
-    val parameters        = node.parameters.toSeq
-    val accessorSpecifier = code(node.accessorSpecifier)
+    val parameters = node.parameters.toSeq
 
     val methodInfo = methodInfoForAccessorDecl(node, variableName, tpe, fullNameSubscriptPrefix)
     val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
@@ -1194,12 +1161,12 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.pushNewMethodScope(methodFullNameAndSignatureExt, methodName, block, capturingRefNode)
     localAstParentStack.push(block)
 
-    val selfTpe = fullNameOfEnclosingTypeDecl()
-    val selfParameterNode =
-      parameterInNode(node, "self", "self", 0, false, EvaluationStrategies.BY_SHARING, selfTpe)
+    val selfTpe           = fullNameOfEnclosingTypeDecl()
+    val selfParameterNode = parameterInNode(node, "self", "self", 0, false, EvaluationStrategies.BY_SHARING, selfTpe)
     scope.addVariable("self", selfParameterNode, selfTpe, VariableScopeManager.ScopeType.MethodScope)
     val selfParameterNodeAst = Ast(selfParameterNode)
 
+    val accessorSpecifier = code(node.accessorSpecifier)
     val parameterAsts = if (parameters.isEmpty && accessorSpecifier == "set") {
       val name          = "newValue" // Swift default parameter name for set accessors
       val parameterNode = parameterInNode(node, name, name, 1, false, EvaluationStrategies.BY_VALUE, Some(tpe))
@@ -1350,9 +1317,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
               Ast()
             } else {
               val patternAst = if (!isTypeDeclMember) {
-                val attributeAsts = variableDecl.attributes.children.map(astForNode)
-                val modifiers =
-                  variableDecl.modifiers.children.flatMap(astForNode(_).root.map(_.asInstanceOf[NewModifier]))
+                val attributesAsts    = variableDecl.attributes.children.map(astForNode)
+                val modifiersAsts     = modifierAstsForDecl(variableDecl)
                 val patternIdentifier = identifierNode(binding.pattern, cleanedName).typeFullName(typeFullName)
                 scope.addVariableReference(
                   cleanedName,
@@ -1360,14 +1326,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
                   typeFullName,
                   EvaluationStrategies.BY_REFERENCE
                 )
-                modifiers.foreach { mod =>
-                  diffGraph.addEdge(patternIdentifier, mod, EdgeTypes.AST)
-                }
-                attributeAsts.foreach { attrAst =>
-                  Ast.storeInDiffGraph(attrAst, diffGraph)
-                  attrAst.root.foreach { attr => diffGraph.addEdge(patternIdentifier, attr, EdgeTypes.AST) }
-                }
-                Ast(patternIdentifier)
+                Ast(patternIdentifier).withChildren(attributesAsts).withChildren(modifiersAsts)
               } else {
                 val tpe = fullNameOfEnclosingTypeDecl()
                 val selfNode = if (scope.isInStaticMethodScope) {
@@ -1414,12 +1373,12 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForMissingDeclSyntax(@unused node: MissingDeclSyntax): Ast = Ast()
 
   protected def astForDeclSyntax(declSyntax: DeclSyntax): Ast = declSyntax match {
-    case node: TypeDeclLike                => Ast(refForTypeDeclSyntax(node))
+    case node: TypeDeclLike                => astForTypeDeclSyntax(node)
     case node: AssociatedTypeDeclSyntax    => astForAssociatedTypeDeclSyntax(node)
     case node: DeinitializerDeclSyntax     => astForDeinitializerDeclSyntax(node)
     case node: EditorPlaceholderDeclSyntax => astForEditorPlaceholderDeclSyntax(node)
     case node: EnumCaseDeclSyntax          => astForEnumCaseDeclSyntax(node)
-    case node: ExtensionDeclSyntax         => Ast(refForExtensionDeclSyntax(node))
+    case node: ExtensionDeclSyntax         => astForExtensionDeclSyntax(node)
     case node: FunctionDeclSyntax          => astForFunctionDeclSyntax(node)
     case node: IfConfigDeclSyntax          => astForIfConfigDeclSyntax(node)
     case node: ImportDeclSyntax            => astForImportDeclSyntax(node)

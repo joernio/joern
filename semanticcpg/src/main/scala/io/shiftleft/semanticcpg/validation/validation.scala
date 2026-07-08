@@ -1,28 +1,14 @@
 package io.shiftleft.semanticcpg.validation
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AstNode,
-  File,
-  Member,
-  MetaData,
-  Method,
-  NamespaceBlock,
-  TypeDecl
-}
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  EdgeTypes,
-  PropertyDefaults,
-  PropertyNames,
-  nodes
-}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, EdgeTypes, PropertyDefaults, nodes}
 import io.shiftleft.passes.CpgPass
-
-import scala.collection.mutable
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.validation.PostFrontendValidator.ErrorType
 import org.slf4j.{Logger, LoggerFactory}
+
+import scala.collection.mutable
 
 class ValidationError(msg: String) extends RuntimeException(msg) {}
 
@@ -98,8 +84,8 @@ object PostFrontendValidator {
   * [[ValidationLevel]] and [[PostFrontendValidator.ErrorType]] for the highest validation level.
   */
 class PostFrontendValidator(cpg: Cpg, fatalValidationLevel: ValidationLevel) extends AbstractValidator(cpg) {
-  import PostFrontendValidator.logger
   import PostFrontendValidator.ErrorType.*
+  import PostFrontendValidator.logger
 
   /** Run the validator using the standard pass mechanism. */
   def run(): Unit = createAndApply()

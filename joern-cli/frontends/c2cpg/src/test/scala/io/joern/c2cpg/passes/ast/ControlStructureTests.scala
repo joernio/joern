@@ -2,8 +2,8 @@ package io.joern.c2cpg.passes.ast
 
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.C2CpgSuite
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import org.apache.commons.lang3.StringUtils
 
@@ -420,6 +420,32 @@ class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
         case List(whileNode: ControlStructure) =>
           inside(whileNode.trueBodyOut.l) { case List(emptyBlock: Block) =>
             emptyBlock.astChildren.l shouldBe List.empty
+          }
+      }
+    }
+  }
+
+  "while loop with const assigment" should {
+    val cpg = code(
+      """
+        |void main() {
+        |  while (const char* c = read()) {
+        |    foo(c);
+        |  }
+        |}
+        |""".stripMargin,
+      fileName = "test.cpp"
+    )
+
+    "emit a condition edge with correct content`" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.WHILE).l) {
+        case List(whileNode: ControlStructure) =>
+          inside(whileNode.condition.l) { case List(expr: Expression) =>
+            expr.code shouldBe "const char* c = read() != 0"
+          }
+
+          inside(cpg.local.nameExact("c").l) { case List(cLocal: Local) =>
+            cLocal.astParent shouldBe cpg.method.nameExact("main").block.loneElement
           }
       }
     }

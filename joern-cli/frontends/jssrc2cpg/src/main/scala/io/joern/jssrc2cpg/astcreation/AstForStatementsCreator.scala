@@ -110,22 +110,30 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     tryCatchAst(tryStmt, bodyAst, catchAst, finalizerAst)
   }
 
+  private def handleEmptyStatement(json: Value): Ast = {
+    val nodeInfo = createBabelNodeInfo(json)
+    nodeInfo.node match {
+      case EmptyStatement => Ast(blockNode(nodeInfo))
+      case _              => astForNodeWithFunctionReference(nodeInfo.json)
+    }
+  }
+
   def astForIfStatement(ifStmt: BabelNodeInfo): Ast = {
-    val conditionAst = astForNodeWithFunctionReference(ifStmt.json("test"))
-    val thenAst      = astForNodeWithFunctionReference(ifStmt.json("consequent"))
-    val elseAst = safeObj(ifStmt.json, "alternate").map(alternate => astForNodeWithFunctionReference(Obj(alternate)))
+    val conditionAst = handleEmptyStatement(ifStmt.json("test"))
+    val thenAst      = handleEmptyStatement(ifStmt.json("consequent"))
+    val elseAst      = safeObj(ifStmt.json, "alternate").map(alternate => handleEmptyStatement(Obj(alternate)))
     ifThenElseAst(ifStmt, Some(conditionAst), thenAst, elseAst)
   }
 
   protected def astForDoWhileStatement(doWhileStmt: BabelNodeInfo): Ast = {
-    val testAst = astForNodeWithFunctionReference(doWhileStmt.json("test"))
-    val bodyAst = astForNodeWithFunctionReference(doWhileStmt.json("body"))
+    val testAst = handleEmptyStatement(doWhileStmt.json("test"))
+    val bodyAst = handleEmptyStatement(doWhileStmt.json("body"))
     doWhileAst(doWhileStmt, Some(testAst), Seq(bodyAst))
   }
 
   protected def astForWhileStatement(whileStmt: BabelNodeInfo): Ast = {
-    val testAst = astForNodeWithFunctionReference(whileStmt.json("test"))
-    val bodyAst = astForNodeWithFunctionReference(whileStmt.json("body"))
+    val testAst = handleEmptyStatement(whileStmt.json("test"))
+    val bodyAst = handleEmptyStatement(whileStmt.json("body"))
     whileAst(whileStmt, Some(testAst), Seq(bodyAst))
   }
 
