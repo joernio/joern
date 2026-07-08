@@ -1,12 +1,12 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.parser.BabelAst.*
-import io.joern.jssrc2cpg.parser.{BabelAst, BabelNodeInfo}
-import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyDefaults, PropertyNames}
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyDefaults, PropertyNames}
 import ujson.Value
 
 import scala.collection.mutable
@@ -18,14 +18,35 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def nodeTypeOf(json: Value): BabelNode = fromString(json("type").str)
 
   protected def createBabelNodeInfo(json: Value): BabelNodeInfo = {
-    val c     = code(json)
-    val ln    = line(json)
-    val cn    = column(json)
-    val lnEnd = lineEnd(json)
-    val cnEnd = columnEnd(json)
-    val node  = nodeTypeOf(json)
-    BabelNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
+    // Resolve start/end offsets and their line numbers once, then derive columns and code from them. Going through the
+    // individual code/line/column/lineEnd/columnEnd accessors would recompute start/end and the line binary search
+    // several times per node, and createBabelNodeInfo runs for every AST node.
+    val startOffset   = start(json)
+    val endOffset     = end(json)
+    val lineOfStart   = startOffset.map(getLineOfSource)
+    val lineOfEnd     = endOffset.map(getLineOfSource)
+    val columnOfStart = columnFor(startOffset, lineOfStart)
+    val columnOfEnd   = columnFor(endOffset, lineOfEnd)
+    val nodeCode      = codeForOffsets(startOffset, endOffset)
+    val node          = nodeTypeOf(json)
+    BabelNodeInfo(node, json, nodeCode, lineOfStart, columnOfStart, lineOfEnd, columnOfEnd)
   }
+
+  private def columnFor(offset: Option[Int], lineOfOffset: Option[Int]): Option[Int] =
+    offset.zip(lineOfOffset).map { case (position, line) => position - lineStartPositions(line - 1) }
+
+  /** Clamps a raw start/end offset pair to the bounds of the file content. */
+  protected def clampOffsets(startOffset: Int, endOffset: Int): (Int, Int) =
+    (math.max(startOffset, 0), math.min(endOffset, parserResult.fileContent.length))
+
+  private def codeForOffsets(startOffset: Option[Int], endOffset: Option[Int]): String =
+    startOffset
+      .zip(endOffset)
+      .map { case (startPosition, endPosition) =>
+        val (clampedStart, clampedEnd) = clampOffsets(startPosition, endPosition)
+        shortenCode(parserResult.fileContent.substring(clampedStart, clampedEnd).trim)
+      }
+      .getOrElse(PropertyDefaults.Code)
 
   protected def line(node: Value): Option[Int] = start(node).map(getLineOfSource)
 
@@ -283,14 +304,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  protected def code(node: Value): String = {
-    nodeOffsets(node) match {
-      case Some((startOffset, endOffset)) =>
-        shortenCode(parserResult.fileContent.substring(startOffset, endOffset).trim)
-      case _ =>
-        PropertyDefaults.Code
-    }
-  }
+  protected def code(node: Value): String = codeForOffsets(start(node), end(node))
 
   protected def hasKey(node: Value, key: String): Boolean =
     node.objOpt.exists(_.contains(key))

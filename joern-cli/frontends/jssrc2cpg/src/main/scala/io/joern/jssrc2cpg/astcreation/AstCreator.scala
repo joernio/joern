@@ -256,6 +256,6 @@ class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val
     for {
       startOffset <- start(node)
       endOffset   <- end(node)
-    } yield (math.max(startOffset, 0), math.min(endOffset, parserResult.fileContent.length))
+    } yield clampOffsets(startOffset, endOffset)
   }
 }
