@@ -36,7 +36,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
 
   protected def createBlockStatementAsts(json: Value): List[Ast] = {
-    val blockStmts = sortBlockStatements(json.arr.toList.map(createBabelNodeInfo))
+    val blockStmts = sortBlockStatements(json.arr.iterator.map(createBabelNodeInfo).toList)
     blockStmts.map(stmt => astForNodeWithFunctionReferenceAndCall(stmt.json))
   }
 
