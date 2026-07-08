@@ -1,6 +1,6 @@
 package io.joern.lua2cpg
 
-import io.joern.lua2cpg.passes.LuaFileInventoryPass
+import io.joern.lua2cpg.passes.{LuaBytecodeModelPass, LuaFileInventoryPass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.frontend.MetaDataPass
@@ -16,6 +16,7 @@ class Lua2Cpg extends X2CpgFrontend {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       new MetaDataPass(cpg, "LUA", config.inputPath).createAndApply()
       new LuaFileInventoryPass(cpg, config).createAndApply()
+      new LuaBytecodeModelPass(cpg, config).createAndApply()
     }
   }
 }
