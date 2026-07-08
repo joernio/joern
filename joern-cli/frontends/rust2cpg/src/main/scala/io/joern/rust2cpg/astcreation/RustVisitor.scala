@@ -105,7 +105,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     case expr: ParenExpr                => visitExpr(expr.expr)
     case pathExpr: PathExpr             => visitPathExpr(pathExpr)
     case prefixExpr: PrefixExpr         => visitPrefixExpr(prefixExpr)
-    case x: RangeExpr                   => notHandledYet(x)
+    case rangeExpr: RangeExpr           => visitRangeExpr(rangeExpr)
     case recordExpr: RecordExpr         => visitRecordExpr(recordExpr)
     case refExpr: RefExpr               => visitRefExpr(refExpr)
     case returnExpr: ReturnExpr         => visitReturnExpr(returnExpr)
@@ -799,47 +799,64 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //   tmp
   // In case of spreads e.g. `Foo { x: y, ..bar }` we include the assignment `tmp = bar` for flow purposes.
   private def visitRecordExpr(recordExpr: RecordExpr): Ast = {
-    // LOCAL tmp
     val structType = typeFullNameForExpr(recordExpr)
     val fieldList  = recordExpr.recordExprFieldList
     val tmpName    = "tmp"
-    val local      = localNode(recordExpr, tmpName, tmpName, structType)
 
-    // tmp = <operator>.alloc
-    val allocAssignAst = {
-      val tmp       = identifierNode(recordExpr, tmpName, tmpName, structType)
-      val tmpAst    = Ast(tmp).withRefEdge(tmp, local) // TODO: remove once ref linker is in.
-      val allocCall = operatorCallNode(recordExpr, Operators.alloc, Operators.alloc, Some(structType))
-      callAst(assignmentNode(recordExpr, s"$tmpName = ${Operators.alloc}"), Seq(tmpAst, Ast(allocCall)))
+    allocBlockAst(recordExpr, tmpName, structType) { mktmpIdent =>
+      // tmp = base
+      val spreadAssignAst = fieldList.expr.map { base =>
+        val tmpAst = mktmpIdent(recordExpr)
+        callAst(assignmentNode(recordExpr, s"$tmpName = ${code(base)}"), Seq(tmpAst, visitExpr(base)))
+      }.toSeq
+
+      // tmp.x = 1; tmp.y = 2; etc.
+      val fieldAssignAsts = fieldList.recordExprField.map { field =>
+        val fieldNameRef = field.nameRef.orElse(viewExprAsNameRef(field.expr)).get
+        val fieldName    = code(fieldNameRef)
+        val fieldType    = typeFullNameForExpr(field.expr)
+        val baseAst      = mktmpIdent(field)
+        val lhs = fieldAccessAst(fieldNameRef, fieldNameRef, baseAst, s"$tmpName.$fieldName", fieldName, fieldType)
+        callAst(assignmentNode(field, s"$tmpName.$fieldName = ${code(field.expr)}"), Seq(lhs, visitExpr(field.expr)))
+      }
+
+      spreadAssignAst ++ fieldAssignAsts
     }
+  }
 
-    // tmp = base
-    val spreadAssignAst = fieldList.expr.map { base =>
-      val tmp    = identifierNode(recordExpr, tmpName, tmpName, structType)
-      val tmpAst = Ast(tmp).withRefEdge(tmp, local) // TODO: remove once ref linker is in.
-      callAst(assignmentNode(recordExpr, s"$tmpName = ${code(base)}"), Seq(tmpAst, visitExpr(base)))
-    }.toSeq
+  // BLOCK
+  //  LOCAL "tmp"
+  //  tmp = <operator>.alloc
+  //  <body>
+  //  tmp
+  // The extra RustNode => Ast in <body> is an helper to create tmpName identifier nodes.
+  private def allocBlockAst(node: RustNode, tmpName: String, typeFullName: String)(
+    body: (RustNode => Ast) => Seq[Ast]
+  ): Ast = {
+    // LOCAL tmp
+    val local = localNode(node, tmpName, tmpName, typeFullName)
 
-    // tmp.x = 1; tmp.y = 2; etc.
-    val fieldAssignAsts = fieldList.recordExprField.map { field =>
-      val fieldNameRef = field.nameRef.orElse(viewExprAsNameRef(field.expr)).get
-      val fieldName    = code(fieldNameRef)
-      val fieldType    = typeFullNameForExpr(field.expr)
-      val tmp          = identifierNode(field, tmpName, tmpName, structType)
-      val baseAst      = Ast(tmp).withRefEdge(tmp, local) // TODO: remove once ref linker is in.
-      val lhs = fieldAccessAst(fieldNameRef, fieldNameRef, baseAst, s"$tmpName.$fieldName", fieldName, fieldType)
-      callAst(assignmentNode(field, s"$tmpName.$fieldName = ${code(field.expr)}"), Seq(lhs, visitExpr(field.expr)))
-    }
-
-    // tmp
-    val retAst = {
-      val tmp = identifierNode(recordExpr, tmpName, tmpName, structType)
+    def mkTmpIdent(node: RustNode): Ast = {
+      val tmp = identifierNode(node, tmpName, tmpName, typeFullName)
       Ast(tmp).withRefEdge(tmp, local) // TODO: remove once ref linker is in.
     }
 
+    // tmp = <operator>.alloc
+    val allocAssignAst = {
+      val tmpAst    = mkTmpIdent(node)
+      val allocCall = operatorCallNode(node, Operators.alloc, Operators.alloc, Some(typeFullName))
+      callAst(assignmentNode(node, s"$tmpName = ${Operators.alloc}"), Seq(tmpAst, Ast(allocCall)))
+    }
+
+    // <body>
+    val bodyAst = body(mkTmpIdent)
+
+    // tmp
+    val retAst = mkTmpIdent(node)
+
     // BLOCK { ... }
-    val block = blockNode(recordExpr, code(recordExpr), structType)
-    Ast(block).withChildren(Seq(Ast(local), allocAssignAst) ++ spreadAssignAst ++ fieldAssignAsts ++ Seq(retAst))
+    val block = blockNode(node, code(node), typeFullName)
+    Ast(block).withChildren(Seq(Ast(local), allocAssignAst) ++ bodyAst ++ Seq(retAst))
   }
 
   // ArrayExpr =
@@ -1011,6 +1028,42 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val argAst   = visitExpr(formatArgsArg.expr)
 
     callAst(callNode, Seq(argAst))
+  }
+
+  // RangeExpr =
+  //  Attr* start:Expr? op:('..' | '..=') end:Expr?
+  private def visitRangeExpr(rangeExpr: RangeExpr): Ast = {
+    (rangeExpr.start, rangeExpr.end, rangeExpr.isInclusive) match {
+      // a..b becomes Range { start, end }
+      case (Some(start), Some(end), false) =>
+        val rangeType = typeFullNameForExpr(rangeExpr)
+        val tmpName   = "tmp"
+        allocBlockAst(rangeExpr, tmpName, rangeType) { mktmpIdent =>
+          def mkAssign(fieldName: String, expr: Expr): Ast = {
+            val fieldType = typeFullNameForExpr(expr)
+            val lhs       = fieldAccessAst(expr, expr, mktmpIdent(expr), s"$tmpName.$fieldName", fieldName, fieldType)
+            callAst(assignmentNode(expr, s"$tmpName.$fieldName = ${code(expr)}"), Seq(lhs, visitExpr(expr)))
+          }
+          Seq(mkAssign("start", start), mkAssign("end", end))
+        }
+
+      case _ => notHandledYet(rangeExpr)
+    }
+  }
+
+  extension (rangeExpr: RangeExpr) {
+    private def isInclusive: Boolean       = rangeExpr.dot2eqToken.isDefined
+    private def opToken: Option[RustToken] = rangeExpr.dot2Token.orElse(rangeExpr.dot2eqToken)
+    private def start: Option[Expr]        = operand(_ < _)
+    private def end: Option[Expr]          = operand(_ > _)
+    private def operand(compareWithOpOffset: (Int, Int) => Boolean): Option[Expr] = {
+      opToken.flatMap(_.startOffset).flatMap { opOffset =>
+        // TODO(rust_ast_gen): Expr? Expr? should produce List[Expr], not Option[Expr].
+        //  We should be using rangeExpr.expr, not children.
+        val operands = rangeExpr.children.map(createRustNode)
+        operands.find(_.startOffset.exists(compareWithOpOffset(_, opOffset))).collect { case expr: Expr => expr }
+      }
+    }
   }
 
 }
