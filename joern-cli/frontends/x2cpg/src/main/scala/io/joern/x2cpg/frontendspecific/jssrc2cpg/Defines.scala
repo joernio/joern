@@ -36,8 +36,8 @@ object Defines {
   // first two bytes of an EJS output tag in the original source
   val EjsOutputTagPrefix: String = "<%"
 
-  val JsTypes: List[String] =
-    List(
+  val JsTypes: Set[String] =
+    Set(
       Any,
       Array,
       Number,
