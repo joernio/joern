@@ -257,7 +257,18 @@ class LuaBytecodeModelPass(
             order = 52_000 + index
           )
         }
-      moduleResolutions ++ returnTables ++ boundaries
+      val e5Boundaries = semantics.e5Boundaries
+        .filter(_.boundaryId.startsWith(relativeName))
+        .sortBy(_.boundaryId)
+        .zipWithIndex
+        .map { case (boundary, index) =>
+          semanticCallNode(
+            name = "lua.e5.boundary",
+            code = s"${boundary.boundaryId} reason=${boundary.reason}",
+            order = 52_500 + index
+          )
+        }
+      moduleResolutions ++ returnTables ++ boundaries ++ e5Boundaries
     } else Vector.empty
 
     val fieldCalls = semantics.moduleFieldCallTargets
@@ -321,8 +332,90 @@ class LuaBytecodeModelPass(
           order = 57_000 + index
         )
       }
+    val ruleMatches = semantics.ruleMatches
+      .filter(row => row.callsiteId.startsWith(prefix))
+      .sortBy(row => (row.ruleKind, row.callsiteId, row.matchedName))
+      .zipWithIndex
+      .map { case (row, index) =>
+        semanticCallNode(
+          name = "lua.rule.match",
+          code = s"${row.callsiteId} ${row.trigger} -> ${row.matchedName}",
+          order = 58_000 + index
+        )
+      }
+    val sourceEndpoints = semantics.sourceEndpoints
+      .filter(row => row.sourceRef.startsWith(s"$relativeName:${prototype.prototypeId}@"))
+      .sortBy(row => (row.sourceRef, row.trigger))
+      .zipWithIndex
+      .map { case (row, index) =>
+        semanticCallNode(
+          name = "lua.source.endpoint",
+          code = s"${row.sourceRef} via ${row.trigger}",
+          order = 59_000 + index
+        )
+      }
+    val sinkEndpoints = semantics.sinkEndpoints
+      .filter(row => row.sinkRef.startsWith(s"$relativeName:${prototype.prototypeId}@"))
+      .sortBy(row => (row.sinkRef, row.trigger))
+      .zipWithIndex
+      .map { case (row, index) =>
+        semanticCallNode(
+          name = "lua.sink.endpoint",
+          code = s"${row.sinkRef} via ${row.trigger} param=${row.parameterIndex}",
+          order = 60_000 + index
+        )
+      }
+    val sanitizerCalls = semantics.sanitizerCalls
+      .filter(row => row.sanitizedValueRef.startsWith(s"$relativeName:${prototype.prototypeId}@"))
+      .sortBy(row => (row.callsiteId, row.sanitizerName))
+      .zipWithIndex
+      .map { case (row, index) =>
+        semanticCallNode(
+          name = "lua.sanitizer.call",
+          code = s"${row.callsiteId} ${row.sanitizerName} -> ${row.sanitizedValueRef}",
+          order = 61_000 + index
+        )
+      }
+    val sanitizerClassifications = semantics.sanitizerClassifications
+      .filter(row => row.sourceRef.startsWith(s"$relativeName:${prototype.prototypeId}@"))
+      .sortBy(row => (row.sourceRef, row.sinkRef, row.sanitizerCallsiteId))
+      .zipWithIndex
+      .map { case (row, index) =>
+        semanticCallNode(
+          name = "lua.sanitizer.classification",
+          code =
+            s"${row.sourceRef} -> ${row.sinkRef} classification=${row.classification} sanitizer=${row.sanitizerName}",
+          order = 62_000 + index
+        )
+      }
+    val reportClassifications = semantics.reportClassifications
+      .filter(row => row.sourceRef.startsWith(s"$relativeName:${prototype.prototypeId}@"))
+      .sortBy(row => (row.sourceRef, row.sinkRef))
+      .zipWithIndex
+      .map { case (row, index) =>
+        semanticCallNode(
+          name = "lua.report.classification",
+          code = s"${row.sourceRef} -> ${row.sinkRef} classification=${row.classification} reason=${row.reason}",
+          order = 63_000 + index
+        )
+      }
+    val vulnerabilityReports = semantics.vulnerabilityReports
+      .filter(row => row.sourceRef.startsWith(s"$relativeName:${prototype.prototypeId}@"))
+      .sortBy(row => (row.sourceRef, row.sinkRef))
+      .zipWithIndex
+      .map { case (row, index) =>
+        semanticCallNode(
+          name = "lua.report.vulnerability",
+          code =
+            s"${row.sourceRef} -> ${row.sinkRef} status=${row.pathStatus} classification=${row.classification} path=${row.pathSteps
+                .mkString(";")}",
+          order = 64_000 + index
+        )
+      }
 
-    rootMarkers ++ fieldCalls ++ argFlows ++ returnFlows ++ crossTargets ++ taintPaths
+    rootMarkers ++ fieldCalls ++ argFlows ++ returnFlows ++ crossTargets ++ taintPaths ++ ruleMatches ++
+      sourceEndpoints ++ sinkEndpoints ++ sanitizerCalls ++ sanitizerClassifications ++ reportClassifications ++
+      vulnerabilityReports
   }
 
   private def semanticCallNode(name: String, code: String, order: Int): NewCall =
