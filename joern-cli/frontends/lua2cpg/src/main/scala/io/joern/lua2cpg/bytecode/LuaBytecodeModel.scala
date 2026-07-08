@@ -1,5 +1,8 @@
 package io.joern.lua2cpg.bytecode
 
+/** Lua 5.1 byte strings decoded with ISO-8859-1, preserving each byte as the same numeric code point. */
+type LuaByteStringText = String
+
 final case class LuaBytecodeArtifact(
   path: String,
   inputKind: String,
@@ -25,7 +28,7 @@ final case class LuaPrototype(
   prototypeId: String,
   parentPrototypeId: Option[String],
   ordinalPath: Vector[Int],
-  sourceName: String,
+  sourceName: LuaByteStringText,
   firstLine: Long,
   lastLine: Long,
   upvalueCount: Int,
@@ -37,7 +40,7 @@ final case class LuaPrototype(
   nested: Vector[LuaPrototype],
   lineNumbers: Vector[Long],
   locals: Vector[LuaLocal],
-  upvalueNames: Vector[String]
+  upvalueNames: Vector[LuaByteStringText]
 )
 
 final case class LuaInstruction(
@@ -58,7 +61,7 @@ final case class LuaDiagnostic(
   successFactsAllowed: Boolean
 )
 
-final case class LuaLocal(name: String, startPc: Long, endPc: Long)
+final case class LuaLocal(name: LuaByteStringText, startPc: Long, endPc: Long)
 
 final case class LuaBytecodeDecodeResult(
   artifact: LuaBytecodeArtifact,
@@ -127,5 +130,5 @@ enum LuaConstantValue {
   case NilValue
   case BooleanValue(value: Boolean)
   case NumberValue(value: Double)
-  case StringValue(value: String)
+  case StringValue(value: LuaByteStringText)
 }

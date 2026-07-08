@@ -2,7 +2,7 @@ package io.joern.lua2cpg.bytecode
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.nio.charset.{CharacterCodingException, StandardCharsets}
+import java.nio.charset.StandardCharsets
 
 object LuaBytecodeDecoder {
   private val LuaMagic: Array[Byte]     = Array(0x1b.toByte, 0x4c.toByte, 0x75.toByte, 0x61.toByte)
@@ -13,6 +13,7 @@ object LuaBytecodeDecoder {
   private val SeverityError             = "error"
   private val NumberModeFloating        = "floating"
   private val NumberModeIntegral        = "integral"
+  private val LuaByteStringCharset      = StandardCharsets.ISO_8859_1
 
   def decode(path: String, bytes: Array[Byte]): LuaBytecodeDecodeResult = {
     val reader = new Reader(bytes)
@@ -220,7 +221,7 @@ object LuaBytecodeDecoder {
       value
     }
 
-    private def readString(): String = {
+    private def readString(): LuaByteStringText = {
       val size = readSizeT()
       if (size == 0) {
         return ""
@@ -234,13 +235,7 @@ object LuaBytecodeDecoder {
       if (bytes(bytesStart + size.toInt - 1) != 0) {
         reject("malformed-constant", "unterminated Lua bytecode string")
       }
-      val decoder = StandardCharsets.UTF_8.newDecoder()
-      try {
-        decoder.decode(ByteBuffer.wrap(bytes, bytesStart, size.toInt - 1)).toString
-      } catch {
-        case error: CharacterCodingException =>
-          reject("malformed-constant", s"invalid UTF-8 Lua bytecode string: ${error.getMessage}")
-      }
+      new String(bytes, bytesStart, size.toInt - 1, LuaByteStringCharset)
     }
 
     private def ensureAvailable(size: Int): Unit = {
