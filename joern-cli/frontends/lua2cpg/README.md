@@ -67,3 +67,27 @@ committed focused `.luac` fixtures. It does not claim interprocedural
 arg/return, module require/export resolution, source parser AST semantics,
 QueryDB, sanitizer classification, report construction, schema extension
 acceptance, distribution acceptance, or official frontend acceptance.
+
+## Interprocedural Module Taint Smoke
+
+```bash
+JAVA_TOOL_OPTIONS='-Dsbt.watch.mode=polling -Dsbt.io.jdktimestamps=true' \
+  sbt 'lua2cpg/testOnly io.joern.lua2cpg.InterproceduralModuleTaintSmokeTest'
+JAVA_TOOL_OPTIONS='-Dsbt.watch.mode=polling -Dsbt.io.jdktimestamps=true' \
+  sbt 'lua2cpg/stage'
+git status --short
+```
+
+Expected result:
+
+- `InterproceduralModuleTaintSmokeTest` succeeds.
+- `lua2cpg/stage` succeeds.
+- `git status --short` is clean after the smoke.
+
+This E4 smoke proves interprocedural arg/return, literal require resolution,
+module returned-table exports, cross-boundary call targets, and explainable
+taint paths over committed fixtures.
+
+It does not claim QueryDB readiness, source parser AST semantics, sanitizer
+classification, report construction, schema extension acceptance, distribution
+acceptance, or official frontend acceptance.
