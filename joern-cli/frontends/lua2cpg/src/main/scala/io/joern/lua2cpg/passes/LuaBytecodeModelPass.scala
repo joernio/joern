@@ -220,7 +220,14 @@ class LuaBytecodeModelPass(
         .sortBy(_.requireCallsiteId)
         .zipWithIndex
         .map { case (resolution, index) =>
-          val target = resolution.targetModulePath.getOrElse(resolution.unresolvedReason.getOrElse("unresolved"))
+          val target = resolution match {
+            case LuaModuleResolution(_, _, "matched", _, Some(targetModulePath), None, _) => targetModulePath
+            case LuaModuleResolution(_, _, _, _, None, Some(unresolvedReason), _)         => unresolvedReason
+            case _ =>
+              throw new IllegalStateException(
+                s"inconsistent Lua module resolution state at ${resolution.fromModulePath}:${resolution.requireCallsiteId}"
+              )
+          }
           semanticCallNode(
             name = "lua.module.resolution",
             code =
