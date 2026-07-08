@@ -13,7 +13,7 @@ class BytecodeModelSmokeTest extends AnyWordSpec with Matchers {
 
   "Lua2Cpg" should {
     "emit bytecode model nodes that survive CPG reopen" in {
-      val resourceRoot = Paths.get(getClass.getClassLoader.getResource("bytecode-model").toURI)
+      val resourceRoot = Paths.get(getClass.getClassLoader.getResource("bytecode-model").toURI).getParent
 
       FileUtil.usingTemporaryDirectory("lua2cpg-bytecode-model-smoke") { tmpDir =>
         val outputPath = tmpDir.resolve("bytecode-model.cpg.bin").toString
@@ -25,23 +25,28 @@ class BytecodeModelSmokeTest extends AnyWordSpec with Matchers {
         val reopened = CpgLoader.load(outputPath)
         try {
           reopened.file.nameNot(FileTraversal.UNKNOWN).name.sorted.l should contain allOf (
-            "bc-prototype-params/input.luac",
-            "bc-constants-call/input.luac",
-            "bc-stripped-metadata/input.luac"
+            "bytecode-model/bc-prototype-params/input.luac",
+            "bytecode-model/bc-constants-call/input.luac",
+            "bytecode-model/bc-stripped-metadata/input.luac",
+            "OpenWrtDerived-luci/cgi.lua",
+            "OpenWrtDerived-luci/uci.lua",
+            "OpenWrtDerived-luci/version.lua"
           )
 
+          // Expected rows were manually cross-checked against the referenceAnalyzer prototype YAML fixtures for
+          // bc-prototype-params, bc-constants-call, bc-stripped-metadata, and bc-malformed-diagnostic.
           val methodFullNames = reopened.method.fullName.sorted.l
           methodFullNames should contain allOf (
-            "lua:bc-prototype-params/input.luac:root",
-            "lua:bc-prototype-params/input.luac:root.0",
-            "lua:bc-constants-call/input.luac:root",
-            "lua:bc-constants-call/input.luac:root.0",
-            "lua:bc-stripped-metadata/input.luac:root",
-            "lua:bc-stripped-metadata/input.luac:root.0"
+            "lua:bytecode-model/bc-prototype-params/input.luac:root",
+            "lua:bytecode-model/bc-prototype-params/input.luac:root.0",
+            "lua:bytecode-model/bc-constants-call/input.luac:root",
+            "lua:bytecode-model/bc-constants-call/input.luac:root.0",
+            "lua:bytecode-model/bc-stripped-metadata/input.luac:root",
+            "lua:bytecode-model/bc-stripped-metadata/input.luac:root.0"
           )
 
           reopened.method
-            .fullNameExact("lua:bc-prototype-params/input.luac:root.0")
+            .fullNameExact("lua:bytecode-model/bc-prototype-params/input.luac:root.0")
             .parameter
             .indexGt(0)
             .index
@@ -56,15 +61,15 @@ class BytecodeModelSmokeTest extends AnyWordSpec with Matchers {
             .fullName
             .l
           diagnostics should contain allOf (
-            "lua:bc-malformed-diagnostic/not-lua-bytecode.bin:diagnostic:not-lua-bytecode",
-            "lua:bc-malformed-diagnostic/truncated.luac:diagnostic:truncated-bytecode",
-            "lua:bc-malformed-diagnostic/unsupported-version.luac:diagnostic:unsupported-bytecode-version",
-            "lua:bc-malformed-diagnostic/unsupported-profile.luac:diagnostic:unsupported-bytecode-profile",
-            "lua:bc-malformed-diagnostic/malformed-constant.luac:diagnostic:malformed-constant",
-            "lua:bc-stripped-metadata/input.luac:diagnostic:metadata-unavailable"
+            "lua:bytecode-model/bc-malformed-diagnostic/not-lua-bytecode.bin:diagnostic:not-lua-bytecode",
+            "lua:bytecode-model/bc-malformed-diagnostic/truncated.luac:diagnostic:truncated-bytecode",
+            "lua:bytecode-model/bc-malformed-diagnostic/unsupported-version.luac:diagnostic:unsupported-bytecode-version",
+            "lua:bytecode-model/bc-malformed-diagnostic/unsupported-profile.luac:diagnostic:unsupported-bytecode-profile",
+            "lua:bytecode-model/bc-malformed-diagnostic/malformed-constant.luac:diagnostic:malformed-constant",
+            "lua:bytecode-model/bc-stripped-metadata/input.luac:diagnostic:metadata-unavailable"
           )
 
-          methodFullNames.filter(_.startsWith("lua:bc-malformed-diagnostic/")) shouldBe Nil
+          methodFullNames.filter(_.startsWith("lua:bytecode-model/bc-malformed-diagnostic/")) shouldBe Nil
         } finally {
           reopened.close()
         }
