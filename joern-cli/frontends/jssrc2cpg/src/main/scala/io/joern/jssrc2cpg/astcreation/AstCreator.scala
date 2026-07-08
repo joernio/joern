@@ -55,7 +55,7 @@ class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val
   // ujson.Value whose hashCode/equals are structural, so hashing a key would recurse over the entire function subtree.
   protected val functionNodeToNameAndFullName = mutable.HashMap.empty[String, (String, String)]
   protected val usedVariableNames             = mutable.HashMap.empty[String, Int]
-  protected val seenAliasTypes                = mutable.HashSet.empty[NewTypeDecl]
+  protected val seenAliasTypes                = mutable.HashMap.empty[String, NewTypeDecl]
   protected val functionFullNames             = mutable.HashSet.empty[String]
 
   // we track line and column numbers manually because astgen / @babel-parser sometimes

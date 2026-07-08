@@ -40,9 +40,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val aliasTypeDeclNode =
       typeDeclNode(alias, aliasName, aliasFullName, parserResult.filename, alias.code, astParentType, astParentFullName)
-    seenAliasTypes.add(aliasTypeDeclNode)
+    seenAliasTypes.update(aliasTypeDeclNode.name, aliasTypeDeclNode)
 
-    if (!Defines.JsTypes.contains(name) && !seenAliasTypes.exists(_.name == name)) {
+    if (!Defines.JsTypes.contains(name) && !seenAliasTypes.contains(name)) {
       val (typeName, typeFullName) = calcTypeNameAndFullName(alias, Option(name))
       registerType(typeFullName)
 
@@ -58,7 +58,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       )
       diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
     } else {
-      seenAliasTypes.find(t => t.name == name).foreach(_.aliasTypeFullName(aliasFullName))
+      seenAliasTypes.get(name).foreach(_.aliasTypeFullName(aliasFullName))
     }
 
     // adding all class methods / functions and uninitialized, non-static members
@@ -280,7 +280,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       astParentType,
       astParentFullName
     )
-    seenAliasTypes.add(typeDeclNode_)
+    seenAliasTypes.update(typeDeclNode_.name, typeDeclNode_)
 
     addModifier(typeDeclNode_, tsEnum.json)
 
@@ -445,7 +445,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       astParentFullName,
       inherits = superClass ++ implements ++ mixins
     )
-    seenAliasTypes.add(typeDeclNode_)
+    seenAliasTypes.update(typeDeclNode_.name, typeDeclNode_)
 
     addModifier(typeDeclNode_, clazz.json)
     astsForDecorators(clazz).foreach { decoratorAst =>
@@ -1013,7 +1013,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       astParentFullName,
       inherits = extendz
     )
-    seenAliasTypes.add(typeDeclNode_)
+    seenAliasTypes.update(typeDeclNode_.name, typeDeclNode_)
 
     addModifier(typeDeclNode_, tsInterface.json)
 
