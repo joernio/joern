@@ -7,14 +7,7 @@ import io.joern.rust2cpg.parser.RustNodeSyntax
 import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewCall,
-  NewControlStructure,
-  NewMethod,
-  NewNamespaceBlock,
-  NewNode,
-  NewTypeDecl
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, Operators, PropertyDefaults, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
@@ -29,12 +22,18 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
   private val logger = LoggerFactory.getLogger(getClass)
 
   protected val methodAstParentStack = new Stack[NewNode]
+  private var detachedAsts           = List.empty[Ast]
 
   override def createAst(): DiffGraphBuilder = {
     val sourceFile = parseResult.ast.asInstanceOf[RustNodeSyntax.SourceFile]
     val ast        = visitSourceFile(sourceFile)
     Ast.storeInDiffGraph(ast, diffGraph)
+    detachedAsts.foreach(Ast.storeInDiffGraph(_, diffGraph))
     diffGraph
+  }
+
+  protected def addDetachedAst(ast: Ast): Unit = {
+    detachedAsts = ast :: detachedAsts
   }
 
   // NB: rust_ast_gen uses 0-based line/column

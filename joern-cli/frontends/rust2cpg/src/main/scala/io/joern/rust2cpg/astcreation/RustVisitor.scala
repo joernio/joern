@@ -355,23 +355,33 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  AssocItemList
   private def visitImpl(impl: Impl): Seq[Ast] = {
     if (impl.forKwToken.isDefined) {
-      impl.typ match {
-        case implTrait :: implType :: Nil =>
-          val typeDecl = typeDeclForTraitImpl(impl, implTrait, implType)
-          methodAstParentStack.push(typeDecl)
-          val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn => visitFn(fn) }
-          methodAstParentStack.pop()
-          Ast(typeDecl).withChildren(methodAsts) :: Nil
-        case _ => notHandledYet(impl) :: Nil
-      }
+      lowerImplFor(impl) :: Nil
     } else {
-      methodAstParentStack.push(typeDeclForImpl(impl))
-      val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn => visitFn(fn) }
-      methodAstParentStack.pop()
-      // TODO: remove this side-effect once ref-linker/scope is in.
-      methodAsts.foreach(Ast.storeInDiffGraph(_, diffGraph))
+      lowerInherentImplAsDetachedAst(impl)
       Nil
     }
+  }
+
+  // There can be at most one `impl X for Y` (for some X, Y) in the same file/project.
+  private def lowerImplFor(impl: Impl): Ast = {
+    impl.typ match {
+      case implTrait :: implType :: Nil =>
+        val typeDecl = typeDeclForTraitImpl(impl, implTrait, implType)
+        methodAstParentStack.push(typeDecl)
+        val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn => visitFn(fn) }
+        methodAstParentStack.pop()
+        Ast(typeDecl).withChildren(methodAsts)
+      case _ => notHandledYet(impl)
+    }
+  }
+
+  // There can be multiple `impl X` in the same file/project, so we lower their
+  // methods as detached Asts. The AstLinker pass shall later create the appropriate Ast edges.
+  private def lowerInherentImplAsDetachedAst(impl: Impl): Unit = {
+    methodAstParentStack.push(typeDeclForImpl(impl))
+    val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn => visitFn(fn) }
+    methodAstParentStack.pop()
+    methodAsts.foreach(addDetachedAst)
   }
 
   // Trait =
