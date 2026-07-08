@@ -150,8 +150,8 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
   }
 
   private def isMinifiedFile(filePath: String, fileLines: => Seq[String]): Boolean = filePath match {
-    case p if MinifiedPathRegex.matches(p) => true
-    case p if Files.exists(Paths.get(p)) && p.endsWith(".js") =>
+    case _ if MinifiedPathRegex.matches(filePath) => true
+    case _ if Files.exists(Paths.get(filePath)) && filePath.endsWith(".js") =>
       val lines             = fileLines
       val linesOfCode       = lines.size
       val longestLineLength = if (lines.isEmpty) 0 else lines.map(_.length).max
