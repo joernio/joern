@@ -26,13 +26,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private case class CallExpressionInfo(receiverAst: Ast, baseNode: NewIdentifier, callName: String)
 
-  private def handleCallNodeArgs(callExpr: BabelNodeInfo, callExpressionInfo: CallExpressionInfo): Ast = {
+  private def handleCallNodeArgs(
+    callExpr: BabelNodeInfo,
+    callExpressionInfo: CallExpressionInfo,
+    maybeCallee: Option[BabelNodeInfo] = None
+  ): Ast = {
     val args      = astForNodes(callExpr.json("arguments").arr.toList)
     val callNode_ = callNode(callExpr, callExpr.code, callExpressionInfo.callName, DispatchTypes.DYNAMIC_DISPATCH)
-    // If the callee is a function itself, e.g. closure, then resolve this locally, if possible
-    callExpr.json.obj
-      .get("callee")
-      .map(createBabelNodeInfo)
+    // If the callee is a function itself, e.g. closure, then resolve this locally, if possible.
+    // Reuse the already-built callee when the caller has one to avoid rebuilding it from JSON.
+    maybeCallee
+      .orElse(callExpr.json.obj.get("callee").map(createBabelNodeInfo))
       .flatMap {
         case callee if callee.node.isInstanceOf[FunctionLike] =>
           functionNodeToNameAndFullName.get(functionNodeKey(callee))
@@ -95,7 +99,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       createBuiltinStaticCall(callExpr, callee, calleeCode)
     } else {
       val callExpressionInfo = callExpressionInfoForCallLikeExpr(callee)
-      handleCallNodeArgs(callExpr, callExpressionInfo)
+      handleCallNodeArgs(callExpr, callExpressionInfo, Option(callee))
     }
   }
 
