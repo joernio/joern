@@ -183,7 +183,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astsForSwitchCase(switchCase: BabelNodeInfo): List[Ast] = {
     val labelAst       = Ast(jumpTargetNode(switchCase))
     val testAsts       = safeObj(switchCase.json, "test").map(t => astForNodeWithFunctionReference(Obj(t))).toList
-    val consequentAsts = astForNodes(switchCase.json("consequent").arr.toList)
+    val consequentAsts = astForNodes(switchCase.json("consequent").arr)
     labelAst +: (testAsts ++ consequentAsts)
   }
 

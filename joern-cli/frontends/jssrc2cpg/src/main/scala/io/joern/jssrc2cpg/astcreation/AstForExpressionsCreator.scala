@@ -20,7 +20,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case _                => callee.code
     }
     val callNode = staticCallNode(callExpr.code, callName, fullName, callee.lineNumber, callee.columnNumber)
-    val argAsts  = astForNodes(callExpr.json("arguments").arr.toList)
+    val argAsts  = astForNodes(callExpr.json("arguments").arr)
     callAst(callNode, argAsts)
   }
 
@@ -31,7 +31,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callExpressionInfo: CallExpressionInfo,
     maybeCallee: Option[BabelNodeInfo] = None
   ): Ast = {
-    val args      = astForNodes(callExpr.json("arguments").arr.toList)
+    val args      = astForNodes(callExpr.json("arguments").arr)
     val callNode_ = callNode(callExpr, callExpr.code, callExpressionInfo.callName, DispatchTypes.DYNAMIC_DISPATCH)
     // If the callee is a function itself, e.g. closure, then resolve this locally, if possible.
     // Reuse the already-built callee when the caller has one to avoid rebuilding it from JSON.
@@ -505,7 +505,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     scope.popScope()
     localAstParentStack.pop()
 
-    val childrenAsts = (propertiesAsts :+ Ast(tmpNode)).toList
+    val childrenAsts = (propertiesAsts.iterator ++ Iterator.single(Ast(tmpNode))).toList
     blockAst(blockNode_, childrenAsts)
   }
 

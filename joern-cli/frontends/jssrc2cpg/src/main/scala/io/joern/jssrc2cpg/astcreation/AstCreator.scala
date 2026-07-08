@@ -228,7 +228,8 @@ class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val
     }
   }
 
-  protected def astForNodes(jsons: List[Value]): List[Ast] = jsons.map(astForNodeWithFunctionReference)
+  protected def astForNodes(jsons: collection.Seq[Value]): List[Ast] =
+    jsons.iterator.map(astForNodeWithFunctionReference).toList
 
   protected def astForNodeWithFunctionReference(json: Value): Ast = {
     val nodeInfo = createBabelNodeInfo(json)
