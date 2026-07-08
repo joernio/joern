@@ -9,4 +9,4 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % Versions.scalatest % Test
 )
 
-enablePlugins(JavaAppPackaging)
+enablePlugins(JavaAppPackaging, LauncherJarPlugin)
