@@ -1034,8 +1034,23 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  Attr* start:Expr? op:('..' | '..=') end:Expr?
   private def visitRangeExpr(rangeExpr: RangeExpr): Ast = {
     (rangeExpr.start, rangeExpr.end, rangeExpr.isInclusive) match {
-      // a..b becomes Range { start, end }
-      case (Some(start), Some(end), false) =>
+      // NB: RangeInclusive (a..=b) has private start/end fields + a `new` constructor, whereas
+      // the remaining ranges have no constructor but public start/end fields. Hence the special
+      // treatment here.
+      case (Some(start), Some(end), true) =>
+        // TODO(rust_ast_gen) matches the stdlib type, but it ideally would come from rust_ast_gen.
+        val methodFullName = "core::ops::range::RangeInclusive<Idx>::new"
+        val call = callNode(
+          rangeExpr,
+          code(rangeExpr),
+          "new",
+          methodFullName,
+          DispatchTypes.STATIC_DISPATCH,
+          None,
+          Some(typeFullNameForExpr(rangeExpr))
+        )
+        callAst(call, Seq(visitExpr(start), visitExpr(end)))
+      case (start, end, _) =>
         val rangeType = typeFullNameForExpr(rangeExpr)
         val tmpName   = "tmp"
         allocBlockAst(rangeExpr, tmpName, rangeType) { mktmpIdent =>
@@ -1044,10 +1059,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
             val lhs       = fieldAccessAst(expr, expr, mktmpIdent(expr), s"$tmpName.$fieldName", fieldName, fieldType)
             callAst(assignmentNode(expr, s"$tmpName.$fieldName = ${code(expr)}"), Seq(lhs, visitExpr(expr)))
           }
-          Seq(mkAssign("start", start), mkAssign("end", end))
+          (start.map(mkAssign("start", _)) ++ end.map(mkAssign("end", _))).toSeq
         }
-
-      case _ => notHandledYet(rangeExpr)
     }
   }
 
