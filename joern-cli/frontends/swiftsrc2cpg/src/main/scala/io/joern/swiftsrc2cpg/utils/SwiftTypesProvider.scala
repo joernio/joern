@@ -155,6 +155,12 @@ object SwiftTypesProvider {
     "weak"
   )
 
+  /** Precomputed padded forms of each [[SwiftDeclModifier]] used by `removeModifier`, so the space-padded prefix and
+    * infix variants are not rebuilt on every fold step. Each entry is `(prefix = "modifier ", infix = " modifier ")`.
+    */
+  private val SwiftDeclModifierPadded: Array[(String, String)] =
+    SwiftDeclModifier.toArray.map(modifier => (s"$modifier ", s" $modifier "))
+
   /** The regular expression pattern `(?<!\\\\)` is used to split a string of spaces, but only if the space is not
     * preceded by a backslash.
     *
@@ -635,9 +641,11 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     *   The cleaned fullName with modifiers removed
     */
   private def removeModifier(fullName: String): String = {
-    SwiftDeclModifier.foldLeft(fullName) { (cur, repl) =>
-      if (cur.startsWith(s"$repl ") || cur.contains(s" $repl ")) {
-        cur.replace(s" $repl ", " ").stripPrefix(s"$repl ")
+    // A modifier is always followed by a space, so a name without any space cannot contain one.
+    if (!fullName.contains(' ')) return fullName
+    SwiftDeclModifierPadded.foldLeft(fullName) { case (cur, (prefix, infix)) =>
+      if (cur.startsWith(prefix) || cur.contains(infix)) {
+        cur.replace(infix, " ").stripPrefix(prefix)
       } else cur
     }
   }
