@@ -84,13 +84,22 @@ class AstCreator(
     )
   }
 
+  // FunctionDeclLike is a cross-category union, so its members are peeled off inside the ExprSyntax and
+  // DeclSyntax branches rather than testing the whole union first for every node.
   protected def astForNode(node: SwiftNode): Ast = node match {
-    case func: FunctionDeclLike             => astForFunctionLike(func, List.empty, None)
-    case swiftToken: SwiftToken             => astForSwiftToken(swiftToken)
+    case swiftToken: SwiftToken => astForSwiftToken(swiftToken)
+    case exprSyntax: ExprSyntax =>
+      exprSyntax match {
+        case closure: ClosureExprSyntax => astForFunctionLike(closure, List.empty, None)
+        case other                      => astForExprSyntax(other)
+      }
+    case declSyntax: DeclSyntax =>
+      declSyntax match {
+        case func: FunctionDeclLike => astForFunctionLike(func, List.empty, None)
+        case other                  => astForDeclSyntax(other)
+      }
     case syntax: Syntax                     => astForSyntax(syntax)
-    case exprSyntax: ExprSyntax             => astForExprSyntax(exprSyntax)
     case typeSyntax: TypeSyntax             => astForTypeSyntax(typeSyntax)
-    case declSyntax: DeclSyntax             => astForDeclSyntax(declSyntax)
     case patternSyntax: PatternSyntax       => astForPatternSyntax(patternSyntax)
     case stmtSyntax: StmtSyntax             => astForStmtSyntax(stmtSyntax)
     case syntaxCollection: SyntaxCollection => astForSyntaxCollection(syntaxCollection)
