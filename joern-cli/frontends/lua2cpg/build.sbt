@@ -6,6 +6,7 @@ dependsOn(
 )
 
 libraryDependencies ++= Seq(
+  "com.lihaoyi"   %% "ujson"     % Versions.upickle,
   "org.scalatest" %% "scalatest" % Versions.scalatest % Test
 )
 
