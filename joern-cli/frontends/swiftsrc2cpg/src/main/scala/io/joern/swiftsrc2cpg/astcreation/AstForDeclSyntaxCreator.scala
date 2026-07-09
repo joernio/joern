@@ -252,17 +252,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def isClassMethodOrUninitializedMember(node: DeclSyntax): Boolean = {
-    node match {
-      case _: AccessorDeclSyntax                => true
-      case _: InitializerDeclSyntax             => true
-      case _: DeinitializerDeclSyntax           => true
-      case _: FunctionDeclSyntax                => true
-      case other if !isInitializedMember(other) => true
-      case _                                    => false
-    }
-  }
-
   private def astForDeclAttributes(
     node: TypeDeclLike | VariableDeclSyntax | AssociatedTypeDeclSyntax | TypeAliasDeclSyntax
   ): Seq[Ast] = {
@@ -331,25 +320,20 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.pushNewTypeDeclScope(typeName, typeFullName)
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
-    val allClassMembers = declMembers(node, withConstructor = false).toList
+    val allClassMembers                                    = declMembers(node, withConstructor = false).toList
+    val (initializedMembers, classMethodsAndUninitialized) = allClassMembers.partition(isInitializedMember)
+    val (staticMemberInits, memberInits)                   = initializedMembers.partition(isStaticMember)
 
     // adding all other members and retrieving their initialization calls
-    val memberInits = allClassMembers.filter(m => !isStaticMember(m) && isInitializedMember(m))
     createDeclConstructor(node, typeDeclNode_, memberInits)
 
     // adding all static members and retrieving their initialization calls
-    val staticMemberInits = allClassMembers.filter { member =>
-      isStaticMember(member) && !isClassMethodOrUninitializedMember(member)
-    }
-
     if (staticMemberInits.nonEmpty) {
       createStaticConstructor(node, staticMemberInits, typeDeclNode_)
     }
 
     // adding all class methods / functions and uninitialized members
-    allClassMembers
-      .filter(member => isClassMethodOrUninitializedMember(member))
-      .foreach(m => astForDeclMember(m, typeDeclNode_))
+    classMethodsAndUninitialized.foreach(m => astForDeclMember(m, typeDeclNode_))
 
     methodAstParentStack.pop()
     typeRefNodeMaybe.foreach(_ => typeRefIdStack.pop())
