@@ -1071,10 +1071,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     private def end: Option[Expr]          = operand(_ > _)
     private def operand(compareWithOpOffset: (Int, Int) => Boolean): Option[Expr] = {
       opToken.flatMap(_.startOffset).flatMap { opOffset =>
-        // TODO(rust_ast_gen): Expr? Expr? should produce List[Expr], not Option[Expr].
-        //  We should be using rangeExpr.expr, not children.
-        val operands = rangeExpr.children.map(createRustNode)
-        operands.find(_.startOffset.exists(compareWithOpOffset(_, opOffset))).collect { case expr: Expr => expr }
+        rangeExpr.expr.find(_.startOffset.exists(compareWithOpOffset(_, opOffset)))
       }
     }
   }
