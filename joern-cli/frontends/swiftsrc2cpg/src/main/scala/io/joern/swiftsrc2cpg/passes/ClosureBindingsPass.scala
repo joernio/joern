@@ -21,16 +21,16 @@ class ClosureBindingsPass(cpg: Cpg) extends CpgPass(cpg) {
   private val seenBoundMethods = scala.collection.mutable.HashMap.empty[String, NewMethod]
 
   private def stubTypeDeclIfNeeded(diffGraph: DiffGraphBuilder, fullName: String): TypeDecl | NewTypeDecl = {
-    if (cpg.typeDecl.fullNameExact(fullName).isEmpty) {
-      seenTypeDecls.getOrElseUpdate(
-        fullName, {
-          val typeDeclStub = TypeDeclStubCreator.createTypeDeclStub("Function", fullName)
-          diffGraph.addNode(typeDeclStub)
-          typeDeclStub
-        }
-      )
-    } else {
-      cpg.typeDecl.fullNameExact(fullName).loneElement
+    cpg.typeDecl.fullNameExact(fullName).loneElementOption match {
+      case Some(existing) => existing
+      case None =>
+        seenTypeDecls.getOrElseUpdate(
+          fullName, {
+            val typeDeclStub = TypeDeclStubCreator.createTypeDeclStub("Function", fullName)
+            diffGraph.addNode(typeDeclStub)
+            typeDeclStub
+          }
+        )
     }
   }
 
@@ -40,22 +40,21 @@ class ClosureBindingsPass(cpg: Cpg) extends CpgPass(cpg) {
     closureMethod: Method
   ): Method | NewMethod = {
     val methodFullName = s"$closureMethodFullName.${Defines.ClosureApplyMethodName}:${closureMethod.signature}"
-    val numArgs        = closureMethod.parameter.size
-    if (cpg.method.fullNameExact(methodFullName).isEmpty) {
-      seenBoundMethods.getOrElseUpdate(
-        methodFullName, {
-          MethodStubCreator.createMethodStub(
-            Defines.ClosureApplyMethodName,
-            methodFullName,
-            closureMethod.signature,
-            DispatchTypes.DYNAMIC_DISPATCH,
-            numArgs,
-            diffGraph
-          )
-        }
-      )
-    } else {
-      cpg.method.fullNameExact(methodFullName).loneElement
+    cpg.method.fullNameExact(methodFullName).loneElementOption match {
+      case Some(existing) => existing
+      case None =>
+        seenBoundMethods.getOrElseUpdate(
+          methodFullName, {
+            MethodStubCreator.createMethodStub(
+              Defines.ClosureApplyMethodName,
+              methodFullName,
+              closureMethod.signature,
+              DispatchTypes.DYNAMIC_DISPATCH,
+              closureMethod.parameter.size,
+              diffGraph
+            )
+          }
+        )
     }
   }
 
