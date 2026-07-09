@@ -25,25 +25,23 @@ class ConfigFileCreationPass(cpg: Cpg, config: Config)
 
   override val configFileFilters: List[Path => Boolean] = List(extensionFilter(PlistExt), extensionFilter(".xib"))
 
-  /** Reads the file once and classifies it:
-    *   - `Some(content)` — a text file whose content can be added to the CPG directly.
-    *   - `None` — a binary plist that must be parsed via [[PropertyListParser]] first.
+  /** Reads the file once and returns its content together with an optional source comment. Binary plists are converted
+    * to XML via [[PropertyListParser]] and annotated with a comment recording their origin; text files are returned
+    * as-is with an empty comment.
     */
-  private def textContentOrBinaryPlist(file: Path): Try[Option[String]] = {
-    Try(IOUtils.readEntireFile(file)).map { content =>
-      val isBinaryPlist = file.extension().contains(PlistExt) && content.trim.startsWith("bplist")
-      Option.unless(isBinaryPlist)(content)
+  private def parseConfigFile(file: Path): Try[(String, String)] = Try {
+    val content       = IOUtils.readEntireFile(file)
+    val isBinaryPlist = file.extension().contains(PlistExt) && content.trim.startsWith("bplist")
+    if (isBinaryPlist) {
+      val sourceComment = s"\n<!--This file was generated from ${file.toAbsolutePath}-->"
+      (PropertyListParser.parse(file.toFile).toXMLPropertyList, sourceComment)
+    } else {
+      (content, "")
     }
   }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, file: Path): Unit = {
-    val parseResult = textContentOrBinaryPlist(file).flatMap {
-      case Some(textContent) => Success((textContent, ""))
-      case None =>
-        val sourceComment = s"\n<!--This file was generated from ${file.toAbsolutePath}-->"
-        Try((PropertyListParser.parse(file.toFile).toXMLPropertyList, sourceComment))
-    }
-    parseResult match {
+    parseConfigFile(file) match {
       case Success((content, sourceComment)) =>
         val configFileContent = s"$content$sourceComment"
         val name              = configFileName(file)

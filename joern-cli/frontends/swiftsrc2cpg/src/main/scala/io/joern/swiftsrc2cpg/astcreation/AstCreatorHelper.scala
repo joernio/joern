@@ -141,11 +141,11 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def astsForBlockElements(elements: List[SwiftNode]): List[Ast] = {
     def isDefer(node: SwiftNode): Boolean =
-      node
-        .isInstanceOf[CodeBlockItemSyntax] && node.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[DeferStmtSyntax]
+      node.isInstanceOf[CodeBlockItemSyntax] &&
+        node.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[DeferStmtSyntax]
     def isGuard(node: SwiftNode): Boolean =
-      node
-        .isInstanceOf[CodeBlockItemSyntax] && node.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[GuardStmtSyntax]
+      node.isInstanceOf[CodeBlockItemSyntax] &&
+        node.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[GuardStmtSyntax]
 
     // Most blocks contain neither a defer nor a guard, so map directly and skip the partition/indexWhere
     // scans (which each allocate) in that common case.

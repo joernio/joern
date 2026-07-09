@@ -51,11 +51,6 @@ object Defines {
       Void
     )
 
-  /** `Set` view over [[SwiftTypes]] for O(1) membership tests on the per-node hot path (the `List` order is kept for
-    * callers that rely on it, e.g. `BuiltinTypesPass` deriving `order` from `zipWithIndex`).
-    */
-  val SwiftTypesSet: Set[String] = SwiftTypes.toSet
-
   val PostfixOperatorMap: Map[String, String] = Map(
     "++"  -> Operators.postIncrement,
     "--"  -> Operators.postDecrement,

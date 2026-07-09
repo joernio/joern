@@ -21,7 +21,7 @@ class ClosureBindingsPass(cpg: Cpg) extends CpgPass(cpg) {
   private val seenBoundMethods = scala.collection.mutable.HashMap.empty[String, NewMethod]
 
   private def stubTypeDeclIfNeeded(diffGraph: DiffGraphBuilder, fullName: String): TypeDecl | NewTypeDecl = {
-    cpg.typeDecl.fullNameExact(fullName).loneElementOption match {
+    cpg.typeDecl.fullNameExact(fullName).nextOption() match {
       case Some(existing) => existing
       case None =>
         seenTypeDecls.getOrElseUpdate(
@@ -40,7 +40,7 @@ class ClosureBindingsPass(cpg: Cpg) extends CpgPass(cpg) {
     closureMethod: Method
   ): Method | NewMethod = {
     val methodFullName = s"$closureMethodFullName.${Defines.ClosureApplyMethodName}:${closureMethod.signature}"
-    cpg.method.fullNameExact(methodFullName).loneElementOption match {
+    cpg.method.fullNameExact(methodFullName).nextOption() match {
       case Some(existing) => existing
       case None =>
         seenBoundMethods.getOrElseUpdate(

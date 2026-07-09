@@ -553,7 +553,6 @@ class VariableScopeManager {
     variableName: String
   ): Option[(NewNode, String, String)] = {
     stack.flatMap { stackElement =>
-      // Single hash probe per scope level: a `contains` followed by `get` would probe the map twice.
       stackElement.nameToVariableNode.get(variableName) match {
         case found @ Some(_) => found
         case None            => variableFromStack(stackElement.surroundingScope, variableName)

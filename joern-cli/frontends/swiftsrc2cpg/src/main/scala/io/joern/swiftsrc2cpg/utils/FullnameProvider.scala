@@ -37,13 +37,6 @@ private object FullnameProvider {
   */
 class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
 
-  /** Memoizes the (relatively expensive) recursive range resolution. A FullnameProvider is created once per file and
-    * only accessed from that file's single AST-creation thread, and `typeMap` is immutable, so an unsynchronized cache
-    * is safe and its results are stable. The same node is typically resolved several times per occurrence (e.g. once
-    * for the decl name, again for the type, again while building the identifier node).
-    */
-  private val fullNameCache = mutable.HashMap.empty[(Int, Int, FullnameProvider.Kind, String), Option[String]]
-
   /** Filters a set of resolved type information based on the given node kind.
     *
     * @param in
@@ -100,6 +93,13 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
         None
     }
   }
+
+  /** Memoizes the (relatively expensive) recursive range resolution. A FullnameProvider is created once per file and
+    * only accessed from that file's single AST-creation thread, and `typeMap` is immutable, so an unsynchronized cache
+    * is safe and its results are stable. The same node is typically resolved several times per occurrence (e.g. once
+    * for the decl name, again for the type, again while building the identifier node).
+    */
+  private val fullNameCache = mutable.HashMap.empty[(Int, Int, FullnameProvider.Kind, String), Option[String]]
 
   /** Memoized entry point for [[fullName]]. Keyed by the original range plus kind and nodeKind. */
   private def cachedFullName(range: (Int, Int), kind: FullnameProvider.Kind, nodeKind: String): Option[String] = {
