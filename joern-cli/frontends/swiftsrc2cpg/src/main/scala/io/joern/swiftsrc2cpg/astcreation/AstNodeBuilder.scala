@@ -114,8 +114,8 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
 
   protected def literalNode(node: SwiftNode, code: String, possibleTypes: Option[String]): NewLiteral = {
     val typeFullName = possibleTypes match {
-      case Some(value) if Defines.SwiftTypes.contains(value) => value
-      case _                                                 => Defines.Any
+      case Some(value) if Defines.SwiftTypesSet.contains(value) => value
+      case _                                                    => Defines.Any
     }
     literalNode(node, code, typeFullName).possibleTypes(possibleTypes.toList)
   }

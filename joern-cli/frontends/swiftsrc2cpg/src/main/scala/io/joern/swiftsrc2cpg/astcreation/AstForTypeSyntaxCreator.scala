@@ -52,8 +52,8 @@ trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case Some(tpe) => (tpe, Seq.empty)
       case None =>
         val tpe = AstCreatorHelper.cleanType(nodeCode) match {
-          case value if Defines.SwiftTypes.contains(value) => value
-          case _                                           => Defines.Any
+          case value if Defines.SwiftTypesSet.contains(value) => value
+          case _                                              => Defines.Any
         }
         (tpe, Seq(nodeCode))
     }
