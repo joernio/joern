@@ -56,6 +56,11 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension {
     NodeOrdering.nodeList(NodeOrdering.postOrderNumbering(method, expand).toList).iterator
   }
 
+  /** Check whether method is a stub, i.e., the code is not available or the method body is empty.
+   */
+  def isStub: Boolean =
+    method.cfgOut.forall(_.isInstanceOf[MethodReturn])
+
   /** The type declaration associated with this method, e.g., the class it is defined in.
     */
   def definingTypeDecl: Option[TypeDecl] =
