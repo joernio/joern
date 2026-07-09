@@ -126,3 +126,72 @@ cpg.call.nameExact("lua.e5.boundary").code.l
 This phase does not claim QueryDB inclusion, schema extension acceptance,
 distribution acceptance, source parser AST support, production security-query
 readiness, or official frontend acceptance.
+
+## Controller Benchmark Runbook
+
+Quick local capability smoke from the Joern clone:
+
+```bash
+JAVA_TOOL_OPTIONS='-Dsbt.watch.mode=polling -Dsbt.io.jdktimestamps=true' \
+  sbt 'lua2cpg/testOnly io.joern.lua2cpg.RulesSanitizerReportSmokeTest'
+JAVA_TOOL_OPTIONS='-Dsbt.watch.mode=polling -Dsbt.io.jdktimestamps=true' \
+  sbt 'lua2cpg/stage'
+joern-cli/frontends/lua2cpg/target/universal/stage/bin/lua2cpg --help
+git status --short
+```
+
+Expected result:
+
+- `RulesSanitizerReportSmokeTest` succeeds and prints E5 node/report counts.
+- `lua2cpg/stage` succeeds.
+- The staged `lua2cpg --help` command prints usage.
+- `git status --short` is clean after the smoke.
+
+referenceAnalyzer-managed benchmark adapter smoke:
+
+```bash
+referenceAnalyzer=/path/to/referenceAnalyzer
+JOERN_CLONE=$(pwd)
+JOERN_COMMAND="$JOERN_CLONE/joern-cli/frontends/lua2cpg/target/universal/stage/bin/lua2cpg"
+RUN_ID=joern-upstream-smoke
+RUN_ROOT=/tmp/referenceAnalyzer-upstream-joern-smoke-runs
+FIRMWARE_ROOT=/tmp/referenceAnalyzer-focused-luac
+
+cd "$referenceAnalyzer"
+python3 -m tools.real_firmware.OpenWrtDerived_compare init \
+  --run-id "$RUN_ID" \
+  --run-root "$RUN_ROOT" \
+  --firmware-profile custom \
+  --firmware-root "$FIRMWARE_ROOT" \
+  --luabyte-result-dir "$RUN_ROOT/$RUN_ID-luabyte-placeholder" \
+  --upstream-joern-clone "$JOERN_CLONE"
+
+python3 -m tools.real_firmware.OpenWrtDerived_compare run-joern \
+  --run-dir "$RUN_ROOT/$RUN_ID" \
+  --upstream-joern-clone "$JOERN_CLONE" \
+  --joern-command "$JOERN_COMMAND"
+
+python3 - <<'PY'
+from pathlib import Path
+from tools.real_firmware.normalize_joern import normalize_joern_run
+
+run_dir = Path("/tmp/referenceAnalyzer-upstream-joern-smoke-runs/joern-upstream-smoke")
+normalize_joern_run(run_dir=run_dir, run_id=run_dir.name)
+PY
+```
+
+Expected output:
+
+- `raw/joern/run-errors.json` contains `{"errors": []}` when the staged command
+  can process the selected material.
+- `raw/joern/command-record.json` records `target_kind=upstream-clone` for this
+  clone.
+- `normalized/joern.jsonl` is present.
+
+The benchmark adapter smoke is controlled by referenceAnalyzer because referenceAnalyzer owns the
+oracle, firmware selection, normalization, comparison, and performance
+judgment. It proves that this Joern clone can produce upstream-clone output for
+the controller. It is not a standalone full-corpus benchmark and does not claim
+QueryDB inclusion, schema extension acceptance, distribution acceptance, source
+parser AST support, production security-query readiness, or official frontend
+acceptance.
