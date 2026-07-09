@@ -2,6 +2,7 @@ package io.joern.rust2cpg.astcreation
 
 import io.joern.rust2cpg.parser.RustNodeSyntax
 import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
+import io.joern.rust2cpg.parser.RustNodeSyntaxExtensions.value
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNamespaceBlock}

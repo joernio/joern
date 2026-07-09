@@ -6,6 +6,7 @@ import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewModifier, NewNamespaceBlock}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, ModifierTypes, Operators}
+import io.joern.rust2cpg.parser.RustNodeSyntaxExtensions.*
 
 trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -297,19 +298,6 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     Ast(literalNode(lit, code(lit), typeFullName))
   }
 
-  extension (lit: Literal) {
-    protected def value: Option[RustToken] =
-      lit.intNumberToken
-        .orElse(lit.floatNumberToken)
-        .orElse(lit.stringToken)
-        .orElse(lit.byteStringToken)
-        .orElse(lit.cStringToken)
-        .orElse(lit.charToken)
-        .orElse(lit.byteToken)
-        .orElse(lit.trueKwToken)
-        .orElse(lit.falseKwToken)
-  }
-
   // Fn =
   // Attr* Visibility?
   // 'default'? 'const'? 'async'? 'gen'? 'unsafe'? 'safe'? Abi?
@@ -591,16 +579,6 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     }
   }
 
-  extension (nameRef: NameRef) {
-    private def token: Option[RustToken] =
-      nameRef.identToken
-        .orElse(nameRef.intNumberToken)
-        .orElse(nameRef.selfKwToken)
-        .orElse(nameRef.superKwToken)
-        .orElse(nameRef.crateKwToken)
-        .orElse(nameRef.selfTypeKwToken)
-  }
-
   // BinExpr =
   //  Attr*
   //  lhs:Expr
@@ -622,39 +600,6 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     }
   }
 
-  extension (binExpr: BinExpr) {
-    protected def op: Option[RustToken] =
-      binExpr.pipe2Token
-        .orElse(binExpr.amp2Token)
-        .orElse(binExpr.eq2Token)
-        .orElse(binExpr.neqToken)
-        .orElse(binExpr.lteqToken)
-        .orElse(binExpr.gteqToken)
-        .orElse(binExpr.lAngleToken)
-        .orElse(binExpr.rAngleToken)
-        .orElse(binExpr.plusToken)
-        .orElse(binExpr.starToken)
-        .orElse(binExpr.minusToken)
-        .orElse(binExpr.slashToken)
-        .orElse(binExpr.percentToken)
-        .orElse(binExpr.shlToken)
-        .orElse(binExpr.shrToken)
-        .orElse(binExpr.caretToken)
-        .orElse(binExpr.pipeToken)
-        .orElse(binExpr.ampToken)
-        .orElse(binExpr.eqToken)
-        .orElse(binExpr.pluseqToken)
-        .orElse(binExpr.slasheqToken)
-        .orElse(binExpr.stareqToken)
-        .orElse(binExpr.percenteqToken)
-        .orElse(binExpr.shreqToken)
-        .orElse(binExpr.shleqToken)
-        .orElse(binExpr.minuseqToken)
-        .orElse(binExpr.pipeeqToken)
-        .orElse(binExpr.ampeqToken)
-        .orElse(binExpr.careteqToken)
-  }
-
   // PrefixExpr =
   //  Attr* op:('-' | '!' | '*') Expr
   private def visitPrefixExpr(prefixExpr: PrefixExpr): Ast = {
@@ -666,13 +611,6 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         callAst(callNode, Seq(exprAst))
       case None => notHandledYet(prefixExpr)
     }
-  }
-
-  extension (prefixExpr: PrefixExpr) {
-    protected def op: Option[RustToken] =
-      prefixExpr.minusToken
-        .orElse(prefixExpr.bangToken)
-        .orElse(prefixExpr.starToken)
   }
 
   // RefExpr =
@@ -692,21 +630,6 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val thenAst      = visitBlockExpr(ifExpr.thenBranch)
     val elseAst      = ifExpr.elseBranch.map(visitExpr)
     ifThenElseAst(ifExpr, Some(conditionAst), thenAst, elseAst)
-  }
-
-  extension (ifExpr: IfExpr) {
-    protected def thenBranch: BlockExpr = {
-      ifExpr.blockExpr.head
-    }
-
-    protected def elseBranch: Option[IfExpr | BlockExpr] = {
-      if (ifExpr.ifExpr.isDefined) {
-        ifExpr.ifExpr
-      } else if (ifExpr.blockExpr.sizeIs > 1) {
-        Some(ifExpr.blockExpr.last)
-      } else
-        None
-    }
   }
 
   // CastExpr =
@@ -768,11 +691,6 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val baseAst      = visitExpr(indexExpr.base)
     val indexAst     = visitExpr(indexExpr.index)
     callAst(callNode, Seq(baseAst, indexAst))
-  }
-
-  extension (indexExpr: IndexExpr) {
-    protected def base: Expr  = indexExpr.expr.head
-    protected def index: Expr = indexExpr.expr.last
   }
 
   // TupleExpr =
@@ -1061,18 +979,6 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
           }
           (start.map(mkAssign("start", _)) ++ end.map(mkAssign("end", _))).toSeq
         }
-    }
-  }
-
-  extension (rangeExpr: RangeExpr) {
-    private def isInclusive: Boolean       = rangeExpr.dot2eqToken.isDefined
-    private def opToken: Option[RustToken] = rangeExpr.dot2Token.orElse(rangeExpr.dot2eqToken)
-    private def start: Option[Expr]        = operand(_ < _)
-    private def end: Option[Expr]          = operand(_ > _)
-    private def operand(compareWithOpOffset: (Int, Int) => Boolean): Option[Expr] = {
-      opToken.flatMap(_.startOffset).flatMap { opOffset =>
-        rangeExpr.expr.find(_.startOffset.exists(compareWithOpOffset(_, opOffset)))
-      }
     }
   }
 

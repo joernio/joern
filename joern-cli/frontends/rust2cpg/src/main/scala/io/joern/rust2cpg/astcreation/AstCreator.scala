@@ -5,6 +5,7 @@ import io.joern.rust2cpg.Config
 import io.joern.rust2cpg.parser.RustJsonParser.{ParseResult, isMacroExpanded}
 import io.joern.rust2cpg.parser.RustNodeSyntax
 import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
+import io.joern.rust2cpg.parser.RustNodeSyntaxExtensions.op
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
