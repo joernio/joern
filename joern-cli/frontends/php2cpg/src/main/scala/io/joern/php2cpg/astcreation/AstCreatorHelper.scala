@@ -1,9 +1,8 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
+import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
-import io.joern.php2cpg.passes.SymbolSummaryPass.PhpFunction
 import io.joern.php2cpg.utils.{BlockScope, MethodScope}
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
@@ -11,8 +10,6 @@ import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-
-import scala.collection.mutable
 
 trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 

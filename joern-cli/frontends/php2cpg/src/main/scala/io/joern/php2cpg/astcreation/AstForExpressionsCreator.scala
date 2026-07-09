@@ -1063,6 +1063,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForSimpleNewExpr(expr: PhpNewExpr, classNameExpr: PhpExpr): Ast = {
+    val block = blockNode(expr)
+    scope.pushNewScope(BlockScope(block, ""))
+
     val (maybeNameAst, className) = classNameExpr match {
       case nameExpr: PhpNameExpr =>
         (None, nameExpr.name)
@@ -1105,7 +1108,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     // Return identifier
     val returnIdentifierAst = astForIdentifierWithLocalRef(tmpIdentifier.copy, local)
-    Ast(blockNode(expr, "", Defines.Any))
+
+    scope.popScope()
+    Ast(block)
       .withChild(allocAssignAst)
       .withChild(initCallAst)
       .withChild(returnIdentifierAst)
