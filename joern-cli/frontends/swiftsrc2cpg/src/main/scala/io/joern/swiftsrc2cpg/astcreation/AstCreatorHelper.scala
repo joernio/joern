@@ -140,13 +140,22 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def astsForBlockElements(elements: List[SwiftNode]): List[Ast] = {
-    val (deferElements: List[SwiftNode], otherElements: List[SwiftNode]) = elements.partition(n =>
-      n.isInstanceOf[CodeBlockItemSyntax] && n.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[DeferStmtSyntax]
-    )
-    val deferElementsAstsOrdered = deferElements.reverse.map(astForNode)
-    val indexOfGuardStmt = otherElements.indexWhere(n =>
-      n.isInstanceOf[CodeBlockItemSyntax] && n.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[GuardStmtSyntax]
-    )
+    def isDefer(node: SwiftNode): Boolean =
+      node
+        .isInstanceOf[CodeBlockItemSyntax] && node.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[DeferStmtSyntax]
+    def isGuard(node: SwiftNode): Boolean =
+      node
+        .isInstanceOf[CodeBlockItemSyntax] && node.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[GuardStmtSyntax]
+
+    // Most blocks contain neither a defer nor a guard, so map directly and skip the partition/indexWhere
+    // scans (which each allocate) in that common case.
+    if (!elements.exists(node => isDefer(node) || isGuard(node))) {
+      return elements.map(astForNode)
+    }
+
+    val (deferElements: List[SwiftNode], otherElements: List[SwiftNode]) = elements.partition(isDefer)
+    val deferElementsAstsOrdered                                         = deferElements.reverse.map(astForNode)
+    val indexOfGuardStmt                                                 = otherElements.indexWhere(isGuard)
     if (indexOfGuardStmt < 0) {
       otherElements.map(astForNode) ++ deferElementsAstsOrdered
     } else {
