@@ -11,7 +11,6 @@ import versionsort.VersionHelper
 
 import java.io.{BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter, StringReader}
 import java.util.concurrent.{Callable, Executors}
-import scala.jdk.CollectionConverters.*
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 import scala.annotation.tailrec
@@ -885,11 +884,16 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
       }
       futures.foreach(_.get())
 
-      // Phase 2: Batch demangle all unique mangled names in a single swift-demangle process
-      val allMangledNames = allTypeInfos.asScala.flatMap { typeInfo =>
-        typeInfo.typeFullname ++ typeInfo.declFullname ++ typeInfo.inherits
+      // Phase 2: Batch demangle all unique mangled names in a single swift-demangle process.
+      // Collect straight into a Set to deduplicate up front instead of materializing a list with one entry
+      // per name reference (batchDemangle would otherwise re-deduplicate them internally).
+      val uniqueMangledNames = mutable.Set.empty[String]
+      allTypeInfos.forEach { typeInfo =>
+        typeInfo.typeFullname.foreach(uniqueMangledNames.addOne)
+        typeInfo.declFullname.foreach(uniqueMangledNames.addOne)
+        typeInfo.inherits.foreach(uniqueMangledNames.addOne)
       }
-      batchDemangle(allMangledNames)
+      batchDemangle(uniqueMangledNames)
 
       // Phase 3: Resolve and build mapping (demangle calls now hit the cache)
       allTypeInfos.forEach(addToMapping(_, mapping))
