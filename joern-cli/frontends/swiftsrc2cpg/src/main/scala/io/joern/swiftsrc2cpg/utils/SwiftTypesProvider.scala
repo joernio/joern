@@ -16,9 +16,6 @@ import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
-import scala.collection.parallel.ExecutionContextTaskSupport
-import scala.concurrent.ExecutionContext
 import scala.util.matching.Regex
 import scala.util.{Failure, Try, Using}
 
@@ -856,31 +853,37 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     *   A ConcurrentHashMap containing filename-to-type mappings for Swift source files
     */
   def retrieveMappings(): MutableSwiftTypeMapping = {
-    val mapping = new MutableSwiftTypeMapping
-    // We want to use the same pool for parallel Swift compiler invocations and their type mapping work
-    val pool = java.util.concurrent.Executors.newCachedThreadPool()
+    val mapping     = new MutableSwiftTypeMapping
+    val parallelism = math.max(1, Runtime.getRuntime.availableProcessors())
+    // Two bounded pools: one runs the (blocking) compiler invocations, the other runs the JSON-line
+    // callbacks. They must be separate because each invocation blocks on its ParallelLineProcessor latch,
+    // so sharing a single bounded pool would let blocked producers starve the callback workers.
+    val invocationPool = Executors.newFixedThreadPool(parallelism)
+    val workerPool     = Executors.newFixedThreadPool(parallelism)
     try {
       // Phase 1: Collect all raw TypeInfo (no demangling yet)
-      val allTypeInfos   = new java.util.concurrent.ConcurrentLinkedQueue[TypeInfo]()
-      val parInvocations = parsedSwiftInvocations.par
-      val ec             = ExecutionContext.fromExecutorService(pool)
-      parInvocations.tasksupport = new ExecutionContextTaskSupport(ec)
-      parInvocations.foreach { invocationCommand =>
-        Using.Manager { use =>
-          val process = processFromCommand(invocationCommand, config.inputPath)
-          use(new AutoCloseable { def close(): Unit = { process.destroyForcibly().waitFor(); () } })
-          val reader = use(new InputStreamReader(process.getInputStream))
-          val stdOut = use(new BufferedReader(reader))
-          ParallelLineProcessor.processLinesParallel(stdOut, pool, _.startsWith("{")) { jsonString =>
-            collectTypeInfoFromJson(jsonString, allTypeInfos.add)
+      val allTypeInfos = new java.util.concurrent.ConcurrentLinkedQueue[TypeInfo]()
+      val futures = parsedSwiftInvocations.map { invocationCommand =>
+        invocationPool.submit(new Callable[Unit] {
+          def call(): Unit = {
+            Using.Manager { use =>
+              val process = processFromCommand(invocationCommand, config.inputPath)
+              use(new AutoCloseable { def close(): Unit = { process.destroyForcibly().waitFor(); () } })
+              val reader = use(new InputStreamReader(process.getInputStream))
+              val stdOut = use(new BufferedReader(reader))
+              ParallelLineProcessor.processLinesParallel(stdOut, workerPool, _.startsWith("{")) { jsonString =>
+                collectTypeInfoFromJson(jsonString, allTypeInfos.add)
+              }
+            } match {
+              case Failure(exception) =>
+                // Using.Manager swallows exceptions otherwise
+                logger.warn("Error during Swift type map creation", exception)
+              case _ => // this is fine
+            }
           }
-        } match {
-          case Failure(exception) =>
-            // Using.Manager swallows exceptions otherwise
-            logger.warn("Error during Swift type map creation", exception)
-          case _ => // this is fine
-        }
+        })
       }
+      futures.foreach(_.get())
 
       // Phase 2: Batch demangle all unique mangled names in a single swift-demangle process
       val allMangledNames = allTypeInfos.asScala.flatMap { typeInfo =>
@@ -894,7 +897,8 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
       logger.info(s"Got ${mapping.size} type map entries.")
       mapping
     } finally {
-      pool.shutdown()
+      invocationPool.shutdown()
+      workerPool.shutdown()
     }
   }
 
