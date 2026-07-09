@@ -1,7 +1,7 @@
 package io.joern.php2cpg.testfixtures
 
 import io.joern.dataflowengineoss.DefaultSemantics
-import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.php2cpg.{Config, Php2Cpg}
 import io.joern.x2cpg.frontendspecific.php2cpg
@@ -20,7 +20,7 @@ trait PhpFrontend extends LanguageFrontend {
   override def execute(sourceCodeFile: File): Cpg = {
     val defaultConfig: Config = getConfig().getOrElse(Config())
     val cpg                   = new Php2Cpg().createCpg(defaultConfig.withInputPath(sourceCodeFile.getAbsolutePath)).get
-    new PostFrontendValidator(cpg, ValidationLevel.V1).run()
+    new PostFrontendValidator(cpg, ValidationLevel.V3).run()
     cpg
   }
 }

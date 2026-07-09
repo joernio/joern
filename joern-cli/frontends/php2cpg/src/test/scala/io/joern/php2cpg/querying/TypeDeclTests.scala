@@ -2,7 +2,6 @@ package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
-import io.joern.php2cpg.parser.Domain
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
@@ -146,37 +145,38 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       |  new Foo(42);
       |}""".stripMargin)
 
-    inside(cpg.method.name("foo").body.astChildren.l) { case List(tmpLocal: Local, constructorBlock: Block) =>
-      tmpLocal.name shouldBe "foo@tmp-0"
-      tmpLocal.code shouldBe "$foo@tmp-0"
-
+    inside(cpg.method.name("foo").body.astChildren.l) { case List(constructorBlock: Block) =>
       constructorBlock.lineNumber shouldBe Some(3)
 
-      inside(constructorBlock.astChildren.l) { case List(allocAssign: Call, initCall: Call, tmpVar: Identifier) =>
-        allocAssign.methodFullName shouldBe Operators.assignment
-        inside(allocAssign.astChildren.l) { case List(tmpIdentifier: Identifier, allocCall: Call) =>
-          tmpIdentifier.name shouldBe "foo@tmp-0"
-          tmpIdentifier.code shouldBe "$foo@tmp-0"
-          tmpIdentifier._localViaRefOut should contain(tmpLocal)
+      inside(constructorBlock.astChildren.l) {
+        case List(tmpLocal: Local, allocAssign: Call, initCall: Call, tmpVar: Identifier) =>
+          tmpLocal.name shouldBe "foo@tmp-0"
+          tmpLocal.code shouldBe "$foo@tmp-0"
 
-          allocCall.name shouldBe Operators.alloc
-          allocCall.methodFullName shouldBe Operators.alloc
-          allocCall.lineNumber shouldBe Some(3)
-          allocCall.code shouldBe "Foo.<alloc>()"
-        }
+          allocAssign.methodFullName shouldBe Operators.assignment
+          inside(allocAssign.astChildren.l) { case List(tmpIdentifier: Identifier, allocCall: Call) =>
+            tmpIdentifier.name shouldBe "foo@tmp-0"
+            tmpIdentifier.code shouldBe "$foo@tmp-0"
+            tmpIdentifier._localViaRefOut should contain(tmpLocal)
 
-        initCall.name shouldBe "__construct"
-        initCall.methodFullName shouldBe s"Foo.__construct"
-        initCall.signature shouldBe ""
-        initCall.code shouldBe "new Foo(42)"
-        inside(initCall.argument.l) { case List(tmpIdentifier: Identifier, literal: Literal) =>
-          tmpIdentifier.name shouldBe "foo@tmp-0"
-          tmpIdentifier.code shouldBe "$foo@tmp-0"
-          tmpIdentifier.argumentIndex shouldBe 0
-          tmpIdentifier._localViaRefOut should contain(tmpLocal)
-          literal.code shouldBe "42"
-          literal.argumentIndex shouldBe 1
-        }
+            allocCall.name shouldBe Operators.alloc
+            allocCall.methodFullName shouldBe Operators.alloc
+            allocCall.lineNumber shouldBe Some(3)
+            allocCall.code shouldBe "Foo.<alloc>()"
+          }
+
+          initCall.name shouldBe "__construct"
+          initCall.methodFullName shouldBe s"Foo.__construct"
+          initCall.signature shouldBe ""
+          initCall.code shouldBe "new Foo(42)"
+          inside(initCall.argument.l) { case List(tmpIdentifier: Identifier, literal: Literal) =>
+            tmpIdentifier.name shouldBe "foo@tmp-0"
+            tmpIdentifier.code shouldBe "$foo@tmp-0"
+            tmpIdentifier.argumentIndex shouldBe 0
+            tmpIdentifier._localViaRefOut should contain(tmpLocal)
+            literal.code shouldBe "42"
+            literal.argumentIndex shouldBe 1
+          }
       }
     }
   }
@@ -553,6 +553,15 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     inside(cpg.typeDecl.name("Foo").member.l) { case _ :: fooAnonMem :: Nil =>
       fooAnonMem.name shouldBe "Foo.anon-class-0"
     }
+    inside(cpg.local.l) { case List(fooLocal) =>
+      fooLocal.name shouldBe "Foo@tmp-0"
+      fooLocal.astIn.isBlock.loneElement.astChildren.code.l shouldBe List(
+        "$Foo@tmp-0",
+        "$Foo@tmp-0 = Foo.anon-class-0.<alloc>()",
+        "new Foo.anon-class-0(10)",
+        "$Foo@tmp-0"
+      )
+    }
   }
 
   "Anonymous class nested in class" in {
@@ -569,13 +578,13 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       anonClass.member.code.l shouldBe List("$x")
     }
 
-    inside(cpg.method.name("D").body.astChildren.l) { case (localNode: Local) :: (bodyBlock: Block) :: Nil =>
-      localNode.code shouldBe "$C.D@tmp-0"
-      localNode.name shouldBe "C.D@tmp-0"
-      localNode.refIn.cast[Identifier].head.typeFullName shouldBe "C.D.anon-class-0"
-
+    inside(cpg.method.name("D").body.astChildren.l) { case (bodyBlock: Block) :: Nil =>
       inside(bodyBlock.astChildren.l) {
-        case (assignmentCall: Call) :: (constructCall: Call) :: (tmpIdentifier: Identifier) :: Nil =>
+        case (localNode: Local) :: (assignmentCall: Call) :: (constructCall: Call) :: (tmpIdentifier: Identifier) :: Nil =>
+          localNode.code shouldBe "$C.D@tmp-0"
+          localNode.name shouldBe "C.D@tmp-0"
+          localNode.refIn.cast[Identifier].head.typeFullName shouldBe "C.D.anon-class-0"
+
           assignmentCall.methodFullName shouldBe Operators.assignment
           val List(lhs: Identifier, rhs: Call) = assignmentCall.argument.l: @unchecked
           lhs.typeFullName shouldBe "C.D.anon-class-0"
