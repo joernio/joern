@@ -207,7 +207,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
 
         sinkRows.exists(row =>
           row("module_path").str.endsWith("usr/lib/lua/luci/util.luac") &&
-            row("callsite_id").str == "root@pc3" &&
+            row("callsite_id").str == "root.36@pc3" &&
             row("trigger").str == "io.popen"
         ) shouldBe true
 
@@ -215,6 +215,12 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
           row("module_path").str.endsWith("usr/lib/lua/luci/controller/api/misystem.luac") &&
             row("callsite_id").str == "root.145@pc48" &&
             row("resolved_name").str == "luci.util.exec"
+        ) shouldBe true
+
+        sinkRows.exists(row =>
+          row("module_path").str.endsWith("usr/lib/lua/luci/controller/api/misystem.luac") &&
+            row("callsite_id").str == "root.94@pc38" &&
+            row("trigger").str == "luci.util.exec"
         ) shouldBe true
 
         pathRows.exists(row => row.obj.contains("callsite_id")) shouldBe false
@@ -260,6 +266,8 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
             row("sink_module_path").str.endsWith("usr/lib/lua/luci/controller/api/misystem.luac") &&
             row("source_pc").num.toInt == 15 &&
             row("sink_pc").num.toInt == 38 &&
+            row("source_function_name").str == "root.94" &&
+            row("sink_function_name").str == "root.94" &&
             row("source_trigger").str == "luci.http.formvalue" &&
             row("sink_trigger").str == "luci.util.exec" &&
             row("path_steps").arr.forall(_.str.contains("::"))

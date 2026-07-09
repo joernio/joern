@@ -340,7 +340,7 @@ object LuaInstructionSemantics {
 
     private def callArgumentSlots(instruction: LuaInstruction): Seq[Int] =
       instruction.b match {
-        case 0 => Seq.empty
+        case 0 => (instruction.a + 1) until prototype.maxStack
         case 1 => Seq.empty
         case n => (instruction.a + 1) until (instruction.a + n)
       }
