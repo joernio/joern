@@ -23,7 +23,7 @@ class EjsPreprocessor {
       val matches     = TagGroupsRegex.findAllIn(scriptBlock).matchData.toList
       matches.foreach {
         case mat if mat.group(1) == "<%" && mat.group(3) == "-%>" =>
-          scriptBlock = scriptBlock.replace(mat.toString(), " " * mat.toString().replaceAll("\\S", " ").length)
+          scriptBlock = scriptBlock.replace(mat.toString(), " " * mat.toString().length)
         case _ =>
       }
       OpeningTagReplacements.foreach { case (search, replacement) =>
@@ -56,15 +56,19 @@ class EjsPreprocessor {
         val start = ma.start + ma.group(1).length
         val end   = ma.end - ma.group(3).length
         Option((start, end))
-    }
+    }.toArray
 
-    codeAsCharArray.zipWithIndex.foreach {
-      case (currChar, _) if currChar == '\n' || currChar == '\r' =>
-        preprocessedCode.append(currChar)
-      case (currChar, index) if positions.exists { case (start, end) => index >= start && index < end } =>
-        preprocessedCode.append(currChar)
-      case _ =>
-        preprocessedCode.append(" ")
+    // Keep characters inside a tag body (or newlines); blank everything else out. `positions` are sorted and
+    // non-overlapping, so a single advancing pointer suffices to track which tag body the current index falls in.
+    var positionIndex = 0
+    var index         = 0
+    while (index < codeAsCharArray.length) {
+      val currChar = codeAsCharArray(index)
+      while (positionIndex < positions.length && index >= positions(positionIndex)._2) positionIndex += 1
+      val insideTagBody = positionIndex < positions.length && index >= positions(positionIndex)._1
+      if (currChar == '\n' || currChar == '\r' || insideTagBody) preprocessedCode.append(currChar)
+      else preprocessedCode.append(' ')
+      index += 1
     }
 
     matches.foreach {

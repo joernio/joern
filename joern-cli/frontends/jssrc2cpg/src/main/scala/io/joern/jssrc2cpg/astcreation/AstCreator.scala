@@ -46,14 +46,16 @@ class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val
   // TypeDecls with their bindings (with their refs) for lambdas and methods are not put in the AST
   // where the respective nodes are defined. Instead, we put them under the parent TYPE_DECL in which they are defined.
   // To achieve this we need this extra stack.
-  protected val methodAstParentStack          = new Stack[NewNode]()
-  protected val typeRefIdStack                = new Stack[NewTypeRef]
-  protected val dynamicInstanceTypeStack      = new Stack[String]
-  protected val localAstParentStack           = new Stack[NewBlock]()
-  protected val rootTypeDecl                  = new Stack[NewTypeDecl]()
-  protected val functionNodeToNameAndFullName = mutable.HashMap.empty[BabelNodeInfo, (String, String)]
+  protected val methodAstParentStack     = new Stack[NewNode]()
+  protected val typeRefIdStack           = new Stack[NewTypeRef]
+  protected val dynamicInstanceTypeStack = new Stack[String]
+  protected val localAstParentStack      = new Stack[NewBlock]()
+  protected val rootTypeDecl             = new Stack[NewTypeDecl]()
+  // Keyed by the function node's source range (start:end): a BabelNodeInfo key would hash its ujson.Value structurally,
+  // recursing over the entire function subtree on every lookup.
+  protected val functionNodeToNameAndFullName = mutable.HashMap.empty[String, (String, String)]
   protected val usedVariableNames             = mutable.HashMap.empty[String, Int]
-  protected val seenAliasTypes                = mutable.HashSet.empty[NewTypeDecl]
+  protected val seenAliasTypes                = mutable.HashMap.empty[String, NewTypeDecl]
   protected val functionFullNames             = mutable.HashSet.empty[String]
 
   // we track line and column numbers manually because astgen / @babel-parser sometimes
@@ -226,7 +228,8 @@ class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val
     }
   }
 
-  protected def astForNodes(jsons: List[Value]): List[Ast] = jsons.map(astForNodeWithFunctionReference)
+  protected def astForNodes(jsons: collection.Seq[Value]): List[Ast] =
+    jsons.iterator.map(astForNodeWithFunctionReference).toList
 
   protected def astForNodeWithFunctionReference(json: Value): Ast = {
     val nodeInfo = createBabelNodeInfo(json)
@@ -254,6 +257,6 @@ class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val
     for {
       startOffset <- start(node)
       endOffset   <- end(node)
-    } yield (math.max(startOffset, 0), math.min(endOffset, parserResult.fileContent.length))
+    } yield clampOffsets(startOffset, endOffset)
   }
 }

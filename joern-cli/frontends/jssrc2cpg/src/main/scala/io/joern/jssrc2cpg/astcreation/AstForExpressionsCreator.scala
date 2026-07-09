@@ -20,22 +20,27 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case _                => callee.code
     }
     val callNode = staticCallNode(callExpr.code, callName, fullName, callee.lineNumber, callee.columnNumber)
-    val argAsts  = astForNodes(callExpr.json("arguments").arr.toList)
+    val argAsts  = astForNodes(callExpr.json("arguments").arr)
     callAst(callNode, argAsts)
   }
 
   private case class CallExpressionInfo(receiverAst: Ast, baseNode: NewIdentifier, callName: String)
 
-  private def handleCallNodeArgs(callExpr: BabelNodeInfo, callExpressionInfo: CallExpressionInfo): Ast = {
-    val args      = astForNodes(callExpr.json("arguments").arr.toList)
+  private def handleCallNodeArgs(
+    callExpr: BabelNodeInfo,
+    callExpressionInfo: CallExpressionInfo,
+    maybeCallee: Option[BabelNodeInfo] = None
+  ): Ast = {
+    val args      = astForNodes(callExpr.json("arguments").arr)
     val callNode_ = callNode(callExpr, callExpr.code, callExpressionInfo.callName, DispatchTypes.DYNAMIC_DISPATCH)
-    // If the callee is a function itself, e.g. closure, then resolve this locally, if possible
-    callExpr.json.obj
-      .get("callee")
-      .map(createBabelNodeInfo)
+    // If the callee is a function itself, e.g. closure, then resolve this locally, if possible.
+    // Reuse the already-built callee when the caller has one to avoid rebuilding it from JSON.
+    maybeCallee
+      .orElse(callExpr.json.obj.get("callee").map(createBabelNodeInfo))
       .flatMap {
-        case callee if callee.node.isInstanceOf[FunctionLike] => functionNodeToNameAndFullName.get(callee)
-        case _                                                => None
+        case callee if callee.node.isInstanceOf[FunctionLike] =>
+          functionNodeToNameAndFullName.get(functionNodeKey(callee))
+        case _ => None
       }
       .foreach { case (name, fullName) => callNode_.name(name).methodFullName(fullName) }
     callAst(
@@ -94,7 +99,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       createBuiltinStaticCall(callExpr, callee, calleeCode)
     } else {
       val callExpressionInfo = callExpressionInfoForCallLikeExpr(callee)
-      handleCallNodeArgs(callExpr, callExpressionInfo)
+      handleCallNodeArgs(callExpr, callExpressionInfo, Option(callee))
     }
   }
 
@@ -409,8 +414,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .get("callee")
       .map(createBabelNodeInfo)
       .flatMap {
-        case callee if callee.node.isInstanceOf[FunctionLike] => functionNodeToNameAndFullName.get(callee)
-        case _                                                => None
+        case callee if callee.node.isInstanceOf[FunctionLike] =>
+          functionNodeToNameAndFullName.get(functionNodeKey(callee))
+        case _ => None
       }
       .foreach { case (name, fullName) => callNode_.name(name).methodFullName(fullName) }
     callAst(
@@ -499,7 +505,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     scope.popScope()
     localAstParentStack.pop()
 
-    val childrenAsts = (propertiesAsts :+ Ast(tmpNode)).toList
+    val childrenAsts = (propertiesAsts.iterator ++ Iterator.single(Ast(tmpNode))).toList
     blockAst(blockNode_, childrenAsts)
   }
 

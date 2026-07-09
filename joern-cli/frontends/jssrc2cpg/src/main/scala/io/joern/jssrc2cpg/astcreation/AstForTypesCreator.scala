@@ -40,9 +40,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val aliasTypeDeclNode =
       typeDeclNode(alias, aliasName, aliasFullName, parserResult.filename, alias.code, astParentType, astParentFullName)
-    seenAliasTypes.add(aliasTypeDeclNode)
+    seenAliasTypes.update(aliasTypeDeclNode.name, aliasTypeDeclNode)
 
-    if (!Defines.JsTypes.contains(name) && !seenAliasTypes.exists(_.name == name)) {
+    if (!Defines.JsTypes.contains(name) && !seenAliasTypes.contains(name)) {
       val (typeName, typeFullName) = calcTypeNameAndFullName(alias, Option(name))
       registerType(typeFullName)
 
@@ -58,7 +58,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       )
       diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
     } else {
-      seenAliasTypes.find(t => t.name == name).foreach(_.aliasTypeFullName(aliasFullName))
+      seenAliasTypes.get(name).foreach(_.aliasTypeFullName(aliasFullName))
     }
 
     // adding all class methods / functions and uninitialized, non-static members
@@ -76,19 +76,35 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     case _                               => safeStr(json, "kind").contains("constructor")
   }
 
-  private def classMembers(clazz: BabelNodeInfo, withConstructor: Boolean = true): Seq[Value] = {
+  /** The decomposed body of a class: its parameter properties, all declared members, the members declared dynamically
+    * in the constructor body, and the constructor itself (if present).
+    */
+  private case class ClassMembers(
+    parameterProperties: Seq[Value],
+    allMembers: Seq[Value],
+    dynamicallyDeclaredMembers: Seq[Value],
+    constructor: Option[Value]
+  ) {
+    def members(withConstructor: Boolean): Seq[Value] =
+      if (withConstructor) {
+        parameterProperties ++ allMembers ++ dynamicallyDeclaredMembers
+      } else {
+        parameterProperties ++ allMembers.diff(constructor.toSeq) ++ dynamicallyDeclaredMembers
+      }
+  }
+
+  private def decomposeClassMembers(clazz: BabelNodeInfo): ClassMembers = {
     val allMembers            = clazz.json.obj.get("body").flatMap(_.obj.get("body")).flatMap(_.arrOpt).toSeq.flatten
     val constructor           = allMembers.find(isConstructor)
     val constructorBody       = constructor.flatMap(c => c.obj.get("body").flatMap(_.obj.get("body")).flatMap(_.arrOpt))
     val constructorParameters = constructor.flatMap(c => c.obj.get("params").flatMap(_.arrOpt))
     val dynamicallyDeclaredMembers = constructorBody.toSeq.flatten.filter(isInitializedMember)
     val parameterProperties        = constructorParameters.toSeq.flatten.filter(isParameterProperty)
-    if (withConstructor) {
-      parameterProperties ++ allMembers ++ dynamicallyDeclaredMembers
-    } else {
-      parameterProperties ++ allMembers.diff(constructor.toSeq) ++ dynamicallyDeclaredMembers
-    }
+    ClassMembers(parameterProperties, allMembers, dynamicallyDeclaredMembers, constructor)
   }
+
+  private def classMembers(clazz: BabelNodeInfo, withConstructor: Boolean = true): Seq[Value] =
+    decomposeClassMembers(clazz).members(withConstructor)
 
   private def classMembersForTypeAlias(alias: BabelNodeInfo): Seq[Value] =
     alias.json.obj.get("members").flatMap(_.arrOpt).toSeq.flatten
@@ -138,8 +154,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     def empty: ConstructorContent = ConstructorContent(None, List.empty, None)
   }
 
-  private def createClassConstructor(classExpr: BabelNodeInfo, constructorContent: ConstructorContent): MethodAst =
-    findClassConstructor(classExpr) match {
+  private def createClassConstructor(
+    classExpr: BabelNodeInfo,
+    classConstructorNode: Option[Value],
+    constructorContent: ConstructorContent
+  ): MethodAst =
+    classConstructorNode match {
       case Some(classConstructor) if hasKey(classConstructor, "body") =>
         val result =
           createMethodAstAndNode(createBabelNodeInfo(classConstructor), false, false, constructorContent)
@@ -280,7 +300,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       astParentType,
       astParentFullName
     )
-    seenAliasTypes.add(typeDeclNode_)
+    seenAliasTypes.update(typeDeclNode_.name, typeDeclNode_)
 
     addModifier(typeDeclNode_, tsEnum.json)
 
@@ -445,7 +465,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       astParentFullName,
       inherits = superClass ++ implements ++ mixins
     )
-    seenAliasTypes.add(typeDeclNode_)
+    seenAliasTypes.update(typeDeclNode_.name, typeDeclNode_)
 
     addModifier(typeDeclNode_, clazz.json)
     astsForDecorators(clazz).foreach { decoratorAst =>
@@ -463,14 +483,20 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
-    val allClassMembers = classMembers(clazz, withConstructor = false).toList
+    // Decompose the class body once and reuse it for both the member sequence and the located constructor below.
+    val decomposedMembers = decomposeClassMembers(clazz)
+    val allClassMembers   = decomposedMembers.members(withConstructor = false).toList
 
     // adding all other members and retrieving their initialization calls
     val memberInitCalls =
       allClassMembers.filter(m => !isStaticMember(m) && (isInitializedMember(m) || isParameterProperty(m)))
 
     val constructor =
-      createClassConstructor(clazz, ConstructorContent(Some(clazz), memberInitCalls, Some(typeDeclNode_)))
+      createClassConstructor(
+        clazz,
+        decomposedMembers.constructor,
+        ConstructorContent(Some(clazz), memberInitCalls, Some(typeDeclNode_))
+      )
     val constructorNode = constructor.methodNode
 
     // adding all class methods / functions and uninitialized, non-static members
@@ -523,9 +549,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         clazz.columnNumber
       )
 
+      val membersWithConstructor = decomposedMembers.members(withConstructor = true)
       val classDecorationAst     = createClassDecorationAst(clazz, classIdNode)
-      val propertyDecorationAsts = createPropertyDecorationAsts(clazz, classIdNode)
-      val methodDecorationAsts   = createMethodDecorationAsts(clazz, classIdNode)
+      val propertyDecorationAsts =
+        createPropertyDecorationAsts(membersWithConstructor, classNodeInfo = clazz, classIdNode)
+      val methodDecorationAsts = createMethodDecorationAsts(membersWithConstructor, classNodeInfo = clazz, classIdNode)
       if (classDecorationAst.root.isDefined || propertyDecorationAsts.nonEmpty || methodDecorationAsts.nonEmpty) {
         val blockNode_ = blockNode(clazz)
         val childrenAsts =
@@ -742,8 +770,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     )
   }
 
-  private def createPropertyDecorationAsts(classNodeInfo: BabelNodeInfo, classIdNode: NewIdentifier): Seq[Ast] = {
-    val tsProperties = classMembers(classNodeInfo).flatMap { member =>
+  private def createPropertyDecorationAsts(
+    members: Seq[Value],
+    classNodeInfo: BabelNodeInfo,
+    classIdNode: NewIdentifier
+  ): Seq[Ast] = {
+    val tsProperties = members.flatMap { member =>
       val memberNodeInfo = createBabelNodeInfo(member)
       if (
         memberNodeInfo.node == ClassProperty ||
@@ -798,8 +830,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
   }
 
-  private def createMethodDecorationAsts(classNodeInfo: BabelNodeInfo, classIdNode: NewIdentifier): Seq[Ast] = {
-    val tsMethods = classMembers(classNodeInfo).flatMap { member =>
+  private def createMethodDecorationAsts(
+    members: Seq[Value],
+    classNodeInfo: BabelNodeInfo,
+    classIdNode: NewIdentifier
+  ): Seq[Ast] = {
+    val tsMethods = members.flatMap { member =>
       val memberNodeInfo = createBabelNodeInfo(member)
       if (memberNodeInfo.node == ClassMethod) {
         Some(memberNodeInfo)
@@ -1013,7 +1049,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       astParentFullName,
       inherits = extendz
     )
-    seenAliasTypes.add(typeDeclNode_)
+    seenAliasTypes.update(typeDeclNode_.name, typeDeclNode_)
 
     addModifier(typeDeclNode_, tsInterface.json)
 

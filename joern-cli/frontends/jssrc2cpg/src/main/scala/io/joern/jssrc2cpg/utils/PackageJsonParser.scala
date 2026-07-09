@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import upickle.default.read
 
 import java.nio.file.{Path, Paths}
+import scala.collection.mutable
 import scala.collection.concurrent.TrieMap
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
@@ -44,19 +45,19 @@ object PackageJsonParser {
           val content     = IOUtils.readEntireFile(lockDepsPath)
           val packageJson = read[ujson.Obj](content)
 
-          var depToVersion = Map.empty[String, String]
+          val depToVersion = mutable.LinkedHashMap.empty[String, String]
           val dependencyIt = packageJson.value.get("dependencies").map(_.obj).getOrElse(Map.empty[String, ujson.Value])
           dependencyIt.foreach {
             case (depName, value @ ujson.Str(version)) =>
-              depToVersion = depToVersion.updated(depName, version)
+              depToVersion.update(depName, version)
             case (depName, value @ ujson.Obj(obj)) =>
               obj.get("version").foreach { version =>
-                depToVersion = depToVersion.updated(depName, version.str)
+                depToVersion.update(depName, version.str)
               }
             case (depName, value) =>
               logger.warn(s"Unexpected version structure for dependency $depName: ${value.getClass}")
           }
-          depToVersion
+          depToVersion.toMap
         }.toOption
 
         // lazy val because we only evaluate this in case no package lock file is available.
@@ -64,15 +65,15 @@ object PackageJsonParser {
           val content     = IOUtils.readEntireFile(depsPath)
           val packageJson = read[ujson.Obj](content)
 
-          var depToVersion = Map.empty[String, String]
+          val depToVersion = mutable.LinkedHashMap.empty[String, String]
           ProjectDependencies
             .foreach { dependency =>
               val dependencyIt = packageJson.value.get(dependency).map(_.obj).getOrElse(Map.empty[String, ujson.Value])
               dependencyIt.foreach { case (key, value) =>
-                depToVersion = depToVersion.updated(key, value.str)
+                depToVersion.update(key, value.str)
               }
             }
-          depToVersion
+          depToVersion.toMap
         }.toOption
 
         if (lockDeps.isDefined && lockDeps.get.nonEmpty) {

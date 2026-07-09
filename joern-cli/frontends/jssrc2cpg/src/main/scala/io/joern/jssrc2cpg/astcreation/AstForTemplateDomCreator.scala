@@ -10,7 +10,7 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForJsxElement(jsxElem: BabelNodeInfo): Ast = {
     val domNode      = templateDomNode(jsxElem.node.toString, jsxElem.code, jsxElem.lineNumber, jsxElem.columnNumber)
     val openingAst   = astForNodeWithFunctionReference(jsxElem.json("openingElement"))
-    val childrenAsts = astForNodes(jsxElem.json("children").arr.toList)
+    val childrenAsts = astForNodes(jsxElem.json("children").arr)
     val closingAst = safeObj(jsxElem.json, "closingElement")
       .map(e => astForNodeWithFunctionReference(Obj(e)))
       .getOrElse(Ast())
@@ -21,7 +21,7 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForJsxFragment(jsxFragment: BabelNodeInfo): Ast = {
     val name         = jsxFragment.node.toString
     val domNode      = templateDomNode(name, jsxFragment.code, jsxFragment.lineNumber, jsxFragment.columnNumber)
-    val childrenAsts = astForNodes(jsxFragment.json("children").arr.toList)
+    val childrenAsts = astForNodes(jsxFragment.json("children").arr)
     Ast(domNode).withChildren(childrenAsts)
   }
 
@@ -32,7 +32,7 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
     // We look at the previous character there and re-add the colon if needed.
     val colon = start(jsxAttr.json)
       .collect {
-        case position if position > 0 && parserResult.fileContent.substring(position - 1, position) == ":" => ":"
+        case position if position > 0 && parserResult.fileContent.charAt(position - 1) == ':' => ":"
       }
       .getOrElse("")
     val domNode =
@@ -55,7 +55,7 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
       jsxOpeningElem.lineNumber,
       jsxOpeningElem.columnNumber
     )
-    val childrenAsts = astForNodes(jsxOpeningElem.json("attributes").arr.toList)
+    val childrenAsts = astForNodes(jsxOpeningElem.json("attributes").arr)
     Ast(domNode).withChildren(childrenAsts)
   }
 
