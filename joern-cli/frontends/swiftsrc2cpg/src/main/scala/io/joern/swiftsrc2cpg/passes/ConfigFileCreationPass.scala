@@ -25,20 +25,23 @@ class ConfigFileCreationPass(cpg: Cpg, config: Config)
 
   override val configFileFilters: List[Path => Boolean] = List(extensionFilter(PlistExt), extensionFilter(".xib"))
 
-  private def isBinaryPlist(file: Path): Boolean = {
-    if (!file.extension().contains(PlistExt)) return false
-    Try(IOUtils.readLinesInFile(file)) match {
-      case Success(dataBeginning :: _) => dataBeginning.trim.startsWith("bplist")
-      case _                           => false
+  /** Reads the file once and classifies it:
+    *   - `Some(content)` — a text file whose content can be added to the CPG directly.
+    *   - `None` — a binary plist that must be parsed via [[PropertyListParser]] first.
+    */
+  private def textContentOrBinaryPlist(file: Path): Try[Option[String]] = {
+    Try(IOUtils.readEntireFile(file)).map { content =>
+      val isBinaryPlist = file.extension().contains(PlistExt) && content.trim.startsWith("bplist")
+      Option.unless(isBinaryPlist)(content)
     }
   }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, file: Path): Unit = {
-    val parseResult = if (isBinaryPlist(file)) {
-      val sourceComment = s"\n<!--This file was generated from ${file.toAbsolutePath}-->"
-      Try((PropertyListParser.parse(file.toFile).toXMLPropertyList, sourceComment))
-    } else {
-      Try((IOUtils.readEntireFile(file), ""))
+    val parseResult = textContentOrBinaryPlist(file).flatMap {
+      case Some(textContent) => Success((textContent, ""))
+      case None =>
+        val sourceComment = s"\n<!--This file was generated from ${file.toAbsolutePath}-->"
+        Try((PropertyListParser.parse(file.toFile).toXMLPropertyList, sourceComment))
     }
     parseResult match {
       case Success((content, sourceComment)) =>
