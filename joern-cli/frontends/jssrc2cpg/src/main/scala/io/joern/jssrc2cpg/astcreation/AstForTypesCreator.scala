@@ -76,8 +76,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     case _                               => safeStr(json, "kind").contains("constructor")
   }
 
-  /** The members of a class, decomposed once so callers can derive the member sequence (with or without the
-    * constructor) and reuse the located constructor without re-walking the class body.
+  /** The decomposed body of a class: its parameter properties, all declared members, the members declared dynamically
+    * in the constructor body, and the constructor itself (if present).
     */
   private case class ClassMembers(
     parameterProperties: Seq[Value],
@@ -483,6 +483,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
+    // Decompose the class body once and reuse it for both the member sequence and the located constructor below.
     val decomposedMembers = decomposeClassMembers(clazz)
     val allClassMembers   = decomposedMembers.members(withConstructor = false).toList
 

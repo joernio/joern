@@ -11,7 +11,7 @@ trait TypeHelper { this: AstCreator =>
   private val TypeAnnotationKey   = "typeAnnotation"
   private val ReturnTypeKey       = "returnType"
   private val ImportMatcher       = Pattern.compile("(typeof )?import\\([\"'](.*)[\"']\\)")
-  private val ArrayReplacePattern = Pattern.compile(":[^,.]+\\[]")
+  private val ArrayReplacePattern = ":[^,.]+\\[]".r
 
   private val TypeReplacements = Map(
     " any"       -> s" ${Defines.Any}",
@@ -130,7 +130,7 @@ trait TypeHelper { this: AstCreator =>
     val tpeWithArrayReplacements = if (tpeWithTypeReplacements.endsWith("[]")) {
       Defines.Array
     } else {
-      ArrayReplacePattern.matcher(tpeWithTypeReplacements).replaceAll(s": ${Defines.Array}")
+      ArrayReplacePattern.replaceAllIn(tpeWithTypeReplacements, s": ${Defines.Array}")
     }
     if (!tpeWithArrayReplacements.contains("{") && !tpe.contains("(")) {
       registerType(tpeWithArrayReplacements)

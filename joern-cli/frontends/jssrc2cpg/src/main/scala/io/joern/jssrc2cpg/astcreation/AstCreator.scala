@@ -51,8 +51,8 @@ class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val
   protected val dynamicInstanceTypeStack = new Stack[String]
   protected val localAstParentStack      = new Stack[NewBlock]()
   protected val rootTypeDecl             = new Stack[NewTypeDecl]()
-  // Keyed by the function node's source range (start:end) rather than the BabelNodeInfo itself: the latter holds a
-  // ujson.Value whose hashCode/equals are structural, so hashing a key would recurse over the entire function subtree.
+  // Keyed by the function node's source range (start:end): a BabelNodeInfo key would hash its ujson.Value structurally,
+  // recursing over the entire function subtree on every lookup.
   protected val functionNodeToNameAndFullName = mutable.HashMap.empty[String, (String, String)]
   protected val usedVariableNames             = mutable.HashMap.empty[String, Int]
   protected val seenAliasTypes                = mutable.HashMap.empty[String, NewTypeDecl]

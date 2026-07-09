@@ -18,9 +18,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def nodeTypeOf(json: Value): BabelNode = fromString(json("type").str)
 
   protected def createBabelNodeInfo(json: Value): BabelNodeInfo = {
-    // Resolve start/end offsets and their line numbers once, then derive columns and code from them. Going through the
-    // individual code/line/column/lineEnd/columnEnd accessors would recompute start/end and the line binary search
-    // several times per node, and createBabelNodeInfo runs for every AST node.
+    // Resolve start/end offsets and their line numbers once, then derive columns and code from them. This runs for
+    // every AST node, so we avoid recomputing the offsets and the line binary search per accessor.
     val startOffset   = start(json)
     val endOffset     = end(json)
     val lineOfStart   = startOffset.map(getLineOfSource)

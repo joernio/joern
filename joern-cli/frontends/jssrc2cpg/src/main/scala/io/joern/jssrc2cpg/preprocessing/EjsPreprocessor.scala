@@ -59,7 +59,7 @@ class EjsPreprocessor {
     }.toArray
 
     // Keep characters inside a tag body (or newlines); blank everything else out. `positions` are sorted and
-    // non-overlapping, so a single advancing pointer replaces the previous per-character linear scan.
+    // non-overlapping, so a single advancing pointer suffices to track which tag body the current index falls in.
     var positionIndex = 0
     var index         = 0
     while (index < codeAsCharArray.length) {
