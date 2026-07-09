@@ -14,6 +14,7 @@ import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, ModifierTypes
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
 
+import java.nio.charset.StandardCharsets
 import scala.collection.mutable
 
 class AstCreator(
@@ -114,14 +115,15 @@ class AstCreator(
 
   override protected def code(node: SwiftNode): String = {
     val (start, end) = nodeOffsets(node) match {
-      case Some(startOffset, endOffset) => (startOffset, endOffset)
-      case _                            => return PropertyDefaults.Code
+      case Some(startOffset, endOffset) if endOffset >= startOffset => (startOffset, endOffset)
+      case _                                                        => return PropertyDefaults.Code
     }
-    val code = parserResult.contentBytes.slice(start, end)
+    // Decode directly from the shared byte array (which is UTF-8, see SwiftJsonParser) without copying it first.
+    val code = new String(parserResult.contentBytes, start, end - start, StandardCharsets.UTF_8)
     node match {
-      case _: TypeSyntax => new String(code).trim.stripSuffix("?").stripSuffix("!")
-      case _: identifier => new String(code).trim.stripSuffix("()")
-      case _             => shortenCode(new String(code)).stripLineEnd
+      case _: TypeSyntax => code.trim.stripSuffix("?").stripSuffix("!")
+      case _: identifier => code.trim.stripSuffix("()")
+      case _             => shortenCode(code).stripLineEnd
     }
   }
 
