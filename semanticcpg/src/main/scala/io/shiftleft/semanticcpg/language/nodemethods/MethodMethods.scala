@@ -57,7 +57,7 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension {
   }
 
   /** Check whether method is a stub, i.e., the code is not available or the method body is empty.
-   */
+    */
   def isStub: Boolean =
     method.cfgOut.forall(_.isInstanceOf[MethodReturn])
 
