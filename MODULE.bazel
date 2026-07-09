@@ -124,7 +124,7 @@ http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_
 
 http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
-JSSRC2CPG_ASTGEN_VERSION = "3.46.0"
+JSSRC2CPG_ASTGEN_VERSION = "3.47.0"
 
 SWIFTSRC2CPG_ASTGEN_VERSION = "0.4.2"
 
