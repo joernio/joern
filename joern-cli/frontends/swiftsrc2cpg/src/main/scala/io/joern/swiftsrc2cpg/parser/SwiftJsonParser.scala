@@ -11,16 +11,10 @@ import scala.util.Try
 
 object SwiftJsonParser {
 
-  case class ParseResult(
-    filename: String,
-    fullPath: String,
-    ast: SwiftNode,
-    contentBytes: Array[Byte],
-    loc: Int
-  ) {
+  case class ParseResult(filename: String, fullPath: String, ast: SwiftNode, contentBytes: Array[Byte], loc: Int) {
 
-    /** The source file content, decoded on demand from `contentBytes` (its UTF-8 encoding).
-      * Only the byte array is retained so we do not hold two full copies of every file.
+    /** The source file content, decoded on demand from `contentBytes` (its UTF-8 encoding). Only the byte array is
+      * retained so we do not hold two full copies of every file.
       */
     def fileContent: String = new String(contentBytes, StandardCharsets.UTF_8)
   }

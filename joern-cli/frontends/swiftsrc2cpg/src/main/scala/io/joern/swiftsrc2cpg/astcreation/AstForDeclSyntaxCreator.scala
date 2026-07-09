@@ -333,7 +333,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     // adding all class methods / functions and uninitialized members
-    classMethodsAndUninitialized.foreach(m => astForDeclMember(m, typeDeclNode_))
+    classMethodsAndUninitialized.foreach(member => astForDeclMember(member, typeDeclNode_))
 
     methodAstParentStack.pop()
     typeRefNodeMaybe.foreach(_ => typeRefIdStack.pop())

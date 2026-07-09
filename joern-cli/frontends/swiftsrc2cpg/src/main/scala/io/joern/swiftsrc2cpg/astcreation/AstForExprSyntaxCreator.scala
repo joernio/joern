@@ -8,7 +8,7 @@ import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, NewControlStructure}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall}
 
 import scala.annotation.{tailrec, unused}
 
@@ -197,12 +197,14 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   /** Builds the argument ASTs for a call: positional arguments followed by the trailing closure and any additional
-    * trailing closures. The trailing-closure ASTs are evaluated before the positional arguments (as in the original
-    * inline code) so that the side effects of `astForNode` (scope references, unique-name counters) keep their order.
+    * trailing closures. The trailing-closure ASTs are evaluated before the positional arguments so that the side
+    * effects of `astForNode` (scope references, unique-name counters) run in that order.
     */
   private def argAstsForCall(callExpr: FunctionCallExprSyntax): Seq[Ast] = {
-    val trailingClosureAsts            = callExpr.trailingClosure.toList.map(astForNode)
-    val additionalTrailingClosuresAsts = callExpr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
+    val trailingClosureAsts =
+      callExpr.trailingClosure.map(astForNode).toList
+    val additionalTrailingClosuresAsts =
+      callExpr.additionalTrailingClosures.children.map(element => astForNode(element.closure))
     callExpr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
   }
 
