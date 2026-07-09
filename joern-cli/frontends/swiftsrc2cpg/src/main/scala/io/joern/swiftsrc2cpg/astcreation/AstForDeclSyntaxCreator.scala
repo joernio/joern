@@ -463,8 +463,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.restoreMembersForExtension(extendedTypeFullName)
 
     val memberBlock = node.memberBlock
+    val memberDecls = memberBlock.members.children.map(_.decl)
 
-    val members = memberBlock.members.children.map(_.decl).collect { case v: VariableDeclSyntax => v }.toList
+    val members = memberDecls.collect { case v: VariableDeclSyntax => v }.toList
     members.foreach { decl =>
       decl.bindings.children.foreach { binding =>
         val name           = code(binding.pattern)
@@ -485,7 +486,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       }
     }
 
-    val functionDeclLikes = memberBlock.members.children.map(_.decl).collect { case f: FunctionDeclLike => f }.toList
+    val functionDeclLikes     = memberDecls.collect { case f: FunctionDeclLike => f }.toList
     val functionDeclLikesAsts = functionDeclLikes.map(astForFunctionInExtension)
 
     typeRefNodeMaybe.foreach(_ => typeRefIdStack.pop())
