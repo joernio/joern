@@ -323,7 +323,7 @@ class CallTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
 
     "resolve `from` to core::convert::From" in {
       inside(cpg.call.nameExact("from").l) { case from :: Nil =>
-        from.methodFullName shouldBe "core::convert::From<T>::from"
+        from.methodFullName shouldBe "<alloc::string::String as core::convert::From<&str>>::from"
         from.typeFullName shouldBe "alloc::string::String"
         from.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       }
