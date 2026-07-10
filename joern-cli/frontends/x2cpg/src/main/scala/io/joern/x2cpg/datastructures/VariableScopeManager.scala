@@ -553,8 +553,10 @@ class VariableScopeManager {
     variableName: String
   ): Option[(NewNode, String, String)] = {
     stack.flatMap { stackElement =>
-      if (stackElement.nameToVariableNode.contains(variableName)) { stackElement.nameToVariableNode.get(variableName) }
-      else { variableFromStack(stackElement.surroundingScope, variableName) }
+      stackElement.nameToVariableNode.get(variableName) match {
+        case found @ Some(_) => found
+        case None            => variableFromStack(stackElement.surroundingScope, variableName)
+      }
     }
   }
 

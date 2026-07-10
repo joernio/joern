@@ -8,7 +8,7 @@ import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, NewControlStructure}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall}
 
 import scala.annotation.{tailrec, unused}
 
@@ -196,6 +196,18 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
+  /** Builds the argument ASTs for a call: positional arguments followed by the trailing closure and any additional
+    * trailing closures. The trailing-closure ASTs are evaluated before the positional arguments so that the side
+    * effects of `astForNode` (scope references, unique-name counters) run in that order.
+    */
+  private def argAstsForCall(callExpr: FunctionCallExprSyntax): Seq[Ast] = {
+    val trailingClosureAsts =
+      callExpr.trailingClosure.map(astForNode).toList
+    val additionalTrailingClosuresAsts =
+      callExpr.additionalTrailingClosures.children.map(element => astForNode(element.closure))
+    callExpr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
+  }
+
   private def createBuiltinStaticCall(callExpr: FunctionCallExprSyntax, callee: ExprSyntax, fullName: String): Ast = {
     val callName = callee match {
       case m: MemberAccessExprSyntax => code(m.declName)
@@ -204,17 +216,11 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val callNode = createStaticCallNode(callee, code(callExpr), callName, fullName, Defines.Any)
     setFullNameInfoForCall(callExpr, callNode)
 
-    val trailingClosureAsts            = callExpr.trailingClosure.toList.map(astForNode)
-    val additionalTrailingClosuresAsts = callExpr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
-    val argAsts = callExpr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
-    callAst(callNode, argAsts)
+    callAst(callNode, argAstsForCall(callExpr))
   }
 
   private def handleCallNodeArgs(callExpr: FunctionCallExprSyntax, baseAst: Ast, callName: String): Ast = {
-    val trailingClosureAsts            = callExpr.trailingClosure.toList.map(astForNode)
-    val additionalTrailingClosuresAsts = callExpr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
-
-    val args = callExpr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
+    val args = argAstsForCall(callExpr)
 
     val callExprCode = code(callExpr)
     val callCode = if (callExprCode.startsWith(".")) {
@@ -320,9 +326,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     )
     finalizeInitCall(expr, constructorCallNode, tpe)
 
-    val trailingClosureAsts            = expr.trailingClosure.toList.map(astForNode)
-    val additionalTrailingClosuresAsts = expr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
-    val args = expr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
+    val args = argAstsForCall(expr)
 
     val constructorCallAst = callAst(constructorCallNode, args, base = Some(Ast(baseNode)))
 
@@ -350,9 +354,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       callNode.typeFullName(typeFullName)
     }
 
-    val trailingClosureAsts            = node.trailingClosure.toList.map(astForNode)
-    val additionalTrailingClosuresAsts = node.additionalTrailingClosures.children.map(c => astForNode(c.closure))
-    val argAsts = node.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
+    val argAsts = argAstsForCall(node)
     setArgumentIndices(argAsts)
 
     val baseRoot = baseAst.root.toList
@@ -422,9 +424,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val callMethodFullname = s"${Defines.Function}<$signature>.$callName:$signature"
     val baseAst            = astForIdentifier(expr.calledExpression)
 
-    val trailingClosureAsts            = expr.trailingClosure.toList.map(astForNode)
-    val additionalTrailingClosuresAsts = expr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
-    val args = expr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
+    val args = argAstsForCall(expr)
 
     val callExprCode = code(expr)
     val callNode_ = callNode(

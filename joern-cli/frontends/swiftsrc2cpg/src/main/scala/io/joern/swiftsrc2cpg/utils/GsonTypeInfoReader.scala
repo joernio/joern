@@ -305,20 +305,24 @@ object GsonTypeInfoReader {
           filename = readPrimitiveAsString().orNull
           isFromBuild = filename != null && isInBuildFolder(filename)
         } else {
-          jsonReader.peek() match {
+          val fieldWasScalar = jsonReader.peek() match {
             case JsonToken.BEGIN_OBJECT if hasKind && !isFromBuild =>
               val child = parseObject()
               if (RelevantChildFieldNames.contains(name)) {
                 addChild(node, name, child)
               }
+              false
             case JsonToken.BEGIN_OBJECT =>
               // don't descend
               jsonReader.skipValue()
+              false
             case JsonToken.BEGIN_ARRAY if hasKind && !isFromBuild =>
               parseArray(node, name)
+              false
             case JsonToken.BEGIN_ARRAY =>
               // don't descend
               jsonReader.skipValue()
+              false
             case _ =>
               name match {
                 case "start" =>
@@ -346,8 +350,12 @@ object GsonTypeInfoReader {
                 case _ =>
                   jsonReader.skipValue()
               }
+              true
           }
-          currentRange = safeRange(node).orElse(currentRange)
+          // `safeRange` reads only the node's `range` child, `_kind` and `attrs` — never the scalar fields set
+          // above. Recomputing it after a scalar field would always yield the same value, so only refresh the
+          // running range after structural (object/array) fields.
+          if (!fieldWasScalar) currentRange = safeRange(node).orElse(currentRange)
         }
       }
       jsonReader.endObject()

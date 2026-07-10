@@ -6,6 +6,7 @@ import io.joern.swiftsrc2cpg.utils.FullnameProvider.NodeKindMapping
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{ResolvedTypeInfo, SwiftFileLocalTypeMapping}
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 /** Companion object for the FullnameProvider class. Contains helper types and constants used by the FullnameProvider.
   */
@@ -50,7 +51,7 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     if (in.size == 1) return in.headOption
     NodeKindMapping
       .get(nodeKind)
-      .flatMap(mappedNodeKinds => mappedNodeKinds.flatMap(kind => in.find(_.nodeKind == kind)).headOption)
+      .flatMap(mappedNodeKinds => mappedNodeKinds.iterator.flatMap(kind => in.find(_.nodeKind == kind)).nextOption())
       .orElse(in.headOption)
   }
 
@@ -93,6 +94,18 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     }
   }
 
+  /** Memoizes the (relatively expensive) recursive range resolution. A FullnameProvider is created once per file and
+    * only accessed from that file's single AST-creation thread, and `typeMap` is immutable, so an unsynchronized cache
+    * is safe and its results are stable. The same node is typically resolved several times per occurrence (e.g. once
+    * for the decl name, again for the type, again while building the identifier node).
+    */
+  private val fullNameCache = mutable.HashMap.empty[(Int, Int, FullnameProvider.Kind, String), Option[String]]
+
+  /** Memoized entry point for [[fullName]]. Keyed by the original range plus kind and nodeKind. */
+  private def cachedFullName(range: (Int, Int), kind: FullnameProvider.Kind, nodeKind: String): Option[String] = {
+    fullNameCache.getOrElseUpdate((range._1, range._2, kind, nodeKind), fullName(range, kind, nodeKind))
+  }
+
   /** Retrieves the type fullName for a given source range and node kind.
     *
     * @param range
@@ -103,13 +116,13 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     *   An optional String containing the type fullName if found
     */
   protected def typeFullname(range: (Int, Int), nodeKind: String): Option[String] = {
-    fullName(range, FullnameProvider.Kind.Type, nodeKind).map(AstCreatorHelper.cleanType)
+    cachedFullName(range, FullnameProvider.Kind.Type, nodeKind).map(AstCreatorHelper.cleanType)
   }
 
   /** Same as FullnameProvider.typeFullname but does no type name sanitation.
     */
   protected def typeFullnameRaw(range: (Int, Int), nodeKind: String): Option[String] = {
-    fullName(range, FullnameProvider.Kind.Type, nodeKind).map(AstCreatorHelper.cleanName)
+    cachedFullName(range, FullnameProvider.Kind.Type, nodeKind).map(AstCreatorHelper.cleanName)
   }
 
   /** Retrieves the declaration fullName for a given source range and node kind.
@@ -122,7 +135,7 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     *   An optional String containing the declaration fullName if found
     */
   protected def declFullname(range: (Int, Int), nodeKind: String): Option[String] = {
-    fullName(range, FullnameProvider.Kind.Decl, nodeKind)
+    cachedFullName(range, FullnameProvider.Kind.Decl, nodeKind)
   }
 
   /** Retrieves the type fullName for a given Swift node. Extracts the start and end offsets from the node if available.
@@ -160,7 +173,7 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     *   An optional String containing the declaration fullName if found
     */
   def declFullname(node: SwiftNode): Option[String] = {
-    declFullnameRaw(node).map(_.replace("<extension>", ""))
+    declFullnameRaw(node).map(name => if (name.contains("<extension>")) name.replace("<extension>", "") else name)
   }
 
   /** Same as FullnameProvider.declFullname but does not strip the `<extension>` tag.

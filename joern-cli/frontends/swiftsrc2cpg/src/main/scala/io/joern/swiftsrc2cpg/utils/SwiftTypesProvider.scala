@@ -11,14 +11,10 @@ import versionsort.VersionHelper
 
 import java.io.{BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter, StringReader}
 import java.util.concurrent.{Callable, Executors}
-import scala.jdk.CollectionConverters.*
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
-import scala.collection.parallel.ExecutionContextTaskSupport
-import scala.concurrent.ExecutionContext
 import scala.util.matching.Regex
 import scala.util.{Failure, Try, Using}
 
@@ -158,6 +154,12 @@ object SwiftTypesProvider {
     "unowned",
     "weak"
   )
+
+  /** Precomputed padded forms of each [[SwiftDeclModifier]] used by `removeModifier`, so the space-padded prefix and
+    * infix variants are not rebuilt on every fold step. Each entry is `(prefix = "modifier ", infix = " modifier ")`.
+    */
+  private val SwiftDeclModifierPadded: Array[(String, String)] =
+    SwiftDeclModifier.toArray.map(modifier => (s"$modifier ", s" $modifier "))
 
   /** The regular expression pattern `(?<!\\\\)` is used to split a string of spaces, but only if the space is not
     * preceded by a backslash.
@@ -639,9 +641,11 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     *   The cleaned fullName with modifiers removed
     */
   private def removeModifier(fullName: String): String = {
-    SwiftDeclModifier.foldLeft(fullName) { (cur, repl) =>
-      if (cur.startsWith(s"$repl ") || cur.contains(s" $repl ")) {
-        cur.replace(s" $repl ", " ").stripPrefix(s"$repl ")
+    // A modifier is always followed by a space, so a name without any space cannot contain one.
+    if (!fullName.contains(' ')) return fullName
+    SwiftDeclModifierPadded.foldLeft(fullName) { case (cur, (prefix, infix)) =>
+      if (cur.startsWith(prefix) || cur.contains(infix)) {
+        cur.replace(infix, " ").stripPrefix(prefix)
       } else cur
     }
   }
@@ -856,37 +860,48 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     *   A ConcurrentHashMap containing filename-to-type mappings for Swift source files
     */
   def retrieveMappings(): MutableSwiftTypeMapping = {
-    val mapping = new MutableSwiftTypeMapping
-    // We want to use the same pool for parallel Swift compiler invocations and their type mapping work
-    val pool = java.util.concurrent.Executors.newCachedThreadPool()
+    val mapping     = new MutableSwiftTypeMapping
+    val parallelism = math.max(1, Runtime.getRuntime.availableProcessors())
+    // Two bounded pools: one runs the (blocking) compiler invocations, the other runs the JSON-line
+    // callbacks. They must be separate because each invocation blocks on its ParallelLineProcessor latch,
+    // so sharing a single bounded pool would let blocked producers starve the callback workers.
+    val invocationPool = Executors.newFixedThreadPool(parallelism)
+    val workerPool     = Executors.newFixedThreadPool(parallelism)
     try {
       // Phase 1: Collect all raw TypeInfo (no demangling yet)
-      val allTypeInfos   = new java.util.concurrent.ConcurrentLinkedQueue[TypeInfo]()
-      val parInvocations = parsedSwiftInvocations.par
-      val ec             = ExecutionContext.fromExecutorService(pool)
-      parInvocations.tasksupport = new ExecutionContextTaskSupport(ec)
-      parInvocations.foreach { invocationCommand =>
-        Using.Manager { use =>
-          val process = processFromCommand(invocationCommand, config.inputPath)
-          use(new AutoCloseable { def close(): Unit = { process.destroyForcibly().waitFor(); () } })
-          val reader = use(new InputStreamReader(process.getInputStream))
-          val stdOut = use(new BufferedReader(reader))
-          ParallelLineProcessor.processLinesParallel(stdOut, pool, _.startsWith("{")) { jsonString =>
-            collectTypeInfoFromJson(jsonString, allTypeInfos.add)
+      val allTypeInfos = new java.util.concurrent.ConcurrentLinkedQueue[TypeInfo]()
+      val futures = parsedSwiftInvocations.map { invocationCommand =>
+        invocationPool.submit(new Callable[Unit] {
+          def call(): Unit = {
+            Using.Manager { use =>
+              val process = processFromCommand(invocationCommand, config.inputPath)
+              use(new AutoCloseable { def close(): Unit = { process.destroyForcibly().waitFor(); () } })
+              val reader = use(new InputStreamReader(process.getInputStream))
+              val stdOut = use(new BufferedReader(reader))
+              ParallelLineProcessor.processLinesParallel(stdOut, workerPool, _.startsWith("{")) { jsonString =>
+                collectTypeInfoFromJson(jsonString, allTypeInfos.add)
+              }
+            } match {
+              case Failure(exception) =>
+                // Using.Manager swallows exceptions otherwise
+                logger.warn("Error during Swift type map creation", exception)
+              case _ => // this is fine
+            }
           }
-        } match {
-          case Failure(exception) =>
-            // Using.Manager swallows exceptions otherwise
-            logger.warn("Error during Swift type map creation", exception)
-          case _ => // this is fine
-        }
+        })
       }
+      futures.foreach(_.get())
 
-      // Phase 2: Batch demangle all unique mangled names in a single swift-demangle process
-      val allMangledNames = allTypeInfos.asScala.flatMap { typeInfo =>
-        typeInfo.typeFullname ++ typeInfo.declFullname ++ typeInfo.inherits
+      // Phase 2: Batch demangle all unique mangled names in a single swift-demangle process.
+      // Collect straight into a Set to deduplicate up front instead of materializing a list with one entry
+      // per name reference (batchDemangle would otherwise re-deduplicate them internally).
+      val uniqueMangledNames = mutable.Set.empty[String]
+      allTypeInfos.forEach { typeInfo =>
+        typeInfo.typeFullname.foreach(uniqueMangledNames.addOne)
+        typeInfo.declFullname.foreach(uniqueMangledNames.addOne)
+        typeInfo.inherits.foreach(uniqueMangledNames.addOne)
       }
-      batchDemangle(allMangledNames)
+      batchDemangle(uniqueMangledNames)
 
       // Phase 3: Resolve and build mapping (demangle calls now hit the cache)
       allTypeInfos.forEach(addToMapping(_, mapping))
@@ -894,7 +909,8 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
       logger.info(s"Got ${mapping.size} type map entries.")
       mapping
     } finally {
-      pool.shutdown()
+      invocationPool.shutdown()
+      workerPool.shutdown()
     }
   }
 

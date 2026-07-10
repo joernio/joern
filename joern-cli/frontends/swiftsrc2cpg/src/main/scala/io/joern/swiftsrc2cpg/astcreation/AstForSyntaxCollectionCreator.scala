@@ -53,13 +53,10 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   )
 
   private def astForCodeBlockItemListSyntax(node: CodeBlockItemListSyntax): Ast = {
-    astForListSyntaxChildren(
-      node,
-      node.children.sortBy {
-        case item if item.item.isInstanceOf[ExtensionDeclSyntax] => 2
-        case _                                                   => 1
-      }
-    )
+    // Extension declarations are processed after all other items. `partition` keeps the original order within
+    // each group.
+    val (extensions, others) = node.children.partition(_.item.isInstanceOf[ExtensionDeclSyntax])
+    astForListSyntaxChildren(node, others ++ extensions)
   }
 
   private def astForCompositionTypeElementListSyntax(node: CompositionTypeElementListSyntax): Ast = notHandledYet(node)

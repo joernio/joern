@@ -11,14 +11,13 @@ import scala.util.Try
 
 object SwiftJsonParser {
 
-  case class ParseResult(
-    filename: String,
-    fullPath: String,
-    ast: SwiftNode,
-    fileContent: String,
-    contentBytes: Array[Byte],
-    loc: Int
-  )
+  case class ParseResult(filename: String, fullPath: String, ast: SwiftNode, contentBytes: Array[Byte], loc: Int) {
+
+    /** The source file content, decoded on demand from `contentBytes` (its UTF-8 encoding). Only the byte array is
+      * retained so we do not hold two full copies of every file.
+      */
+    def fileContent: String = new String(contentBytes, StandardCharsets.UTF_8)
+  }
 
   def readFile(file: Path): Try[ParseResult] = Try {
     val jsonContent       = IOUtils.readEntireFile(file)
@@ -29,7 +28,7 @@ object SwiftJsonParser {
     val contentBytes      = sourceFileContent.getBytes(StandardCharsets.UTF_8)
     val ast               = SwiftNodeSyntax.createSwiftNode(json)
     val loc               = json("loc").num.toInt
-    ParseResult(filename, fullPath.toString, ast, sourceFileContent, contentBytes, loc)
+    ParseResult(filename, fullPath.toString, ast, contentBytes, loc)
   }
 
   /** Lightweight extraction of only the "relativeFilePath" field using streaming JSON parsing. Scans top-level keys and
