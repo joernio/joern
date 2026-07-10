@@ -89,17 +89,39 @@ object LuaInstructionSemantics {
   private val MutationBoundary     = "upvalue-mutation-boundary"
   private val UpvalueStaleBoundary = "no-stale-upvalue-reuse-after-setupval"
 
+  private final case class UpvalueClosureBindings(
+    directTargets: Map[Int, String],
+    tableTargets: Map[Int, Map[String, String]]
+  ) {
+    def nonEmpty: Boolean = directTargets.nonEmpty || tableTargets.nonEmpty
+  }
+
+  private object UpvalueClosureBindings {
+    val Empty: UpvalueClosureBindings = UpvalueClosureBindings(Map.empty, Map.empty)
+  }
+
   def normalize(prototype: LuaPrototype): LuaPrototypeSemantics = {
-    val builder = Vector.newBuilder[LuaPrototypeSemantics]
-    builder += normalizeOne(prototype)
-    prototype.nested.foreach(child => builder += normalize(child))
+    val upvalueClosureBindings = closureBindingsByPrototypeAndUpvalue(prototype)
+    val builder                = Vector.newBuilder[LuaPrototypeSemantics]
+    def visit(current: LuaPrototype): Unit = {
+      builder += normalizeOne(
+        current,
+        upvalueClosureBindings.getOrElse(current.prototypeId, UpvalueClosureBindings.Empty)
+      )
+      current.nested.foreach(visit)
+    }
+    visit(prototype)
     combine(builder.result())
   }
 
-  def normalizePrototype(prototype: LuaPrototype): LuaPrototypeSemantics = normalizeOne(prototype)
+  def normalizePrototype(prototype: LuaPrototype): LuaPrototypeSemantics =
+    normalizeOne(prototype, UpvalueClosureBindings.Empty)
 
-  private def normalizeOne(prototype: LuaPrototype): LuaPrototypeSemantics = {
-    val state = new SemanticState(prototype)
+  private def normalizeOne(
+    prototype: LuaPrototype,
+    upvalueClosureBindings: UpvalueClosureBindings
+  ): LuaPrototypeSemantics = {
+    val state = new SemanticState(prototype, upvalueClosureBindings)
     prototype.instructions.sortBy(_.pc).foreach(state.visit)
     state.result()
   }
@@ -120,7 +142,150 @@ object LuaInstructionSemantics {
       negativeExpectations = items.flatMap(_.negativeExpectations)
     )
 
-  private final class SemanticState(prototype: LuaPrototype) {
+  private def closureBindingsByPrototypeAndUpvalue(root: LuaPrototype): Map[String, UpvalueClosureBindings] = {
+    def collect(
+      parent: LuaPrototype,
+      currentUpvalueBindings: UpvalueClosureBindings
+    ): Map[String, UpvalueClosureBindings] = {
+      val directTargetsBySlot = scala.collection.mutable.Map.empty[Int, String]
+      val tableTargetsBySlot  = scala.collection.mutable.Map.empty[Int, Map[String, String]]
+      val capturedByPrototype = scala.collection.mutable.Map.empty[String, UpvalueClosureBindings]
+      val sorted              = parent.instructions.sortBy(_.pc)
+      val bindingPcs          = closureBindingPcs(parent)
+
+      def clearSlot(slot: Int): Unit = {
+        directTargetsBySlot -= slot
+        tableTargetsBySlot -= slot
+      }
+
+      def keyName(value: Int): Option[String] =
+        if (value >= RkConstantBase) constantString(parent, value - RkConstantBase) else None
+
+      def childUpvalueBindings(closure: LuaInstruction): UpvalueClosureBindings = {
+        val childPrototypeId = s"${parent.prototypeId}.${closure.b}"
+        parent.nested
+          .find(_.prototypeId == childPrototypeId)
+          .map { child =>
+            val directTargets = sorted
+              .dropWhile(_.pc <= closure.pc)
+              .take(child.upvalueCount)
+              .zipWithIndex
+              .flatMap {
+                case (binder, upvalueSlot) if binder.opcode == LuaOpcode.Move =>
+                  directTargetsBySlot.get(binder.b).map(upvalueSlot -> _)
+                case (binder, upvalueSlot) if binder.opcode == LuaOpcode.GetUpval =>
+                  currentUpvalueBindings.directTargets.get(binder.b).map(upvalueSlot -> _)
+                case _ => None
+              }
+              .toMap
+            val tableTargets = sorted
+              .dropWhile(_.pc <= closure.pc)
+              .take(child.upvalueCount)
+              .zipWithIndex
+              .flatMap {
+                case (binder, upvalueSlot) if binder.opcode == LuaOpcode.Move =>
+                  tableTargetsBySlot.get(binder.b).map(upvalueSlot -> _)
+                case (binder, upvalueSlot) if binder.opcode == LuaOpcode.GetUpval =>
+                  currentUpvalueBindings.tableTargets.get(binder.b).map(upvalueSlot -> _)
+                case _ => None
+              }
+              .toMap
+            UpvalueClosureBindings(directTargets, tableTargets)
+          }
+          .getOrElse(UpvalueClosureBindings.Empty)
+      }
+
+      sorted.foreach {
+        case instruction if bindingPcs(instruction.pc) =>
+        case instruction if instruction.opcode == LuaOpcode.Closure =>
+          clearSlot(instruction.a)
+          val targetPrototypeId = s"${parent.prototypeId}.${instruction.b}"
+          directTargetsBySlot += instruction.a -> targetPrototypeId
+          val childBindings = childUpvalueBindings(instruction)
+          if (childBindings.nonEmpty) {
+            capturedByPrototype += targetPrototypeId -> childBindings
+          }
+          parent.nested
+            .find(_.prototypeId == targetPrototypeId)
+            .foreach(child => capturedByPrototype ++= collect(child, childBindings))
+        case instruction if instruction.opcode == LuaOpcode.Move =>
+          val movedDirect = directTargetsBySlot.get(instruction.b)
+          val movedTable  = tableTargetsBySlot.get(instruction.b)
+          clearSlot(instruction.a)
+          movedDirect.foreach(target => directTargetsBySlot += instruction.a -> target)
+          movedTable.foreach(targets => tableTargetsBySlot += instruction.a -> targets)
+        case instruction if instruction.opcode == LuaOpcode.GetUpval =>
+          val inheritedDirect = currentUpvalueBindings.directTargets.get(instruction.b)
+          val inheritedTable  = currentUpvalueBindings.tableTargets.get(instruction.b)
+          clearSlot(instruction.a)
+          inheritedDirect.foreach(target => directTargetsBySlot += instruction.a -> target)
+          inheritedTable.foreach(targets => tableTargetsBySlot += instruction.a -> targets)
+        case instruction if instruction.opcode == LuaOpcode.GetTable =>
+          val loaded = for {
+            tableTargets <- tableTargetsBySlot.get(instruction.b)
+            key          <- instruction.c.flatMap(keyName)
+            target       <- tableTargets.get(key)
+          } yield target
+          clearSlot(instruction.a)
+          loaded.foreach(target => directTargetsBySlot += instruction.a -> target)
+        case instruction if instruction.opcode == LuaOpcode.SetTable =>
+          for {
+            key         <- keyName(instruction.b)
+            valueSlot   <- instruction.c.flatMap(rkRegisterValue)
+            valueTarget <- directTargetsBySlot.get(valueSlot)
+          } {
+            val currentTargets = tableTargetsBySlot.getOrElse(instruction.a, Map.empty)
+            tableTargetsBySlot += instruction.a -> (currentTargets + (key -> valueTarget))
+          }
+        case instruction if instruction.opcode == LuaOpcode.Call || instruction.opcode == LuaOpcode.TailCall =>
+          clearSlot(instruction.a)
+        case instruction
+            if instruction.opcode == LuaOpcode.LoadK || instruction.opcode == LuaOpcode.LoadBool ||
+              instruction.opcode == LuaOpcode.LoadNil || instruction.opcode == LuaOpcode.GetGlobal ||
+              instruction.opcode == LuaOpcode.NewTable ||
+              instruction.opcode == LuaOpcode.Self || instruction.opcode == LuaOpcode.Vararg =>
+          clearSlot(instruction.a)
+        case _ =>
+      }
+
+      capturedByPrototype.toMap
+    }
+
+    collect(root, UpvalueClosureBindings.Empty)
+  }
+
+  private def constantString(prototype: LuaPrototype, index: Int): Option[String] =
+    prototype.constants.collectFirst { case LuaConstant(`index`, "string", LuaConstantValue.StringValue(value)) =>
+      value
+    }
+
+  private def rkRegisterValue(value: Int): Option[Int] =
+    if (value < RkConstantBase) Some(value) else None
+
+  private def closureBindingPcs(prototype: LuaPrototype): Set[Int] =
+    prototype.instructions
+      .sortBy(_.pc)
+      .zipWithIndex
+      .flatMap {
+        case (closure, index) if closure.opcode == LuaOpcode.Closure =>
+          prototype.nested.find(_.prototypeId == s"${prototype.prototypeId}.${closure.b}").toVector.flatMap { child =>
+            (1 to child.upvalueCount)
+              .takeWhile { offset =>
+                prototype.instructions
+                  .sortBy(_.pc)
+                  .lift(index + offset)
+                  .exists(binding =>
+                    binding.pc == closure.pc + offset &&
+                      (binding.opcode == LuaOpcode.Move || binding.opcode == LuaOpcode.GetUpval)
+                  )
+              }
+              .flatMap(offset => prototype.instructions.sortBy(_.pc).lift(index + offset).map(_.pc))
+          }
+        case _ => Vector.empty
+      }
+      .toSet
+
+  private final class SemanticState(prototype: LuaPrototype, upvalueClosureBindings: UpvalueClosureBindings) {
     private val registerEvents       = Vector.newBuilder[LuaRegisterEvent]
     private val semanticSteps        = Vector.newBuilder[LuaSemanticStep]
     private val closureValues        = Vector.newBuilder[LuaClosureValue]
@@ -134,21 +299,31 @@ object LuaInstructionSemantics {
     private val killOverwrites       = Vector.newBuilder[LuaKillOverwrite]
     private val negativeExpectations = Vector.newBuilder[LuaNegativeExpectation]
 
-    private var reaching        = (0 until prototype.numParams).map(slot => slot -> Set(staticSlotRef(slot))).toMap
-    private var closuresBySlot  = Map.empty[Int, LuaClosureValue]
-    private var tableWrites     = Map.empty[(Int, String), Set[String]]
-    private var globalWrites    = Map.empty[String, Set[String]]
-    private var mutatedUpvalues = Set.empty[Int]
+    private var reaching           = (0 until prototype.numParams).map(slot => slot -> Set(staticSlotRef(slot))).toMap
+    private var closuresBySlot     = Map.empty[Int, LuaClosureValue]
+    private var tableWrites        = Map.empty[(Int, String), Set[String]]
+    private var closureTableWrites = Map.empty[(Int, String), LuaClosureValue]
+    private var globalWrites       = Map.empty[String, Set[String]]
+    private var mutatedUpvalues    = Set.empty[Int]
 
     def visit(instruction: LuaInstruction): Unit = {
       instruction.opcode match {
         case LuaOpcode.Move =>
           val source = readSlot(instruction, instruction.b)
+          val movedTableClosures = closureTableWrites.collect {
+            case ((tableSlot, key), closure) if tableSlot == instruction.b => key -> closure
+          }
           writeSlot(instruction, instruction.a, Set(source), "move")
           closuresBySlot.get(instruction.b).foreach { closure =>
             val moved = closure.copy(slot = instruction.a, valueRef = slotRef(instruction.pc, instruction.a))
             closuresBySlot += instruction.a -> moved
             closureValues += moved
+          }
+          movedTableClosures.foreach { case (key, closure) =>
+            closureTableWrites += (instruction.a, key) -> closure.copy(
+              slot = instruction.a,
+              valueRef = slotRef(instruction.pc, instruction.a)
+            )
           }
         case LuaOpcode.LoadK =>
           writeSlot(instruction, instruction.a, Set(constantRef(instruction.b)), "loadk")
@@ -173,6 +348,17 @@ object LuaInstructionSemantics {
         case LuaOpcode.GetUpval =>
           val read = slotRef(instruction.pc, instruction.a)
           writeSlot(instruction, instruction.a, Set(read), "getupval")
+          upvalueClosureBindings.directTargets.get(instruction.b).foreach { targetPrototypeId =>
+            val closure = LuaClosureValue(instruction.a, read, targetPrototypeId, BytecodeProvenance)
+            closuresBySlot += instruction.a -> closure
+            closureValues += closure
+          }
+          upvalueClosureBindings.tableTargets.get(instruction.b).foreach { targetsByKey =>
+            targetsByKey.foreach { case (key, targetPrototypeId) =>
+              closureTableWrites += (instruction.a, key) ->
+                LuaClosureValue(instruction.a, read, targetPrototypeId, BytecodeProvenance)
+            }
+          }
           upvalueFlows += LuaUpvalueFlow(upvalueRef(instruction.b), read, read, read, BytecodeProvenance)
           if (mutatedUpvalues(instruction.b)) {
             addBoundary(UpvalueStaleBoundary, read, read, "upvalue mutation invalidates earlier read")
@@ -282,6 +468,9 @@ object LuaInstructionSemantics {
       readSlot(instruction, tableSlot)
       instruction.c.flatMap(rkRegister).foreach(readSlot(instruction, _))
       val write = slotRef(instruction.pc, instruction.a)
+      val loadedClosure = instruction.c
+        .flatMap(rkConstantName)
+        .flatMap(key => closureTableWrites.get((tableSlot, key)))
       writeSlot(instruction, instruction.a, Set(write), "gettable")
       instruction.c.flatMap(rkConstantRef).foreach { key =>
         tableWrites.get((tableSlot, key)).foreach { sources =>
@@ -295,6 +484,11 @@ object LuaInstructionSemantics {
             )
           }
         }
+      }
+      loadedClosure.foreach { closure =>
+        val loaded = closure.copy(slot = instruction.a, valueRef = write)
+        closuresBySlot += instruction.a -> loaded
+        closureValues += loaded
       }
       if (isGlobalEnvironmentTable(tableSlot)) {
         instruction.c.flatMap(rkConstantName).foreach { name =>
@@ -311,9 +505,15 @@ object LuaInstructionSemantics {
       val tableSlot = instruction.a
       readSlot(instruction, tableSlot)
       rkRegister(instruction.b).foreach(readSlot(instruction, _))
-      val valueRefs = instruction.c.flatMap(rkRegister).map(readSlot(instruction, _)).toSet
+      val valueSlot = instruction.c.flatMap(rkRegister)
+      val valueRefs = valueSlot.map(readSlot(instruction, _)).toSet
       instruction.bOptionConstantString.foreach { key =>
         tableWrites += (tableSlot, key) -> valueRefs
+      }
+      instruction.bOptionConstantName.foreach { key =>
+        valueSlot.flatMap(closuresBySlot.get).foreach { closure =>
+          closureTableWrites += (tableSlot, key) -> closure
+        }
       }
       if (isGlobalEnvironmentTable(tableSlot)) {
         instruction.bOptionConstantName.foreach { name =>
@@ -387,6 +587,7 @@ object LuaInstructionSemantics {
     }
       reaching += slot -> Set(write)
       closuresBySlot -= slot
+      closureTableWrites = closureTableWrites.filterNot { case ((tableSlot, _), _) => tableSlot == slot }
 
     private def isParamDerived(slot: Int): Boolean =
       reachesParameter(reaching.getOrElse(slot, Set.empty), Set.empty)

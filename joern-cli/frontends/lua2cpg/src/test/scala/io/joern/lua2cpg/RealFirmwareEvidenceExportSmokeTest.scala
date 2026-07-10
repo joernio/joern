@@ -153,12 +153,21 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       withDLinkStagingRows { stagingRows =>
         val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
         val sinkRows   = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
+        val linkRows   = stagingRows.flatMap(_("module_linkage").arr.map(_.obj))
         val pathRows   = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
 
         sourceRows.exists(row =>
           row("module_path").str.endsWith("usr/lib/lua/luci/controller/mtkwifi.luac") &&
-            row("callsite_id").str == "root.2@pc4" &&
+            row("callsite_id").str == "root.55@pc3" &&
             row("trigger").str == "luci.http.formvalue"
+        ) shouldBe true
+
+        linkRows.exists(row =>
+          row("module_path").str.endsWith("usr/lib/lua/luci/controller/mtkwifi.luac") &&
+            row("callsite_id").str == "root.55@pc13" &&
+            row("target_module_path").str.endsWith("usr/lib/lua/mtkwifi.luac") &&
+            row("target_prototype_id").str == "root.12" &&
+            row("field_name").str == "read_pipe"
         ) shouldBe true
 
         sinkRows.exists(row =>
@@ -170,12 +179,20 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         pathRows.exists(row =>
           row("source_module_path").str.endsWith("usr/lib/lua/luci/controller/mtkwifi.luac") &&
             row("sink_module_path").str.endsWith("usr/lib/lua/mtkwifi.luac") &&
-            row("source_pc").num.toInt == 4 &&
+            row("source_pc").num.toInt == 3 &&
             row("sink_pc").num.toInt == 5 &&
             row("source_trigger").str == "luci.http.formvalue" &&
             row("sink_trigger").str == "io.popen" &&
             row("path_steps").arr.forall(_.str.contains("::"))
         ) shouldBe true
+        pathRows.exists(row =>
+          row("source_module_path").str.endsWith("usr/lib/lua/luci/controller/mtkwifi.luac") &&
+            row("sink_module_path").str.endsWith("usr/lib/lua/mtkwifi.luac") &&
+            row("source_pc").num.toInt == 4 &&
+            row("source_function_name").str == "root.2" &&
+            row("sink_pc").num.toInt == 5 &&
+            row("sink_function_name").str == "root.12"
+        ) shouldBe false
         pathRows.exists(row => row.obj.contains("callsite_id")) shouldBe false
       }
     }
@@ -274,6 +291,58 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         ) shouldBe true
       }
     }
+
+    "export CrossPlatform path search profile without repeated local graph builds" in {
+      withXiaomiExportDir { exportDir =>
+        val profile = ujson.read(Files.readString(exportDir.resolve("path-search-profile.json"))).obj
+
+        profile.contains("local_path_graph_module_count") shouldBe true
+        profile.contains("local_path_graph_build_count") shouldBe true
+        profile.contains("local_path_search_count") shouldBe true
+
+        val moduleCount = profile("local_path_graph_module_count").num.toInt
+        val buildCount  = profile("local_path_graph_build_count").num.toInt
+        val searchCount = profile("local_path_search_count").num.toInt
+
+        moduleCount should be > 0
+        searchCount should be > buildCount
+        buildCount should be <= (moduleCount * 2)
+      }
+    }
+
+    "export CrossPlatform path search profile with source-specific sink pruning" in {
+      withXiaomiExportDir { exportDir =>
+        val profile = ujson.read(Files.readString(exportDir.resolve("path-search-profile.json"))).obj
+
+        profile.contains("source_sink_pair_count") shouldBe true
+        profile.contains("qualified_source_sink_pair_count") shouldBe true
+        profile.contains("prototype_pruned_source_sink_pair_count") shouldBe true
+
+        val totalPairCount     = profile("source_sink_pair_count").num.toInt
+        val qualifiedPairCount = profile("qualified_source_sink_pair_count").num.toInt
+        val prunedPairCount    = profile("prototype_pruned_source_sink_pair_count").num.toInt
+
+        totalPairCount shouldBe profile("source_endpoint_count").num.toInt * profile("sink_endpoint_count").num.toInt
+        totalPairCount should be > qualifiedPairCount
+        prunedPairCount shouldBe (totalPairCount - qualifiedPairCount)
+        qualifiedPairCount should be <= profile("local_path_search_count").num.toInt
+      }
+    }
+
+    "export CrossPlatform upvalue closure call targets for source-specific pruning" in {
+      withXiaomiStagingRows { stagingRows =>
+        val synchrodata = stagingRows
+          .find(_("relative_path").str.endsWith("usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac"))
+          .getOrElse(fail("missing XQSynchrodata staging evidence"))
+
+        val targetRows = synchrodata("call_target_candidate").arr.map(_.obj)
+        targetRows.exists(row =>
+          row("callsite_id").str == "root.3@pc6" &&
+            row("target_ref").str.endsWith("usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac::root.0") &&
+            row("resolution_status").str == "matched"
+        ) shouldBe true
+      }
+    }
   }
 
   private def withDLinkStagingRows(test: Vector[ujson.Obj] => Unit): Unit = {
@@ -304,6 +373,20 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
   }
 
   private def withXiaomiStagingRows(test: Vector[ujson.Obj] => Unit): Unit = {
+    withXiaomiExportDir { exportDir =>
+      val stagingDir    = exportDir.resolve("staging")
+      val stagingStream = Files.list(stagingDir)
+      val stagingFiles  = stagingStream.iterator.asScala.toVector
+      try {
+        stagingFiles.size should be > 0
+        test(stagingFiles.map(path => ujson.read(Files.readString(path)).obj))
+      } finally {
+        stagingStream.close()
+      }
+    }
+  }
+
+  private def withXiaomiExportDir(test: java.nio.file.Path => Unit): Unit = {
     val resourceRoot = Paths.get(getClass.getClassLoader.getResource("CrossPlatform-real-firmware-path-report").toURI)
 
     FileUtil.usingTemporaryDirectory("lua2cpg-CrossPlatform-real-firmware-path-report") { tmpDir =>
@@ -315,18 +398,10 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
             .withInputPath(resourceRoot.toString)
             .withOutputPath(outputPath)
         )
-        .get
+          .get
       cpg.close()
 
-      val stagingDir    = exportDir.resolve("staging")
-      val stagingStream = Files.list(stagingDir)
-      val stagingFiles  = stagingStream.iterator.asScala.toVector
-      try {
-        stagingFiles.size should be > 0
-        test(stagingFiles.map(path => ujson.read(Files.readString(path)).obj))
-      } finally {
-        stagingStream.close()
-      }
+      test(exportDir)
     }
   }
 }
