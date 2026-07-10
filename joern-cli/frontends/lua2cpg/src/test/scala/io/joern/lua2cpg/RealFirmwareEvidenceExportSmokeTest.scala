@@ -292,6 +292,31 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "reject CrossPlatform representative cross-module paths without source callsite bridge" in {
+      withXiaomiStagingRows { stagingRows =>
+        val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        pathRows.exists(row =>
+          row("source_module_path").str.endsWith("usr/lib/lua/luci/controller/api/misystem.luac") &&
+            row("source_function_name").str == "root.126" &&
+            row("source_pc").num.toInt == 27 &&
+            row("sink_module_path").str.endsWith("usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac") &&
+            row("sink_function_name").str == "root.0" &&
+            row("sink_pc").num.toInt == 25
+        ) shouldBe false
+
+        pathRows.exists(row =>
+          row("source_module_path").str.endsWith("usr/lib/lua/luci/controller/api/misystem.luac") &&
+            row("source_function_name").str == "root.63" &&
+            row("source_pc").num.toInt == 15 &&
+            row("sink_module_path").str.endsWith("usr/lib/lua/xiaoqiang/util/XQQoSUtil.luac") &&
+            row("sink_function_name").str == "root.24" &&
+            row("sink_pc").num.toInt == 82 &&
+            row("path_steps").arr.forall(_.str.contains("::"))
+        ) shouldBe true
+      }
+    }
+
     "export CrossPlatform path search profile without repeated local graph builds" in {
       withXiaomiExportDir { exportDir =>
         val profile = ujson.read(Files.readString(exportDir.resolve("path-search-profile.json"))).obj
