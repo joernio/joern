@@ -59,6 +59,21 @@ class ClosureTests extends PhpCode2CpgFixture {
     }
   }
 
+  "multiple top-level closures inside a named namespace" should {
+    val cpg = code(
+      """<?
+        |namespace X;
+        |$a = function () {};
+        |$b = function () {};
+        |""".stripMargin,
+      fileName = "foo.php"
+    )
+
+    "get unique, namespace-scoped fullNames" in {
+      cpg.method.name(".*<lambda>.*").fullName.sorted.l shouldBe List("foo.php:X.<lambda>0", "foo.php:X.<lambda>1")
+    }
+  }
+
   "long-form closures with uses " should {
     val cpg = code(
       """<?php
@@ -121,6 +136,39 @@ class ClosureTests extends PhpCode2CpgFixture {
         methodRef.code shouldBe expectedName
         methodRef.lineNumber shouldBe Some(3)
       }
+    }
+  }
+
+  "a variable captured by a use-closure and also referenced in the enclosing method" should {
+    val cpg = code(
+      """<?php
+        |class articles {
+        |  public function getArticles() {
+        |    $result = foo();
+        |    foreach ($result AS $res) {
+        |      $res->body = preg_replace_callback("/x/", function($match) use ($res) {
+        |        $res->video = $match[1];
+        |      }, $res->body);
+        |    }
+        |    return $result;
+        |  }
+        |}
+        |""".stripMargin,
+      fileName = "articles.php"
+    )
+
+    "create separate locals for the outer method and the closure" in {
+      val outerLocal = cpg.method.name("getArticles").local.nameExact("res").loneElement
+      outerLocal.closureBindingId shouldBe None
+
+      val closureLocal = cpg.method.name(".*<lambda>0").local.nameExact("res").loneElement
+      closureLocal.closureBindingId shouldBe Some("articles.getArticles.<lambda>0:res")
+    }
+
+    "not create a REF edge crossing the method boundary" in {
+      cpg.method.name("getArticles").ast.isIdentifier.nameExact("res")._localViaRefOut.method.name.toSet shouldBe Set(
+        "getArticles"
+      )
     }
   }
 

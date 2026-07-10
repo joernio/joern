@@ -99,6 +99,24 @@ class MemberTests extends PhpCode2CpgFixture {
     }
   }
 
+  "array-literal field initializer without an explicit constructor" should {
+    val cpg = code("""<?php
+      |class Kernel {
+      |  protected $middleware = [ 1, 2, 3 ];
+      |}
+      |""".stripMargin)
+
+    "lower the initializer into the default constructor and keep the tmp local inside it" in {
+      inside(cpg.method.nameExact(Domain.ConstructorMethodName).l) { case List(initMethod) =>
+        initMethod.fullName shouldBe "Kernel.__construct"
+        inside(initMethod.local.name.l) { case List(tmpLocalName) =>
+          tmpLocalName shouldBe "Kernel.__construct@tmp-0"
+        }
+      }
+      cpg.local.name.l shouldBe List("Kernel.__construct@tmp-0")
+    }
+  }
+
   "class properties (fields) for classes with a constructor" should {
 
     val cpg = code("""<?php

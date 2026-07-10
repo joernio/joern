@@ -83,6 +83,7 @@ object Domain {
   // Used for creating the default constructor.
   val ConstructorMethodName = "__construct"
   val GlobalName            = "<global>"
+  val DuplicateSuffix       = "<duplicate>"
 
   final case class PhpAttributes(
     lineNumber: Option[Int],

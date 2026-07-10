@@ -150,22 +150,6 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     modifiers: List[String] = List.empty
   ): NewNode = {
     scope.lookupVariable(name) match {
-      case None =>
-        val localCode = if (name == NameConstants.Self) NameConstants.Self else s"$$$name"
-        val local     = localNode(expr, name, code.getOrElse(localCode), tfn.getOrElse(Defines.Any))
-
-        modifiers.foreach { modifier =>
-          val modNode = modifierNode(expr, modifier)
-          diffGraph.addEdge(local, modNode, EdgeTypes.AST)
-        }
-
-        scope.addToScope(name, local) match {
-          case BlockScope(block, _)                 => diffGraph.addEdge(block, local, EdgeTypes.AST)
-          case MethodScope(_, block, _, _, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
-          case _                                    => // do nothing
-        }
-
-        local
       case Some(local: NewLocal)
           if scope.isSurroundedByArrowClosure && local.closureBindingId.exists(_.contains("<lambda>")) =>
         local // the contains check ensures that we can capture global variables into an arrow closure
@@ -174,7 +158,26 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         createClosureBindingsForArrowClosure(expr, name)
       case Some(_: NewLocal) if scope.isSurroundedByArrowClosure =>
         createClosureBindingsForArrowClosure(expr, name)
-      case Some(local) => local
+      case _ =>
+        scope.lookupVariableInCurrentMethod(name) match {
+          case Some(existing) => existing
+          case None =>
+            val localCode = if (name == NameConstants.Self) NameConstants.Self else s"$$$name"
+            val local     = localNode(expr, name, code.getOrElse(localCode), tfn.getOrElse(Defines.Any))
+
+            modifiers.foreach { modifier =>
+              val modNode = modifierNode(expr, modifier)
+              diffGraph.addEdge(local, modNode, EdgeTypes.AST)
+            }
+
+            scope.addToScope(name, local) match {
+              case BlockScope(block, _)                 => diffGraph.addEdge(block, local, EdgeTypes.AST)
+              case MethodScope(_, block, _, _, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
+              case _                                    => // do nothing
+            }
+
+            local
+        }
     }
   }
 
