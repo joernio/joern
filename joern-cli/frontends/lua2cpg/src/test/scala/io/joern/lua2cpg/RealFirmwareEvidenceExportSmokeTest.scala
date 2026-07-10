@@ -292,6 +292,34 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform real-firmware sanitizer classifications from call-name rows" in {
+      withXiaomiExportDir { exportDir =>
+        val profile     = ujson.read(Files.readString(exportDir.resolve("path-search-profile.json"))).obj
+        val stagingDir  = exportDir.resolve("staging")
+        val stagingList = Files.list(stagingDir)
+        try {
+          val stagingRows = stagingList.iterator.asScala.toVector.map(path => ujson.read(Files.readString(path)).obj)
+          val callRows    = stagingRows.flatMap(_("call_name_resolution").arr.map(_.obj))
+          val pathRows    = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+          val sanitizerSuffixes = Set("tonumber", "tostring")
+          callRows.exists(row =>
+            row("module_path").str.endsWith("usr/lib/lua/luci/controller/api/misystem.luac") &&
+              sanitizerSuffixes.contains(row("resolved_name").str.split('.').last) &&
+              row.obj.contains("target_value_ref") &&
+              row("target_value_ref").str.nonEmpty
+          ) shouldBe true
+
+          profile("sanitizer_classification_count").num.toInt should be > 0
+          pathRows.exists(row => row("sanitizer_hits").arr.nonEmpty) shouldBe true
+          pathRows.exists(row => row("classification").str == "sanitized") shouldBe true
+          pathRows.exists(row => row("classification").str == "true-positive") shouldBe true
+        } finally {
+          stagingList.close()
+        }
+      }
+    }
+
     "reject CrossPlatform representative cross-module paths without source callsite bridge" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
