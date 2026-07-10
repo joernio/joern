@@ -292,6 +292,131 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r5 residual sink endpoints and source-to-sink paths" in {
+      withXiaomiStagingRows { stagingRows =>
+        val sinkRows = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
+        val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        def hasSink(moduleSuffix: String, pc: Int, trigger: String): Boolean =
+          sinkRows.exists(row =>
+            row("module_path").str.endsWith(moduleSuffix) &&
+              row("callsite_id").str.endsWith(s"@pc$pc") &&
+              row("trigger").str == trigger
+          )
+
+        def hasPath(
+          sourceModuleSuffix: String,
+          sourceFunctionName: String,
+          sourcePc: Int,
+          sinkModuleSuffix: String,
+          sinkFunctionName: String,
+          sinkPc: Int,
+          sinkTrigger: String
+        ): Boolean =
+          pathRows.exists(row =>
+            row("source_module_path").str.endsWith(sourceModuleSuffix) &&
+              row("source_function_name").str == sourceFunctionName &&
+              row("source_pc").num.toInt == sourcePc &&
+              row("sink_module_path").str.endsWith(sinkModuleSuffix) &&
+              row("sink_function_name").str == sinkFunctionName &&
+              row("sink_pc").num.toInt == sinkPc &&
+              row("sink_trigger").str == sinkTrigger &&
+              row("path_steps").arr.nonEmpty &&
+              row("path_steps").arr.forall(_.str.contains("::"))
+          )
+
+        hasSink(
+          "usr/lib/lua/luci/controller/api/xqnetwork.luac",
+          276,
+          "test.api.Process.forkExec"
+        ) shouldBe true
+        hasSink(
+          "usr/lib/lua/xiaoqiang/module/XQEcos.luac",
+          15,
+          "test.api.Process.forkExec"
+        ) shouldBe true
+        hasSink(
+          "usr/lib/lua/xiaoqiang/util/XQSysUtil.luac",
+          112,
+          "test.api.Process.forkExec"
+        ) shouldBe true
+        hasSink("usr/lib/lua/xiaoqiang/common/XQFunction.luac", 56, "forkExec") shouldBe true
+
+        hasPath(
+          "usr/lib/lua/luci/controller/api/misystem.luac",
+          "networkAccessControlStatus",
+          8,
+          "usr/lib/lua/xiaoqiang/module/XQParentControl.luac",
+          "get_macfilter_wan",
+          10,
+          "luci.util.exec"
+        ) shouldBe true
+        hasPath(
+          "usr/lib/lua/luci/controller/api/misystem.luac",
+          "parentalctlSetUrl",
+          8,
+          "usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac",
+          "func_unknow_0_0",
+          25,
+          "os.execute"
+        ) shouldBe true
+        hasPath(
+          "usr/lib/lua/luci/controller/api/misystem.luac",
+          "parentalctlSetUrl",
+          8,
+          "usr/lib/lua/xiaoqiang/common/XQFunction.luac",
+          "thrift_tunnel_to_datacenter",
+          22,
+          "luci.util.exec"
+        ) shouldBe true
+        hasPath(
+          "usr/lib/lua/luci/controller/api/misystem.luac",
+          "qosApp",
+          16,
+          "usr/lib/lua/luci/controller/api/misystem.luac",
+          "qosApp",
+          102,
+          "os.execute"
+        ) shouldBe true
+        hasPath(
+          "usr/lib/lua/luci/controller/api/xqsystem.luac",
+          "ExtendWifiConnectInitedRouter",
+          32,
+          "usr/lib/lua/xiaoqiang/util/XQWifiUtil.luac",
+          "apcli_get_connect",
+          24,
+          "luci.util.exec"
+        ) shouldBe true
+        hasPath(
+          "usr/lib/lua/luci/controller/api/xqsystem.luac",
+          "ExtendWifiConnectInitedRouter",
+          32,
+          "usr/lib/lua/xiaoqiang/module/XQAPModule.luac",
+          "extendwifi_set_connect",
+          139,
+          "luci.util.exec"
+        ) shouldBe true
+        hasPath(
+          "usr/lib/lua/luci/controller/api/xqsystem.luac",
+          "setPassword",
+          16,
+          "usr/lib/lua/xiaoqiang/util/XQSecureUtil.luac",
+          "decCiphertext",
+          46,
+          "os.execute"
+        ) shouldBe true
+        hasPath(
+          "usr/lib/lua/luci/controller/service/datacenter.luac",
+          "setSyncRouterFile",
+          6,
+          "usr/lib/lua/luci/controller/service/datacenter.luac",
+          "tunnelRequestDatacenter",
+          24,
+          "luci.util.exec"
+        ) shouldBe true
+      }
+    }
+
     "export CrossPlatform real-firmware sanitizer classifications from call-name rows" in {
       withXiaomiExportDir { exportDir =>
         val profile     = ujson.read(Files.readString(exportDir.resolve("path-search-profile.json"))).obj
