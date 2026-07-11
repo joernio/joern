@@ -293,6 +293,117 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "distinguish CrossPlatform r5 direct-jump rows from strict source-scoped path evidence" in {
+      withXiaomiStagingRows { stagingRows =>
+        val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
+        val sinkRows   = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
+        val bridgeRows = stagingRows.flatMap(_("interproc_arg_flow").arr.map(_.obj))
+        val pathRows   = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        def hasSource(moduleSuffix: String, pc: Int, trigger: String): Boolean =
+          sourceRows.exists(row =>
+            row("module_path").str.endsWith(moduleSuffix) &&
+              row("callsite_id").str.endsWith(s"@pc$pc") &&
+              row("callsite_id").str.contains("::") &&
+              row("trigger").str == trigger
+          )
+
+        def hasSink(moduleSuffix: String, pc: Int, trigger: String): Boolean =
+          sinkRows.exists(row =>
+            row("module_path").str.endsWith(moduleSuffix) &&
+              row("callsite_id").str.endsWith(s"@pc$pc") &&
+              row("callsite_id").str.contains("::") &&
+              row("trigger").str == trigger
+          )
+
+        def hasBridge(
+          sourceModuleSuffix: String,
+          sourceCallsiteSuffix: String,
+          targetModuleSuffix: String,
+          targetPrototypeId: String,
+          argumentIndex: Int
+        ): Boolean =
+          bridgeRows.exists(row =>
+            row("callsite_id").str.contains("::") &&
+              row("callsite_id").str.endsWith(sourceCallsiteSuffix) &&
+              row("from_argument_ref").str.contains(sourceModuleSuffix) &&
+              row("argument_index").num.toInt == argumentIndex &&
+              row("target_module_path").str.endsWith(targetModuleSuffix) &&
+              row("target_prototype_id").str == targetPrototypeId
+          )
+
+        def pathByPc(
+          sourceModuleSuffix: String,
+          sourcePc: Int,
+          sourceTrigger: String,
+          sinkModuleSuffix: String,
+          sinkPc: Int,
+          sinkTrigger: String
+        ) =
+          pathRows.find(row =>
+            row("source_module_path").str.endsWith(sourceModuleSuffix) &&
+              row("source_pc").num.toInt == sourcePc &&
+              row("source_trigger").str == sourceTrigger &&
+              row("sink_module_path").str.endsWith(sinkModuleSuffix) &&
+              row("sink_pc").num.toInt == sinkPc &&
+              row("sink_trigger").str == sinkTrigger &&
+              row("path_steps").arr.nonEmpty &&
+              row("path_steps").arr.forall(_.str.contains("::"))
+          )
+
+        def pathByFunction(
+          sourceModuleSuffix: String,
+          sourceFunctionName: String,
+          sourcePc: Int,
+          sourceTrigger: String,
+          sinkModuleSuffix: String,
+          sinkFunctionName: String,
+          sinkPc: Int,
+          sinkTrigger: String
+        ) =
+          pathByPc(sourceModuleSuffix, sourcePc, sourceTrigger, sinkModuleSuffix, sinkPc, sinkTrigger)
+            .filter(row =>
+              row("source_function_name").str == sourceFunctionName &&
+                row("sink_function_name").str == sinkFunctionName
+            )
+
+        hasSource("usr/lib/lua/luci/controller/api/misystem.luac", 57, "luci.http.formvalue") shouldBe true
+        hasSink("usr/lib/lua/xiaoqiang/common/XQFunction.luac", 35, "os.execute") shouldBe true
+        hasBridge(
+          "usr/lib/lua/luci/controller/api/misystem.luac",
+          "root.37@pc114",
+          "usr/lib/lua/xiaoqiang/common/XQFunction.luac",
+          "root.33",
+          1
+        ) shouldBe true
+
+        pathByPc(
+          "usr/lib/lua/luci/controller/api/misystem.luac",
+          57,
+          "luci.http.formvalue",
+          "usr/lib/lua/xiaoqiang/common/XQFunction.luac",
+          35,
+          "os.execute"
+        ).isDefined shouldBe false
+
+        val strictBridgePath = pathByFunction(
+          "usr/lib/lua/luci/controller/api/misystem.luac",
+          "memTestConfig",
+          14,
+          "luci.http.formvalue",
+          "usr/lib/lua/xiaoqiang/common/XQFunction.luac",
+          "nvramSet",
+          35,
+          "os.execute"
+        )
+        strictBridgePath.isDefined shouldBe true
+        val strictBridgeSteps = strictBridgePath.get("path_steps").arr.map(_.str).toSet
+        strictBridgeSteps should contain("usr/lib/lua/luci/controller/api/misystem.luac::root.151@pc22:r6")
+        strictBridgeSteps should contain("usr/lib/lua/xiaoqiang/common/XQFunction.luac::root.33:r1")
+        strictBridgeSteps should contain("usr/lib/lua/xiaoqiang/common/XQFunction.luac::root.33@pc30:r3")
+      }
+    }
+
     "export CrossPlatform r5 residual sink endpoints and source-to-sink paths" in {
       withXiaomiStagingRows { stagingRows =>
         val sinkRows = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
