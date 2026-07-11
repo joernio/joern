@@ -608,69 +608,75 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
               !row.obj.contains("callsite_id")
           )
 
-        hasPath(
-          "usr/lib/lua/luci/controller/api/xqsmarthome.luac",
-          "requestMitv",
-          3,
-          "usr/lib/lua/luci/util.luac",
-          "exec",
-          3,
-          "io.popen"
-        ) shouldBe true
-        hasPath(
-          "usr/lib/lua/luci/controller/api/xqsystem.luac",
-          "sysRecovery",
-          12,
-          "usr/lib/lua/xiaoqiang/common/XQFunction.luac",
-          "nvramSet",
-          35,
-          "os.execute"
-        ) shouldBe true
-        hasPath(
-          "usr/lib/lua/luci/controller/api/misystem.luac",
-          "setLanApMode_Init",
-          22,
-          "usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac",
-          "func_unknow_0_0",
-          25,
-          "os.execute"
-        ) shouldBe true
-        hasPath(
-          "usr/lib/lua/luci/controller/api/misystem.luac",
-          "setWifiApMode",
-          61,
-          "usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac",
-          "func_unknow_0_0",
-          25,
-          "os.execute"
-        ) shouldBe true
-        hasPath(
-          "usr/lib/lua/luci/controller/api/xqnetwork.luac",
-          "pppoeStatus",
-          6,
-          "usr/lib/lua/luci/util.luac",
-          "exec",
-          3,
-          "io.popen"
-        ) shouldBe true
-        hasPath(
-          "usr/lib/lua/luci/controller/api/xqnetwork.luac",
-          "setPeerWifiAutoAPMode",
-          42,
-          "usr/lib/lua/xiaoqiang/util/XQWifiUtil.luac",
-          "apcli_set_inactive",
-          75,
-          "os.execute"
-        ) shouldBe true
-        hasPath(
-          "usr/lib/lua/luci/controller/api/miats.luac",
-          "getWifiMacfilterInfo",
-          70,
-          "usr/lib/lua/luci/util.luac",
-          "exec",
-          3,
-          "io.popen"
-        ) shouldBe true
+        val missingFamilies = Vector(
+          "xqsmarthome.requestMitv@pc3->luci.util.exec@pc3" -> hasPath(
+            "usr/lib/lua/luci/controller/api/xqsmarthome.luac",
+            "requestMitv",
+            3,
+            "usr/lib/lua/luci/util.luac",
+            "exec",
+            3,
+            "io.popen"
+          ),
+          "xqsystem.sysRecovery@pc12->XQFunction.nvramSet@pc35" -> hasPath(
+            "usr/lib/lua/luci/controller/api/xqsystem.luac",
+            "sysRecovery",
+            12,
+            "usr/lib/lua/xiaoqiang/common/XQFunction.luac",
+            "nvramSet",
+            35,
+            "os.execute"
+          ),
+          "misystem.setLanApMode_Init@pc22->XQSynchrodata.func_unknow_0_0@pc25" -> hasPath(
+            "usr/lib/lua/luci/controller/api/misystem.luac",
+            "setLanApMode_Init",
+            22,
+            "usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac",
+            "func_unknow_0_0",
+            25,
+            "os.execute"
+          ),
+          "misystem.setWifiApMode@pc61->XQSynchrodata.func_unknow_0_0@pc25" -> hasPath(
+            "usr/lib/lua/luci/controller/api/misystem.luac",
+            "setWifiApMode",
+            61,
+            "usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac",
+            "func_unknow_0_0",
+            25,
+            "os.execute"
+          ),
+          "xqnetwork.pppoeStatus@pc6->luci.util.exec@pc3" -> hasPath(
+            "usr/lib/lua/luci/controller/api/xqnetwork.luac",
+            "pppoeStatus",
+            6,
+            "usr/lib/lua/luci/util.luac",
+            "exec",
+            3,
+            "io.popen"
+          ),
+          "xqnetwork.setPeerWifiAutoAPMode@pc42->XQWifiUtil.apcli_set_inactive@pc75" -> hasPath(
+            "usr/lib/lua/luci/controller/api/xqnetwork.luac",
+            "setPeerWifiAutoAPMode",
+            42,
+            "usr/lib/lua/xiaoqiang/util/XQWifiUtil.luac",
+            "apcli_set_inactive",
+            75,
+            "os.execute"
+          ),
+          "miats.getWifiMacfilterInfo@pc70->luci.util.exec@pc3" -> hasPath(
+            "usr/lib/lua/luci/controller/api/miats.luac",
+            "getWifiMacfilterInfo",
+            70,
+            "usr/lib/lua/luci/util.luac",
+            "exec",
+            3,
+            "io.popen"
+          )
+        ).collect { case (label, false) => label }
+
+        withClue(s"missing families: ${missingFamilies.mkString(", ")}") {
+          missingFamilies shouldBe empty
+        }
       }
     }
 
@@ -710,97 +716,107 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
               !row.obj.contains("callsite_id")
           )
 
-        hasSink("usr/lib/lua/luci/controller/api/miats.luac", 148, "luci.util.exec") shouldBe true
-        hasPath(
-          "usr/lib/lua/luci/controller/api/xqnetwork.luac",
-          "setWifiApMode",
-          28,
-          "usr/lib/lua/xiaoqiang/common/XQFunction.luac",
-          "nvramSet",
-          35,
-          "os.execute"
-        ) shouldBe true
-        hasPath(
-          "usr/lib/lua/luci/controller/api/xqnetwork.luac",
-          "setAllWifi",
-          40,
-          "usr/lib/lua/xiaoqiang/common/XQFunction.luac",
-          "nvramSet",
-          35,
-          "os.execute"
-        ) shouldBe true
-        hasPath(
-          "usr/lib/lua/luci/controller/api/xqnetwork.luac",
-          "setWifiApMode",
-          28,
-          "usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac",
-          "func_unknow_0_0",
-          25,
-          "os.execute"
-        ) shouldBe true
-        hasPath(
-          "usr/lib/lua/luci/controller/api/misystem.luac",
-          "setWifiApMode_Init",
-          60,
-          "usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac",
-          "func_unknow_0_0",
-          25,
-          "os.execute"
-        ) shouldBe true
-        hasPath(
-          "usr/lib/lua/luci/controller/api/xqsmarthome.luac",
-          "requestMitv",
-          3,
-          "usr/lib/lua/xiaoqiang/util/XQMitvUtil.luac",
-          "DoExec",
-          10,
-          "luci.util.exec"
-        ) shouldBe true
-        hasPath(
-          "usr/lib/lua/luci/controller/api/xqnetwork.luac",
-          "setWan6",
-          40,
-          "usr/lib/lua/luci/controller/api/xqnetwork.luac",
-          "setWan6",
-          276,
-          "test.api.Process.forkExec"
-        ) shouldBe true
-        hasPath(
-          "usr/lib/lua/luci/controller/api/xqsystem.luac",
-          "vpnSwitch",
-          12,
-          "usr/lib/lua/xiaoqiang/util/XQCryptoUtil.luac",
-          "md5Str",
-          10,
-          "luci.util.exec"
-        ) shouldBe true
-        hasPath(
-          "usr/lib/lua/luci/controller/api/xqnetwork.luac",
-          "editDevice",
-          20,
-          "usr/lib/lua/xiaoqiang/util/XQWifiUtil.luac",
-          "wl_editWiFiMacfilterList",
-          348,
-          "os.execute"
-        ) shouldBe true
-        hasPath(
-          "usr/lib/lua/luci/controller/api/xqsystem.luac",
-          "ExtendWifiConnectInitedRouter",
-          36,
-          "usr/lib/lua/xiaoqiang/module/XQExtendWifi.luac",
-          "write_t_v",
-          31,
-          "os.execute"
-        ) shouldBe true
-        hasPath(
-          "usr/lib/lua/luci/controller/api/xqnetwork.luac",
-          "deleteTransportList",
-          28,
-          "usr/lib/lua/xiaoqiang/module/XQBaiduPanUtil.luac",
-          "kill_baidupan_process",
-          22,
-          "luci.util.exec"
-        ) shouldBe true
+        val missingFamilies = Vector(
+          "miats.sink@pc148:luci.util.exec" -> hasSink(
+            "usr/lib/lua/luci/controller/api/miats.luac",
+            148,
+            "luci.util.exec"
+          ),
+          "xqnetwork.setWifiApMode@pc28->XQFunction.nvramSet@pc35" -> hasPath(
+            "usr/lib/lua/luci/controller/api/xqnetwork.luac",
+            "setWifiApMode",
+            28,
+            "usr/lib/lua/xiaoqiang/common/XQFunction.luac",
+            "nvramSet",
+            35,
+            "os.execute"
+          ),
+          "xqnetwork.setAllWifi@pc40->XQFunction.nvramSet@pc35" -> hasPath(
+            "usr/lib/lua/luci/controller/api/xqnetwork.luac",
+            "setAllWifi",
+            40,
+            "usr/lib/lua/xiaoqiang/common/XQFunction.luac",
+            "nvramSet",
+            35,
+            "os.execute"
+          ),
+          "xqnetwork.setWifiApMode@pc28->XQSynchrodata.func_unknow_0_0@pc25" -> hasPath(
+            "usr/lib/lua/luci/controller/api/xqnetwork.luac",
+            "setWifiApMode",
+            28,
+            "usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac",
+            "func_unknow_0_0",
+            25,
+            "os.execute"
+          ),
+          "misystem.setWifiApMode_Init@pc60->XQSynchrodata.func_unknow_0_0@pc25" -> hasPath(
+            "usr/lib/lua/luci/controller/api/misystem.luac",
+            "setWifiApMode_Init",
+            60,
+            "usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac",
+            "func_unknow_0_0",
+            25,
+            "os.execute"
+          ),
+          "xqsmarthome.requestMitv@pc3->XQMitvUtil.DoExec@pc10" -> hasPath(
+            "usr/lib/lua/luci/controller/api/xqsmarthome.luac",
+            "requestMitv",
+            3,
+            "usr/lib/lua/xiaoqiang/util/XQMitvUtil.luac",
+            "DoExec",
+            10,
+            "luci.util.exec"
+          ),
+          "xqnetwork.setWan6@pc40->xqnetwork.setWan6@pc276" -> hasPath(
+            "usr/lib/lua/luci/controller/api/xqnetwork.luac",
+            "setWan6",
+            40,
+            "usr/lib/lua/luci/controller/api/xqnetwork.luac",
+            "setWan6",
+            276,
+            "test.api.Process.forkExec"
+          ),
+          "xqsystem.vpnSwitch@pc12->XQCryptoUtil.md5Str@pc10" -> hasPath(
+            "usr/lib/lua/luci/controller/api/xqsystem.luac",
+            "vpnSwitch",
+            12,
+            "usr/lib/lua/xiaoqiang/util/XQCryptoUtil.luac",
+            "md5Str",
+            10,
+            "luci.util.exec"
+          ),
+          "xqnetwork.editDevice@pc20->XQWifiUtil.wl_editWiFiMacfilterList@pc348" -> hasPath(
+            "usr/lib/lua/luci/controller/api/xqnetwork.luac",
+            "editDevice",
+            20,
+            "usr/lib/lua/xiaoqiang/util/XQWifiUtil.luac",
+            "wl_editWiFiMacfilterList",
+            348,
+            "os.execute"
+          ),
+          "xqsystem.ExtendWifiConnectInitedRouter@pc36->XQExtendWifi.write_t_v@pc31" -> hasPath(
+            "usr/lib/lua/luci/controller/api/xqsystem.luac",
+            "ExtendWifiConnectInitedRouter",
+            36,
+            "usr/lib/lua/xiaoqiang/module/XQExtendWifi.luac",
+            "write_t_v",
+            31,
+            "os.execute"
+          ),
+          "xqnetwork.deleteTransportList@pc28->XQBaiduPanUtil.kill_baidupan_process@pc22" -> hasPath(
+            "usr/lib/lua/luci/controller/api/xqnetwork.luac",
+            "deleteTransportList",
+            28,
+            "usr/lib/lua/xiaoqiang/module/XQBaiduPanUtil.luac",
+            "kill_baidupan_process",
+            22,
+            "luci.util.exec"
+          )
+        ).collect { case (label, false) => label }
+
+        withClue(s"missing families: ${missingFamilies.mkString(", ")}") {
+          missingFamilies shouldBe empty
+        }
       }
     }
 
