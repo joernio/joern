@@ -8,9 +8,12 @@ import java.nio.file.{Files, Path, Paths}
 import scala.jdk.CollectionConverters.*
 
 object LuaRealFirmwareEvidenceExporter {
+  private val MaxRetainedPairProfileBytes = 4096L
+
   def write(config: Config, decoded: Vector[DecodedBytecode], semantics: LuaProgramSemantics): Unit =
     config.realFirmwareOutputDir.foreach { outputDir =>
       validateTaintPathEndpoints(semantics)
+      val profile    = pathSearchProfile(semantics)
       val root       = Paths.get(outputDir)
       val stagingDir = root.resolve("staging")
       Files.createDirectories(stagingDir)
@@ -40,7 +43,7 @@ object LuaRealFirmwareEvidenceExporter {
           "artifacts" -> artifacts
         )
       )
-      writeJson(root.resolve("path-search-profile.json"), pathSearchProfile(semantics))
+      writeJson(root.resolve("path-search-profile.json"), profile)
       writeJson(
         root.resolve("run-summary.json"),
         ujson.Obj(
@@ -542,7 +545,8 @@ object LuaRealFirmwareEvidenceExporter {
         }
     )
 
-  private def pathSearchProfile(semantics: LuaProgramSemantics): ujson.Obj =
+  private def pathSearchProfile(semantics: LuaProgramSemantics): ujson.Obj = {
+    validatePerformanceAttribution(semantics)
     ujson.Obj(
       "status"                                  -> "completed",
       "source_endpoint_count"                   -> semantics.sourceEndpoints.size,
@@ -556,8 +560,328 @@ object LuaRealFirmwareEvidenceExporter {
       "distinct_local_path_query_count"         -> semantics.pathSearchStats.distinctLocalPathQueryCount,
       "source_sink_pair_count"                  -> semantics.pathSearchStats.sourceSinkPairCount,
       "qualified_source_sink_pair_count"        -> semantics.pathSearchStats.qualifiedSourceSinkPairCount,
-      "prototype_pruned_source_sink_pair_count" -> semantics.pathSearchStats.prototypePrunedSourceSinkPairCount
+      "prototype_pruned_source_sink_pair_count" -> semantics.pathSearchStats.prototypePrunedSourceSinkPairCount,
+      "performance_attribution"                 -> performanceAttributionJson(semantics.performanceAttribution)
     )
+  }
+
+  private val PairCounterNames = Set(
+    "source_reachability_check_count",
+    "source_reachability_accepted_count",
+    "prototype_unreachable_pair_count",
+    "source_specific_provenance_pruned_pair_count",
+    "parameter_position_check_count",
+    "parameter_position_accepted_count",
+    "parameter_position_pruned_count",
+    "path_constructor_check_count",
+    "path_constructor_accepted_count",
+    "path_constructor_pruned_count",
+    "bridge_argument_provenance_candidate_count",
+    "bridge_candidate_pc_pruned_count",
+    "bridge_candidate_reachability_pruned_count",
+    "bridge_local_path_attempt_count",
+    "bridge_local_path_success_count",
+    "local_path_search_count",
+    "distinct_local_path_query_count",
+    "local_path_cache_hit_count",
+    "local_path_cache_miss_count",
+    "local_path_graph_build_count",
+    "local_path_graph_cache_hit_count",
+    "local_path_graph_cache_miss_count",
+    "bridge_path_cache_hit_count",
+    "bridge_path_cache_miss_count",
+    "targeted_search_node_visit_count",
+    "targeted_search_edge_visit_count",
+    "early_candidate_short_circuit_count",
+    "taint_path_count",
+    "report_count"
+  )
+
+  private def performanceAttributionJson(attribution: LuaPerformanceAttribution): ujson.Obj = {
+    val aggregate                                = attribution.aggregateCounters
+    def aggregateNumber(name: String): ujson.Num = ujson.Num(aggregate(name).toDouble)
+    val pairProfiles                             = pairProfilesJson(attribution.pairProfiles)
+    ujson.Obj(
+      "schema"                           -> "lua-r7-performance-attribution-v1",
+      "unattributed_changed_family_work" -> ujson.Num(attribution.unattributedChangedFamilyWork.toDouble),
+      "retained_pair_profile_count"      -> attribution.pairProfiles.size,
+      "retained_pair_profile_bytes" -> ujson
+        .write(pairProfiles)
+        .getBytes(StandardCharsets.UTF_8)
+        .length,
+      "rows" -> ujson.Obj(
+        "P1" -> ujson.Obj(
+          "candidate_count" -> ujson.Num(attribution.p1CandidateCount.toDouble),
+          "rejected_count"  -> ujson.Num(attribution.p1RejectedCount.toDouble),
+          "accepted_count"  -> ujson.Num(attribution.p1AcceptedCount.toDouble)
+        ),
+        "P2" -> aggregateRow(
+          aggregate,
+          "parameter_position_check_count",
+          "parameter_position_accepted_count",
+          "parameter_position_pruned_count"
+        ),
+        "P3" -> ujson.Obj(
+          "candidate_count"           -> aggregateNumber("source_reachability_check_count"),
+          "accepted_count"            -> aggregateNumber("source_reachability_accepted_count"),
+          "prototype_rejected_count"  -> aggregateNumber("prototype_unreachable_pair_count"),
+          "provenance_rejected_count" -> aggregateNumber("source_specific_provenance_pruned_pair_count")
+        ),
+        "P4" -> ujson.Obj(
+          "candidate_count"             -> aggregateNumber("bridge_argument_provenance_candidate_count"),
+          "pc_rejected_count"           -> aggregateNumber("bridge_candidate_pc_pruned_count"),
+          "reachability_rejected_count" -> aggregateNumber("bridge_candidate_reachability_pruned_count"),
+          "continued_count" -> ujson.Num(
+            (aggregate("bridge_argument_provenance_candidate_count") - aggregate(
+              "bridge_candidate_pc_pruned_count"
+            ) - aggregate("bridge_candidate_reachability_pruned_count")).toDouble
+          ),
+          "path_constructor_candidate_count" -> aggregateNumber("path_constructor_check_count"),
+          "path_constructor_accepted_count"  -> aggregateNumber("path_constructor_accepted_count"),
+          "path_constructor_rejected_count"  -> aggregateNumber("path_constructor_pruned_count")
+        ),
+        "P5" -> ujson.Obj(
+          "node_visit_count" -> aggregateNumber("targeted_search_node_visit_count"),
+          "edge_visit_count" -> aggregateNumber("targeted_search_edge_visit_count")
+        ),
+        "P6" -> ujson.Obj(
+          "local_path_cache_hit_count"        -> aggregateNumber("local_path_cache_hit_count"),
+          "local_path_cache_miss_count"       -> aggregateNumber("local_path_cache_miss_count"),
+          "local_path_graph_cache_hit_count"  -> aggregateNumber("local_path_graph_cache_hit_count"),
+          "local_path_graph_cache_miss_count" -> aggregateNumber("local_path_graph_cache_miss_count"),
+          "bridge_path_cache_hit_count"       -> aggregateNumber("bridge_path_cache_hit_count"),
+          "bridge_path_cache_miss_count"      -> aggregateNumber("bridge_path_cache_miss_count")
+        ),
+        "P7" -> ujson.Obj("status" -> "not-invoked-no-reuse", "invocation_count" -> 0, "reuse_count" -> 0),
+        "early_short_circuit" -> ujson.Obj(
+          "count"                       -> aggregateNumber("early_candidate_short_circuit_count"),
+          "pc_rejected_count"           -> aggregateNumber("bridge_candidate_pc_pruned_count"),
+          "reachability_rejected_count" -> aggregateNumber("bridge_candidate_reachability_pruned_count")
+        )
+      ),
+      "pair_profiles" -> pairProfiles
+    )
+  }
+
+  private def pairProfilesJson(rows: Vector[LuaPairPerformanceProfile]): ujson.Arr =
+    ujson.Arr.from(rows.map { row =>
+      ujson.Obj.from(
+        Vector(
+          "pair_id"            -> ujson.Str(row.pairId),
+          "source_ref"         -> ujson.Str(row.sourceRef),
+          "sink_ref"           -> ujson.Str(row.sinkRef),
+          "source_callsite_id" -> ujson.Str(row.sourceCallsiteId),
+          "sink_callsite_id"   -> ujson.Str(row.sinkCallsiteId),
+          "source_trigger"     -> ujson.Str(row.sourceTrigger),
+          "sink_trigger"       -> ujson.Str(row.sinkTrigger)
+        ) ++ row.counters.toVector.sortBy(_._1).map { case (name, value) => name -> ujson.Num(value.toDouble) }
+      )
+    })
+
+  private def aggregateRow(count: Map[String, Long], total: String, accepted: String, rejected: String): ujson.Obj =
+    ujson.Obj(
+      "candidate_count" -> ujson.Num(count(total).toDouble),
+      "accepted_count"  -> ujson.Num(count(accepted).toDouble),
+      "rejected_count"  -> ujson.Num(count(rejected).toDouble)
+    )
+
+  private def validatePerformanceAttribution(semantics: LuaProgramSemantics): Unit = {
+    val attribution = semantics.performanceAttribution
+    def requireCount(condition: Boolean, message: String): Unit =
+      if (!condition) throw new IllegalStateException(s"invalid Lua performance attribution: $message")
+
+    requireCount(
+      attribution.p1CandidateCount == attribution.p1RejectedCount + attribution.p1AcceptedCount,
+      "P1 candidate count does not partition into accepted and rejected counts"
+    )
+    requireCount(
+      attribution.unattributedChangedFamilyWork == 0L,
+      s"unattributed changed-family work is ${attribution.unattributedChangedFamilyWork}"
+    )
+    requireCount(
+      attribution.aggregateCounters.keySet == PairCounterNames,
+      "aggregate counter keys do not exactly match the required schema"
+    )
+    val continuedBridgeCandidates =
+      attribution.aggregateCounters("bridge_argument_provenance_candidate_count") -
+        attribution.aggregateCounters("early_candidate_short_circuit_count")
+    val requiresPairProfiles = attribution.aggregateCounters("local_path_search_count") > 0L ||
+      attribution.aggregateCounters("taint_path_count") > 0L || continuedBridgeCandidates > 0L
+    requireCount(
+      !requiresPairProfiles || attribution.pairProfiles.nonEmpty,
+      "pair profiles are empty despite retained pair work"
+    )
+    validateCounterPartitions(attribution.aggregateCounters, "aggregate")
+    requireCount(
+      attribution.pairProfiles.map(_.pairId).distinct.size == attribution.pairProfiles.size,
+      "pair identities are not unique"
+    )
+    requireCount(
+      attribution.pairProfiles.size <= semantics.pathSearchStats.localPathSearchCount + semantics.taintPaths.size,
+      "retained pair profile count exceeds local-search plus taint-path bound"
+    )
+    val retainedPairProfileBytes = ujson
+      .write(pairProfilesJson(attribution.pairProfiles))
+      .getBytes(StandardCharsets.UTF_8)
+      .length
+    requireCount(
+      attribution.pairProfiles.isEmpty ||
+        retainedPairProfileBytes <= attribution.pairProfiles.size.toLong * MaxRetainedPairProfileBytes,
+      s"retained pair profile payload exceeds $MaxRetainedPairProfileBytes bytes per row"
+    )
+    requireCount(
+      attribution.aggregateCounters("source_reachability_check_count") == semantics.pathSearchStats.sourceSinkPairCount,
+      "aggregate source reachability count does not match legacy source-sink pair count"
+    )
+    requireCount(
+      attribution.aggregateCounters(
+        "parameter_position_accepted_count"
+      ) == semantics.pathSearchStats.qualifiedSourceSinkPairCount,
+      "aggregate parameter-position accepted count does not match legacy qualified pair count"
+    )
+    requireCount(
+      attribution.aggregateCounters("local_path_search_count") == semantics.pathSearchStats.localPathSearchCount,
+      "aggregate local path search count does not match legacy count"
+    )
+    requireCount(
+      attribution.aggregateCounters(
+        "distinct_local_path_query_count"
+      ) == semantics.pathSearchStats.distinctLocalPathQueryCount,
+      "aggregate distinct local path query count does not match legacy count"
+    )
+    requireCount(
+      attribution.aggregateCounters(
+        "local_path_graph_build_count"
+      ) == semantics.pathSearchStats.localPathGraphBuildCount,
+      "aggregate local path graph build count does not match legacy count"
+    )
+    attribution.pairProfiles.foreach { row =>
+      val count = row.counters
+      requireCount(
+        count.keySet == PairCounterNames,
+        s"counter keys do not exactly match the required schema for pair ${row.pairId}"
+      )
+      requireIdentity(row)
+      requireCount(
+        count("local_path_search_count") > 0L || count("taint_path_count") > 0L,
+        s"retained pair has neither local-search nor taint-path work for pair ${row.pairId}"
+      )
+      requireCount(count.values.forall(_ >= 0L), s"negative counter for pair ${row.pairId}")
+      requireCount(
+        count("source_reachability_check_count") == count("source_reachability_accepted_count") +
+          count("prototype_unreachable_pair_count") + count("source_specific_provenance_pruned_pair_count"),
+        s"source reachability partition mismatch for pair ${row.pairId}"
+      )
+      requireCount(
+        count("parameter_position_check_count") == count("parameter_position_accepted_count") +
+          count("parameter_position_pruned_count"),
+        s"parameter position partition mismatch for pair ${row.pairId}"
+      )
+      requireCount(
+        count("path_constructor_check_count") == count("path_constructor_accepted_count") +
+          count("path_constructor_pruned_count"),
+        s"path constructor partition mismatch for pair ${row.pairId}"
+      )
+      requireCount(
+        count("bridge_argument_provenance_candidate_count") >= count("bridge_candidate_pc_pruned_count") +
+          count("bridge_candidate_reachability_pruned_count"),
+        s"bridge candidate partition mismatch for pair ${row.pairId}"
+      )
+      requireCount(
+        count("early_candidate_short_circuit_count") == count("bridge_candidate_pc_pruned_count") +
+          count("bridge_candidate_reachability_pruned_count"),
+        s"early short-circuit partition mismatch for pair ${row.pairId}"
+      )
+      requireCount(
+        count("local_path_search_count") == count("local_path_cache_hit_count") +
+          count("local_path_cache_miss_count"),
+        s"local path cache partition mismatch for pair ${row.pairId}"
+      )
+      requireCount(
+        count("distinct_local_path_query_count") == count("local_path_cache_miss_count"),
+        s"distinct local path query mismatch for pair ${row.pairId}"
+      )
+      requireCount(
+        count("local_path_graph_build_count") == count("local_path_graph_cache_miss_count"),
+        s"local path graph build mismatch for pair ${row.pairId}"
+      )
+      requireCount(
+        count("taint_path_count") == semantics.taintPaths.count(path =>
+          path.sourceRef == row.sourceRef && path.sinkRef == row.sinkRef
+        ),
+        s"path reconciliation mismatch for pair ${row.pairId}"
+      )
+      requireCount(
+        count("report_count") == semantics.reportClassifications.count(report =>
+          report.sourceRef == row.sourceRef && report.sinkRef == row.sinkRef
+        ),
+        s"report reconciliation mismatch for pair ${row.pairId}"
+      )
+    }
+  }
+
+  private def validateCounterPartitions(count: Map[String, Long], identity: String): Unit = {
+    def requireCount(condition: Boolean, message: String): Unit =
+      if (!condition) throw new IllegalStateException(s"invalid Lua performance attribution: $message")
+    requireCount(count.values.forall(_ >= 0L), s"negative counter for $identity")
+    requireCount(
+      count("source_reachability_check_count") == count("source_reachability_accepted_count") + count(
+        "prototype_unreachable_pair_count"
+      ) + count("source_specific_provenance_pruned_pair_count"),
+      s"source reachability partition mismatch for $identity"
+    )
+    requireCount(
+      count("parameter_position_check_count") == count("parameter_position_accepted_count") + count(
+        "parameter_position_pruned_count"
+      ),
+      s"parameter position partition mismatch for $identity"
+    )
+    requireCount(
+      count("path_constructor_check_count") == count("path_constructor_accepted_count") + count(
+        "path_constructor_pruned_count"
+      ),
+      s"path constructor partition mismatch for $identity"
+    )
+    requireCount(
+      count("bridge_argument_provenance_candidate_count") >= count("bridge_candidate_pc_pruned_count") + count(
+        "bridge_candidate_reachability_pruned_count"
+      ),
+      s"bridge candidate partition mismatch for $identity"
+    )
+    requireCount(
+      count("early_candidate_short_circuit_count") == count("bridge_candidate_pc_pruned_count") + count(
+        "bridge_candidate_reachability_pruned_count"
+      ),
+      s"early short-circuit partition mismatch for $identity"
+    )
+    requireCount(
+      count("local_path_search_count") == count("local_path_cache_hit_count") + count("local_path_cache_miss_count"),
+      s"local path cache partition mismatch for $identity"
+    )
+    requireCount(
+      count("distinct_local_path_query_count") == count("local_path_cache_miss_count"),
+      s"distinct local path query mismatch for $identity"
+    )
+    requireCount(
+      count("local_path_graph_build_count") == count("local_path_graph_cache_miss_count"),
+      s"local path graph build mismatch for $identity"
+    )
+  }
+
+  private def requireIdentity(row: LuaPairPerformanceProfile): Unit = {
+    def invalid(message: String): Nothing =
+      throw new IllegalStateException(s"invalid Lua performance attribution: $message for pair ${row.pairId}")
+    val ValueRef = raw"(.+):([^:]+)@pc([0-9]+):r([0-9]+)".r
+    val Callsite = raw"(.+)::([^:]+)@pc([0-9]+)".r
+    def validate(ref: String, callsite: String, side: String): Unit = (ref, callsite) match {
+      case (ValueRef(refModule, refPrototype, refPc, _), Callsite(callModule, callPrototype, callPc))
+          if refModule == callModule && refPrototype == callPrototype && refPc == callPc =>
+      case _ => invalid(s"malformed or mismatched $side identity")
+    }
+    if (row.sourceTrigger.isEmpty || row.sinkTrigger.isEmpty) invalid("empty trigger")
+    validate(row.sourceRef, row.sourceCallsiteId, "source")
+    validate(row.sinkRef, row.sinkCallsiteId, "sink")
+  }
 
   private def profileJson(profile: LuaBytecodeProfile): ujson.Obj =
     ujson.Obj(
