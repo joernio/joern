@@ -389,6 +389,8 @@ object LuaInstructionSemantics {
           handleGetTable(instruction)
         case LuaOpcode.SetTable =>
           handleSetTable(instruction)
+        case LuaOpcode.SetList =>
+          handleSetList(instruction)
         case LuaOpcode.Self =>
           handleSelf(instruction)
         case LuaOpcode.Return =>
@@ -524,6 +526,19 @@ object LuaInstructionSemantics {
       }
     }
 
+    private def handleSetList(instruction: LuaInstruction): Unit = {
+      val tableSlot = instruction.a
+      readSlot(instruction, tableSlot)
+      if (instruction.b > 0) {
+        val valueRefs = (1 to instruction.b).map(offset => readSlot(instruction, tableSlot + offset))
+        instruction.c.foreach { block =>
+          valueRefs.zipWithIndex.foreach { case (valueRef, index) =>
+            tableWrites += (tableSlot, setListElementKey(block, index)) -> Set(valueRef)
+          }
+        }
+      }
+    }
+
     private def handleSelf(instruction: LuaInstruction): Unit = {
       readSlot(instruction, instruction.b)
       instruction.c.flatMap(rkRegister).foreach(readSlot(instruction, _))
@@ -627,6 +642,8 @@ object LuaInstructionSemantics {
     private def constantRef(index: Int): String = s"${prototype.prototypeId}:k$index"
 
     private def upvalueRef(index: Int): String = s"${prototype.prototypeId}:u$index"
+
+    private def setListElementKey(block: Int, index: Int): String = s"${prototype.prototypeId}:setlist:$block:$index"
 
     private def nestedPrototypeId(ordinal: Int): String = s"${prototype.prototypeId}.$ordinal"
 

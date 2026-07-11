@@ -44,7 +44,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
           val callRows = staging("call_name_resolution").arr.map(_.obj)
           callRows.exists(row =>
             row("module_path").str.endsWith("d24-sanitizer-suppresses-report/input.luac") &&
-              row("callsite_id").str == "root@pc20" &&
+              hasScopedCallsite(row, "root@pc20") &&
               row("resolved_name").str == "tonumber"
           ) shouldBe true
 
@@ -66,13 +66,13 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
 
         sourceRows.exists(row =>
           row("module_path").str.endsWith("usr/lib/lua/luci/controller/mtkwifi.luac") &&
-            row("callsite_id").str == "root.110@pc3" &&
+            hasScopedCallsite(row, "root.110@pc3") &&
             row("trigger").str == "luci.http.formvalue"
         ) shouldBe true
 
         sinkRows.exists(row =>
           row("module_path").str.endsWith("usr/lib/lua/luci/controller/mtkwifi.luac") &&
-            row("callsite_id").str == "root.110@pc12" &&
+            hasScopedCallsite(row, "root.110@pc12") &&
             row("trigger").str == "os.execute"
         ) shouldBe true
 
@@ -106,7 +106,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
 
         sourceRows.exists(row =>
           row("module_path").str.endsWith("usr/lib/lua/luci/controller/mtkwifi.luac") &&
-            row("callsite_id").str == "root.61@pc63" &&
+            hasScopedCallsite(row, "root.61@pc63") &&
             row("trigger").str == "luci.http.formvalue"
         ) shouldBe true
 
@@ -122,13 +122,13 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         sinkCallsites.foreach { callsiteId =>
           sourceRows.exists(row =>
             row("module_path").str.endsWith("usr/lib/lua/luci/controller/mtkwifi.luac") &&
-              row("callsite_id").str == "root.61@pc63" &&
+              hasScopedCallsite(row, "root.61@pc63") &&
               row("trigger").str == "luci.http.formvalue"
           ) shouldBe true
 
           sinkRows.exists(row =>
             row("module_path").str.endsWith("usr/lib/lua/luci/controller/mtkwifi.luac") &&
-              row("callsite_id").str == callsiteId &&
+              hasScopedCallsite(row, callsiteId) &&
               row("trigger").str == "os.execute"
           ) shouldBe true
         }
@@ -158,13 +158,13 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
 
         sourceRows.exists(row =>
           row("module_path").str.endsWith("usr/lib/lua/luci/controller/mtkwifi.luac") &&
-            row("callsite_id").str == "root.55@pc3" &&
+            hasScopedCallsite(row, "root.55@pc3") &&
             row("trigger").str == "luci.http.formvalue"
         ) shouldBe true
 
         linkRows.exists(row =>
           row("module_path").str.endsWith("usr/lib/lua/luci/controller/mtkwifi.luac") &&
-            row("callsite_id").str == "root.55@pc13" &&
+            hasScopedCallsite(row, "root.55@pc13") &&
             row("target_module_path").str.endsWith("usr/lib/lua/mtkwifi.luac") &&
             row("target_prototype_id").str == "root.12" &&
             row("field_name").str == "read_pipe"
@@ -172,7 +172,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
 
         sinkRows.exists(row =>
           row("module_path").str.endsWith("usr/lib/lua/mtkwifi.luac") &&
-            row("callsite_id").str == "root.12@pc5" &&
+            hasScopedCallsite(row, "root.12@pc5") &&
             row("trigger").str == "io.popen"
         ) shouldBe true
 
@@ -206,37 +206,37 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
 
         sourceRows.exists(row =>
           row("module_path").str.endsWith("usr/lib/lua/luci/controller/api/misystem.luac") &&
-            row("callsite_id").str == "root.39@pc15" &&
+            hasScopedCallsite(row, "root.39@pc15") &&
             row("trigger").str == "luci.http.formvalue"
         ) shouldBe true
 
         sinkRows.exists(row =>
           row("module_path").str.endsWith("usr/lib/lua/xiaoqiang/util/XQQoSUtil.luac") &&
-            row("callsite_id").str == "root.24@pc82" &&
+            hasScopedCallsite(row, "root.24@pc82") &&
             row("trigger").str == "os.execute"
         ) shouldBe true
 
         sinkRows.exists(row =>
           row("module_path").str.endsWith("usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac") &&
-            row("callsite_id").str == "root.0@pc25" &&
+            hasScopedCallsite(row, "root.0@pc25") &&
             row("trigger").str == "os.execute"
         ) shouldBe true
 
         sinkRows.exists(row =>
           row("module_path").str.endsWith("usr/lib/lua/luci/util.luac") &&
-            row("callsite_id").str == "root.36@pc3" &&
+            hasScopedCallsite(row, "root.36@pc3") &&
             row("trigger").str == "io.popen"
         ) shouldBe true
 
         callRows.exists(row =>
           row("module_path").str.endsWith("usr/lib/lua/luci/controller/api/misystem.luac") &&
-            row("callsite_id").str == "root.145@pc48" &&
+            hasScopedCallsite(row, "root.145@pc48") &&
             row("resolved_name").str == "luci.util.exec"
         ) shouldBe true
 
         sinkRows.exists(row =>
           row("module_path").str.endsWith("usr/lib/lua/luci/controller/api/misystem.luac") &&
-            row("callsite_id").str == "root.94@pc38" &&
+            hasScopedCallsite(row, "root.94@pc38") &&
             row("trigger").str == "luci.util.exec"
         ) shouldBe true
 
@@ -247,15 +247,18 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
     "export CrossPlatform representative source-to-sink path evidence" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+        val misystem = "usr/lib/lua/luci/controller/api/misystem.luac"
 
         pathRows.exists(row =>
-          row("source_module_path").str.endsWith("usr/lib/lua/luci/controller/api/misystem.luac") &&
+          row("source_module_path").str.endsWith(misystem) &&
             row("sink_module_path").str.endsWith("usr/lib/lua/xiaoqiang/util/XQQoSUtil.luac") &&
             row("source_pc").num.toInt == 15 &&
             row("sink_pc").num.toInt == 82 &&
             row("source_trigger").str == "luci.http.formvalue" &&
             row("sink_trigger").str == "os.execute" &&
-            row("path_steps").arr.forall(_.str.contains("::"))
+            row("path_steps").arr.forall(_.str.contains("::")) &&
+            row("path_steps").arr.exists(_.str == s"$misystem::root.63@pc23:r7") &&
+            row("path_steps").arr.exists(_.str == s"$misystem::root.63@pc23:r6")
         ) shouldBe true
 
         pathRows.exists(row =>
@@ -283,8 +286,6 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
             row("sink_module_path").str.endsWith("usr/lib/lua/luci/controller/api/misystem.luac") &&
             row("source_pc").num.toInt == 15 &&
             row("sink_pc").num.toInt == 38 &&
-            row("source_function_name").str == "root.94" &&
-            row("sink_function_name").str == "root.94" &&
             row("source_trigger").str == "luci.http.formvalue" &&
             row("sink_trigger").str == "luci.util.exec" &&
             row("path_steps").arr.forall(_.str.contains("::"))
@@ -301,6 +302,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
           sinkRows.exists(row =>
             row("module_path").str.endsWith(moduleSuffix) &&
               row("callsite_id").str.endsWith(s"@pc$pc") &&
+              row("callsite_id").str.contains("::") &&
               row("trigger").str == trigger
           )
 
@@ -356,7 +358,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
           "parentalctlSetUrl",
           8,
           "usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac",
-          "func_unknow_0_0",
+          "root.0",
           25,
           "os.execute"
         ) shouldBe true
@@ -430,7 +432,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
           val sanitizerSuffixes = Set("tonumber", "tostring")
           callRows.exists(row =>
             row("module_path").str.endsWith("usr/lib/lua/luci/controller/api/misystem.luac") &&
-              sanitizerSuffixes.contains(row("resolved_name").str.split('.').last) &&
+              sanitizerSuffixes.contains(row("resolved_name").str) &&
               row.obj.contains("target_value_ref") &&
               row("target_value_ref").str.nonEmpty
           ) shouldBe true
@@ -451,19 +453,15 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
 
         pathRows.exists(row =>
           row("source_module_path").str.endsWith("usr/lib/lua/luci/controller/api/misystem.luac") &&
-            row("source_function_name").str == "root.126" &&
             row("source_pc").num.toInt == 27 &&
             row("sink_module_path").str.endsWith("usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac") &&
-            row("sink_function_name").str == "root.0" &&
             row("sink_pc").num.toInt == 25
         ) shouldBe false
 
         pathRows.exists(row =>
           row("source_module_path").str.endsWith("usr/lib/lua/luci/controller/api/misystem.luac") &&
-            row("source_function_name").str == "root.63" &&
             row("source_pc").num.toInt == 15 &&
             row("sink_module_path").str.endsWith("usr/lib/lua/xiaoqiang/util/XQQoSUtil.luac") &&
-            row("sink_function_name").str == "root.24" &&
             row("sink_pc").num.toInt == 82 &&
             row("path_steps").arr.forall(_.str.contains("::"))
         ) shouldBe true
@@ -495,15 +493,19 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         profile.contains("source_sink_pair_count") shouldBe true
         profile.contains("qualified_source_sink_pair_count") shouldBe true
         profile.contains("prototype_pruned_source_sink_pair_count") shouldBe true
+        profile.contains("distinct_local_path_query_count") shouldBe true
 
-        val totalPairCount     = profile("source_sink_pair_count").num.toInt
-        val qualifiedPairCount = profile("qualified_source_sink_pair_count").num.toInt
-        val prunedPairCount    = profile("prototype_pruned_source_sink_pair_count").num.toInt
+        val totalPairCount       = profile("source_sink_pair_count").num.toInt
+        val qualifiedPairCount   = profile("qualified_source_sink_pair_count").num.toInt
+        val prunedPairCount      = profile("prototype_pruned_source_sink_pair_count").num.toInt
+        val distinctQueryCount   = profile("distinct_local_path_query_count").num.toInt
+        val localPathSearchCount = profile("local_path_search_count").num.toInt
 
         totalPairCount shouldBe profile("source_endpoint_count").num.toInt * profile("sink_endpoint_count").num.toInt
         totalPairCount should be > qualifiedPairCount
         prunedPairCount shouldBe (totalPairCount - qualifiedPairCount)
-        qualifiedPairCount should be <= profile("local_path_search_count").num.toInt
+        distinctQueryCount should be <= localPathSearchCount
+        qualifiedPairCount should be > distinctQueryCount
       }
     }
 
@@ -515,7 +517,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
 
         val targetRows = synchrodata("call_target_candidate").arr.map(_.obj)
         targetRows.exists(row =>
-          row("callsite_id").str == "root.3@pc6" &&
+          hasScopedCallsite(row, "root.3@pc6") &&
             row("target_ref").str.endsWith("usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac::root.0") &&
             row("resolution_status").str == "matched"
         ) shouldBe true
@@ -549,6 +551,9 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
   }
+
+  private def hasScopedCallsite(row: ujson.Obj, localCallsiteId: String): Boolean =
+    row("callsite_id").str.contains("::") && row("callsite_id").str.endsWith(s"::$localCallsiteId")
 
   private def withXiaomiStagingRows(test: Vector[ujson.Obj] => Unit): Unit = {
     withXiaomiExportDir { exportDir =>

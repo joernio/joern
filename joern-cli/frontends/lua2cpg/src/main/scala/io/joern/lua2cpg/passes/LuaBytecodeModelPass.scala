@@ -291,7 +291,7 @@ class LuaBytecodeModelPass(
       .map { case (row, index) =>
         semanticCallNode(
           name = "lua.interproc.arg_flow",
-          code = s"${row.fromArgumentRef} -> ${row.targetModulePath}::${row.toParameterRef}",
+          code = s"${row.fromArgumentRef} -> ${row.toParameterRef}",
           order = 54_000 + index
         )
       }
