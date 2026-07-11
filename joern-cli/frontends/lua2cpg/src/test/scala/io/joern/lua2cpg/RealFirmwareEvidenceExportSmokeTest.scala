@@ -410,13 +410,13 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         val sinkRows   = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
         val pathRows   = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
 
-        val sourceModule = "usr/lib/lua/luci/controller/api/misystem.luac"
+        val sourceModule = "usr/lib/lua/luci/controller/api/xqsystem.luac"
         val sinkModule   = "usr/lib/lua/xiaoqiang/common/XQFunction.luac"
 
         sourceRows.exists(row =>
           row("module_path").str.endsWith(sourceModule) &&
             row("callsite_id").str.contains("::") &&
-            row("callsite_id").str.endsWith("::root.151@pc8") &&
+            row("callsite_id").str.endsWith("::root.40@pc31") &&
             row("trigger").str == "luci.http.formvalue"
         ) shouldBe true
 
@@ -428,8 +428,8 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
 
         val representativePath = pathRows.find(row =>
           row("source_module_path").str.endsWith(sourceModule) &&
-            row("source_function_name").str == "memTestConfig" &&
-            row("source_pc").num.toInt == 8 &&
+            row("source_function_name").str == "setRouter" &&
+            row("source_pc").num.toInt == 31 &&
             row("source_trigger").str == "luci.http.formvalue" &&
             row("sink_module_path").str.endsWith(sinkModule) &&
             row("sink_function_name").str == "nvramSet" &&
