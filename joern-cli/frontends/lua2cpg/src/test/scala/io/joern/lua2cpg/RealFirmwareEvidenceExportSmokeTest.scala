@@ -1,9 +1,11 @@
 package io.joern.lua2cpg
 
+import io.joern.lua2cpg.bytecode.*
 import io.shiftleft.semanticcpg.utils.FileUtil
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 import scala.jdk.CollectionConverters.*
 
@@ -907,6 +909,300 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         prunedPairCount shouldBe (totalPairCount - qualifiedPairCount)
         distinctQueryCount should be <= localPathSearchCount
         qualifiedPairCount should be > distinctQueryCount
+      }
+    }
+
+    "export r7 performance attribution without changing legacy producer profile fields" in {
+      withXiaomiExportDir { exportDir =>
+        val profile = ujson.read(Files.readString(exportDir.resolve("path-search-profile.json"))).obj
+        val legacyProfileKeys = Set(
+          "status",
+          "source_endpoint_count",
+          "sink_endpoint_count",
+          "taint_path_count",
+          "sanitizer_classification_count",
+          "report_count",
+          "local_path_graph_module_count",
+          "local_path_graph_build_count",
+          "local_path_search_count",
+          "distinct_local_path_query_count",
+          "source_sink_pair_count",
+          "qualified_source_sink_pair_count",
+          "prototype_pruned_source_sink_pair_count"
+        )
+
+        profile.value.keySet shouldBe (legacyProfileKeys + "performance_attribution")
+        profile("status").str shouldBe "completed"
+        profile("source_sink_pair_count").num.toInt shouldBe
+          profile("source_endpoint_count").num.toInt * profile("sink_endpoint_count").num.toInt
+        profile("prototype_pruned_source_sink_pair_count").num.toInt shouldBe
+          profile("source_sink_pair_count").num.toInt - profile("qualified_source_sink_pair_count").num.toInt
+
+        val attribution = profile("performance_attribution").obj
+        attribution("schema").str shouldBe "lua-r7-performance-attribution-v1"
+        attribution("unattributed_changed_family_work").num.toLong shouldBe 0L
+
+        val rows = attribution("rows").obj
+        rows.value.keySet shouldBe Set("P1", "P2", "P3", "P4", "P5", "P6", "P7", "early_short_circuit")
+
+        val p1 = rows("P1").obj
+        p1("candidate_count").num.toLong should be > 0L
+        p1("rejected_count").num.toLong should be > 0L
+        p1("candidate_count").num.toLong shouldBe
+          p1("rejected_count").num.toLong + p1("accepted_count").num.toLong
+
+        val p7 = rows("P7").obj
+        p7("status").str shouldBe "not-invoked-no-reuse"
+        p7("invocation_count").num.toLong shouldBe 0L
+        p7("reuse_count").num.toLong shouldBe 0L
+
+        val p2 = rows("P2").obj
+        p2("candidate_count").num.toLong shouldBe
+          p2("accepted_count").num.toLong + p2("rejected_count").num.toLong
+        val p3 = rows("P3").obj
+        p3("candidate_count").num.toLong shouldBe
+          p3("accepted_count").num.toLong + p3("prototype_rejected_count").num.toLong +
+            p3("provenance_rejected_count").num.toLong
+        (p2("rejected_count").num.toLong + p3("prototype_rejected_count").num.toLong +
+          p3("provenance_rejected_count").num.toLong) should be > 0L
+        val p4 = rows("P4").obj
+        p4("candidate_count").num.toLong shouldBe
+          p4("pc_rejected_count").num.toLong + p4("reachability_rejected_count").num.toLong +
+            p4("continued_count").num.toLong
+        p4("pc_rejected_count").num.toLong should be > 0L
+        p4("reachability_rejected_count").num.toLong should be > 0L
+        p4("path_constructor_candidate_count").num.toLong shouldBe
+          p4("path_constructor_accepted_count").num.toLong + p4("path_constructor_rejected_count").num.toLong
+        val p5 = rows("P5").obj
+        (p5("node_visit_count").num.toLong + p5("edge_visit_count").num.toLong) should be > 0L
+        val p6 = rows("P6").obj
+        (p6("local_path_cache_hit_count").num.toLong + p6("local_path_cache_miss_count").num.toLong) should be > 0L
+        val early = rows("early_short_circuit").obj
+        early("count").num.toLong shouldBe
+          early("pc_rejected_count").num.toLong + early("reachability_rejected_count").num.toLong
+        early("count").num.toLong should be > 0L
+
+        val pairProfiles = attribution("pair_profiles").arr.map(_.obj).toVector
+        val pairCounterKeys = Vector(
+          "source_reachability_check_count",
+          "source_reachability_accepted_count",
+          "prototype_unreachable_pair_count",
+          "source_specific_provenance_pruned_pair_count",
+          "parameter_position_check_count",
+          "parameter_position_accepted_count",
+          "parameter_position_pruned_count",
+          "path_constructor_check_count",
+          "path_constructor_accepted_count",
+          "path_constructor_pruned_count",
+          "bridge_argument_provenance_candidate_count",
+          "bridge_candidate_pc_pruned_count",
+          "bridge_candidate_reachability_pruned_count",
+          "bridge_local_path_attempt_count",
+          "bridge_local_path_success_count",
+          "local_path_search_count",
+          "distinct_local_path_query_count",
+          "local_path_cache_hit_count",
+          "local_path_cache_miss_count",
+          "local_path_graph_build_count",
+          "local_path_graph_cache_hit_count",
+          "local_path_graph_cache_miss_count",
+          "bridge_path_cache_hit_count",
+          "bridge_path_cache_miss_count",
+          "targeted_search_node_visit_count",
+          "targeted_search_edge_visit_count",
+          "early_candidate_short_circuit_count",
+          "taint_path_count",
+          "report_count"
+        )
+        pairProfiles.foreach { row =>
+          row("source_ref").str should not be empty
+          row("sink_ref").str should not be empty
+          row("source_callsite_id").str should include("::")
+          row("sink_callsite_id").str should include("::")
+          row("source_trigger").str should not be empty
+          row("sink_trigger").str should not be empty
+          row("pair_id").str shouldBe
+            s"${row("source_ref").str}|${row("source_callsite_id").str}|${row("source_trigger").str}->" +
+              s"${row("sink_ref").str}|${row("sink_callsite_id").str}|${row("sink_trigger").str}"
+          pairCounterKeys.foreach(key => row(key).num.toLong should be >= 0L)
+          row("source_reachability_check_count").num.toLong shouldBe
+            row("source_reachability_accepted_count").num.toLong +
+              row("prototype_unreachable_pair_count").num.toLong +
+              row("source_specific_provenance_pruned_pair_count").num.toLong
+          row("parameter_position_check_count").num.toLong shouldBe
+            row("parameter_position_accepted_count").num.toLong + row("parameter_position_pruned_count").num.toLong
+          row("path_constructor_check_count").num.toLong shouldBe
+            row("path_constructor_accepted_count").num.toLong + row("path_constructor_pruned_count").num.toLong
+          row("early_candidate_short_circuit_count").num.toLong shouldBe
+            row("bridge_candidate_pc_pruned_count").num.toLong +
+              row("bridge_candidate_reachability_pruned_count").num.toLong
+          row("local_path_search_count").num.toLong shouldBe
+            row("local_path_cache_hit_count").num.toLong + row("local_path_cache_miss_count").num.toLong
+          row("distinct_local_path_query_count").num.toLong shouldBe row("local_path_cache_miss_count").num.toLong
+          row("local_path_graph_build_count").num.toLong shouldBe row("local_path_graph_cache_miss_count").num.toLong
+        }
+        pairProfiles.map(_("pair_id").str).distinct.size shouldBe pairProfiles.size
+        attribution("retained_pair_profile_count").num.toInt shouldBe pairProfiles.size
+        attribution("retained_pair_profile_count").num.toLong should be <=
+          profile("local_path_search_count").num.toLong + profile("taint_path_count").num.toLong
+        attribution("retained_pair_profile_bytes").num.toLong shouldBe
+          ujson.write(ujson.Arr.from(pairProfiles)).getBytes(StandardCharsets.UTF_8).length.toLong
+        info(
+          s"r7 retained_pair_profile_count=${pairProfiles.size} retained_pair_profile_bytes=${attribution("retained_pair_profile_bytes").num.toLong}"
+        )
+        pairProfiles.foreach { row =>
+          (row("local_path_search_count").num.toLong > 0L || row("taint_path_count").num.toLong > 0L) shouldBe true
+        }
+
+        def selectPair(
+          sourceRef: String,
+          sourceCallsiteId: String,
+          sourceTrigger: String,
+          sinkRef: String,
+          sinkCallsiteId: String,
+          sinkTrigger: String
+        ): ujson.Obj =
+          pairProfiles
+            .find(row =>
+              row("source_ref").str == sourceRef &&
+                row("source_callsite_id").str == sourceCallsiteId &&
+                row("source_trigger").str == sourceTrigger &&
+                row("sink_ref").str == sinkRef &&
+                row("sink_callsite_id").str == sinkCallsiteId &&
+                row("sink_trigger").str == sinkTrigger
+            )
+            .getOrElse(fail(s"missing attributed pair $sourceRef -> $sinkRef"))
+
+        val commonPairs = Vector(
+          selectPair("usr/lib/lua/luci/controller/api/misystem.luac:root.151@pc14:r3", "usr/lib/lua/luci/controller/api/misystem.luac::root.151@pc14", "luci.http.formvalue", "usr/lib/lua/xiaoqiang/common/XQFunction.luac:root.33@pc35:r4", "usr/lib/lua/xiaoqiang/common/XQFunction.luac::root.33@pc35", "os.execute"),
+          selectPair("usr/lib/lua/luci/controller/api/xqsystem.luac:root.40@pc31:r11", "usr/lib/lua/luci/controller/api/xqsystem.luac::root.40@pc31", "luci.http.formvalue", "usr/lib/lua/xiaoqiang/common/XQFunction.luac:root.33@pc35:r4", "usr/lib/lua/xiaoqiang/common/XQFunction.luac::root.33@pc35", "os.execute"),
+          selectPair("usr/lib/lua/luci/controller/api/misystem.luac:root.147@pc16:r4", "usr/lib/lua/luci/controller/api/misystem.luac::root.147@pc16", "luci.http.formvalue", "usr/lib/lua/luci/controller/api/misystem.luac:root.147@pc102:r9", "usr/lib/lua/luci/controller/api/misystem.luac::root.147@pc102", "os.execute")
+        )
+        commonPairs.foreach { row =>
+          row("path_constructor_check_count").num.toLong should be > 0L
+          row("local_path_search_count").num.toLong should be > 0L
+          row("taint_path_count").num.toLong should be > 0L
+          row("report_count").num.toLong should be > 0L
+        }
+
+        val targetPairs = Vector(
+          selectPair("usr/lib/lua/luci/controller/api/xqsmarthome.luac:root.5@pc3:r0", "usr/lib/lua/luci/controller/api/xqsmarthome.luac::root.5@pc3", "luci.http.formvalue", "usr/lib/lua/luci/util.luac:root.36@pc3:r2", "usr/lib/lua/luci/util.luac::root.36@pc3", "io.popen"),
+          selectPair("usr/lib/lua/luci/controller/api/xqnetwork.luac:root.93@pc28:r8", "usr/lib/lua/luci/controller/api/xqnetwork.luac::root.93@pc28", "luci.http.formvalue", "usr/lib/lua/xiaoqiang/common/XQFunction.luac:root.33@pc35:r4", "usr/lib/lua/xiaoqiang/common/XQFunction.luac::root.33@pc35", "os.execute")
+        )
+        targetPairs.foreach { row =>
+          row("path_constructor_check_count").num.toLong should be > 0L
+          row("bridge_argument_provenance_candidate_count").num.toLong should be > 0L
+          row("taint_path_count").num.toLong shouldBe 0L
+          row("report_count").num.toLong shouldBe 0L
+        }
+      }
+
+    }
+
+    "reject malformed r7 performance attribution before output creation" in {
+      val requiredCounters = Vector(
+        "source_reachability_check_count",
+        "source_reachability_accepted_count",
+        "prototype_unreachable_pair_count",
+        "source_specific_provenance_pruned_pair_count",
+        "parameter_position_check_count",
+        "parameter_position_accepted_count",
+        "parameter_position_pruned_count",
+        "path_constructor_check_count",
+        "path_constructor_accepted_count",
+        "path_constructor_pruned_count",
+        "bridge_argument_provenance_candidate_count",
+        "bridge_candidate_pc_pruned_count",
+        "bridge_candidate_reachability_pruned_count",
+        "bridge_local_path_attempt_count",
+        "bridge_local_path_success_count",
+        "local_path_search_count",
+        "distinct_local_path_query_count",
+        "local_path_cache_hit_count",
+        "local_path_cache_miss_count",
+        "local_path_graph_build_count",
+        "local_path_graph_cache_hit_count",
+        "local_path_graph_cache_miss_count",
+        "bridge_path_cache_hit_count",
+        "bridge_path_cache_miss_count",
+        "targeted_search_node_visit_count",
+        "targeted_search_edge_visit_count",
+        "early_candidate_short_circuit_count",
+        "taint_path_count",
+        "report_count"
+      )
+      val counters = requiredCounters.map(_ -> 0L).toMap ++ Map(
+        "source_reachability_check_count" -> 1L,
+        "source_reachability_accepted_count" -> 1L,
+        "parameter_position_check_count" -> 1L,
+        "parameter_position_accepted_count" -> 1L,
+        "path_constructor_check_count" -> 1L,
+        "path_constructor_accepted_count" -> 1L,
+        "local_path_search_count" -> 1L,
+        "distinct_local_path_query_count" -> 1L,
+        "local_path_cache_miss_count" -> 1L
+      )
+      val validRow = LuaPairPerformanceProfile(
+        "a.luac:root@pc1:r0",
+        "b.luac:root@pc2:r1",
+        "a.luac::root@pc1",
+        "b.luac::root@pc2",
+        "luci.http.formvalue",
+        "os.execute",
+        counters
+      )
+      val baselineSemantics = LuaProgramSemantics(
+        Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty,
+        Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty,
+        LuaPathSearchStats(0, 0, 1, 1, 1, 1, 0),
+        LuaPerformanceAttribution(1, 0, 1, 0, Vector(validRow), counters)
+      )
+      val validSemantics = baselineSemantics.copy(
+        sourceEndpoints = Vector(LuaSourceEndpoint(validRow.sourceRef, "a.luac:root@pc1:r0", validRow.sourceTrigger, "bytecode-only")),
+        sinkEndpoints = Vector(LuaSinkEndpoint(validRow.sinkRef, "b.luac:root@pc2:r1", validRow.sinkTrigger, 0, "bytecode-only"))
+      )
+      def withAggregate(updated: Map[String, Long]): LuaProgramSemantics =
+        validSemantics.copy(
+          performanceAttribution = validSemantics.performanceAttribution.copy(aggregateCounters = updated)
+        )
+      val secondRow = validRow.copy(
+        sourceRef = "c.luac:root@pc3:r0",
+        sinkRef = "d.luac:root@pc4:r1",
+        sourceCallsiteId = "c.luac::root@pc3",
+        sinkCallsiteId = "d.luac::root@pc4"
+      )
+      val malformed = Vector(
+        validSemantics.copy(performanceAttribution = validSemantics.performanceAttribution.copy(pairProfiles = Vector.empty)) -> "pair profiles are empty",
+        withAggregate(counters - "report_count") -> "aggregate counter keys do not exactly match",
+        withAggregate(counters + ("unknown_count" -> 1L)) -> "aggregate counter keys do not exactly match",
+        validSemantics.copy(performanceAttribution = validSemantics.performanceAttribution.copy(p1CandidateCount = 2L)) -> "P1 candidate count does not partition",
+        withAggregate(counters.updated("parameter_position_check_count", 2L)) -> "parameter position partition mismatch for aggregate",
+        withAggregate(counters.updated("source_reachability_check_count", 2L)) -> "source reachability partition mismatch for aggregate",
+        withAggregate(counters.updated("bridge_candidate_pc_pruned_count", 1L)) -> "bridge candidate partition mismatch for aggregate",
+        validSemantics.copy(pathSearchStats = validSemantics.pathSearchStats.copy(localPathSearchCount = 2)) -> "aggregate local path search count does not match legacy count",
+        validSemantics.copy(performanceAttribution = validSemantics.performanceAttribution.copy(pairProfiles = Vector(validRow.copy(counters = counters.updated("taint_path_count", 1L))))) -> "path reconciliation mismatch",
+        validSemantics.copy(performanceAttribution = validSemantics.performanceAttribution.copy(pairProfiles = Vector(validRow.copy(counters = counters.updated("report_count", 1L))))) -> "report reconciliation mismatch",
+        validSemantics.copy(performanceAttribution = validSemantics.performanceAttribution.copy(pairProfiles = Vector(validRow, secondRow))) -> "retained pair profile count exceeds",
+        validSemantics.copy(performanceAttribution = validSemantics.performanceAttribution.copy(pairProfiles = Vector(validRow.copy(sourceTrigger = "x" * 5000)))) -> "retained pair profile payload exceeds",
+        validSemantics.copy(performanceAttribution = validSemantics.performanceAttribution.copy(pairProfiles = Vector(validRow, validRow))) -> "pair identities are not unique",
+        validSemantics.copy(performanceAttribution = validSemantics.performanceAttribution.copy(pairProfiles = Vector(validRow.copy(counters = counters - "report_count")))) -> "counter keys do not exactly match",
+        validSemantics.copy(performanceAttribution = validSemantics.performanceAttribution.copy(pairProfiles = Vector(validRow.copy(counters = counters + ("unknown_count" -> 1L))))) -> "counter keys do not exactly match",
+        validSemantics.copy(performanceAttribution = validSemantics.performanceAttribution.copy(pairProfiles = Vector(validRow.copy(sourceCallsiteId = "b.luac::root@pc1")))) -> "mismatched source identity",
+        validSemantics.copy(performanceAttribution = validSemantics.performanceAttribution.copy(pairProfiles = Vector(validRow.copy(sourceTrigger = "")))) -> "empty trigger",
+        validSemantics.copy(performanceAttribution = validSemantics.performanceAttribution.copy(pairProfiles = Vector(validRow.copy(counters = counters.updated("path_constructor_accepted_count", 0L))))) -> "path constructor partition mismatch"
+      )
+
+      malformed.foreach { case (semantics, expectedMessage) =>
+        FileUtil.usingTemporaryDirectory("lua2cpg-invalid-r7-attribution") { tmpDir =>
+          val exportDir = tmpDir.resolve("must-not-exist")
+          val error = intercept[IllegalStateException](LuaRealFirmwareEvidenceExporter.write(
+            Config(realFirmwareOutputDir = Some(exportDir.toString)),
+            Vector.empty,
+            semantics
+          ))
+          error.getMessage should include(expectedMessage)
+          Files.exists(exportDir) shouldBe false
+        }
       }
     }
 
