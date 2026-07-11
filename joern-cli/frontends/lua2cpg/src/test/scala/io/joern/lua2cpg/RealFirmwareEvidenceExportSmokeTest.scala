@@ -293,11 +293,12 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
-    "distinguish CrossPlatform r5 direct-jump rows from strict source-scoped path evidence" in {
+    "distinguish source-value bridge proof from representative bridge proof" in {
       withXiaomiStagingRows { stagingRows =>
         val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
         val sinkRows   = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
         val bridgeRows = stagingRows.flatMap(_("interproc_arg_flow").arr.map(_.obj))
+        val defuseRows = stagingRows.flatMap(_("defuse_paths").arr.map(_.obj))
         val pathRows   = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
 
         def hasSource(moduleSuffix: String, pc: Int, trigger: String): Boolean =
@@ -384,7 +385,13 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
           "usr/lib/lua/xiaoqiang/common/XQFunction.luac",
           35,
           "os.execute"
-        ).isDefined shouldBe false
+        ).isDefined shouldBe true
+
+        defuseRows.exists(row =>
+          row("source_ref").str == "root.37@pc57:r15" &&
+            row("sink_ref").str == "root.37@pc114:r28" &&
+            row("first_missing_edge").str == "none"
+        ) shouldBe false
 
         val strictBridgePath = pathByFunction(
           "usr/lib/lua/luci/controller/api/misystem.luac",
