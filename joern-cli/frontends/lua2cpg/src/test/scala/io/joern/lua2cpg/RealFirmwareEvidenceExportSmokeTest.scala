@@ -404,6 +404,50 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "preserve CrossPlatform r5 representative bridge rows without unscoped fallback" in {
+      withXiaomiStagingRows { stagingRows =>
+        val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
+        val sinkRows   = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
+        val pathRows   = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val sourceModule = "usr/lib/lua/luci/controller/api/misystem.luac"
+        val sinkModule   = "usr/lib/lua/xiaoqiang/common/XQFunction.luac"
+
+        sourceRows.exists(row =>
+          row("module_path").str.endsWith(sourceModule) &&
+            row("callsite_id").str.contains("::") &&
+            row("callsite_id").str.endsWith("@pc16") &&
+            row("trigger").str == "luci.http.formvalue"
+        ) shouldBe true
+
+        sinkRows.exists(row =>
+          row("module_path").str.endsWith(sinkModule) &&
+            row("callsite_id").str.endsWith("::root.33@pc35") &&
+            row("trigger").str == "os.execute"
+        ) shouldBe true
+
+        val representativePath = pathRows.find(row =>
+          row("source_module_path").str.endsWith(sourceModule) &&
+            row("source_function_name").str == "changePassword" &&
+            row("source_pc").num.toInt == 16 &&
+            row("source_trigger").str == "luci.http.formvalue" &&
+            row("sink_module_path").str.endsWith(sinkModule) &&
+            row("sink_function_name").str == "nvramSet" &&
+            row("sink_pc").num.toInt == 35 &&
+            row("sink_trigger").str == "os.execute" &&
+            row("path_steps").arr.nonEmpty &&
+            row("path_steps").arr.forall(_.str.contains("::"))
+        )
+
+        representativePath.isDefined shouldBe true
+        representativePath.get.obj.contains("callsite_id") shouldBe false
+
+        val steps = representativePath.get("path_steps").arr.map(_.str)
+        steps.exists(_.startsWith(s"$sourceModule::")) shouldBe true
+        steps.exists(_.startsWith(s"$sinkModule::")) shouldBe true
+      }
+    }
+
     "export CrossPlatform r5 residual sink endpoints and source-to-sink paths" in {
       withXiaomiStagingRows { stagingRows =>
         val sinkRows = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
