@@ -416,7 +416,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         sourceRows.exists(row =>
           row("module_path").str.endsWith(sourceModule) &&
             row("callsite_id").str.contains("::") &&
-            row("callsite_id").str.endsWith("@pc16") &&
+            row("callsite_id").str.endsWith("::root.151@pc8") &&
             row("trigger").str == "luci.http.formvalue"
         ) shouldBe true
 
@@ -428,8 +428,8 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
 
         val representativePath = pathRows.find(row =>
           row("source_module_path").str.endsWith(sourceModule) &&
-            row("source_function_name").str == "changePassword" &&
-            row("source_pc").num.toInt == 16 &&
+            row("source_function_name").str == "memTestConfig" &&
+            row("source_pc").num.toInt == 8 &&
             row("source_trigger").str == "luci.http.formvalue" &&
             row("sink_module_path").str.endsWith(sinkModule) &&
             row("sink_function_name").str == "nvramSet" &&
