@@ -715,7 +715,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
-    "short-circuit CrossPlatform captured-require bridge search after the first strict path" in {
+    "prune CrossPlatform captured-require bridge flows before local path search" in {
       withXiaomiExportDir { exportDir =>
         val profile = ujson.read(Files.readString(exportDir.resolve("path-search-profile.json"))).obj
         val pairProfiles = profile("performance_attribution")("pair_profiles").arr.map(_.obj)
@@ -735,7 +735,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         targetPair("taint_path_count").num.toLong shouldBe 1L
         targetPair("report_count").num.toLong shouldBe 1L
         targetPair("bridge_local_path_success_count").num.toLong shouldBe 6L
-        targetPair("bridge_local_path_attempt_count").num.toLong should be < 131L
+        targetPair("bridge_local_path_attempt_count").num.toLong should be <= 12L
       }
     }
 
@@ -1142,15 +1142,22 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
           row("report_count").num.toLong should be > 0L
         }
 
-        val targetPairs = Vector(
-          selectPair("usr/lib/lua/luci/controller/api/xqsmarthome.luac:root.5@pc3:r0", "usr/lib/lua/luci/controller/api/xqsmarthome.luac::root.5@pc3", "luci.http.formvalue", "usr/lib/lua/luci/util.luac:root.36@pc3:r2", "usr/lib/lua/luci/util.luac::root.36@pc3", "io.popen"),
+        val unresolvedTargetPair =
+          selectPair("usr/lib/lua/luci/controller/api/xqsmarthome.luac:root.5@pc3:r0", "usr/lib/lua/luci/controller/api/xqsmarthome.luac::root.5@pc3", "luci.http.formvalue", "usr/lib/lua/luci/util.luac:root.36@pc3:r2", "usr/lib/lua/luci/util.luac::root.36@pc3", "io.popen")
+        unresolvedTargetPair("path_constructor_check_count").num.toLong should be > 0L
+        unresolvedTargetPair("bridge_argument_provenance_candidate_count").num.toLong should be > 0L
+        unresolvedTargetPair("taint_path_count").num.toLong shouldBe 0L
+        unresolvedTargetPair("report_count").num.toLong shouldBe 0L
+
+        val recoveredTargetPair =
           selectPair("usr/lib/lua/luci/controller/api/xqnetwork.luac:root.93@pc28:r8", "usr/lib/lua/luci/controller/api/xqnetwork.luac::root.93@pc28", "luci.http.formvalue", "usr/lib/lua/xiaoqiang/common/XQFunction.luac:root.33@pc35:r4", "usr/lib/lua/xiaoqiang/common/XQFunction.luac::root.33@pc35", "os.execute")
-        )
-        targetPairs.foreach { row =>
+        recoveredTargetPair("path_constructor_check_count").num.toLong should be > 0L
+        recoveredTargetPair("bridge_argument_provenance_candidate_count").num.toLong should be > 0L
+        recoveredTargetPair("taint_path_count").num.toLong shouldBe 1L
+        recoveredTargetPair("report_count").num.toLong shouldBe 1L
+        Vector(unresolvedTargetPair, recoveredTargetPair).foreach { row =>
           row("path_constructor_check_count").num.toLong should be > 0L
           row("bridge_argument_provenance_candidate_count").num.toLong should be > 0L
-          row("taint_path_count").num.toLong shouldBe 0L
-          row("report_count").num.toLong shouldBe 0L
         }
       }
 
