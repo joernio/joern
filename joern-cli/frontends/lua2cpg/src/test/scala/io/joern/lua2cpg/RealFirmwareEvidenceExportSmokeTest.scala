@@ -835,6 +835,36 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r7 setAllWifi path through conditional call result flow" in {
+      withXiaomiStagingRows { stagingRows =>
+        val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val path = pathRows
+          .find(row =>
+            row("source_module_path").str == "usr/lib/lua/luci/controller/api/xqnetwork.luac" &&
+              row("source_function_name").str == "setAllWifi" &&
+              row("source_pc").num.toInt == 40 &&
+              row("source_trigger").str == "luci.http.formvalue" &&
+              row("sink_module_path").str == "usr/lib/lua/xiaoqiang/common/XQFunction.luac" &&
+              row("sink_function_name").str == "nvramSet" &&
+              row("sink_pc").num.toInt == 35 &&
+              row("sink_trigger").str == "os.execute" &&
+              row("path_steps").arr.nonEmpty &&
+              row("path_steps").arr.forall(_.str.contains("::")) &&
+              !row.obj.contains("callsite_id")
+          )
+          .getOrElse(fail("missing setAllWifi to XQFunction.nvramSet strict path"))
+
+        val steps = path("path_steps").arr.map(_.str)
+        steps should contain("usr/lib/lua/luci/controller/api/xqnetwork.luac::root.15@pc40:r13")
+        steps should contain("usr/lib/lua/luci/controller/api/xqnetwork.luac::root.15@pc287:r13")
+        steps should contain("usr/lib/lua/luci/controller/api/xqnetwork.luac::root.15@pc287:r48")
+        steps should contain("usr/lib/lua/luci/controller/api/xqnetwork.luac::root.15@pc300:r48")
+        steps should contain("usr/lib/lua/xiaoqiang/util/XQWifiUtil.luac::root.41:r2")
+        steps should contain("usr/lib/lua/xiaoqiang/common/XQFunction.luac::root.33@pc35:r4")
+      }
+    }
+
     "prune CrossPlatform captured-require bridge flows before local path search" in {
       withXiaomiExportDir { exportDir =>
         val profile = ujson.read(Files.readString(exportDir.resolve("path-search-profile.json"))).obj

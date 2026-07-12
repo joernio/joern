@@ -305,8 +305,10 @@ object LuaInstructionSemantics {
     private var closureTableWrites = Map.empty[(Int, String), LuaClosureValue]
     private var globalWrites       = Map.empty[String, Set[String]]
     private var mutatedUpvalues    = Set.empty[Int]
+    private var conditionalWriteUntilPc = Option.empty[Int]
 
     def visit(instruction: LuaInstruction): Unit = {
+      conditionalWriteUntilPc = conditionalWriteUntilPc.filter(instruction.pc < _)
       instruction.opcode match {
         case LuaOpcode.Move =>
           val source = readSlot(instruction, instruction.b)
@@ -403,6 +405,9 @@ object LuaInstructionSemantics {
             rkRegister(instruction.b).foreach(readSlot(instruction, _))
             rkRegister(c).foreach(readSlot(instruction, _))
           }
+      }
+      forwardJumpTargetPc(instruction).foreach { target =>
+        conditionalWriteUntilPc = Some(math.max(conditionalWriteUntilPc.getOrElse(target), target))
       }
     }
 
@@ -585,25 +590,41 @@ object LuaInstructionSemantics {
         localFlows += LuaLocalFlow(source, write, "same-instruction-dependence", BytecodeProvenance)
         semanticSteps += LuaSemanticStep(source, write, kind)
       }
-      reaching.get(slot).foreach { prior =>
-        if (prior.nonEmpty && !prior.contains(write)) {
-          prior.foreach { first =>
-            killOverwrites += LuaKillOverwrite(
-              s"${prototype.prototypeId}:pc${instruction.pc}:r$slot:kills:$first",
-              prototype.prototypeId,
-              first,
-              write,
-              write,
-              write,
-              "same-slot-overwrite-kills-prior-definition"
-            )
+      if (conditionalWriteUntilPc.isDefined && isConditionalDefaultWrite(instruction)) {
+        reaching += slot -> (reaching.getOrElse(slot, Set.empty) + write)
+      } else {
+        reaching.get(slot).foreach { prior =>
+          if (prior.nonEmpty && !prior.contains(write)) {
+            prior.foreach { first =>
+              killOverwrites += LuaKillOverwrite(
+                s"${prototype.prototypeId}:pc${instruction.pc}:r$slot:kills:$first",
+                prototype.prototypeId,
+                first,
+                write,
+                write,
+                write,
+                "same-slot-overwrite-kills-prior-definition"
+              )
+            }
           }
         }
+        reaching += slot -> Set(write)
+        closuresBySlot -= slot
+        closureTableWrites = closureTableWrites.filterNot { case ((tableSlot, _), _) => tableSlot == slot }
       }
     }
-      reaching += slot -> Set(write)
-      closuresBySlot -= slot
-      closureTableWrites = closureTableWrites.filterNot { case ((tableSlot, _), _) => tableSlot == slot }
+
+    private def forwardJumpTargetPc(instruction: LuaInstruction): Option[Int] =
+      if (instruction.opcode == LuaOpcode.Jmp) {
+        val target = instruction.pc + 1 + instruction.b
+        Option.when(target > instruction.pc + 1)(target)
+      } else {
+        None
+      }
+
+    private def isConditionalDefaultWrite(instruction: LuaInstruction): Boolean =
+      instruction.opcode == LuaOpcode.LoadK || instruction.opcode == LuaOpcode.LoadBool ||
+        instruction.opcode == LuaOpcode.LoadNil
 
     private def isParamDerived(slot: Int): Boolean =
       reachesParameter(reaching.getOrElse(slot, Set.empty), Set.empty)
