@@ -783,6 +783,58 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r7 requestMitv paths through referenceAnalyzer-equivalent call result flow" in {
+      withXiaomiStagingRows { stagingRows =>
+        val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        def requestMitvPath(sinkModule: String, sinkFunction: String, sinkPc: Int, sinkTrigger: String) =
+          pathRows.find(row =>
+            row("source_module_path").str == "usr/lib/lua/luci/controller/api/xqsmarthome.luac" &&
+              row("source_function_name").str == "requestMitv" &&
+              row("source_pc").num.toInt == 3 &&
+              row("source_trigger").str == "luci.http.formvalue" &&
+              row("sink_module_path").str == sinkModule &&
+              row("sink_function_name").str == sinkFunction &&
+              row("sink_pc").num.toInt == sinkPc &&
+              row("sink_trigger").str == sinkTrigger &&
+              row("path_steps").arr.nonEmpty &&
+              row("path_steps").arr.forall(_.str.contains("::")) &&
+              !row.obj.contains("callsite_id")
+          )
+
+        val doExecPath = requestMitvPath(
+          "usr/lib/lua/xiaoqiang/util/XQMitvUtil.luac",
+          "DoExec",
+          10,
+          "luci.util.exec"
+        ).getOrElse(fail("missing requestMitv to XQMitvUtil.DoExec strict path"))
+        val doExecSteps = doExecPath("path_steps").arr.map(_.str)
+
+        doExecSteps should contain("usr/lib/lua/luci/controller/api/xqsmarthome.luac::root.5@pc3:r0")
+        doExecSteps should contain("usr/lib/lua/luci/controller/api/xqsmarthome.luac::root.5@pc11:r4")
+        doExecSteps should contain("usr/lib/lua/xiaoqiang/util/XQMitvUtil.luac::root.1:r0")
+        doExecSteps should contain("usr/lib/lua/xiaoqiang/util/XQMitvUtil.luac::root.1@pc7:r2")
+        doExecSteps should contain("usr/lib/lua/xiaoqiang/util/XQMitvUtil.luac::root.1@pc7:r1")
+        doExecSteps.exists(_.startsWith("usr/lib/lua/xiaoqiang/util/XQMitvUtil.luac::root.0")) shouldBe true
+        doExecSteps should contain("usr/lib/lua/xiaoqiang/util/XQMitvUtil.luac::root.0@pc10:r3")
+
+        val popenPath = requestMitvPath(
+          "usr/lib/lua/luci/util.luac",
+          "exec",
+          3,
+          "io.popen"
+        ).getOrElse(fail("missing requestMitv to luci.util.exec strict path"))
+        val popenSteps = popenPath("path_steps").arr.map(_.str)
+
+        popenSteps should contain("usr/lib/lua/luci/controller/api/xqsmarthome.luac::root.5@pc3:r0")
+        popenSteps should contain("usr/lib/lua/xiaoqiang/util/XQMitvUtil.luac::root.1@pc7:r2")
+        popenSteps should contain("usr/lib/lua/xiaoqiang/util/XQMitvUtil.luac::root.1@pc7:r1")
+        popenSteps should contain("usr/lib/lua/xiaoqiang/util/XQMitvUtil.luac::root.0@pc10:r3")
+        popenSteps should contain("usr/lib/lua/luci/util.luac::root.36:r0")
+        popenSteps should contain("usr/lib/lua/luci/util.luac::root.36@pc3:r2")
+      }
+    }
+
     "prune CrossPlatform captured-require bridge flows before local path search" in {
       withXiaomiExportDir { exportDir =>
         val profile = ujson.read(Files.readString(exportDir.resolve("path-search-profile.json"))).obj

@@ -427,10 +427,11 @@ object LuaInstructionSemantics {
       val targetClosure = closuresBySlot.get(instruction.a)
       val targetRead    = readSlot(instruction, instruction.a)
       val argSlots      = callArgumentSlots(instruction)
-      argSlots.foreach(readSlot(instruction, _))
-      val returnSlots = callReturnSlots(instruction)
+      val argumentReads = argSlots.map(readSlot(instruction, _))
+      val returnSlots   = callReturnSlots(instruction)
+      val callReads     = (targetRead +: argumentReads).toSet
       returnSlots.foreach { slot =>
-        writeSlot(instruction, slot, Set(slotRef(instruction.pc, slot)), "call-return")
+        writeSlot(instruction, slot, callReads, "call-return")
       }
       val callsite = LuaCallSite(
         callsiteId = instructionRef(instruction.pc),
@@ -467,13 +468,13 @@ object LuaInstructionSemantics {
 
     private def handleGetTable(instruction: LuaInstruction): Unit = {
       val tableSlot = instruction.b
-      readSlot(instruction, tableSlot)
-      instruction.c.flatMap(rkRegister).foreach(readSlot(instruction, _))
-      val write = slotRef(instruction.pc, instruction.a)
+      val tableRead = readSlot(instruction, tableSlot)
+      val keyReads  = instruction.c.flatMap(rkRegister).map(readSlot(instruction, _)).toSet
+      val write     = slotRef(instruction.pc, instruction.a)
       val loadedClosure = instruction.c
         .flatMap(rkConstantName)
         .flatMap(key => closureTableWrites.get((tableSlot, key)))
-      writeSlot(instruction, instruction.a, Set(write), "gettable")
+      writeSlot(instruction, instruction.a, keyReads + tableRead, "gettable")
       instruction.c.flatMap(rkConstantRef).foreach { key =>
         tableWrites.get((tableSlot, key)).foreach { sources =>
           sources.foreach { source =>
