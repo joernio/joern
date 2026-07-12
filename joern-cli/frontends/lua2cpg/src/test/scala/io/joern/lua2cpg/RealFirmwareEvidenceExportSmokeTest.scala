@@ -715,6 +715,74 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r7 setWifiApMode to XQSynchrodata path with exact module scope" in {
+      withXiaomiStagingRows { stagingRows =>
+        val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+        val targetPath = pathRows.find(row =>
+          row("source_module_path").str.endsWith("usr/lib/lua/luci/controller/api/xqnetwork.luac") &&
+            row("source_function_name").str == "setWifiApMode" &&
+            row("source_pc").num.toInt == 28 &&
+            row("source_trigger").str == "luci.http.formvalue" &&
+            row("sink_module_path").str.endsWith("usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac") &&
+            row("sink_function_name").str == "func_unknow_0_0" &&
+            row("sink_pc").num.toInt == 25 &&
+            row("sink_trigger").str == "os.execute"
+        )
+
+        targetPath.isDefined shouldBe true
+        val pathSteps = targetPath.get("path_steps").arr.map(_.str)
+        pathSteps should contain("usr/lib/lua/luci/controller/api/xqnetwork.luac::root.93@pc28:r8")
+        pathSteps.exists(_.startsWith("usr/lib/lua/xiaoqiang/module/XQAPModule.luac::")) shouldBe true
+        pathSteps should contain("usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac::root.0@pc25:r4")
+        pathSteps.foreach(_ should include("::"))
+        targetPath.get.obj.contains("callsite_id") shouldBe false
+      }
+    }
+
+    "export CrossPlatform r7 XQSynchrodata synthetic report-facing function identity" in {
+      withXiaomiStagingRows { stagingRows =>
+        val synchrodata = stagingRows
+          .find(_("relative_path").str.endsWith("usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac"))
+          .getOrElse(fail("missing XQSynchrodata staging evidence"))
+
+        val identityRows = synchrodata("function_identity").arr.map(_.obj)
+        identityRows.exists(row =>
+          row("module_path").str == "usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac" &&
+            row("prototype_id").str == "root.0" &&
+            row("display_name").str == "func_unknow_0_0" &&
+            row("identity_kind").str == "synthetic" &&
+            row("provenance").str == "upstream-lua2cpg,bytecode-only,synthetic-name"
+        ) shouldBe true
+      }
+    }
+
+    "export CrossPlatform r7 XQWifiUtil to XQSynchrodata strict producer evidence" in {
+      withXiaomiStagingRows { stagingRows =>
+        val wifiUtil = stagingRows
+          .find(_("relative_path").str.endsWith("usr/lib/lua/xiaoqiang/util/XQWifiUtil.luac"))
+          .getOrElse(fail("missing XQWifiUtil staging evidence"))
+
+        val linkageRows = wifiUtil("module_linkage").arr.map(_.obj)
+        linkageRows.exists(row =>
+          row("callsite_id").str == "usr/lib/lua/xiaoqiang/util/XQWifiUtil.luac::root.41@pc225" &&
+            row("target_module_path").str == "usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac" &&
+            row("target_prototype_id").str == "root.3" &&
+            row("field_name").str == "syncWiFiSSID" &&
+            row("resolution_status").str == "matched"
+        ) shouldBe true
+
+        val argRows = wifiUtil("interproc_arg_flow").arr.map(_.obj)
+        argRows.exists(row =>
+          row("callsite_id").str == "usr/lib/lua/xiaoqiang/util/XQWifiUtil.luac::root.41@pc225" &&
+            row("from_argument_ref").str == "usr/lib/lua/xiaoqiang/util/XQWifiUtil.luac:root.41@pc225:r22" &&
+            row("argument_index").num.toInt == 1 &&
+            row("target_module_path").str == "usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac" &&
+            row("target_prototype_id").str == "root.3" &&
+            row("to_parameter_ref").str == "usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac:root.3:r1"
+        ) shouldBe true
+      }
+    }
+
     "prune CrossPlatform captured-require bridge flows before local path search" in {
       withXiaomiExportDir { exportDir =>
         val profile = ujson.read(Files.readString(exportDir.resolve("path-search-profile.json"))).obj

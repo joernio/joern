@@ -70,6 +70,7 @@ object LuaRealFirmwareEvidenceExporter {
     val prototypes   = result.root.toVector.flatMap(allPrototypes)
     val local        = localSemantics(result)
 
+    val exportedNamesByPrototype = exportedFunctionNamesByPrototype(semantics)
     ujson.Obj(
       "artifact_id"          -> artifactId,
       "relative_path"        -> relativeName,
@@ -83,7 +84,7 @@ object LuaRealFirmwareEvidenceExporter {
       "unresolved_values"    -> ujson.Arr(),
       "upvalue_flows"        -> local.upvalueFlows.map(upvalueFlowJson),
       "defuse_paths"         -> local.localFlows.map(defusePathJson(relativeName)),
-      "function_identity"    -> prototypes.map(functionIdentityJson(artifactId, relativeName)),
+      "function_identity" -> prototypes.map(functionIdentityJson(artifactId, relativeName, exportedNamesByPrototype)),
       "module_resolution" -> semantics.moduleResolutions
         .filter(_.fromModulePath == relativeName)
         .map(moduleResolutionJson),
@@ -332,17 +333,23 @@ object LuaRealFirmwareEvidenceExporter {
       "provenance"         -> row.provenance
     )
 
-  private def functionIdentityJson(artifactId: String, relativeName: String)(prototype: LuaPrototype): ujson.Obj =
+  private def functionIdentityJson(
+    artifactId: String,
+    relativeName: String,
+    exportedNamesByPrototype: Map[(String, String), String]
+  )(prototype: LuaPrototype): ujson.Obj = {
+    val identity = functionDisplayIdentity(exportedNamesByPrototype, relativeName, prototype.prototypeId)
     ujson.Obj(
       "identity_id"   -> s"$relativeName:${prototype.prototypeId}",
       "artifact_id"   -> artifactId,
       "artifact_role" -> "main",
       "module_path"   -> relativeName,
       "prototype_id"  -> prototype.prototypeId,
-      "display_name"  -> prototype.prototypeId,
-      "identity_kind" -> "bytecode-prototype-id",
-      "provenance"    -> "upstream-lua2cpg,bytecode-only,prototype-identity"
+      "display_name"  -> identity.displayName,
+      "identity_kind" -> identity.identityKind,
+      "provenance"    -> identity.provenance
     )
+  }
 
   private def moduleResolutionJson(row: LuaModuleResolution): ujson.Obj =
     ujson.Obj(
@@ -461,12 +468,7 @@ object LuaRealFirmwareEvidenceExporter {
   }
 
   private def pathEvidenceRows(relativeName: String, semantics: LuaProgramSemantics): Vector[ujson.Obj] = {
-    val exportedNamesByPrototype = semantics.moduleReturnTables
-      .groupBy(item => item.modulePath -> item.targetPrototypeId)
-      .view
-      .mapValues(_.map(_.fieldName).distinct.sorted)
-      .collect { case (key, Vector(singleName)) => key -> singleName }
-      .toMap
+    val exportedNamesByPrototype = exportedFunctionNamesByPrototype(semantics)
     semantics.taintPaths.filter(_.sourceRef.startsWith(s"$relativeName:")).map { row =>
       val report =
         semantics.reportClassifications.find(item => item.sourceRef == row.sourceRef && item.sinkRef == row.sinkRef)
@@ -529,7 +531,54 @@ object LuaRealFirmwareEvidenceExporter {
     modulePath: String,
     prototypeId: String
   ): String =
-    exportedNamesByPrototype.getOrElse(modulePath -> prototypeId, prototypeId)
+    functionDisplayIdentity(exportedNamesByPrototype, modulePath, prototypeId).displayName
+
+  private final case class FunctionDisplayIdentity(displayName: String, identityKind: String, provenance: String)
+
+  private def exportedFunctionNamesByPrototype(semantics: LuaProgramSemantics): Map[(String, String), String] =
+    semantics.moduleReturnTables
+      .groupBy(item => item.modulePath -> item.targetPrototypeId)
+      .view
+      .mapValues(_.map(_.fieldName).distinct.sorted)
+      .collect { case (key, Vector(singleName)) => key -> singleName }
+      .toMap
+
+  private def functionDisplayIdentity(
+    exportedNamesByPrototype: Map[(String, String), String],
+    modulePath: String,
+    prototypeId: String
+  ): FunctionDisplayIdentity =
+    exportedNamesByPrototype.get(modulePath -> prototypeId) match {
+      case Some(displayName) =>
+        FunctionDisplayIdentity(displayName, "synthetic", "upstream-lua2cpg,bytecode-only,synthetic-name")
+      case None =>
+        syntheticPrototypeDisplayName(prototypeId) match {
+          case Some(displayName) =>
+            FunctionDisplayIdentity(displayName, "synthetic", "upstream-lua2cpg,bytecode-only,synthetic-name")
+          case None =>
+            FunctionDisplayIdentity(
+              prototypeId,
+              "bytecode-prototype-id",
+              "upstream-lua2cpg,bytecode-only,prototype-identity"
+            )
+        }
+    }
+
+  private def syntheticPrototypeDisplayName(prototypeId: String): Option[String] =
+    if (prototypeId == "root") None
+    else {
+      val prefix = "root."
+      if (!prototypeId.startsWith(prefix)) {
+        throw new IllegalArgumentException(
+          s"unsupported Lua prototype id for synthetic function identity: $prototypeId"
+        )
+      }
+      val ordinalPath = prototypeId.stripPrefix(prefix).split('.').toVector
+      if (ordinalPath.exists(_.forall(_.isDigit) == false)) {
+        throw new IllegalArgumentException(s"non-numeric Lua prototype ordinal path: $prototypeId")
+      }
+      Some(s"func_unknow_0_${ordinalPath.mkString("_")}")
+    }
 
   private def sanitizerHitsFor(path: LuaTaintPath, semantics: LuaProgramSemantics): ujson.Arr =
     ujson.Arr.from(
