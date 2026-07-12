@@ -543,23 +543,23 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     }
   }
 
-  "Members for anonymous class directly under class created" in {
+  "Anonymous class in field initializer lowered into the default constructor" in {
     val cpg = code("""<?php
       |class Foo {
       |  public $foo = new class(10) {
       |   private int $x;
       |  };
       |}""".stripMargin)
-    inside(cpg.typeDecl.name("Foo").member.l) { case _ :: fooAnonMem :: Nil =>
-      fooAnonMem.name shouldBe "Foo.anon-class-0"
-    }
+    cpg.typeDecl.name("Foo").member.name.l shouldBe List("foo")
+    cpg.typeDecl.fullNameExact("Foo.__construct.anon-class-0").nonEmpty shouldBe true
     inside(cpg.local.l) { case List(fooLocal) =>
-      fooLocal.name shouldBe "Foo@tmp-0"
+      fooLocal.name shouldBe "Foo.__construct@tmp-0"
+      fooLocal.method.name.l shouldBe List("__construct")
       fooLocal.astIn.isBlock.loneElement.astChildren.code.l shouldBe List(
-        "$Foo@tmp-0",
-        "$Foo@tmp-0 = Foo.anon-class-0.<alloc>()",
-        "new Foo.anon-class-0(10)",
-        "$Foo@tmp-0"
+        "$Foo.__construct@tmp-0",
+        "$Foo.__construct@tmp-0 = Foo.__construct.anon-class-0.<alloc>()",
+        "new Foo.__construct.anon-class-0(10)",
+        "$Foo.__construct@tmp-0"
       )
     }
   }
