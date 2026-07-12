@@ -715,6 +715,30 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "short-circuit CrossPlatform captured-require bridge search after the first strict path" in {
+      withXiaomiExportDir { exportDir =>
+        val profile = ujson.read(Files.readString(exportDir.resolve("path-search-profile.json"))).obj
+        val pairProfiles = profile("performance_attribution")("pair_profiles").arr.map(_.obj)
+        val targetPair = pairProfiles
+          .find(row =>
+            row("source_ref").str ==
+              "usr/lib/lua/luci/controller/api/xqnetwork.luac:root.93@pc28:r8" &&
+              row("source_callsite_id").str ==
+                "usr/lib/lua/luci/controller/api/xqnetwork.luac::root.93@pc28" &&
+              row("sink_ref").str ==
+                "usr/lib/lua/xiaoqiang/common/XQFunction.luac:root.33@pc35:r4" &&
+              row("sink_callsite_id").str ==
+                "usr/lib/lua/xiaoqiang/common/XQFunction.luac::root.33@pc35"
+          )
+          .getOrElse(fail("missing attributed captured-require pair"))
+
+        targetPair("taint_path_count").num.toLong shouldBe 1L
+        targetPair("report_count").num.toLong shouldBe 1L
+        targetPair("bridge_local_path_success_count").num.toLong shouldBe 6L
+        targetPair("bridge_local_path_attempt_count").num.toLong should be < 131L
+      }
+    }
+
     "export CrossPlatform r7 residual source-to-sink paths and miats sink endpoint" in {
       withXiaomiStagingRows { stagingRows =>
         val sinkRows = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
