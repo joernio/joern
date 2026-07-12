@@ -682,6 +682,19 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r7 miats pc148 sink endpoint with exact module scope" in {
+      withXiaomiStagingRows { stagingRows =>
+        val sinkRows = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
+
+        sinkRows.count(row =>
+          row("module_path").str.endsWith("usr/lib/lua/luci/controller/api/miats.luac") &&
+            row("callsite_id").str.contains("::") &&
+            row("callsite_id").str.endsWith("@pc148") &&
+            row("trigger").str == "luci.util.exec"
+        ) shouldBe 1
+      }
+    }
+
     "export CrossPlatform r7 residual source-to-sink paths and miats sink endpoint" in {
       withXiaomiStagingRows { stagingRows =>
         val sinkRows = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
