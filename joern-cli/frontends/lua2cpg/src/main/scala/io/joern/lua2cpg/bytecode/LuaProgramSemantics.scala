@@ -1867,6 +1867,9 @@ object LuaProgramSemantics {
           .contains(resolved)
     )
 
+  private def isRepresentativeIteratorCall(name: Option[String]): Boolean =
+    name.exists(Set("ipairs", "pairs").contains)
+
   private def representativeTableValueEdges(module: ModuleSummary): Vector[(String, String)] =
     module.prototypes.flatMap { prototype =>
       val tableSourcesBySlot = scala.collection.mutable.Map.empty[Int, Set[String]].withDefaultValue(Set.empty)
@@ -1921,7 +1924,7 @@ object LuaProgramSemantics {
   private def representativeIteratorValueEdges(module: ModuleSummary): Vector[(String, String)] =
     module.prototypes.flatMap { prototype =>
       prototype.calls
-        .filter(call => call.resolvedName.contains("ipairs"))
+        .filter(call => isRepresentativeIteratorCall(call.resolvedName))
         .flatMap { iteratorCall =>
           val iteratorInputs = iteratorCall.argumentRefs.map(qualify(module.path, _))
           for {
@@ -1962,18 +1965,23 @@ object LuaProgramSemantics {
     val loopValueSlots = tforLoop.c
       .map(count => (tforLoop.a + 3 until tforLoop.a + 3 + count).toSet)
       .getOrElse(Set.empty)
-    prototype.instructions
+    val bodyInstructions = prototype.instructions
       .filter(instruction => instruction.pc > loop.bodyStartPc && instruction.pc < tforLoop.pc)
-      .collect {
-        case instruction
-            if instruction.opcode == LuaOpcode.GetTable &&
-              loopValueSlots(instruction.b) &&
-              instruction.c.exists(_ >= RkConstantBase) =>
-          val tableRead = qualify(modulePath, valueRef(prototype.prototypeId, instruction.pc, instruction.b))
-          val fieldRead = qualify(modulePath, valueRef(prototype.prototypeId, instruction.pc, instruction.a))
-          Vector(iteratorInput -> tableRead, tableRead -> fieldRead)
-      }
-      .flatten
+    val loopValueReadEdges = bodyInstructions.flatMap { instruction =>
+      representativeReadSlots(prototype, instruction)
+        .filter(loopValueSlots)
+        .map(slot => iteratorInput -> qualify(modulePath, valueRef(prototype.prototypeId, instruction.pc, slot)))
+    }
+    val tableReadEdges = bodyInstructions.collect {
+      case instruction
+          if instruction.opcode == LuaOpcode.GetTable &&
+            loopValueSlots(instruction.b) &&
+            instruction.c.exists(_ >= RkConstantBase) =>
+        val tableRead = qualify(modulePath, valueRef(prototype.prototypeId, instruction.pc, instruction.b))
+        val fieldRead = qualify(modulePath, valueRef(prototype.prototypeId, instruction.pc, instruction.a))
+        Vector(iteratorInput -> tableRead, tableRead -> fieldRead)
+    }.flatten
+    (loopValueReadEdges ++ tableReadEdges).distinct
   }
 
   private def representativeExpressionResultEdges(module: ModuleSummary): Vector[(String, String)] =

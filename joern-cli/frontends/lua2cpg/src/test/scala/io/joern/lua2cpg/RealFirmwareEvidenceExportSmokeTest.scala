@@ -865,6 +865,38 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r7 deleteTransportList path through XQBaiduPanUtil" in {
+      withXiaomiStagingRows { stagingRows =>
+        val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val path = pathRows
+          .find(row =>
+            row("source_module_path").str == "usr/lib/lua/luci/controller/api/xqnetwork.luac" &&
+              row("source_function_name").str == "deleteTransportList" &&
+              row("source_pc").num.toInt == 28 &&
+              row("source_trigger").str == "luci.http.formvalue" &&
+              row("sink_module_path").str == "usr/lib/lua/xiaoqiang/module/XQBaiduPanUtil.luac" &&
+              row("sink_function_name").str == "kill_baidupan_process" &&
+              row("sink_pc").num.toInt == 22 &&
+              row("sink_trigger").str == "luci.util.exec" &&
+              row("path_steps").arr.nonEmpty &&
+              row("path_steps").arr.forall(_.str.contains("::")) &&
+              !row.obj.contains("callsite_id")
+          )
+          .getOrElse(fail("missing deleteTransportList to XQBaiduPanUtil.kill_baidupan_process strict path"))
+
+        val steps = path("path_steps").arr.map(_.str)
+        steps should contain("usr/lib/lua/luci/controller/api/xqnetwork.luac::root.133@pc28:r8")
+        steps should contain("usr/lib/lua/luci/controller/api/xqnetwork.luac::root.133@pc87:r15")
+        steps should contain("usr/lib/lua/xiaoqiang/module/XQBaiduPanUtil.luac::root.39:r2")
+        steps should contain("usr/lib/lua/xiaoqiang/module/XQBaiduPanUtil.luac::root.39@pc65:r9")
+        steps should contain("usr/lib/lua/xiaoqiang/module/XQBaiduPanUtil.luac::root.39@pc75:r12")
+        steps should contain("usr/lib/lua/xiaoqiang/module/XQBaiduPanUtil.luac::root.39@pc76:r14")
+        steps should contain("usr/lib/lua/xiaoqiang/module/XQBaiduPanUtil.luac::root.37:r0")
+        steps should contain("usr/lib/lua/xiaoqiang/module/XQBaiduPanUtil.luac::root.37@pc22:r3")
+      }
+    }
+
     "prune CrossPlatform captured-require bridge flows before local path search" in {
       withXiaomiExportDir { exportDir =>
         val profile = ujson.read(Files.readString(exportDir.resolve("path-search-profile.json"))).obj
