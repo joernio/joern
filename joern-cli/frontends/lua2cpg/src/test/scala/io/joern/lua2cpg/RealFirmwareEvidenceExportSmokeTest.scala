@@ -835,6 +835,33 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r7 pppoeStatus path to luci util exec" in {
+      withXiaomiStagingRows { stagingRows =>
+        val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val path = pathRows
+          .find(row =>
+            row("source_module_path").str == "usr/lib/lua/luci/controller/api/xqnetwork.luac" &&
+              row("source_function_name").str == "pppoeStatus" &&
+              row("source_pc").num.toInt == 6 &&
+              row("source_trigger").str == "luci.http.formvalue" &&
+              row("sink_module_path").str == "usr/lib/lua/luci/util.luac" &&
+              row("sink_function_name").str == "exec" &&
+              row("sink_pc").num.toInt == 3 &&
+              row("sink_trigger").str == "io.popen" &&
+              row("path_steps").arr.nonEmpty &&
+              row("path_steps").arr.forall(_.str.contains("::")) &&
+              !row.obj.contains("callsite_id")
+          )
+          .getOrElse(fail("missing pppoeStatus to luci.util.exec strict path"))
+
+        val steps = path("path_steps").arr.map(_.str)
+        steps should contain("usr/lib/lua/luci/controller/api/xqnetwork.luac::root.55@pc6:r1")
+        steps should contain("usr/lib/lua/luci/util.luac::root.36:r0")
+        steps should contain("usr/lib/lua/luci/util.luac::root.36@pc3:r2")
+      }
+    }
+
     "export CrossPlatform r7 setAllWifi path through conditional call result flow" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
