@@ -2940,14 +2940,11 @@ object LuaProgramSemantics {
     requireCalls: Vector[RequireCall],
     capturedRequireRefs: Map[String, String]
   ): Option[String] = {
-    val localRegisterRefs = localRequireRefForGetTable(prototype, getTable, requireCalls).toVector
-    val capturedRefs = getUpvalueBefore(prototype, getTable.pc, getTable.b)
-      .flatMap(upvalueSlot => capturedRequireRefs.get(capturedRequireRefKey(prototype.prototypeId, upvalueSlot)))
-      .toVector
-
-    (localRegisterRefs ++ capturedRefs).distinct match {
-      case Vector(single) => Some(single)
-      case _              => None
+    getUpvalueBefore(prototype, getTable.pc, getTable.b) match {
+      case Some(upvalueSlot) =>
+        capturedRequireRefs.get(capturedRequireRefKey(prototype.prototypeId, upvalueSlot))
+      case None =>
+        localRequireRefForGetTable(prototype, getTable, requireCalls)
     }
   }
 

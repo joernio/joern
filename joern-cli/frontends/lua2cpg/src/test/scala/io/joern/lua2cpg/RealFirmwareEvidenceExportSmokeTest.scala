@@ -695,6 +695,26 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r7 setWifiApMode to nvramSet path with exact module scope" in {
+      withXiaomiStagingRows { stagingRows =>
+        val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        pathRows.exists(row =>
+          row("source_module_path").str.endsWith("usr/lib/lua/luci/controller/api/xqnetwork.luac") &&
+            row("source_function_name").str == "setWifiApMode" &&
+            row("source_pc").num.toInt == 28 &&
+            row("source_trigger").str == "luci.http.formvalue" &&
+            row("sink_module_path").str.endsWith("usr/lib/lua/xiaoqiang/common/XQFunction.luac") &&
+            row("sink_function_name").str == "nvramSet" &&
+            row("sink_pc").num.toInt == 35 &&
+            row("sink_trigger").str == "os.execute" &&
+            row("path_steps").arr.nonEmpty &&
+            row("path_steps").arr.forall(_.str.contains("::")) &&
+            !row.obj.contains("callsite_id")
+        ) shouldBe true
+      }
+    }
+
     "export CrossPlatform r7 residual source-to-sink paths and miats sink endpoint" in {
       withXiaomiStagingRows { stagingRows =>
         val sinkRows = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
