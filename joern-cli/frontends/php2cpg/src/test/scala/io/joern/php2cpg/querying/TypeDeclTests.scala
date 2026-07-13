@@ -613,13 +613,12 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     }
 
     "contain static methods" in {
-      inside(cpg.typeDecl.name(s"Foo").method.name("bar").l) {
-        case barMethod :: Nil =>
-          barMethod.modifier.modifierType.sorted.l shouldBe List(
-            ModifierTypes.PUBLIC,
-            ModifierTypes.STATIC,
-            ModifierTypes.VIRTUAL
-          )
+      inside(cpg.typeDecl.name(s"Foo").method.name("bar").l) { case barMethod :: Nil =>
+        barMethod.modifier.modifierType.sorted.l shouldBe List(
+          ModifierTypes.PUBLIC,
+          ModifierTypes.STATIC,
+          ModifierTypes.VIRTUAL
+        )
       }
     }
 
