@@ -85,6 +85,21 @@ that its status changes then the actual comment in/out status.
 What can also help is cache invalidation: Go to `File -> Invalidate Caches...` and select
 `Clear file system cache and Local History` as well as `Invalidate downloaded shared indexes`.
 
+### Test caching and cache_test_results setting
+By default, Bazel caches test results and replays them on subsequent runs without re-executing
+the tests if the inputs haven't changed. Bazel indicates cached results with a small `(cached)`
+notation in the output. While this is useful for performance, it can be problematic during
+development when you want to re-run tests even though nothing has changed from the view point
+of Bazel. This can happen for non hermetic tests which depend on inputs not properly declared in Bazel.
+
+To disable test result caching, add the following to your `~/.bazelrc` (per user) or `user.bazelrc` (per project):
+```
+test --cache_test_results=no
+```
+
+This setting affects both the CLI (`bazel test` commands) and IntelliJ (run test interaction),
+ensuring tests are always re-executed regardless of whether the inputs have changed.
+
 ## Bazel build development notes
 
 ## Scalac options
@@ -126,8 +141,4 @@ libraries. So we do not even have Scala code and can directly use `java_binary`.
      coffee-fast. Try this out!
      We tested it to be fast enough. But we would not be surprised if this depends on the
      specific buttons we pressed in Intellij. So please report if you find this slow.
-  4. If you re-run tests without inputs having changed, Bazel sometimes doesn't re-run tests
-     and instead simply replays the old results. Bazel informs you about this by a small 
-     `(cached)` indication. This is cool if everything works but check if that is really
-     what you want.
-  5. Scalafix integration is still TBD
+  4. Scalafix integration is still TBD
