@@ -1,6 +1,6 @@
 package io.joern.pysrc2cpg
 
-import PythonAstVisitor.{keywordDictArgName, logger, metaClassSuffix, noLineAndColumn}
+import PythonAstVisitor.{duplicateSuffix, keywordDictArgName, logger, metaClassSuffix, noLineAndColumn}
 import io.joern.pysrc2cpg.memop.*
 import io.joern.pysrc2cpg.memop.MemoryOperation.{Del, Load, Store}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants.builtinPrefix
@@ -47,6 +47,8 @@ class PythonAstVisitor(
   private var memOpMap: AstNodeToMemoryOperationMap = scala.compiletime.uninitialized
   private var scopeNames: ScopeNameCollection       = scala.compiletime.uninitialized
 
+  private val classDefToDuplicateIndex = mutable.Map.empty[ast.ClassDef, Int]
+
   private val members = mutable.Map.empty[NewTypeDecl, List[String]]
 
   // As key only ast.FunctionDef and ast.AsyncFunctionDef are used but there
@@ -83,6 +85,8 @@ class PythonAstVisitor(
     module.accept(memOpCalculator)
     memOpMap = memOpCalculator.astNodeToMemOp
     scopeNames = memOpCalculator.scopeNames
+
+    classDefToDuplicateIndex ++= new ClassDefDuplicateCalculator().calculate(module)
 
     val contentOption = if (enableFileContent) Some(nodeToCode.content) else None
     val fileNode      = nodeBuilder.fileNode(relFileName, contentOption)
@@ -458,7 +462,7 @@ class PythonAstVisitor(
   def convert(classDef: ast.ClassDef): NewNode = {
     // Create type for the meta class object
     val metaTypeDeclName     = classDef.name + metaClassSuffix
-    val metaTypeDeclFullName = calculateFullNameFromContext(metaTypeDeclName)
+    val metaTypeDeclFullName = calculateClassFullName(classDef, metaTypeDeclName)
 
     val metaTypeNode = nodeBuilder.typeNode(metaTypeDeclName, metaTypeDeclFullName)
     val metaTypeDeclNode =
@@ -473,7 +477,7 @@ class PythonAstVisitor(
 
     // Create type for class instances
     val instanceTypeDeclName     = classDef.name
-    val instanceTypeDeclFullName = calculateFullNameFromContext(instanceTypeDeclName)
+    val instanceTypeDeclFullName = calculateClassFullName(classDef, instanceTypeDeclName)
 
     // TODO for now we just take the code of the base expression and pretend they are full names, converting special
     //  nodes as we go.
@@ -504,7 +508,8 @@ class PythonAstVisitor(
     edgeBuilder.astEdge(instanceTypeDecl, contextStack.astParent, contextStack.order.getAndInc)
 
     // Create <body> function which contains the code defining the class
-    contextStack.pushClass(Some(classDef.name), instanceTypeDecl, scopeNames.namesInScope(classDef))
+    val className = classDef.name + duplicateSuffixFor(classDef)
+    contextStack.pushClass(Some(className), instanceTypeDecl, scopeNames.namesInScope(classDef))
     val classBodyFunctionName = "<body>"
     val (_, methodRefNode) = createMethodAndMethodRef(
       classBodyFunctionName,
@@ -523,7 +528,7 @@ class PythonAstVisitor(
 
     contextStack.pop()
 
-    contextStack.pushClass(Some(classDef.name), metaTypeDeclNode, scopeNames.namesInScope(classDef))
+    contextStack.pushClass(Some(className), metaTypeDeclNode, scopeNames.namesInScope(classDef))
 
     // Create meta class call handling method and bind it to meta class type.
     val functions = classDef.body.collect { case func: ast.FunctionDef => func }
@@ -2185,6 +2190,14 @@ class PythonAstVisitor(
     if (contextQualName != "") relFileName + ":" + contextQualName + "." + name else relFileName + ":" + name
   }
 
+  // See ClassDefDuplicateCalculator for why only the last occurrence stays unmangled.
+  private def calculateClassFullName(classDef: ast.ClassDef, simpleName: String): String = {
+    calculateFullNameFromContext(simpleName) + duplicateSuffixFor(classDef)
+  }
+
+  private def duplicateSuffixFor(classDef: ast.ClassDef): String =
+    classDefToDuplicateIndex.get(classDef).fold("")(i => s"$duplicateSuffix$i")
+
   override protected def line(node: iast): Option[Int]         = None
   override protected def column(node: iast): Option[Int]       = None
   override protected def lineEnd(node: iast): Option[Int]      = None
@@ -2198,6 +2211,7 @@ object PythonAstVisitor {
   val typingPrefix       = "typing."
   val metaClassSuffix    = "<meta>"
   val keywordDictArgName = "<keyword_dict>"
+  val duplicateSuffix    = "<duplicate>"
 
   val noLineAndColumn = LineAndColumn(-1, -1, -1, -1, -1, -1)
 
