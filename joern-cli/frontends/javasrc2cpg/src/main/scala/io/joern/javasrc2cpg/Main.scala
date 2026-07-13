@@ -116,7 +116,8 @@ private object Frontend {
             "projects: delombok resolves symbols against these jars, so without this flag delombok will fail on " +
             "any Lombok-annotated code that references third-party libraries."
         )
-        .action((_, conf) => conf.withFetchDependencies(true)),
+        .action((_, conf) => conf.withFetchDependencies(true))
+        .unbounded(),
       opt[String]("delombok-java-home")
         .text("Optional override to set java home used to run Delombok. Java 17 is recommended for the best results.")
         .action((path, c) => c.withDelombokJavaHome(path)),
