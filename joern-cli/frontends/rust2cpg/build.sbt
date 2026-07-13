@@ -88,9 +88,6 @@ astGenDlTask := {
     file.setExecutable(true, false)
   }
 
-  val rustNodeSyntaxFile = (Compile / scalaSource).value / "io" / "joern" / "rust2cpg" / "parser" / "RustNodeSyntax.scala"
-  DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}RustNodeSyntax.scala", rustNodeSyntaxFile)
-
   val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
   distDir.mkdirs()
   IO.copyDirectory(astGenDir, distDir, preserveExecutable = true)
