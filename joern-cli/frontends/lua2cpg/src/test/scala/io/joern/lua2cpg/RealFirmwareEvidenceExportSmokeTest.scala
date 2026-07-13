@@ -915,6 +915,32 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r7 editDevice path to XQWifiUtil wl_editWiFiMacfilterList" in {
+      withXiaomiStagingRows { stagingRows =>
+        val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val path = pathRows
+          .find(row =>
+            row("source_module_path").str == "usr/lib/lua/luci/controller/api/xqnetwork.luac" &&
+              row("source_function_name").str == "editDevice" &&
+              row("source_pc").num.toInt == 20 &&
+              row("source_trigger").str == "luci.http.formvalue" &&
+              row("sink_module_path").str == "usr/lib/lua/xiaoqiang/util/XQWifiUtil.luac" &&
+              row("sink_function_name").str == "wl_editWiFiMacfilterList" &&
+              row("sink_pc").num.toInt == 348 &&
+              row("sink_trigger").str == "os.execute" &&
+              row("path_steps").arr.nonEmpty &&
+              row("path_steps").arr.forall(_.str.contains("::")) &&
+              !row.obj.contains("callsite_id")
+          )
+          .getOrElse(fail("missing editDevice to XQWifiUtil.wl_editWiFiMacfilterList strict path"))
+
+        val steps = path("path_steps").arr.map(_.str)
+        steps should contain("usr/lib/lua/luci/controller/api/xqnetwork.luac::root.48@pc20:r7")
+        steps should contain("usr/lib/lua/xiaoqiang/util/XQWifiUtil.luac::root.82@pc348:r17")
+      }
+    }
+
     "preserve CrossPlatform r7 unsanitized alternative when sanitizer bridge is present" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
