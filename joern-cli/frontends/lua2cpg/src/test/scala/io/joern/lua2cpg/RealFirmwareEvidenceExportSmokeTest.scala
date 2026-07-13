@@ -1024,6 +1024,64 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r8 setAllWifi formvalue paths to XQFunction nvramSet" in {
+      withXiaomiStagingRows { stagingRows =>
+        val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
+        val sinkRows   = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
+        val pathRows   = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val sourceModule = "usr/lib/lua/luci/controller/api/xqnetwork.luac"
+        val sinkModule   = "usr/lib/lua/xiaoqiang/common/XQFunction.luac"
+        val expectedSources = Vector(
+          74  -> "root.15@pc74:r20",
+          78  -> "root.15@pc78:r21",
+          85  -> "root.15@pc85:r22",
+          112 -> "root.15@pc112:r28",
+          116 -> "root.15@pc116:r29",
+          120 -> "root.15@pc120:r30"
+        )
+
+        expectedSources.foreach { case (pc, localRef) =>
+          sourceRows.exists(row =>
+            row("module_path").str == sourceModule &&
+              row("value_ref").str == localRef &&
+              hasScopedCallsite(row, s"root.15@pc$pc") &&
+              row("trigger").str == "luci.http.formvalue"
+          ) shouldBe true
+        }
+
+        sinkRows.exists(row =>
+          row("module_path").str == sinkModule &&
+            row("value_ref").str == "root.33@pc35:r4" &&
+            hasScopedCallsite(row, "root.33@pc35") &&
+            row("trigger").str == "os.execute"
+        ) shouldBe true
+
+        val missingPaths = expectedSources.collect { case (pc, localRef)
+            if !pathRows.exists(row =>
+              row("source_module_path").str == sourceModule &&
+                row("source_function_name").str == "setAllWifi" &&
+                row("source_pc").num.toInt == pc &&
+                row("source_trigger").str == "luci.http.formvalue" &&
+                row("sink_module_path").str == sinkModule &&
+                row("sink_function_name").str == "nvramSet" &&
+                row("sink_pc").num.toInt == 35 &&
+                row("sink_trigger").str == "os.execute" &&
+                row("path_steps").arr.nonEmpty &&
+                row("path_steps").arr.forall(_.str.contains("::")) &&
+                row("path_steps").arr.exists(_.str == s"$sourceModule::$localRef") &&
+                row("path_steps").arr.exists(_.str == s"$sinkModule::root.33@pc35:r4") &&
+                !row.obj.contains("callsite_id")
+            ) =>
+          s"setAllWifi@pc$pc"
+        }
+
+        withClue(s"missing r8 paths: ${missingPaths.mkString(", ")}") {
+          missingPaths shouldBe empty
+        }
+      }
+    }
+
     "export CrossPlatform r8 setRouterInfo formvalue paths to XQFunction nvramSet" in {
       withXiaomiStagingRows { stagingRows =>
         val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
