@@ -89,16 +89,16 @@ What can also help is cache invalidation: Go to `File -> Invalidate Caches...` a
 By default, Bazel caches test results and replays them on subsequent runs without re-executing
 the tests if the inputs haven't changed. Bazel indicates cached results with a small `(cached)`
 notation in the output. While this is useful for performance, it can be problematic during
-development when you want to re-run tests even though nothing has changed.
+development when you want to re-run tests even though nothing has changed from the view point
+of Bazel. This can happen for non hermetic tests which depend on inputs not properly declared in Bazel.
 
-To disable test result caching, add the following to your `~/.bazelrc`:
+To disable test result caching, add the following to your `~/.bazelrc` (per user) or `user.bazelrc` (per project):
 ```
 test --cache_test_results=no
 ```
 
-This setting affects both the CLI (`bazel test` commands) and IntelliJ, ensuring tests are
-always re-executed regardless of whether the inputs have changed. This is particularly useful
-during interactive development and debugging when you need to run tests frequently.
+This setting affects both the CLI (`bazel test` commands) and IntelliJ (run test interaction),
+ensuring tests are always re-executed regardless of whether the inputs have changed.
 
 ## Bazel build development notes
 
