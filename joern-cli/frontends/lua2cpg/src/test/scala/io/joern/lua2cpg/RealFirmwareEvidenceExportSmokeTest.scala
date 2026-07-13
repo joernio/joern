@@ -1244,6 +1244,60 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r8 miats remote_call paths to datacenter requestDatacenter" in {
+      withXiaomiStagingRows { stagingRows =>
+        val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
+        val sinkRows   = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
+        val pathRows   = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val sourceModule = "usr/lib/lua/luci/controller/api/miats.luac"
+        val sinkModule   = "usr/lib/lua/luci/controller/service/datacenter.luac"
+        val expectedSources = Vector(
+          9  -> "root.9@pc9:r2",
+          17 -> "root.9@pc17:r4"
+        )
+
+        expectedSources.foreach { case (pc, localRef) =>
+          sourceRows.exists(row =>
+            row("module_path").str == sourceModule &&
+              row("value_ref").str == localRef &&
+              hasScopedCallsite(row, s"root.9@pc$pc") &&
+              row("trigger").str == "luci.http.formvalue"
+          ) shouldBe true
+        }
+
+        sinkRows.exists(row =>
+          row("module_path").str == sinkModule &&
+            row("value_ref").str == "root.15@pc22:r6" &&
+            hasScopedCallsite(row, "root.15@pc22") &&
+            row("trigger").str == "luci.util.exec"
+        ) shouldBe true
+
+        val missingPaths = expectedSources.collect { case (pc, localRef)
+            if !pathRows.exists(row =>
+              row("source_module_path").str == sourceModule &&
+                row("source_function_name").str == "remote_call" &&
+                row("source_pc").num.toInt == pc &&
+                row("source_trigger").str == "luci.http.formvalue" &&
+                row("sink_module_path").str == sinkModule &&
+                row("sink_function_name").str == "requestDatacenter" &&
+                row("sink_pc").num.toInt == 22 &&
+                row("sink_trigger").str == "luci.util.exec" &&
+                row("path_steps").arr.nonEmpty &&
+                row("path_steps").arr.forall(_.str.contains("::")) &&
+                row("path_steps").arr.exists(_.str == s"$sourceModule::$localRef") &&
+                row("path_steps").arr.exists(_.str == s"$sinkModule::root.15@pc22:r6") &&
+                !row.obj.contains("callsite_id")
+            ) =>
+          s"miats.remote_call@pc$pc"
+        }
+
+        withClue(s"missing r8 miats requestDatacenter paths: ${missingPaths.mkString(", ")}") {
+          missingPaths shouldBe empty
+        }
+      }
+    }
+
     "export CrossPlatform r7 deleteTransportList path through XQBaiduPanUtil" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
