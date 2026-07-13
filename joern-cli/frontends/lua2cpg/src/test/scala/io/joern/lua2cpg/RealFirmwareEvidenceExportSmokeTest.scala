@@ -732,7 +732,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         targetPath.isDefined shouldBe true
         val pathSteps = targetPath.get("path_steps").arr.map(_.str)
         pathSteps should contain("usr/lib/lua/luci/controller/api/xqnetwork.luac::root.93@pc28:r8")
-        pathSteps.exists(_.startsWith("usr/lib/lua/xiaoqiang/module/XQAPModule.luac::")) shouldBe true
+        pathSteps.exists(_.startsWith("usr/lib/lua/xiaoqiang/util/XQSysUtil.luac::")) shouldBe true
         pathSteps should contain("usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac::root.0@pc25:r4")
         pathSteps.foreach(_ should include("::"))
         targetPath.get.obj.contains("callsite_id") shouldBe false
@@ -1132,6 +1132,60 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         }
 
         withClue(s"missing r8 paths: ${missingPaths.mkString(", ")}") {
+          missingPaths shouldBe empty
+        }
+      }
+    }
+
+    "export CrossPlatform r8 misystem paths to XQSynchrodata" in {
+      withXiaomiStagingRows { stagingRows =>
+        val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
+        val sinkRows   = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
+        val pathRows   = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val sourceModule = "usr/lib/lua/luci/controller/api/misystem.luac"
+        val sinkModule   = "usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac"
+        val expectedSources = Vector(
+          ("setRouterInfo", 78, "root.27@pc78", "root.27@pc78:r18"),
+          ("setLanApMode_Init", 92, "root.40@pc92", "root.40@pc92:r19")
+        )
+
+        expectedSources.foreach { case (_, _, callsiteId, localRef) =>
+          sourceRows.exists(row =>
+            row("module_path").str == sourceModule &&
+              row("value_ref").str == localRef &&
+              hasScopedCallsite(row, callsiteId) &&
+              row("trigger").str == "luci.http.formvalue"
+          ) shouldBe true
+        }
+
+        sinkRows.exists(row =>
+          row("module_path").str == sinkModule &&
+            row("value_ref").str == "root.0@pc25:r4" &&
+            hasScopedCallsite(row, "root.0@pc25") &&
+            row("trigger").str == "os.execute"
+        ) shouldBe true
+
+        val missingPaths = expectedSources.collect { case (functionName, pc, _, localRef)
+            if !pathRows.exists(row =>
+              row("source_module_path").str == sourceModule &&
+                row("source_function_name").str == functionName &&
+                row("source_pc").num.toInt == pc &&
+                row("source_trigger").str == "luci.http.formvalue" &&
+                row("sink_module_path").str == sinkModule &&
+                row("sink_function_name").str == "func_unknow_0_0" &&
+                row("sink_pc").num.toInt == 25 &&
+                row("sink_trigger").str == "os.execute" &&
+                row("path_steps").arr.nonEmpty &&
+                row("path_steps").arr.forall(_.str.contains("::")) &&
+                row("path_steps").arr.exists(_.str == s"$sourceModule::$localRef") &&
+                row("path_steps").arr.exists(_.str == s"$sinkModule::root.0@pc25:r4") &&
+                !row.obj.contains("callsite_id")
+            ) =>
+          s"$functionName@pc$pc"
+        }
+
+        withClue(s"missing r8 XQSynchrodata paths: ${missingPaths.mkString(", ")}") {
           missingPaths shouldBe empty
         }
       }
