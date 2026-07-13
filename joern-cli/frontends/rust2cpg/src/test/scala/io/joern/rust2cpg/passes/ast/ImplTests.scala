@@ -328,8 +328,7 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct methodFullName" in {
       inside(cpg.call.nameExact("do_stuff").l) { case call :: Nil =>
-        // TODO(rust_ast_gen): resolve to the impl method, not the trait method here.
-        pendingUntilFixed(call.methodFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff")
+        call.methodFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff"
         call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       }
     }
@@ -377,8 +376,7 @@ class ImplTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
 
     "have correct fulName for the trait call" in {
       inside(cpg.call.nameExact("default").l) { case call :: Nil =>
-        // TODO(rust_ast_gen): resolve to the impl method, not the trait method here.
-        pendingUntilFixed(call.methodFullName shouldBe "<rust2cpgtest::Foo as core::default::Default>::default")
+        call.methodFullName shouldBe "<rust2cpgtest::Foo as core::default::Default>::default"
       }
     }
 
