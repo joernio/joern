@@ -352,7 +352,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       .map { text => s"${Constants.WhenKeyword}($text)" }
       .getOrElse(Constants.WhenKeyword)
     val switchNode = controlStructureNode(expr, ControlStructureTypes.SWITCH, shortenCode(codeForSwitch))
-    val ast        = Ast(withArgumentIndex(switchNode, argIdx)).withChildren(List(astForSubject, astForBlock))
+    val ast        = Ast(withArgumentIndex(switchNode, argIdx)).withChildren(List(finalAstForSubject, astForBlock))
     // TODO: rewrite this as well
     finalAstForSubject.root match {
       case Some(root) => ast.withConditionEdge(switchNode, root)

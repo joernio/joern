@@ -92,9 +92,8 @@ class AstCreator(
   def createAst(): DiffGraphBuilder = {
     val fileNode = NewFile().name(filename).order(0)
     fileContent.foreach(fileNode.content(_))
-    val ast = astForTranslationUnit(javaParserAst)
+    val ast = Ast(fileNode).withChild(astForTranslationUnit(javaParserAst))
     storeInDiffGraph(ast)
-    diffGraph.addNode(fileNode)
     diffGraph
   }
 
