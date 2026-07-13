@@ -1191,6 +1191,59 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r8 setRouterToBaidu formvalue paths to local exec sink" in {
+      withXiaomiStagingRows { stagingRows =>
+        val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
+        val sinkRows   = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
+        val pathRows   = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val module = "usr/lib/lua/luci/controller/api/xqnetwork.luac"
+        val expectedSources = Vector(
+          27 -> "root.131@pc27:r8",
+          35 -> "root.131@pc35:r10"
+        )
+
+        expectedSources.foreach { case (pc, localRef) =>
+          sourceRows.exists(row =>
+            row("module_path").str == module &&
+              row("value_ref").str == localRef &&
+              hasScopedCallsite(row, s"root.131@pc$pc") &&
+              row("trigger").str == "luci.http.formvalue"
+          ) shouldBe true
+        }
+
+        sinkRows.exists(row =>
+          row("module_path").str == module &&
+            row("value_ref").str == "root.131@pc161:r19" &&
+            hasScopedCallsite(row, "root.131@pc161") &&
+            row("trigger").str == "luci.util.exec"
+        ) shouldBe true
+
+        val missingPaths = expectedSources.collect { case (pc, localRef)
+            if !pathRows.exists(row =>
+              row("source_module_path").str == module &&
+                row("source_function_name").str == "setRouterToBaidu" &&
+                row("source_pc").num.toInt == pc &&
+                row("source_trigger").str == "luci.http.formvalue" &&
+                row("sink_module_path").str == module &&
+                row("sink_function_name").str == "setRouterToBaidu" &&
+                row("sink_pc").num.toInt == 161 &&
+                row("sink_trigger").str == "luci.util.exec" &&
+                row("path_steps").arr.nonEmpty &&
+                row("path_steps").arr.forall(_.str.contains("::")) &&
+                row("path_steps").arr.exists(_.str == s"$module::$localRef") &&
+                row("path_steps").arr.exists(_.str == s"$module::root.131@pc161:r19") &&
+                !row.obj.contains("callsite_id")
+            ) =>
+          s"setRouterToBaidu@pc$pc"
+        }
+
+        withClue(s"missing r8 setRouterToBaidu local exec paths: ${missingPaths.mkString(", ")}") {
+          missingPaths shouldBe empty
+        }
+      }
+    }
+
     "export CrossPlatform r7 deleteTransportList path through XQBaiduPanUtil" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
