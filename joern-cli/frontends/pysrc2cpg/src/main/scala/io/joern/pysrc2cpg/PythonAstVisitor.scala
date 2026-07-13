@@ -2041,10 +2041,6 @@ class PythonAstVisitor(
   }
 
   def convert(list: ast.List): nodes.NewNode = {
-    // Must be a List as part of a Load memory operation because a List literal
-    // is not permitted as argument to a Del and List as part of a Store does not
-    // reach here.
-    assert(memOpMap.get(list).get == Load)
     val listElementNodes = list.elts.map(convert)
     val code             = listElementNodes.map(codeOf).mkString("[", ", ", "]")
 

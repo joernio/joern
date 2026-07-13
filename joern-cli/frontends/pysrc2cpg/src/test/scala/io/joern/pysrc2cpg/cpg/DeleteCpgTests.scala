@@ -52,4 +52,15 @@ class DeleteCpgTests extends PySrc2CpgFixture with Matchers {
     }
   }
 
+  "delete of list should be represented correctly" in {
+    val cpg      = code("""del [x, y]""".stripMargin)
+    val callNode = cpg.call.methodFullNameExact("<operator>.delete").head
+    callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    callNode.code shouldBe "del [x, y]"
+    callNode.lineNumber shouldBe Some(1)
+
+    val listArgument = callNode.argument(1)
+    listArgument.code shouldBe "[x, y]"
+  }
+
 }
