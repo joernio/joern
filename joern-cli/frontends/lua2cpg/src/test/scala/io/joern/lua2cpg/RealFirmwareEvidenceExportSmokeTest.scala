@@ -1646,6 +1646,82 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r8 pingTest path to luci sys exec sink" in {
+      withXiaomiStagingRows { stagingRows =>
+        val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
+        val sinkRows   = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
+        val exportRows = stagingRows.flatMap(_("module_return_table").arr.map(_.obj))
+        val linkRows   = stagingRows.flatMap(_("module_linkage").arr.map(_.obj))
+        val pathRows   = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val sourceModule = "usr/lib/lua/luci/controller/api/xqnetdetect.luac"
+        val sinkModule   = "usr/lib/lua/luci/sys.luac"
+        val sourceRef    = "root.3@pc6:r1"
+        val bridgeRef    = "root.3@pc10:r3"
+        val sinkRef      = "root.25@pc9:r2"
+
+        sourceRows.exists(row =>
+          row("module_path").str == sourceModule &&
+            row("value_ref").str == sourceRef &&
+            hasScopedCallsite(row, "root.3@pc6") &&
+            row("trigger").str == "luci.http.formvalue"
+        ) shouldBe true
+
+        sinkRows.exists(row =>
+          row("module_path").str == sinkModule &&
+            row("value_ref").str == sinkRef &&
+            hasScopedCallsite(row, "root.25@pc9") &&
+            row("trigger").str == "os.execute"
+        ) shouldBe true
+
+        exportRows.exists(row =>
+          row("module_path").str == sinkModule &&
+            row("table_ref").str == s"$sinkModule:module-global" &&
+            row("field_name").str == "net.pingtest" &&
+            row("target_prototype_id").str == "root.25"
+        ) shouldBe true
+
+        linkRows.exists(row =>
+          row("module_path").str == sourceModule &&
+            hasScopedCallsite(row, "root.3@pc10") &&
+            row("target_module_path").str == sinkModule &&
+            row("target_prototype_id").str == "root.25" &&
+            row("field_name").str == "net.pingtest"
+        ) shouldBe true
+
+        val path = pathRows.find(row =>
+          row("source_module_path").str == sourceModule &&
+            row("source_function_name").str == "pingTest" &&
+            row("source_pc").num.toInt == 6 &&
+            row("source_trigger").str == "luci.http.formvalue" &&
+            row("sink_module_path").str == sinkModule &&
+            row("sink_function_name").str == "net.pingtest" &&
+            row("sink_pc").num.toInt == 9 &&
+            row("sink_trigger").str == "os.execute" &&
+            row("classification").str == "true-positive" &&
+            row("path_steps").arr.nonEmpty &&
+            row("path_steps").arr.forall(_.str.contains("::")) &&
+            row("path_steps").arr.exists(_.str == s"$sourceModule::$sourceRef") &&
+            row("path_steps").arr.exists(_.str == s"$sourceModule::$bridgeRef") &&
+            row("path_steps").arr.exists(_.str == s"$sinkModule::$sinkRef") &&
+            !row.obj.contains("callsite_id")
+        )
+
+        withClue("missing r8 pingTest luci.sys os.execute path") {
+          path.isDefined shouldBe true
+        }
+        val steps = path.get("path_steps").arr.map(_.str)
+        steps should contain(s"$sourceModule::root.3@pc9:r1")
+        steps should contain(s"$sourceModule::$bridgeRef")
+        steps should contain(s"$sinkModule::root.25:r0")
+        steps should contain(s"$sinkModule::root.25@pc3:r4")
+        steps should contain(s"$sinkModule::root.25@pc6:r4")
+        steps should contain(s"$sinkModule::root.25@pc6:r3")
+        steps should contain(s"$sinkModule::root.25@pc8:r2")
+        steps should contain(s"$sinkModule::$sinkRef")
+      }
+    }
+
     "export CrossPlatform r8 miats remote_call paths to datacenter requestDatacenter" in {
       withXiaomiStagingRows { stagingRows =>
         val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
