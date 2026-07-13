@@ -88,15 +88,21 @@ astGenDlTask := {
     file.setExecutable(true, false)
   }
 
-  val rustNodeSyntaxFile = (Compile / scalaSource).value / "io" / "joern" / "rust2cpg" / "parser" / "RustNodeSyntax.scala"
-  DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}RustNodeSyntax.scala", rustNodeSyntaxFile)
-
   val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
   distDir.mkdirs()
   IO.copyDirectory(astGenDir, distDir, preserveExecutable = true)
 }
 
 Compile / compile := ((Compile / compile) dependsOn astGenDlTask).value
+
+lazy val rustNodeSyntaxDlTask = taskKey[Seq[File]]("Download RustNodeSyntax.scala")
+rustNodeSyntaxDlTask := {
+  val file = (Compile / sourceManaged).value / "io" / "joern" / "rust2cpg" / "parser" / "RustNodeSyntax.scala"
+  DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}RustNodeSyntax.scala", file)
+  Seq(file)
+}
+
+Compile / sourceGenerators += rustNodeSyntaxDlTask
 
 lazy val astGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
 astGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
