@@ -1,6 +1,5 @@
 package io.joern.x2cpg
 
-import io.joern.x2cpg.utils.IgnoreInWindows
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.utils.ProjectRoot
@@ -8,10 +7,10 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{Ignore, Inside, Tag}
 
-import java.nio.file.attribute.PosixFilePermissions
-import scala.util.Try
 import java.io.FileNotFoundException
+import java.nio.file.attribute.PosixFilePermissions
 import java.nio.file.{Files, Paths}
+import scala.util.Try
 
 class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
 
@@ -105,7 +104,7 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
       result.failed.get shouldBe a[FileNotFoundException]
     }
 
-    "the input file exists, but is not readable" taggedAs IgnoreInWindows in {
+    "the input file exists, but is not readable" taggedAs UnixOnly in {
       FileUtil.usingTemporaryFile() { tmpFile =>
         Files.setPosixFilePermissions(tmpFile, PosixFilePermissions.fromString("-wx-w--w-"))
         Files.exists(tmpFile) shouldBe true

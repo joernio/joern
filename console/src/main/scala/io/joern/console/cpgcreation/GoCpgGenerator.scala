@@ -21,7 +21,7 @@ case class GoCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGen
     var command   = rootPath.resolve("go2cpg.sh").toString
     var arguments = Seq("--output", outputPath) ++ config.cmdLineParams ++ Seq("generate") ++ List(inputPath)
 
-    if (System.getProperty("os.name").startsWith("Windows")) {
+    if (scala.util.Properties.isWin) {
       command = "powershell"
       arguments = Seq(rootPath.resolve("go2cpg.ps1").toString) ++ arguments
     }

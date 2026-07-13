@@ -25,7 +25,7 @@ case class CSharpCpgGenerator(config: FrontendConfig, rootPath: Path) extends Cp
     var arguments = Seq("-i", inputPath, "-o", outputPath) ++ config.cmdLineParams
     var command   = rootPath.resolve("csharp2cpg.sh").toString
 
-    if (System.getProperty("os.name").startsWith("Windows")) {
+    if (scala.util.Properties.isWin) {
       command = "powershell"
       arguments = Seq(rootPath.resolve("csharp2cpg.ps1").toString) ++ arguments
     }
