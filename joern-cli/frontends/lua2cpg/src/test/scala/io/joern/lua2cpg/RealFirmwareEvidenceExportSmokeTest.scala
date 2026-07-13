@@ -1488,6 +1488,53 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r8 datacenter setSyncRouterFile path to tunnelRequestDatacenter exec sink" in {
+      withXiaomiStagingRows { stagingRows =>
+        val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
+        val sinkRows   = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
+        val pathRows   = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val module    = "usr/lib/lua/luci/controller/service/datacenter.luac"
+        val sourceRef = "root.1@pc6:r1"
+        val sinkRef   = "root.14@pc24:r7"
+
+        sourceRows.exists(row =>
+          row("module_path").str == module &&
+            row("value_ref").str == sourceRef &&
+            hasScopedCallsite(row, "root.1@pc6") &&
+            row("trigger").str == "luci.http.formvalue"
+        ) shouldBe true
+
+        sinkRows.exists(row =>
+          row("module_path").str == module &&
+            row("value_ref").str == sinkRef &&
+            hasScopedCallsite(row, "root.14@pc24") &&
+            row("trigger").str == "luci.util.exec"
+        ) shouldBe true
+
+        val pathExists = pathRows.exists(row =>
+          row("source_module_path").str == module &&
+            row("source_function_name").str == "setSyncRouterFile" &&
+            row("source_pc").num.toInt == 6 &&
+            row("source_trigger").str == "luci.http.formvalue" &&
+            row("sink_module_path").str == module &&
+            row("sink_function_name").str == "tunnelRequestDatacenter" &&
+            row("sink_pc").num.toInt == 24 &&
+            row("sink_trigger").str == "luci.util.exec" &&
+            row("classification").str == "true-positive" &&
+            row("path_steps").arr.nonEmpty &&
+            row("path_steps").arr.forall(_.str.contains("::")) &&
+            row("path_steps").arr.exists(_.str == s"$module::$sourceRef") &&
+            row("path_steps").arr.exists(_.str == s"$module::$sinkRef") &&
+            !row.obj.contains("callsite_id")
+        )
+
+        withClue("missing r8 datacenter setSyncRouterFile local exec path") {
+          pathExists shouldBe true
+        }
+      }
+    }
+
     "export CrossPlatform r8 miats remote_call paths to datacenter requestDatacenter" in {
       withXiaomiStagingRows { stagingRows =>
         val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
