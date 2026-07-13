@@ -889,6 +889,48 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "preserve CrossPlatform r7 unsanitized alternative when sanitizer bridge is present" in {
+      withXiaomiStagingRows { stagingRows =>
+        val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val wifiPath = pathRows
+          .find(row =>
+            row("source_module_path").str == "usr/lib/lua/luci/controller/api/xqnetwork.luac" &&
+              row("source_function_name").str == "setWifiMacfilter" &&
+              row("source_pc").num.toInt == 34 &&
+              row("sink_module_path").str == "usr/lib/lua/xiaoqiang/util/XQWifiUtil.luac" &&
+              row("sink_function_name").str == "setWiFiMacfilterModel" &&
+              row("sink_pc").num.toInt == 384 &&
+              row("sink_trigger").str == "os.execute"
+          )
+          .getOrElse(fail("missing setWifiMacfilter to setWiFiMacfilterModel strict path"))
+
+        wifiPath("classification").str shouldBe "true-positive"
+        wifiPath("sanitizer_hits").arr shouldBe empty
+        val wifiSteps = wifiPath("path_steps").arr.map(_.str)
+        wifiSteps should contain("usr/lib/lua/luci/controller/api/xqnetwork.luac::root.47@pc82:r10")
+        wifiSteps should not contain "usr/lib/lua/luci/controller/api/xqnetwork.luac::root.47@pc35:r7"
+
+        val wanSpeedPath = pathRows
+          .find(row =>
+            row("source_module_path").str == "usr/lib/lua/luci/controller/api/xqnetwork.luac" &&
+              row("source_function_name").str == "setWanSpeed" &&
+              row("source_pc").num.toInt == 7 &&
+              row("sink_module_path").str == "usr/lib/lua/xiaoqiang/util/XQLanWanUtil.luac" &&
+              row("sink_function_name").str == "setWanSpeed" &&
+              row("sink_pc").num.toInt == 31 &&
+              row("sink_trigger").str == "os.execute"
+          )
+          .getOrElse(fail("missing setWanSpeed to XQLanWanUtil.setWanSpeed strict path"))
+
+        wanSpeedPath("classification").str shouldBe "true-positive"
+        wanSpeedPath("sanitizer_hits").arr shouldBe empty
+        val wanSpeedSteps = wanSpeedPath("path_steps").arr.map(_.str)
+        wanSpeedSteps should contain("usr/lib/lua/luci/controller/api/xqnetwork.luac::root.82@pc13:r4")
+        wanSpeedSteps should not contain "usr/lib/lua/luci/controller/api/xqnetwork.luac::root.82@pc8:r1"
+      }
+    }
+
     "export CrossPlatform r7 setAllWifi path through conditional call result flow" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
