@@ -146,8 +146,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           val target = t.copy(name = recv)
           astForNameExpr(target, code = Some(recv))
         }
-      case t =>
-        logger.warn(s"Expected a PhpNameExpr target but got $t.")
+      case expr =>
+        logger.warn(s"Expected a PhpNameExpr target but got $expr.")
         None
     }
   }
