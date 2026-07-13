@@ -889,6 +889,32 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r7 vpnSwitch path to XQCryptoUtil md5Str" in {
+      withXiaomiStagingRows { stagingRows =>
+        val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val path = pathRows
+          .find(row =>
+            row("source_module_path").str == "usr/lib/lua/luci/controller/api/xqsystem.luac" &&
+              row("source_function_name").str == "vpnSwitch" &&
+              row("source_pc").num.toInt == 12 &&
+              row("source_trigger").str == "luci.http.formvalue" &&
+              row("sink_module_path").str == "usr/lib/lua/xiaoqiang/util/XQCryptoUtil.luac" &&
+              row("sink_function_name").str == "md5Str" &&
+              row("sink_pc").num.toInt == 10 &&
+              row("sink_trigger").str == "luci.util.exec" &&
+              row("path_steps").arr.nonEmpty &&
+              row("path_steps").arr.forall(_.str.contains("::")) &&
+              !row.obj.contains("callsite_id")
+          )
+          .getOrElse(fail("missing vpnSwitch to XQCryptoUtil.md5Str strict path"))
+
+        val steps = path("path_steps").arr.map(_.str)
+        steps should contain("usr/lib/lua/luci/controller/api/xqsystem.luac::root.92@pc12:r2")
+        steps should contain("usr/lib/lua/xiaoqiang/util/XQCryptoUtil.luac::root.3@pc10:r4")
+      }
+    }
+
     "preserve CrossPlatform r7 unsanitized alternative when sanitizer bridge is present" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
