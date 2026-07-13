@@ -677,9 +677,103 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  Attr* Label? 'for' Pat 'in' iterable:Expr
   //  loop_body:BlockExpr
   private def visitForExpr(forExpr: ForExpr): Ast = {
-    // TODO
-    notHandledYet(forExpr)
-    visitBlockExpr(forExpr.blockExpr)
+    // TODO: only handling `for x in expr` with `x` an identifier.
+    forExpr.pat match {
+      case identPat: IdentPat =>
+        identPat.name.identToken match {
+          case Some(identToken) => lowerForExprWithIdentPattern(forExpr, identPat)
+          case None =>
+            notHandledYet(forExpr)
+            visitBlockExpr(forExpr.blockExpr)
+        }
+      case _ =>
+        notHandledYet(forExpr)
+        visitBlockExpr(forExpr.blockExpr)
+    }
+  }
+
+  // Lowering `for x in y` as follows:
+  // BLOCK {
+  //   LOCAL tmp
+  //   tmp = y.into_iter()
+  //   WHILE (UNKNOWN) {
+  //     LOCAL x
+  //     x = tmp.next()
+  //     body
+  //   }
+  // }
+  // NB: the condition is currently UNKNOWN. A more faithful lowering would be:
+  // WHILE (TRUE) {
+  //  match tmp.next() {
+  //    Some(x) => body
+  //    None    => break
+  //  }
+  // But we currently don't lower `match` expressions.
+  // TODO: revisit once match expressions are handled.
+  private def lowerForExprWithIdentPattern(forExpr: ForExpr, identPat: IdentPat): Ast = {
+    val iterable = forExpr.expr
+    val tmpName  = "tmp"
+    val tmpLocal = localNode(iterable, tmpName, tmpName, Defines.Any)
+
+    // tmp = y.into_iter()
+    val intoIterAssignAst = {
+      val intoIterName = "into_iter"
+      val receiverAst  = visitExpr(iterable)
+      val intoIterCode = s"${receiverAst.rootCodeOrEmpty}.$intoIterName()"
+      val intoIterCall = callNode(
+        node = iterable,
+        code = intoIterCode,
+        name = intoIterName,
+        methodFullName = combineRustFullName(Defines.UnresolvedNamespace, intoIterName),
+        dispatchType = DispatchTypes.STATIC_DISPATCH,
+        signature = None,
+        // TODO(rust_ast_gen): include what would be the type for this into_iter() call.
+        typeFullName = Some(Defines.Any)
+      )
+      val tmpIdent    = identifierNode(iterable, tmpName, tmpName, Defines.Any)
+      val tmpIdentAst = Ast(tmpIdent).withRefEdge(tmpIdent, tmpLocal) // TODO: remove once ref linker is in.
+      callAst(
+        assignmentNode(iterable, s"$tmpName = $intoIterCode"),
+        Seq(tmpIdentAst, callAst(intoIterCall, Seq.empty, base = Some(receiverAst)))
+      )
+    }
+
+    // LOCAL x; x = tmp.next()
+    val lhsName      = code(identPat)
+    val typeFullName = typeFullNameForIdentPat(identPat)
+    val local        = localNode(identPat, lhsName, lhsName, typeFullName)
+    val nextAssignAst = {
+      val nextName = "next"
+      val nextCode = s"$tmpName.$nextName()"
+      val ident    = identifierNode(identPat, lhsName, lhsName, typeFullName)
+      val lhsAst   = Ast(ident).withRefEdge(ident, local) // TODO: remove once ref linker is in.
+      val nextTypeFullName = typeFullName match {
+        case Defines.Any => Defines.Any
+        case other       => s"core::option::Option<$other>"
+      }
+      val nextCall = callNode(
+        node = identPat,
+        code = nextCode,
+        name = nextName,
+        methodFullName = combineRustFullName(Defines.UnresolvedNamespace, nextName),
+        dispatchType = DispatchTypes.STATIC_DISPATCH,
+        signature = None,
+        typeFullName = Some(nextTypeFullName)
+      )
+      val tmpIdent    = identifierNode(identPat, tmpName, tmpName, Defines.Any)
+      val tmpIdentAst = Ast(tmpIdent).withRefEdge(tmpIdent, tmpLocal) // TODO: remove once ref linker is in.
+      callAst(
+        assignmentNode(identPat, s"$lhsName = $nextCode"),
+        Seq(lhsAst, callAst(nextCall, Seq.empty, base = Some(tmpIdentAst)))
+      )
+    }
+
+    val stmts        = visitStmtList(forExpr.blockExpr.stmtList)
+    val bodyAst      = Ast(blockNode(forExpr.blockExpr)).withChildren(Seq(Ast(local), nextAssignAst) ++ stmts)
+    val conditionAst = Ast(unknownNode(forExpr, code(forExpr)))
+    val whileLoopAst = whileAst(forExpr, Some(conditionAst), Seq(bodyAst))
+
+    Ast(blockNode(forExpr)).withChildren(Seq(Ast(tmpLocal), intoIterAssignAst, whileLoopAst))
   }
 
   // ContinueExpr =
