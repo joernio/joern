@@ -916,7 +916,15 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
     }
 
     "export CrossPlatform r7 editDevice path to XQWifiUtil wl_editWiFiMacfilterList" in {
-      withXiaomiStagingRows { stagingRows =>
+      withXiaomiExportDir { exportDir =>
+        val profile = ujson.read(Files.readString(exportDir.resolve("path-search-profile.json"))).obj
+        profile("report_count").num.toInt should be <= 4000
+        profile("local_path_search_count").num.toInt should be <= 30000
+
+        val stagingDir    = exportDir.resolve("staging")
+        val stagingStream = Files.list(stagingDir)
+        val stagingRows   = stagingStream.iterator.asScala.toVector.map(path => ujson.read(Files.readString(path)).obj)
+        try {
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
 
         val path = pathRows
@@ -938,6 +946,9 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         val steps = path("path_steps").arr.map(_.str)
         steps should contain("usr/lib/lua/luci/controller/api/xqnetwork.luac::root.48@pc20:r7")
         steps should contain("usr/lib/lua/xiaoqiang/util/XQWifiUtil.luac::root.82@pc348:r17")
+        } finally {
+          stagingStream.close()
+        }
       }
     }
 
