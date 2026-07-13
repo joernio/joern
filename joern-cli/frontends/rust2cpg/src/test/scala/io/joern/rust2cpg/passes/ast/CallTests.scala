@@ -196,17 +196,17 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
         receiver.name shouldBe Operators.addressOf
         receiver.code shouldBe "&*g"
         receiver.argumentIndex shouldBe 0
-        receiver.typeFullName shouldBe "&dyn Greet + 'static"
+        receiver.typeFullName shouldBe "&dyn rust2cpgtest::Greet"
 
         inside(receiver.argument.l) { case (deref: Call) :: Nil =>
           deref.name shouldBe Operators.indirection
           deref.code shouldBe "*g"
-          deref.typeFullName shouldBe "dyn Greet + 'static"
+          deref.typeFullName shouldBe "dyn rust2cpgtest::Greet"
 
           inside(deref.argument.l) { case (ident: Identifier) :: Nil =>
             ident.name shouldBe "g"
             ident.code shouldBe "g"
-            ident.typeFullName shouldBe "&dyn Greet + 'static"
+            ident.typeFullName shouldBe "&dyn rust2cpgtest::Greet"
           }
         }
       }
@@ -291,8 +291,7 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
         call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
         inside(call.receiver.l) { case (recv: Call) :: Nil =>
           recv.code shouldBe "&*g"
-          // TODO(rust_ast_gen): in dyn T, T isn't fully-qualified
-          pendingUntilFixed(recv.typeFullName shouldBe "&dyn rust2cpgtest::Tr")
+          recv.typeFullName shouldBe "&dyn rust2cpgtest::Tr"
           recv.argumentIndex shouldBe 0
         }
       }
