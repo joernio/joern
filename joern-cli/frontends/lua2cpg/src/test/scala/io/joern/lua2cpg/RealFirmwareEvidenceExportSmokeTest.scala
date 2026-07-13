@@ -1535,6 +1535,60 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r8 setSysTime path to XQSysUtil setSysTime forkExec sink" in {
+      withXiaomiStagingRows { stagingRows =>
+        val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
+        val sinkRows   = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
+        val pathRows   = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val sourceModule = "usr/lib/lua/luci/controller/api/misystem.luac"
+        val sinkModule   = "usr/lib/lua/xiaoqiang/util/XQSysUtil.luac"
+        val sourceRef    = "root.144@pc5:r1"
+        val sinkRef      = "root.108@pc112:r4"
+
+        sourceRows.exists(row =>
+          row("module_path").str == sourceModule &&
+            row("value_ref").str == sourceRef &&
+            hasScopedCallsite(row, "root.144@pc5") &&
+            row("trigger").str == "luci.http.formvalue"
+        ) shouldBe true
+
+        sinkRows.exists(row =>
+          row("module_path").str == sinkModule &&
+            row("value_ref").str == sinkRef &&
+            hasScopedCallsite(row, "root.108@pc112") &&
+            row("trigger").str == "test.api.Process.forkExec"
+        ) shouldBe true
+
+        val path = pathRows.find(row =>
+          row("source_module_path").str == sourceModule &&
+            row("source_function_name").str == "setSysTime" &&
+            row("source_pc").num.toInt == 5 &&
+            row("source_trigger").str == "luci.http.formvalue" &&
+            row("sink_module_path").str == sinkModule &&
+            row("sink_function_name").str == "setSysTime" &&
+            row("sink_pc").num.toInt == 112 &&
+            row("sink_trigger").str == "test.api.Process.forkExec" &&
+            row("classification").str == "true-positive" &&
+            row("path_steps").arr.nonEmpty &&
+            row("path_steps").arr.forall(_.str.contains("::")) &&
+            row("path_steps").arr.exists(_.str == s"$sourceModule::$sourceRef") &&
+            row("path_steps").arr.exists(_.str == s"$sinkModule::$sinkRef") &&
+            !row.obj.contains("callsite_id")
+        )
+
+        withClue("missing r8 setSysTime XQSysUtil forkExec path") {
+          path.isDefined shouldBe true
+        }
+        val steps = path.get("path_steps").arr.map(_.str)
+        steps should contain(s"$sinkModule::root.108@pc98:r3")
+        steps should contain(s"$sinkModule::root.108@pc103:r3")
+        steps should contain(s"$sinkModule::root.108@pc109:r0")
+        steps should contain(s"$sinkModule::root.108@pc111:r4")
+        steps should contain(s"$sinkModule::$sinkRef")
+      }
+    }
+
     "export CrossPlatform r8 miats remote_call paths to datacenter requestDatacenter" in {
       withXiaomiStagingRows { stagingRows =>
         val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
