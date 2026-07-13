@@ -413,16 +413,28 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // CallExpr =
   //  Attr* Expr ArgList
   private def visitCallExpr(callExpr: CallExpr): Ast = {
-    viewExprAsPathExpr(callExpr.expr) match {
-      case Some(nameRefs) =>
-        val name           = code(nameRefs.last)
-        val methodFullName = methodFullNameForCallExpr(callExpr, nameRefs)
-        val typeFullName   = typeFullNameForExpr(callExpr)
-        val dispatch       = DispatchTypes.STATIC_DISPATCH
+    callExpr.expr match {
+      case pathExpr: PathExpr => lowerPathExprCall(callExpr, pathExpr)
+      case _                  => notHandledYet(callExpr)
+    }
+  }
+
+  private def lowerPathExprCall(callExpr: CallExpr, pathExpr: PathExpr): Ast = {
+    pathExpr.path.pathSegment.nameRef match {
+      case Some(nameRef) =>
+        val name = code(nameRef)
+        val methodFullName =
+          methodFullNameForCallExpr(callExpr, viewPathAsSequenceOfNameRefs(pathExpr.path).getOrElse(Nil), name)
+        val typeFullName    = typeFullNameForExpr(callExpr)
+        val argExprs        = callExpr.argList.expr
+        val hasSelfReceiver = callExpr.hasSelfReceiver.isDefined && argExprs.nonEmpty
+        val dispatch =
+          if (hasSelfReceiver && isTraitObject(typeFullNameForExpr(argExprs.head))) DispatchTypes.DYNAMIC_DISPATCH
+          else DispatchTypes.STATIC_DISPATCH
         val call =
           callNode(callExpr, code(callExpr), name, methodFullName, dispatch, None, Some(typeFullName))
-        val args = callExpr.argList.expr.map(visitExpr)
-        if (callExpr.hasSelfReceiver.isDefined && args.nonEmpty) {
+        val args = argExprs.map(visitExpr)
+        if (hasSelfReceiver) {
           callAst(call, args.tail, base = Some(args.head))
         } else {
           callAst(call, args)

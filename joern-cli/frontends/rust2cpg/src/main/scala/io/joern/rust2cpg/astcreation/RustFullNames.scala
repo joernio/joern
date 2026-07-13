@@ -53,14 +53,16 @@ trait RustFullNames { this: AstCreator =>
 
   protected def methodFullNameForCallExpr(
     callExpr: RustNodeSyntax.CallExpr,
-    nameRefs: Seq[RustNodeSyntax.NameRef]
+    nameRefs: Seq[RustNodeSyntax.NameRef],
+    name: String
   ): String = {
     callExpr.methodFullName.getOrElse {
       // TODO: take into account `use` (imports). We are incorrectly assuming here that an
       //  unresolved call e.g. `a::b::c()` has fullName `a::b::c`.
-      nameRefs match {
-        case name :: Nil => combineRustFullName(Defines.UnresolvedNamespace, code(name))
-        case names       => names.map(code).mkString(PathSep)
+      if (nameRefs.size > 1) {
+        nameRefs.map(code).reduce(combineRustFullName)
+      } else {
+        combineRustFullName(Defines.UnresolvedNamespace, name)
       }
     }
   }

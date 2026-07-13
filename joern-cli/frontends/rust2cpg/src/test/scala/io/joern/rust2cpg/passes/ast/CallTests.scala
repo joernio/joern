@@ -217,6 +217,88 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "a `<S as Tr>::m` call" should {
+    val cpg = code("""
+        |trait Tr { fn m(&self) -> i32; }
+        |struct S;
+        |impl Tr for S { fn m(&self) -> i32 { 0 } }
+        |fn f(s: S) { <S as Tr>::m(&s); }
+        |""".stripMargin)
+
+    "resolve to the impl method" in {
+      inside(cpg.call.codeExact("<S as Tr>::m(&s)").l) { case call :: Nil =>
+        call.name shouldBe "m"
+        call.methodFullName shouldBe "<rust2cpgtest::S as rust2cpgtest::Tr>::m"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        inside(call.receiver.l) { case (recv: Call) :: Nil =>
+          recv.code shouldBe "&*&s"
+          recv.typeFullName shouldBe "&rust2cpgtest::S"
+          recv.argumentIndex shouldBe 0
+        }
+      }
+    }
+  }
+
+  "a `Tr::m` call" should {
+    val cpg = code("""
+        |trait Tr { fn m(&self) -> i32; }
+        |struct S;
+        |impl Tr for S { fn m(&self) -> i32 { 0 } }
+        |fn f(s: S) { Tr::m(&s); }
+        |""".stripMargin)
+
+    "resolve to the impl method" in {
+      inside(cpg.call.codeExact("Tr::m(&s)").l) { case call :: Nil =>
+        call.name shouldBe "m"
+        call.methodFullName shouldBe "<rust2cpgtest::S as rust2cpgtest::Tr>::m"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        inside(call.receiver.l) { case (recv: Call) :: Nil =>
+          recv.code shouldBe "&*&s"
+          recv.typeFullName shouldBe "&rust2cpgtest::S"
+          recv.argumentIndex shouldBe 0
+        }
+      }
+    }
+  }
+
+  "an unresolved `<S as Clone>::clone` call" should {
+    val cpg = code("""
+        |struct S;
+        |fn f(s: S) { <S as Clone>::clone(&s); }
+        |""".stripMargin)
+
+    "have an unresolved methodFullName" in {
+      inside(cpg.call.codeExact("<S as Clone>::clone(&s)").l) { case call :: Nil =>
+        call.name shouldBe "clone"
+        call.methodFullName shouldBe s"${Defines.UnresolvedNamespace}::clone"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      }
+    }
+  }
+
+  "a `Tr::m` call of a `&dyn Trait`" should {
+    val cpg = code("""
+        |trait Tr { fn m(&self) -> i32; }
+        |struct S;
+        |impl Tr for S { fn m(&self) -> i32 { 0 } }
+        |fn f(g: &dyn Tr) { Tr::m(g); }
+        |""".stripMargin)
+
+    "resolve to the trait method" in {
+      inside(cpg.call.codeExact("Tr::m(g)").l) { case call :: Nil =>
+        call.name shouldBe "m"
+        call.methodFullName shouldBe "rust2cpgtest::Tr::m"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        inside(call.receiver.l) { case (recv: Call) :: Nil =>
+          recv.code shouldBe "&*g"
+          // TODO(rust_ast_gen): in dyn T, T isn't fully-qualified
+          pendingUntilFixed(recv.typeFullName shouldBe "&dyn rust2cpgtest::Tr")
+          recv.argumentIndex shouldBe 0
+        }
+      }
+    }
+  }
+
   "an inherent method called through receiver and fully-qualified syntax" should {
     val cpg = code("""
         |struct Circle {
