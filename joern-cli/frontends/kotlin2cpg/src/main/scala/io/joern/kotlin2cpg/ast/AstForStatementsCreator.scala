@@ -324,19 +324,19 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForWhenAsStatement(expr: KtWhenExpression, argIdx: Option[Int]): Ast = {
-    val (astForSubject, finalAstForSubject) = Option(expr.getSubjectExpression) match {
+    val astForSubject = Option(expr.getSubjectExpression) match {
       case Some(subjectExpression) =>
-        val astForSubject = astsForExpression(subjectExpression, Some(1)).headOption.getOrElse(Ast())
-        val finalAstForSubject = expr.getSubjectExpression match {
+        val astForSubjectExpression = astsForExpression(subjectExpression, Some(1)).headOption.getOrElse(Ast())
+        expr.getSubjectExpression match {
           case p: KtProperty =>
             val block = blockNode(p, "", "").argumentIndex(1)
-            blockAst(block, List(astForSubject))
-          case _ => astForSubject
+            blockAst(block, List(astForSubjectExpression))
+          case _ =>
+            astForSubjectExpression
         }
-        (astForSubject, finalAstForSubject)
       case _ =>
         logger.warn(s"Subject Expression empty in this file `$relativizedPath`.")
-        (Ast(), Ast())
+        Ast()
     }
 
     val astsForEntries =
@@ -344,17 +344,16 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
         astsForWhenEntry(e, idx)
       }.flatten
 
-    val switchBlockNode =
-      blockNode(expr, expr.getEntries.asScala.map(_.getText).mkString("\n"), TypeConstants.Any)
-    val astForBlock = blockAst(switchBlockNode, astsForEntries.toList)
+    val switchBlockNode = blockNode(expr, expr.getEntries.asScala.map(_.getText).mkString("\n"), TypeConstants.Any)
+    val astForBlock     = blockAst(switchBlockNode, astsForEntries.toList)
     val codeForSwitch = Option(expr.getSubjectExpression)
       .map(_.getText)
       .map { text => s"${Constants.WhenKeyword}($text)" }
       .getOrElse(Constants.WhenKeyword)
     val switchNode = controlStructureNode(expr, ControlStructureTypes.SWITCH, shortenCode(codeForSwitch))
-    val ast        = Ast(withArgumentIndex(switchNode, argIdx)).withChildren(List(finalAstForSubject, astForBlock))
+    val ast        = Ast(withArgumentIndex(switchNode, argIdx)).withChildren(List(astForSubject, astForBlock))
     // TODO: rewrite this as well
-    finalAstForSubject.root match {
+    astForSubject.root match {
       case Some(root) => ast.withConditionEdge(switchNode, root)
       case None       => ast
     }
