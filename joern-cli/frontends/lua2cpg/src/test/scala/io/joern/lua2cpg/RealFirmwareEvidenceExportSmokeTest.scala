@@ -1441,6 +1441,53 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r8 setMeshInfo formvalue path to forkExec sink" in {
+      withXiaomiStagingRows { stagingRows =>
+        val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
+        val sinkRows   = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
+        val pathRows   = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val module    = "usr/lib/lua/luci/controller/api/misystem.luac"
+        val sourceRef = "root.28@pc47:r12"
+        val sinkRef   = "root.28@pc345:r23"
+
+        sourceRows.exists(row =>
+          row("module_path").str == module &&
+            row("value_ref").str == sourceRef &&
+            hasScopedCallsite(row, "root.28@pc47") &&
+            row("trigger").str == "luci.http.formvalue"
+        ) shouldBe true
+
+        sinkRows.exists(row =>
+          row("module_path").str == module &&
+            row("value_ref").str == sinkRef &&
+            hasScopedCallsite(row, "root.28@pc345") &&
+            row("trigger").str == "test.api.Process.forkExec"
+        ) shouldBe true
+
+        val pathExists = pathRows.exists(row =>
+          row("source_module_path").str == module &&
+            row("source_function_name").str == "setMeshInfo" &&
+            row("source_pc").num.toInt == 47 &&
+            row("source_trigger").str == "luci.http.formvalue" &&
+            row("sink_module_path").str == module &&
+            row("sink_function_name").str == "setMeshInfo" &&
+            row("sink_pc").num.toInt == 345 &&
+            row("sink_trigger").str == "test.api.Process.forkExec" &&
+            row("classification").str == "true-positive" &&
+            row("path_steps").arr.nonEmpty &&
+            row("path_steps").arr.forall(_.str.contains("::")) &&
+            row("path_steps").arr.exists(_.str == s"$module::$sourceRef") &&
+            row("path_steps").arr.exists(_.str == s"$module::$sinkRef") &&
+            !row.obj.contains("callsite_id")
+        )
+
+        withClue("missing r8 setMeshInfo forkExec path") {
+          pathExists shouldBe true
+        }
+      }
+    }
+
     "export CrossPlatform r8 miats remote_call paths to datacenter requestDatacenter" in {
       withXiaomiStagingRows { stagingRows =>
         val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
