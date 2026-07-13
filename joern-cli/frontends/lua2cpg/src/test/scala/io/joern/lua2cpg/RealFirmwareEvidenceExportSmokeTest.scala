@@ -1589,6 +1589,63 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r8 webAccess path to XQSysUtil webAccessControl exec sink" in {
+      withXiaomiStagingRows { stagingRows =>
+        val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
+        val sinkRows   = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
+        val pathRows   = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val sourceModule = "usr/lib/lua/luci/controller/api/misystem.luac"
+        val sinkModule   = "usr/lib/lua/xiaoqiang/util/XQSysUtil.luac"
+        val sourceRef    = "root.136@pc17:r2"
+        val bridgeRef    = "root.136@pc56:r7"
+        val paramRef     = "root.105:r1"
+        val sinkRef      = "root.105@pc32:r8"
+
+        sourceRows.exists(row =>
+          row("module_path").str == sourceModule &&
+            row("value_ref").str == sourceRef &&
+            hasScopedCallsite(row, "root.136@pc17") &&
+            row("trigger").str == "luci.http.formvalue"
+        ) shouldBe true
+
+        sinkRows.exists(row =>
+          row("module_path").str == sinkModule &&
+            row("value_ref").str == sinkRef &&
+            hasScopedCallsite(row, "root.105@pc32") &&
+            row("trigger").str == "os.execute"
+        ) shouldBe true
+
+        val path = pathRows.find(row =>
+          row("source_module_path").str == sourceModule &&
+            row("source_function_name").str == "webAccess" &&
+            row("source_pc").num.toInt == 17 &&
+            row("source_trigger").str == "luci.http.formvalue" &&
+            row("sink_module_path").str == sinkModule &&
+            row("sink_function_name").str == "webAccessControl" &&
+            row("sink_pc").num.toInt == 32 &&
+            row("sink_trigger").str == "os.execute" &&
+            row("classification").str == "true-positive" &&
+            row("path_steps").arr.nonEmpty &&
+            row("path_steps").arr.forall(_.str.contains("::")) &&
+            row("path_steps").arr.exists(_.str == s"$sourceModule::$sourceRef") &&
+            row("path_steps").arr.exists(_.str == s"$sourceModule::$bridgeRef") &&
+            row("path_steps").arr.exists(_.str == s"$sinkModule::$paramRef") &&
+            row("path_steps").arr.exists(_.str == s"$sinkModule::$sinkRef") &&
+            !row.obj.contains("callsite_id")
+        )
+
+        withClue("missing r8 webAccess XQSysUtil webAccessControl os.execute path") {
+          path.isDefined shouldBe true
+        }
+        val steps = path.get("path_steps").arr.map(_.str)
+        steps should contain(s"$sinkModule::root.105@pc11:r6")
+        steps should contain(s"$sinkModule::root.105@pc28:r6")
+        steps should contain(s"$sinkModule::root.105@pc31:r8")
+        steps should contain(s"$sinkModule::$sinkRef")
+      }
+    }
+
     "export CrossPlatform r8 miats remote_call paths to datacenter requestDatacenter" in {
       withXiaomiStagingRows { stagingRows =>
         val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
