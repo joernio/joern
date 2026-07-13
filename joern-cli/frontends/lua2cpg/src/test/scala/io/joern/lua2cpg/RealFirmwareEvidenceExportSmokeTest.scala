@@ -1290,6 +1290,63 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r8 getTransListFileStat sanitized path to local exec sink" in {
+      withXiaomiStagingRows { stagingRows =>
+        val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
+        val sinkRows   = stagingRows.flatMap(_("sink_endpoints").arr.map(_.obj))
+        val pathRows   = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val module    = "usr/lib/lua/luci/controller/api/xqnetwork.luac"
+        val sourceRef = "root.137@pc26:r7"
+        val sinkRef   = "root.137@pc68:r14"
+
+        sourceRows.exists(row =>
+          row("module_path").str == module &&
+            row("value_ref").str == sourceRef &&
+            hasScopedCallsite(row, "root.137@pc26") &&
+            row("trigger").str == "luci.http.formvalue"
+        ) shouldBe true
+
+        sinkRows.exists(row =>
+          row("module_path").str == module &&
+            row("value_ref").str == sinkRef &&
+            hasScopedCallsite(row, "root.137@pc68") &&
+            row("trigger").str == "luci.util.exec"
+        ) shouldBe true
+
+        val path = pathRows
+          .find(row =>
+            row("source_module_path").str == module &&
+              row("source_function_name").str == "getTransListFileStat" &&
+              row("source_pc").num.toInt == 26 &&
+              row("source_trigger").str == "luci.http.formvalue" &&
+              row("sink_module_path").str == module &&
+              row("sink_function_name").str == "getTransListFileStat" &&
+              row("sink_pc").num.toInt == 68 &&
+              row("sink_trigger").str == "luci.util.exec" &&
+              row("path_steps").arr.nonEmpty &&
+              row("path_steps").arr.forall(_.str.contains("::")) &&
+              row("path_steps").arr.exists(_.str == s"$module::$sourceRef") &&
+              row("path_steps").arr.exists(_.str == s"$module::$sinkRef") &&
+              !row.obj.contains("callsite_id")
+          )
+          .getOrElse(fail("missing r8 getTransListFileStat local exec path"))
+
+        withClue(
+          s"path_steps=${path("path_steps").arr.map(_.str).mkString("[", ",", "]")} sanitizer_hits=${path("sanitizer_hits")}"
+        ) {
+          path("classification").str shouldBe "sanitized"
+          path("sanitizer_hits").arr.exists { hit =>
+            val row = hit.obj
+            row("callsite_id").str == s"$module::root.137@pc60" &&
+            row("sanitizer_name").str == "json.encode" &&
+            row("applies_to_sink").bool &&
+            row("on_dataflow_chain").bool
+          } shouldBe true
+        }
+      }
+    }
+
     "export CrossPlatform r8 miats remote_call paths to datacenter requestDatacenter" in {
       withXiaomiStagingRows { stagingRows =>
         val sourceRows = stagingRows.flatMap(_("source_endpoints").arr.map(_.obj))
