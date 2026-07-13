@@ -158,9 +158,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       MethodScope(method, methodBodyNode, method.fullName, decl.params.map(_.name), methodRef, isArrowClosure)
     )
 
+    val staticReceiver = Option.when(decl.isClassMethod && isStatic) {
+      staticReceiverAstForMethod(decl)
+    }
+
     val thisParam =
       if (!isAnonymousMethod && decl.isClassMethod && !isStatic) Option(thisParamAstForMethod(decl)) else None
-    val parameters = thisParam.toList ++ decl.params.zipWithIndex.map { case (param, idx) =>
+    val parameters = thisParam.toList ++ staticReceiver.toList ++ decl.params.zipWithIndex.map { case (param, idx) =>
       astForParam(param, idx + 1)
     }
     parameters.flatMap(_.root).foreach {
@@ -172,19 +176,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case _               =>
     }
     scope.useFunctionDecl(methodName, fullName)
-
-    val thisParam = if (!isAnonymousMethod && decl.isClassMethod && !isStatic) {
-      Option(thisParamAstForMethod(decl))
-    } else {
-      None
-    }
-    val staticReceiver = Option.when(decl.isClassMethod && isStatic) {
-      staticReceiverAstForMethod(decl)
-    }
-
-    val parameters = thisParam.toList ++ staticReceiver.toList ++ decl.params.zipWithIndex.map { case (param, idx) =>
-      astForParam(param, idx + 1)
-    }
 
     val returnType = decl.returnType.map(_.name).getOrElse(Defines.Any)
 
