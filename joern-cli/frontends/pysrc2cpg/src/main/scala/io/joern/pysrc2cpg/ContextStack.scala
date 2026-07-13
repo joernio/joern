@@ -169,15 +169,16 @@ class ContextStack {
     val context  = stack.head
     val nameBase = prefix.map(prefixValue => s"${prefixValue}_tmp").getOrElse("tmp")
 
-    var result: String = ""
-    while (result == "" || context.reservedNames.contains(result)) {
+    var unusedName = Option.empty[String]
+    while (unusedName.forall(context.reservedNames.contains)) {
       val counter = context.tmpCounters.getOrElse(nameBase, 0)
-      result = s"$nameBase$counter"
+      unusedName = Some(s"$nameBase$counter")
       context.tmpCounters.update(nameBase, counter + 1)
     }
 
-    context.reservedNames.add(result)
-    result
+    val name = unusedName.get
+    context.reservedNames.add(name)
+    name
   }
 
   private def findEnclosingMethodContext(contextStack: List[Context]): MethodContext = {

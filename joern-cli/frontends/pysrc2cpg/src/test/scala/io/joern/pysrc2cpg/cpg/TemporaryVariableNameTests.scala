@@ -22,6 +22,20 @@ class TemporaryVariableNameTests extends PySrc2CpgFixture {
       cpg.method.name("f").local.name("tmp1").size shouldBe 1
     }
 
+    "avoid names captured from enclosing scopes" in {
+      val cpg = code("""def foo():
+          |    tmp0 = 1
+          |    def bar():
+          |        left, right = source
+          |        print(tmp0)
+          |    bar()
+          |foo()
+          |""".stripMargin)
+
+      cpg.method.name("bar").ast.isCall.code("tmp1 = source").size shouldBe 1
+      cpg.method.name("bar").local.name("tmp1").size shouldBe 1
+    }
+
     "avoid import aliases for prefixed temporaries" in {
       val cpg = code("""import manager as manager_tmp0
           |with context():
