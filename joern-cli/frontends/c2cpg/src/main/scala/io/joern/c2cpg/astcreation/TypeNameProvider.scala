@@ -42,14 +42,14 @@ trait TypeNameProvider { this: AstCreator =>
     )
 
   private val ReservedKeywordsAtTypesPatterns: List[(String, String)] =
-    ReservedKeywordsAtTypes.map(k => (s"$k ", s" $k "))
+    ReservedKeywordsAtTypes.map(keyword => (s"$keyword ", s" $keyword "))
 
   private val ReservedKeywordsAtTypesSet: Set[String] = ReservedKeywordsAtTypes.toSet
 
   private val KeywordsAtTypesToKeep: List[String] = List("unsigned", "volatile")
 
   private val KeywordsAtTypesToKeepPatterns: List[(String, String)] =
-    KeywordsAtTypesToKeep.map(k => (s"$k ", s" $k "))
+    KeywordsAtTypesToKeep.map(keyword => (s"$keyword ", s" $keyword "))
 
   protected def typeForDeclSpecifier(spec: IASTNode, index: Int = 0): String = {
     val tpeString = spec match {

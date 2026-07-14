@@ -19,7 +19,7 @@ class HeaderFileFinder(config: Config) {
       ignoredFilesRegex = Option(config.ignoredFilesRegex),
       ignoredFilesPath = Option(config.ignoredFiles)
     )
-    .map(p => Paths.get(p))
+    .map(path => Paths.get(path))
     .groupMap(_.fileName)(_.toString)
 
   private val findCache = new ConcurrentHashMap[String, Option[String]]()
@@ -29,10 +29,10 @@ class HeaderFileFinder(config: Config) {
     */
   def find(path: String): Option[String] = findCache.computeIfAbsent(
     path,
-    p =>
-      Paths.get(p).nameOption.flatMap { name =>
+    unresolvedPath =>
+      Paths.get(unresolvedPath).nameOption.flatMap { name =>
         val matches = nameToPathMap.getOrElse(name, List())
-        matches.sortBy(x => Levenshtein.distance(x, p)).headOption
+        matches.sortBy(candidate => Levenshtein.distance(candidate, unresolvedPath)).headOption
       }
   )
 

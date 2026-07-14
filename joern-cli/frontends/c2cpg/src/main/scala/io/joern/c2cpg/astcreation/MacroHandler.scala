@@ -173,10 +173,10 @@ trait MacroHandler { this: AstCreator =>
     val codeIndex: Map[String, ExpressionNew] = ast.nodes.collect {
       case x: ExpressionNew if !x.isInstanceOf[NewFieldIdentifier] => x.code.replace(" ", "") -> x
     }.toMap
-    arguments.zipWithIndex.map { case (arg, i) =>
+    arguments.zipWithIndex.map { case (arg, argIndex) =>
       val normalizedCode = arg.replace(" ", "")
       if (normalizedCode.isEmpty) None
-      else codeIndex.get(normalizedCode).map(x => ast.subTreeCopy(x.asInstanceOf[AstNodeNew], i + 1))
+      else codeIndex.get(normalizedCode).map(node => ast.subTreeCopy(node.asInstanceOf[AstNodeNew], argIndex + 1))
     }
   }
 
