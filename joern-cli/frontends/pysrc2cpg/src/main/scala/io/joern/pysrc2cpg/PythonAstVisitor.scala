@@ -863,9 +863,16 @@ class PythonAstVisitor(
   }
 
   def convert(delete: ast.Delete): NewNode = {
-    val deleteArgs = delete.targets.map(convert)
+    val code = "del " + delete.targets.map(nodeToCode.getCode).mkString(", ")
 
-    val code     = "del " + deleteArgs.map(codeOf).mkString(", ")
+    def flattenDeleteTargets(exprs: Iterable[ast.iexpr]): Iterable[NewNode] =
+      exprs.flatMap {
+        case listNode: ast.List   => flattenDeleteTargets(listNode.elts)
+        case tupleNode: ast.Tuple => flattenDeleteTargets(tupleNode.elts)
+        case other                => Seq(convert(other))
+      }
+
+    val deleteArgs = flattenDeleteTargets(delete.targets)
     val callNode = nodeBuilder.callNode(code, "<operator>.delete", DispatchTypes.STATIC_DISPATCH, lineAndColOf(delete))
 
     addAstChildrenAsArguments(callNode, 1, deleteArgs)
