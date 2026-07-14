@@ -420,7 +420,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     parameter match {
       case p: CPPASTParameterDeclaration =>
         val paramName       = shortName(p.getDeclarator)
-        val parentSignature = Try(parameter.getParent.getRawSignature.replaceAll(" ", "")).toOption
+        val parentSignature = Try(parameter.getParent.getRawSignature.replace(" ", "")).toOption
         parentSignature.exists(_.contains(s"$paramName,...")) || parentSignature.exists(_.contains(s"$paramName..."))
       case _ => false
     }
