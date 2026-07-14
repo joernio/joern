@@ -24,7 +24,9 @@ filegroup(
 
 scala_library(
     name = "rust2cpg",
-    srcs = glob(["src/main/scala/**/*.scala"]),
+    srcs = [
+        "@rust2cpg_node_syntax//file:RustNodeSyntax.scala",
+    ] + glob(["src/main/scala/**/*.scala"]),
     data = [":rust2cpg_astgen"],
     resources = glob(["src/main/resources/application.conf"]),
     visibility = ["//visibility:public"],
