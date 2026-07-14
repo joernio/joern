@@ -411,11 +411,12 @@ trait TypeNameProvider { this: AstCreator =>
   @nowarn
   private def typeForIASTArrayDeclarator(a: IASTArrayDeclarator): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
-    if (safeGetNodeType(a).startsWith("? ")) {
+    val nodeType = safeGetNodeType(a)
+    if (nodeType.startsWith("? ")) {
       val tpe = getNodeSignature(a).replace("[]", "").strip()
-      val arr = safeGetNodeType(a).replace("? ", "")
+      val arr = nodeType.replace("? ", "")
       s"$tpe$arr"
-    } else if (safeGetNodeType(a).contains("} ") || safeGetNodeType(a).contains(" [")) {
+    } else if (nodeType.contains("} ") || nodeType.contains(" [")) {
       val tpe = getNodeSignature(a).replace("[]", "").strip()
       val arr = a.getArrayModifiers.map {
         case m if m.getConstantExpression != null => s"[${nodeSignature(m.getConstantExpression)}]"
@@ -428,7 +429,7 @@ trait TypeNameProvider { this: AstCreator =>
       }.mkString
       s"$tpe$arr"
     } else {
-      safeGetNodeType(a)
+      nodeType
     }
   }
 
