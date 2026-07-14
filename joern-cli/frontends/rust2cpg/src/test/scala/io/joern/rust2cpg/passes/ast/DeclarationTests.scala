@@ -298,4 +298,21 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "let to a function" should {
+    val cpg = code("""
+        |fn handler(x: i64) -> i64 { x }
+        |fn main() {
+        | let f = handler;
+        |}
+        |""".stripMargin)
+
+    "have a MethodRef as the assignment's second argument" in {
+      inside(cpg.assignment.argument(2).l) { case (rhs: MethodRef) :: Nil =>
+        rhs.code shouldBe "handler"
+        rhs.methodFullName shouldBe "rust2cpgtest::handler"
+        rhs.typeFullName shouldBe "rust2cpgtest::handler"
+      }
+    }
+  }
 }

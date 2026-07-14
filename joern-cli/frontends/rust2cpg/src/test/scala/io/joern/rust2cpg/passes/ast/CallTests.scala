@@ -337,6 +337,69 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "a function passed as an argument" should {
+    val cpg = code("""
+        |fn handler(x: i64) -> i64 { x }
+        |fn register(f: fn(i64) -> i64) {}
+        |fn main() { register(handler); }
+        |""".stripMargin)
+
+    "have the adjusted MethodRef as the argument" in {
+      inside(cpg.call.nameExact("register").argument.l) { case (cast: Call) :: Nil =>
+        cast.name shouldBe Operators.cast
+        cast.code shouldBe "handler as fn(i64) -> i64"
+        cast.typeFullName shouldBe "fn(i64) -> i64"
+        cast.argumentIndex shouldBe 1
+
+        inside(cast.argument.sortBy(_.argumentIndex).l) { case (typeRef: TypeRef) :: (ref: MethodRef) :: Nil =>
+          typeRef.code shouldBe "fn(i64) -> i64"
+          typeRef.typeFullName shouldBe "fn(i64) -> i64"
+
+          ref.code shouldBe "handler"
+          ref.methodFullName shouldBe "rust2cpgtest::handler"
+          ref.typeFullName shouldBe "rust2cpgtest::handler"
+        }
+      }
+    }
+
+    "have a REF edge from the MethodRef to the method" in {
+      cpg.methodRef.referencedMethod.l shouldBe cpg.method.fullNameExact("rust2cpgtest::handler").l
+    }
+  }
+
+  "an associated function passed as an argument" should {
+    val cpg = code("""
+        |struct Counter;
+        |impl Counter {
+        |    fn incr(x: i64) -> i64 { x + 1 }
+        |}
+        |fn register(f: fn(i64) -> i64) {}
+        |fn main() { register(Counter::incr); }
+        |""".stripMargin)
+
+    "have the adjusted MethodRef as the argument" in {
+      inside(cpg.call.nameExact("register").argument.l) { case (cast: Call) :: Nil =>
+        cast.name shouldBe Operators.cast
+        cast.code shouldBe "Counter::incr as fn(i64) -> i64"
+        cast.typeFullName shouldBe "fn(i64) -> i64"
+        cast.argumentIndex shouldBe 1
+
+        inside(cast.argument.sortBy(_.argumentIndex).l) { case (typeRef: TypeRef) :: (ref: MethodRef) :: Nil =>
+          typeRef.code shouldBe "fn(i64) -> i64"
+          typeRef.typeFullName shouldBe "fn(i64) -> i64"
+
+          ref.code shouldBe "Counter::incr"
+          ref.methodFullName shouldBe "rust2cpgtest::Counter::incr"
+          ref.typeFullName shouldBe "rust2cpgtest::Counter::incr"
+        }
+      }
+    }
+
+    "have a REF edge from the MethodRef to the method" in {
+      cpg.methodRef.referencedMethod.l shouldBe cpg.method.fullNameExact("rust2cpgtest::Counter::incr").l
+    }
+  }
 }
 
 class CallTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
