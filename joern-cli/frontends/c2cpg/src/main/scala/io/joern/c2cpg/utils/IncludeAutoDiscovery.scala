@@ -36,35 +36,43 @@ object IncludeAutoDiscovery {
   private val LanguageSetting = Map("LC_ALL" -> "C")
 
   // Only check once
-  private var isGccAvailable: Option[Boolean] = None
+  @volatile private var isGccAvailable: Option[Boolean] = None
 
   // Only discover them once
-  private var systemIncludePathsC: mutable.LinkedHashSet[Path]   = mutable.LinkedHashSet.empty
-  private var systemIncludePathsCPP: mutable.LinkedHashSet[Path] = mutable.LinkedHashSet.empty
+  @volatile private var systemIncludePathsC: mutable.LinkedHashSet[Path]   = mutable.LinkedHashSet.empty
+  @volatile private var systemIncludePathsCPP: mutable.LinkedHashSet[Path] = mutable.LinkedHashSet.empty
 
   def discoverIncludePathsC(config: Config): mutable.LinkedHashSet[Path] = {
     if (!config.includePathsAutoDiscovery) return mutable.LinkedHashSet.empty
     if (systemIncludePathsC.nonEmpty) return systemIncludePathsC
-
-    if (isMSVCProject(config)) {
-      systemIncludePathsCPP = discoverMSVCPaths() // discovers paths for both languages
-      systemIncludePathsC = systemIncludePathsCPP
-      reportIncludePaths(systemIncludePathsC, "MSVC")
+    IncludeAutoDiscovery.synchronized {
+      if (systemIncludePathsC.nonEmpty) return systemIncludePathsC
+      if (isMSVCProject(config)) {
+        systemIncludePathsCPP = discoverMSVCPaths() // discovers paths for both languages
+        systemIncludePathsC = systemIncludePathsCPP
+        reportIncludePaths(systemIncludePathsC, "MSVC")
+      }
+      if (systemIncludePathsC.isEmpty && gccAvailable()) {
+        systemIncludePathsC = discoverPaths(CIncludeCommand)
+        reportIncludePaths(systemIncludePathsC, "C")
+      }
+      systemIncludePathsC
     }
-    if (systemIncludePathsC.isEmpty && gccAvailable()) {
-      systemIncludePathsC = discoverPaths(CIncludeCommand)
-      reportIncludePaths(systemIncludePathsC, "C")
-    }
-    systemIncludePathsC
   }
 
   def gccAvailable(): Boolean = {
     isGccAvailable match {
-      case Some(value) =>
-        value
+      case Some(value) => value
       case None =>
-        isGccAvailable = Option(checkForGcc())
-        isGccAvailable.get
+        IncludeAutoDiscovery.synchronized {
+          isGccAvailable match {
+            case Some(value) => value
+            case None =>
+              val result = checkForGcc()
+              isGccAvailable = Some(result)
+              result
+          }
+        }
     }
   }
 
@@ -145,17 +153,19 @@ object IncludeAutoDiscovery {
   def discoverIncludePathsCPP(config: Config): mutable.LinkedHashSet[Path] = {
     if (!config.includePathsAutoDiscovery) return mutable.LinkedHashSet.empty
     if (systemIncludePathsCPP.nonEmpty) return systemIncludePathsCPP
-
-    if (isMSVCProject(config)) {
-      systemIncludePathsCPP = discoverMSVCPaths() // discovers paths for both languages
-      systemIncludePathsC = systemIncludePathsCPP
-      reportIncludePaths(systemIncludePathsCPP, "MSVC")
+    IncludeAutoDiscovery.synchronized {
+      if (systemIncludePathsCPP.nonEmpty) return systemIncludePathsCPP
+      if (isMSVCProject(config)) {
+        systemIncludePathsCPP = discoverMSVCPaths() // discovers paths for both languages
+        systemIncludePathsC = systemIncludePathsCPP
+        reportIncludePaths(systemIncludePathsCPP, "MSVC")
+      }
+      if (systemIncludePathsCPP.isEmpty && gccAvailable()) {
+        systemIncludePathsCPP = discoverPaths(CppIncludeCommand)
+        reportIncludePaths(systemIncludePathsCPP, "CPP")
+      }
+      systemIncludePathsCPP
     }
-    if (systemIncludePathsCPP.isEmpty && gccAvailable()) {
-      systemIncludePathsCPP = discoverPaths(CppIncludeCommand)
-      reportIncludePaths(systemIncludePathsCPP, "CPP")
-    }
-    systemIncludePathsCPP
   }
 
 }
