@@ -232,7 +232,14 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def genFileOffsetTable(): Array[Int] = {
-    cdtAst.getRawSignature.toCharArray.zipWithIndex.collect { case ('\n', idx) => idx + 1 }
+    val chars   = cdtAst.getRawSignature.toCharArray
+    val buf     = new scala.collection.mutable.ArrayBuffer[Int](256)
+    var charIdx = 0
+    while (charIdx < chars.length) {
+      if (chars(charIdx) == '\n') buf += charIdx + 1
+      charIdx += 1
+    }
+    buf.toArray
   }
 
   private def notHandledText(node: IASTNode): String = {
