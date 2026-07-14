@@ -21,16 +21,20 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
   import FullNameProvider.*
 
-  final protected def parameters(functionNode: IASTNode): Seq[IASTNode] = functionNode match {
-    case arr: IASTArrayDeclarator       => parameters(arr.getNestedDeclarator)
-    case decl: CPPASTFunctionDeclarator => decl.getParameters.toIndexedSeq ++ parameters(decl.getNestedDeclarator)
-    case decl: CASTFunctionDeclarator   => decl.getParameters.toIndexedSeq ++ parameters(decl.getNestedDeclarator)
-    case defn: IASTFunctionDefinition   => parameters(defn.getDeclarator)
-    case lambdaExpression: ICPPASTLambdaExpression => parameters(lambdaExpression.getDeclarator)
-    case knr: ICASTKnRFunctionDeclarator           => knr.getParameterDeclarations.toIndexedSeq
-    case _: IASTDeclarator                         => Seq.empty
-    case other if other != null                    => notHandledYet(other); Seq.empty
-    case null                                      => Seq.empty
+  final protected def parameters(functionNode: IASTNode): Seq[IASTNode] = {
+    @scala.annotation.tailrec
+    def collect(node: IASTNode, acc: Vector[IASTNode]): Vector[IASTNode] = node match {
+      case arr: IASTArrayDeclarator        => collect(arr.getNestedDeclarator, acc)
+      case decl: CPPASTFunctionDeclarator  => collect(decl.getNestedDeclarator, acc ++ decl.getParameters.toIndexedSeq)
+      case decl: CASTFunctionDeclarator    => collect(decl.getNestedDeclarator, acc ++ decl.getParameters.toIndexedSeq)
+      case defn: IASTFunctionDefinition    => collect(defn.getDeclarator, acc)
+      case lambda: ICPPASTLambdaExpression => collect(lambda.getDeclarator, acc)
+      case knr: ICASTKnRFunctionDeclarator => acc ++ knr.getParameterDeclarations.toIndexedSeq
+      case _: IASTDeclarator               => acc
+      case other if other != null          => notHandledYet(other); acc
+      case null                            => acc
+    }
+    collect(functionNode, Vector.empty)
   }
 
   @tailrec
