@@ -108,16 +108,16 @@ trait TypeNameProvider { this: AstCreator =>
         }
     stripTemplateTags(replaceWhitespaceAfterKeyword(tpe)) match {
       // Empty or problematic types
-      case ""                                                                      => Defines.Any
-      case t if t.contains("?")                                                    => Defines.Any
-      case t if t.contains("#")                                                    => Defines.Any
-      case t if t.contains("::{") || t.contains("}::")                             => Defines.Any
-      case t if (t.contains("{") || t.contains("}")) && !isThisLambdaCapture(t)    => Defines.Any
-      case t if t.contains("org.eclipse.cdt.internal.core.dom.parser.ProblemType") => Defines.Any
+      case ""                                                                           => Defines.Any
+      case tpe if tpe.contains("?")                                                     => Defines.Any
+      case tpe if tpe.contains("#")                                                     => Defines.Any
+      case tpe if tpe.contains("::{") || tpe.contains("}::")                            => Defines.Any
+      case tpe if (tpe.contains("{") || tpe.contains("}")) && !isThisLambdaCapture(tpe) => Defines.Any
+      case tpe if tpe.contains("org.eclipse.cdt.internal.core.dom.parser.ProblemType")  => Defines.Any
       // Special patterns with specific handling
-      case t if t.startsWith("[") && t.endsWith("]")       => Defines.Array
-      case t if isThisLambdaCapture(t) || t.contains("->") => Defines.Function
-      case t if t.contains("( ") => applyQualifiedNameSeparator(t.substring(0, t.indexOf("( ")))
+      case tpe if tpe.startsWith("[") && tpe.endsWith("]")       => Defines.Array
+      case tpe if isThisLambdaCapture(tpe) || tpe.contains("->") => Defines.Function
+      case tpe if tpe.contains("( ") => applyQualifiedNameSeparator(tpe.substring(0, tpe.indexOf("( ")))
       // Default case
       case typeStr => applyQualifiedNameSeparator(typeStr)
     }

@@ -313,7 +313,7 @@ trait FullNameProvider { this: AstCreator =>
           case Some(evalBinding: EvalBinding) =>
             evalBinding.getBinding match {
               case f: CPPFunction if f.getDeclarations != null =>
-                Option(f.getDeclarations.headOption.map(n => fullName(n)).getOrElse(f.getName))
+                Option(f.getDeclarations.headOption.map(decl => fullName(decl)).getOrElse(f.getName))
               case f: CPPFunction if f.getDefinition != null =>
                 Option(fullName(f.getDefinition))
               case other =>
