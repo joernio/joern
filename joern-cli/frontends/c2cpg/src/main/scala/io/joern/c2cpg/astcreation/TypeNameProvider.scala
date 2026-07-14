@@ -60,10 +60,10 @@ trait TypeNameProvider { this: AstCreator =>
         val parentDecl = s.getParent.asInstanceOf[IASTFunctionDefinition].getDeclarator
         ASTStringUtil.getReturnTypeString(s, parentDecl)
       case s: IASTSimpleDeclaration if s.getParent.isInstanceOf[ICASTKnRFunctionDeclarator] =>
-        val decl = s.getDeclarators.toList(index)
+        val decl = s.getDeclarators.apply(index)
         pointersAsString(s.getDeclSpecifier, decl)
       case s: IASTSimpleDeclSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
-        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
+        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.apply(index)
         pointersAsString(s, parentDecl)
       case s: IASTSimpleDeclSpecifier =>
         ASTStringUtil.getReturnTypeString(s, null)
@@ -71,23 +71,23 @@ trait TypeNameProvider { this: AstCreator =>
         val parentDecl = s.getParent.asInstanceOf[IASTParameterDeclaration].getDeclarator
         pointersAsString(s, parentDecl)
       case s: IASTNamedTypeSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
-        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
+        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.apply(index)
         pointersAsString(s, parentDecl)
       case s: IASTNamedTypeSpecifier =>
         ASTStringUtil.getSimpleName(s.getName)
       case s: IASTCompositeTypeSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
-        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
+        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.apply(index)
         pointersAsString(s, parentDecl)
       case s: IASTCompositeTypeSpecifier => ASTStringUtil.getSimpleName(s.getName)
       case s: IASTEnumerationSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
-        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
+        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.apply(index)
         pointersAsString(s, parentDecl)
       case s: IASTEnumerationSpecifier => ASTStringUtil.getSimpleName(s.getName)
       case s: IASTElaboratedTypeSpecifier if s.getParent.isInstanceOf[IASTParameterDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTParameterDeclaration].getDeclarator
         pointersAsString(s, parentDecl)
       case s: IASTElaboratedTypeSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
-        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
+        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.apply(index)
         pointersAsString(s, parentDecl)
       case s: IASTElaboratedTypeSpecifier => ASTStringUtil.getSignatureString(s, null)
       // TODO: handle other types of IASTDeclSpecifier
