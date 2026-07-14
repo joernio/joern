@@ -117,9 +117,9 @@ trait TypeNameProvider { this: AstCreator =>
       // Special patterns with specific handling
       case t if t.startsWith("[") && t.endsWith("]")       => Defines.Array
       case t if isThisLambdaCapture(t) || t.contains("->") => Defines.Function
-      case t if t.contains("( ") => replaceQualifiedNameSeparator(t.substring(0, t.indexOf("( ")))
+      case t if t.contains("( ") => applyQualifiedNameSeparator(t.substring(0, t.indexOf("( ")))
       // Default case
-      case typeStr => replaceQualifiedNameSeparator(typeStr)
+      case typeStr => applyQualifiedNameSeparator(typeStr)
     }
   }
 

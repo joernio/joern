@@ -88,9 +88,11 @@ trait FullNameProvider { this: AstCreator =>
 
   protected def replaceQualifiedNameSeparator(name: String): String = {
     if (name.isEmpty || name == Defines.Any || name == Defines.Void) return name
-    val normalizedName = StringUtils.normalizeSpace(name)
-    normalizedName.replace(Defines.QualifiedNameSeparator, ".").stripPrefix(".")
+    StringUtils.normalizeSpace(name).replace(Defines.QualifiedNameSeparator, ".").stripPrefix(".")
   }
+
+  protected def applyQualifiedNameSeparator(normalizedName: String): String =
+    normalizedName.replace(Defines.QualifiedNameSeparator, ".").stripPrefix(".")
 
   protected def methodFullNameInfo(methodLike: MethodLike): MethodFullNameInfo = {
     val name_             = shortName(methodLike)
