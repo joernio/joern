@@ -215,7 +215,16 @@ http_file(
     url = "https://github.com/joernio/joern-type-stubs/releases/download/v{}/rubysrc_builtin_types.zip".format(RUBYSRC2CPG_TYPE_STUBS_VERSION),
 )
 
-#rust2cpg astgen binary imports
+#rust2cpg astgen binary imports and syntax imports
+
+http_file(
+    name = "rust2cpg_node_syntax",
+    downloaded_file_path = "RustNodeSyntax.scala",
+    # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
+    # to update this all the time.
+    sha256 = "",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/RustNodeSyntax.scala".format(RUST2CPG_ASTGEN_VERSION),
+)
 
 http_file(
     name = "rust2cpg_astgen_macos_arm",
