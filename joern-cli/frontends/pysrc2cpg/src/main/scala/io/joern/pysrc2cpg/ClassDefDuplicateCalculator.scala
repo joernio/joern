@@ -8,11 +8,6 @@ import scala.collection.mutable
   * ClassDef whose simple name is duplicated within that scope. The LAST occurrence per name gets no entry (keeps the
   * plain full name); earlier occurrences get 0, 1, 2, ...
   *
-  * The traversal walks statement containers only (module/function/class bodies and nested control-flow statements whose
-  * bodies live in the same Python scope). Function / class bodies open a new scope; other statement bodies (if, try,
-  * for, while, with, match) do not.
-  *
-  * ==Downstream effect==
   * The suffix is also propagated to `contextStack` when entering the class body, so members (methods, nested classes)
   * of a mangled class receive fullNames prefixed with the mangled class name. Example:
   * {{{
@@ -24,7 +19,6 @@ import scala.collection.mutable
   * Consumers querying by class simple name via `typeDecl.name("A").method` still find both, but queries pinned on full
   * name must account for the `<duplicate>N` marker.
   *
-  * ==Why the last occurrence stays unmangled==
   * At runtime Python binds the class name to the most recent `class` statement, so callers that reference the name
   * (e.g. `A()`) resolve to the last definition. Keeping that definition's fullName plain (unsuffixed) means: (1)
   * existing queries against the CPG that assume one class per name still land on the runtime-effective definition, and
@@ -32,7 +26,7 @@ import scala.collection.mutable
   * they remain addressable for taint tracking and static queries.
   */
 class ClassDefDuplicateCalculator {
-  private val classDefToDuplicateIndex: mutable.Map[ast.ClassDef, Int] = mutable.Map.empty
+  private val classDefToDuplicateIndex = mutable.Map[ast.ClassDef, Int]()
 
   private val scopeStack =
     mutable.Stack[mutable.LinkedHashMap[String, mutable.ArrayBuffer[ast.ClassDef]]]()
@@ -96,7 +90,7 @@ class ClassDefDuplicateCalculator {
     case withStmt: ast.AsyncWith => visitStmts(withStmt.body)
     case tryStmt: ast.Try =>
       visitStmts(tryStmt.body)
-      tryStmt.handlers.foreach(h => visitStmts(h.body))
+      tryStmt.handlers.foreach(handler => visitStmts(handler.body))
       visitStmts(tryStmt.orelse)
       visitStmts(tryStmt.finalbody)
     case matchStmt: ast.Match =>

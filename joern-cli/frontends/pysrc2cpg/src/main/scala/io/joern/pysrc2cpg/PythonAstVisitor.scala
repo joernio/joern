@@ -462,7 +462,7 @@ class PythonAstVisitor(
   def convert(classDef: ast.ClassDef): NewNode = {
     // Create type for the meta class object
     val metaTypeDeclName     = classDef.name + metaClassSuffix
-    val metaTypeDeclFullName = calculateClassFullName(classDef, metaTypeDeclName)
+    val metaTypeDeclFullName = classFullNameWithDuplicateSuffix(classDef, metaTypeDeclName)
 
     val metaTypeNode = nodeBuilder.typeNode(metaTypeDeclName, metaTypeDeclFullName)
     val metaTypeDeclNode =
@@ -477,7 +477,7 @@ class PythonAstVisitor(
 
     // Create type for class instances
     val instanceTypeDeclName     = classDef.name
-    val instanceTypeDeclFullName = calculateClassFullName(classDef, instanceTypeDeclName)
+    val instanceTypeDeclFullName = classFullNameWithDuplicateSuffix(classDef, instanceTypeDeclName)
 
     // TODO for now we just take the code of the base expression and pretend they are full names, converting special
     //  nodes as we go.
@@ -2191,12 +2191,13 @@ class PythonAstVisitor(
   }
 
   // See ClassDefDuplicateCalculator for why only the last occurrence stays unmangled.
-  private def calculateClassFullName(classDef: ast.ClassDef, simpleName: String): String = {
+  private def classFullNameWithDuplicateSuffix(classDef: ast.ClassDef, simpleName: String): String = {
     calculateFullNameFromContext(simpleName) + duplicateSuffixFor(classDef)
   }
 
-  private def duplicateSuffixFor(classDef: ast.ClassDef): String =
-    classDefToDuplicateIndex.get(classDef).fold("")(i => s"$duplicateSuffix$i")
+  private def duplicateSuffixFor(classDef: ast.ClassDef): String = {
+    classDefToDuplicateIndex.get(classDef).map(idx => s"$duplicateSuffix$idx").getOrElse("")
+  }
 
   override protected def line(node: iast): Option[Int]         = None
   override protected def column(node: iast): Option[Int]       = None
