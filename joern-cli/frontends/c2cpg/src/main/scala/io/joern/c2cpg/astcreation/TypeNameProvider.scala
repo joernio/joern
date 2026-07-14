@@ -41,7 +41,15 @@ trait TypeNameProvider { this: AstCreator =>
       "virtual"
     )
 
+  private val ReservedKeywordsAtTypesPatterns: List[(String, String)] =
+    ReservedKeywordsAtTypes.map(k => (s"$k ", s" $k "))
+
+  private val ReservedKeywordsAtTypesSet: Set[String] = ReservedKeywordsAtTypes.toSet
+
   private val KeywordsAtTypesToKeep: List[String] = List("unsigned", "volatile")
+
+  private val KeywordsAtTypesToKeepPatterns: List[(String, String)] =
+    KeywordsAtTypesToKeep.map(k => (s"$k ", s" $k "))
 
   protected def typeForDeclSpecifier(spec: IASTNode, index: Int = 0): String = {
     val tpeString = spec match {
@@ -91,11 +99,12 @@ trait TypeNameProvider { this: AstCreator =>
   protected def cleanType(rawType: String): String = {
     if (rawType == Defines.Any) return rawType
     val normalizedTpe = StringUtils.normalizeSpace(rawType.stripSuffix(" ()"))
-    val tpe = ReservedKeywordsAtTypes.foldLeft(normalizedTpe) { (cur, repl) =>
-      if (cur.startsWith(s"$repl ") || cur.contains(s" $repl ")) {
-        cur.replace(s" $repl ", " ").stripPrefix(s"$repl ")
-      } else cur
-    }
+    val tpe =
+      if (!ReservedKeywordsAtTypesSet.exists(normalizedTpe.contains)) normalizedTpe
+      else ReservedKeywordsAtTypesPatterns.foldLeft(normalizedTpe) { case (cur, (prefix, infix)) =>
+        if (cur.startsWith(prefix) || cur.contains(infix)) cur.replace(infix, " ").stripPrefix(prefix)
+        else cur
+      }
     stripTemplateTags(replaceWhitespaceAfterKeyword(tpe)) match {
       // Empty or problematic types
       case ""                                                                      => Defines.Any
@@ -320,16 +329,15 @@ trait TypeNameProvider { this: AstCreator =>
   }
 
   private def replaceWhitespaceAfterKeyword(tpe: String): String = {
-    if (KeywordsAtTypesToKeep.exists(k => tpe.startsWith(s"$k ") || tpe.contains(s" $k "))) {
-      KeywordsAtTypesToKeep.foldLeft(tpe) { (cur, repl) =>
-        val prefixStartsWith = s"$repl "
-        val prefixContains   = s" $repl "
-        if (cur.startsWith(prefixStartsWith)) {
-          prefixStartsWith + replaceWhitespaceAfterKeyword(cur.substring(prefixStartsWith.length))
-        } else if (cur.contains(prefixContains)) {
-          val front = tpe.substring(0, tpe.indexOf(prefixContains))
-          val back  = tpe.substring(tpe.indexOf(prefixContains) + prefixContains.length)
-          s"${replaceWhitespaceAfterKeyword(front)}$prefixContains${replaceWhitespaceAfterKeyword(back)}"
+    if (KeywordsAtTypesToKeepPatterns.exists { case (prefix, infix) => tpe.startsWith(prefix) || tpe.contains(infix) }) {
+      KeywordsAtTypesToKeepPatterns.foldLeft(tpe) { case (cur, (prefix, infix)) =>
+        if (cur.startsWith(prefix)) {
+          prefix + replaceWhitespaceAfterKeyword(cur.substring(prefix.length))
+        } else if (cur.contains(infix)) {
+          val idx   = cur.indexOf(infix)
+          val front = cur.substring(0, idx)
+          val back  = cur.substring(idx + infix.length)
+          s"${replaceWhitespaceAfterKeyword(front)}$infix${replaceWhitespaceAfterKeyword(back)}"
         } else {
           cur
         }
