@@ -1,17 +1,9 @@
 package io.joern.javasrc2cpg.astcreation.declarations
 
-import io.joern.x2cpg.utils.AstPropertiesUtil.*
-import com.github.javaparser.ast.NodeList
-import com.github.javaparser.ast.body.{
-  CallableDeclaration,
-  CompactConstructorDeclaration,
-  ConstructorDeclaration,
-  FieldDeclaration,
-  MethodDeclaration,
-  Parameter,
-  VariableDeclarator
-}
-import com.github.javaparser.ast.stmt.{BlockStmt, ExplicitConstructorInvocationStmt}
+import com.github.javaparser.ast.Node
+import com.github.javaparser.ast.`type`.ClassOrInterfaceType
+import com.github.javaparser.ast.body.*
+import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt
 import com.github.javaparser.resolution.declarations.{
   ResolvedMethodDeclaration,
   ResolvedMethodLikeDeclaration,
@@ -19,40 +11,21 @@ import com.github.javaparser.resolution.declarations.{
 }
 import com.github.javaparser.resolution.types.ResolvedType
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
+import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserParameterDeclaration
+import io.joern.javasrc2cpg.astcreation.declarations.AstForMethodsCreator.PartialConstructorDeclaration
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
+import io.joern.javasrc2cpg.scope.JavaScopeElement.fullName
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.Util.*
+import io.joern.javasrc2cpg.util.{NameConstants, Util}
+import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AstNodeNew,
-  NewBlock,
-  NewCall,
-  NewFieldIdentifier,
-  NewIdentifier,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodReturn,
-  NewModifier
-}
-import io.shiftleft.codepropertygraph.generated.{
-  DispatchTypes,
-  EdgeTypes,
-  EvaluationStrategies,
-  ModifierTypes,
-  NodeTypes,
-  Operators,
-  nodes
-}
-import io.joern.javasrc2cpg.scope.JavaScopeElement.fullName
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.*
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Failure, Success, Try}
-import com.github.javaparser.ast.Node
-import com.github.javaparser.ast.`type`.ClassOrInterfaceType
-import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserParameterDeclaration
-import io.joern.javasrc2cpg.astcreation.declarations.AstForMethodsCreator.PartialConstructorDeclaration
-import io.joern.javasrc2cpg.util.{NameConstants, Util}
 
 private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   def astForMethod(methodDeclaration: MethodDeclaration): Ast = {

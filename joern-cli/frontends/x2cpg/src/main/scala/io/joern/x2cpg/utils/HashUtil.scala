@@ -9,9 +9,6 @@ object HashUtil {
   def sha256(file: Path): String =
     sha256(Seq(file))
 
-  def sha256(file: String): String =
-    sha256(Seq(Path.of(file)))
-
   def sha256(bytes: Array[Byte]): String = {
     val md = MessageDigest.getInstance("SHA-256")
     md.update(bytes)

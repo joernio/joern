@@ -4,18 +4,10 @@ import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.parser.Domain
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.parser.Domain.PhpModifiers.containsAccessModifier
-import io.joern.php2cpg.utils.{BlockScope, MethodScope}
-import io.joern.x2cpg.Defines.UnresolvedSignature
-import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
+import io.joern.php2cpg.utils.MethodScope
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{
-  EdgeTypes,
-  EvaluationStrategies,
-  ModifierTypes,
-  PropertyDefaults,
-  PropertyNames
-}
+import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
