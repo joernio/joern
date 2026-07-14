@@ -548,7 +548,11 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // PathExpr =
   //  Attr* Path
   private def visitPathExpr(pathExpr: PathExpr): Ast = {
-    visitPath(pathExpr.path)
+    // A path has `methodFullName` if it denotes a method reference. Otherwise, it's some other identifier.
+    pathExpr.methodFullName match {
+      case Some(methodFullName) => Ast(methodRefNode(pathExpr, code(pathExpr), methodFullName, methodFullName))
+      case None                 => visitPath(pathExpr.path)
+    }
   }
 
   // Path =
