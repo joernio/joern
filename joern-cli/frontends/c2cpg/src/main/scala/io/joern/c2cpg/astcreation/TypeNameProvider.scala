@@ -101,10 +101,11 @@ trait TypeNameProvider { this: AstCreator =>
     val normalizedTpe = StringUtils.normalizeSpace(rawType.stripSuffix(" ()"))
     val tpe =
       if (!ReservedKeywordsAtTypesSet.exists(normalizedTpe.contains)) normalizedTpe
-      else ReservedKeywordsAtTypesPatterns.foldLeft(normalizedTpe) { case (cur, (prefix, infix)) =>
-        if (cur.startsWith(prefix) || cur.contains(infix)) cur.replace(infix, " ").stripPrefix(prefix)
-        else cur
-      }
+      else
+        ReservedKeywordsAtTypesPatterns.foldLeft(normalizedTpe) { case (cur, (prefix, infix)) =>
+          if (cur.startsWith(prefix) || cur.contains(infix)) cur.replace(infix, " ").stripPrefix(prefix)
+          else cur
+        }
     stripTemplateTags(replaceWhitespaceAfterKeyword(tpe)) match {
       // Empty or problematic types
       case ""                                                                      => Defines.Any
@@ -329,7 +330,9 @@ trait TypeNameProvider { this: AstCreator =>
   }
 
   private def replaceWhitespaceAfterKeyword(tpe: String): String = {
-    if (KeywordsAtTypesToKeepPatterns.exists { case (prefix, infix) => tpe.startsWith(prefix) || tpe.contains(infix) }) {
+    if (
+      KeywordsAtTypesToKeepPatterns.exists { case (prefix, infix) => tpe.startsWith(prefix) || tpe.contains(infix) }
+    ) {
       KeywordsAtTypesToKeepPatterns.foldLeft(tpe) { case (cur, (prefix, infix)) =>
         if (cur.startsWith(prefix)) {
           prefix + replaceWhitespaceAfterKeyword(cur.substring(prefix.length))
