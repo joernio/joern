@@ -19,6 +19,7 @@ import org.eclipse.cdt.core.model.ILanguage
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.{Path, Paths}
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 
 object AstCreationPass {
@@ -85,7 +86,8 @@ class AstCreationPass(
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  private val headerFileFinder: HeaderFileFinder = new HeaderFileFinder(config)
+  private val headerFileFinder: HeaderFileFinder                         = new HeaderFileFinder(config)
+  private val headerContentCache: ConcurrentHashMap[String, Array[Char]] = new ConcurrentHashMap()
 
   private var _finalAccumulator: Accumulator = Accumulator()
 
@@ -176,7 +178,7 @@ class AstCreationPass(
     val (path, language) = fileAndLanguage
     val relPath          = SourceFiles.toRelativePath(path.toString, config.inputPath)
     val (gotCpg, duration) = TimeUtils.time {
-      val cdtParser   = new CdtParser(config, headerFileFinder, compilationDatabase)
+      val cdtParser   = new CdtParser(config, headerFileFinder, compilationDatabase, headerContentCache)
       val parseResult = cdtParser.parse(path, language, accumulator)
       parseResult match {
         case Some(translationUnit) =>

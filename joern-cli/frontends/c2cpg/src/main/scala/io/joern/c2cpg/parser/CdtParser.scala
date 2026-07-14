@@ -15,6 +15,7 @@ import org.eclipse.cdt.core.parser.{DefaultLogService, FileContent, ScannerInfo}
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Path, Paths}
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.control.NonFatal
@@ -94,8 +95,12 @@ object CdtParser {
 
 }
 
-class CdtParser(config: Config, headerFileFinder: HeaderFileFinder, compilationDatabase: Option[CompilationDatabase])
-    extends ParseProblemsLogger
+class CdtParser(
+  config: Config,
+  headerFileFinder: HeaderFileFinder,
+  compilationDatabase: Option[CompilationDatabase],
+  headerContentCache: ConcurrentHashMap[String, Array[Char]] = new ConcurrentHashMap()
+) extends ParseProblemsLogger
     with PreprocessorStatementsLogger {
 
   import io.joern.c2cpg.parser.CdtParser.*
@@ -160,9 +165,10 @@ class CdtParser(config: Config, headerFileFinder: HeaderFileFinder, compilationD
     fileContent: FileContent,
     accumulator: AstCreationPass.Accumulator
   ): ParseResult = {
-    val relativeFilePath    = SourceFiles.toRelativePath(file.toString, config.inputPath)
-    val fileContentProvider = new CustomFileContentProvider(headerFileFinder, file.toString, accumulator)
-    val scannerInfo         = createScannerInfo(file)
+    val relativeFilePath = SourceFiles.toRelativePath(file.toString, config.inputPath)
+    val fileContentProvider =
+      new CustomFileContentProvider(headerFileFinder, file.toString, accumulator, headerContentCache)
+    val scannerInfo = createScannerInfo(file)
     safeParseInternal(fileContent, scannerInfo, fileContentProvider, lang, relativeFilePath)
   }
 
