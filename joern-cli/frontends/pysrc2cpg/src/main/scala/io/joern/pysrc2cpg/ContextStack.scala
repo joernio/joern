@@ -31,6 +31,8 @@ class ContextStack {
     val astParent: nodes.NewNode
     val order: AutoIncIndex
     val variables: mutable.Map[String, nodes.NewNode]
+    val reservedNames: mutable.Set[String]
+    val tmpCounters: mutable.Map[String, Int]
     var lambdaCounter: Int
     val methodCounter: mutable.Map[String, Int]
   }
@@ -43,6 +45,8 @@ class ContextStack {
     val methodBlockNode: Option[nodes.NewBlock] = None,
     val methodRefNode: Option[nodes.NewMethodRef] = None,
     val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
+    val reservedNames: mutable.Set[String] = mutable.Set.empty,
+    val tmpCounters: mutable.Map[String, Int] = mutable.Map.empty,
     val globalVariables: mutable.Set[String] = mutable.Set.empty,
     val nonLocalVariables: mutable.Set[String] = mutable.Set.empty,
     var lambdaCounter: Int = 0,
@@ -54,6 +58,8 @@ class ContextStack {
     val astParent: nodes.NewNode,
     val order: AutoIncIndex,
     val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
+    val reservedNames: mutable.Set[String] = mutable.Set.empty,
+    val tmpCounters: mutable.Map[String, Int] = mutable.Map.empty,
     var lambdaCounter: Int = 0,
     val methodCounter: mutable.Map[String, Int] = mutable.Map.empty
   ) extends Context {}
@@ -72,6 +78,8 @@ class ContextStack {
     val astParent: nodes.NewNode,
     val order: AutoIncIndex,
     val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
+    val reservedNames: mutable.Set[String] = mutable.Set.empty,
+    val tmpCounters: mutable.Map[String, Int] = mutable.Map.empty,
     var lambdaCounter: Int = 0,
     val methodCounter: mutable.Map[String, Int] = mutable.Map.empty
   ) extends Context {}
@@ -101,7 +109,8 @@ class ContextStack {
     scopeName: Option[String],
     methodNode: nodes.NewMethod,
     methodBlockNode: nodes.NewBlock,
-    methodRefNode: Option[nodes.NewMethodRef]
+    methodRefNode: Option[nodes.NewMethodRef],
+    reservedNames: Iterable[String]
   ): Unit = {
     val isClassBodyMethod = stack.headOption.exists(_.isInstanceOf[ClassContext])
 
@@ -112,7 +121,8 @@ class ContextStack {
         new AutoIncIndex(1),
         isClassBodyMethod,
         Some(methodBlockNode),
-        methodRefNode
+        methodRefNode,
+        reservedNames = mutable.Set.from(reservedNames)
       )
     if (moduleMethodContext.isEmpty) {
       moduleMethodContext = Some(methodContext)
@@ -120,13 +130,21 @@ class ContextStack {
     push(methodContext)
   }
 
-  def pushClass(scopeName: Option[String], classNode: nodes.NewTypeDecl): Unit = {
-    push(new ClassContext(scopeName, classNode, new AutoIncIndex(1)))
+  def pushClass(scopeName: Option[String], classNode: nodes.NewTypeDecl, reservedNames: Iterable[String]): Unit = {
+    push(new ClassContext(scopeName, classNode, new AutoIncIndex(1), reservedNames = mutable.Set.from(reservedNames)))
   }
 
-  def pushSpecialContext(): Unit = {
+  def pushSpecialContext(reservedNames: Iterable[String]): Unit = {
     val methodContext = findEnclosingMethodContext(stack)
-    push(new SpecialBlockContext(methodContext.astParent, methodContext.order))
+    methodContext.reservedNames.addAll(reservedNames)
+    push(
+      new SpecialBlockContext(
+        methodContext.astParent,
+        methodContext.order,
+        reservedNames = methodContext.reservedNames,
+        tmpCounters = methodContext.tmpCounters
+      )
+    )
   }
 
   def pop(): Unit = {
@@ -145,6 +163,22 @@ class ContextStack {
     val result = stack.head.lambdaCounter
     stack.head.lambdaCounter += 1
     result
+  }
+
+  def getUnusedName(prefix: Option[String] = None): String = {
+    val context  = stack.head
+    val nameBase = prefix.map(prefixValue => s"${prefixValue}_tmp").getOrElse("tmp")
+
+    var unusedName = Option.empty[String]
+    while (unusedName.forall(context.reservedNames.contains)) {
+      val counter = context.tmpCounters.getOrElse(nameBase, 0)
+      unusedName = Some(s"$nameBase$counter")
+      context.tmpCounters.update(nameBase, counter + 1)
+    }
+
+    val name = unusedName.get
+    context.reservedNames.add(name)
+    name
   }
 
   private def findEnclosingMethodContext(contextStack: List[Context]): MethodContext = {
