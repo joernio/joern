@@ -81,7 +81,7 @@ trait MacroHandler { this: AstCreator =>
   /** Determine whether `node` is expanded from the macro expansion at `loc`.
     */
   private def isExpandedFrom(node: IASTNode, loc: IASTMacroExpansionLocation): Boolean = {
-    expandedFromMacro(node).map(_.getExpansion.getMacroDefinition).contains(loc.getExpansion.getMacroDefinition)
+    expandedFromMacro(node).exists(_.getExpansion.getMacroDefinition == loc.getExpansion.getMacroDefinition)
   }
 
   /** Create an AST that represents a macro expansion as a call. The AST is rooted in a CALL node and contains subtrees
@@ -190,7 +190,9 @@ trait MacroHandler { this: AstCreator =>
   private def isExpandedFromMacro(node: IASTNode): Boolean = expandedFromMacro(node).nonEmpty
 
   private def expandedFromMacro(node: IASTNode): Option[IASTMacroExpansionLocation] = {
-    val locations = node.getNodeLocations.toList
+    val rawLocations = node.getNodeLocations
+    if (rawLocations == null || rawLocations.length == 0) return None
+    val locations = rawLocations.toList
     val locationsSorted = node match {
       // For binary expressions the expansion locations may occur in any order.
       // We manually sort them here to ignore this.
