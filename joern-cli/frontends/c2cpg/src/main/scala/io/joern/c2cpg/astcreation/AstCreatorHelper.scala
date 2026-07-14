@@ -39,8 +39,9 @@ trait AstCreatorHelper { this: AstCreator =>
     val bse = base.getOrElse(Ast())
     var ast = Ast(callNode).withChild(bse)
 
+    val receiverRoot = receiver.flatMap(_.root)
     if (receiver.isDefined && receiver != base) {
-      receiver.get.root.get.asInstanceOf[ExpressionNew].argumentIndex = -1
+      receiverRoot.get.asInstanceOf[ExpressionNew].argumentIndex = -1
       ast = ast.withChild(receiver.get)
     }
 
@@ -49,8 +50,8 @@ trait AstCreatorHelper { this: AstCreator =>
       .withArgEdges(callNode, baseRoot)
       .withArgEdges(callNode, arguments.flatMap(_.root))
 
-    if (receiver.isDefined) {
-      ast = ast.withReceiverEdge(callNode, receiver.get.root.get)
+    receiverRoot.foreach { root =>
+      ast = ast.withReceiverEdge(callNode, root)
     }
     ast
   }
@@ -177,7 +178,7 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def astsForDependenciesAndImports(iASTTranslationUnit: IASTTranslationUnit): Seq[Ast] = {
-    val allIncludes = iASTTranslationUnit.getIncludeDirectives.toList.filterNot(isIncludedNode)
+    val allIncludes = iASTTranslationUnit.getIncludeDirectives.iterator.filterNot(isIncludedNode).toSeq
     allIncludes.map { include =>
       val name       = include.getName.toString
       val dependency = dependencyNode(name, name, "include")
@@ -190,7 +191,7 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def astsForComments(iASTTranslationUnit: IASTTranslationUnit): Seq[Ast] = {
     if (config.includeComments)
-      iASTTranslationUnit.getComments.toList.filterNot(isIncludedNode).map(comment => astForComment(comment))
+      iASTTranslationUnit.getComments.iterator.filterNot(isIncludedNode).map(comment => astForComment(comment)).toSeq
     else Seq.empty
   }
 

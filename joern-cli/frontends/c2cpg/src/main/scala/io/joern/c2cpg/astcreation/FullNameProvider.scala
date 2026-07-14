@@ -17,7 +17,7 @@ object FullNameProvider {
 
   type MethodLike = IASTFunctionDeclarator | IASTFunctionDefinition | ICPPASTLambdaExpression
 
-  private val TagsToKeepInFullName = List(
+  private val TagsToKeepInFullName = Set(
     "<anonymous>",
     "<const>",
     "<duplicate>",
@@ -313,9 +313,9 @@ trait FullNameProvider { this: AstCreator =>
           case Some(evalBinding: EvalBinding) =>
             evalBinding.getBinding match {
               case f: CPPFunction if f.getDeclarations != null =>
-                Option(f.getDeclarations.headOption.map(n => s"${fullName(n)}").getOrElse(f.getName))
+                Option(f.getDeclarations.headOption.map(n => fullName(n)).getOrElse(f.getName))
               case f: CPPFunction if f.getDefinition != null =>
-                Option(s"${fullName(f.getDefinition)}")
+                Option(fullName(f.getDefinition))
               case other =>
                 Option(other.getName)
             }

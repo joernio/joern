@@ -364,7 +364,7 @@ trait TypeNameProvider { this: AstCreator =>
     }
     val pointers = parentDecl.getPointerOperators
     val arr = parentDecl match {
-      case p: IASTArrayDeclarator => p.getArrayModifiers.toList.map(_.getRawSignature).mkString
+      case p: IASTArrayDeclarator => p.getArrayModifiers.iterator.map(_.getRawSignature).mkString
       case _                      => ""
     }
     if (pointers.isEmpty) {
