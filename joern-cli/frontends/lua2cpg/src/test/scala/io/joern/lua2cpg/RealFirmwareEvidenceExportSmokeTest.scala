@@ -1184,6 +1184,58 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r7 misystem setWifiAPMode paths with scoped sanitizer hits" in {
+      withXiaomiStagingRows { stagingRows =>
+        val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val sourceModule  = "usr/lib/lua/luci/controller/api/misystem.luac"
+        val apModule      = "usr/lib/lua/xiaoqiang/module/XQAPModule.luac"
+        val utilModule    = "usr/lib/lua/luci/util.luac"
+        val sanitizerName = "xiaoqiang.module.XQAPModule.setWifiAPMode"
+        val expectedPaths = Vector(
+          ("setWifiApMode", 101, apModule, "setWifiAPMode", 211, "os.execute", "root.37@pc168", "root.37@pc168:r32"),
+          ("setWifiApMode_Init", 104, apModule, "setWifiAPMode", 211, "os.execute", "root.38@pc200", "root.38@pc200:r34"),
+          ("setWifiApMode_Init", 104, utilModule, "exec", 3, "io.popen", "root.38@pc200", "root.38@pc200:r34")
+        )
+
+        expectedPaths.foreach {
+          case (sourceFunction, sourcePc, sinkModule, sinkFunction, sinkPc, sinkTrigger, sanitizerLocalCall, sanitizerLocalValue) =>
+            val sanitizerCall  = s"$sourceModule::$sanitizerLocalCall"
+            val sanitizerValue = s"$sourceModule::$sanitizerLocalValue"
+            val matchingPaths = pathRows.filter(row =>
+              row("source_module_path").str == sourceModule &&
+                row("source_function_name").str == sourceFunction &&
+                row("source_pc").num.toInt == sourcePc &&
+                row("source_trigger").str == "luci.http.formvalue" &&
+                row("sink_module_path").str == sinkModule &&
+                row("sink_function_name").str == sinkFunction &&
+                row("sink_pc").num.toInt == sinkPc &&
+                row("sink_trigger").str == sinkTrigger &&
+                row("path_steps").arr.nonEmpty &&
+                row("path_steps").arr.forall(_.str.contains("::")) &&
+                !row.obj.contains("callsite_id")
+            )
+
+            matchingPaths should not be empty
+            matchingPaths.foreach { path =>
+              withClue(
+                s"$sourceFunction sourcePc=$sourcePc sink=$sinkFunction pc=$sinkPc path_steps=${path("path_steps").arr.map(_.str).mkString("[", ",", "]")} sanitizer_hits=${path("sanitizer_hits")}"
+              ) {
+                path("path_steps").arr.exists(_.str == sanitizerValue) shouldBe true
+                path("classification").str shouldBe "sanitized"
+                path("sanitizer_hits").arr.exists { hit =>
+                  val row = hit.obj
+                  row("callsite_id").str == sanitizerCall &&
+                  row("sanitizer_name").str == sanitizerName &&
+                  row("applies_to_sink").bool &&
+                  row("on_dataflow_chain").bool
+                } shouldBe true
+              }
+            }
+        }
+      }
+    }
+
     "export CrossPlatform r7 setRouterToBaidu path with referenceAnalyzer known ipairs sanitizer hit" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
