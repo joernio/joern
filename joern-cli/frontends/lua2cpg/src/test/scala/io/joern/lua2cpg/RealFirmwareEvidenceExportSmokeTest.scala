@@ -997,6 +997,58 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r7 setConfigIotDevHidessid paths with referenceAnalyzer known _cmdformat sanitizer hits" in {
+      withXiaomiStagingRows { stagingRows =>
+        val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val module = "usr/lib/lua/luci/controller/api/misystem.luac"
+        val expectedPairs = Vector(
+          11 -> 161,
+          11 -> 186,
+          19 -> 161,
+          19 -> 186,
+          23 -> 161,
+          23 -> 186,
+          27 -> 161,
+          27 -> 186,
+          31 -> 186,
+          35 -> 186
+        )
+
+        expectedPairs.foreach { case (sourcePc, sinkPc) =>
+          val path = pathRows
+            .find(row =>
+              row("source_module_path").str == module &&
+                row("source_function_name").str == "setConfigIotDevHidessid" &&
+                row("source_pc").num.toInt == sourcePc &&
+                row("source_trigger").str == "luci.http.formvalue" &&
+                row("sink_module_path").str == module &&
+                row("sink_function_name").str == "setConfigIotDevHidessid" &&
+                row("sink_pc").num.toInt == sinkPc &&
+                row("sink_trigger").str == "test.api.Process.forkExec" &&
+                row("path_steps").arr.nonEmpty &&
+                row("path_steps").arr.forall(_.str.contains("::")) &&
+                !row.obj.contains("callsite_id")
+            )
+            .getOrElse(fail(s"missing setConfigIotDevHidessid strict path sourcePc=$sourcePc sinkPc=$sinkPc"))
+
+          withClue(
+            s"sourcePc=$sourcePc sinkPc=$sinkPc path_steps=${path("path_steps").arr.map(_.str).mkString("[", ",", "]")} sanitizer_hits=${path("sanitizer_hits")}"
+          ) {
+            path("classification").str shouldBe "sanitized"
+            path("sanitizer_hits").arr.exists { hit =>
+              val row = hit.obj
+              row("callsite_id").str.startsWith(s"$module::root.172@pc") &&
+              row("callsite_id").str.contains("::") &&
+              row("sanitizer_name").str == "test.api.Process._cmdformat" &&
+              row("applies_to_sink").bool &&
+              row("on_dataflow_chain").bool
+            } shouldBe true
+          }
+        }
+      }
+    }
+
     "preserve CrossPlatform r7 baseline sanitizer classifications for setWifiMacfilter and setWanSpeed" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
