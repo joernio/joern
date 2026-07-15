@@ -1225,6 +1225,58 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r7 xqsystem payment paths with referenceAnalyzer known _cmdformat sanitizer hits" in {
+      withXiaomiStagingRows { stagingRows =>
+        val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val module     = "usr/lib/lua/luci/controller/api/xqsystem.luac"
+        val utilModule = "usr/lib/lua/luci/util.luac"
+        val expectedPaths = Vector(
+          ("setPaymentInfo", 19, module, "setPaymentInfo", 37, "luci.util.exec", "root.123@pc33", "root.123@pc33:r6"),
+          ("setPaymentInfo", 19, utilModule, "exec", 3, "io.popen", "root.123@pc33", "root.123@pc33:r6"),
+          ("signOrder", 14, module, "signOrder", 58, "luci.util.exec", "root.124@pc54", "root.124@pc54:r7"),
+          ("signOrder", 14, utilModule, "exec", 3, "io.popen", "root.124@pc54", "root.124@pc54:r7"),
+          ("signOrder", 18, module, "signOrder", 58, "luci.util.exec", "root.124@pc54", "root.124@pc54:r7"),
+          ("signOrder", 18, utilModule, "exec", 3, "io.popen", "root.124@pc54", "root.124@pc54:r7")
+        )
+
+        expectedPaths.foreach {
+          case (sourceFunction, sourcePc, sinkModule, sinkFunction, sinkPc, sinkTrigger, sanitizerLocalCall, sanitizerLocalValue) =>
+            val sanitizerCall  = s"$module::$sanitizerLocalCall"
+            val sanitizerValue = s"$module::$sanitizerLocalValue"
+            val path = pathRows
+              .find(row =>
+                row("source_module_path").str == module &&
+                  row("source_function_name").str == sourceFunction &&
+                  row("source_pc").num.toInt == sourcePc &&
+                  row("source_trigger").str == "luci.http.formvalue" &&
+                  row("sink_module_path").str == sinkModule &&
+                  row("sink_function_name").str == sinkFunction &&
+                  row("sink_pc").num.toInt == sinkPc &&
+                  row("sink_trigger").str == sinkTrigger &&
+                  row("path_steps").arr.nonEmpty &&
+                  row("path_steps").arr.forall(_.str.contains("::")) &&
+                  !row.obj.contains("callsite_id")
+              )
+              .getOrElse(fail(s"missing xqsystem payment strict path $sourceFunction sourcePc=$sourcePc sink=$sinkFunction pc=$sinkPc"))
+
+            withClue(
+              s"$sourceFunction sourcePc=$sourcePc sink=$sinkFunction pc=$sinkPc path_steps=${path("path_steps").arr.map(_.str).mkString("[", ",", "]")} sanitizer_hits=${path("sanitizer_hits")}"
+            ) {
+              path("path_steps").arr.exists(_.str == sanitizerValue) shouldBe true
+              path("classification").str shouldBe "sanitized"
+              path("sanitizer_hits").arr.exists { hit =>
+                val row = hit.obj
+                row("callsite_id").str == sanitizerCall &&
+                row("sanitizer_name").str == "test.api.Process._cmdformat" &&
+                row("applies_to_sink").bool &&
+                row("on_dataflow_chain").bool
+              } shouldBe true
+            }
+        }
+      }
+    }
+
     "preserve CrossPlatform r7 baseline sanitizer classifications for setWifiMacfilter and setWanSpeed" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
