@@ -17,8 +17,10 @@ case class DependencyResolverParams(
 )
 
 object DependencyResolver {
-  private val logger                           = LoggerFactory.getLogger(getClass)
-  private val BuildFileExtensions: Set[String] = Set(".gradle", ".gradle.kts", "pom.xml")
+  private val logger                               = LoggerFactory.getLogger(getClass)
+  private val GradleBuildFileSuffixes: Set[String] = Set(".gradle", ".gradle.kts")
+  private val MavenBuildFileSuffixes: Set[String]  = Set("pom.xml")
+  private val BuildFileSuffixes: Set[String]       = GradleBuildFileSuffixes ++ MavenBuildFileSuffixes
 
   def getCoordinates(
     projectDir: Path,
@@ -97,19 +99,18 @@ object DependencyResolver {
     }
   }
 
-  private[dependency] def isGradleBuildFile(file: Path): Boolean = {
-    val pathString = file.toString
-    pathString.endsWith(".gradle") || pathString.endsWith(".gradle.kts")
-  }
+  private[dependency] def isGradleBuildFile(file: Path): Boolean =
+    GradleBuildFileSuffixes.exists(file.toString.endsWith)
 
-  private[dependency] def isMavenBuildFile(file: Path): Boolean = {
-    file.toString.endsWith("pom.xml")
-  }
+  private[dependency] def isMavenBuildFile(file: Path): Boolean =
+    MavenBuildFileSuffixes.exists(file.toString.endsWith)
 
   private[dependency] def findSupportedBuildFiles(currentDir: Path): List[Path] = {
-    val allBuildFiles = SourceFiles
-      .determine(currentDir.toString, BuildFileExtensions)
-      .map(Path.of(_))
+    val allBuildFiles = SourceFiles.determine(
+      currentDir,
+      BuildFileSuffixes,
+      ignoredDefaultRegex = Some(SourceFiles.JvmDefaultIgnoredFolders)
+    )
 
     // Only fetch dependencies once for projects with both a build.gradle and a pom.xml file
     // by grouping per parent directory and preferring Gradle over Maven.
