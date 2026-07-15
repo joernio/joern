@@ -817,6 +817,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         doExecSteps should contain("usr/lib/lua/xiaoqiang/util/XQMitvUtil.luac::root.1@pc7:r1")
         doExecSteps.exists(_.startsWith("usr/lib/lua/xiaoqiang/util/XQMitvUtil.luac::root.0")) shouldBe true
         doExecSteps should contain("usr/lib/lua/xiaoqiang/util/XQMitvUtil.luac::root.0@pc10:r3")
+        assertRequestMitvStringMatchSanitizer(doExecPath)
 
         val popenPath = requestMitvPath(
           "usr/lib/lua/luci/util.luac",
@@ -832,6 +833,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         popenSteps should contain("usr/lib/lua/xiaoqiang/util/XQMitvUtil.luac::root.0@pc10:r3")
         popenSteps should contain("usr/lib/lua/luci/util.luac::root.36:r0")
         popenSteps should contain("usr/lib/lua/luci/util.luac::root.36@pc3:r2")
+        assertRequestMitvStringMatchSanitizer(popenPath)
       }
     }
 
@@ -2484,6 +2486,19 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
 
   private def hasScopedCallsite(row: ujson.Obj, localCallsiteId: String): Boolean =
     row("callsite_id").str.contains("::") && row("callsite_id").str.endsWith(s"::$localCallsiteId")
+
+  private def assertRequestMitvStringMatchSanitizer(path: ujson.Obj): Unit = {
+    val sanitizerCall = "usr/lib/lua/xiaoqiang/util/XQMitvUtil.luac::root.1@pc36"
+    path("classification").str shouldBe "sanitized"
+    path("path_steps").arr.exists(_.str == s"$sanitizerCall:r3") shouldBe true
+    path("sanitizer_hits").arr.exists { hit =>
+      val row = hit.obj
+      row("callsite_id").str == sanitizerCall &&
+        row("sanitizer_name").str == "string.match" &&
+        row("applies_to_sink").bool &&
+        row("on_dataflow_chain").bool
+    } shouldBe true
+  }
 
   private def withXiaomiStagingRows(test: Vector[ujson.Obj] => Unit): Unit = {
     withXiaomiExportDir { exportDir =>
