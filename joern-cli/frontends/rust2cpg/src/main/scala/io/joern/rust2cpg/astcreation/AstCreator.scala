@@ -6,7 +6,9 @@ import io.joern.rust2cpg.parser.RustJsonParser.{ParseResult, isMacroExpanded}
 import io.joern.rust2cpg.parser.RustNodeSyntax
 import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
 import io.joern.rust2cpg.parser.RustNodeSyntaxExtensions.op
+import io.joern.rust2cpg.passes.AstCreationPass
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.AstNodeBuilder.bindingNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, Operators, PropertyDefaults, PropertyNames}
@@ -15,8 +17,9 @@ import org.slf4j.LoggerFactory
 
 import java.nio.charset.StandardCharsets
 
-class AstCreator(val config: Config, val parseResult: ParseResult)(implicit withSchemaValidation: ValidationMode)
-    extends AstCreatorBase[RustNode, AstCreator](parseResult.filename)
+class AstCreator(val config: Config, val parseResult: ParseResult, val accumulator: AstCreationPass.Accumulator)(
+  implicit withSchemaValidation: ValidationMode
+) extends AstCreatorBase[RustNode, AstCreator](parseResult.filename)
     with RustVisitor
     with RustFullNames {
 
@@ -35,6 +38,13 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
 
   protected def addDetachedAst(ast: Ast): Unit = {
     detachedAsts = ast :: detachedAsts
+  }
+
+  protected def addDetachedBindingAsts(typeDecl: NewTypeDecl, methodAsts: Seq[Ast]): Unit = {
+    methodAsts.flatMap(_.root).collect { case method: NewMethod =>
+      val binding = bindingNode(method.name, "", method.fullName)
+      addDetachedAst(Ast(binding).withBindsEdge(typeDecl, binding).withRefEdge(binding, method))
+    }
   }
 
   // NB: rust_ast_gen uses 0-based line/column

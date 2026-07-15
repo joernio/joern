@@ -51,6 +51,20 @@ class TraitTests extends Rust2CpgSuite(noSysRoot = true) {
     "lower the method with a body" in {
       cpg.method.nameExact("b").block.astChildren.isReturn.code.l shouldBe List("4")
     }
+
+    "create binding nodes for each method" in {
+      inside(cpg.typeDecl.nameExact("Foo").bindsOut.sortBy(_.name).l) { case List(methodA, methodB) =>
+        methodA.name shouldBe "a"
+        methodA.signature shouldBe ""
+        methodA.methodFullName shouldBe "rust2cpgtest::Foo::a"
+        methodA.refOut.fullName.l shouldBe List("rust2cpgtest::Foo::a")
+
+        methodB.name shouldBe "b"
+        methodB.signature shouldBe ""
+        methodB.methodFullName shouldBe "rust2cpgtest::Foo::b"
+        methodB.refOut.fullName.l shouldBe List("rust2cpgtest::Foo::b")
+      }
+    }
   }
 
   "a trait associated function without a receiver" should {

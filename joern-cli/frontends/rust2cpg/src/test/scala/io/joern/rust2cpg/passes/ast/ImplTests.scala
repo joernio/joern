@@ -281,6 +281,12 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
         .l shouldBe List("rust2cpgtest::Bar")
     }
 
+    "have correct inheritsFromTypeFullName on the struct" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Foo").inheritsFromTypeFullName.l shouldBe List(
+        "<rust2cpgtest::Foo as rust2cpgtest::Bar>"
+      )
+    }
+
     "have correct methodFullName" in {
       cpg.typeDecl
         .fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>")
@@ -341,6 +347,80 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
         .modifier
         .modifierType
         .l shouldBe List(ModifierTypes.VIRTUAL)
+    }
+
+    "create binding node for the method" in {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>").bindsOut.l) { case binding :: Nil =>
+        binding.name shouldBe "do_stuff"
+        binding.signature shouldBe ""
+        binding.methodFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff"
+        binding.refOut.fullName.l shouldBe List("<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff")
+      }
+    }
+  }
+
+  "an impl overriding a trait default method" should {
+    val cpg = code("""
+        |trait Bar {
+        |  fn a(&self) -> i32 { 0 }
+        |  fn b(&self) -> i32 { 0 }
+        |}
+        |struct Foo;
+        |impl Bar for Foo {
+        |  fn b(&self) -> i32 { 1 }
+        |}
+        |""".stripMargin)
+
+    "create a binding node for the overriding method" in {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>").bindsOut.l) { case binding :: Nil =>
+        binding.name shouldBe "b"
+        binding.signature shouldBe ""
+        binding.methodFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>::b"
+        binding.refOut.fullName.l shouldBe List("<rust2cpgtest::Foo as rust2cpgtest::Bar>::b")
+      }
+    }
+  }
+
+  "a trait impl in a different file" should {
+    val cpg = code(
+      """
+        |mod a;
+        |trait Bar {
+        |  fn do_stuff(&self) -> i32;
+        |}
+        |struct Foo;
+        |""".stripMargin,
+      fileName = (Paths.get("src") / "lib.rs").toString
+    ).moreCode(
+      """
+        |impl crate::Bar for crate::Foo {
+        |  fn do_stuff(&self) -> i32 { 1 }
+        |}
+        |""".stripMargin,
+      fileName = (Paths.get("src") / "a.rs").toString
+    )
+
+    "have correct inheritsFromTypeFullName on the struct" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Foo").inheritsFromTypeFullName.l shouldBe List(
+        "<rust2cpgtest::Foo as rust2cpgtest::Bar>"
+      )
+    }
+  }
+
+  "two trait impls for the same type" should {
+    val cpg = code("""
+        |trait Bar { fn a(&self) -> i32; }
+        |trait Baz { fn b(&self) -> i32; }
+        |struct Foo;
+        |impl Bar for Foo { fn a(&self) -> i32 { 1 } }
+        |impl Baz for Foo { fn b(&self) -> i32 { 2 } }
+        |""".stripMargin)
+
+    "have correct inheritsFromTypeFullName on the struct" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Foo").inheritsFromTypeFullName.l shouldBe List(
+        "<rust2cpgtest::Foo as rust2cpgtest::Bar>",
+        "<rust2cpgtest::Foo as rust2cpgtest::Baz>"
+      )
     }
   }
 
@@ -446,6 +526,22 @@ class ImplTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
       inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo as core::default::Default>").l) { case typeDecl :: Nil =>
         typeDecl.inheritsFromTypeFullName shouldBe List("core::default::Default")
         typeDecl.method.fullName.l shouldBe List("<rust2cpgtest::Foo as core::default::Default>::default")
+      }
+    }
+
+    "have correct inheritsFromTypeFullName on the struct" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Foo").inheritsFromTypeFullName.l shouldBe List(
+        "<rust2cpgtest::Foo as core::default::Default>"
+      )
+    }
+
+    "create binding node for the method" in {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo as core::default::Default>").bindsOut.l) {
+        case binding :: Nil =>
+          binding.name shouldBe "default"
+          binding.signature shouldBe ""
+          binding.methodFullName shouldBe "<rust2cpgtest::Foo as core::default::Default>::default"
+          binding.refOut.fullName.l shouldBe List("<rust2cpgtest::Foo as core::default::Default>::default")
       }
     }
 
