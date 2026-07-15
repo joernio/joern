@@ -1277,6 +1277,53 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r7 XQAPModule extendwifi paths with referenceAnalyzer known apcli sanitizer hits" in {
+      withXiaomiStagingRows { stagingRows =>
+        val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val sinkModule     = "usr/lib/lua/xiaoqiang/module/XQAPModule.luac"
+        val sanitizerCall  = s"$sinkModule::root.13@pc85"
+        val sanitizerValue = s"$sinkModule::root.13@pc138:r16"
+        val expectedPaths = Vector(
+          ("usr/lib/lua/luci/controller/api/xqnetwork.luac", "setPeerWifiAutoAPMode", 42),
+          ("usr/lib/lua/luci/controller/api/misystem.luac", "set_extendwifi_connect", 29),
+          ("usr/lib/lua/luci/controller/api/xqsystem.luac", "ExtendWifiConnectInitedRouter", 32)
+        )
+
+        expectedPaths.foreach { case (sourceModule, sourceFunction, sourcePc) =>
+          val path = pathRows
+            .find(row =>
+              row("source_module_path").str == sourceModule &&
+                row("source_function_name").str == sourceFunction &&
+                row("source_pc").num.toInt == sourcePc &&
+                row("source_trigger").str == "luci.http.formvalue" &&
+                row("sink_module_path").str == sinkModule &&
+                row("sink_function_name").str == "extendwifi_set_connect" &&
+                row("sink_pc").num.toInt == 139 &&
+                row("sink_trigger").str == "luci.util.exec" &&
+                row("path_steps").arr.nonEmpty &&
+                row("path_steps").arr.forall(_.str.contains("::")) &&
+                !row.obj.contains("callsite_id")
+            )
+            .getOrElse(fail(s"missing XQAPModule extendwifi strict path $sourceFunction sourcePc=$sourcePc"))
+
+          withClue(
+            s"$sourceFunction sourcePc=$sourcePc path_steps=${path("path_steps").arr.map(_.str).mkString("[", ",", "]")} sanitizer_hits=${path("sanitizer_hits")}"
+          ) {
+            path("path_steps").arr.exists(_.str == sanitizerValue) shouldBe true
+            path("classification").str shouldBe "sanitized"
+            path("sanitizer_hits").arr.exists { hit =>
+              val row = hit.obj
+              row("callsite_id").str == sanitizerCall &&
+              row("sanitizer_name").str == "xiaoqiang.util.XQWifiUtil.apcli_get_ifname_form_band" &&
+              row("applies_to_sink").bool &&
+              row("on_dataflow_chain").bool
+            } shouldBe true
+          }
+        }
+      }
+    }
+
     "preserve CrossPlatform r7 baseline sanitizer classifications for setWifiMacfilter and setWanSpeed" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
