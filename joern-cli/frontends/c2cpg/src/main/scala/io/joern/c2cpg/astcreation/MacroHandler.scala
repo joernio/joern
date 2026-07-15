@@ -184,7 +184,7 @@ trait MacroHandler { this: AstCreator =>
 
   private def expandedFromMacro(node: IASTNode): Option[IASTMacroExpansionLocation] = {
     val rawLocations = node.getNodeLocations
-    if (rawLocations == null || rawLocations.length == 0) return None
+    if (rawLocations == null || rawLocations.isEmpty) return None
     val locations = rawLocations.toList
     val locationsSorted = node match {
       // For binary expressions the expansion locations may occur in any order.

@@ -1,23 +1,27 @@
 package io.joern.c2cpg.astcreation
 
-import io.joern.c2cpg.passes.{AstCreationPass, FunctionDeclNodePass}
+import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.AstNodeBuilder.dependencyNode
-import io.joern.x2cpg.{Ast, AstNodeBuilder, SourceFiles}
+import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall}
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTArrayRangeDesignator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTArrayRangeDesignator, ICPPEvaluation}
 
+import java.nio.file.{Path, Paths}
 import scala.collection.mutable
 import scala.util.{Success, Try}
 
 trait AstCreatorHelper { this: AstCreator =>
 
+  private val resolvedInputPath: Path = Paths.get(config.inputPath).toAbsolutePath.normalize()
+
   private val scopeLocalUniqueNames: mutable.Map[String, Int] = mutable.HashMap.empty
   private val file2OffsetTable: Array[Int]                    = genFileOffsetTable()
+  private val relativePathCache: mutable.Map[String, String]  = mutable.HashMap.empty
 
   // We use our own call ast creation function since the version in x2cpg treats
   // base as receiver if no receiver is given which does not fit the needs of this
@@ -198,11 +202,22 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def isIncludedNode(node: IASTNode): Boolean = fileName(node) != filename
 
   protected def fileName(node: IASTNode): String = {
-    val path = Try(node.getContainingFilename) match {
+    val rawPath = Try(node.getContainingFilename) match {
       case Success(value) if value.nonEmpty => value
       case _                                => filename
     }
-    SourceFiles.toRelativePath(path, config.inputPath)
+    relativePathCache.getOrElseUpdate(
+      rawPath, {
+        val absPath = Paths.get(rawPath).normalize()
+        if (absPath.equals(resolvedInputPath)) {
+          absPath.getFileName.toString
+        } else if (absPath.startsWith(resolvedInputPath)) {
+          resolvedInputPath.relativize(absPath).toString
+        } else {
+          rawPath
+        }
+      }
+    )
   }
 
   protected def astForNode(node: IASTNode): Ast = {
