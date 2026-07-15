@@ -170,13 +170,17 @@ trait MacroHandler { this: AstCreator =>
   }
 
   private def argumentTrees(arguments: List[String], ast: Ast): List[Option[Ast]] = {
-    val codeIndex: Map[String, ExpressionNew] = ast.nodes.collect {
-      case x: ExpressionNew if !x.isInstanceOf[NewFieldIdentifier] => x.code.replace(" ", "") -> x
-    }.toMap
     arguments.zipWithIndex.map { case (arg, argIndex) =>
-      val normalizedCode = arg.replace(" ", "")
-      if (normalizedCode.isEmpty) None
-      else codeIndex.get(normalizedCode).map(node => ast.subTreeCopy(node.asInstanceOf[AstNodeNew], argIndex + 1))
+      val rootNode = argForCode(arg, ast)
+      rootNode.map(node => ast.subTreeCopy(node.asInstanceOf[AstNodeNew], argIndex + 1))
+    }
+  }
+
+  private def argForCode(code: String, ast: Ast): Option[NewNode] = {
+    val normalizedCode = code.replace(" ", "")
+    if (normalizedCode.isEmpty) return None
+    ast.nodes.collectFirst {
+      case expr: ExpressionNew if !expr.isInstanceOf[NewFieldIdentifier] && expr.code == normalizedCode => expr
     }
   }
 
