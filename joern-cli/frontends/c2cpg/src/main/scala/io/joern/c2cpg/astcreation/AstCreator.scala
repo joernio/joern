@@ -110,10 +110,7 @@ class AstCreator(
   }
 
   private def nodeOffsets(node: IASTNode): Option[(Int, Int)] = {
-    for {
-      startOffset <- nullSafeFileLocation(node).map(l => l.getNodeOffset)
-      endOffset   <- nullSafeFileLocation(node).map(l => l.getNodeOffset + l.getNodeLength)
-    } yield (startOffset, endOffset)
+    nullSafeFileLocation(node).map(loc => (loc.getNodeOffset, loc.getNodeOffset + loc.getNodeLength))
   }
 
   protected def columnEnd(node: IASTNode): Option[Int] = {

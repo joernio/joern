@@ -71,13 +71,14 @@ class C2CpgMacroExpansionTracker(stepToTrack: Int) extends MacroExpansionTracker
   }
 
   private def tokenListToString(tokenList: TokenList): String = {
+    val sb          = new java.lang.StringBuilder
     var tok: IToken = tokenList.first()
-    var arg         = ""
     while (tok != null) {
-      arg += s"${tok.toString} "
+      sb.append(tok.toString).append(' ')
       tok = tok.getNext
     }
-    arg.trim
+    if (sb.length > 0) sb.setLength(sb.length - 1)
+    sb.toString
   }
 
 }

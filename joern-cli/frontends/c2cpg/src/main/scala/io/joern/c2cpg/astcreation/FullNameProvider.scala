@@ -17,7 +17,7 @@ object FullNameProvider {
 
   type MethodLike = IASTFunctionDeclarator | IASTFunctionDefinition | ICPPASTLambdaExpression
 
-  private val TagsToKeepInFullName = List(
+  private val TagsToKeepInFullName = Set(
     "<anonymous>",
     "<const>",
     "<duplicate>",
@@ -88,9 +88,11 @@ trait FullNameProvider { this: AstCreator =>
 
   protected def replaceQualifiedNameSeparator(name: String): String = {
     if (name.isEmpty || name == Defines.Any || name == Defines.Void) return name
-    val normalizedName = StringUtils.normalizeSpace(name)
-    normalizedName.replace(Defines.QualifiedNameSeparator, ".").stripPrefix(".")
+    StringUtils.normalizeSpace(name).replace(Defines.QualifiedNameSeparator, ".").stripPrefix(".")
   }
+
+  protected def applyQualifiedNameSeparator(normalizedName: String): String =
+    normalizedName.replace(Defines.QualifiedNameSeparator, ".").stripPrefix(".")
 
   protected def methodFullNameInfo(methodLike: MethodLike): MethodFullNameInfo = {
     val name_             = shortName(methodLike)
@@ -311,9 +313,9 @@ trait FullNameProvider { this: AstCreator =>
           case Some(evalBinding: EvalBinding) =>
             evalBinding.getBinding match {
               case f: CPPFunction if f.getDeclarations != null =>
-                Option(f.getDeclarations.headOption.map(n => s"${fullName(n)}").getOrElse(f.getName))
+                Option(f.getDeclarations.headOption.map(decl => fullName(decl)).getOrElse(f.getName))
               case f: CPPFunction if f.getDefinition != null =>
-                Option(s"${fullName(f.getDefinition)}")
+                Option(fullName(f.getDefinition))
               case other =>
                 Option(other.getName)
             }

@@ -1,18 +1,9 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.x2cpg.{Ast, Defines as X2CpgDefines}
-import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  EdgeTypes,
-  EvaluationStrategies,
-  Operators
-}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EvaluationStrategies, Operators}
 import org.apache.commons.lang3.StringUtils
-import org.eclipse.cdt.core.dom.ast
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.c.ICArrayType
 import org.eclipse.cdt.core.dom.ast.cpp.*
@@ -23,13 +14,13 @@ import org.eclipse.cdt.internal.core.dom.parser.c.{
   CFunctionType,
   CPointerType
 }
+import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalFunctionCall
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{
   CPPASTFoldExpression,
   CPPASTIdExpression,
   CPPASTQualifiedName,
   CPPClosureType
 }
-import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalFunctionCall
 
 import scala.annotation.tailrec
 import scala.util.Try

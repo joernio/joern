@@ -145,11 +145,12 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astsForIASTSimpleDeclaration(simpleDecl: IASTSimpleDeclaration): Seq[Ast] = {
-    val declAsts = simpleDecl.getDeclarators.zipWithIndex.map {
+    val declarators = simpleDecl.getDeclarators
+    val declAsts = declarators.zipWithIndex.map {
       case (d: IASTFunctionDeclarator, _) => astForFunctionDeclarator(d)
       case (d, i)                         => astForDeclarator(simpleDecl, d, i)
     }
-    val arrayModCallsAsts = simpleDecl.getDeclarators
+    val arrayModCallsAsts = declarators
       .collect { case d: IASTArrayDeclarator if hasValidArrayModifier(d) => d }
       .map { d =>
         val name          = Operators.alloc
@@ -172,7 +173,7 @@ trait AstForStatementsCreator { this: AstCreator =>
         val left = astForNode(d.getName)
         callAst(assignmentCallNode, List(left, allocCallAst))
       }
-    val initCallsAsts = simpleDecl.getDeclarators.map {
+    val initCallsAsts = declarators.map {
       case d: ICPPASTDeclarator if d.getInitializer == null && isCPPClassLike(simpleDecl) => astForConstructorCall(d)
       case d if d.getInitializer != null => astForInitializer(d, d.getInitializer)
       case _                             => Ast()

@@ -21,16 +21,20 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
   import FullNameProvider.*
 
-  final protected def parameters(functionNode: IASTNode): Seq[IASTNode] = functionNode match {
-    case arr: IASTArrayDeclarator       => parameters(arr.getNestedDeclarator)
-    case decl: CPPASTFunctionDeclarator => decl.getParameters.toIndexedSeq ++ parameters(decl.getNestedDeclarator)
-    case decl: CASTFunctionDeclarator   => decl.getParameters.toIndexedSeq ++ parameters(decl.getNestedDeclarator)
-    case defn: IASTFunctionDefinition   => parameters(defn.getDeclarator)
-    case lambdaExpression: ICPPASTLambdaExpression => parameters(lambdaExpression.getDeclarator)
-    case knr: ICASTKnRFunctionDeclarator           => knr.getParameterDeclarations.toIndexedSeq
-    case _: IASTDeclarator                         => Seq.empty
-    case other if other != null                    => notHandledYet(other); Seq.empty
-    case null                                      => Seq.empty
+  final protected def parameters(functionNode: IASTNode): Seq[IASTNode] = {
+    @scala.annotation.tailrec
+    def collect(node: IASTNode, acc: Vector[IASTNode]): Vector[IASTNode] = node match {
+      case arr: IASTArrayDeclarator        => collect(arr.getNestedDeclarator, acc)
+      case decl: CPPASTFunctionDeclarator  => collect(decl.getNestedDeclarator, acc ++ decl.getParameters.toIndexedSeq)
+      case decl: CASTFunctionDeclarator    => collect(decl.getNestedDeclarator, acc ++ decl.getParameters.toIndexedSeq)
+      case defn: IASTFunctionDefinition    => collect(defn.getDeclarator, acc)
+      case lambda: ICPPASTLambdaExpression => collect(lambda.getDeclarator, acc)
+      case knr: ICASTKnRFunctionDeclarator => acc ++ knr.getParameterDeclarations.toIndexedSeq
+      case _: IASTDeclarator               => acc
+      case other if other != null          => notHandledYet(other); acc
+      case null                            => acc
+    }
+    collect(functionNode, Vector.empty)
   }
 
   @tailrec
@@ -416,7 +420,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     parameter match {
       case p: CPPASTParameterDeclaration =>
         val paramName       = shortName(p.getDeclarator)
-        val parentSignature = Try(parameter.getParent.getRawSignature.replaceAll(" ", "")).toOption
+        val parentSignature = Try(parameter.getParent.getRawSignature.replace(" ", "")).toOption
         parentSignature.exists(_.contains(s"$paramName,...")) || parentSignature.exists(_.contains(s"$paramName..."))
       case _ => false
     }
@@ -514,15 +518,15 @@ trait AstForFunctionsCreator { this: AstCreator =>
           case _ => // do nothing
         }
       case other =>
-        val validCaptures = other.filter(_.getIdentifier != null)
+        val validCaptures  = other.filter(_.getIdentifier != null)
+        val capturesByName = validCaptures.map(capture => code(capture.getIdentifier) -> capture).toMap
         bodyAst.nodes.foreach {
-          case i: NewIdentifier if !scope.variableIsInMethodScope(i.name) =>
-            val maybeInCaptures = validCaptures.find(c => code(c.getIdentifier) == i.name)
-            val strategy = maybeInCaptures match {
-              case Some(c) if c.isByReference => EvaluationStrategies.BY_REFERENCE
-              case _                          => strategyMapping
+          case identifier: NewIdentifier if !scope.variableIsInMethodScope(identifier.name) =>
+            val strategy = capturesByName.get(identifier.name) match {
+              case Some(capture) if capture.isByReference => EvaluationStrategies.BY_REFERENCE
+              case _                                      => strategyMapping
             }
-            scope.updateVariableReference(i, strategy)
+            scope.updateVariableReference(identifier, strategy)
           case _ => // do nothing
         }
     }
