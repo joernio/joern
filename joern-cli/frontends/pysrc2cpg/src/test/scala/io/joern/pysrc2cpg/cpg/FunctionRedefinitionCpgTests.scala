@@ -74,10 +74,7 @@ class FunctionRedefinitionCpgTests extends PySrc2CpgFixture(withOssDataflow = fa
         |""".stripMargin)
 
     "mangle the earlier definition and keep the last one unmangled" in {
-      methodFullNames(cpg, "f") shouldBe Set(
-        "Test0.py:<module>.outer.f<redefined>0",
-        "Test0.py:<module>.outer.f"
-      )
+      methodFullNames(cpg, "f") shouldBe Set("Test0.py:<module>.outer.f<redefined>0", "Test0.py:<module>.outer.f")
     }
   }
 
@@ -88,10 +85,7 @@ class FunctionRedefinitionCpgTests extends PySrc2CpgFixture(withOssDataflow = fa
         |""".stripMargin)
 
     "mangle the earlier definition and keep the last one unmangled" in {
-      methodFullNames(cpg, "m") shouldBe Set(
-        "Test0.py:<module>.Foo.m<redefined>0",
-        "Test0.py:<module>.Foo.m"
-      )
+      methodFullNames(cpg, "m") shouldBe Set("Test0.py:<module>.Foo.m<redefined>0", "Test0.py:<module>.Foo.m")
     }
 
     "bind the last definition on the instance TypeDecl" in {
@@ -142,10 +136,7 @@ class FunctionRedefinitionCpgTests extends PySrc2CpgFixture(withOssDataflow = fa
         |""".stripMargin)
 
     "mangle the earlier definition and keep the last one unmangled" in {
-      methodFullNames(cpg, "f") shouldBe Set(
-        "Test0.py:<module>.outer.f<redefined>0",
-        "Test0.py:<module>.outer.f"
-      )
+      methodFullNames(cpg, "f") shouldBe Set("Test0.py:<module>.outer.f<redefined>0", "Test0.py:<module>.outer.f")
     }
   }
 

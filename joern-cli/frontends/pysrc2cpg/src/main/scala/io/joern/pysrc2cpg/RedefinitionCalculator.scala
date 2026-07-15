@@ -87,7 +87,7 @@ class RedefinitionCalculator {
       pushScope()
       visitStmts(cd.body)
       popScopeAndAssignIndices()
-    case fd: ast.FunctionDef      => 
+    case fd: ast.FunctionDef =>
       recordDef(fd)
       visitScopeBody(fd.body)
     case fd: ast.AsyncFunctionDef =>
