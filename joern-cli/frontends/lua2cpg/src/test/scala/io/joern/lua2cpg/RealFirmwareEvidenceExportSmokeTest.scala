@@ -2006,7 +2006,6 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
             row("sink_function_name").str == "setSysTime" &&
             row("sink_pc").num.toInt == 112 &&
             row("sink_trigger").str == "test.api.Process.forkExec" &&
-            row("classification").str == "true-positive" &&
             row("path_steps").arr.nonEmpty &&
             row("path_steps").arr.forall(_.str.contains("::")) &&
             row("path_steps").arr.exists(_.str == s"$sourceModule::$sourceRef") &&
@@ -2023,6 +2022,14 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         steps should contain(s"$sinkModule::root.108@pc109:r0")
         steps should contain(s"$sinkModule::root.108@pc111:r4")
         steps should contain(s"$sinkModule::$sinkRef")
+        path.get("classification").str shouldBe "sanitized"
+        path.get("sanitizer_hits").arr.exists { hit =>
+          val row = hit.obj
+          row("callsite_id").str == s"$sinkModule::root.108@pc103" &&
+          row("sanitizer_name").str == "Param_0.match" &&
+          row("applies_to_sink").bool &&
+          row("on_dataflow_chain").bool
+        } shouldBe true
       }
     }
 
