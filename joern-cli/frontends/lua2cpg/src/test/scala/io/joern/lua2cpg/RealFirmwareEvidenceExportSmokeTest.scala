@@ -1184,6 +1184,47 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform r7 setRouterToBaidu path with referenceAnalyzer known ipairs sanitizer hit" in {
+      withXiaomiStagingRows { stagingRows =>
+        val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
+
+        val sourceModule   = "usr/lib/lua/luci/controller/api/xqnetwork.luac"
+        val sinkModule     = "usr/lib/lua/xiaoqiang/module/XQBaiduPanUtil.luac"
+        val sanitizerCall  = "usr/lib/lua/xiaoqiang/module/XQBaiduPanUtil.luac::root.43@pc3"
+        val sanitizerValue = s"$sanitizerCall:r4"
+
+        val path = pathRows
+          .find(row =>
+            row("source_module_path").str == sourceModule &&
+              row("source_function_name").str == "setRouterToBaidu" &&
+              row("source_pc").num.toInt == 27 &&
+              row("source_trigger").str == "luci.http.formvalue" &&
+              row("sink_module_path").str == sinkModule &&
+              row("sink_function_name").str == "handleFileDirname" &&
+              row("sink_pc").num.toInt == 57 &&
+              row("sink_trigger").str == "luci.util.exec" &&
+              row("path_steps").arr.nonEmpty &&
+              row("path_steps").arr.forall(_.str.contains("::")) &&
+              !row.obj.contains("callsite_id")
+          )
+          .getOrElse(fail("missing setRouterToBaidu strict path sourcePc=27 sink=handleFileDirname"))
+
+        withClue(
+          s"path_steps=${path("path_steps").arr.map(_.str).mkString("[", ",", "]")} sanitizer_hits=${path("sanitizer_hits")}"
+        ) {
+          path("path_steps").arr.exists(_.str == sanitizerValue) shouldBe true
+          path("classification").str shouldBe "sanitized"
+          path("sanitizer_hits").arr.exists { hit =>
+            val row = hit.obj
+            row("callsite_id").str == sanitizerCall &&
+            row("sanitizer_name").str == "ipairs.match" &&
+            row("applies_to_sink").bool &&
+            row("on_dataflow_chain").bool
+          } shouldBe true
+        }
+      }
+    }
+
     "preserve CrossPlatform r7 baseline sanitizer classifications for setWifiMacfilter and setWanSpeed" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
