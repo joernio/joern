@@ -1,6 +1,6 @@
 package io.joern.pysrc2cpg
 
-import PythonAstVisitor.{duplicateSuffix, keywordDictArgName, logger, metaClassSuffix, noLineAndColumn}
+import PythonAstVisitor.{redefinedSuffix, keywordDictArgName, logger, metaClassSuffix, noLineAndColumn}
 import io.joern.pysrc2cpg.memop.*
 import io.joern.pysrc2cpg.memop.MemoryOperation.{Del, Load, Store}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants.builtinPrefix
@@ -36,8 +36,6 @@ class PythonAstVisitor(
     extends AstCreatorBase[ast.iast, PythonAstVisitor](relFileName)
     with PythonAstVisitorHelpers {
 
-  private val redefintionSuffix = "$redefinition"
-
   private val diffGraph     = Cpg.newDiffGraphBuilder
   protected val nodeBuilder = new NodeBuilder(diffGraph)
   protected val edgeBuilder = new EdgeBuilder(diffGraph)
@@ -47,7 +45,7 @@ class PythonAstVisitor(
   private var memOpMap: AstNodeToMemoryOperationMap = scala.compiletime.uninitialized
   private var scopeNames: ScopeNameCollection       = scala.compiletime.uninitialized
 
-  private val defToDuplicateIndex = mutable.Map.empty[ClassOrFunctionDef, Int]
+  private val defToRedefinedIndex = mutable.Map.empty[ClassOrFunctionDef, Int]
 
   private val members = mutable.Map.empty[NewTypeDecl, List[String]]
 
@@ -86,7 +84,7 @@ class PythonAstVisitor(
     memOpMap = memOpCalculator.astNodeToMemOp
     scopeNames = memOpCalculator.scopeNames
 
-    defToDuplicateIndex ++= new RedefinitionCalculator().calculate(module)
+    defToRedefinedIndex ++= new RedefinitionCalculator().calculate(module)
 
     val contentOption = if (enableFileContent) Some(nodeToCode.content) else None
     val fileNode      = nodeBuilder.fileNode(relFileName, contentOption)
@@ -270,19 +268,21 @@ class PythonAstVisitor(
     body: ast.CollType[istmt],
     returns: Option[iexpr],
     isAsync: Boolean,
-    functionDef: istmt
+    functionDef: ClassOrFunctionDef
   ): NewNode = {
     val methodIdentifierNode =
       createIdentifierNode(name, Store, lineAndColOf(functionDef))
+    val suffix = redefinedSuffixFor(functionDef)
     val (methodNode, methodRefNode) = createMethodAndMethodRef(
       name,
-      Some(name),
+      Some(name + suffix),
       createParameterProcessingFunction(args, isStaticMethod(decoratorList)),
       () => body.map(convert),
       returns,
       isAsync,
       lineAndColOf(functionDef),
-      reservedNames = scopeNames.namesInScope(functionDef)
+      reservedNames = scopeNames.namesInScope(functionDef),
+      redefinedSuffix = suffix
     )
     functionDefToMethod.put(functionDef, methodNode)
 
@@ -349,16 +349,10 @@ class PythonAstVisitor(
     isAsync: Boolean,
     lineAndColumn: LineAndColumn,
     additionalModifiers: List[String] = List.empty,
-    reservedNames: Iterable[String]
+    reservedNames: Iterable[String],
+    redefinedSuffix: String = ""
   ): (nodes.NewMethod, nodes.NewMethodRef) = {
-    val suffix =
-      contextStack.methodCounter.get(methodName) match {
-        case Some(counter) =>
-          redefintionSuffix + counter.toString
-        case None =>
-          ""
-      }
-    val methodFullName = calculateFullNameFromContext(methodName) + suffix
+    val methodFullName = calculateFullNameFromContext(methodName) + redefinedSuffix
 
     val methodRefNode =
       nodeBuilder.methodRefNode("def " + methodName + "(...)", methodFullName, lineAndColumn)
@@ -378,11 +372,6 @@ class PythonAstVisitor(
         lineAndColumn,
         reservedNames
       )
-
-    contextStack.methodCounter.updateWith(methodName) {
-      case None          => Some(1)
-      case Some(counter) => Some(counter + 1)
-    }
 
     (methodNode, methodRefNode)
   }
@@ -462,7 +451,7 @@ class PythonAstVisitor(
   def convert(classDef: ast.ClassDef): NewNode = {
     // Create type for the meta class object
     val metaTypeDeclName     = classDef.name + metaClassSuffix
-    val metaTypeDeclFullName = classFullNameWithDuplicateSuffix(classDef, metaTypeDeclName)
+    val metaTypeDeclFullName = classFullNameWithRedefinedSuffix(classDef, metaTypeDeclName)
 
     val metaTypeNode = nodeBuilder.typeNode(metaTypeDeclName, metaTypeDeclFullName)
     val metaTypeDeclNode =
@@ -477,7 +466,7 @@ class PythonAstVisitor(
 
     // Create type for class instances
     val instanceTypeDeclName     = classDef.name
-    val instanceTypeDeclFullName = classFullNameWithDuplicateSuffix(classDef, instanceTypeDeclName)
+    val instanceTypeDeclFullName = classFullNameWithRedefinedSuffix(classDef, instanceTypeDeclName)
 
     // TODO for now we just take the code of the base expression and pretend they are full names, converting special
     //  nodes as we go.
@@ -508,7 +497,7 @@ class PythonAstVisitor(
     edgeBuilder.astEdge(instanceTypeDecl, contextStack.astParent, contextStack.order.getAndInc)
 
     // Create <body> function which contains the code defining the class
-    val className = classDef.name + duplicateSuffixFor(classDef)
+    val className = classDef.name + redefinedSuffixFor(classDef)
     contextStack.pushClass(Some(className), instanceTypeDecl, scopeNames.namesInScope(classDef))
     val classBodyFunctionName = "<body>"
     val (_, methodRefNode) = createMethodAndMethodRef(
@@ -2191,12 +2180,12 @@ class PythonAstVisitor(
   }
 
   // See RedefinitionCalculator for why only the last occurrence stays unmangled.
-  private def classFullNameWithDuplicateSuffix(classDef: ast.ClassDef, simpleName: String): String = {
-    calculateFullNameFromContext(simpleName) + duplicateSuffixFor(classDef)
+  private def classFullNameWithRedefinedSuffix(classDef: ast.ClassDef, simpleName: String): String = {
+    calculateFullNameFromContext(simpleName) + redefinedSuffixFor(classDef)
   }
 
-  private def duplicateSuffixFor(classDef: ast.ClassDef): String = {
-    defToDuplicateIndex.get(classDef).map(idx => s"$duplicateSuffix$idx").getOrElse("")
+  private def redefinedSuffixFor(definition: ClassOrFunctionDef): String = {
+    defToRedefinedIndex.get(definition).map(idx => s"$redefinedSuffix$idx").getOrElse("")
   }
 
   override protected def line(node: iast): Option[Int]         = None
@@ -2212,7 +2201,7 @@ object PythonAstVisitor {
   val typingPrefix       = "typing."
   val metaClassSuffix    = "<meta>"
   val keywordDictArgName = "<keyword_dict>"
-  val duplicateSuffix    = "<duplicate>"
+  val redefinedSuffix    = "<redefined>"
 
   val noLineAndColumn = LineAndColumn(-1, -1, -1, -1, -1, -1)
 

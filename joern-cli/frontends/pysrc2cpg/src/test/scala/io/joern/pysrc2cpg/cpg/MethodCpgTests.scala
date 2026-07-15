@@ -40,13 +40,13 @@ class MethodCpgTests extends PySrc2CpgFixture with Matchers {
     )
 
     cpg.method.name("method").map(m => (m.name, m.fullName)).l should contain theSameElementsAs (List(
-      ("method", s"$path:<module>.Foo.method"),
-      ("method", s"$path:<module>.Foo.method$$redefinition1"),
-      ("method", s"$path:<module>.Foo.method$$redefinition2")
+      ("method", s"$path:<module>.Foo.method<redefined>0"),
+      ("method", s"$path:<module>.Foo.method<redefined>1"),
+      ("method", s"$path:<module>.Foo.method")
     ))
 
     cpg.typeDecl.name("Foo").member.name("method").dynamicTypeHintFullName.l should contain theSameElementsAs (
-      List(s"$path:<module>.Foo.method$$redefinition2")
+      List(s"$path:<module>.Foo.method")
     )
 
     cpg.typeDecl.name("Foo<meta>").member.name("method").dynamicTypeHintFullName.l should contain theSameElementsAs (

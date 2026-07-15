@@ -7,28 +7,29 @@ import scala.collection.mutable
 type ClassOrFunctionDef = ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef
 
 /** Traverses a module and, per Python scope (module / function / class body), records the source-order index of every
-  * ClassDef whose simple name is duplicated within that scope. The LAST occurrence per name gets no entry (keeps the
-  * plain full name); earlier occurrences get 0, 1, 2, ...
+  * ClassDef, FunctionDef or AsyncFunctionDef whose simple name is redefined within that scope. Classes and functions
+  * are bucketed separately: a `def A` and a `class A` in the same scope do not shadow each other in the map. The LAST
+  * occurrence per (kind, name) gets no entry (keeps the plain full name); earlier occurrences get 0, 1, 2, ...
   *
   * The suffix is also propagated to `contextStack` when entering the class body, so members (methods, nested classes)
   * of a mangled class receive fullNames prefixed with the mangled class name. Example:
   * {{{
   *   class A:
-  *     def m(self): ...     # fullName: Test.py:<module>.A<duplicate>0.m
+  *     def m(self): ...     # fullName: Test.py:<module>.A<redefined>0.m
   *   class A:
   *     def m(self): ...     # fullName: Test.py:<module>.A.m
   * }}}
   * Consumers querying by class simple name via `typeDecl.name("A").method` still find both, but queries pinned on full
-  * name must account for the `<duplicate>N` marker.
+  * name must account for the `<redefined>N` marker.
   *
   * At runtime Python binds the class name to the most recent `class` statement, so callers that reference the name
   * (e.g. `A()`) resolve to the last definition. Keeping that definition's fullName plain (unsuffixed) means: (1)
   * existing queries against the CPG that assume one class per name still land on the runtime-effective definition, and
-  * (2) the earlier, shadowed definitions get disambiguated with `<duplicate>0`, `<duplicate>1`, ... in source order so
+  * (2) the earlier, shadowed definitions get disambiguated with `<redefined>0`, `<redefined>1`, ... in source order so
   * they remain addressable for taint tracking and static queries.
   */
 class RedefinitionCalculator {
-  private val defToDuplicateIndex = mutable.Map[ClassOrFunctionDef, Int]()
+  private val defToRedefinedIndex = mutable.Map[ClassOrFunctionDef, Int]()
 
   private val scopeStack =
     mutable.Stack[mutable.LinkedHashMap[String, mutable.ArrayBuffer[ClassOrFunctionDef]]]()
@@ -37,7 +38,7 @@ class RedefinitionCalculator {
     pushScope()
     module.stmts.foreach(visitStmt)
     popScopeAndAssignIndices()
-    defToDuplicateIndex.toMap
+    defToRedefinedIndex.toMap
   }
 
   private def pushScope(): Unit =
@@ -46,10 +47,11 @@ class RedefinitionCalculator {
   private def popScopeAndAssignIndices(): Unit = {
     val scope = scopeStack.pop()
     scope.values.foreach { mixedDefs =>
-      if (mixedDefs.length > 1) {
-        mixedDefs.partition(_.isInstanceOf[ast.ClassDef]).toList.foreach { defs =>
+      val (classes, functions) = mixedDefs.partition(_.isInstanceOf[ast.ClassDef])
+      List(classes, functions).foreach { defs =>
+        if (defs.length > 1) {
           defs.zipWithIndex.init.foreach { case (cd, idx) =>
-            defToDuplicateIndex(cd) = idx
+            defToRedefinedIndex(cd) = idx
           }
         }
       }
@@ -57,8 +59,12 @@ class RedefinitionCalculator {
   }
 
   private def recordDef(definition: ClassOrFunctionDef): Unit = {
-
-    scopeStack.top.getOrElseUpdate(definition.name, mutable.ArrayBuffer.empty) += definition
+    val name = definition match {
+      case cd: ast.ClassDef         => cd.name
+      case fd: ast.FunctionDef      => fd.name
+      case fd: ast.AsyncFunctionDef => fd.name
+    }
+    scopeStack.top.getOrElseUpdate(name, mutable.ArrayBuffer.empty) += definition
   }
 
   private def visitStmts(stmts: Iterable[ast.istmt]): Unit =

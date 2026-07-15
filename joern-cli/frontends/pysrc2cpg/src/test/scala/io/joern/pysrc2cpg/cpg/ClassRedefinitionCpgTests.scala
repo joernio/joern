@@ -19,11 +19,11 @@ class ClassRedefinitionCpgTests extends PySrc2CpgFixture(withOssDataflow = false
 
     "produce two distinct instance TypeDecl full names" in {
       val fullNames = cpg.typeDecl.name("A").fullName.toSet
-      fullNames shouldBe Set("Test0.py:<module>.A<duplicate>0", "Test0.py:<module>.A")
+      fullNames shouldBe Set("Test0.py:<module>.A<redefined>0", "Test0.py:<module>.A")
 
       inside(
         cpg.typeDecl
-          .fullNameExact("Test0.py:<module>.A<duplicate>0")
+          .fullNameExact("Test0.py:<module>.A<redefined>0")
           .ast
           .isCall(".*print.*")
           .argument
@@ -41,7 +41,7 @@ class ClassRedefinitionCpgTests extends PySrc2CpgFixture(withOssDataflow = false
 
     "produce two distinct meta TypeDecl full names" in {
       val fullNames = cpg.typeDecl.name("A<meta>").fullName.toSet
-      fullNames shouldBe Set("Test0.py:<module>.A<meta><duplicate>0", "Test0.py:<module>.A<meta>")
+      fullNames shouldBe Set("Test0.py:<module>.A<meta><redefined>0", "Test0.py:<module>.A<meta>")
     }
   }
 
@@ -54,8 +54,8 @@ class ClassRedefinitionCpgTests extends PySrc2CpgFixture(withOssDataflow = false
     "produce three distinct instance TypeDecl full names" in {
       val fullNames = cpg.typeDecl.name("A").fullName.toSet
       fullNames shouldBe Set(
-        "Test0.py:<module>.A<duplicate>0",
-        "Test0.py:<module>.A<duplicate>1",
+        "Test0.py:<module>.A<redefined>0",
+        "Test0.py:<module>.A<redefined>1",
         "Test0.py:<module>.A"
       )
     }
@@ -70,7 +70,7 @@ class ClassRedefinitionCpgTests extends PySrc2CpgFixture(withOssDataflow = false
 
     "produce two distinct instance TypeDecl full names" in {
       val fullNames = cpg.typeDecl.name("A").fullName.toSet
-      fullNames shouldBe Set("Test0.py:<module>.A<duplicate>0", "Test0.py:<module>.A")
+      fullNames shouldBe Set("Test0.py:<module>.A<redefined>0", "Test0.py:<module>.A")
     }
   }
 
@@ -94,7 +94,7 @@ class ClassRedefinitionCpgTests extends PySrc2CpgFixture(withOssDataflow = false
 
     "mangle the earlier definition and keep the last one unmangled" in {
       val fullNames = cpg.typeDecl.name("A").fullName.toSet
-      fullNames shouldBe Set("Test0.py:<module>.f.A<duplicate>0", "Test0.py:<module>.f.A")
+      fullNames shouldBe Set("Test0.py:<module>.f.A<redefined>0", "Test0.py:<module>.f.A")
     }
   }
 
@@ -106,7 +106,7 @@ class ClassRedefinitionCpgTests extends PySrc2CpgFixture(withOssDataflow = false
 
     "mangle the earlier Inner and keep the last Inner unmangled" in {
       typeDeclFullNames(cpg, "Inner") shouldBe Set(
-        "Test0.py:<module>.Outer.Inner<duplicate>0",
+        "Test0.py:<module>.Outer.Inner<redefined>0",
         "Test0.py:<module>.Outer.Inner"
       )
       typeDeclFullNames(cpg, "Outer") shouldBe Set("Test0.py:<module>.Outer")
@@ -124,8 +124,8 @@ class ClassRedefinitionCpgTests extends PySrc2CpgFixture(withOssDataflow = false
 
     "produce three distinct instance TypeDecl full names" in {
       typeDeclFullNames(cpg, "A") shouldBe Set(
-        "Test0.py:<module>.A<duplicate>0",
-        "Test0.py:<module>.A<duplicate>1",
+        "Test0.py:<module>.A<redefined>0",
+        "Test0.py:<module>.A<redefined>1",
         "Test0.py:<module>.A"
       )
     }
@@ -140,7 +140,7 @@ class ClassRedefinitionCpgTests extends PySrc2CpgFixture(withOssDataflow = false
         |""".stripMargin)
 
     "produce two distinct instance TypeDecl full names" in {
-      typeDeclFullNames(cpg, "A") shouldBe Set("Test0.py:<module>.A<duplicate>0", "Test0.py:<module>.A")
+      typeDeclFullNames(cpg, "A") shouldBe Set("Test0.py:<module>.A<redefined>0", "Test0.py:<module>.A")
     }
   }
 
@@ -151,7 +151,7 @@ class ClassRedefinitionCpgTests extends PySrc2CpgFixture(withOssDataflow = false
         |""".stripMargin)
 
     "mangle the earlier definition and keep the last one unmangled" in {
-      typeDeclFullNames(cpg, "A") shouldBe Set("Test0.py:<module>.f.A<duplicate>0", "Test0.py:<module>.f.A")
+      typeDeclFullNames(cpg, "A") shouldBe Set("Test0.py:<module>.f.A<redefined>0", "Test0.py:<module>.f.A")
     }
   }
 
@@ -162,7 +162,7 @@ class ClassRedefinitionCpgTests extends PySrc2CpgFixture(withOssDataflow = false
         |""".stripMargin)
 
     "produce two distinct instance TypeDecl full names since the while body shares module scope" in {
-      typeDeclFullNames(cpg, "A") shouldBe Set("Test0.py:<module>.A<duplicate>0", "Test0.py:<module>.A")
+      typeDeclFullNames(cpg, "A") shouldBe Set("Test0.py:<module>.A<redefined>0", "Test0.py:<module>.A")
     }
   }
 }
