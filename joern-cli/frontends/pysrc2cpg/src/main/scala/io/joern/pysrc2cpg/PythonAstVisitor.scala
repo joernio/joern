@@ -47,7 +47,7 @@ class PythonAstVisitor(
   private var memOpMap: AstNodeToMemoryOperationMap = scala.compiletime.uninitialized
   private var scopeNames: ScopeNameCollection       = scala.compiletime.uninitialized
 
-  private val classDefToDuplicateIndex = mutable.Map.empty[ast.ClassDef, Int]
+  private val defToDuplicateIndex = mutable.Map.empty[ClassOrFunctionDef, Int]
 
   private val members = mutable.Map.empty[NewTypeDecl, List[String]]
 
@@ -86,7 +86,7 @@ class PythonAstVisitor(
     memOpMap = memOpCalculator.astNodeToMemOp
     scopeNames = memOpCalculator.scopeNames
 
-    classDefToDuplicateIndex ++= new ClassDefDuplicateCalculator().calculate(module)
+    defToDuplicateIndex ++= new RedefinitionCalculator().calculate(module)
 
     val contentOption = if (enableFileContent) Some(nodeToCode.content) else None
     val fileNode      = nodeBuilder.fileNode(relFileName, contentOption)
@@ -2190,13 +2190,13 @@ class PythonAstVisitor(
     if (contextQualName != "") relFileName + ":" + contextQualName + "." + name else relFileName + ":" + name
   }
 
-  // See ClassDefDuplicateCalculator for why only the last occurrence stays unmangled.
+  // See RedefinitionCalculator for why only the last occurrence stays unmangled.
   private def classFullNameWithDuplicateSuffix(classDef: ast.ClassDef, simpleName: String): String = {
     calculateFullNameFromContext(simpleName) + duplicateSuffixFor(classDef)
   }
 
   private def duplicateSuffixFor(classDef: ast.ClassDef): String = {
-    classDefToDuplicateIndex.get(classDef).map(idx => s"$duplicateSuffix$idx").getOrElse("")
+    defToDuplicateIndex.get(classDef).map(idx => s"$duplicateSuffix$idx").getOrElse("")
   }
 
   override protected def line(node: iast): Option[Int]         = None

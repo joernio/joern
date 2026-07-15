@@ -4,6 +4,8 @@ import io.joern.pythonparser.ast
 
 import scala.collection.mutable
 
+type ClassOrFunctionDef = ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef
+
 /** Traverses a module and, per Python scope (module / function / class body), records the source-order index of every
   * ClassDef whose simple name is duplicated within that scope. The LAST occurrence per name gets no entry (keeps the
   * plain full name); earlier occurrences get 0, 1, 2, ...
@@ -25,17 +27,17 @@ import scala.collection.mutable
   * (2) the earlier, shadowed definitions get disambiguated with `<duplicate>0`, `<duplicate>1`, ... in source order so
   * they remain addressable for taint tracking and static queries.
   */
-class ClassDefDuplicateCalculator {
-  private val classDefToDuplicateIndex = mutable.Map[ast.ClassDef, Int]()
+class RedefinitionCalculator {
+  private val defToDuplicateIndex = mutable.Map[ClassOrFunctionDef, Int]()
 
   private val scopeStack =
-    mutable.Stack[mutable.LinkedHashMap[String, mutable.ArrayBuffer[ast.ClassDef]]]()
+    mutable.Stack[mutable.LinkedHashMap[String, mutable.ArrayBuffer[ClassOrFunctionDef]]]()
 
-  def calculate(module: ast.Module): Map[ast.ClassDef, Int] = {
+  def calculate(module: ast.Module): Map[ClassOrFunctionDef, Int] = {
     pushScope()
     module.stmts.foreach(visitStmt)
     popScopeAndAssignIndices()
-    classDefToDuplicateIndex.toMap
+    defToDuplicateIndex.toMap
   }
 
   private def pushScope(): Unit =
@@ -43,17 +45,20 @@ class ClassDefDuplicateCalculator {
 
   private def popScopeAndAssignIndices(): Unit = {
     val scope = scopeStack.pop()
-    scope.values.foreach { defs =>
-      if (defs.length > 1) {
-        defs.zipWithIndex.init.foreach { case (cd, idx) =>
-          classDefToDuplicateIndex(cd) = idx
+    scope.values.foreach { mixedDefs =>
+      if (mixedDefs.length > 1) {
+        mixedDefs.partition(_.isInstanceOf[ast.ClassDef]).toList.foreach { defs =>
+          defs.zipWithIndex.init.foreach { case (cd, idx) =>
+            defToDuplicateIndex(cd) = idx
+          }
         }
       }
     }
   }
 
-  private def recordClassDef(cd: ast.ClassDef): Unit = {
-    scopeStack.top.getOrElseUpdate(cd.name, mutable.ArrayBuffer.empty) += cd
+  private def recordDef(definition: ClassOrFunctionDef): Unit = {
+
+    scopeStack.top.getOrElseUpdate(definition.name, mutable.ArrayBuffer.empty) += definition
   }
 
   private def visitStmts(stmts: Iterable[ast.istmt]): Unit =
@@ -72,12 +77,16 @@ class ClassDefDuplicateCalculator {
 
   private def visitStmt(stmt: ast.istmt): Unit = stmt match {
     case cd: ast.ClassDef =>
-      recordClassDef(cd)
+      recordDef(cd)
       pushScope()
       visitStmts(cd.body)
       popScopeAndAssignIndices()
-    case fd: ast.FunctionDef      => visitScopeBody(fd.body)
-    case fd: ast.AsyncFunctionDef => visitScopeBody(fd.body)
+    case fd: ast.FunctionDef      => 
+      recordDef(fd)
+      visitScopeBody(fd.body)
+    case fd: ast.AsyncFunctionDef =>
+      recordDef(fd)
+      visitScopeBody(fd.body)
     case ifStmt: ast.If =>
       visitStmts(ifStmt.body)
       visitStmts(ifStmt.orelse)
