@@ -106,8 +106,8 @@ object DependencyResolver {
     MavenBuildFileSuffixes.exists(file.toString.endsWith)
 
   private[dependency] def findSupportedBuildFiles(currentDir: Path): List[Path] = {
-    val allBuildFiles = SourceFiles.determine(
-      currentDir,
+    val allBuildFiles = SourceFiles.determinePaths(
+      currentDir.toAbsolutePath.toString,
       BuildFileSuffixes,
       ignoredDefaultRegex = Some(SourceFiles.JvmDefaultIgnoredFolders)
     )
