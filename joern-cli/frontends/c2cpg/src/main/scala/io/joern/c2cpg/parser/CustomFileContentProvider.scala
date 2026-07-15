@@ -10,13 +10,11 @@ import org.eclipse.cdt.internal.core.parser.scanner.InternalFileContent
 import org.eclipse.cdt.internal.core.parser.scanner.InternalFileContentProvider
 
 import java.nio.file.Paths
-import java.util.concurrent.ConcurrentHashMap
 
 class CustomFileContentProvider(
   headerFileFinder: HeaderFileFinder,
   sourceFile: String,
-  accumulator: AstCreationPass.Accumulator,
-  contentCache: ConcurrentHashMap[String, Array[Char]] = new ConcurrentHashMap()
+  accumulator: AstCreationPass.Accumulator
 ) extends InternalFileContentProvider {
 
   override def getContentForInclusion(path: String, macroDictionary: IMacroDictionary): InternalFileContent = {
@@ -32,11 +30,7 @@ class CustomFileContentProvider(
     else { Option(path) }
     maybeFullPath.map { foundPath =>
       updateHeaderFileParserLanguage(foundPath)
-      val content =
-        contentCache.computeIfAbsent(
-          foundPath,
-          filePath => IOUtils.readLinesInFile(Paths.get(filePath)).mkString("\n").toArray
-        )
+      val content = IOUtils.readLinesInFile(Paths.get(foundPath)).mkString("\n").toArray
       FileContent.create(path, false, content).asInstanceOf[InternalFileContent]
     }.orNull
   }
