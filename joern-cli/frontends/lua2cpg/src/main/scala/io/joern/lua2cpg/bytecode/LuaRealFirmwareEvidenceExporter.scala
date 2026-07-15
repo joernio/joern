@@ -186,9 +186,16 @@ object LuaRealFirmwareEvidenceExporter {
         )
       }
     }
+    val decodedRowsByScopedCallsite = decodedRows.map(row => row("callsite_id").str -> row).toMap
     val sanitizerRows = semantics.sanitizerCalls.flatMap { row =>
       val (modulePath, callsiteId) = splitQualifiedRef(row.callsiteId)
       if (modulePath == relativeName) {
+        val scopedSanitizerCallsite = toScopedStepRef(row.callsiteId)
+        val decodedRow = decodedRowsByScopedCallsite.getOrElse(
+          scopedSanitizerCallsite,
+          throw new IllegalStateException(s"missing decoded call row for sanitizer call: $scopedSanitizerCallsite")
+        )
+        val argumentRefs = decodedRow("argument_value_refs").arr.map(_.str).toVector
         Vector(
           ujson.Obj(
             "resolution_id"               -> s"${row.callsiteId}:${row.sanitizerName}",
@@ -197,7 +204,7 @@ object LuaRealFirmwareEvidenceExporter {
             "module_path"                 -> modulePath,
             "prototype_id"                -> prototypeIdFromCallsiteId(callsiteId),
             "pc"                          -> pcFromCallsiteId(callsiteId),
-            "callsite_id"                 -> toScopedStepRef(row.callsiteId),
+            "callsite_id"                 -> scopedSanitizerCallsite,
             "target_value_ref"            -> splitQualifiedRef(row.sanitizedValueRef)._2,
             "bytecode_pattern"            -> s"sanitizer:${row.sanitizerName}",
             "resolved_name"               -> row.sanitizerName,
@@ -206,7 +213,7 @@ object LuaRealFirmwareEvidenceExporter {
             "confidence"                  -> "bytecode-derived",
             "provenance"                  -> row.provenance,
             "unresolved_reason"           -> "none",
-            "argument_value_refs"         -> Vector(splitQualifiedRef(row.sanitizedValueRef)._2),
+            "argument_value_refs"         -> argumentRefs,
             "return_value_refs"           -> Vector(splitQualifiedRef(row.sanitizedValueRef)._2),
             "argument_constants"          -> ujson.Arr(),
             "direct_target_prototype_ids" -> ujson.Arr()

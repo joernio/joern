@@ -2056,6 +2056,26 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
+    "export CrossPlatform sanitizer call rows with original call argument refs" in {
+      withXiaomiStagingRows { stagingRows =>
+        val callRows = stagingRows.flatMap(_("call_name_resolution").arr.map(_.obj))
+
+        val sanitizerRow = callRows
+          .find(row =>
+            row("module_path").str == "usr/lib/lua/luci/controller/api/xqnetwork.luac" &&
+              row("callsite_id").str == "usr/lib/lua/luci/controller/api/xqnetwork.luac::root.93@pc101" &&
+              row("resolved_name").str == "xiaoqiang.module.XQAPModule.setWifiAPMode" &&
+              row("resolution_kind").str == "sanitizer-call"
+          )
+          .getOrElse(fail("missing setWifiAPMode sanitizer call row"))
+
+        val argumentRefs = sanitizerRow("argument_value_refs").arr.map(_.str).toVector
+        argumentRefs should contain("root.93@pc101:r29")
+        argumentRefs should contain("root.93@pc101:r32")
+        argumentRefs should not contain "root.93@pc101:r21"
+      }
+    }
+
     "reject CrossPlatform representative cross-module paths without source callsite bridge" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
