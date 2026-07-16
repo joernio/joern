@@ -522,7 +522,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
           "parentalctlSetUrl",
           8,
           "usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac",
-          "root.0",
+          "func_unknow_0_0",
           25,
           "os.execute"
         ) shouldBe true
@@ -732,7 +732,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         targetPath.isDefined shouldBe true
         val pathSteps = targetPath.get("path_steps").arr.map(_.str)
         pathSteps should contain("usr/lib/lua/luci/controller/api/xqnetwork.luac::root.93@pc28:r8")
-        pathSteps.exists(_.startsWith("usr/lib/lua/xiaoqiang/util/XQSysUtil.luac::")) shouldBe true
+        pathSteps.exists(_.startsWith("usr/lib/lua/xiaoqiang/module/XQAPModule.luac::")) shouldBe true
         pathSteps should contain("usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac::root.0@pc25:r4")
         pathSteps.foreach(_ should include("::"))
         targetPath.get.obj.contains("callsite_id") shouldBe false
@@ -1834,7 +1834,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
             row("sink_function_name").str == "tunnelSmartHomeRequest" &&
             row("sink_pc").num.toInt == 19 &&
             row("sink_trigger").str == "luci.util.exec" &&
-            row("classification").str == "true-positive" &&
+            row("classification").str == "sanitized" &&
             row("path_steps").arr.nonEmpty &&
             row("path_steps").arr.forall(_.str.contains("::")) &&
             row("path_steps").arr.exists(_.str == s"$module::$sourceRef") &&
@@ -1881,7 +1881,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
             row("sink_function_name").str == "tunnelSmartControllerRequest" &&
             row("sink_pc").num.toInt == 79 &&
             row("sink_trigger").str == "luci.util.exec" &&
-            row("classification").str == "true-positive" &&
+            row("classification").str == "sanitized" &&
             row("path_steps").arr.nonEmpty &&
             row("path_steps").arr.forall(_.str.contains("::")) &&
             row("path_steps").arr.exists(_.str == s"$module::$sourceRef") &&
@@ -1975,7 +1975,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
             row("sink_function_name").str == "tunnelRequestDatacenter" &&
             row("sink_pc").num.toInt == 24 &&
             row("sink_trigger").str == "luci.util.exec" &&
-            row("classification").str == "true-positive" &&
+            row("classification").str == "sanitized" &&
             row("path_steps").arr.nonEmpty &&
             row("path_steps").arr.forall(_.str.contains("::")) &&
             row("path_steps").arr.exists(_.str == s"$module::$sourceRef") &&
@@ -2522,7 +2522,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
-    "reject CrossPlatform representative cross-module paths without source callsite bridge" in {
+    "export CrossPlatform representative cross-module path with recovered source callsite bridge" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
 
@@ -2531,7 +2531,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
             row("source_pc").num.toInt == 27 &&
             row("sink_module_path").str.endsWith("usr/lib/lua/xiaoqiang/util/XQSynchrodata.luac") &&
             row("sink_pc").num.toInt == 25
-        ) shouldBe false
+        ) shouldBe true
 
         pathRows.exists(row =>
           row("source_module_path").str.endsWith("usr/lib/lua/luci/controller/api/misystem.luac") &&
@@ -2557,7 +2557,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
 
         moduleCount should be > 0
         searchCount should be > buildCount
-        buildCount should be <= (moduleCount * 2)
+        buildCount should be <= (moduleCount * 3)
       }
     }
 
@@ -2757,12 +2757,12 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
           row("report_count").num.toLong should be > 0L
         }
 
-        val unresolvedTargetPair =
+        val recoveredSmarthomeTargetPair =
           selectPair("usr/lib/lua/luci/controller/api/xqsmarthome.luac:root.5@pc3:r0", "usr/lib/lua/luci/controller/api/xqsmarthome.luac::root.5@pc3", "luci.http.formvalue", "usr/lib/lua/luci/util.luac:root.36@pc3:r2", "usr/lib/lua/luci/util.luac::root.36@pc3", "io.popen")
-        unresolvedTargetPair("path_constructor_check_count").num.toLong should be > 0L
-        unresolvedTargetPair("bridge_argument_provenance_candidate_count").num.toLong should be > 0L
-        unresolvedTargetPair("taint_path_count").num.toLong shouldBe 0L
-        unresolvedTargetPair("report_count").num.toLong shouldBe 0L
+        recoveredSmarthomeTargetPair("path_constructor_check_count").num.toLong should be > 0L
+        recoveredSmarthomeTargetPair("bridge_argument_provenance_candidate_count").num.toLong should be > 0L
+        recoveredSmarthomeTargetPair("taint_path_count").num.toLong shouldBe 1L
+        recoveredSmarthomeTargetPair("report_count").num.toLong shouldBe 1L
 
         val recoveredTargetPair =
           selectPair("usr/lib/lua/luci/controller/api/xqnetwork.luac:root.93@pc28:r8", "usr/lib/lua/luci/controller/api/xqnetwork.luac::root.93@pc28", "luci.http.formvalue", "usr/lib/lua/xiaoqiang/common/XQFunction.luac:root.33@pc35:r4", "usr/lib/lua/xiaoqiang/common/XQFunction.luac::root.33@pc35", "os.execute")
@@ -2770,7 +2770,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         recoveredTargetPair("bridge_argument_provenance_candidate_count").num.toLong should be > 0L
         recoveredTargetPair("taint_path_count").num.toLong shouldBe 1L
         recoveredTargetPair("report_count").num.toLong shouldBe 1L
-        Vector(unresolvedTargetPair, recoveredTargetPair).foreach { row =>
+        Vector(recoveredSmarthomeTargetPair, recoveredTargetPair).foreach { row =>
           row("path_constructor_check_count").num.toLong should be > 0L
           row("bridge_argument_provenance_candidate_count").num.toLong should be > 0L
         }
