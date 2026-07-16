@@ -841,6 +841,9 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
 
+        val sanitizerCall  = "usr/lib/lua/xiaoqiang/util/XQCryptoUtil.luac::root.3@pc8"
+        val sanitizerValue = s"$sanitizerCall:r4"
+
         val path = pathRows
           .find(row =>
             row("source_module_path").str == "usr/lib/lua/luci/controller/api/xqnetwork.luac" &&
@@ -859,8 +862,22 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
 
         val steps = path("path_steps").arr.map(_.str)
         steps should contain("usr/lib/lua/luci/controller/api/xqnetwork.luac::root.55@pc6:r1")
+        steps should contain(sanitizerValue)
         steps should contain("usr/lib/lua/luci/util.luac::root.36:r0")
         steps should contain("usr/lib/lua/luci/util.luac::root.36@pc3:r2")
+
+        withClue(
+          s"path_steps=${steps.mkString("[", ",", "]")} sanitizer_hits=${path("sanitizer_hits")}"
+        ) {
+          path("classification").str shouldBe "sanitized"
+          path("sanitizer_hits").arr.exists { hit =>
+            val row = hit.obj
+            row("callsite_id").str == sanitizerCall &&
+            row("sanitizer_name").str == "test.api.Process._cmdformat" &&
+            row("applies_to_sink").bool &&
+            row("on_dataflow_chain").bool
+          } shouldBe true
+        }
       }
     }
 
