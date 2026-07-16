@@ -74,7 +74,7 @@ private[joern] case class DependencyGraph(
     seedProjects.foreach(project => toCheck.push(project.projectName))
 
     while (toCheck.nonEmpty) {
-      val projectName = toCheck.pop
+      val projectName = toCheck.pop()
 
       if (!checked.contains(projectName)) {
         checked.add(projectName)

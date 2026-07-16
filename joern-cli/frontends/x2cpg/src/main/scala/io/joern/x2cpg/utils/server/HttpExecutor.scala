@@ -36,7 +36,7 @@ class HttpExecutor(locator: ExecutableLocator, defaultArgs: Seq[String] = Nil, p
         Process(List(locator.resolve().toString, ".", "--server", "--server-timeout-minutes=1"))
           .run(ProcessLogger(stdOutHandler, stdErrHandler))
 
-      while (process.isAlive && !port.isDone) {
+      while (process.isAlive() && !port.isDone) {
         try {
           port.get(100, TimeUnit.MILLISECONDS)
         } catch {

@@ -116,7 +116,7 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
     var mode    = PARSE_MODE.SKIP_TRAILER
     val linesIt = lines.iterator
     while (linesIt.hasNext) {
-      val line = linesIt.next
+      val line = linesIt.next()
       mode match {
         case PARSE_MODE.PARSE_INFO =>
           if (line != "==> JSON dump:") {

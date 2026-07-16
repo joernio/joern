@@ -268,7 +268,7 @@ class BinarySignatureCalculator(scope: Scope) {
       writer.visitClassType(javaObjectName)
       writer.visitEnd()
     } else {
-      addType(writer, typeBoundIt.next)
+      addType(writer, typeBoundIt.next())
     }
     typeBoundIt.foreach { typeBound =>
       writer.visitInterfaceBound()

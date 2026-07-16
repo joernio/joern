@@ -47,7 +47,7 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[CfgNode] {
   private val firstOutputParam = firstParam.flatMap(_.asOutput.headOption)
   private val lastOutputParam  = method.parameter.sortBy(_.index).asOutput.lastOption
 
-  private val lastActualCfgNode = exitNode.cfgIn.nextOption
+  private val lastActualCfgNode = exitNode.cfgIn.nextOption()
 
   override val allNodesReversePostOrder: List[CfgNode] =
     List(entryNode) ++ method.parameter.toList ++ method.reversePostOrder.toList.filter(x =>
