@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory
 import java.io.FileNotFoundException
 import java.nio.file.{FileVisitOption, FileVisitResult, FileVisitor, Files, LinkOption, Path, Paths}
 import java.nio.file.attribute.BasicFileAttributes
-import java.util.regex.Pattern
 import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.util.matching.Regex
 import scala.util.Try
@@ -19,16 +18,6 @@ object SourceFiles {
   private[x2cpg] val DefaultMaxFileSizeBytes: Long = Integer.MAX_VALUE - 2L
 
   private def DefaultMaxFileSizeString: String = s"${DefaultMaxFileSizeBytes}B"
-
-  /** Regexes matching common JVM build-tool / IDE / VCS folder names. Used to prune tree traversal so we don't descend
-    * into caches, generated output, repo metadata, or test roots.
-    */
-  val JvmDefaultIgnoredFolders: List[Regex] =
-    List(".git", ".mvn", ".gradle", "build", "target", "out", "node_modules", ".idea", "test")
-      .map(Pattern.quote)
-      .flatMap { name =>
-        List(s"(^|\\\\)$name($$|\\\\)".r.unanchored, s"(^|/)$name($$|/)".r.unanchored)
-      }
 
   /** A failsafe implementation of a [[FileVisitor]] that continues iterating through files even if an [[IOException]]
     * occurs during traversal.

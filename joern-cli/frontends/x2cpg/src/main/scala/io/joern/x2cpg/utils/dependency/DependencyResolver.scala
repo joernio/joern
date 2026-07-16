@@ -1,6 +1,7 @@
 package io.joern.x2cpg.utils.dependency
 
 import io.joern.x2cpg.SourceFiles
+import io.joern.x2cpg.frontendspecific.javasrc2cpg.JvmDefaultIgnoredFolders
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
@@ -110,7 +111,7 @@ object DependencyResolver {
       .determine(
         currentDir.toAbsolutePath.toString,
         BuildFileSuffixes,
-        ignoredDefaultRegex = Some(SourceFiles.JvmDefaultIgnoredFolders)
+        ignoredDefaultRegex = Some(JvmDefaultIgnoredFolders)
       )
       .map(Path.of(_))
 
