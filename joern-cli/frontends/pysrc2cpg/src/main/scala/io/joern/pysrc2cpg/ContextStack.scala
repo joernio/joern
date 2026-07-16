@@ -34,7 +34,6 @@ class ContextStack {
     val reservedNames: mutable.Set[String]
     val tmpCounters: mutable.Map[String, Int]
     var lambdaCounter: Int
-    val methodCounter: mutable.Map[String, Int]
   }
 
   private class MethodContext(
@@ -49,8 +48,7 @@ class ContextStack {
     val tmpCounters: mutable.Map[String, Int] = mutable.Map.empty,
     val globalVariables: mutable.Set[String] = mutable.Set.empty,
     val nonLocalVariables: mutable.Set[String] = mutable.Set.empty,
-    var lambdaCounter: Int = 0,
-    val methodCounter: mutable.Map[String, Int] = mutable.Map.empty
+    var lambdaCounter: Int = 0
   ) extends Context {}
 
   private class ClassContext(
@@ -60,8 +58,7 @@ class ContextStack {
     val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
     val reservedNames: mutable.Set[String] = mutable.Set.empty,
     val tmpCounters: mutable.Map[String, Int] = mutable.Map.empty,
-    var lambdaCounter: Int = 0,
-    val methodCounter: mutable.Map[String, Int] = mutable.Map.empty
+    var lambdaCounter: Int = 0
   ) extends Context {}
 
   // Used to represent comprehension variable and exception
@@ -80,8 +77,7 @@ class ContextStack {
     val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
     val reservedNames: mutable.Set[String] = mutable.Set.empty,
     val tmpCounters: mutable.Map[String, Int] = mutable.Map.empty,
-    var lambdaCounter: Int = 0,
-    val methodCounter: mutable.Map[String, Int] = mutable.Map.empty
+    var lambdaCounter: Int = 0
   ) extends Context {}
 
   private case class VariableReference(
@@ -470,10 +466,6 @@ class ContextStack {
       case methodContext: MethodContext if methodContext.isClassBodyMethod => true
       case _                                                               => false
     })
-  }
-
-  def methodCounter: mutable.Map[String, Int] = {
-    stack.head.methodCounter
   }
 
 }
