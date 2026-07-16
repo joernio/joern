@@ -127,17 +127,17 @@ object DependencyResolver {
       }
       .toList
 
-    // Keep only the top-most build file on each directory branch. After sorting by path,
-    // any nested build file appears immediately after its ancestor's build file, so we can
-    // drop it by checking a prefix against the last kept directory.
-    perDirectory
-      .sortBy(_.toString)
+    // Keep only the top-most build file on each directory branch. Sort by path depth so
+    // that a parent build file is always visited before any of its descendants, then drop
+    // any candidate whose directory sits under an already-kept one.
+    val foundBuildFiles = perDirectory
+      .sortBy(_.getNameCount)
       .foldLeft(List.empty[Path]) { (kept, buildFile) =>
-        kept.headOption match {
-          case Some(top) if buildFile.getParent.startsWith(top.getParent) => kept
-          case _                                                          => buildFile :: kept
-        }
+        if (kept.exists(k => buildFile.getParent.startsWith(k.getParent))) kept
+        else buildFile :: kept
       }
       .reverse
+    logger.debug(s"Found build files:\n - ${foundBuildFiles.mkString("\n - ")}")
+    foundBuildFiles
   }
 }

@@ -90,4 +90,28 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
       dependencyFiles.find(_.endsWith("slf4j-api-1.7.36.jar")) should not be empty
     }
   }
+
+  "findSupportedBuildFiles" should {
+    "deduplicate nested Gradle build files to the top-most per branch" in {
+      FileUtil.usingTemporaryDirectory("DependencyResolverTests") { tmpDir =>
+        val relFiles = Seq(
+          "attackerapp/build.gradle",
+          "attackerapp/app/build.gradle",
+          "vulnerableapp/build.gradle",
+          "vulnerableapp/app/build.gradle"
+        )
+        relFiles.foreach { rel =>
+          val f = tmpDir / rel
+          f.createWithParentsIfNotExists(createParents = true)
+          Files.writeString(f, "")
+        }
+
+        val found = DependencyResolver.findSupportedBuildFiles(tmpDir)
+        found.map(_.toString) should contain theSameElementsAs Seq(
+          (tmpDir / "attackerapp/build.gradle").toString,
+          (tmpDir / "vulnerableapp/build.gradle").toString
+        )
+      }
+    }
+  }
 }
