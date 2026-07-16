@@ -1,9 +1,11 @@
 package io.joern.javasrc2cpg
 
 import io.joern.javasrc2cpg.passes.{AstCreationPass, OuterClassRefPass, TypeInferencePass}
+import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.frontend.{JavaConfigFileCreationPass, MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.X2CpgFrontend
+import io.joern.x2cpg.frontendspecific.javasrc2cpg.JvmDefaultIgnoredFolders
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
@@ -41,11 +43,8 @@ object JavaSrc2Cpg {
   val language: String                  = Languages.JAVASRC
   val sourceFileExtensions: Set[String] = Set(".java")
 
-  val DefaultIgnoredFilesRegex: List[Regex] =
-    List(".git", ".mvn", ".gradle", "test").map(Pattern.quote).flatMap { directory =>
-      List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|/)$directory($$|/)".r.unanchored)
-    }
-  val DefaultConfig: Config = Config()
+  val DefaultIgnoredFilesRegex: List[Regex] = JvmDefaultIgnoredFolders
+  val DefaultConfig: Config                 = Config()
 
   def showEnv(): Unit = {
     JavaSrcEnvVar.values.foreach { envVar =>

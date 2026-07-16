@@ -1,10 +1,11 @@
 package io.joern.x2cpg.utils.dependency
 
-import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
-import FileUtil.*
+import io.joern.x2cpg.SourceFiles
+import io.joern.x2cpg.frontendspecific.javasrc2cpg.JvmDefaultIgnoredFolders
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
-import java.nio.file.{Files, Path}
+import java.nio.file.Path
 import scala.util.{Failure, Success}
 
 enum GradleConfigKeys {
@@ -17,8 +18,10 @@ case class DependencyResolverParams(
 )
 
 object DependencyResolver {
-  private val logger              = LoggerFactory.getLogger(getClass)
-  private val MaxSearchDepth: Int = 4
+  private val logger                               = LoggerFactory.getLogger(getClass)
+  private val GradleBuildFileSuffixes: Set[String] = Set(".gradle", ".gradle.kts")
+  private val MavenBuildFileSuffixes: Set[String]  = Set("pom.xml")
+  private val BuildFileSuffixes: Set[String]       = GradleBuildFileSuffixes ++ MavenBuildFileSuffixes
 
   def getCoordinates(
     projectDir: Path,
@@ -97,35 +100,44 @@ object DependencyResolver {
     }
   }
 
-  private[dependency] def isGradleBuildFile(file: Path): Boolean = {
-    val pathString = file.toString
-    pathString.endsWith(".gradle") || pathString.endsWith(".gradle.kts")
-  }
+  private[dependency] def isGradleBuildFile(file: Path): Boolean =
+    GradleBuildFileSuffixes.exists(file.toString.endsWith)
 
-  private[dependency] def isMavenBuildFile(file: Path): Boolean = {
-    file.toString.endsWith("pom.xml")
-  }
+  private[dependency] def isMavenBuildFile(file: Path): Boolean =
+    MavenBuildFileSuffixes.exists(file.toString.endsWith)
 
-  private[dependency] def findSupportedBuildFiles(currentDir: Path, depth: Int = 0): List[Path] = {
-    if (depth >= MaxSearchDepth) {
-      logger.info("findSupportedBuildFiles reached max depth before finding build files")
-      Nil
-    } else {
-      val (childDirectories, childFiles) = currentDir.listFiles().partition(Files.isDirectory(_))
-      // Only fetch dependencies once for projects with both a build.gradle and a pom.xml file
-      val childFileList = childFiles.toList
-      childFileList
-        .find(isGradleBuildFile)
-        .orElse(childFileList.find(isMavenBuildFile)) match {
-        case Some(buildFile) => buildFile :: Nil
+  private[dependency] def findSupportedBuildFiles(currentDir: Path): List[Path] = {
+    val allBuildFiles = SourceFiles
+      .determine(
+        currentDir.toAbsolutePath.toString,
+        BuildFileSuffixes,
+        ignoredDefaultRegex = Some(JvmDefaultIgnoredFolders)
+      )
+      .map(Path.of(_))
 
-        case None if childDirectories.isEmpty => Nil
-
-        case None =>
-          childDirectories.flatMap { dir =>
-            findSupportedBuildFiles(dir, depth + 1)
-          }.toList
+    // Only fetch dependencies once for projects with both a build.gradle and a pom.xml file
+    // by grouping per parent directory and preferring Gradle over Maven.
+    val perDirectory = allBuildFiles
+      .groupBy(_.getParent)
+      .values
+      .flatMap { filesInDir =>
+        filesInDir
+          .find(isGradleBuildFile)
+          .orElse(filesInDir.find(isMavenBuildFile))
       }
-    }
+      .toList
+
+    // Keep only the top-most build file on each directory branch. Sort by path depth so
+    // that a parent build file is always visited before any of its descendants, then drop
+    // any candidate whose directory sits under an already-kept one.
+    val foundBuildFiles = perDirectory
+      .sortBy(_.getNameCount)
+      .foldLeft(List.empty[Path]) { (kept, buildFile) =>
+        if (kept.exists(k => buildFile.getParent.startsWith(k.getParent))) kept
+        else buildFile :: kept
+      }
+      .reverse
+    logger.debug(s"Found build files:\n - ${foundBuildFiles.mkString("\n - ")}")
+    foundBuildFiles
   }
 }
