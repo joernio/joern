@@ -25,7 +25,10 @@ class InterproceduralModuleTaintSmokeTest extends AnyWordSpec with Matchers {
         val reopened = CpgLoader.load(outputPath)
         try {
           markerCodes(reopened, "lua.interproc.arg_flow") should contain(
-            "d16-rf-interprocedural-formvalue-execute/input.luac:root@pc18:r4 -> d16-rf-interprocedural-formvalue-execute/input.luac::root.3:r0"
+            "d16-rf-interprocedural-formvalue-execute/input.luac:root@pc18:r4 -> d16-rf-interprocedural-formvalue-execute/input.luac:root.3:r0"
+          )
+          markerCodes(reopened, "lua.interproc.arg_flow") should contain(
+            "d24-interproc-unresolved-callee-negative/input.luac:root@pc8:r6 -> d24-interproc-unresolved-callee-negative/input.luac:root.2:r1"
           )
           markerCodes(reopened, "lua.interproc.return_flow") should contain(
             "d16-rf-interprocedural-formvalue-execute/input.luac::root.2@pc4:r0 -> d16-rf-interprocedural-formvalue-execute/input.luac:root@pc15:r2"
@@ -50,12 +53,12 @@ class InterproceduralModuleTaintSmokeTest extends AnyWordSpec with Matchers {
           val unresolvedArgFlows = markerCodes(reopened, "lua.interproc.arg_flow")
             .filter(_.contains("d24-interproc-unresolved-callee-negative"))
           withClue(s"unresolved arg flows: ${unresolvedArgFlows.mkString(", ")}") {
-            unresolvedArgFlows.exists(_.contains("root@pc8")) shouldBe false
+            unresolvedArgFlows.exists(_.contains("root.2@pc2")) shouldBe false
           }
           val unresolvedReturnFlows = markerCodes(reopened, "lua.interproc.return_flow")
             .filter(_.contains("d24-interproc-unresolved-callee-negative"))
           withClue(s"unresolved return flows: ${unresolvedReturnFlows.mkString(", ")}") {
-            unresolvedReturnFlows.exists(_.contains("root@pc8")) shouldBe false
+            unresolvedReturnFlows.exists(_.contains("root.2@pc2")) shouldBe false
           }
           markerCodes(reopened, "lua.module.resolution")
             .exists(code =>
@@ -68,7 +71,7 @@ class InterproceduralModuleTaintSmokeTest extends AnyWordSpec with Matchers {
 
           val boundaryCodes = markerCodes(reopened, "lua.e4.boundary")
           boundaryCodes should contain allOf (
-            "d24-interproc-unresolved-callee-negative/input.luac:root@pc8 reason=unresolved-callee",
+            "d24-interproc-unresolved-callee-negative/input.luac:root.2@pc2 reason=unresolved-callee",
             "d24-module-ambiguous-unresolved-dynamic-negative/missing.luac:require:missing.module reason=unresolved-module",
             "d24-module-ambiguous-unresolved-dynamic-negative/ambiguous.luac:require:shared.module reason=ambiguous-module",
             "d24-module-ambiguous-unresolved-dynamic-negative/controller.luac:require:dynamic reason=dynamic-require",
