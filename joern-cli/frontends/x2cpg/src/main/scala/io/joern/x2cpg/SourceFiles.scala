@@ -258,18 +258,6 @@ object SourceFiles {
     ignoredFilesRegex: Option[Regex] = None,
     ignoredFilesPath: Option[Seq[String]] = None
   )(implicit visitOptions: Seq[FileVisitOption] = Seq(FileVisitOption.FOLLOW_LINKS)): List[String] = {
-    determinePaths(inputPath, sourceFileExtensions, ignoredDefaultRegex, ignoredFilesRegex, ignoredFilesPath).map(
-      _.toString
-    )
-  }
-
-  def determinePaths(
-    inputPath: String,
-    sourceFileExtensions: Set[String],
-    ignoredDefaultRegex: Option[Seq[Regex]] = None,
-    ignoredFilesRegex: Option[Regex] = None,
-    ignoredFilesPath: Option[Seq[String]] = None
-  )(implicit visitOptions: Seq[FileVisitOption] = Seq(FileVisitOption.FOLLOW_LINKS)): List[Path] = {
     val dir = Paths.get(inputPath)
     assertExists(dir)
     val visitor = new FailsafeFileVisitor(
@@ -280,7 +268,8 @@ object SourceFiles {
       ignoredFilesPath
     )
     Files.walkFileTree(dir, visitOptions.toSet.asJava, Int.MaxValue, visitor)
-    visitor.files().toList.sorted
+    val matchingFiles = visitor.files().map(_.toString)
+    matchingFiles.toList.sorted
   }
 
   /** Asserts that a given file exists and is readable.

@@ -106,11 +106,13 @@ object DependencyResolver {
     MavenBuildFileSuffixes.exists(file.toString.endsWith)
 
   private[dependency] def findSupportedBuildFiles(currentDir: Path): List[Path] = {
-    val allBuildFiles = SourceFiles.determinePaths(
-      currentDir.toAbsolutePath.toString,
-      BuildFileSuffixes,
-      ignoredDefaultRegex = Some(SourceFiles.JvmDefaultIgnoredFolders)
-    )
+    val allBuildFiles = SourceFiles
+      .determine(
+        currentDir.toAbsolutePath.toString,
+        BuildFileSuffixes,
+        ignoredDefaultRegex = Some(SourceFiles.JvmDefaultIgnoredFolders)
+      )
+      .map(Path.of(_))
 
     // Only fetch dependencies once for projects with both a build.gradle and a pom.xml file
     // by grouping per parent directory and preferring Gradle over Maven.
