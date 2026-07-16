@@ -1,11 +1,11 @@
 package io.joern.pysrc2cpg
 
-import PythonAstVisitor.{redefinedSuffix, keywordDictArgName, logger, metaClassSuffix, noLineAndColumn}
+import PythonAstVisitor.{keywordDictArgName, logger, metaClassSuffix, noLineAndColumn, redefinedSuffix}
 import io.joern.pysrc2cpg.memop.*
 import io.joern.pysrc2cpg.memop.MemoryOperation.{Del, Load, Store}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants.builtinPrefix
 import io.joern.pythonparser.{AstPrinter, ast}
-import io.joern.pythonparser.ast.{Arguments, MatchAs, iast, iexpr, istmt}
+import io.joern.pythonparser.ast.{Arguments, AsyncFunctionDef, FunctionDef, MatchAs, iast, iexpr, istmt}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
 import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
@@ -268,7 +268,7 @@ class PythonAstVisitor(
     body: ast.CollType[istmt],
     returns: Option[iexpr],
     isAsync: Boolean,
-    functionDef: ClassOrFunctionDef
+    functionDef: FunctionDef | AsyncFunctionDef
   ): NewNode = {
     val methodIdentifierNode =
       createIdentifierNode(name, Store, lineAndColOf(functionDef))
