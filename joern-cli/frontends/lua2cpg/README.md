@@ -1,153 +1,202 @@
-# lua2cpg Preparation
+# lua2cpg
 
-This directory exists only on the preparation branch.
+`lua2cpg` is a Lua 5.1 analyzer for Joern. It builds Code Property
+Graphs for Lua programs through a bytecode-based pipeline and emits
+taint-analysis evidence for Lua code, including interprocedural flow,
+source/sink matches, sanitizer classifications, and vulnerability reports.
 
-It is a scaffold for future upstream work and does not claim:
+The analysis core operates on Lua 5.1 bytecode. To analyze Lua source files,
+compile them with `luac5.1` and pass the generated `.luac` files to
+`lua2cpg`. Source files placed in the input tree are also recorded in the CPG
+file inventory.
 
-- final maintainer-approved frontend identity
-- final schema or traversal API shape
-- QueryDB readiness
-- upstream-ready Lua support
+## Prerequisites
 
-## E1 Local Smoke
+- Use the JDK and `sbt` versions required by the Joern repository.
+- Run the commands below from the Joern repository root.
+- Install `luac5.1` when starting from Lua source files.
+
+## Build
+
+Build the staged frontend command:
 
 ```bash
-sbt 'lua2cpg/testOnly io.joern.lua2cpg.DLinkLuCIEntrySmokeTest'
-sbt 'lua2cpg/test'
 sbt 'lua2cpg/stage'
 ```
 
-Expected result:
-
-- `DLinkLuCIEntrySmokeTest` observes `META_DATA.language == "LUA"`.
-- `DLinkLuCIEntrySmokeTest` observes `cgi.lua`, `uci.lua`, and `version.lua`
-  as CPG `FILE` nodes.
-- `lua2cpg/stage` exits `0` and produces a staged `lua2cpg` command.
-
-This E1 smoke proves only the runnable Lua frontend entry and file inventory.
-It does not claim Lua parsing, bytecode decode, AST semantics, dataflow,
-QueryDB, sanitizer, or report construction.
-
-## Bytecode Model Smoke
+The staged command is written to:
 
 ```bash
-sbt 'lua2cpg/testOnly io.joern.lua2cpg.BytecodeModelSmokeTest'
-sbt 'lua2cpg/stage'
-git status --short
+joern-cli/frontends/lua2cpg/target/universal/stage/bin/lua2cpg
 ```
 
-Expected result:
-
-- `BytecodeModelSmokeTest` succeeds.
-- `lua2cpg/stage` succeeds.
-- `git status --short` is clean after the smoke.
-
-This E2 smoke proves bytecode artifact/profile/prototype/constant/diagnostic
-CPG evidence only. It does not claim parser AST semantics, dataflow, QueryDB,
-sanitizer, report construction, schema extension, distribution acceptance, or
-official frontend acceptance.
-
-## Intraprocedural Semantics Smoke
+Check the available options:
 
 ```bash
-sbt 'lua2cpg/testOnly io.joern.lua2cpg.IntraproceduralSemanticsSmokeTest'
-sbt 'lua2cpg/stage'
-git status --short
+joern-cli/frontends/lua2cpg/target/universal/stage/bin/lua2cpg --help
 ```
 
-Expected result:
+## Quickstart
 
-- `IntraproceduralSemanticsSmokeTest` succeeds.
-- `lua2cpg/stage` succeeds.
-- `git status --short` is clean after the smoke.
-
-This E3 smoke proves bytecode-local intraprocedural CPG evidence through
-`CALL`, `IDENTIFIER`, `LITERAL`, `METHOD`, and `REACHING_DEF` evidence over
-committed focused `.luac` fixtures. It does not claim interprocedural
-arg/return, module require/export resolution, source parser AST semantics,
-QueryDB, sanitizer classification, report construction, schema extension
-acceptance, distribution acceptance, or official frontend acceptance.
-
-## Interprocedural Module Taint Smoke
+Analyze an existing Lua 5.1 bytecode directory:
 
 ```bash
-JAVA_TOOL_OPTIONS='-Dsbt.watch.mode=polling -Dsbt.io.jdktimestamps=true' \
-  sbt 'lua2cpg/testOnly io.joern.lua2cpg.InterproceduralModuleTaintSmokeTest'
-JAVA_TOOL_OPTIONS='-Dsbt.watch.mode=polling -Dsbt.io.jdktimestamps=true' \
-  sbt 'lua2cpg/stage'
-git status --short
+LUA2CPG=joern-cli/frontends/lua2cpg/target/universal/stage/bin/lua2cpg
+INPUT=/path/to/lua-bytecode
+OUTPUT=/tmp/lua.cpg.bin
+
+"$LUA2CPG" "$INPUT" --output "$OUTPUT"
 ```
 
-Expected result:
-
-- `InterproceduralModuleTaintSmokeTest` succeeds.
-- `lua2cpg/stage` succeeds.
-- `git status --short` is clean after the smoke.
-
-This E4 smoke proves interprocedural arg/return, literal require resolution,
-module returned-table exports, cross-boundary call targets, and explainable
-taint paths over committed fixtures.
-
-It does not claim QueryDB readiness, source parser AST semantics, sanitizer
-classification, report construction, schema extension acceptance, distribution
-acceptance, or official frontend acceptance.
-
-## Rules, Sanitizer, And Report Smoke
+Analyze a Lua source file by compiling it to Lua 5.1 bytecode first:
 
 ```bash
-JAVA_TOOL_OPTIONS='-Dsbt.watch.mode=polling -Dsbt.io.jdktimestamps=true' \
-  sbt 'lua2cpg/testOnly io.joern.lua2cpg.RulesSanitizerReportSmokeTest'
-git status --short
+mkdir -p /tmp/lua-bytecode
+luac5.1 -o /tmp/lua-bytecode/app.luac /path/to/app.lua
+
+joern-cli/frontends/lua2cpg/target/universal/stage/bin/lua2cpg \
+  /tmp/lua-bytecode \
+  --output /tmp/lua.cpg.bin
 ```
 
-Expected result:
+For a source tree, preserve the directory layout while compiling:
 
-- `RulesSanitizerReportSmokeTest` succeeds.
-- `git status --short` is clean after the smoke.
+```bash
+SRC_ROOT=/path/to/lua-source
+BC_ROOT=/tmp/lua-bytecode
 
-This E5 smoke proves source/sink rule matches, sanitizer calls and
-classification, report classification, vulnerability report construction, and
-explainable E5 boundaries through schema-safe CPG `CALL` markers over committed
-focused `.luac` fixtures.
+mkdir -p "$BC_ROOT"
+find "$SRC_ROOT" -name '*.lua' -print0 |
+  while IFS= read -r -d '' file; do
+    rel="${file#$SRC_ROOT/}"
+    out="$BC_ROOT/${rel%.lua}.luac"
+    mkdir -p "$(dirname "$out")"
+    luac5.1 -o "$out" "$file"
+  done
 
-Reviewer traversal surface:
+joern-cli/frontends/lua2cpg/target/universal/stage/bin/lua2cpg \
+  "$BC_ROOT" \
+  --output /tmp/lua.cpg.bin
+```
+
+## Inspecting The CPG
+
+Open the generated CPG with Joern and inspect the Lua-specific evidence:
+
+```bash
+joern /tmp/lua.cpg.bin
+```
+
+Useful traversals:
 
 ```scala
-cpg.call.nameExact("lua.rule.match").code.l
+cpg.metaData.language.l
+cpg.file.name.l
+cpg.method.fullName.l
+cpg.call.nameExact("lua.module.resolution").code.l
+cpg.call.nameExact("lua.calltarget.candidate").code.l
 cpg.call.nameExact("lua.source.endpoint").code.l
 cpg.call.nameExact("lua.sink.endpoint").code.l
-cpg.call.nameExact("lua.sanitizer.call").code.l
 cpg.call.nameExact("lua.sanitizer.classification").code.l
-cpg.call.nameExact("lua.report.classification").code.l
 cpg.call.nameExact("lua.report.vulnerability").code.l
-cpg.call.nameExact("lua.e5.boundary").code.l
 ```
 
-This phase does not claim QueryDB inclusion, schema extension acceptance,
-distribution acceptance, source parser AST support, production security-query
-readiness, or official frontend acceptance.
+## Taint Evidence Export
 
-## Controller Benchmark Runbook
-
-Quick local capability smoke from the Joern clone:
+`lua2cpg` can also write reviewer-visible JSON evidence for benchmark and
+debugging workflows:
 
 ```bash
-JAVA_TOOL_OPTIONS='-Dsbt.watch.mode=polling -Dsbt.io.jdktimestamps=true' \
-  sbt 'lua2cpg/testOnly io.joern.lua2cpg.RulesSanitizerReportSmokeTest'
-JAVA_TOOL_OPTIONS='-Dsbt.watch.mode=polling -Dsbt.io.jdktimestamps=true' \
-  sbt 'lua2cpg/stage'
+joern-cli/frontends/lua2cpg/target/universal/stage/bin/lua2cpg \
+  /path/to/lua-bytecode \
+  --output /tmp/lua.cpg.bin \
+  --lua-real-firmware-output-dir /tmp/lua2cpg-evidence
+```
+
+The evidence directory contains:
+
+- `decoder-summary.json`: input, decode, prototype, instruction, callsite, and
+  local-flow totals.
+- `path-search-profile.json`: taint path-search counters and retained pair
+  profiles.
+- `run-summary.json`: native run status and decode totals.
+- `run-errors.json`: native run errors.
+- `staging/*.json`: per-artifact decode, flow, module-resolution, source/sink,
+  sanitizer, and path-evidence rows.
+
+This export is optional. The primary `lua2cpg` output is the CPG written by
+`--output`.
+
+## Supported Analysis
+
+- Lua version: Lua 5.1.
+- Inputs: Lua 5.1 `.luac` bytecode; Lua source after compilation with
+  `luac5.1`.
+- CPG content: file inventory, bytecode artifacts, prototypes, constants,
+  instructions, methods, identifiers, calls, and reaching definitions.
+- Program analysis: intraprocedural value flow, module require/return-table
+  linkage, cross-module call targets, interprocedural argument and return flow,
+  source/sink matching, sanitizer classification, and vulnerability reports.
+- Distribution boundary: this frontend does not ship QueryDB queries as part
+  of this README. Reviewer-visible results are exposed through CPG nodes and
+  optional JSON evidence.
+
+## Architecture
+
+The frontend is organized around a bytecode-first analysis pipeline:
+
+- `LuaFileInventoryPass` records `.lua` source files in the CPG file inventory.
+- `LuaBytecodeDecoder` decodes Lua 5.1 bytecode artifacts into profiles,
+  prototypes, constants, instructions, and diagnostics.
+- `LuaBytecodeModelPass` emits the decoded bytecode model into the CPG.
+- `LuaInstructionSemantics` computes prototype-local value, call, table,
+  global, upvalue, and boundary facts.
+- `LuaProgramSemantics` normalizes module-level and interprocedural flow,
+  source/sink, sanitizer, and report evidence across decoded artifacts.
+- `LuaRealFirmwareEvidenceExporter` writes the optional JSON evidence directory
+  requested by `--lua-real-firmware-output-dir`.
+
+## Tests
+
+Use the smallest tier that answers the review question first.
+
+Quick smoke:
+
+```bash
+sbt 'lua2cpg/testOnly io.joern.lua2cpg.RulesSanitizerReportSmokeTest'
+sbt 'lua2cpg/stage'
 joern-cli/frontends/lua2cpg/target/universal/stage/bin/lua2cpg --help
 git status --short
 ```
 
-Expected result:
+Focused capability tests:
 
-- `RulesSanitizerReportSmokeTest` succeeds and prints E5 node/report counts.
-- `lua2cpg/stage` succeeds.
-- The staged `lua2cpg --help` command prints usage.
-- `git status --short` is clean after the smoke.
+```bash
+sbt 'lua2cpg/testOnly io.joern.lua2cpg.BytecodeModelSmokeTest'
+sbt 'lua2cpg/testOnly io.joern.lua2cpg.IntraproceduralSemanticsSmokeTest'
+sbt 'lua2cpg/testOnly io.joern.lua2cpg.InterproceduralModuleTaintSmokeTest'
+sbt 'lua2cpg/testOnly io.joern.lua2cpg.RulesSanitizerReportSmokeTest'
+sbt 'lua2cpg/testOnly io.joern.lua2cpg.RealFirmwareEvidenceExportSmokeTest'
+```
 
-referenceAnalyzer-managed benchmark adapter smoke:
+Full frontend test suite:
+
+```bash
+sbt 'lua2cpg/test'
+```
+
+The full `lua2cpg/test` suite is intentionally broader and can take about an
+hour in this development environment.
+
+## Optional External Benchmarking
+
+referenceAnalyzer can run larger firmware benchmarks against a staged `lua2cpg`
+command. This is optional external acceptance tooling: referenceAnalyzer owns firmware
+selection, normalization, oracle comparison, and full-corpus benchmark
+judgments. It is not required to build `lua2cpg`, generate a CPG, inspect the
+CPG in Joern, or emit native JSON evidence.
+
+Example adapter flow:
 
 ```bash
 referenceAnalyzer=/path/to/referenceAnalyzer
@@ -155,7 +204,7 @@ JOERN_CLONE=$(pwd)
 JOERN_COMMAND="$JOERN_CLONE/joern-cli/frontends/lua2cpg/target/universal/stage/bin/lua2cpg"
 RUN_ID=joern-upstream-smoke
 RUN_ROOT=/tmp/referenceAnalyzer-upstream-joern-smoke-runs
-FIRMWARE_ROOT=/tmp/referenceAnalyzer-focused-luac
+FIRMWARE_ROOT=/path/to/lua-bytecode-corpus
 
 cd "$referenceAnalyzer"
 python3 -m tools.real_firmware.OpenWrtDerived_compare init \
@@ -170,28 +219,4 @@ python3 -m tools.real_firmware.OpenWrtDerived_compare run-joern \
   --run-dir "$RUN_ROOT/$RUN_ID" \
   --upstream-joern-clone "$JOERN_CLONE" \
   --joern-command "$JOERN_COMMAND"
-
-python3 - <<'PY'
-from pathlib import Path
-from tools.real_firmware.normalize_joern import normalize_joern_run
-
-run_dir = Path("/tmp/referenceAnalyzer-upstream-joern-smoke-runs/joern-upstream-smoke")
-normalize_joern_run(run_dir=run_dir, run_id=run_dir.name)
-PY
 ```
-
-Expected output:
-
-- `raw/joern/run-errors.json` contains `{"errors": []}` when the staged command
-  can process the selected material.
-- `raw/joern/command-record.json` records `target_kind=upstream-clone` for this
-  clone.
-- `normalized/joern.jsonl` is present.
-
-The benchmark adapter smoke is controlled by referenceAnalyzer because referenceAnalyzer owns the
-oracle, firmware selection, normalization, comparison, and performance
-judgment. It proves that this Joern clone can produce upstream-clone output for
-the controller. It is not a standalone full-corpus benchmark and does not claim
-QueryDB inclusion, schema extension acceptance, distribution acceptance, source
-parser AST support, production security-query readiness, or official frontend
-acceptance.
