@@ -1,6 +1,6 @@
 name                     := "joern"
 ThisBuild / organization := "io.joern"
-ThisBuild / scalaVersion := "3.7.4"
+ThisBuild / scalaVersion := "3.8.3"
 
 val cpgVersion = "1.7.70"
 
@@ -66,7 +66,7 @@ ThisBuild / compile / javacOptions ++= Seq(
   "-g", // debug symbols
   "-Xlint",
   "-proc:none",
-  "--release=11"
+  "--release=17"
 ) ++ {
   // Require Java 13+ due to FileSystems.newFileSystem(Path) API used in project/FileUtils.scala
   val javaVersion = sys.props("java.specification.version").toFloat
@@ -77,8 +77,8 @@ ThisBuild / compile / javacOptions ++= Seq(
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
   "--release",
-  "11",
-  "-Xfatal-warnings",
+  "17",
+  "-Werror",
   "-feature",
   "-Wshadow:type-parameter-shadow",
   "-no-indent",
