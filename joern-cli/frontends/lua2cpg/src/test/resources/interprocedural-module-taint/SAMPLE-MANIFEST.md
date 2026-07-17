@@ -1,6 +1,7 @@
 # E4 Interprocedural Module Taint Samples
 
-Source family: referenceAnalyzer shared E4 fixtures derived from OpenWrtDerived LuCI behavior.
+Source family: committed Lua 5.1 bytecode fixtures covering interprocedural
+module and taint behavior.
 
 Positive samples:
 - d16-rf-interprocedural-formvalue-execute/input.luac: resolved same-artifact arg/return.
@@ -19,4 +20,5 @@ JAVA_TOOL_OPTIONS='-Dsbt.watch.mode=polling -Dsbt.io.jdktimestamps=true' sbt 'lu
 JAVA_TOOL_OPTIONS='-Dsbt.watch.mode=polling -Dsbt.io.jdktimestamps=true' sbt 'lua2cpg/stage'
 git status --short
 
-This subset is sufficient for reviewer smoke of E4 semantics. Full closure still depends on referenceAnalyzer controller evidence and phase-subset performance records.
+This subset is sufficient for reviewer smoke of E4 semantics and is consumed
+entirely from the `lua2cpg` test resources.

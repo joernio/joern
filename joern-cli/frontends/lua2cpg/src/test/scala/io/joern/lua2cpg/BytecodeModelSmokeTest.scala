@@ -33,7 +33,7 @@ class BytecodeModelSmokeTest extends AnyWordSpec with Matchers {
             "OpenWrtDerived-luci/version.lua"
           )
 
-          // Expected rows were manually cross-checked against the referenceAnalyzer prototype YAML fixtures for
+          // Expected rows are anchored in the committed bytecode fixtures for
           // bc-prototype-params, bc-constants-call, bc-stripped-metadata, and bc-malformed-diagnostic.
           val methodFullNames = reopened.method.fullName.sorted.l
           methodFullNames should contain allOf (

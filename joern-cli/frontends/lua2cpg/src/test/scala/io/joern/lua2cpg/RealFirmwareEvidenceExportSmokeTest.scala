@@ -783,7 +783,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
-    "export CrossPlatform r7 requestMitv paths through referenceAnalyzer-equivalent call result flow" in {
+    "export CrossPlatform r7 requestMitv paths through call result flow" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
 
@@ -971,7 +971,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
-    "export CrossPlatform r7 editDevice path with referenceAnalyzer known _cmdformat sanitizer hit" in {
+    "export CrossPlatform r7 editDevice path with _cmdformat sanitizer hit" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
 
@@ -1014,7 +1014,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
-    "export CrossPlatform r7 setConfigIotDevHidessid paths with referenceAnalyzer known _cmdformat sanitizer hits" in {
+    "export CrossPlatform r7 setConfigIotDevHidessid paths with _cmdformat sanitizer hits" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
 
@@ -1066,7 +1066,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
-    "export CrossPlatform r7 addMeshNode paths with referenceAnalyzer known _strformat sanitizer hits" in {
+    "export CrossPlatform r7 addMeshNode paths with _strformat sanitizer hits" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
 
@@ -1111,7 +1111,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
-    "export CrossPlatform r7 debug paths with referenceAnalyzer known _cmdformat sanitizer hits" in {
+    "export CrossPlatform r7 debug paths with _cmdformat sanitizer hits" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
 
@@ -1159,7 +1159,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
-    "export CrossPlatform r7 appSetWifiApMode exec path with referenceAnalyzer known apcli sanitizer hit" in {
+    "export CrossPlatform r7 appSetWifiApMode exec path with apcli sanitizer hit" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
 
@@ -1253,7 +1253,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
-    "export CrossPlatform r7 setRouterToBaidu path with referenceAnalyzer known ipairs sanitizer hit" in {
+    "export CrossPlatform r7 setRouterToBaidu path with ipairs sanitizer hit" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
 
@@ -1294,7 +1294,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
-    "export CrossPlatform r7 xqsystem payment paths with referenceAnalyzer known _cmdformat sanitizer hits" in {
+    "export CrossPlatform r7 xqsystem payment paths with _cmdformat sanitizer hits" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
 
@@ -1346,7 +1346,7 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
       }
     }
 
-    "export CrossPlatform r7 XQAPModule extendwifi paths with referenceAnalyzer known apcli sanitizer hits" in {
+    "export CrossPlatform r7 XQAPModule extendwifi paths with apcli sanitizer hits" in {
       withXiaomiStagingRows { stagingRows =>
         val pathRows = stagingRows.flatMap(_("path_evidence").arr.map(_.obj))
 
