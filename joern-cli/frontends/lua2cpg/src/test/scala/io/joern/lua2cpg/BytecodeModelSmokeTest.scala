@@ -58,13 +58,14 @@ class BytecodeModelSmokeTest extends AnyWordSpec with Matchers {
             .fullName
             .l
           diagnostics should contain allOf (
-            "lua:bytecode-model/bc-malformed-diagnostic/not-lua-bytecode.bin:diagnostic:not-lua-bytecode",
+            "lua:bytecode-model/bc-malformed-diagnostic/not-lua-bytecode.luac:diagnostic:not-lua-bytecode",
             "lua:bytecode-model/bc-malformed-diagnostic/truncated.luac:diagnostic:truncated-bytecode",
             "lua:bytecode-model/bc-malformed-diagnostic/unsupported-version.luac:diagnostic:unsupported-bytecode-version",
             "lua:bytecode-model/bc-malformed-diagnostic/unsupported-profile.luac:diagnostic:unsupported-bytecode-profile",
             "lua:bytecode-model/bc-malformed-diagnostic/malformed-constant.luac:diagnostic:malformed-constant",
             "lua:bytecode-model/bc-stripped-metadata/input.luac:diagnostic:metadata-unavailable"
           )
+          diagnostics.exists(_.contains("not-lua-bytecode.bin")) shouldBe false
 
           methodFullNames.filter(_.startsWith("lua:bytecode-model/bc-malformed-diagnostic/")) shouldBe Nil
         } finally {
