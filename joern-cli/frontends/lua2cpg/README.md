@@ -187,36 +187,3 @@ sbt 'lua2cpg/test'
 
 The full `lua2cpg/test` suite is intentionally broader and can take about an
 hour in this development environment.
-
-## Optional External Benchmarking
-
-referenceAnalyzer can run larger firmware benchmarks against a staged `lua2cpg`
-command. This is optional external acceptance tooling: referenceAnalyzer owns firmware
-selection, normalization, oracle comparison, and full-corpus benchmark
-judgments. It is not required to build `lua2cpg`, generate a CPG, inspect the
-CPG in Joern, or emit native JSON evidence.
-
-Example adapter flow:
-
-```bash
-referenceAnalyzer=/path/to/referenceAnalyzer
-JOERN_CLONE=$(pwd)
-JOERN_COMMAND="$JOERN_CLONE/joern-cli/frontends/lua2cpg/target/universal/stage/bin/lua2cpg"
-RUN_ID=joern-upstream-smoke
-RUN_ROOT=/tmp/referenceAnalyzer-upstream-joern-smoke-runs
-FIRMWARE_ROOT=/path/to/lua-bytecode-corpus
-
-cd "$referenceAnalyzer"
-python3 -m tools.real_firmware.OpenWrtDerived_compare init \
-  --run-id "$RUN_ID" \
-  --run-root "$RUN_ROOT" \
-  --firmware-profile custom \
-  --firmware-root "$FIRMWARE_ROOT" \
-  --luabyte-result-dir "$RUN_ROOT/$RUN_ID-luabyte-placeholder" \
-  --upstream-joern-clone "$JOERN_CLONE"
-
-python3 -m tools.real_firmware.OpenWrtDerived_compare run-joern \
-  --run-dir "$RUN_ROOT/$RUN_ID" \
-  --upstream-joern-clone "$JOERN_CLONE" \
-  --joern-command "$JOERN_COMMAND"
-```
