@@ -1,0 +1,2522 @@
+<%+header%>
+<!--
+    This module implements EasyMesh feature.
+-->
+
+<script src="/luci-static/resources/monCon.js"></script>
+<script src="/luci-static/resources/jquery-3.5.1.min.js"></script>
+
+<style type="text/css">
+    table.sp_table {
+        font-family: verdana,arial,sans-serif;
+        font-size:12px;
+        color:#333333;
+        border-width: 1px;
+        border-color: #999999;
+        border-collapse: collapse;
+        text-align: center;
+    }
+    table.sp_table th {
+        background-color:#c3dde0;
+        border-width: 1px;
+        padding: 1px;
+        border-style: solid;
+        border-color: #a9c6c9;
+        text-align: center;
+    }
+    table.sp_table tr {
+        background-color:#d4e3e5;
+    }
+    table.sp_table td {
+        border-width: 1px;
+        padding: 2px;
+        border-style: solid;
+        border-color: #a9c6c9;
+        text-align: center;
+    }
+    .sp-form-item {
+      position: relative;
+      padding-left: 155px;
+      padding-right: 20px;
+      margin-top: 1px
+      margin-bottom: 1px;
+      line-height: 40px;
+      height: 40px;
+    }
+    .sp-form-item > .lb {
+      position: absolute;
+      left: 0;
+      top: 0;
+      display: block;
+      width: 150px;
+      text-align: right;
+      line-height: 40px;
+      height: 40px;
+      font-size: 13px;
+    }
+    .sp-form-item > .txt {
+      width: 300px;
+      line-height: 40px;
+      height: 40px;
+    }
+    .mask {
+      position: absolute;
+      top: 0px;
+      left: 0px;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      opacity: 0.15;
+      display: none;
+    }
+    .sp-form {
+      position: absolute;
+      top: 10%;
+      left: 50%;
+      margin-left: -197px;
+      padding-bottom: 5px;
+      background: #f1f1f1;
+      display: none;
+    }
+    .sp-form-title {
+      background-color: #d8d8d8;
+      border-width: 1px 1px 0 1px;
+      border-bottom: 0;
+      margin-bottom: 0;
+      position: relative;
+    }
+    .sp-form-title span {
+      width: auto;
+      height: 18px;
+      font-size: 16px;
+      font-weight: bold;
+      color: rgb(102, 102, 102);
+      text-indent: 12px;
+      padding: 8px 0px 10px;
+      margin-right: 10px;
+      display: block;
+      overflow: hidden;
+      text-align: left;
+    }
+    .sp-form-title div {
+      width: 16px;
+      height: 20px;
+      position: absolute;
+      right: 10px;
+      top: 6px;
+      font-size: 30px;
+      line-height: 16px;
+      cursor: pointer;
+    }
+    .sp-form-submit {
+      text-align: center;
+    }
+    .sp-form-submit input {
+      width: 170px;
+      height: 32px;
+    }
+</style>
+
+<% local mtkwifi = require("mtkwifi") %>
+<% if not mtkwifi then %>
+    <fieldset class="cbi-section">
+        <legend class="alert-message error">mtkwifi lua module is not available!</legend>
+    </fieldset>
+<% else %>
+    <%
+        local devs = mtkwifi.get_all_devs()
+        local l1dat, l1 = mtkwifi.__get_l1dat()
+        local bands = mtkwifi.detect_triband()
+        local cfg_1905d = mtkwifi.load_profile("/etc/map/1905d.cfg")
+        local driver_cfgs
+        local allDevDiff = {}
+        local map_cfgs = mtkwifi.load_profile(mtkwifi.__read_easymesh_profile_path())
+        local first_card_cfgs = mtkwifi.load_profile(mtkwifi.detect_first_card())
+        local appliedMapDiffTable = mtkwifi.diff_profile(mtkwifi.detect_first_card())
+        local appliedMapModeDiff = appliedMapDiffTable["MapMode"] and appliedMapDiffTable["MapMode"][2] or nil
+        local isMapSupported = true
+        local mapd_default_cfg = mtkwifi.load_profile("/etc/map/mapd_default.cfg")
+        local mapd_user_cfg = mtkwifi.load_profile("/etc/map/mapd_user.cfg")
+        local eth_mode = mapd_default_cfg.mode
+        if mapd_user_cfg.mode then
+            eth_mode = mapd_user_cfg.mode
+        end
+        local dpp_cfg = mtkwifi.load_profile("/etc/dpp_cfg.txt")
+    %>
+
+    <% if not l1dat or not l1 then %>
+        <fieldset class="cbi-section">
+            <legend class="alert-message error">l1profile.dat file is not available!</legend>
+        </fieldset>
+    <% else %>
+        <%
+            for idx,dev in ipairs(devs) do
+                local zone = l1.l1_path_to_zone(dev.profile)
+                local diff = mtkwifi.diff_profile(dev.profile)
+                if next(diff) ~= nil then
+                    allDevDiff[dev.devname] = diff
+                end
+                if not dev.isMultiAPSupported then
+                    isMapSupported = false
+                end
+                if zone == "dev1" then
+                    driver_cfgs = mtkwifi.load_profile(dev.profile)
+                end
+            end
+        %>
+
+        <% if not isMapSupported then %>
+            <fieldset class="cbi-section">
+                <legend class="alert-message error">EasyMesh feature is not supported for this platform!</legend>
+            </fieldset>
+        <% else %>
+
+            <% if not driver_cfgs or not map_cfgs then %>
+                <fieldset class="cbi-section">
+                    <legend class="alert-message error">Profile settings file is not available!</legend>
+                </fieldset>
+            <% else %>
+                <div class="alert-message" id="LOADING_MULTI_AP" style="display:none;">
+                    <img src="<%=resource%>/icons/loading.gif" alt="" style="vertical-align:middle" />
+                    <big><strong>Please wait.</strong></big>
+                </div>
+                <div id="MULTI_AP_SETTINGS">
+                    <fieldset class="cbi-section">
+                        <legend>EasyMesh Configurations
+
+                        </legend>
+                    </fieldset>
+                    <ul class="cbi-tabmenu">
+                        <li class="cbi-tab" id="map-cfg-tab-basic">
+                            <a href="javascript:hi('basic');this.blur();">Basic</a>
+                        </li>
+                        <% if not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then %>
+                            <li class="cbi-tab-disabled" id="map-cfg-tab-adv" style="display:none">
+                                <a href="javascript:hi('adv');this.blur();">Advanced</a>
+                            </li>
+                            <li class="cbi-tab-disabled" id="map-cfg-tab-status" style="display:none">
+                                <a href="javascript:hi('status');this.blur();">Status</a>
+                            </li>
+                            <% if cfg_1905d.map_ver ~= "R1" and cfg_1905d.map_ver ~= "R2" then %>
+                                <li class="cbi-tab-disabled" id="map-cfg-tab-priority" style="display:none">
+                                    <a href="javascript:hi('priority');this.blur();">MAP QoS</a>
+                                </li>
+                            <% end %>
+                        <% end %>
+                    </ul>
+                    <input type="hidden" name="__activeTab" id="__activeTab" value="basic">
+                    <form method="post" name="cbi" action="<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "map_cfg")%>" enctype="multipart/form-data" onsubmit="return validate_all()" autocomplete="off">
+                        <table class="cbi-section-table" id="map-cfg-basic">
+                            <tr>
+                                <td>EasyMesh Mode</td>
+                                <td>
+                                    <select name="MapMode" id="MapMode" onchange="MapMode_onchange(this.options[this.options.selectedIndex].value)">
+                                        <option value="0" <% if first_card_cfgs.MapMode == "0" then %> selected="selected" <% end %> >Disable</option>
+                                        <option value="1" <% if first_card_cfgs.MapMode == "1" then %> selected="selected" <% end %> >Map Turnkey</option>
+                                        <option value="2" <% if first_card_cfgs.MapMode == "2" then %> selected="selected" <% end %> >BS 2.0</option>
+                                        <option value="3" <% if first_card_cfgs.MapMode == "3" then %> selected="selected" <% end %> >API Mode</option>
+                                        <option value="4" <% if first_card_cfgs.MapMode == "4" then %> selected="selected" <% end %> >Cert</option>
+                                    </select>
+                                </td>
+                                <td></td>
+                            </tr>
+                            <% if bands == 3 and first_card_cfgs.MapMode == "1" then %>
+                                <tr id="triband-cfgs" style="display:none">
+                                    <td>Set High/Low Band</td>
+                                    <td colspan="2">
+                                        <input type="radio" name="TriBand" id="" value="0" <% if cfg_1905d.radio_band ~= "24G;5GH;5GL" or cfg_1905d.radio_band == "24G;5GL;5GH" then %> checked="checked" <% end %> /> Not Configured
+                                        <input type="radio" name="TriBand" id="" value="1" <% if cfg_1905d.radio_band == "24G;5GH;5GL" then %> checked="checked" <% end %> /> 5GHGL
+                                        <input type="radio" name="TriBand" id="" value="2" <% if cfg_1905d.radio_band == "24G;5GL;5GH" then %> checked="checked" <% end %> /> 5GLGH
+                                        <span style="font-size: 12px;">(Notes: 5GX5GY, X is first 5G radio band, Y is second 5G radio band)</span>
+                                    </td>
+                                </tr>
+                            <% end %>
+                            <% if first_card_cfgs.MapMode == "1" then %>
+                                <% if mapd_default_cfg.mode then %>
+                                    <tr id="device-mode" style="display:none">
+                                        <td>Set Device Mode as</td>
+                                        <td>
+                                            <select name="mode" id="mode" size="1">
+                                                <option value="0" <% if mapd_user_cfg.mode == "0" then %> selected="selected" <% end %> >Auto</option>
+                                                <option value="1" <% if mapd_user_cfg.mode == "1" then %> selected="selected" <% end %> >Router</option>
+                                                <option value="2" <% if mapd_user_cfg.mode == "2" then %> selected="selected" <% end %> >Bridge</option>
+                                            </select>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    <tr id="current-device-mode" style="display:none">
+                                        <td>Current Device Mode</td>
+                                        <td>
+                                            <span><strong id="current-dev-mode">Not configured</strong></span>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                <% end %>
+                                <tr id="device-role" style="display:none">
+                                    <td>Set Device Role as</td>
+                                    <td>
+                                        <select name="DeviceRole" id="DeviceRole" size="1" onchange="DeviceRole_onchange(this.options[this.options.selectedIndex].value)">
+                                            <option value="0" <% if map_cfgs.DeviceRole == "0" then %> selected="selected" <% end %> >Auto</option>
+                                            <option value="1" <% if map_cfgs.DeviceRole == "1" then %> selected="selected" <% end %> >Controller</option>
+                                            <option value="2" <% if map_cfgs.DeviceRole == "2" then %> selected="selected" <% end %> >Agent</option>
+                                        </select>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr id="change-device-role" style="display:none">
+                                    <td>Change Device Role</td>
+                                    <td>
+                                        <input name="__ChangeDeviceRole" id="change-dev-role" value="" />
+                                    </td>
+                                </tr>
+                                <% if appliedMapModeDiff and appliedMapModeDiff ~= "1" and first_card_cfgs.MapMode == "1" then %>
+                                    <tr>
+                                        <td>Reset EasyMesh Settings to default</td>
+                                        <td colspan="2">
+                                            <input class="cbi-button cbi-button-reset" type="button" value="Load Default Settings" id="resetMap" onClick="resetToDefaultEasyMesh()" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                    <td class="alert-message" colspan="3">
+                                        <strong>
+                                                EasyMesh has not been enabled yet!<br />
+                                                Please click on <em>Save and Apply</em> button to enable the EasyMesh.
+                                        </strong>
+                                    </td>
+                                    </tr>
+                                <% end %>
+                                <% if appliedMapModeDiff and appliedMapModeDiff == "1" and first_card_cfgs.MapMode ~= "1" then %>
+                                    <tr>
+                                        <td>Reset EasyMesh Settings to default</td>
+                                        <td colspan="2">
+                                            <input class="cbi-button cbi-button-reset" type="button" value="Load Default Settings" id="resetMap" onClick="resetToDefaultEasyMesh()" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                    <td class="alert-message" colspan="3">
+                                        <strong>
+                                                EasyMesh has not been disabled yet!<br />
+                                                Please click on <em>Save and Apply</em> button to disable the EasyMesh.
+                                        </strong>
+                                    </td>
+                                    </tr>
+                                <% end %>
+                                <% if not appliedMapModeDiff and first_card_cfgs.MapMode ~= "1" then %>
+                                    <tr>
+                                        <td>Reset EasyMesh Settings to default</td>
+                                        <td colspan="2">
+                                            <input class="cbi-button cbi-button-reset" type="button" value="Load Default Settings" id="resetMap" onClick="resetToDefaultEasyMesh()" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                    <td class="alert-message" colspan="3">
+                                        <strong>
+                                                Other EasyMesh related settings will be displayed only after enabling EasyMesh!<br />
+                                                Please check Enable radio button of EasyMesh and then click on <em>Save and Apply</em> button to enable EasyMesh.
+                                        </strong>
+                                    </td>
+                                    </tr>
+                                <% end %>
+                            <% end %>
+                            <% if not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then %>
+                                <tr id="current-device-role" style="display:none">
+                                    <td>Current Device Role</td>
+                                    <td>
+                                        <span><strong id="current-dev-role">Not configured</strong></span>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tbody id="map-cfg-back-haul-connection-status-settings" style="display:none">
+                                    <tr>
+                                        <td>Back-haul Connection Status </td>
+                                        <td>
+                                            <span id="back-haul-connection-status"</span>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                                <tr id="reset-defaults" style="display:none">
+                                    <td>Reset EasyMesh Settings to default</td>
+                                    <td colspan="2">
+                                        <input class="cbi-button cbi-button-reset" type="button" value="Load Default Settings" id="resetMap" onClick="resetToDefaultEasyMesh()" />
+                                    </td>
+                                </tr>
+                                <tbody id="on-boarding" style="display:none">
+                                    <tr>
+                                        <td rowspan="2" style="vertical-align:middle">PBC On-boarding</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2">
+                                            <input class="cbi-button cbi-button-apply" type="button" id="multi-ap-on-board-btn" value="Trigger Wi-Fi On-boarding" onClick="triggerMultiApOnBoarding()" />
+                                            <span> (Wi-Fi will select the back-haul band automatically) </span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tbody id="add-dpp-uri" style="display:none">
+                                    <tr>
+                                        <td rowspan="2" style="vertical-align:middle">Add DPP URI</td>
+                                        <td colspan="2">
+                                            <input id="dpp-uri" value="" name="dpp-uri"></input>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2">
+                                            <input class="cbi-button cbi-button-apply" type="button" id="submit-dpp-uri" value="Submit DPP URI" onClick="addDPPURI()" />
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tbody id="display-bootstrapping-uri" style="display:none">
+                                    <tr>
+                                        <td rowspan="2" style="vertical-align:middle">Display Bootstrapping URIs</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2">
+                                            <input class="cbi-button cbi-button-apply" type="button" id="display-bootstrapping-uri" value="Display Bootstrapping URIs" onClick="visit_url('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "display_bootstrapping_uri")%>')" />
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tbody id="dpp-onboarding" style="display:none">
+                                    <tr>
+                                        <td rowspan="2" style="vertical-align:middle">DPP Onboarding</td>
+                                    </tr>
+                                    <tr>
+                                        <td >
+                                            <input class="cbi-button cbi-button-apply" type="button" id="start-dpp-onboarding" value="Start DPP Onboarding" onClick="visit_url('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "start_dpp_onboarding")%>')" />
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tbody id="generate-dpp-uri" style="display:none">
+                                    <tr>
+                                        <td rowspan="2" style="vertical-align:middle">Generate DPP URI</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2">
+                                            <input class="cbi-button cbi-button-apply" type="button" id="generate-dpp-uri" value="Generate DPP URI" onClick="visit_url('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "generate_dpp_uri")%>')" />
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tbody id="retrive-dpp-uri" style="display:none">
+                                    <tr>
+                                        <td rowspan="3" style="vertical-align:middle">Retrive DPP URI</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2">
+                                            <input class="cbi-button cbi-button-apply" type="button" id="retrive-dpp-uri" value="Retrive DPP URI" onClick="retriveDPPURI()" />
+                                        </td>
+                                    </tr>
+                                    <tr >
+                                        <td rowspan="2" colspan="2" >
+                                            <input type="text" id="show-retrive-dpp-uri" value="Show DPP URI"  />
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <% if cfg_1905d.map_ver ~= "R1" and cfg_1905d.map_ver ~= "R2" then %>
+                                    <tr id="MeshSREnable" style="display:none" >
+                                        <td>Mesh SR</td>
+                                        <td>
+                                            <input type="radio" name="MeshSREnable" value="1" <% if mapd_user_cfg.MeshSREnable == "1" then %> checked="checked"<% end %> /> Enable
+                                            <input type="radio" name="MeshSREnable" value="0" <% if mapd_user_cfg.MeshSREnable == "0" then %> checked="checked"<% end %> /> Disable
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                               <% end %>
+                                <tr id="current-dev-role-during-not-configured-msg">
+                                   <td class="alert-message" colspan="3">
+                                       <strong>
+                                            Other EasyMesh related settings will be displayed once Device Role is configured.
+                                       </strong>
+                                   </td>
+                                </tr>
+                                <tbody id="map-cfg-basic-dev-role-configured-settings" style="display:none">
+                                    <tr id="runtime-topo" style="display:none">
+                                        <td>Runtime Topology</td>
+                                        <td colspan="2">
+                                            <input class="cbi-button cbi-button-apply" type="button" id="display-runtime-topology-btn" value="Display Runtime Topology" onClick="displayRuntimeTopology()" />
+                                        </td>
+                                    </tr>
+                                    <tr id="steering" style="display:none">
+                                        <td>Steering</td>
+                                        <td>
+                                            <input type="radio" name="SteerEnable" id="SteerEnable" value="1" <% if map_cfgs.SteerEnable == "1" then %> checked="checked"<% end %> /> Enable
+                                            <input type="radio" name="SteerEnable" id="SteerEnable" value="0" <% if map_cfgs.SteerEnable ~= "1" then %> checked="checked"<% end %> /> Disable
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    <tbody id="map-cfg-basic-wireless-bh-preference" style="display:none">
+                                        <% if bands == 3 then %>
+                                            <tr>
+                                                <td rowspan="4" style="vertical-align:middle">Wireless Back-haul Preference</td>
+                                                <td>
+                                                    <span>2G</span>
+                                                </td>
+                                                <td>
+                                                    <select name="BhPriority2G" id="BhPriority2G" size="1">
+                                                        <option value="0" <% if map_cfgs.BhPriority2G == "0" then %> selected="selected" <% end %>>Disable</option>
+                                                        <option value="1" <% if map_cfgs.BhPriority2G == "1" then %> selected="selected" <% end %>>High</option>
+                                                        <option value="2" <% if map_cfgs.BhPriority2G == "2" then %> selected="selected" <% end %>>Medium</option>
+                                                        <option value="3" <% if map_cfgs.BhPriority2G == "3" then %> selected="selected" <% end %>>Low</option>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <span>5GH</span>
+                                                </td>
+                                                <td>
+                                                    <select name="BhPriority5GH" id="BhPriority5GH" size="1">
+                                                        <option value="0" <% if map_cfgs.BhPriority5GH == "0" then %> selected="selected" <% end %>>Disable</option>
+                                                        <option value="1" <% if map_cfgs.BhPriority5GH == "1" then %> selected="selected" <% end %>>High</option>
+                                                        <option value="2" <% if map_cfgs.BhPriority5GH == "2" then %> selected="selected" <% end %>>Medium</option>
+                                                        <option value="3" <% if map_cfgs.BhPriority5GH == "3" then %> selected="selected" <% end %>>Low</option>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <span>5GL</span>
+                                                </td>
+                                                <td>
+                                                    <select name="BhPriority5GL" id="BhPriority5GL" size="1">
+                                                        <option value="0" <% if map_cfgs.BhPriority5GL == "0" then %> selected="selected" <% end %>>Disable</option>
+                                                        <option value="1" <% if map_cfgs.BhPriority5GL == "1" then %> selected="selected" <% end %>>High</option>
+                                                        <option value="2" <% if map_cfgs.BhPriority5GL == "2" then %> selected="selected" <% end %>>Medium</option>
+                                                        <option value="3" <% if map_cfgs.BhPriority5GL == "3" then %> selected="selected" <% end %>>Low</option>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="2">
+                                                    <input class="cbi-button cbi-button-apply" type="button" id="apply-triband-bh-priority-btn" value="Apply Wireless Back-haul Priority" onClick="applyTriBandBhPriority()" />
+                                                </td>
+                                            </tr>
+                                        <% else %>
+                                            <tr>
+                                                <td rowspan="4" style="vertical-align:middle">Wireless Back-haul Preference</td>
+                                                <td>
+                                                    <span>2G</span>
+                                                </td>
+                                                <td>
+                                                    <select name="BhPriority2G" id="BhPriority2G" size="1">
+                                                        <option value="0" <% if map_cfgs.BhPriority2G == "0" then %> selected="selected" <% end %>>Disable</option>
+                                                        <option value="1" <% if map_cfgs.BhPriority2G == "1" then %> selected="selected" <% end %>>High</option>
+                                                        <option value="2" <% if map_cfgs.BhPriority2G == "2" then %> selected="selected" <% end %>>Medium</option>
+                                                        <option value="3" <% if map_cfgs.BhPriority2G == "3" then %> selected="selected" <% end %>>Low</option>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <span>5G</span>
+                                                </td>
+                                                <td>
+                                                    <select name="BhPriority5GL" id="BhPriority5GL" size="1">
+                                                        <option value="0" <% if map_cfgs.BhPriority5GL == "0" then %> selected="selected" <% end %>>Disable</option>
+                                                        <option value="1" <% if map_cfgs.BhPriority5GL == "1" then %> selected="selected" <% end %>>High</option>
+                                                        <option value="2" <% if map_cfgs.BhPriority5GL == "2" then %> selected="selected" <% end %>>Medium</option>
+                                                        <option value="3" <% if map_cfgs.BhPriority5GL == "3" then %> selected="selected" <% end %>>Low</option>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="2">
+                                                    <input class="cbi-button cbi-button-apply" type="button" id="apply-bh-priority-btn" value="Apply Wireless Back-haul Priority" onClick="applyBhPriority()" />
+                                                </td>
+                                            </tr>
+                                        <% end %>
+                                    </tbody>
+                                </tbody>
+                            <% end %> <!-- if not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then -->
+                        </table>
+                        <% if not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then %>
+                            <table class="cbi-section-table" id="map-cfg-adv" style="display:none">
+                                <tbody>
+                                    <tr>
+                                        <td>AL_MAC</td>
+                                        <td>
+                                            <span id="al_mac"></span>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Up-link AP Selection</td>
+                                        <td colspan="2">
+                                            <input class="cbi-button cbi-button-apply" type="button" id="uplink-ap-selection-btn" value="Trigger Up-link AP Selection" onClick="triggerUplinkApSelection()" />
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tbody id="map-cfg-adv-controller-settings">
+                                    <% if cfg_1905d.map_ver ~= "R1" then %>
+                                        <tr>
+                                            <td rowspan="2" style="vertical-align:middle">Channel Statistics</td>
+                                            <td>
+                                                <select id="get-devices" size="1" style="width:100%">
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input class="cbi-button cbi-button-apply" type="button" value="Trigger Channel Scan" onClick="triggerChannelScan()" />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2">
+                                                <input class="cbi-button cbi-button-apply" type="button" id="display_channel_scan_btn" value="Display Channel Scan Result" onclick="displayChannelScanResult()">
+                                            </td>
+                                        </tr>
+                                    <% end %>
+                                    <tr>
+                                        <td>BSS Configurations Renew</td>
+                                        <td>
+                                            <input class="cbi-button cbi-button-edit" type="button" value="Configure BSS" onClick="configBss()" />
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td rowspan="4"  style="vertical-align:middle">Channel Utilization Threshold</td>
+                                        <td>
+                                            <span>2G</span>
+                                        </td>
+                                        <td>
+                                            <input type="text" id="CUOverloadTh_2G" name="CUOverloadTh_2G" value="<%=map_cfgs.CUOverloadTh_2G%>" />
+                                            <span> Range: 0 to 100 %</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <span>5GL</span>
+                                        </td>
+                                        <td>
+                                            <input type="text" id="CUOverloadTh_5G_L" name="CUOverloadTh_5G_L" value="<%=map_cfgs.CUOverloadTh_5G_L%>" />
+                                            <span> Range: 0 to 100 %</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <span>5GH</span>
+                                        </td>
+                                        <td>
+                                            <input type="text" id="CUOverloadTh_5G_H" name="CUOverloadTh_5G_H" value="<%=map_cfgs.CUOverloadTh_5G_H%>" />
+                                            <span> Range: 0 to 100 %</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2">
+                                            <input class="cbi-button cbi-button-apply" type="button" id="apply-channel-utilization-th-btn" value="Apply Channel Utilization Threshold" onClick="applyChannelUtilizationTh()" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td rowspan="2"  style="vertical-align:middle">AP Steering RSSI Threshold</td>
+                                        <td>
+                                            <input type="text" id="APSteerRssiTh" name="APSteerRssiTh" value="<%=map_cfgs.APSteerRssiTh%>" />
+                                            <span> Range: -90 to 0 Unit: dbm</span>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2">
+                                            <input class="cbi-button cbi-button-apply" type="button" id="apply-rssi-th-btn" value="Apply RSSI Threshold" onClick="applyRssiTh()" />
+                                        </td>
+                                    </tr>
+                                        <tr><td rowspan="1" style="vertical-align:middle">User Preferred Channel</td>
+                                            <td>
+                                                <select id="get-preferred-channel" size="1" style="width:100%">
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input class="cbi-button cbi-button-apply" type="button" title="User Preferred Channel takes precedence over Channel Planning " value="Apply User Preferred Channel" onClick="applyUserPreferredChannel()" />
+                                            </td>
+                                        </tr>
+                                    <tr><td rowspan="2" style="vertical-align:middle">Channel Planning</td>
+                                        <td>Channel</td>
+                                        <td>
+                                            <input type="text" id="channel-setting" name="channel_setting" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2">
+                                            <input class="cbi-button cbi-button-apply" type="button" id="apply-channel-setting-btn" value="Apply Channel setting" onClick="applyChannelSetting_plan()" />
+                                        </td>
+                                    </tr>
+                                    <% if cfg_1905d.map_ver ~= "R1" then %>
+                                        <tr><td rowspan="2" style="vertical-align:middle">Channel Planning R2</td>
+                                            <td>
+                                                <select id="ch-band">
+                                                    <option value="">Choose Band</option>
+                                                    <option value="1">2G</option>
+                                                    <% if bands == 3 then %>
+                                                        <option value="2">5GL</option>
+                                                        <option value="3">5GH</option>
+                                                    <% else %>
+                                                        <option value="2">5G</option>
+                                                    <% end %>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input class="cbi-button cbi-button-apply" type="button" value="Trigger Channel Planning R2" onClick="triggerChannelPlanningR2()" />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input class="cbi-button cbi-button-apply" type="button" id="display-channel-setting-r2-btn" value="Display Channel Scan Result" onClick="displayChannelScanResult()"/>
+                                            </td>
+                                            <td>
+                                                <input class="cbi-button cbi-button-apply" type="button" id="display-channel-planning-score-btn" value="Display Channel Planning Score" onClick="displayChannelPlanningScore()"/>
+                                            </td>
+                                        </tr>
+                                    <% end %>
+                                    <% if bands == 3 then %>
+                                        <tr>
+                                            <td rowspan="5" style="vertical-align:middle">Channel Force Switching </td>
+                                            <td>Target  AL-MAC</td>
+                                            <td>
+                                                <input type="text" id="mandate-steering-agent-almac" />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>2G Channel</td>
+                                            <td>
+                                                <input type="text" id="channel-setting-2g" name="channel_setting" />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>5GH Channel</td>
+                                            <td>
+                                                <input type="text" id="channel-setting-5gh" name="channel_setting_5gh" />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>5GL Channel</td>
+                                            <td>
+                                                <input type="text" id="channel-setting-5gl" name="channel_setting_5gl" />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2">
+                                                <input class="cbi-button cbi-button-apply" type="button" id="apply-channel-setting_forswitch-btn" value="Apply Channel setting" onClick="applyTriBandChannelSetting_forceswitch()" />
+                                           </td>
+                                        </tr>
+                                    <% else %>
+                                        <tr>
+                                            <td rowspan="4" style="vertical-align:middle">Channel Force Switching </td>
+                                            <td>Target  AL-MAC</td>
+                                            <td>
+                                                <input type="text" id="mandate-steering-agent-almac" />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>2G Channel</td>
+                                            <td>
+                                                <input type="text" id="channel-setting-2g" name="channel_setting" />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>5G Channel</td>
+                                            <td>
+                                                <input type="text" id="channel-setting-5gl" name="channel_setting" />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2">
+                                                <input class="cbi-button cbi-button-apply" type="button" id="apply-channel-setting_forswitch-btn" value="Apply Channel setting" onClick="applyChannelSetting_forceswitch()" />
+                                            </td>
+                                        </tr>
+                                    <% end %>
+                                    <tr>
+                                        <td rowspan="3" style="vertical-align:middle">Mandate Steering on Agent</td>
+                                        <td>STA MAC</td>
+                                        <td>
+                                            <input type="text" id="mandate-steering-agent-sta-mac" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Target BSSID</td>
+                                        <td>
+                                            <input type="text" id="mandate-steering-agent-target-bssid" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2">
+                                            <input class="cbi-button cbi-button-apply" type="button" id="mandate-steering-agent-apply" value="Trigger Mandate Steering on Agent" onClick="triggerMandateSteeringOnAgent()" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td rowspan="3" style="vertical-align:middle">Back-haul Steering</td>
+                                        <td>Back-haul MAC</td>
+                                        <td>
+                                            <input type="text" id="back-haul-steering-mac" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Target BSSID</td>
+                                        <td>
+                                            <input type="text" id="back-haul-steering-target-bssid" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2">
+                                            <input class="cbi-button cbi-button-apply" type="button" id="back-haul-steering-apply" value="Trigger Back-haul Steering" onClick="triggerBackHaulSteering()" />
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tbody>
+                                    <tr>
+                                        <td rowspan="2" style="vertical-align:middle">Trigger WPS at front-haul BSS of an Agent</td>
+                                        <td>Agent AL-MAC</td>
+                                        <td>
+                                            <input type="text" id="trigger-wps-fh-agent-al-mac" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2">
+                                            <input class="cbi-button cbi-button-apply" type="button" id="trigger-wps-fh-agent-apply" value="Trigger WPS at Front-haul BSS of an Agent" onClick="triggerWpsFhAgent()" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Front-haul status per BSS</td>
+                                        <td>
+                                            <input class="cbi-button cbi-button-apply" type="button" id="disp-fh-status-bss" value="Display Front-haul Status per BSS" onClick="dispFhStatusBss()" />
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Back-haul Link Metrics at Controller</td>
+                                        <td>
+                                            <input class="cbi-button cbi-button-apply" type="button" id="disp-bh-link-metrics-ctrler" value="Display Back-haul Link Metrics at Controller" onClick="dispBhLinkMetricsCtrler()" />
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        <% end %> <!-- if not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then -->
+                        <% if not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then %>
+                            <table class="cbi-section-table" id="map-cfg-status" style="display:none">
+                                <tr>
+                                    <td>STA Steering Progress</td>
+                                    <td>
+                                        <span id="sta-steering-progress"></span>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>Station Back-haul Interface</td>
+                                    <td>
+                                        <ul id="sta-bh-inf-ul"></ul>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td style="vertical-align:middle">AP Back-haul Interface List</td>
+                                    <td>
+                                        <ul id="ap-bh-inf-list-ul"></ul>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td style="vertical-align:middle">AP Front-haul Interface List</td>
+                                    <td>
+                                        <ul id="ap-fh-inf-list-ul"></ul>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>AP Capabilities</td>
+                                    <td colspan="2">
+                                        <input class="cbi-button cbi-button-apply" type="button" id="ap-db-btn" value="Display AP Capabilities" onClick="displayApCapabilities()" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Client Capabilities</td>
+                                    <td colspan="2">
+                                        <input class="cbi-button cbi-button-apply" type="button" id="client-db-btn" value="Display Client Capabilities" onClick="displayClientCapabilities()" />
+                                    </td>
+                                </tr>
+                            </table>
+                        <% end %> <!-- if not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then -->
+
+                        <% if cfg_1905d.map_ver ~= "R1" and cfg_1905d.map_ver ~= "R2" and not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then %>
+                            <div class = "service_prioritization" id = "service_prioritization" style="display:none">
+                                <table class="sp_table" id="map-cfg-priority">
+                                    <tr>
+                                        MAP QoS(Service Prioritization) rule list
+                                    </tr>
+                                    <tr>
+                                        <th style="width:20px;">Index</th>
+                                        <th style="width:50px;">Name</th>
+                                        <th style="width:70px;">SSID</th>
+
+                                        <th style="width:70px;">Client MAC</th>
+                                        <th style="width:20px;">Protocol</th>
+                                        <th style="width:50px;">Dest IP</th>
+                                        <th style="width:50px;">Src IP</th>
+
+                                        <th style="width:20px;">Dest Port</th>
+                                        <th style="width:20px;">Src Port</th>
+                                        <th style="width:20px;">Priority</th>
+                                        <th style="width:20px;">Operation</th>
+                                    </tr>
+                                    <tbody id="sp_tabletext">
+
+                                    </tbody>
+                                </table>
+                                <div>
+                                    <input type="button" value="Add Rule" id="add-sp-rule" class="cbi-button cbi-button-apply"/>
+                                    <input type="button" value="Apply Rule" id="apply-sp-config" class="cbi-button cbi-button-apply"/>
+                                </div>
+                                <div id="sp-form-edit" class="sp-form">
+                                    <div class="sp-form-title">
+                                        <span id='dialog_txt'>Add Service Prioritization Rule</span>
+                                        <div id="sp-form-exit">x</div>
+                                    </div>
+                                    <div class="sp-form-item">
+                                        <label class="lb" for="rule_index">index:</label>
+                                        <select name="index" id = "rule_index">
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                            <option value="6">6</option>
+                                            <option value="7">7</option>
+                                            <option value="8">8</option>
+                                            <option value="9">9</option>
+                                            <option value="10">10</option>
+                                            <option value="11">11</option>
+                                            <option value="12">12</option>
+                                            <option value="13">13</option>
+                                            <option value="14">14</option>
+                                            <option value="15">15</option>
+                                            <option value="16">16</option>
+                                            <option value="17">17</option>
+                                            <option value="18">18</option>
+                                            <option value="19">19</option>
+                                            <option value="20">20</option>
+                                            <option value="21">21</option>
+                                            <option value="22">22</option>
+                                            <option value="23">23</option>
+                                            <option value="24">24</option>
+                                            <option value="25">25</option>
+                                            <option value="26">26</option>
+                                            <option value="27">27</option>
+                                            <option value="28">28</option>
+                                            <option value="29">29</option>
+                                            <option value="30">30</option>
+                                            <option value="31">31</option>
+                                            <option value="32">32</option>
+                                        </select><br /> <br />
+                                    </div>
+                                    <div class="sp-form-item">
+                                        <label class="lb" for="rule_name">name:</label>
+                                        <input type="text" name="name" id="rule_name" value="" placeholder="please input rule name"/><br /><br />
+                                    </div>
+                                    <div class="sp-form-item">
+                                        <label class="lb" for="ssid">SSID:</label>
+                                        <input type="text" name="ssid" id="ssid" value=""/><br /><br />
+                                    </div>
+                                    <div class="sp-form-item">
+                                        <label class="lb" for="client_mac">Client MAC:</label>
+                                        <input type="text" name="client_mac" id="client_mac" value=""/><br /><br />
+                                    </div>
+                                    <div class="sp-form-item">
+                                        <label class="lb" for="protocol">Protocol:</label>
+                                        <select name="protocol" id = "protocol">
+                                            <option value="" selected="selected"></option>
+                                            <option value="IGMP">IGMP</option>
+                                            <option value="ICMP">ICMP</option>
+                                            <option value="TCP">TCP</option>
+                                            <option value="UDP">UDP</option>
+                                        </select><br /> <br />
+                                    </div>
+                                    <div class="sp-form-item">
+                                        <label class="lb" for="dst_ip">Destination IP Address:</label>
+                                        <input type="text" name="dst_ip" id="dst_ip" value=""/><br /><br />
+                                    </div>
+                                    <div class="sp-form-item">
+                                        <label class="lb" for="src_ip">Source IP Address:</label>
+                                        <input type="text" name="src_ip" id="src_ip" value=""/><br /><br />
+                                    </div>
+                                    <div class="sp-form-item">
+                                        <label class="lb" for="dst_port">Destination Port:</label>
+                                        <input type="number" min="1" max="65535" name="dst_port" id="dst_port" value=""/><br /><br />
+                                    </div>
+                                    <div class="sp-form-item">
+                                        <label class="lb" for="sr_port">Source Port:</label>
+                                        <input type="number" min="1" max="65535" name="srcc_port" id="src_port" value=""/><br /><br />
+                                    </div>
+                                    <div class="sp-form-item">
+                                        <label class="lb" for="priority">Priority:</label>
+                                        <select name="priority" id = "priority">
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                            <option value="6">6</option>
+                                            <option value="7">7</option>
+                                        </select><br /> <br />
+                                    </div>
+                                  <div class="sp-form-submit">
+                                    <input type="button" value="OK" id="sp-btnAdd">
+                                  </div>
+                                </div>
+                            </div>
+                        <% end %> <!-- if cfg_1905d.map_ver ~= "R1" and cfg_1905d.map_ver ~= "R2" and not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then -->
+
+                        <div class="cbi-page-actions" id="multi_ap_form_action_btns">
+                            <input class="cbi-button cbi-button-apply" name="__apply" value="Save and Apply" type="submit" />
+                            <input class="cbi-button cbi-button-apply" value="Save" type="submit" />
+                            <input class="cbi-button cbi-button-reset" value="Reset" type="reset" />
+                        </div>
+                    </form>
+                </div>
+
+                <script>
+                    <% if cfg_1905d.map_ver ~= "R1" and cfg_1905d.map_ver ~= "R2" then %>
+                        $(document).ready(function () {
+                            $("#add-sp-rule").click(function () {
+                                $("#sp-form-edit").show();
+                                $("#rule_index").attr("disabled","");
+                                $("#rule_index").removeAttr("disabled");
+                                $("#dialog_txt").text("Add Service Prioritization Rule");
+                                $("#priority").val("7");
+                            });
+                            $("#sp-form-exit").click(function () {
+                                $("#sp-form-edit").hide();
+                            });
+                            $("#sp-btnAdd").click(function () {
+                                var reg;
+                                var exp_ip = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/;
+                                var exp_mac = /^([a-fA-F0-9]{2}:){5}([a-fA-F0-9]{2})$/;
+                                var txtname = $("#rule_name").val();
+                                if (txtname == "") {
+                                    alert("rule_name should not be empty");
+                                    return;
+                                }
+                                if (txtname.length > 32) {
+                                    alert("rule_name length should not larger than 32");
+                                    return;
+                                }
+                                var index = $("#rule_index").val();
+                                var ssid = $("#ssid").val();
+                                if (ssid.length > 32) {
+                                    alert("ssid length should not larger than 32");
+                                    return;
+                                }
+                                var client_mac = $("#client_mac").val();
+                                if (client_mac != "") {
+                                    reg = client_mac.match(exp_mac);
+                                    if (reg == null) {
+                                        alert("client mac address is invalid");
+                                        return;
+                                    }
+                                }
+                                var protocol = $("#protocol").val();
+                                if (protocol == null){
+                                    protocol = ""
+                                }
+                                var dst_ip = $("#dst_ip").val();
+                                if (dst_ip != "") {
+                                    reg = dst_ip.match(exp_ip);
+                                    if (reg == null) {
+                                        alert("destination ip address is invalid");
+                                        return;
+                                    }
+                                }
+                                var src_ip = $("#src_ip").val();
+                                if (src_ip) {
+                                    reg = src_ip.match(exp_ip);
+                                    if (reg == null) {
+                                        alert("source ip address is invalid");
+                                        return;
+                                    }
+                                }
+                                var dst_port = $("#dst_port").val();
+                                if (dst_port > 65535) {
+                                    alert("destination port should not larger than 65535");
+                                    return;
+                                }
+                                var src_port = $("#src_port").val();
+                                if (src_port > 65535) {
+                                    alert("source port should not larger than 65535");
+                                    return;
+                                }
+                                var priority = $("#priority").val();
+                                if (ssid == "" && client_mac == "" && protocol == "" && dst_ip =="" &&
+                                    src_ip == "" && dst_port == "" && src_port == "") {
+                                    alert("All conditions are empty, please fill at lease one condition");
+                                    return;
+                                }
+                                var str_rule = index + '.' + txtname + ':[]+[' + ssid + ']' + '+[' + client_mac + ']'
+                                    + '+[' + protocol + ']' + '+[' + dst_ip + ']' + '+[' + src_ip + ']' + '+[' + dst_port + ']'
+                                    + '+[' + src_port + ']=' + priority;
+                                //alert(str_rule);
+                                sp_rule_add(str_rule);
+                                $("#sp-form-edit").hide();
+                            });
+                            $("#apply-sp-config").click(function () {
+                                apply_sp_config();
+                                alert("All rules have been applied");
+                            });
+                        });
+                        function sp_init() {
+                            var curDevRole = document.getElementById("current-dev-role").innerHTML;
+
+                            if (curDevRole != "Controller") {
+                                $("#add-sp-rule").hide();
+                                $("#apply-sp-config").hide();
+                                return;
+                            }
+                            $("#add-sp-rule").show();
+                            $("#apply-sp-config").show();
+                            //alert("ready");
+                            $("#sp_tabletext").on("click",".del",function(){
+                                //$(this).parent().parent().remove();
+                                var text = $(this).parent().parent().children("td").eq(0).text();
+                                //alert(text);
+                                sp_rule_del(text);
+                                alert("Rule has been deleted");
+                            });
+                            $("#sp_tabletext").on("click",".up",function(){
+                                //$(this).parent().parent().remove();
+                                var cur_idx = $(this).parent().parent().children("td").eq(0).text();
+                                //alert(cur_idx);
+                                sp_rule_move(cur_idx, 0);
+                            });
+                            $("#sp_tabletext").on("click",".down",function(){
+                                //$(this).parent().parent().remove();
+                                var cur_idx = $(this).parent().parent().children("td").eq(0).text();
+
+                                //alert(cur_idx);
+                                sp_rule_move(cur_idx, 1);
+                            });
+                            $("#sp_tabletext").on("click",".modify",function(){
+                                //$(this).parent().parent().remove();
+                                var cur_idx = $(this).parent().parent().children("td").eq(0).text();
+                                $("#sp-form-edit").show();
+                                $("#dialog_txt").text("Modify Service Prioritization Rule");
+                                $("#rule_index").val(cur_idx);
+                                $("#rule_index").attr("disabled","disabled");
+                                $("#rule_name").val($(this).parent().parent().children("td").eq(1).text());
+                                $("#ssid").val($(this).parent().parent().children("td").eq(2).text());
+                                if ($("#ssid").val() == "-")
+                                    $("#ssid").val("");
+                                $("#client_mac").val($(this).parent().parent().children("td").eq(3).text());
+                                if ($("#client_mac").val() == "-")
+                                    $("#client_mac").val("");
+                                $("#protocol").val($(this).parent().parent().children("td").eq(4).text());
+                                if ($("#protocol").val() == "-")
+                                    $("#protocol").val("");
+                                $("#dst_ip").val($(this).parent().parent().children("td").eq(5).text());
+                                if ($("#dst_ip").val() == "-")
+                                    $("#dst_ip").val("");
+                                $("#src_ip").val($(this).parent().parent().children("td").eq(6).text());
+                                if ($("#src_ip").val() == "-")
+                                    $("#src_ip").val("");
+                                $("#dst_port").val($(this).parent().parent().children("td").eq(7).text());
+                                if ($("#dst_port").val() == "-")
+                                    $("#dst_port").val("");
+                                $("#src_port").val($(this).parent().parent().children("td").eq(8).text());
+                                if ($("#src_port").val() == "-")
+                                    $("#src_port").val("");
+                                $("#priority").val($(this).parent().parent().children("td").eq(9).text());
+                            });
+                        }
+                        function sp_rule_add(str_rule) {
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "add_sp_rule")%>' + '/' + str_rule, null,
+                                function(x)
+                                {
+                                    get_sp_rule_list();
+                                }
+                            );
+                        }
+                        function sp_rule_del(index) {
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "del_sp_rule")%>' + '/' + index, null,
+                                function(x)
+                                {
+                                    get_sp_rule_list();
+                                }
+                            );
+                        }
+                        function sp_rule_move(org_index, action) {
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "sp_rule_move")%>' + '/' + org_index + '/' + action, null,
+                                function(x)
+                                {
+                                    get_sp_rule_list();
+                                }
+                            );
+                        }
+                        function sp_rule_move(org_index, action) {
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "sp_rule_move")%>' + '/' + org_index + '/' + action, null,
+                                function(x)
+                                {
+                                    get_sp_rule_list();
+                                }
+                            );
+                        }
+                        function apply_sp_config() {
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "sp_config_done")%>', null,
+                                function(x)
+                                {
+                                    get_sp_rule_list();
+                                }
+                            );
+                        }
+                        function get_sp_rule_list()
+                        {
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "get_sp_rule_list")%>', null,
+                                function(x)
+                                {
+                                    console.log(x);
+                                    var curDevRole = document.getElementById("current-dev-role").innerHTML;
+                                    var rules_json = JSON.parse(x.response);
+                                    var rules = rules_json.rules;
+                                    console.log(rules);
+                                    var resultS2;
+                                    var patt = new RegExp("([0-9]+)\\.([^:\\+]*):\\[([0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2})*\\]\\+\\[([^\\+]*)\\]\\+\\[([0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2}:[0-9a-f]{2})*\\]\\+\\[([^\\+]*)\\]\\+\\[([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})*\\]\\+\\[([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})*\\]\\+\\[([0-9]{0,5})\\]\\+\\[([0-9]{0,5})\\]=([0-9])","g");
+                                    var str = "";
+                                    console.log(rules);
+                                    var element;
+
+                                    while ((resultS2 = patt.exec(rules)) !== null) {
+                                        console.log(resultS2);
+                                        str += "<tr onmouseover=\"this.style.backgroundColor='#ffff66';\" onmouseout=\"this.style.backgroundColor='#d4e3e5';\">"
+                                        for (var i = 1; i <= 11; i++) {
+                                            if (i == 3)
+                                                continue;
+                                            if (resultS2[i] == undefined || resultS2[i] == "")
+                                                element = "-";
+                                            else
+                                                element = resultS2[i];
+
+                                            str += "<td>" + element + "</td>";
+                                        }
+                                        if(curDevRole == "Controller")
+                                            str += "<td><a href=\"#\" class=\"del\"><u>del</u> </a><a href=\"#\" class=\"up\"><u>up</u></a> <a href=\"#\" class=\"down\"><u>down</u></a> <a href=\"#\" class=\"modify\"><u>modify</u></a></td></tr>";
+                                        else
+                                            str += "</tr>";
+                                        console.log(str);
+                                    }
+                                    $("#sp_tabletext").html(str);
+                                }
+                            );
+                        }
+                    <% end %> <!-- if cfg_1905d.map_ver ~= "R1" and cfg_1905d.map_ver ~= "R2" then -->
+
+                    function MapMode_onchange(mode)
+                    {
+                        var cfgs_to_display = [];
+                        var cfgs_table_id_list = ["triband-cfgs", "device-role", "device-mode", "current-device-mode", "reset-defaults", "current-device-role", "on-boarding", "add-dpp-uri", "display-bootstrapping-uri", "dpp-onboarding", "generate-dpp-uri", "retrive-dpp-uri","runtime-topo", "steering", "map-cfg-back-haul-connection-status-settings", "map-cfg-basic-wireless-bh-preference", "MeshSREnable"];
+
+                        switch (mode) {
+                            case "0":
+                                break;
+                            case "1":
+                                cfgs_to_display.push("triband-cfgs");
+                                cfgs_to_display.push("device-mode");
+                                cfgs_to_display.push("current-device-mode");
+                                cfgs_to_display.push("device-role");
+                                cfgs_to_display.push("reset-defaults");
+                                cfgs_to_display.push("current-device-role");
+                                cfgs_to_display.push("on-boarding");
+                                cfgs_to_display.push("runtime-topo");
+                                cfgs_to_display.push("MeshSREnable");
+                                cfgs_to_display.push("steering");
+                                cfgs_to_display.push("map-cfg-basic-wireless-bh-preference");
+                                cfgs_to_display.push("map-cfg-back-haul-connection-status-settings");
+                                if (document.getElementById("DeviceRole").value !== null) {
+                                    if (document.getElementById("DeviceRole").value == 1) {
+                                        cfgs_to_display.pop();
+                                        cfgs_to_display.pop();
+                                        <% if cfg_1905d.map_ver ~= "R1" and cfg_1905d.map_ver ~= "R2" then %>
+                                            cfgs_to_display.push("add-dpp-uri");
+                                            cfgs_to_display.push("display-bootstrapping-uri");
+                                        <% end %>
+                                    }
+                                    else if (document.getElementById("DeviceRole").value == 2) {
+                                        <% if cfg_1905d.map_ver ~= "R1" and cfg_1905d.map_ver ~= "R2" then %>
+                                            cfgs_to_display.push("dpp-onboarding");
+                                            cfgs_to_display.push("generate-dpp-uri");
+                                            cfgs_to_display.push("retrive-dpp-uri");
+                                        <% end %>
+                                    }
+                                }
+                                break;
+                            case "2":
+                                break;
+                            case "3":
+                                break;
+                            case "4":
+                                break;
+                            default:
+                                break;
+                        }
+
+                        for (tid in cfgs_table_id_list) {
+                            var tmp_tbody = document.getElementById(cfgs_table_id_list[tid])
+                            if (cfgs_to_display.indexOf(cfgs_table_id_list[tid]) != -1) {
+                                if (tmp_tbody) tmp_tbody.style.display = "";
+                            } else {
+                                if (tmp_tbody) tmp_tbody.style.display = "none";
+                            }
+                        }
+                    }
+
+                    function DeviceRole_onchange(mode)
+                    {
+                        document.getElementById("change-dev-role").value = "";
+                        <% if cfg_1905d.map_ver ~= "R1" and cfg_1905d.map_ver ~= "R2" then %>
+                            switch (mode) {
+                                case "0":
+                                    document.getElementById("change-dev-role").value = "changed";
+                                    break;
+                                case "1":
+                                    if (document.getElementById("current-dev-role").innerHTML == "Agent") {
+                                        document.getElementById("change-dev-role").value = "changed";
+                                    }
+                                    break;
+                                case "2":
+                                    if (document.getElementById("current-dev-role").innerHTML == "Controller") {
+                                        document.getElementById("change-dev-role").value = "changed";
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                        <% end %>
+                    }
+
+
+                    <% if not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then %>
+                        var get_device_role_timer_id;
+                        var get_al_mac_timer_id;
+                        var get_sta_steering_progress_timer_id;
+                        var get_bh_connection_status_timer_id;
+                    <% end %>
+
+                    function validate_all()
+                    {
+                        <% if not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then %>
+
+                            var curDevRole = document.getElementById("current-dev-role").innerHTML;
+                            if(curDevRole == "Controller"){
+                                if(!validateControllerSettings()){
+                                    return false;
+                                }
+                            }
+
+                        <% end %> <!-- if not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then -->
+
+                        document.getElementById("LOADING_MULTI_AP").style.display = "";
+                        document.getElementById("MULTI_AP_SETTINGS").style.display = "none";
+                        return true;
+                    }
+
+                    function hi(to)
+                    {
+                        var x;
+                        var tabs = [];
+                        document.getElementById("__activeTab").value = to;
+                        tabs.push("basic");
+                        <% if not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then %>
+                            tabs.push("adv");
+                            tabs.push("status");
+                            <% if cfg_1905d.map_ver ~= "R1" and cfg_1905d.map_ver ~= "R2" then %>
+                                tabs.push("priority");
+                            <% end %>
+                        <% end %>
+
+                        for (x in tabs){
+                            if (tabs[x] != to) {
+                                document.getElementById('map-cfg' + '-tab-' + tabs[x]).className = "cbi-tab-disabled";
+                                document.getElementById('map-cfg' + '-' + tabs[x]).style.display = "none";
+                            }
+                        }
+                        document.getElementById('map-cfg' + '-tab-' + to).className = "cbi-tab";
+                        document.getElementById('map-cfg' + '-' + to).style.display = "";
+                        <% if cfg_1905d.map_ver ~= "R1" and cfg_1905d.map_ver ~= "R2" then %>
+                            document.getElementById("service_prioritization").style.display = "none";
+                        <% end %>
+                        <% if not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then %>
+                            clearAllTimers();
+                            switch(to){
+                                case "basic":
+                                    getDeviceRole();
+                                    document.getElementById("multi_ap_form_action_btns").style.display = "";
+                                    break;
+                                case "adv":
+                                    getAlMac();
+                                    document.getElementById("multi_ap_form_action_btns").style.display = "none";
+                                    <% if map_cfgs.DeviceRole == "1" then %>
+                                        get_bh_connection_status();
+                                    <% end %>
+                                    break;
+                                case "status":
+                                    get_sta_steering_progress();
+                                    get_sta_bh_interface();
+                                    get_ap_bh_inf_list();
+                                    get_ap_fh_inf_list();
+                                    document.getElementById("multi_ap_form_action_btns").style.display = "none";
+                                    break;
+                                <% if cfg_1905d.map_ver ~= "R1" and cfg_1905d.map_ver ~= "R2" then %>
+                                    case "priority":
+                                        document.getElementById("multi_ap_form_action_btns").style.display = "none";
+                                        document.getElementById("service_prioritization").style.display = "";
+                                        get_sp_rule_list();
+                                        sp_init();
+                                        break;
+                                <% end %>
+                                default:
+                                    console.log("Unknown tab in EasyMesh - ",to)
+                                    break;
+                            }
+                        <% end %>
+                    }
+
+                        function resetToDefaultEasyMesh()
+                        {
+                            <% if not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then %>
+                                clearAllTimers();
+                            <% end %>
+                            location.href = '<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "reset_to_default_easymesh")%>';
+                        }
+
+                    /* Write functions below LUA <% if not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then %> statement,
+                     * if the function is required only after EasyMesh feature is Enabled.
+                     */
+                    <% if not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then %>
+
+                        function validateControllerSettings()
+                        {
+                            if (!validateApSteerRssiTh() ||
+                                !validateChannelUtilizationTh()){
+                                return false;
+                            }
+                            return true;
+                        }
+
+                        function validateApSteerRssiTh()
+                        {
+                            var apSteerRssiTh = document.getElementById("APSteerRssiTh").value;
+                            if (apSteerRssiTh == "" ||
+                                isNaN(apSteerRssiTh) ||
+                                !/^(0|-[1-9]|-[1-9][0-9])$/.test(apSteerRssiTh) ||
+                                parseInt(apSteerRssiTh) > 0 ||
+                                parseInt(apSteerRssiTh) < -90){
+                                alert("RSSI Threshold is incorrect!\nPlease enter an integer number between 0 to -90 inclusive.");
+                                document.getElementById("APSteerRssiTh").focus();
+                                document.getElementById("APSteerRssiTh").select();
+                                return false;
+                            }
+                            return true;
+                        }
+
+                        function validateChannelUtilizationTh()
+                        {
+                            var channelUtilTh2G = document.getElementById("CUOverloadTh_2G").value;
+                            var channelUtilTh5GL = document.getElementById("CUOverloadTh_5G_L").value;
+                            var channelUtilTh5GH = document.getElementById("CUOverloadTh_5G_H").value;
+                            if (channelUtilTh2G == "" ||
+                                isNaN(channelUtilTh2G) ||
+                                !/^(0|[1-9]|[1-9][0-9]|100)$/.test(channelUtilTh2G) ||
+                                parseInt(channelUtilTh2G) < 0 ||
+                                parseInt(channelUtilTh2G) > 100){
+                                alert("2G Channel Utilization Threshold is incorrect!\nPlease enter an integer number between 0 to 100 inclusive.");
+                                document.getElementById("CUOverloadTh_2G").focus();
+                                document.getElementById("CUOverloadTh_2G").select();
+                                return false;
+                            }
+                            if (channelUtilTh5GL == "" ||
+                                isNaN(channelUtilTh5GL) ||
+                                !/^(0|[1-9]|[1-9][0-9]|100)$/.test(channelUtilTh5GL) ||
+                                parseInt(channelUtilTh5GL) < 0 ||
+                                parseInt(channelUtilTh5GL) > 100){
+                                alert("5GL Channel Utilization Threshold is incorrect!\nPlease enter an integer number between 0 to 100 inclusive.");
+                                document.getElementById("CUOverloadTh_5G_L").focus();
+                                document.getElementById("CUOverloadTh_5G_L").select();
+                                return false;
+                            }
+                            if (channelUtilTh5GH == "" ||
+                                isNaN(channelUtilTh5GH) ||
+                                !/^(0|[1-9]|[1-9][0-9]|100)$/.test(channelUtilTh5GH) ||
+                                parseInt(channelUtilTh5GH) < 0 ||
+                                parseInt(channelUtilTh5GH) > 100){
+                                alert("5GH Channel Utilization Threshold is incorrect!\nPlease enter an integer number between 0 to 100 inclusive.");
+                                document.getElementById("CUOverloadTh_5G_H").focus();
+                                document.getElementById("CUOverloadTh_5G_H").select();
+                                return false;
+                            }
+                            return true;
+                        }
+
+                        function clearAllTimers()
+                        {
+                            clearTimeout(get_device_role_timer_id);
+                            get_device_role_timer_id = null;
+                            clearTimeout(get_al_mac_timer_id);
+                            get_al_mac_timer_id = null;
+                            clearTimeout(get_sta_steering_progress_timer_id);
+                            get_sta_steering_progress_timer_id = null;
+                            clearTimeout(get_bh_connection_status_timer_id);
+                            get_bh_connection_status_timer_id = null;
+                        }
+
+                        function getDeviceRole()
+                        {
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "get_device_role")%>', null, 
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var devRoleObj = JSON.parse(x.response);
+                                        var devRole = parseInt(devRoleObj.mapDevRole);
+                                        if(isNaN(devRole)){
+                                            console.log("Incorrect Device Role",devRole);
+                                            devRole = 0;
+                                        }
+                                        switch(devRole){
+                                            case 0: // Auto
+                                                document.getElementById("current-dev-role-during-not-configured-msg").style.display = "";
+                                                document.getElementById("map-cfg-basic-dev-role-configured-settings").style.display = "none";
+                                                document.getElementById("map-cfg-basic-wireless-bh-preference").style.display = "none";
+                                                document.getElementById("map-cfg-tab-adv").style.display = "none";
+                                                document.getElementById("map-cfg-adv").style.display = "none";
+                                                document.getElementById("map-cfg-tab-status").style.display = "none";
+                                                document.getElementById("map-cfg-status").style.display = "none";
+                                                <% if cfg_1905d.map_ver ~= "R1" and cfg_1905d.map_ver ~= "R2" then %>
+                                                    document.getElementById("map-cfg-tab-priority").style.display = "";
+                                                    document.getElementById("dpp-onboarding").style.display = "";
+                                                    document.getElementById("generate-dpp-uri").style.display = "";
+                                                    document.getElementById("retrive-dpp-uri").style.display = "";
+                                                <% end %>
+                                                document.getElementById("map-cfg-adv-controller-settings").style.display = "none";
+                                                document.getElementById("current-dev-role").innerHTML = "Not Configured";
+                                                clearTimeout(get_device_role_timer_id);
+                                                get_device_role_timer_id = null;
+                                                if(document.getElementById("__activeTab").value == "basic"){
+                                                    get_device_role_timer_id = setTimeout(getDeviceRole, 1000);
+                                                }
+                                            break;
+                                            case 1: // Controller
+                                                document.getElementById("current-dev-role-during-not-configured-msg").style.display = "none";
+                                                document.getElementById("map-cfg-basic-dev-role-configured-settings").style.display = "";
+                                                document.getElementById("map-cfg-tab-adv").style.display = "";
+                                                document.getElementById("map-cfg-adv-controller-settings").style.display = "";
+                                                document.getElementById("map-cfg-tab-status").style.display = "";
+                                                <% if cfg_1905d.map_ver ~= "R1" and cfg_1905d.map_ver ~= "R2" then %>
+                                                    document.getElementById("map-cfg-tab-priority").style.display = "";
+                                                    document.getElementById("add-dpp-uri").style.display = "";
+                                                    document.getElementById("display-bootstrapping-uri").style.display = "";
+                                                <% end %>
+                                                document.getElementById("current-dev-role").innerHTML = "Controller";
+                                            break;
+                                            case 2: // Agent
+                                                document.getElementById("current-dev-role-during-not-configured-msg").style.display = "none";
+                                                document.getElementById("map-cfg-basic-dev-role-configured-settings").style.display = "";
+                                                document.getElementById("map-cfg-tab-adv").style.display = "";
+                                                document.getElementById("map-cfg-adv-controller-settings").style.display = "none";
+                                                document.getElementById("map-cfg-tab-status").style.display = "";
+                                                <% if cfg_1905d.map_ver ~= "R1" and cfg_1905d.map_ver ~= "R2" then %>
+                                                    document.getElementById("map-cfg-tab-priority").style.display = "";
+                                                    document.getElementById("dpp-onboarding").style.display = "";
+                                                    document.getElementById("generate-dpp-uri").style.display = "";
+                                                    document.getElementById("retrive-dpp-uri").style.display = "";
+                                                <% end %>
+                                                document.getElementById("current-dev-role").innerHTML = "Agent";
+                                                if (document.getElementById("DeviceRole").value == "1"){
+                                                    document.getElementById("map-cfg-back-haul-connection-status-settings").style.display = "";
+                                                    document.getElementById("map-cfg-basic-wireless-bh-preference").style.display = "";
+                                                }
+
+                                                get_bh_connection_status();
+
+                                                clearTimeout(get_device_role_timer_id);
+                                                get_device_role_timer_id = null;
+                                                if(document.getElementById("__activeTab").value == "basic"){
+                                                    get_device_role_timer_id = setTimeout(getDeviceRole, 5000);
+                                                }
+                                            break;
+                                            default:
+                                                console.log("Invalid device role received: ",devRole);
+                                            break;
+                                        }
+                                    }
+                                    catch(e){
+                                        console.log("Incorrect response received for get device role request!");
+                                        clearTimeout(get_device_role_timer_id);
+                                        get_device_role_timer_id = null;
+                                        if(document.getElementById("__activeTab").value == "basic"){
+                                            get_device_role_timer_id = setTimeout(getDeviceRole, 5000);
+                                        }
+                                    }
+                                }
+                            );
+                        }
+
+                        function applyChannelSetting_plan()
+                        {
+                            var channel = document.getElementById("channel-setting").value;
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "apply_user_preferred_channel")%>' + '/' + channel, null, 
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var r = JSON.parse(x.response);
+                                        if (r['status'] == "SUCCESS") {
+                                            alert("Channel Planning setting has been applied successfully.");
+                                        }
+                                        else{
+                                            alert("Failed to apply Channel Planning setting!\nError: ",r['status']);
+                                        }
+                                    }
+                                    catch(e){
+                                        alert("Failed to apply Channel Planning setting!\nError: Incorrect Response.");
+                                    }
+                                }
+                            );
+                        }
+
+                        function applyUserPreferredChannel()
+                        {
+                            var channel = document.getElementById("get-preferred-channel").value;
+                            if(channel == ""){
+                                alert("Please Choose channel before apply user preferred channel");
+                                document.getElementById("get-preferred-channel").focus();
+                                return false;
+                            }
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "apply_user_preferred_channel")%>' + '/' + channel, null,
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var r = JSON.parse(x.response);
+                                        if (r['status'] == "SUCCESS") {
+                                            alert("User Preferred Channel setting has been applied successfully.");
+                                        }
+                                        else{
+                                            alert("Failed to apply User Preferred Channel setting!\nError: ",r['status']);
+                                        }
+                                    }
+                                    catch(e){
+                                        alert("Failed to apply User Preferred Channel setting!\nError: Incorrect Response.");
+                                    }
+                                }
+                            );
+                        }
+
+                        function triggerChannelPlanningR2()
+                        {
+                            var band = document.getElementById("ch-band").value;
+                            var channelPlanningBtn = document.getElementById("display-channel-setting-r2-btn");
+                            var channelPlanningScoreBtn = document.getElementById("display-channel-planning-score-btn");
+                            if(band == ""){
+                                alert("Please Choose Band before trigger Channel Planning R2");
+                                document.getElementById("ch-band").focus();
+                                return false;
+                            }
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "trigger_channel_planning_r2")%>' + '/' + band, null,
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var r = JSON.parse(x.response);
+                                        if (r['status'] == "SUCCESS") {
+                                            channelPlanningBtn.setAttribute('disabled', true);
+                                            channelPlanningScoreBtn.setAttribute('disabled', true);
+                                            alert("Channel Planning R2 has been triggered successfully.");
+                                            window.setTimeout(function() {channelPlanningBtn.removeAttribute('disabled');}, 15000);
+                                            window.setTimeout(function() {channelPlanningScoreBtn.removeAttribute('disabled');}, 15000);
+                                        }
+                                        else if (r['status'] == "Try again!") {
+                                            alert("Channel Planning R2 is not in ideal state. Please try again later.");
+                                        }
+                                        else{
+                                            alert("Failed to apply Channel Planning R2!\nError: ",r['status']);
+                                        }
+                                    }
+                                    catch(e){
+                                        alert("Failed to apply Channel Planning R2!\nError: Incorrect Response.");
+                                    }
+                                }
+                            );
+                        }
+
+                        function triggerChannelScan()
+                        {
+                            var deviceAlMac = document.getElementById("get-devices").value;
+                            var channelScanBtn = document.getElementById("display_channel_scan_btn");
+                            if(deviceAlMac == ""){
+                                alert("Please Choose Device before trigger Channel Scan");
+                                document.getElementById("get-devices").focus();
+                                return false;
+                            }
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "trigger_channel_scan")%>' + '/' + deviceAlMac, null,
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var r = JSON.parse(x.response);
+                                        if (r['status'] == "SUCCESS") {
+                                            channelScanBtn.setAttribute('disabled', true);
+                                            alert("Channel Scan has been triggered successfully.");
+                                            window.setTimeout(function() {channelScanBtn.removeAttribute('disabled');}, 15000);
+                                        }
+                                        else if (r['status'] == "Try again!") {
+                                            alert("Channel Scan is not in ideal state. Please try again later.");
+                                        }
+                                        else{
+                                            alert("Failed to apply Channel Scan setting!\nError: ",r['status']);
+                                            channelScanBtn.removeAttribute('disabled');
+                                        }
+                                    }
+                                    catch(e){
+                                        alert("Failed to apply Channel Scan setting!\nError: Incorrect Response.");
+                                    }
+                                }
+                            );
+                        }
+
+                        function applyTriBandChannelSetting_forceswitch()
+                        {
+                            var channel2G = document.getElementById("channel-setting-2g").value;
+                            var channel5GL = document.getElementById("channel-setting-5gl").value;
+                            var channel5GH = document.getElementById("channel-setting-5gh").value;
+                            var agent_almac_inp = document.getElementById("mandate-steering-agent-almac");
+                            var mac_reg_exp = /[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}/;
+                            if (!mac_reg_exp.test(agent_almac_inp.value)) {
+                                alert("Please fill ALMAC Address of MAP in Mandate Steering Settings in correct format! (XX:XX:XX:XX:XX:XX)");
+                                agent_almac_inp.focus();
+                                agent_almac_inp.select();
+                                return;
+                            }
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "apply_force_ch_switch")%>' + '/' + agent_almac_inp.value + '/' + channel2G + '/' + channel5GL + '/' + channel5GH, null,
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var r = JSON.parse(x.response);
+                                        if (r['status'] == "SUCCESS") {
+                                            alert("Channel Force switching setting has been applied successfully.");
+                                        }
+                                        else{
+                                            alert("Failed to apply Channel Force switching setting!\nError: ",r['status']);
+                                        }
+                                    }
+                                    catch(e){
+                                        alert("Failed to apply Channel Force switching setting!\nError: Incorrect Response.");
+                                    }
+                                }
+                            );
+                        }
+
+                        function applyChannelSetting_forceswitch()
+                        {
+                            var channel2G = document.getElementById("channel-setting-2g").value;
+                            var channel5GL = document.getElementById("channel-setting-5gl").value;
+                            var channel5GH = "";
+                            var agent_almac_inp = document.getElementById("mandate-steering-agent-almac");
+                            var mac_reg_exp = /[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}/;
+                            if (!mac_reg_exp.test(agent_almac_inp.value)) {
+                                alert("Please fill ALMAC Address of MAP in Mandate Steering Settings in correct format! (XX:XX:XX:XX:XX:XX)");
+                                agent_almac_inp.focus();
+                                agent_almac_inp.select();
+                                return;
+                            }
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "apply_force_ch_switch")%>' + '/' + agent_almac_inp.value + '/' + channel2G + '/' + channel5GL + '/' + channel5GH, null, 
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var r = JSON.parse(x.response);
+                                        if (r['status'] == "SUCCESS") {
+                                            alert("Channel Force switching setting has been applied successfully.");
+                                        }
+                                        else{
+                                            alert("Failed to apply Channel Force switching setting!\nError: ",r['status']);
+                                        }
+                                    }
+                                    catch(e){
+                                        alert("Failed to apply Channel Force switching setting!\nError: Incorrect Response.");
+                                    }
+                                }
+                            );
+                        }
+
+                        function applyChannelUtilizationTh()
+                        {
+                            if(!validateChannelUtilizationTh()){
+                                return;
+                            }
+                            var channelUtilTh2G = document.getElementById("CUOverloadTh_2G").value;
+                            var channelUtilTh5GL = document.getElementById("CUOverloadTh_5G_L").value;
+                            var channelUtilTh5GH = document.getElementById("CUOverloadTh_5G_H").value;
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "apply_channel_utilization_th")%>' + '/' + channelUtilTh2G + '/' + channelUtilTh5GL + '/' + channelUtilTh5GH, null, 
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var r = JSON.parse(x.response);
+                                        if (r['status'] == "SUCCESS") {
+                                            alert("Channel Utilization Threshold has been applied successfully.");
+                                        }
+                                        else{
+                                            alert("Failed to apply Channel Utilization Threshold!\nError: ",r['status']);
+                                        }
+                                    }
+                                    catch(e){
+                                        alert("Failed to apply Channel Utilization Threshold!\nError: Incorrect Response.");
+                                    }
+                                }
+                            );
+                        }
+
+                        function applyTriBandBhPriority()
+                        {
+                            var bhPriority2G = document.getElementById("BhPriority2G").value;
+                            var bhPriority5GH = document.getElementById("BhPriority5GH").value;
+                            var bhPriority5GL = document.getElementById("BhPriority5GL").value;
+                            console.log("applyBhPriority    applyBhPriority  applyBhPriority  applyBhPriority  applyBhPriority!");
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "apply_wifi_bh_priority")%>' + '/' +  bhPriority2G + '/' + bhPriority5GL + '/' + bhPriority5GH, null,
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var r = JSON.parse(x.response);
+                                        if (r['status'] == "SUCCESS") {
+                                            alert("Wi-Fi back-haul priority has been applied successfully.");
+                                        }
+                                        else{
+                                            alert("Failed to apply Wi-Fi back-haul priority!\nError: ", r['status']);
+                                        }
+                                    }
+                                    catch(e){
+                                        alert("Failed to apply Wi-Fi back-haul priority!\nError: Incorrect Response.");
+                                    }
+                                }
+                            );
+                        }
+
+                        function applyBhPriority()
+                        {
+                            var bhPriority5GL = document.getElementById("BhPriority5GL").value;
+                            var bhPriority2G = document.getElementById("BhPriority2G").value;
+                            var bhPriority5GH = bhPriority5GL;
+                            console.log("applyBhPriority    applyBhPriority  applyBhPriority  applyBhPriority  applyBhPriority!");
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "apply_wifi_bh_priority")%>' + '/' +  bhPriority2G + '/' + bhPriority5GL + '/' + bhPriority5GH, null, 
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var r = JSON.parse(x.response);
+                                        if (r['status'] == "SUCCESS") {
+                                            alert("Wi-Fi back-haul priority has been applied successfully.");
+                                        }
+                                        else{
+                                            alert("Failed to apply Wi-Fi back-haul priority!\nError: ", r['status']);
+                                        }
+                                    }
+                                    catch(e){
+                                        alert("Failed to apply Wi-Fi back-haul priority!\nError: Incorrect Response.");
+                                    }
+                                }
+                            );
+                        }
+
+                        function applyRssiTh()
+                        {
+                            if(!validateApSteerRssiTh()){
+                                return;
+                            }
+                            var apSteerRssiTh = document.getElementById("APSteerRssiTh").value;
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "apply_ap_steer_rssi_th")%>' + '/' + apSteerRssiTh, null, 
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var r = JSON.parse(x.response);
+                                        if (r['status'] == "SUCCESS") {
+                                            alert("AP Steer RSSI Threshold has been applied successfully.");
+                                        }
+                                        else{
+                                            alert("Failed to apply AP Steer RSSI Threshold!\nError: ",r['status']);
+                                        }
+                                    }
+                                    catch(e){
+                                        alert("Failed to apply AP Steer RSSI Threshold!\nError: Incorrect Response.");
+                                    }
+                                }
+                            );
+                        }
+
+                        function getAlMac()
+                        {
+                            var devRole = document.getElementById("current-dev-role").innerHTML;
+                            if(devRole == "Controller"){
+                                devRole = 1;
+                            }
+                            else{
+                                devRole = 0;
+                            }
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "get_al_mac")%>' + '/' + devRole, null, 
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var r = JSON.parse(x.response);
+                                        var mac_reg_exp = /[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}/;
+                                        if (r['status'] == "SUCCESS" && mac_reg_exp.test(r['al_mac'])) {
+                                            document.getElementById("al_mac").innerHTML = r['al_mac'];
+                                        }
+                                        else{
+                                            console.log("Incorrect AL-MAC received!",r['status'],r['al_mac']);
+                                            if(document.getElementById("__activeTab").value == "adv"){
+                                                get_al_mac_timer_id = setTimeout(getAlMac,1000);
+                                            }
+                                        }
+                                    }
+                                    catch(e){
+                                        console.log("Incorrect response received for get AL-MAC request!");
+                                        if(document.getElementById("__activeTab").value == "adv"){
+                                            get_al_mac_timer_id = setTimeout(getAlMac,1000);
+                                        }
+                                    }
+                                }
+                            );
+                        }
+
+                        function triggerMandateSteeringOnAgent()
+                        {
+                            var sta_mac_inp = document.getElementById("mandate-steering-agent-sta-mac");
+                            var mac_reg_exp = /[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}/;
+                            if (!mac_reg_exp.test(sta_mac_inp.value)) {
+                                alert("Please fill MAC Address of STA in Mandate Steering Settings in correct format! (XX:XX:XX:XX:XX:XX)");
+                                sta_mac_inp.focus();
+                                sta_mac_inp.select();
+                                return;
+                            }
+                            var target_bssid_inp = document.getElementById("mandate-steering-agent-target-bssid");
+                            if (!mac_reg_exp.test(target_bssid_inp.value)) {
+                                alert("Please fill Target BSSID of Mandate Steering Settings in correct format! (XX:XX:XX:XX:XX:XX)");
+                                target_bssid_inp.focus();
+                                target_bssid_inp.select();
+                                return;
+                            }
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "trigger_mandate_steering_on_agent")%>' + '/' + sta_mac_inp.value + '/' + target_bssid_inp.value, null,
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var r = JSON.parse(x.response);
+                                        if(r.status == "SUCCESS"){
+                                            alert("Mandate steering on agent has been triggered!");
+                                        }
+                                        else{
+                                            alert("Failed to trigger mandate steering on agent!");
+                                        }
+                                    }
+                                    catch(e){
+                                        alert("Incorrect response!\nFailed to trigger mandate steering on agent!");
+                                        console.log("Incorrect response received for trigger mandate steering on agent request!");
+                                    }
+                                }
+                            );
+                        }
+
+                        function triggerBackHaulSteering()
+                        {
+                            var back_haul_mac_inp = document.getElementById("back-haul-steering-mac");
+                            var mac_reg_exp = /[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}/;
+                            if (!mac_reg_exp.test(back_haul_mac_inp.value)) {
+                                alert("Please fill MAC Address of Back-haul Steering Settings in correct format! (XX:XX:XX:XX:XX:XX)");
+                                back_haul_mac_inp.focus();
+                                back_haul_mac_inp.select();
+                                return;
+                            }
+                            var back_haul_target_bssid_inp = document.getElementById("back-haul-steering-target-bssid");
+                            if (!mac_reg_exp.test(back_haul_target_bssid_inp.value)) {
+                                alert("Please fill Target BSSID of Back-haul Steering Settings in correct format! (XX:XX:XX:XX:XX:XX)");
+                                back_haul_target_bssid_inp.focus();
+                                back_haul_target_bssid_inp.select();
+                                return;
+                            }
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "trigger_back_haul_steering_on_agent")%>' + '/' + back_haul_mac_inp.value + '/' + back_haul_target_bssid_inp.value, null, 
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var r = JSON.parse(x.response);
+                                        if(r.status == "SUCCESS"){
+                                            alert("Back-haul steering has been triggered!");
+                                        }
+                                        else{
+                                            alert("Failed to trigger back-haul steering!");
+                                        }
+                                    }
+                                    catch(e){
+                                        alert("Incorrect response!\nFailed to trigger back-haul steering!");
+                                        console.log("Incorrect response received for trigger back-haul steering request!");
+                                    }
+                                }
+                            );
+                        }
+
+                        function triggerWpsFhAgent()
+                        {
+                            var fh_mac_inp = document.getElementById("trigger-wps-fh-agent-al-mac");
+                            var mac_reg_exp = /[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}/;
+                            if (!mac_reg_exp.test(fh_mac_inp.value)) {
+                                alert("Please fill AL-MAC of an Agent in correct format! (XX:XX:XX:XX:XX:XX)");
+                                fh_mac_inp.focus();
+                                fh_mac_inp.select();
+                                return;
+                            }
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "trigger_wps_fh_agent")%>' + '/' + fh_mac_inp.value, null, 
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var r = JSON.parse(x.response);
+                                        if(r.status == "SUCCESS"){
+                                            alert("WPS at front-haul BSS of an Agent with AL-MAC "+ fh_mac_inp.value +" has been triggered!");
+                                        }
+                                        else{
+                                            alert("Failed to trigger WPS at front-haul BSS of an Agent with AL-MAC "+ fh_mac_inp.value +" !");
+                                        }
+                                    }
+                                    catch(e){
+                                        alert("Incorrect response received!\nFailed to trigger WPS at front-haul BSS of an Agent with AL-MAC "+ fh_mac_inp.value +" !\n"+ e.name +"\n"+ e.message);
+                                        console.log("Failed to trigger WPS at front-haul BSS of an Agent with AL-MAC ",fh_mac_inp.value,e.name,e.message);
+                                    }
+                                }
+                            );
+                        }
+
+                        <% if cfg_1905d.map_ver ~= "R1" and cfg_1905d.map_ver ~= "R2" then %>
+                            function addQosRule()
+                            {
+                                location.href = '<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "add_qos_rule_view")%>';
+                            }
+                        <% end %>
+
+                        function visit_url(to)
+                        {
+                            location.href = to;
+                        }
+
+                        function addDPPURI()
+                        {
+                            uri=document.getElementById("dpp-uri").value;
+                            (new XHR()).post('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "submit_dpp_uri")%>', {"uri": uri},
+                                function(x)
+                                {
+                                    alert("add ok");
+                                }
+                            );
+                        }
+
+                        function retriveDPPURI()
+                        {
+                            (new XHR()).post('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "retrive_dpp_uri")%>', null,
+                                function(x)
+                                {
+                                    var uri = x.response;
+                                    var y = uri.search("DPP URI:");
+                                    y = uri.slice(y+9);
+                                    document.getElementById("show-retrive-dpp-uri").value=y;
+                                }
+                            );
+                        }
+
+                        function displayRuntimeTopology()
+                        {
+                            if(document.getElementById("current-dev-role").innerHTML != "Controller" &&
+                               document.getElementById("current-dev-role").innerHTML != "Agent"){
+                                alert("Device Role is not configured yet!\nPlease configure the Device Role.");
+                                return;
+                            }
+                            location.href = '<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "display_runtime_topology")%>';
+                        }
+
+                        function displayChannelScanResult()
+                        {
+                            location.href = '<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "display_channel_scan_result")%>';
+                        }
+
+                        function displayChannelPlanningScore()
+                        {
+                            location.href = '<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "display_channel_planning_score")%>';
+                        }
+
+                        function dispFhStatusBss()
+                        {
+                            location.href = '<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "display_fh_status_bss")%>';
+                        }
+
+                        function dispBhLinkMetricsCtrler()
+                        {
+                            location.href = '<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "display_bh_link_metrics_ctrler")%>';
+                        }
+
+                        function displayClientCapabilities()
+                        {
+                            location.href = '<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "display_client_capabilities")%>';
+                        }
+
+                        function displayApCapabilities()
+                        {
+                            location.href = '<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "display_ap_capabilities")%>';
+                        }
+
+                        function configBss()
+                        {
+                            location.href = '<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "easymesh_bss_config_renew")%>';
+                        }
+
+                        function triggerMultiApOnBoarding()
+                        {
+                            var bh_vif_sel = 1;
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "trigger_multi_ap_on_boarding")%>' + '/' + 
+                                bh_vif_sel, null, 
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var r = JSON.parse(x.response);
+                                        if(r.status == "SUCCESS"){
+                                            alert("EasyMesh on-boarding with medium of back-haul interface as Wi-Fi has been triggered!");
+                                        }
+                                        else{
+                                            alert("Failed to trigger EasyMesh on-boarding with medium of back-haul interface as Wi-Fi!\nERROR: " + r.status);
+                                        }
+                                    }
+                                    catch(e){
+                                        alert("Incorrect response!\nFailed to trigger EasyMesh on-boarding with medium of back-haul interface as Wi-Fi!");
+                                        console.log("Incorrect response!\nFailed to trigger EasyMesh on-boarding with medium of back-haul interface as Wi-Fi!");
+                                    }
+                                }
+                            );
+                        }
+
+                        function triggerUplinkApSelection()
+                        {
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "trigger_uplink_ap_selection")%>', null, 
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var rsp = JSON.parse(x.response);
+                                        if(rsp.status == "SUCCESS"){
+                                            alert("Up-link AP selection has been triggered!");
+                                        }
+                                        else{
+                                            alert("Failed to trigger Up-link AP selection!\nStatus: ",rsp.status);
+                                        }
+                                    }
+                                    catch(e){
+                                        alert("Incorrect response!\nFailed to trigger Up-link AP selection!");
+                                        console.log("Incorrect response!\nFailed to trigger Up-link AP selection!");
+                                    }
+                                }
+                            );
+                        }
+
+                        function get_sta_steering_progress()
+                        {
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "get_sta_steering_progress")%>', null,
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var rsp = JSON.parse(x.response);
+                                        if(rsp.status == "SUCCESS"){
+                                            document.getElementById("sta-steering-progress").innerHTML = rsp['sta_steering_info'];
+                                        }
+                                        else{
+                                            console.log("Failed to get STA Steering Progress!\nStatus: ",rsp.status);
+                                        }
+                                        if(document.getElementById("__activeTab").value == "status"){
+                                            get_sta_steering_progress_timer_id = setTimeout(get_sta_steering_progress, 500);
+                                        }
+                                    }
+                                    catch(e){
+                                        console.log("Incorrect response!\nFailed to get STA Steering Progress!");
+                                        if(document.getElementById("__activeTab").value == "status"){
+                                            get_sta_steering_progress_timer_id = setTimeout(get_sta_steering_progress, 500);
+                                        }
+                                    }
+                                }
+                            );
+                        }
+
+                        function update_displayed_bh_connect_status(obj_1905, alMac)
+                        {
+                            var bhConStatus = document.getElementById("back-haul-connection-status");
+                            var bhArr = [];
+
+                            if(!obj_1905.hasOwnProperty('BH Info')){
+                                console.log("Topology does not have BH Info Property!",obj_1905);
+                                bhConStatus.innerHTML = "Disconnected";
+                                return;
+                            }
+                            console.log("Topology BH Info:  ! ", obj_1905['BH Info']);
+                            if(obj_1905['BH Info'].length == 0)
+                            {
+                                console.log("Topology does not have Backhaul Medium Type Property! ", obj_1905['BH Info'].length);
+                                bhConStatus.innerHTML = "Disconnected";
+                                return;
+                            }
+                            for(var idx_1905=0; idx_1905 < obj_1905['BH Info'].length; idx_1905++){
+                                var bhInfo = obj_1905['BH Info'][idx_1905];
+                                if ( bhInfo['neighbor almac addr'].toUpperCase() == alMac.toUpperCase()){
+                                    console.log("update_displayed_bh_connect_status ['Backhaul Medium Type']:  ", bhInfo['Backhaul Medium Type']);
+                                    if ( bhInfo['Backhaul Medium Type'] == "Ethernet"){
+                                        bhConStatus.innerHTML = "Ethernet (If you want to use Wi-Fi connection, please plug out the ethernet cable)";
+                                    }
+                                    else{
+                                        bhArr.push(bhInfo['Backhaul Medium Type']);
+                                        bhConStatus.innerHTML = bhArr;
+                                    }
+                                }
+                            }
+                        }
+
+                        function find_own_topo_info_by_role(devRole, jsTopoInfo, alMac)
+                        {
+                            var tree_info = [];
+                            var topoInfoArr = jsTopoInfo['topology information'];
+                            var bhConStatus = document.getElementById("back-haul-connection-status");
+                            if(!(topoInfoArr instanceof Array)){
+                                console.log("Incorrect TopologyInfo: Value of topology information is not an Array!");
+                                bhConStatus.innerHTML = "Disconnected";
+                                return;
+                            }
+                            for(var idx_1905=0; idx_1905 < topoInfoArr.length; idx_1905++){
+                                var obj_1905 = topoInfoArr[idx_1905];
+                                if (obj_1905.hasOwnProperty('AL MAC') && (obj_1905['AL MAC'].toUpperCase() == alMac.toUpperCase())){
+                                    update_displayed_bh_connect_status(obj_1905, obj_1905['Upstream 1905 device']);
+                                    return;
+                                }
+                            }
+                            bhConStatus.innerHTML = "Disconnected";
+                            console.log(alMac," AL-MAC NOT FOUND in Topology! Topology: ",jsTopoInfo);
+                        }
+
+                        function get_al_mac_by_role(devRole, jsTopoInfo)
+                        {
+                            var bhConStatus = document.getElementById("back-haul-connection-status");
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "get_al_mac")%>' + '/' + devRole, null, 
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var r = JSON.parse(x.response);
+                                        var mac_reg_exp = /[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}/;
+                                        if (r['status'] == "SUCCESS" && mac_reg_exp.test(r['al_mac'])) {
+                                            find_own_topo_info_by_role(devRole, jsTopoInfo, r['al_mac']);
+                                        }
+                                        else{
+                                            console.log("Incorrect AL-MAC received!",r['status'],r['al_mac']);
+                                            bhConStatus.innerHTML = "Disconnected";
+                                        }
+                                    }
+                                    catch(e){
+                                        console.log("Incorrect response received for get AL-MAC request!",e.name,e.message);
+                                        bhConStatus.innerHTML = "Disconnected";
+                                    }
+                                }
+                            );
+                        }
+
+                        function prep_device_dropdown(deviceList){
+                            var getDevices = document.getElementById('get-devices');
+                            getDevices.innerHTML = "";
+                            getDevices.innerHTML = "<option value=''>Choose Device</option>";
+                            for (var i in deviceList){
+                                var opt = document.createElement('option');
+
+                                if(deviceList[i]['alMac'] && deviceList[i]['deviceRole']){
+                                    opt.value = deviceList[i]['alMac'];
+                                    opt.text = deviceList[i]['alMac'] + ' - '+ deviceList[i]['deviceRole'];
+                                }
+                                else{
+                                    opt.value = deviceList[i].value;
+                                    opt.text = deviceList[i].text;
+                                }
+
+                                getDevices.appendChild(opt);
+                            }
+                       }
+
+                       function get_device_list(jsTopoInfo){
+                           var deviceList = [];
+                           var topoInfoArr = jsTopoInfo['topology information'];
+                           for(var i=0; i < topoInfoArr.length; i++){
+                               deviceList.push({"alMac" : topoInfoArr[i]["AL MAC"], "deviceRole" : topoInfoArr[i]["Device role"] == "01" ? "Controller" : "Agent"});
+                           }
+                           prep_device_dropdown(deviceList);
+                       }
+
+                       function get_bh_connection_status()
+                        {
+                            var devRole = document.getElementById("current-dev-role").innerHTML;
+                            var bhConStatus = document.getElementById("back-haul-connection-status");
+                            if(devRole !== "Auto"){
+                                XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "get_runtime_topology")%>', null,
+                                    function(x)
+                                    {
+                                        console.log(x);
+                                        try{
+                                            var r = JSON.parse(x.response);
+                                            if(r.status == "SUCCESS"){
+                                                console.log("get_bh_connection_status get topo ");
+                                                var jsTopoInfo = JSON.parse(r['luaTopologyInfo']);
+                                                get_al_mac_by_role(devRole, jsTopoInfo);
+                                                get_device_list(jsTopoInfo);
+                                            }
+                                            else{
+                                                console.log("get_bh_connection_status() Failed to get Topology Info!\nStatus: ",r.status);
+                                                bhConStatus.innerHTML = "Disconnected";
+                                            }
+                                        }
+                                        catch(e){
+                                            console.log("get_bh_connection_status() Incorrect response! Failed to get Topology Info!",e.name,e.message);
+                                            bhConStatus.innerHTML = "Disconnected";
+                                        }
+                                    }
+                                );
+                            }
+                            else{
+                                bhConStatus.innerHTML = "Disconnected";
+                                console.log("get_bh_connection_status not agent ");
+                            }
+                        }
+
+                        function get_sta_bh_interface()
+                        {
+                            var devRole = document.getElementById("current-dev-role").innerHTML;
+                            var staBhInfUl = document.getElementById("sta-bh-inf-ul");
+                            staBhInfUl.innerHTML = "";
+                            if(devRole == "Agent"){
+                                XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "get_sta_bh_interface")%>', null,
+                                    function(x)
+                                    {
+                                        console.log(x);
+                                        try{
+                                            var rsp = JSON.parse(x.response);
+                                            if(rsp.status == "SUCCESS"){
+                                                staBhInfUl.parentNode.parentNode.style.display = "";
+                                                var sta_bh_inf_arr = rsp.staBhInfStr.split(";");
+                                                for(var idx=0; idx < sta_bh_inf_arr.length; idx++){
+                                                    if(sta_bh_inf_arr[idx] == ""){
+                                                        continue;
+                                                    }
+                                                    var l = document.createElement("LI");
+                                                    var t = document.createTextNode(sta_bh_inf_arr[idx]);
+                                                    l.appendChild(t);
+                                                    staBhInfUl.appendChild(l);
+                                                }
+                                            }
+                                            else{
+                                                console.log("Failed to get STA BH Interface!\nStatus: ",rsp.status);
+                                                if(document.getElementById("__activeTab").value == "status"){
+                                                    setTimeout(get_sta_bh_interface, 500);
+                                                }
+                                            }
+                                        }
+                                        catch(e){
+                                            console.log("Incorrect response!\nFailed to get STA BH Interface!");
+                                            if(document.getElementById("__activeTab").value == "status"){
+                                                setTimeout(get_sta_bh_interface, 500);
+                                            }
+                                        }
+                                    }
+                                );
+                            }
+                            else{
+                                staBhInfUl.parentNode.parentNode.style.display = "none";
+                            }
+                        }
+
+                        function get_ap_bh_inf_list()
+                        {
+                            var apBhInfList = document.getElementById("ap-bh-inf-list-ul");
+                            apBhInfList.innerHTML = "";
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "get_ap_bh_inf_list")%>', null,
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var rsp = JSON.parse(x.response);
+                                        if(rsp.status == "SUCCESS"){
+                                            var ap_bh_inf_list_arr = rsp.apBhInfListStr.split(";");
+                                            for(var idx=0; idx < ap_bh_inf_list_arr.length; idx++){
+                                                if(ap_bh_inf_list_arr[idx] == ""){
+                                                    continue;
+                                                }
+                                                var l = document.createElement("LI");
+                                                var t = document.createTextNode(ap_bh_inf_list_arr[idx]);
+                                                l.appendChild(t);
+                                                apBhInfList.appendChild(l);
+                                            }
+                                        }
+                                        else{
+                                            console.log("Failed to get AP BH Interface list!\nStatus: ",rsp.status);
+                                            if(document.getElementById("__activeTab").value == "status"){
+                                                setTimeout(get_ap_bh_inf_list, 500);
+                                            }
+                                        }
+                                    }
+                                    catch(e){
+                                        console.log("Incorrect response!\nFailed to get AP BH Interface list!");
+                                        if(document.getElementById("__activeTab").value == "status"){
+                                            setTimeout(get_ap_bh_inf_list, 500);
+                                        }
+                                    }
+                                }
+                            );
+                        }
+
+                        function get_ap_fh_inf_list()
+                        {
+                            var apFhInfList = document.getElementById("ap-fh-inf-list-ul");
+                            apFhInfList.innerHTML = "";
+                            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "get_ap_fh_inf_list")%>', null,
+                                function(x)
+                                {
+                                    console.log(x);
+                                    try{
+                                        var rsp = JSON.parse(x.response);
+                                        if(rsp.status == "SUCCESS"){
+                                            var ap_fh_inf_list_arr = rsp.apFhInfListStr.split(";");
+                                            for(var idx=0; idx < ap_fh_inf_list_arr.length; idx++){
+                                                if(ap_fh_inf_list_arr[idx] == ""){
+                                                    continue;
+                                                }
+                                                var l = document.createElement("LI");
+                                                var t = document.createTextNode(ap_fh_inf_list_arr[idx]);
+                                                l.appendChild(t);
+                                                apFhInfList.appendChild(l);
+                                            }
+                                        }
+                                        else{
+                                            console.log("Failed to get AP FH Interface list!\nStatus: ",rsp.status);
+                                            if(document.getElementById("__activeTab").value == "status"){
+                                                setTimeout(get_ap_fh_inf_list, 500);
+                                            }
+                                        }
+                                    }
+                                    catch(e){
+                                        console.log("Incorrect response!\nFailed to get AP FH Interface list!");
+                                        if(document.getElementById("__activeTab").value == "status"){
+                                            setTimeout(get_ap_fh_inf_list, 500);
+                                        }
+                                    }
+                                }
+                            );
+                        }
+
+                    <% end %> /* if not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then */
+                    /* Write functions above LUA <% end %> statement,
+                     * if the function is required only after EasyMesh feature is Enabled.
+                     */
+
+                    function get_apply_status_cb(rsp)
+                    {
+                        try{
+                            var r = JSON.parse(rsp);
+                        }
+                        catch(e){
+                            return;
+                        }
+                        if(r.status == "ON_PROGRESS"){
+                            var u = confirm("Device is applying the saved settings now!\n" +
+                                "It is recommended to wait until all the saved settings are applied.\n" +
+                                "Please click on 'OK' button to wait for the device.\n" +
+                                "or click on 'Cancel' button to configure the settings available in current web-page.");
+                            if (u == true) {
+                                location = '<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "loading")%>' + window.location.pathname;
+                            }
+                        }
+                    }
+
+                    function get_apply_status()
+                    {
+                        XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "get_apply_status")%>', null,
+                            function(x)
+                            {
+                                console.log(x);
+                                get_apply_status_cb(x.response);
+                            }
+                        );
+                    }
+
+                    function getDeviceMode()
+                    {
+                        <% if eth_mode == "0" and map_cfgs.DeviceRole == "1" then %>
+                            document.getElementById("current-dev-mode").innerHTML = "Router";
+                        <% end %>
+
+                        <% if eth_mode == "0" and map_cfgs.DeviceRole == "2" then %>
+                            document.getElementById("current-dev-mode").innerHTML = "Bridge";
+                        <% end %>
+
+                        <% if eth_mode == "1" then %>
+                            document.getElementById("current-dev-mode").innerHTML = "Router";
+                        <% end %>
+
+                        <% if eth_mode == "2" then %>
+                            document.getElementById("current-dev-mode").innerHTML = "Bridge";
+                        <% end %>
+                    }
+                    function compare(a,b){
+                        return a-b;
+                    }
+                    function prep_channel_dropdown(){
+                        XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "get_user_preferred_channel")%>', null,
+                            function(x)
+                            {
+                                console.log(x);
+                                var lists_json = JSON.parse(x.response);
+                                var channel_list = lists_json.preferredList;
+
+                                var getChannels = document.getElementById('get-preferred-channel');
+                                getChannels.innerHTML = "";
+
+                                var arr = []
+                                for( var i in channel_list ){
+                                    arr.push(parseInt(channel_list[i]))
+                                }
+                                arr.sort(compare);
+                                for (var key=0; key<arr.length; key++){
+                                    var opt = document.createElement('option');
+                                    opt.value = arr[key];
+                                    opt.text = arr[key];
+                                    getChannels.appendChild(opt);
+                                }
+                            }
+                        );
+                    }
+
+                    window.onload = function() {
+                        MonCon.ping();
+                        get_apply_status();
+                        MapMode_onchange(document.getElementById("MapMode").options[document.getElementById("MapMode").selectedIndex].value);
+
+                        <% if not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then %>
+
+                            getDeviceRole();
+
+                        <% end %> /* if not appliedMapModeDiff and first_card_cfgs.MapMode == "1" then */
+
+                        <% if mapd_default_cfg.mode then %>
+
+                            getDeviceMode();
+
+                        <% end %>
+
+                        prep_channel_dropdown();
+
+                    }
+
+                </script>
+            <% end %> <!-- if not driver_cfgs or not map_cfgs then -->
+        <% end %> <!-- if not isMapSupported then -->
+    <% end %> <!-- if not l1dat or not l1 then -->
+<% end %> <!-- if not mtkwifi then -->
+<%+footer%>

@@ -1,0 +1,85 @@
+
+<%
+        local disp = require "luci.dispatcher"
+%>
+<%
+        local section_name
+        local cur = require "luci.model.uci".cursor()
+        cur:foreach("ipsec", "remote", function(s) section_name = s['.name'] end)
+%>
+
+<script src="/luci-static/resources/monCon.js"></script>
+<script type="text/javascript" src="<%=resource%>/cbi.js?v=git-17.250.41546-90ac861"></script>
+
+<script type="text/javascript">//<![CDATA[
+function connect() {
+  var btnConnect = document.getElementById('btnConnect');
+  if (btnConnect.value == "Connect") {
+    (new XHR()).post('<%=url('admin/network/ipsec/vpn_connect')%>', {token: '<%=token%>'},
+        function(x) {
+          var data = JSON.parse(x.response);
+          updateStatus(data.status, data.msg)
+        }
+    );
+  } else {
+    (new XHR()).post('<%=url('admin/network/ipsec/vpn_disconnect')%>', {token: '<%=token%>'},
+        function(x) {
+          var data = JSON.parse(x.response);
+          updateStatus(data.status, data.msg)
+        }
+    );
+  }
+
+}
+
+XHR.poll(5, '<%=luci.dispatcher.build_url("admin", "network", "ipsec", "vpn_status")%>', null,
+    function(x) {
+        var data = {};
+        if(x.responseJSON){
+            data = x.responseJSON;
+        }
+        else{
+            data = JSON.parse(x.response);
+        }
+        updateStatus(data.status, data.msg);
+    }
+);
+document.body.onload = function() {pageLoad();}
+function pageLoad() {
+    (new XHR()).post('<%=url('admin/network/ipsec/vpn_status')%>', {token: '<%=token%>'},
+        function(x) {
+            var data = {};
+            if(x.responseJSON){
+                data = x.responseJSON;
+            }
+            else{
+                data = JSON.parse(x.response);
+            }
+            updateStatus(data.status, data.msg);
+        }
+);
+}
+function updateStatus(status, msg) {
+    var dvStatus = document.getElementById('cbid.<%=self.config%>.<%=section_name%>.vpn_status');
+    if (!dvStatus.value){
+        dvStatus = document.getElementById('widget.cbid.<%=self.config%>.<%=section_name%>.vpn_status');
+    }
+
+    var btn = document.getElementById('btnConnect');
+    if (status == "Connected")
+        btn.value = "Disconnect";
+    else
+        btn.value = "Connect";
+
+    dvStatus.value = msg;
+    return;
+}
+//]]></script>
+
+<fieldset class="cbi-section">
+<div>
+                <input type="button" id="btnConnect" value="<%:btn.value%>" style="float: right;" class="cbi-button cbi-button-apply"
+                        onclick="connect()" />
+        </div>
+</fieldset>
+

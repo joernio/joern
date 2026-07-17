@@ -1,0 +1,257 @@
+<%#
+    File name : mtk_wifi_map_ap_capabilities.htm
+    This file is used in WebUI based on LuCI to display EasyMesh AP capabilities.
+%>
+<%+header%>
+
+<script src="/luci-static/resources/monCon.js"></script>
+
+<h2><a>EasyMesh AP Capabilities</a></h2>
+<div id="ap_db_display"></div>
+
+<script type="text/javascript">
+
+    var max_cellspan = 2;
+
+    function set_max_cellspan(o)
+    {
+        for(var k in o){
+            var v = o[k];
+            if (v instanceof Array){
+                max_cellspan++;
+                for(var a_idx=0; a_idx < v.length; a_idx++){
+                    if(((typeof v[a_idx]) == "object") && v[a_idx] != null){
+                        set_max_cellspan(v[a_idx]);
+                    }
+                    else{
+                        console.log("set_max_cellspan: Incorrect Topology: Array element is not an object!",v[a_idx]);
+                    }
+                }
+            }
+            else if(((typeof v) == "object") && v != null){
+                set_max_cellspan(v);
+            }
+        }
+    }
+
+    function set_rowspan(o)
+    {
+        var rowspan = 0;
+        for(var k in o){
+            var v = o[k];
+            if (v instanceof Array){
+                for(var a_idx=0; a_idx < v.length; a_idx++){
+                    if(((typeof v[a_idx]) == "object") && v[a_idx] != null){
+                        rowspan = rowspan + set_rowspan(v[a_idx]);
+                    }
+                    else{
+                        console.log("set_rowspan: Incorrect Topology: Array element is not an object!",v[a_idx]);
+                    }
+                }
+            }
+            else if(((typeof v) == "object") && v != null){
+                rowspan = rowspan + set_rowspan(v);
+            }
+            else{
+                rowspan++;
+            }
+        }
+        return rowspan;
+    }
+
+    function obj_loop(table_id, row, o)
+    {
+        var cell;
+        for(var k in o){
+            var v = o[k];
+            if (v instanceof Array){
+                arr_loop(table_id, k, v);
+            }
+            else if(((typeof v) == "object") && v != null){
+                obj_loop(table_id, row, v);
+            }
+            else{
+                if(row == null){
+                    row = table_id.insertRow(-1);
+                }
+            cell = row.insertCell(-1);
+            cell.innerHTML = k;
+            cell = row.insertCell(-1);
+            cell.colSpan = max_cellspan - row.cells.length + 1;
+            if (k == "Security") {
+                cell.innerHTML = get_auth_mode_str(v);
+            }
+            else if (k == "wireless mode") {
+                cell.innerHTML = get_wireless_mode_str(v);
+            }
+            else if (k == "Encryption") {
+                cell.innerHTML = get_encryp_mode_str(v);
+            }
+            else {
+                cell.innerHTML = v;
+            }
+            row = null;
+            }
+        }
+    }
+
+    function arr_loop(table_id, k, a)
+    {
+        var row, cell;
+        for(var a_idx=0; a_idx < a.length; a_idx++){
+            var v = a[a_idx];
+            if(((typeof v) == "object") && v != null){
+                row = table_id.insertRow(-1);
+                cell = row.insertCell(-1);
+                cell.rowSpan = set_rowspan(v);
+                cell.style.verticalAlign  = "middle";
+                cell.innerHTML = "<strong>" + k + ' - ' + (a_idx + 1) + "</strong>";
+                obj_loop(table_id, row, v);
+            }
+            else{
+                console.log("Incorrect Topology: Array element is not an object!",a);
+            }
+        }
+    }
+
+    function get_auth_mode_str(authModeCode)
+    {
+        switch(authModeCode){
+            case "0001":
+                return "Open";
+            case "0002":
+                return "WPA - Personal";
+            case "0004":
+                return "Shared";
+            case "0008":
+                return "WPA - Enterprise";
+            case "0010":
+                return "WPA2 - Enterprise";
+            case "0020":
+                return "WPA2 - Personal";
+            case "0040":
+                return "WPA3 - SAE Only";
+            case "0060":
+                return "WPA3 - Transition Mode";
+            case "00A0":
+                return "DPP + WPA2 - Personal";
+            case "00C0":
+                return "DPP + WPA3 - SAE";
+            case "00E0":
+                return "DPP + WPA3 - Transition Mode";
+            default:
+                return "Unknown Security Code: " + authModeCode;
+        }
+    }
+
+    function get_wireless_mode_str(wirelessMode)
+    {
+        switch(wirelessMode){
+            case "0":
+                return "CCK";
+            case "1":
+                return "OFDM";
+            case "2":
+                return "HTMIX";
+            case "3":
+                return "HTGREENFIELD";
+            case "4":
+                return "VHT";
+            default:
+                return "Unknown Wireless Mode: " + wirelessMode;
+        }
+    }
+
+    function get_encryp_mode_str(encrypMode)
+    {
+        switch(encrypMode){
+            case "0001":
+                return "OPEN";
+            case "0002":
+                return "WPAPSK";
+            case "0004":
+                return "Shared";
+            case "0008":
+                return "WPA";
+            case "0010":
+                return "WPA2";
+            case "0020":
+                return "WPA2PSK";
+            case "0080":
+                return "WPANONE";
+            default:
+                return "Unknown Encryption Mode: " + encrypMode;
+        }
+    }
+
+    function draw_ap_db_table(jsTopoInfo)
+    {
+        var topoInfoArr = jsTopoInfo['topology information'];
+        if(!(topoInfoArr instanceof Array)){
+            console.log("Incorrect TopologyInfo: Value of topology information is not an Array!");
+            return;
+        }
+
+        for(var idx_1905=0; idx_1905 < topoInfoArr.length; idx_1905++){
+            var ap_db_tbl = document.createElement("TABLE");
+            ap_db_tbl.setAttribute("class", "cbi-section-table");
+            var ap_db = {};
+            ap_db["Radio Info"] = topoInfoArr[idx_1905]['Radio Info'];
+
+            var dev1905fset = document.createElement("FIELDSET");
+            dev1905fset.setAttribute("class", "cbi-section");
+            var dev1905legend = document.createElement("LEGEND");
+            var dev1905a = document.createElement("A");
+            var dev1905text = document.createTextNode("Radio Info of 1905 Device - " + (idx_1905 + 1));
+            dev1905a.setAttribute("href", "#");
+            dev1905a.appendChild(dev1905text);
+            dev1905legend.appendChild(dev1905a);
+            dev1905fset.appendChild(dev1905legend);
+            document.getElementById("ap_db_display").appendChild(dev1905fset);
+
+            set_max_cellspan(ap_db);
+            obj_loop(ap_db_tbl, null, ap_db);
+
+            document.getElementById("ap_db_display").appendChild(ap_db_tbl);
+        }
+    }
+
+    function get_ap_db_cb(rsp)
+    {
+        try{
+            var r = JSON.parse(rsp);
+            if(r.status == "SUCCESS"){
+                var jsTopoInfo = JSON.parse(r.luaTopologyInfo);
+                document.getElementById("ap_db_display").innerHTML = "";
+                draw_ap_db_table(jsTopoInfo);
+            }
+            else{
+                console.log("Failed to get AP DB!\nStatus: ",r.status);
+            }
+            window.setTimeout(get_ap_db, 10000);
+        }
+        catch(e){
+            console.log("Incorrect response! Failed to get AP DB!",e.name,e.message);
+            window.setTimeout(get_ap_db, 10000);
+        }
+    }
+
+    function get_ap_db()
+    {
+        XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "get_runtime_topology")%>', null,
+            function(x)
+            {
+                console.log(x);
+                get_ap_db_cb(x.response);
+            }
+        );
+    }
+
+    window.onload = function(){
+        MonCon.ping();
+        document.getElementById("ap_db_display").innerHTML = "";
+        window.setTimeout(get_ap_db, 1);
+    }
+
+</script>
+<%+footer%>

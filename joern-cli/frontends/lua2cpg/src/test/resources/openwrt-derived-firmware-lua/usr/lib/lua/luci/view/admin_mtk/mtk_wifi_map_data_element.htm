@@ -1,0 +1,216 @@
+<%#
+    File name : mtk_wifi_map_data_element.htm
+    This file is used in WebUI based on LuCI to display Data Element.
+%>
+<%+header%>
+
+<script src="/luci-static/resources/monCon.js"></script>
+
+<%
+    local disp = require "luci.dispatcher"
+    local path  = disp.context.path
+    local request = disp.context.request
+    local getAlMac = request[#request]
+%>
+
+<h2><a>MAP R2 Data Element</a></h2>
+
+<div class="alert-message" id="getDataELInfoMsgDiv">
+    <img src="<%=resource%>/icons/loading.gif" alt="" style="vertical-align:middle" />
+    <big><strong>Retrieving MAP R2 Data Element</strong></big>
+</div>
+<div class="alert-message error" style="display:none">
+    <span><strong id="dataELErrMsgDiv"></strong></span>
+</div>
+<div id="display_data_el_info_div"></div>
+
+<script type="text/javascript">
+
+    var max_cellspan = 2;
+
+    function set_max_cellspan(o)
+    {
+        for(var k in o){
+            var v = o[k];
+            if (v instanceof Array){
+                max_cellspan++;
+                for(var a_idx=0; a_idx < v.length; a_idx++){
+                    if(((typeof v[a_idx]) == "object") && v[a_idx] != null){
+                        set_max_cellspan(v[a_idx]);
+                    }
+                    else{
+                        console.log("set_max_cellspan: Incorrect Data Elements: Array element is not an object!",v[a_idx]);
+                    }
+                }
+            }
+            else if(((typeof v) == "object") && v != null){
+                set_max_cellspan(v);
+            }
+        }
+    }
+
+    function set_rowspan(o)
+    {
+        var rowspan = 0;
+        for(var k in o){
+            var v = o[k];
+            if (v instanceof Array){
+                for(var a_idx=0; a_idx < v.length; a_idx++){
+                    if(((typeof v[a_idx]) == "object") && v[a_idx] != null){
+                        rowspan = rowspan + set_rowspan(v[a_idx]);
+                    }
+                    else{
+                        console.log("set_rowspan: Incorrect Data Elements: Array element is not an object!",v[a_idx]);
+                    }
+                }
+            }
+            else if(((typeof v) == "object") && v != null){
+                rowspan = rowspan + set_rowspan(v);
+            }
+            else{
+                rowspan++;
+            }
+        }
+        return rowspan;
+    }
+
+    function obj_loop(table_id, row, o)
+    {
+        var cell;
+        for(var k in o){
+            var v = o[k];
+            if (v instanceof Array){
+                arr_loop(table_id, k, v);
+            }
+            else if(((typeof v) == "object") && v != null){
+                obj_loop(table_id, row, v);
+            }
+            else{
+                if(row == null){
+                    row = table_id.insertRow(-1);
+                }
+                cell = row.insertCell(-1);
+                cell.innerHTML = k;
+                cell = row.insertCell(-1);
+                cell.colSpan = max_cellspan - row.cells.length + 1;
+                cell.innerHTML = v;
+                row = null;
+            }
+        }
+    }
+
+    function arr_loop(table_id, k, a)
+    {
+        var row, cell;
+        for(var a_idx=0; a_idx < a.length; a_idx++){
+            var v = a[a_idx];
+            if(((typeof v) == "object") && v != null){
+                row = table_id.insertRow(-1);
+                cell = row.insertCell(-1);
+                cell.rowSpan = set_rowspan(v);
+                cell.style.verticalAlign  = "middle";
+                cell.innerHTML = "<strong>" + k + ' - ' + (a_idx + 1) + "</strong>";
+                obj_loop(table_id, row, v);
+            }
+            else{
+                console.log("Incorrect Data Elements: Array element is not an object!",a);
+            }
+        }
+    }
+
+    function draw_data_element_table(jsDataElementInfo)
+    {
+        var tree_info = [];
+        var alMacNotFound = false;
+        var dataElementInfoArr = jsDataElementInfo['Data Elements Information'];
+        if(!(dataElementInfoArr instanceof Array)){
+            console.log("Incorrect Data Elements Info: Value of Data Elements information is not an Array!");
+            return;
+        }
+
+        for(var idx_1905=0; idx_1905 < dataElementInfoArr.length; idx_1905++){
+            var obj_1905 = dataElementInfoArr[idx_1905];
+            if(obj_1905['AL MAC'] == "<%=getAlMac%>"){
+                alMacNotFound = true;
+                var dev1905tbl = document.createElement("TABLE");
+                dev1905tbl.setAttribute("class", "cbi-section-table");
+                var dev1905fset = document.createElement("FIELDSET");
+                dev1905fset.setAttribute("class", "cbi-section");
+                var dev1905legend = document.createElement("LEGEND");
+                var dev1905a = document.createElement("A");
+                var dev1905text = document.createTextNode("1905 Device - " + (idx_1905 + 1));
+                dev1905a.setAttribute("href", "#");
+                dev1905a.appendChild(dev1905text);
+                dev1905legend.appendChild(dev1905a);
+                dev1905fset.appendChild(dev1905legend);
+                document.getElementById("display_data_el_info_div").appendChild(dev1905fset);
+
+                set_max_cellspan(obj_1905);
+                obj_loop(dev1905tbl, null, obj_1905);
+
+                document.getElementById("display_data_el_info_div").appendChild(dev1905tbl);
+                break;
+            }
+        }
+        if(!alMacNotFound)
+            alert("There is no Data Elements found for the selected Agent.");
+    }
+
+    function chk_data_element()
+    {
+        var div = document.getElementById("display_data_el_info_div");
+        if(div.children.length == 0){
+            var b = document.createElement("BIG");
+            var s = document.createElement("STRONG");
+            var t = document.createTextNode("Data Elements Info has not been received yet! Please wait.");
+            s.appendChild(t);
+            b.appendChild(s);
+            b.setAttribute("class", "alert-message");
+            b.style.display = "block";
+            div.appendChild(b);
+        }
+    }
+
+    function get_data_element_cb(rsp)
+    {
+        try{
+            var r = JSON.parse(rsp);
+            if(r.status == "SUCCESS"){
+                var jsDataElementInfo = JSON.parse(r.luaDataElementInfo);
+                document.getElementById("display_data_el_info_div").innerHTML = "";
+                draw_data_element_table(jsDataElementInfo);
+            }
+            else{
+                console.log("Failed to get Data Elements Info!\nStatus: ",r.status);
+            }
+            window.setTimeout(get_data_element, 15000);
+        }
+        catch(e){
+            console.log("Incorrect response! Failed to get Data Elements Info!",e.name,e.message);
+            window.setTimeout(get_data_element, 15000);
+        }
+    }
+
+    function get_data_element()
+    {
+        document.getElementById("dataELErrMsgDiv").style.display = "none";
+        document.getElementById("display_data_el_info_div").removeAttribute("class");
+
+        XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "get_data_element")%>', null,
+            function(x)
+            {
+                console.log(x);
+                document.getElementById('getDataELInfoMsgDiv').style.display = 'none';
+                get_data_element_cb(x.response);
+                chk_data_element();
+            }
+        );
+    }
+
+    window.onload = function(){
+        MonCon.ping();
+        get_data_element();
+    }
+
+</script>
+<%+footer%>

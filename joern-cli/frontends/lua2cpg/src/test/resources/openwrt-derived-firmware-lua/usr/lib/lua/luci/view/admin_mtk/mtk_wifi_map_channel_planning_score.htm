@@ -1,0 +1,407 @@
+<%#
+    File name : mtk_wifi_map_channel_planning_score.htm
+    This file is used in WebUI based on LuCI to display Channel Scan Result.
+%>
+<%+header%>
+
+<link rel="stylesheet" href="/luci-static/resources/chartist.min.css">
+<script src="/luci-static/resources/chartist.min.js"></script>
+<script src="/luci-static/resources/monCon.js"></script>
+
+<h2><a>MAP R2 Channel Planning Score</a></h2>
+
+<div class="alert-message" id="getChannelPlanningInfoMsgDiv">
+    <img src="<%=resource%>/icons/loading.gif" alt="" style="vertical-align:middle" />
+    <big><strong>Retrieving MAP R2 Channel Planning Score!</strong></big>
+</div>
+<div class="alert-message error" style="display:none">
+    <span><strong id="channelPlanningErrMsgDiv"></strong></span>
+</div>
+<div id="selectable" style="display:none">
+    <select id="get-band" style="margin-bottom:10px;">
+    </select>
+</div>
+<div id="graph" style="display:none;">
+    <ul class="cbi-tabmenu" id="list-content"></ul>
+    <div id="tab-content"></div>
+</div>
+<div id="display_channel_planning_info_div" style="display:none"></div>
+<button class="cbi-button cbi-button-apply" id="toggle_disp_channel_planning_info_btn" onclick="toggle_disp_channel_planning_info(this)" disabled="disabled">Show Channel Planning Score</button>
+<script type="text/javascript">
+
+    var countUl;
+    var jsChannelArray;
+    var max_cellspan = 2;
+
+    function hi(to,countUl,jsChannelPlanning){
+    var a;
+    var x;
+    var tabs = new Array();
+    for(var idx=0; idx < countUl.length; idx++){
+        if(countUl[idx] == "Channel Number") continue;
+        tabs.push(countUl[idx].substring(8,13));
+    }
+    for (x in tabs)
+    {
+        if (tabs[x] != to) {
+            a = document.getElementById('ch-planning' + '-tab-' + tabs[x]);
+            a.className = "cbi-tab-disabled";
+            a = document.getElementById('ch-planning' + '-' + tabs[x]);
+            a.style.display = "none";
+        }
+    }
+    a = document.getElementById('ch-planning' + '-tab-' + to);
+    a.className = "cbi-tab";
+    a = document.getElementById('ch-planning' + '-' + to);
+    a.style.display = "";
+    disp_channel_graph(jsChannelPlanning);
+    }
+
+    function get_band(ch){
+        if (ch >= 36) return "5G";
+        else return "2.4G";
+    }
+
+    function set_max_cellspan(o)
+    {
+        for(var k in o){
+            var v = o[k];
+            if (v instanceof Array){
+                max_cellspan++;
+                for(var a_idx=0; a_idx < v.length; a_idx++){
+                    if(((typeof v[a_idx]) == "object") && v[a_idx] != null){
+                        set_max_cellspan(v[a_idx]);
+                    }
+                    else{
+                        console.log("set_max_cellspan: Incorrect Channel Planning Score: Array element is not an object!",v[a_idx]);
+                    }
+                }
+            }
+            else if(((typeof v) == "object") && v != null){
+                set_max_cellspan(v);
+            }
+        }
+    }
+
+    function set_rowspan(o)
+    {
+        var rowspan = 0;
+        for(var k in o){
+            var v = o[k];
+            if (v instanceof Array){
+                for(var a_idx=0; a_idx < v.length; a_idx++){
+                    if(((typeof v[a_idx]) == "object") && v[a_idx] != null){
+                        rowspan = rowspan + set_rowspan(v[a_idx]);
+                    }
+                    else{
+                        console.log("set_rowspan: Incorrect Channel Planning Score: Array element is not an object!",v[a_idx]);
+                    }
+                }
+            }
+            else if(((typeof v) == "object") && v != null){
+                rowspan = rowspan + set_rowspan(v);
+            }
+            else{
+                rowspan++;
+            }
+        }
+        return rowspan;
+    }
+
+    function obj_loop(table_id, row, o)
+    {
+        var cell;
+        for(var k in o){
+            var v = o[k];
+            if (v instanceof Array){
+                arr_loop(table_id, k, v);
+            }
+            else if(((typeof v) == "object") && v != null){
+                obj_loop(table_id, row, v);
+            }
+            else{
+                if(row == null){
+                    row = table_id.insertRow(-1);
+                }
+                cell = row.insertCell(-1);
+                cell.innerHTML = k;
+                cell = row.insertCell(-1);
+                cell.colSpan = max_cellspan - row.cells.length + 1;
+                cell.innerHTML = v;
+                row = null;
+            }
+        }
+    }
+
+    function arr_loop(table_id, k, a)
+    {
+        var row, cell;
+        for(var a_idx=0; a_idx < a.length; a_idx++){
+            var v = a[a_idx];
+            if(((typeof v) == "object") && v != null){
+                row = table_id.insertRow(-1);
+                cell = row.insertCell(-1);
+                cell.rowSpan = set_rowspan(v);
+                cell.style.verticalAlign  = "middle";
+                cell.innerHTML = "<strong>" + k + ' - ' + (a_idx + 1) + "</strong>";
+                obj_loop(table_id, row, v);
+            }
+            else{
+                console.log("Incorrect Channel Planning Score: Array element is not an object!",a);
+            }
+        }
+    }
+
+    function toggle_disp_channel_planning_info(btn){
+        var div = document.getElementById("display_channel_planning_info_div");
+        var btn_str = btn.innerHTML;
+        if(btn_str.startsWith('Show')){
+            btn.innerHTML = 'Hide Channel Planning Score Info';
+            div.style.display = "";
+            if(div.children.length == 0){
+                div.innerHTML = "";
+                var b = document.createElement("BIG");
+                var s = document.createElement("STRONG");
+                var t = document.createTextNode("Channel Planning Score information has not been received yet! Please wait.");
+                s.appendChild(t);
+                b.appendChild(s);
+                div.setAttribute("class", "alert-message");
+                div.appendChild(b);
+            }
+        }
+        else{
+            btn.innerHTML = 'Show Channel Planning Score Info';
+            div.style.display = "none";
+        }
+    }
+
+    function draw_channel_planning_table(jsChannelPlanning)
+    {
+        var tree_info = [];
+        var channelPlanningInfoArr = jsChannelPlanning['Channel Planning Score Information'];
+        if(!(channelPlanningInfoArr instanceof Array)){
+            console.log("Incorrect Channel Planning Score Info: Value of Channel Planning Score information is not an Array!");
+            return;
+        }
+        document.getElementById("display_channel_planning_info_div").innerHTML = "";
+        for(var idx_1905=0; idx_1905 < channelPlanningInfoArr.length; idx_1905++){
+            var obj_1905 = channelPlanningInfoArr[idx_1905];
+            var dev1905tbl = document.createElement("TABLE");
+            dev1905tbl.setAttribute("class", "cbi-section-table");
+            var dev1905fset = document.createElement("FIELDSET");
+            dev1905fset.setAttribute("class", "cbi-section");
+            var dev1905legend = document.createElement("LEGEND");
+            var dev1905a = document.createElement("A");
+            var dev1905text = document.createTextNode("1905 Device - " + (idx_1905 + 1));
+            dev1905a.setAttribute("href", "#");
+            dev1905a.appendChild(dev1905text);
+            dev1905legend.appendChild(dev1905a);
+            dev1905fset.appendChild(dev1905legend);
+            document.getElementById("display_channel_planning_info_div").appendChild(dev1905fset);
+
+            set_max_cellspan(obj_1905);
+            obj_loop(dev1905tbl, null, obj_1905);
+
+            document.getElementById("display_channel_planning_info_div").appendChild(dev1905tbl);
+            var getBand = document.getElementById('get-band');
+            getBand.addEventListener("change", function() {disp_channel_graph(jsChannelPlanning); });
+
+        }
+    }
+
+    function disp_channel_graph(jsChannelPlanning){
+        var band = document.getElementById('get-band').value;
+        if(band !== "")
+            document.getElementById("graph").style.display = "";
+        countUl = get_channel_stats_ul(jsChannelPlanning);
+        var treeInfo = jsChannelPlanning['Channel Planning Score Information'];
+        var channelPlanningData = prep_channel_planning_graph(treeInfo);
+        var dataScore = {};
+        dataScore['labels'] = [];
+        dataScore['series'] = [];
+        var seriesDataScore = [];
+
+        for(i=0; i < channelPlanningData.scoreInfo.length; i++){
+            if(get_band(channelPlanningData.scoreInfo[i]['Channel Number']) == band){
+                dataScore['labels'].push(channelPlanningData.scoreInfo[i]['Channel Number']);
+                seriesDataScore.push(channelPlanningData.scoreInfo[i]['Channel Score']);
+            }
+        }
+        dataScore['series'].push(seriesDataScore);
+
+        var dataRank = {};
+        dataRank['labels'] = [];
+        dataRank['series'] = [];
+        var seriesDataRank = [];
+
+        for(i=0; i < channelPlanningData.rankInfo.length; i++){
+            if(get_band(channelPlanningData.rankInfo[i]['Channel Number']) == band){
+                dataRank['labels'].push(channelPlanningData.rankInfo[i]['Channel Number']);
+                seriesDataRank.push(channelPlanningData.rankInfo[i]['Channel Rank']);
+            }
+        }
+        dataRank['series'].push(seriesDataRank);
+
+        var options = {
+            seriesBarDistance: 10,
+            axisY: {
+                onlyInteger: true
+            }
+        };
+
+        var responsiveOptions = [
+            ['screen and (max-width: 640px)', {
+                seriesBarDistance: 5,
+                axisX: {
+                    labelInterpolationFnc: function (value) {
+                        return value[0];
+                    }
+                }
+            }]
+        ];
+
+        for(var idx=0; idx < countUl.length; idx++){
+            if(countUl[idx] == "Channel Number") continue;
+            document.getElementById("ch-planning-"+countUl[idx].substring(8,13)).innerHTML = '';
+            if(countUl[idx] == "Channel Score")
+                new Chartist.Bar("#ch-planning-"+countUl[idx].substring(8,13), dataScore, options, responsiveOptions);
+            else
+                new Chartist.Bar("#ch-planning-"+countUl[idx].substring(8,13), dataRank, options, responsiveOptions);
+        }
+    }
+
+    function prep_channel_planning_graph(treeInfo){
+        var node = {};
+        node["scoreInfo"] = [];
+        node["rankInfo"] = [];
+        for(var i=0; i<treeInfo.length; i++){
+            node["scoreInfo"].push({"Channel Number" : treeInfo[i]['Channel Number'], "Channel Score" : treeInfo[i]['Channel Score']});
+            node["rankInfo"].push({"Channel Number" : treeInfo[i]['Channel Number'], "Channel Rank" : treeInfo[i]['Channel Rank']});
+        }
+        return node;
+    }
+
+    function draw_channel_planning_content(jsChannelPlanning){
+        countUl = get_channel_stats_ul(jsChannelPlanning);
+        jsChannelArray = jsChannelPlanning;
+        jsArray = jsChannelPlanning['Channel Planning Score Information'];
+        var bandList = [];
+        var tmp2G = "";
+        var tmp5G = "";
+        for(var i=0; i<jsArray.length; i++){
+           if(tmp2G == "" && get_band(jsArray[i]["Channel Number"]) == "2.4G"){
+               bandList.push(get_band(jsArray[i]["Channel Number"]));
+               tmp2G = get_band(jsArray[i]["Channel Number"]);
+           }
+           else if(tmp5G == "" && get_band(jsArray[i]["Channel Number"]) == "5G"){
+               bandList.push(get_band(jsArray[i]["Channel Number"]));
+               tmp5G = get_band(jsArray[i]["Channel Number"]);
+           }
+           else{
+               console.log("No channel number is present");
+           }
+        }
+        var fetchBand = document.getElementById("get-band");
+        fetchBand.innerHTML = "<option value=''>Choose Band</option>";
+        for (var band of bandList){
+            fetchBand.options[fetchBand.options.length] = new Option(band, band);
+        }
+        if(bandList.length < 1) document.getElementById("selectable").style.display = "none";
+        var listContent = document.getElementById('list-content');
+        var tabContent = document.getElementById('tab-content');
+        listContent.innerHTML = "";
+        tabContent.innerHTML = "";
+        for(var idx=0; idx < countUl.length; idx++){
+            if(countUl[idx] == "Channel Number"){
+                var channelStr = document.createElement("p");
+                channelStr.style.textAlign = "center";
+                channelStr.style.fontWeight = "bold";
+                channelStr.innerHTML = "Channel Number";
+                continue;
+            }
+            var liTag = document.createElement('li');
+            var divTag = document.createElement('div');
+            if(idx == 1){
+                liTag.className= "cbi-tab";
+                divTag.style.display = "";
+            }
+            else{
+                liTag.className= "cbi-tab-disabled";
+                divTag.style.display = "none";
+            }
+            liTag.id = "ch-planning-tab-"+countUl[idx].substring(8,13);
+            divTag.id = "ch-planning-"+countUl[idx].substring(8,13);
+            divTag.style.height = "500px";
+            var aTag = document.createElement("a");
+            aTag.innerHTML = countUl[idx];
+            aTag.setAttribute("href", "javascript:hi(\""+countUl[idx].substring(8,13)+"\",countUl,jsChannelArray);this.blur();");
+            liTag.appendChild(aTag);
+            listContent.appendChild(liTag);
+            tabContent.appendChild(divTag);
+            tabContent.appendChild(channelStr);
+        }
+        disp_channel_graph(jsChannelPlanning)
+    }
+
+    function get_channel_stats_ul(jsChannelPlanning){
+        var ulArray;
+        var channelStatsArr = jsChannelPlanning['Channel Planning Score Information'];
+        var channelPlanningErrMsg = document.getElementById("channelPlanningErrMsgDiv");
+        if(channelStatsArr != ""){
+            for(var i=0; i<channelStatsArr.length; i++){
+                ulArray = Object.keys(channelStatsArr[0]);
+                return ulArray;
+            }
+        }
+        else{
+            channelPlanningErrMsg.innerHTML = "";
+            channelPlanningErrMsg.innerHTML += "ERROR: Channel Planning information has not been received yet! Please go back and Trigger Channel Planning R2 again.";
+            channelPlanningErrMsg.parentNode.parentNode.style.display = "";
+            channelPlanningErrMsg.style.display = "";
+        }
+    }
+
+    function get_channel_planning_cb(rsp)
+    {
+        try{
+            var r = JSON.parse(rsp);
+            if(r.status == "SUCCESS"){
+                var jsChannelPlanning = JSON.parse(r.luaChannelPlanningInfo);
+                get_channel_stats_ul(jsChannelPlanning);
+                draw_channel_planning_content(jsChannelPlanning);
+                document.getElementById("display_channel_planning_info_div").innerHTML = "";
+                document.getElementById("graph").style.display = "none";
+                draw_channel_planning_table(jsChannelPlanning);
+            }
+            else{
+                console.log("Failed to get Channel Planning Score!\nStatus: ",r.status);
+            }
+        }
+        catch(e){
+            console.log("Incorrect response! Failed to get Channel Planning Score!",e.name,e.message);
+        }
+    }
+
+    function get_channel_planning()
+    {
+        document.getElementById("channelPlanningErrMsgDiv").style.display = "none";
+        document.getElementById("toggle_disp_channel_planning_info_btn").disabled = true;
+        XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "get_channel_planning_score")%>', null,
+            function(x)
+            {
+                console.log(x);
+                document.getElementById('getChannelPlanningInfoMsgDiv').style.display = 'none';
+                document.getElementById("selectable").style.display = "";
+                get_channel_planning_cb(x.response);
+                document.getElementById("toggle_disp_channel_planning_info_btn").disabled = false;
+            }
+        );
+    }
+
+    window.onload = function(){
+        MonCon.ping();
+        get_channel_planning();
+    }
+
+</script>
+<%+footer%>

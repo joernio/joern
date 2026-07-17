@@ -1,0 +1,557 @@
+<%+header%>
+<!--
+    This module is a demo to configure MTK' proprietary WiFi driver.
+    Basic idea is to bypass uci and edit wireless profile (mt76xx.dat) directly.
+    LuCI's WiFi configuration is more logical and elegent, but it's quite tricky to 
+    translate uci into MTK's WiFi profile (like we did in "uci2dat").
+
+    Hua Shao <nossiac@163.com>
+-->
+
+<script src="/luci-static/resources/monCon.js"></script>
+
+<%
+local mtkwifi = require("mtkwifi")
+local devs = mtkwifi.get_all_devs()
+local l1dat, l1 = mtkwifi.__get_l1dat()
+local dridx = l1.DEV_RINDEX
+local main_ifname
+local map_cfgs
+local first_card_cfgs
+local appliedMapModeDiff
+local chipname
+if pcall(require, "map_helper") then
+    map_cfgs = mtkwifi.load_profile(mtkwifi.__read_easymesh_profile_path())
+    first_card_cfgs = mtkwifi.load_profile(mtkwifi.detect_first_card())
+    local appliedMapDiffTable = mtkwifi.diff_profile(mtkwifi.detect_first_card())
+    appliedMapModeDiff = appliedMapDiffTable["MapMode"] and appliedMapDiffTable["MapMode"][2] or nil
+end
+%>
+
+    <style>
+        table,td,th
+        {
+            border-top:1px solid ;
+            border-spacing: 0;
+            border-color:#E0E0E0;
+        }
+    </style>
+
+    <h2><a name="content">Wireless Overview</a></h2>
+
+    <% if #devs == 0 then %>
+        <div class="alert-message">
+            <big><strong>No wireless device found!</strong></big>
+        </div>
+    <% end %>
+
+    <% for _,dev in ipairs(devs) do %>
+        <% main_ifname = l1dat and l1dat[dridx][dev.devname].main_ifname or dbdc_prefix[mainidx][subidx].."0" %>
+        <% if mtkwifi.exists("/sys/class/net/"..main_ifname) then %>
+            <fieldset class="cbi-section">
+                <table class="cbi-section-table" style="margin:10px; empty-cells:hide">
+                    <!-- physical device -->
+                    <tbody>
+                        <% if chipname ~= string.split(dev.devname,".")[1].."."..(dev.mainidx) then %>
+                            <% chipname = string.split(dev.devname,".")[1].."."..(dev.mainidx) %>
+                            <tr  style="height:45px">
+                                <td style="width:34px">
+                                    <img src="/luci-static/resources/icons/wifi.png" style="float:left; margin-right:10px" width="30px" height="30px">
+                                </td>
+                                <td colspan="2" style="text-align:left">
+                                    <big><strong title="<%=dev.profile%>"> <%=string.split(dev.devname,".")[1]%></strong></big>
+                                    <%if not dev.vifs then%>
+                                        <span style="color:red;">* FATAL ERROR: Incorrect Profile Settings</span>
+                                    <%end%>
+                                    <br>
+                                    <span> Driver version: <%=dev.version%></span>
+                                </td>
+                                <td style="width:310px;text-align:left">
+                                    <div id="ActionBtns_<%=string.split(dev.devname,".")[1]%>">
+                                        <input class="cbi-button cbi-button-edit" style="width:100px" title="Configure WiFi device" value="Config" type="button" onclick="visit_url('<%=string.split(dev.devname,".")[1]%>','<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "chip_cfg_view", dev.devname)%>')">
+                                    </div>
+                                    <div id="BusyText_<%=string.split(dev.devname,".")[1]%>" style="display:none">
+                                        <big><strong>Processing request.</strong></big>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% end %>
+                        <tr>
+                            <td style="width:34px"></td>
+                            <td colspan="2" style="text-align:left;padding-left:25px;">
+                                <big><strong title="<%=dev.profile%>"><%=dev.devname%></strong></big>
+                                    <%local diff = mtkwifi.diff_profile(dev.profile)%>
+                                    <%if next(diff) ~= nil then%>
+                                        <span style="color:red;">* need reload to apply changes</span>
+                                    <%end%>
+                                <br>
+                                <span> Work mode: <% if dev.ApCliEnable == "1" then %> APCli <% else %> AP <% end %></span>
+                            </td>
+                            <td style="width:310px;text-align:right">
+                                <div id="ActionBtns_<%=dev.devname%>">
+                                    <%if not dev.vifs then%>
+                                        <input class="cbi-button cbi-button-apply" id="reset" value="Restore Profile to Factory Settings" type="button" onclick="visit_url('<%=dev.devname%>','<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "reset_to_defaults", dev.devname)%>')">
+                                    <%else%>
+                                        <input class="cbi-button cbi-button-reload" style="width:100px" title="Reload WiFi network" value="Reload" type="button" onclick="visit_url('<%=dev.devname%>','<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "reload", dev.devname)%>')">
+                                        <input class="cbi-button cbi-button-edit" style="width:100px" title="Configure WiFi device" value="Config" type="button" onclick="visit_url('<%=dev.devname%>','<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "dev_cfg_view", dev.devname)%>')">
+                                        <input class="cbi-button cbi-button-add" style="width:100px" title="Add WiFi network" value="Add" type="button" onclick='add_vif("<%=dev.devname%>","<%=dev.vifs.__prefix%>","<%=dev.maxVif%>")'>
+                                    <%end%>
+                                </div>
+                                <div id="BusyText_<%=dev.devname%>" style="display:none">
+                                    <big><strong>Processing request.</strong></big>
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- /physical device -->
+                        <% if dev.vifs then%>
+                            <!-- network list -->
+                            <% for _,vif in ipairs(dev.vifs) do %>
+                            <tr class="cbi-section-table-row cbi-rowstyle-1">
+                                <td></td>
+                                <td class="cbi-value-field" style="width:16px; padding:3px;padding-left:40px;">
+                                    <% if vif.state == "up" then %>
+                                    <img src="/luci-static/resources/icons/signal-75-100.png">
+                                    <% else %>
+                                    <img src="/luci-static/resources/icons/signal-none.png">
+                                    <% end %>
+                                </td>
+                                <td class="cbi-value-field" style="vertical-align:middle; text-align:left; padding:3px">
+                                    <strong>Interface:</strong> <%=vif.vifname%> |
+                                    <strong>Type:</strong> AP |
+                                    <strong>SSID:</strong>
+                                        <span id="SSID_<%=vif.vifname%>">
+                                            <% if vif.__ssid == "" then %>
+                                                <span style="color:red;"> Error: value not present in dat file </span>
+                                            <% else %>
+                                                <span> <%=vif.__ssid and vif.__ssid:gsub(" ","&nbsp;") or nil%> <% end %> </span>
+                                        </span> |
+                                    <strong>Channel:</strong>
+                                        <span id="CHANNEL_<%=vif.vifname%>"><%=vif.__channel or dev.Channel%></span>
+                                    <br>
+                                    <% if vif.state == "up" then %>
+                                    <strong>BSSID:</strong> <span id="BSSID_<%=vif.vifname%>"><%=vif.__bssid%></span> | <strong>Mode:</strong> <span><%=dev.WirelessModeList[tonumber(vif.__wirelessmode)]%></span>
+                                    <% else %>
+                                    Wireless is disabled or not associated
+                                    <% end %>
+                                </td>
+                                <td class="cbi-value-field" style="text-align:right">
+                                    <div id="ActionBtns_<%=vif.vifname%>">
+                                        <% if not vif.state then %>
+                                        <input class="cbi-button cbi-button-apply" style="width:100px" title="Enable this network" value="Enable" type="button" onclick="alert('Please click on Reload button of ' + '<%=dev.devname%>' + ' device to enable this interface.')">
+                                        <% elseif vif.state == "up" then %>
+                                        <input class="cbi-button cbi-button-reset" style="width:100px" title="Disable this network" value="Disable" type="button" onclick="visit_url('<%=vif.vifname%>','<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "vif_disable", vif.vifname)%>')">
+                                        <% else %>
+                                        <input class="cbi-button cbi-button-apply" style="width:100px" title="Enable this network" value="Enable" type="button" onclick="visit_url('<%=vif.vifname%>','<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "vif_enable", vif.vifname)%>')">
+                                        <% end %>
+                                        <input class="cbi-button cbi-button-edit" style="width:100px" title="Edit this network" value="Config" type="button" onclick="visit_url('<%=vif.vifname%>','<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "vif_cfg_view", dev.devname, vif.vifname)%>')">
+                                        <input class="cbi-button cbi-button-remove" style="width:100px" title="Delete this network" value="Remove" type="button" onclick="visit_url('<%=vif.vifname%>','<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "vif_del", dev.devname, vif.vifname)%>')">
+                                    </div>
+                                    <div id="BusyText_<%=vif.vifname%>" style="display:none">
+                                        <big><strong>Processing request.</strong></big>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% end %>
+                            <!-- /network list -->
+                            <!-- apcli list -->
+                            <% if dev.apcli then %>
+                            <tr>
+                                <td></td>
+                                <td class="cbi-value-field" style="width:16px; padding:3px;padding-left:40px;">
+                                    <% if dev.apcli.state == "up" then %>
+                                    <img src="/luci-static/resources/icons/signal-75-100.png">
+                                    <% else %>
+                                    <img src="/luci-static/resources/icons/signal-none.png">
+                                    <% end %>
+                                </td>
+                                <td class="cbi-value-field" style="vertical-align:middle; text-align:left; padding:3px"><strong>Interface:</strong> <%=dev.apcli.devname%> | <strong>Type:</strong> STA | <strong>Status:</strong> <span id="ConnStatus_<%=dev.apcli.devname%>"><% if dev.ApCliEnable ~= "1" then %> Disconnected <% end %></span>
+                                    <br>
+                                    <div id="LoadingBar_<%=dev.apcli.devname%>" <% if dev.ApCliEnable ~= "1" then %> style="display:none" <% end %>>
+                                        <img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" style="width:20px;height:20px;vertical-align:middle;"/> <cite>&nbsp;Loading connection information of <%=dev.apcli.devname%></cite>
+                                    </div>
+                                    <div id="ConnInfo_<%=dev.apcli.devname%>" style="display:none">
+                                        <strong>BSSID:</strong> <span id="ApCliBssid_<%=dev.apcli.devname%>"></span> |
+                                        <strong>SSID:</strong> <span id="ApCliSsid_<%=dev.apcli.devname%>"></span>
+                                    </div>
+                                    <span id="DisConnMsg_<%=dev.apcli.devname%>" <% if dev.ApCliEnable == "1" then %> style="display:none" <% end %>>Wireless is disabled or not associated</span>
+                                </td>
+                                <td style="text-align:right">
+                                    <div id="ActionBtns_<%=dev.apcli.devname%>">
+                                        <% if dev.ApCliEnable ~= "1" then %>
+                                            <% if dev.apcli.state == "up" then %>
+                                            <input class="cbi-button cbi-button-reset" style="width:100px" title="Disable this network" value="Disable" type="button" onclick="visit_url('<%=dev.apcli.devname%>','<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "vif_disable", dev.apcli.vifname)%>')">
+                                            <% else %>
+                                            <input class="cbi-button cbi-button-apply" style="width:100px" title="Enable this network" value="Enable" type="button" onclick="visit_url('<%=dev.apcli.devname%>','<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "vif_enable", dev.apcli.vifname)%>')">
+                                            <% end %>
+                                            <input class="cbi-button cbi-button-reload" style="width:100px" title="Reload WiFi network" value="Connect" type="button" onclick="visit_url('<%=dev.apcli.devname%>','<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "apcli_connect", dev.devname, dev.apcli.vifname)%>')">
+                                            <input class="cbi-button cbi-button-edit" style="width:100px" title="Configure WiFi device" value="Config" type="button" onclick="visit_url('<%=dev.apcli.devname%>','<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "apcli_cfg_view", dev.devname, dev.apcli.vifname)%>')">
+                                        <% else %>
+                                            <input class="cbi-button cbi-button-reset" id="ApCliDownBtn_<%=dev.apcli.devname%>" style="width:100px;display:none" title="Disable this network" value="Disable" type="button" onclick="visit_url('<%=dev.apcli.devname%>','<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "vif_disable", dev.apcli.vifname)%>')">
+                                            <input class="cbi-button cbi-button-apply" id="ApCliUpBtn_<%=dev.apcli.devname%>" style="width:100px;display:none" title="Enable this network" value="Enable" type="button" onclick="visit_url('<%=dev.apcli.devname%>','<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "vif_enable", dev.apcli.vifname)%>')">
+                                            <input class="cbi-button cbi-button-remove" id="ApCliDisConnBtn_<%=dev.apcli.devname%>" style="width:100px;display:none" title="Reload WiFi network" value="Disconnect" type="button" onclick="visit_url('<%=dev.apcli.devname%>','<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "apcli_disconnect", dev.devname, dev.apcli.vifname)%>')">
+                                            <input class="cbi-button cbi-button-reload" id="ApCliConnBtn_<%=dev.apcli.devname%>" style="width:100px;display:none" title="Reload WiFi network" value="Connect" type="button" onclick="visit_url('<%=dev.apcli.devname%>','<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "apcli_connect", dev.devname, dev.apcli.vifname)%>')">
+                                            <input class="cbi-button cbi-button-edit" id="ApCliCfgBtn_<%=dev.apcli.devname%>" style="width:100px;display:none" title="Configure WiFi device" value="Config" type="button" onclick="visit_url('<%=dev.apcli.devname%>','<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "apcli_cfg_view", dev.devname, dev.apcli.vifname)%>')">
+                                        <% end %>
+                                    </div>
+                                    <div id="BusyText_<%=dev.apcli.devname%>" style="display:none">
+                                        <big><strong>Processing request.</strong></big>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% end %>
+                            <!-- /apcli list -->
+                        <% end %>
+                    </tbody>
+                </table>
+            </fieldset>
+        <% end %>
+    <% end %>
+
+<!--
+    <h2><a id="content" name="content"><%:Station List%></a></h2>
+
+    <fieldset class="cbi-section">
+        <table class="cbi-section-table" style="margin:10px" id="iw-assoclist">
+            <tr class="cbi-section-table-titles">
+                <th class="cbi-section-table-cell"></th>
+                <th class="cbi-section-table-cell"><%:SSID%></th>
+                <th class="cbi-section-table-cell"><%:MAC-Address%></th>
+                <th class="cbi-section-table-cell"><%:IPv4-Address%></th>
+                <th class="cbi-section-table-cell"><%:Signal%></th>
+                <th class="cbi-section-table-cell"><%:Noise%></th>
+                <th class="cbi-section-table-cell"><%:RX Rate%></th>
+                <th class="cbi-section-table-cell"><%:TX Rate%></th>
+            </tr>
+            <tr class="cbi-section-table-row cbi-rowstyle-2">
+                <td class="cbi-value-field" colspan="8">
+                    <em><%:Collecting data...%></em>
+                </td>
+            </tr>
+        </table>
+    </fieldset>
+-->
+<script>
+    function disable_all_buttons()
+    {
+        var inp = document.getElementsByTagName("INPUT");
+        for(var idx=0; idx < inp.length; idx++){
+            inp[idx].disabled = true;
+        }
+    }
+
+    function enable_all_buttons()
+    {
+        var inp = document.getElementsByTagName("INPUT");
+        for(var idx=0; idx < inp.length; idx++){
+            inp[idx].disabled = false;
+        }
+    }
+
+    function visit_url(idSuffix,to)
+    {
+        disable_all_buttons();
+        document.getElementById("ActionBtns_"+idSuffix).style.display = "none";
+        document.getElementById("BusyText_"+idSuffix).style.display = "";
+        location.href = to;
+    }
+
+    function add_vif(devName, vifPrefix, maxVif)
+    {
+        disable_all_buttons();
+        document.getElementById("ActionBtns_"+devName).style.display = "none";
+        document.getElementById("BusyText_"+devName).style.display = "";
+        if(isNaN(maxVif) || !/^\d{1,}$/.test(maxVif)){
+            alert("Failed to add a new interface!\nERROR: Incorrect maximum supported VIF setting!\nmaxVif = " + maxVif);
+            location.reload(true);
+            return;
+        }
+        XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "get_bssid_num")%>/' + devName, null,
+            function(x)
+            {
+                try{
+                    var resp = JSON.parse(x.response);
+                    if(resp["status"] == "SUCCESS"){
+                        if(isNaN(resp["bssidNum"]) || !/^\d{1,}$/.test(resp["bssidNum"]) || parseInt(resp["bssidNum"]) > parseInt(maxVif)){
+                            alert("Failed to add a new interface!\nERROR: Device settings have been corrupted!\nBssidNum in Response is: " + resp["bssidNum"]);
+                            location.reload(true);
+                        }
+                        else if(parseInt(resp["bssidNum"]) == parseInt(maxVif)){
+                            alert("As the Device " + devName + " supports maximum " + maxVif + " virtual interfaces, no more virtual interfaces can be added!");
+                        }
+                        else{
+                            location.href = '<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "vif_add_view")%>/' + devName + '/' + vifPrefix;
+                        }
+                    }
+                    else{
+                        alert("Failed to add a new interface!\nERROR: " + resp["status"]);
+                    }
+                }
+                catch(e){
+                    alert("Failed to add a new interface!\nERROR: Incorrect response received!");
+                    console.log("Failed to add a new interface!\nERROR: [" + e.name + "] " + e.message);
+                }
+                finally{
+                    enable_all_buttons();
+                    document.getElementById("ActionBtns_"+devName).style.display = "";
+                    document.getElementById("BusyText_"+devName).style.display = "none";
+                }
+            }
+        );
+    }
+
+    function apcliInfoTimerHandler(vifNameList,idx,remSec)
+    {
+        XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "get_apcli_conn_info")%>/' + vifNameList[idx], null,
+            function(x)
+            {
+                try{
+                    updateApCliInfoCb(vifNameList,idx,remSec,JSON.parse(x.response));
+                }
+                catch(e){
+                    var y={conn_state:"Disconnected"};
+                    updateApCliInfoCb(vifNameList,idx,0,y);
+                }
+            }
+        );
+    }
+    function updateApCliInfoCb(vifNameList,idx,remSec,connInfo)
+    {
+        var vifName = vifNameList[idx];
+        if(connInfo.hasOwnProperty("conn_state") && connInfo["conn_state"] == "Connected"){
+            document.getElementById("ConnStatus_"+vifName).innerHTML = connInfo["conn_state"];
+            document.getElementById("ApCliBssid_"+vifName).innerHTML = (connInfo.hasOwnProperty("bssid")) ? connInfo["bssid"] : "?";
+            document.getElementById("ApCliSsid_"+vifName).innerHTML = (connInfo.hasOwnProperty("ssid")) ? connInfo["ssid"].replace(/ /g,"&nbsp;") : "";
+            document.getElementById("LoadingBar_"+vifName).style.display = "none";
+            document.getElementById("ApCliDownBtn_"+vifName).style.display = "";
+            document.getElementById("ApCliDisConnBtn_"+vifName).style.display = "";
+            document.getElementById("ApCliCfgBtn_"+vifName).style.display = "";
+            document.getElementById("ConnInfo_"+vifName).style.display = "";
+            if(idx < vifNameList.length - 1){
+                setTimeout(apcliInfoTimerHandler,1000,vifNameList,idx+1,5);
+            }
+        }
+        else{
+            if(remSec > 1){
+                setTimeout(apcliInfoTimerHandler,1000,vifNameList,idx,remSec - 1);
+            }
+            else{
+                document.getElementById("ConnStatus_"+vifName).innerHTML = (connInfo.hasOwnProperty("conn_state")) ? connInfo["conn_state"] : "Disconnected";
+                document.getElementById("LoadingBar_"+vifName).style.display = "none";
+                document.getElementById("DisConnMsg_"+vifName).style.display = "";
+                if (connInfo.hasOwnProperty("infc_state") && connInfo["infc_state"] == "up"){
+                    document.getElementById("ApCliDownBtn_"+vifName).style.display = "";
+                }
+                else{
+                    document.getElementById("ApCliUpBtn_"+vifName).style.display = "";
+                }
+                document.getElementById("ApCliConnBtn_"+vifName).style.display = "";
+                document.getElementById("ApCliCfgBtn_"+vifName).style.display = "";
+                if(idx < vifNameList.length - 1){
+                    setTimeout(apcliInfoTimerHandler,1000,vifNameList,idx+1,5);
+                }
+            }
+        }
+    }
+    function updateApCliInfo()
+    {
+        var apCliInfcList=[];
+        <% for _,dev in ipairs(devs) do %>
+            <% if dev.apcli and dev.ApCliEnable == "1" then %>
+                apCliInfcList.push("<%=dev.apcli.devname%>");
+            <% end %>
+        <% end %>
+        if (apCliInfcList.length >= 1 ){
+            setTimeout(apcliInfoTimerHandler,1000,apCliInfcList,0,5);
+        }
+    }
+
+    function update_displayed_profile_fields(obj_1905)
+    {
+        var vifInfcList=[];
+        var WirelessModeListJS = {};
+        <% for _,dev in ipairs(devs) do %>
+            <% if dev.vifs then%>
+                <% for _,vif in ipairs(dev.vifs) do %>
+                    <% if vif.state == "up" then%>
+                        vifInfcList.push("<%=vif.vifname%>");
+                        WirelessModeListJS['<%=vif.vifname%>'] = {};
+                        <% for wModeIdx, wModeStr in pairs(dev.WirelessModeList) do %>
+                            WirelessModeListJS['<%=vif.vifname%>']['<%=wModeIdx%>'] = "<%=wModeStr%>";
+                        <% end %>
+                    <% end %>
+                <% end %>
+            <% end %>
+        <% end %>
+
+        if(!obj_1905.hasOwnProperty('Radio Info')){
+            console.log("Topology does not have Radio Info Property!",obj_1905);
+            return;
+        }
+        for (var vifIdx = 0; vifIdx < vifInfcList.length; vifIdx++){
+            var ssid_span = document.getElementById("SSID_"+vifInfcList[vifIdx]);
+            var channel_span = document.getElementById("CHANNEL_"+vifInfcList[vifIdx]);
+            var bssid_span = document.getElementById("BSSID_"+vifInfcList[vifIdx]);
+
+            if (!ssid_span || !channel_span || !bssid_span ){
+                continue;
+            }
+            for (var radioIdx=0; radioIdx < obj_1905['Radio Info'].length; radioIdx++){
+                var radioInfoObj = obj_1905['Radio Info'][radioIdx];
+                var bssInfoArr = radioInfoObj['BSSINFO'];
+                var bssIdx;
+                for(bssIdx=0; bssIdx < bssInfoArr.length; bssIdx++){
+                    var bssInfo = bssInfoArr[bssIdx];
+                    if(bssInfo.hasOwnProperty('BSSID') && (bssInfo['BSSID'].toUpperCase() == bssid_span.innerHTML.toUpperCase())){
+                        ssid_span.innerHTML = bssInfo['SSID'];
+                        channel_span.innerHTML = radioInfoObj['channel'];
+                        break;
+                    }
+                }
+                if(bssIdx < bssInfoArr.length){
+                    break;
+                }
+            }
+        }
+    }
+
+    function find_own_topo_info(devRole, jsTopoInfo, alMac)
+    {
+        var tree_info = [];
+        var topoInfoArr = jsTopoInfo['topology information'];
+        if(!(topoInfoArr instanceof Array)){
+            console.log("Incorrect TopologyInfo: Value of topology information is not an Array!");
+            return;
+        }
+        for(var idx_1905=0; idx_1905 < topoInfoArr.length; idx_1905++){
+            var obj_1905 = topoInfoArr[idx_1905];
+            if (obj_1905.hasOwnProperty('AL MAC') && (obj_1905['AL MAC'].toUpperCase() == alMac.toUpperCase())){
+                update_displayed_profile_fields(obj_1905);
+                return;
+            }
+        }
+        console.log(alMac," AL-MAC NOT FOUND in Topology! Topology: ",jsTopoInfo);
+    }
+
+    function get_al_mac(devRole, jsTopoInfo)
+    {
+        XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "get_al_mac")%>' + '/' + devRole, null, 
+            function(x)
+            {
+                console.log(x);
+                try{
+                    var r = JSON.parse(x.response);
+                    var mac_reg_exp = /[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}/;
+                    if (r['status'] == "SUCCESS" && mac_reg_exp.test(r['al_mac'])) {
+                        find_own_topo_info(devRole, jsTopoInfo, r['al_mac']);
+                    }
+                    else{
+                        console.log("Incorrect AL-MAC received!",r['status'],r['al_mac']);
+                    }
+                }
+                catch(e){
+                    console.log("Incorrect response received for get AL-MAC request!",e.name,e.message);
+                }
+            }
+        );
+    }
+
+    function get_run_time_topology(devRole)
+    {
+        XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "get_runtime_topology")%>', null, 
+            function(x)
+            {
+                try{
+                    var r = JSON.parse(x.response);
+                    if(r.status == "SUCCESS"){
+                        var jsTopoInfo = JSON.parse(r['luaTopologyInfo']);
+                        get_al_mac(devRole, jsTopoInfo);
+                    }
+                    else{
+                        console.log("Failed to get Topology Info!\nStatus: ",r.status);
+                    }
+                }
+                catch(e){
+                    console.log("Incorrect response! Failed to get Topology Info!",e.name,e.message);
+                }
+            }
+        );
+    }
+
+    function get_device_role()
+    {
+        XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "get_device_role")%>', null, 
+            function(x)
+            {
+                console.log(x);
+                try{
+                    var devRoleObj = JSON.parse(x.response);
+                    var devRole = parseInt(devRoleObj.mapDevRole);
+                    if(devRole != 1 && devRole != 2){
+                        console.log("EasyMesh Device Role is neither Controller nor Agent!");
+                        return;
+                    }
+                    get_run_time_topology(devRole);
+                }
+                catch(e){
+                    console.log("Incorrect response received for get device role request!",e.name,e.message);
+                }
+            }
+        );
+    }
+
+    function check_update_easymesh_profile()
+    {
+        <% if not pcall(require, "map_helper") then %>
+            console.log("map_helper library is not available!");
+            return;
+        <% else %>
+            <%if not map_cfgs then %>
+                console.log("EasyMesh Configurations are not available!");
+                return;
+            <% else %>
+                <% if (not appliedMapModeDiff and first_card_cfgs.MapMode == "1") or
+                    (appliedMapModeDiff and appliedMapModeDiff == "1" and first_card_cfgs.MapMode ~= "1") then %>
+                    get_device_role();
+                <% end %>
+            <% end %>
+        <% end %>
+    }
+
+    function get_apply_status_cb(rsp)
+    {
+        try{
+            var r = JSON.parse(rsp);
+        }
+        catch(e){
+            return;
+        }
+        if(r.status == "ON_PROGRESS"){
+            var u = confirm("Device is applying the saved settings now!\n" +
+                "It is recommended to wait until all the saved settings are applied.\n" +
+                "Please click on 'OK' button to wait for the device.\n" +
+                "or click on 'Cancel' button to configure the settings available in current web-page.");
+            if (u == true) {
+                location = '<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "loading")%>' + window.location.pathname;
+            }
+        }
+    }
+
+    function get_apply_status()
+    {
+        XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "get_apply_status")%>', null,
+            function(x)
+            {
+                console.log(x);
+                get_apply_status_cb(x.response);
+            }
+        );
+    }
+
+    window.onload = function(){
+        MonCon.ping();
+        get_apply_status();
+        check_update_easymesh_profile();
+        updateApCliInfo();
+    }
+</script>
+    <%+footer%>

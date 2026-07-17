@@ -1,0 +1,36 @@
+<%#
+    File name : local mtkwifi = require("mtkwifi").htm
+    This file is used in WebUI to show MAP Bootstrapping URIs.
+%>
+<%+header%>
+
+<link rel="stylesheet" href="/luci-static/resources/chartist.min.css">
+<script src="/luci-static/resources/chartist.min.js"></script>
+<script src="/luci-static/resources/monCon.js"></script>
+
+<%
+    local mtkwifi = require("mtkwifi")
+    local dpp_cfg = mtkwifi.load_profile("/etc/dpp_cfg.txt")
+%>
+
+<h2><a>MAP Bootstrapping URIs </a></h2>
+
+<table border="1" class="cbi-section-table">
+    <% for k,v in pairs(dpp_cfg) do
+        if string.find(k, "agt_qr_code") then %>
+            <tr class="cbi-section-table-row cbi-rowstyle-1">
+                <td colspan="2"><%=k%></td>
+                <td colspan="2"><%=v%></td>
+            </tr>
+        <% end %>
+    <% end %>
+</table>
+
+<script type="text/javascript">
+
+    window.onload = function(){
+        MonCon.ping();
+    }
+
+</script>
+<%+footer%>

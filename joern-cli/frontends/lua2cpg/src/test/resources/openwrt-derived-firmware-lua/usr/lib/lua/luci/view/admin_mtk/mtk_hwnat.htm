@@ -1,0 +1,86 @@
+
+<%
+    local mtkwifi = require("mtkwifi")
+    local nat = false
+
+    if string.match(mtkwifi.read_pipe("lsmod | grep hw_nat"), "hw_nat") then
+        nat = true
+    end
+%>
+<%+header%>
+
+    <script src="/luci-static/resources/monCon.js"></script>
+
+    <!-- Hua Shao <nossiac@163.com> -->
+      <span id="xhr_poll_status" style="display:none" onclick="XHR.running() ? XHR.halt() : XHR.run()">
+       <span class="label success" id="xhr_poll_status_on">Auto Refresh on</span>
+       <span class="label" id="xhr_poll_status_off" style="display:none">Auto Refresh off</span>
+      </span>
+
+    <fieldset class="cbi-section">
+        <legend> <a name="apcli_scan_section">Hardware NAT Acceleration</a></legend>
+
+        <br>
+        <% if nat then %>
+        <p>
+        <input class="cbi-button cbi-button-remove" title="Disable Hardware NAT" value="Disable Hardware NAT" type="button" onclick="location.href='<%=luci.dispatcher.build_url("admin", "mtk", "hwnat", "toggle", "disable")%>'">
+        <% else %>
+        <input class="cbi-button cbi-button-reload" title="Enable Hardware NAT" value="Enable Hardware NAT" type="button" onclick="location.href='<%=luci.dispatcher.build_url("admin", "mtk", "hwnat", "toggle", "enable")%>'">
+        <% end %>
+        </p>
+        <p> <br> <strong style="color: red;">warning</strong>:
+         Web UI (espcially auto-refresh) will decrease the performance significantly. You'd better disable Web UI before any performance/throughout test.</p>
+    </fieldset>
+
+<% if nat then %>
+    <pre id="result" style="background-color:black;color:white;height:auto;min-height:200px;width:98%;"></pre>
+<% end %>
+
+    <script type="text/javascript">
+
+        <% if nat then %>
+            XHR.poll(5, "<%=luci.dispatcher.build_url("admin", "mtk", "hwnat", "status")%>", null, function(x) {
+                console.log(x.responseText)
+                console.log(x)
+                document.getElementById("result").innerHTML = x.responseText;
+            });
+        <% end %>
+
+        function get_apply_status_cb(rsp)
+        {
+            try{
+                var r = JSON.parse(rsp);
+            }
+            catch(e){
+                return;
+            }
+            if(r.status == "ON_PROGRESS"){
+                var u = confirm("Device is applying the saved settings now!\n" +
+                    "It is recommended to wait until all the saved settings are applied.\n" +
+                    "Please click on 'OK' button to wait for the device.\n" +
+                    "or click on 'Cancel' button to configure the settings available in current web-page.");
+                if (u == true) {
+                    location = '<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "loading")%>' + window.location.pathname;
+                }
+            }
+        }
+
+        function get_apply_status()
+        {
+            XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "wifi", "get_apply_status")%>', null,
+                function(x)
+                {
+                    console.log(x);
+                    get_apply_status_cb(x.response);
+                }
+            );
+        }
+
+        window.onload = function(){
+            MonCon.ping();
+            get_apply_status();
+        }
+
+    </script>
+
+<%+footer%>

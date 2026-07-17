@@ -1,0 +1,510 @@
+<%#
+    File name : mtk_wifi_map_channel_scan_result.htm
+    This file is used in WebUI based on LuCI to display Channel Scan Result.
+%>
+<%+header%>
+
+<link rel="stylesheet" href="/luci-static/resources/chartist.min.css">
+<script src="/luci-static/resources/chartist.min.js"></script>
+<script src="/luci-static/resources/monCon.js"></script>
+
+<style>
+    #selectable select{
+        display: block;
+        margin: 10px 0;
+    }
+</style>
+
+<h2><a>MAP R2 Channel Scan Result</a></h2>
+
+<div class="alert-message" id="getChannelStatsInfoMsgDiv">
+    <img src="<%=resource%>/icons/loading.gif" alt="" style="vertical-align:middle" />
+    <big><strong>Retrieving MAP R2 Channel Scan Result!</strong></big>
+</div>
+<div class="alert-message error" style="display:none">
+    <span><strong id="channelStatsErrMsgDiv"></strong></span>
+</div>
+<div id="selectable" style="display:none;">
+    <select id="get-almac"></select>
+    <select id="get-band"></select>
+</div>
+<div id="graph" style="display:none;">
+    <ul class="cbi-tabmenu" id="list-content"></ul>
+    <div id="tab-content"></div>
+</div>
+<div id="display_channel_stats_info_div" style="display:none"></div>
+<button class="cbi-button cbi-button-apply" id="toggle_disp_channel_stats_info_btn" onclick="toggle_disp_channel_stats_info(this)" disabled="disabled">Show Channel Statistics Info</button>
+<script type="text/javascript">
+
+    var countUl;
+    var jsChannelArray;
+    var max_cellspan = 2;
+
+    function hi(to,countUl,jsChannelStats){
+    var a;
+    var x;
+    var tabs = new Array();
+    for(var idx=0; idx < countUl.length; idx++){
+        if(countUl[idx] == "Channel Number") continue;
+        tabs.push(countUl[idx].substring(8,13));
+    }
+    for (x in tabs)
+    {
+        if (tabs[x] != to) {
+            a = document.getElementById('ch-stats' + '-tab-' + tabs[x]);
+            a.className = "cbi-tab-disabled";
+            a = document.getElementById('ch-stats' + '-' + tabs[x]);
+            a.style.display = "none";
+        }
+    }
+    a = document.getElementById('ch-stats' + '-tab-' + to);
+    a.className = "cbi-tab";
+    a = document.getElementById('ch-stats' + '-' + to);
+    a.style.display = "";
+    var tree_info = draw_channel_stats_table(jsChannelStats);
+    var almac = document.getElementById('get-almac').value;
+    var band = document.getElementById('get-band').value;
+    disp_channel_graph(tree_info, jsChannelStats, almac, band);
+    }
+
+    function get_band(ch){
+        if (ch >= 36) return "5G";
+        else return "2.4G";
+    }
+
+    function set_max_cellspan(o)
+    {
+        for(var k in o){
+            var v = o[k];
+            if (v instanceof Array){
+                max_cellspan++;
+                for(var a_idx=0; a_idx < v.length; a_idx++){
+                    if(((typeof v[a_idx]) == "object") && v[a_idx] != null){
+                        set_max_cellspan(v[a_idx]);
+                    }
+                    else{
+                        console.log("set_max_cellspan: Incorrect Channel Statistics: Array element is not an object!",v[a_idx]);
+                    }
+                }
+            }
+            else if(((typeof v) == "object") && v != null){
+                set_max_cellspan(v);
+            }
+        }
+    }
+
+    function set_rowspan(o)
+    {
+        var rowspan = 0;
+        for(var k in o){
+            var v = o[k];
+            if (v instanceof Array){
+                for(var a_idx=0; a_idx < v.length; a_idx++){
+                    if(((typeof v[a_idx]) == "object") && v[a_idx] != null){
+                        rowspan = rowspan + set_rowspan(v[a_idx]);
+                    }
+                    else{
+                        console.log("set_rowspan: Incorrect Channel Statistics: Array element is not an object!",v[a_idx]);
+                    }
+                }
+            }
+            else if(((typeof v) == "object") && v != null){
+                rowspan = rowspan + set_rowspan(v);
+            }
+            else{
+                rowspan++;
+            }
+        }
+        return rowspan;
+    }
+
+    function obj_loop(table_id, row, o)
+    {
+        var cell;
+        for(var k in o){
+            var v = o[k];
+            if (v instanceof Array){
+                arr_loop(table_id, k, v);
+            }
+            else if(((typeof v) == "object") && v != null){
+                obj_loop(table_id, row, v);
+            }
+            else{
+                if(row == null){
+                    row = table_id.insertRow(-1);
+                }
+                cell = row.insertCell(-1);
+                cell.innerHTML = k;
+                cell = row.insertCell(-1);
+                cell.colSpan = max_cellspan - row.cells.length + 1;
+                cell.innerHTML = v;
+                row = null;
+            }
+        }
+    }
+
+    function arr_loop(table_id, k, a)
+    {
+        var row, cell;
+        for(var a_idx=0; a_idx < a.length; a_idx++){
+            var v = a[a_idx];
+            if(((typeof v) == "object") && v != null){
+                row = table_id.insertRow(-1);
+                cell = row.insertCell(-1);
+                cell.rowSpan = set_rowspan(v);
+                cell.style.verticalAlign  = "middle";
+                cell.innerHTML = "<strong>" + k + ' - ' + (a_idx + 1) + "</strong>";
+                obj_loop(table_id, row, v);
+            }
+            else{
+                console.log("Incorrect Channel Statistics: Array element is not an object!",a);
+            }
+        }
+    }
+
+    function toggle_disp_channel_stats_info(btn){
+        var div = document.getElementById("display_channel_stats_info_div");
+        var btn_str = btn.innerHTML;
+        if(btn_str.startsWith('Show')){
+            btn.innerHTML = 'Hide Channel Statistics Info';
+            div.style.display = "";
+            if(div.children.length == 0){
+                div.innerHTML = "";
+                var b = document.createElement("BIG");
+                var s = document.createElement("STRONG");
+                var t = document.createTextNode("Channel Statistics information has not been received yet! Please wait.");
+                s.appendChild(t);
+                b.appendChild(s);
+                div.setAttribute("class", "alert-message");
+                div.appendChild(b);
+            }
+        }
+        else{
+            btn.innerHTML = 'Show Channel Statistics Info';
+            div.style.display = "none";
+        }
+    }
+
+    function prep_selectable_dropdown(tree_info, jsChannelStats, deviceList){
+        var getAlMac = document.getElementById('get-almac');
+        var getBand = document.getElementById('get-band');
+
+        if(getAlMac.innerHTML == "" && getBand.innerHTML == ""){
+            getAlMac.innerHTML = "<option value=''>Choose AlMac</option>";
+            getBand.innerHTML = "<option value=''>Choose Band</option>";
+
+            for (var almac in deviceList){
+                getAlMac.options[getAlMac.options.length] = new Option(deviceList[almac]["alMac"], deviceList[almac]["alMac"]);
+            }
+
+            getAlMac.onchange = function () {
+                getBand.length = 1;
+                if (this.selectedIndex < 1) return;
+                for (var band in deviceList[this.options[this.options.selectedIndex].index-1]["radios"]) {
+                    getBand.options[getBand.options.length] = new Option(get_band(deviceList[this.options[this.options.selectedIndex].index-1]["radios"][band]), deviceList[this.options[this.options.selectedIndex].index-1]["radios"][band]);
+                }
+                document.getElementById("graph").style.display = "none";
+            }
+            getAlMac.onchange();
+            getBand.addEventListener("change", function() {disp_channel_graph(tree_info, jsChannelStats, null, null); });
+        }
+    }
+
+    function draw_channel_stats_table(jsChannelStats)
+    {
+        var tree_info = [];
+        var deviceList = [];
+        var channelStatsInfoArr = jsChannelStats['Channel Scan Information'];
+        if(!(channelStatsInfoArr instanceof Array)){
+            console.log("Incorrect Channel Statistics Info: Value of Channel Statistics information is not an Array!");
+            return;
+        }
+        document.getElementById("display_channel_stats_info_div").innerHTML = "";
+        for(var idx_1905=0; idx_1905 < channelStatsInfoArr.length; idx_1905++){
+            var obj_1905 = channelStatsInfoArr[idx_1905];
+            var channelList = [];
+            for(var i=0; i<obj_1905["Radio Info"].length; i++){
+                if(obj_1905["Radio Info"][i]["Channel scan result"] != "")
+                    channelList.push(obj_1905["Radio Info"][i]["Channel scan result"][0]["Channel Number"]);
+            }
+            deviceList.push({"alMac" : obj_1905['AL MAC'], "radios" : channelList });
+            var dev1905tbl = document.createElement("TABLE");
+            dev1905tbl.setAttribute("class", "cbi-section-table");
+            var dev1905fset = document.createElement("FIELDSET");
+            dev1905fset.setAttribute("class", "cbi-section");
+            var dev1905legend = document.createElement("LEGEND");
+            var dev1905a = document.createElement("A");
+            var dev1905text = document.createTextNode("1905 Device - " + (idx_1905 + 1));
+            dev1905a.setAttribute("href", "#");
+            dev1905a.appendChild(dev1905text);
+            dev1905legend.appendChild(dev1905a);
+            dev1905fset.appendChild(dev1905legend);
+            document.getElementById("display_channel_stats_info_div").appendChild(dev1905fset);
+
+            set_max_cellspan(obj_1905);
+            obj_loop(dev1905tbl, null, obj_1905);
+            tree_info[idx_1905] = prep_channel_stats_graph(obj_1905);
+            document.getElementById("display_channel_stats_info_div").appendChild(dev1905tbl);
+        }
+
+        tree_info.sort(function(a, b){return a.hopCount - b.hopCount});
+        prep_selectable_dropdown(tree_info, jsChannelStats, deviceList);
+        return tree_info;
+    }
+
+    function disp_channel_graph(channelStatsData, jsChannelStats, almac, band){
+        var almac = almac;
+        if (almac == "" || almac == null) almac = document.getElementById('get-almac').value;
+        var band = band;
+        if (band == "" || band == null) band = document.getElementById('get-band').value;
+
+        if(almac !== "" && band !== "")
+            document.getElementById("graph").style.display = "";
+        countUl = get_channel_stats_ul(jsChannelStats);
+        var dataUtil = {};
+        dataUtil['labels'] = [];
+        dataUtil['series'] = [];
+        var seriesDataUtil = [];
+
+        for(i=0; i < channelStatsData.length; i++){
+            if(channelStatsData[i]['alMac'] == almac){
+                for(j=0; j<channelStatsData[i]["utilInfo"].length; j++){
+                    if(get_band(channelStatsData[i]["utilInfo"][j]["Channel Number"]) == get_band(band)){
+                        dataUtil['labels'].push(channelStatsData[i]["utilInfo"][j]['Channel Number']);
+                        seriesDataUtil.push(channelStatsData[i]["utilInfo"][j]['Channel Util']);
+                    }
+                }
+            }
+        }
+        dataUtil['series'].push(seriesDataUtil);
+
+        var dataNoise = {};
+        dataNoise['labels'] = [];
+        dataNoise['series'] = [];
+        var seriesDataNoise = [];
+
+        for(i=0; i < channelStatsData.length; i++){
+            if(channelStatsData[i]['alMac'] == almac){
+                for(j=0; j<channelStatsData[i]["noiseInfo"].length; j++){
+                    if(get_band(channelStatsData[i]["noiseInfo"][j]["Channel Number"]) == get_band(band)){
+                        dataNoise['labels'].push(channelStatsData[i]["noiseInfo"][j]['Channel Number']);
+                        seriesDataNoise.push(channelStatsData[i]["noiseInfo"][j]['Channel Noise']);
+                    }
+                }
+            }
+        }
+        dataNoise['series'].push(seriesDataNoise);
+
+        var dataCondition = {};
+        dataCondition['labels'] = [];
+        dataCondition['series'] = [];
+        var seriesDataCondition = [];
+
+        for(i=0; i < channelStatsData.length; i++){
+            if(channelStatsData[i]['alMac'] == almac){
+                for(j=0; j<channelStatsData[i]["conditionInfo"].length; j++){
+                    if(get_band(channelStatsData[i]["conditionInfo"][j]["Channel Number"]) == get_band(band)){
+                        dataCondition['labels'].push(channelStatsData[i]["conditionInfo"][j]['Channel Number']);
+                        seriesDataCondition.push(channelStatsData[i]["conditionInfo"][j]['Channel Condition']);
+                    }
+                }
+            }
+        }
+        dataCondition['series'].push(seriesDataCondition);
+
+        var dataNeighbour = {};
+        dataNeighbour['labels'] = [];
+        dataNeighbour['series'] = [];
+        var seriesDataNeighbour = [];
+
+        for(i=0; i < channelStatsData.length; i++){
+            if(channelStatsData[i]['alMac'] == almac){
+                for(j=0; j<channelStatsData[i]["neighbourInfo"].length; j++){
+                    if(get_band(channelStatsData[i]["neighbourInfo"][j]["Channel Number"]) == get_band(band)){
+                        dataNeighbour['labels'].push(channelStatsData[i]["neighbourInfo"][j]['Channel Number']);
+                        seriesDataNeighbour.push(channelStatsData[i]["neighbourInfo"][j]['Channel Neighbour']);
+                    }
+                }
+            }
+        }
+        dataNeighbour['series'].push(seriesDataNeighbour);
+
+        var dataEDCCA = {};
+        dataEDCCA['labels'] = [];
+        dataEDCCA['series'] = [];
+        var seriesDataEDCCA = [];
+
+        for(i=0; i < channelStatsData.length; i++){
+            if(channelStatsData[i]['alMac'] == almac){
+                for(j=0; j<channelStatsData[i]["edccaInfo"].length; j++){
+                    if(get_band(channelStatsData[i]["edccaInfo"][j]["Channel Number"]) == get_band(band)){
+                        dataEDCCA['labels'].push(channelStatsData[i]["edccaInfo"][j]['Channel Number']);
+                        seriesDataEDCCA.push(channelStatsData[i]["edccaInfo"][j]['Channel EDCCA']);
+                    }
+                }
+            }
+        }
+        dataEDCCA['series'].push(seriesDataEDCCA);
+
+        var options = {
+            seriesBarDistance: 10,
+            axisY: {
+                onlyInteger: true
+            }
+        };
+
+        var responsiveOptions = [
+            ['screen and (max-width: 640px)', {
+                seriesBarDistance: 5,
+                axisX: {
+                    labelInterpolationFnc: function (value) {
+                        return value[0];
+                    }
+                }
+            }]
+        ];
+
+        for(var idx=0; idx < countUl.length; idx++){
+            if(countUl[idx] == "Channel Number") continue;
+            document.getElementById("ch-stats-"+countUl[idx].substring(8,13)).innerHTML = '';
+            if(countUl[idx] == "Channel Util")
+                new Chartist.Bar("#ch-stats-"+countUl[idx].substring(8,13), dataUtil, options, responsiveOptions);
+            else if(countUl[idx] == "Channel Noise")
+                new Chartist.Bar("#ch-stats-"+countUl[idx].substring(8,13), dataNoise, options, responsiveOptions);
+            else if(countUl[idx] == "Channel Condition")
+                new Chartist.Bar("#ch-stats-"+countUl[idx].substring(8,13), dataCondition, options, responsiveOptions);
+            else if(countUl[idx] == "Channel EDCCA")
+                new Chartist.Bar("#ch-stats-"+countUl[idx].substring(8,13), dataEDCCA, options, responsiveOptions);
+            else
+                new Chartist.Bar("#ch-stats-"+countUl[idx].substring(8,13), dataNeighbour, options, responsiveOptions);
+
+        }
+    }
+
+    function prep_channel_stats_graph(treeInfo){
+        var node = {};
+        node["alMac"] = treeInfo['AL MAC'];
+        node["utilInfo"] = [];
+        node["noiseInfo"] = [];
+        node["conditionInfo"] = [];
+        node["neighbourInfo"] = [];
+        node["edccaInfo"] = [];
+            for(var j=0; j<treeInfo['Radio Info'].length; j++){
+                for(var k=0; k<treeInfo['Radio Info'][j]['Channel scan result'].length; k++){
+                    node["utilInfo"].push({"Channel Number" : treeInfo['Radio Info'][j]['Channel scan result'][k]['Channel Number'], "Channel Util" : treeInfo['Radio Info'][j]['Channel scan result'][k]['Channel Util']});
+                    node["noiseInfo"].push({"Channel Number" : treeInfo['Radio Info'][j]['Channel scan result'][k]['Channel Number'], "Channel Noise" : treeInfo['Radio Info'][j]['Channel scan result'][k]['Channel Noise']});
+                    node["conditionInfo"].push({"Channel Number" : treeInfo['Radio Info'][j]['Channel scan result'][k]['Channel Number'], "Channel Condition" : treeInfo['Radio Info'][j]['Channel scan result'][k]['Channel Condition']});
+                    node["neighbourInfo"].push({"Channel Number" : treeInfo['Radio Info'][j]['Channel scan result'][k]['Channel Number'], "Channel Neighbour" : treeInfo['Radio Info'][j]['Channel scan result'][k]['Channel Neighbour']});
+                    node["edccaInfo"].push({"Channel Number" : treeInfo['Radio Info'][j]['Channel scan result'][k]['Channel Number'], "Channel EDCCA" : treeInfo['Radio Info'][j]['Channel scan result'][k]['Channel EDCCA']});
+                }
+            }
+        return node;
+    }
+
+    function draw_channel_stats_content(jsChannelStats){
+        countUl = get_channel_stats_ul(jsChannelStats);
+        var channelStatsErrMsg = document.getElementById("channelStatsErrMsgDiv");
+        var getDevices = document.getElementById("selectable");
+        if(!(countUl instanceof Array)){
+            channelStatsErrMsg.innerHTML = "";
+            channelStatsErrMsg.innerHTML += "ERROR: Channel Statistics information has not been received yet! Please go back and Trigger Channel Scan again.";
+            channelStatsErrMsg.parentNode.parentNode.style.display = "";
+            channelStatsErrMsg.style.display = "";
+            getDevices.style.display = "none";
+            return;
+        }
+
+        jsChannelArray = jsChannelStats;
+        var listContent = document.getElementById('list-content');
+        var tabContent = document.getElementById('tab-content');
+        listContent.innerHTML = "";
+        tabContent.innerHTML = "";
+        for(var idx=0; idx < countUl.length; idx++){
+            if(countUl[idx] == "Channel Number"){
+                var channelStr = document.createElement("p");
+                channelStr.style.textAlign = "center";
+                channelStr.style.fontWeight = "bold";
+                channelStr.innerHTML = "Channel Number";
+                continue;
+            }
+            var liTag = document.createElement('li');
+            var divTag = document.createElement('div');
+            if(idx == 1){
+                liTag.className= "cbi-tab";
+                divTag.style.display = "";
+            }
+            else{
+                liTag.className= "cbi-tab-disabled";
+                divTag.style.display = "none";
+            }
+            liTag.id = "ch-stats-tab-"+countUl[idx].substring(8,13);
+            divTag.id = "ch-stats-"+countUl[idx].substring(8,13);
+            divTag.style.height = "500px";
+            var aTag = document.createElement("a");
+            aTag.innerHTML = countUl[idx];
+            aTag.setAttribute("href", "javascript:hi(\""+countUl[idx].substring(8,13)+"\",countUl,jsChannelArray);this.blur();");
+            liTag.appendChild(aTag);
+            listContent.appendChild(liTag);
+            tabContent.appendChild(divTag);
+            tabContent.appendChild(channelStr);
+        }
+    }
+
+    function get_channel_stats_ul(jsChannelStats){
+        var ulArray;
+        var channelStatsArr = jsChannelStats['Channel Scan Information'];
+        var channelStatsErrMsg = document.getElementById("channelStatsErrMsgDiv");
+        for(var i=0; i<channelStatsArr.length; i++){
+            for(var j=0; j<channelStatsArr[i]['Radio Info'].length; j++){
+                for(var k=0; k<channelStatsArr[i]['Radio Info'][j]['Channel scan result'].length; k++){
+                    ulArray = Object.keys(channelStatsArr[i]['Radio Info'][j]['Channel scan result'][0]);
+                    return ulArray;
+                }
+            }
+        }
+    }
+
+    function get_channel_stats_cb(rsp)
+    {
+        try{
+            var r = JSON.parse(rsp);
+            if(r.status == "SUCCESS"){
+                var jsChannelStats = JSON.parse(r.luaChannelStatsInfo);
+                get_channel_stats_ul(jsChannelStats);
+                draw_channel_stats_content(jsChannelStats);
+                document.getElementById("display_channel_stats_info_div").innerHTML = "";
+                document.getElementById("graph").style.display = "none";
+                draw_channel_stats_table(jsChannelStats);
+            }
+            else{
+                console.log("Failed to get Channel Stats!\nStatus: ",r.status);
+            }
+        }
+        catch(e){
+            console.log("Incorrect response! Failed to get Channel Stats!",e.name,e.message);
+        }
+    }
+
+    function get_channel_stats()
+    {
+        document.getElementById("channelStatsErrMsgDiv").style.display = "none";
+        document.getElementById("toggle_disp_channel_stats_info_btn").disabled = true;
+        XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "get_channel_stats")%>', null,
+            function(x)
+            {
+                console.log(x);
+                document.getElementById('getChannelStatsInfoMsgDiv').style.display = 'none';
+                document.getElementById("selectable").style.display = "";
+                get_channel_stats_cb(x.response);
+                document.getElementById("toggle_disp_channel_stats_info_btn").disabled = false;
+            }
+        );
+    }
+
+    window.onload = function(){
+        MonCon.ping();
+        get_channel_stats();
+    }
+
+</script>
+<%+footer%>

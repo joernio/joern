@@ -1,0 +1,1156 @@
+<%#
+    File name : mtk_wifi_map_bss_cfg_renew.htm
+    This file is used in WebUI based on LuCI
+    to configure BSS in EasyMesh Network.
+%>
+<%+header%>
+
+<script src="/luci-static/resources/monCon.js"></script>
+
+<%
+    local mtkwifi = require("mtkwifi")
+    local cfgs = mtkwifi.load_easymesh_bss_cfgs()
+    local cfg_1905d = mtkwifi.load_profile("/etc/map/1905d.cfg")
+%>
+
+<fieldset class="cbi-section">
+    <legend><a>EasyMesh BSS Configuration</a>
+        <%local diff = mtkwifi.diff_profile(mtkwifi.__easymesh_bss_cfgs_path())%>
+        <%if next(diff) ~= nil then%>
+            <span style="color:red;">
+                ( <a href="javascript:location.href='<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "apply_easymesh_bss_cfg")%>'">Click here</a> to apply EasyMesh BSS changes)
+            </span>
+        <% end %>
+    </legend>
+</fieldset>
+
+<div class="alert-message" id="bss_cfgs_loading_div" style="display:none">
+    <img src="<%=resource%>/icons/loading.gif" alt="" style="vertical-align:middle" />
+    <big><strong>Please wait while the request is being processed!</strong></big>
+</div>
+<div id="bss_cfgs_error" style="display:none">
+    <legend class="alert-message error">There is an error in <strong>etc/map/wts_bss_info_config</strong> file. Only one Bss configuration can be set as Primary Vlan.</legend>
+</div>
+<div id="bss_cfgs_info" style="display:none">
+    <legend class="alert-message info">There is no Primary Vlan set in <strong>etc/map/wts_bss_info_config</strong> file. Please set one Primary Vlan in any of the BSS.</legend>
+</div>
+
+<div id="bss_cfgs_display">
+    <p class="left">
+        <input id="add_new_dev_bss_cfgs_inp_btn" type="button" class="cbi-button cbi-button-add" onclick="addNewBssCfgs()" value="Add  BSS Configurations"/>
+    </p>
+    <form method="post" name="cbi" id="add_bss_cfgs_form" action="<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "easymesh_bss_cfg")%>" enctype="multipart/form-data" onsubmit="return validate_all()" autocomplete="off" style="display:none">
+        <input type="hidden" name="__IS_EDIT" id="edit_bss_hid_inp" value="0" />
+        <input type="hidden" name="__EDIT_SSID" id="edit_bss_ssid_hid_inp" value="" />
+        <input type="hidden" name="__EDIT_AUTH_MODE" id="edit_bss_auth_mode_hid_inp" value="" />
+        <input type="hidden" name="__EDIT_ENCRYPTION_TYPE" id="edit_bss_enc_type_hid_inp" value="" />
+        <input type="hidden" name="__EDIT_PASS_PHRASE" id="edit_bss_pass_phrase_hid_inp" value="" />
+        <input type="hidden" name="__EDIT_BH_SUPPORT" id="edit_bss_bh_support_hid_inp" value="" />
+        <input type="hidden" name="__EDIT_FH_SUPPORT" id="edit_bss_fh_support_hid_inp" value="" />
+        <input type="hidden" name="__EDIT_IS_SSID_HIDDEN" id="edit_bss_is_ssid_hidden_hid_inp" value="" />
+        <input type="hidden" name="__EDIT_FH_VLAN_ID" id="edit_bss_fh_vlan_hidden_hid_inp" value="" />
+        <input type="hidden" name="__EDIT_PRIM_VLAN" id="edit_bss_prim_vlan_hidden_hid_inp" value="" />
+        <input type="hidden" name="__EDIT_DEF_PCP" id="edit_bss_def_pcp_hidden_hid_inp" value="" />
+        <input type="hidden" name="isBhBssSupported" id="add_bss_bh_hid_inp" value="0" />
+        <input type="hidden" name="isFhBssSupported" id="add_bss_fh_hid_inp" value="0" />
+        <input type="hidden" name="isHidden" id="add_bss_is_ssid_hidden_hid_inp" value="0" />
+        <input type="hidden" name="primVlan" id="add_bss_prim_vlan_hid_inp" value="0" />
+        <input type="hidden" name="defPCP" id="add_bss_def_pcp_hid_inp" value="0" />
+        <table class="cbi-section-table" id="add_bss_cfgs_tbl">
+            <tr>
+                <td>AL-MAC</td>
+                <td>
+                    <input type="text" name="alMac" id="add_bss_almac_inp_text" />
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Radio Band</td>
+                <td>
+                    <select name="band" size="1" id="add_bss_band_sel">
+                        <option value="8x">2G</option>
+                        <option value="11x">5GL</option>
+                        <option value="12x">5GH</option>
+                    </select>
+                </td>
+                <td></td>
+            </tr>
+            <tbody id="add_bss_cfgs_fields_tbody" style="display:none">
+                <tr>
+                    <td>SSID</td>
+                    <td>
+                        <input type="text" name="ssid" id="add_bss_ssid_inp_text" />
+                    </td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Authentication Mode</td>
+                    <td>
+                        <select name="authMode" size="1" id="add_bss_auth_mode_sel" onchange="AuthModeOnChange(this.value)">
+                            <% if cfg_1905d.map_ver ~= "R3" then %>
+                                <option value="0x0001">OPEN</option>
+                            <% end %>
+                            <option value="0x0020">WPA2 - Personal</option>
+                            <option value="0x0040">WPA3 - SAE Only</option>
+                            <option value="0x0060">WPA3 - Transition Mode</option>
+                            <% if cfg_1905d.map_ver ~= "R1" and cfg_1905d.map_ver ~= "R2" then %>
+                                <option value="0x00A0">DPP + WPA2 - Personal</option>
+                                <option value="0x00C0">DPP + WPA3 - SAE</option>
+                                <option value="0x00E0">DPP + WPA3 - Transition Mode</option>
+                            <% end %>
+                        </select>
+                    </td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Encryption Type</td>
+                    <td>
+                        <select name="encType" size="1" id="add_bss_enc_type_sel" onchange="EncryptionTypeOnChange(this.value)">
+                            <option value="0x0001">NONE</option>
+                            <option value="0x0008">AES</option>
+                        </select>
+                    </td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Pass-phrase</td>
+                    <td>
+                        <input type="text" name="passPhrase" id="add_bss_pass_phrase_inp_text" />
+                    </td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Hidden</td>
+                    <td>
+                        <input type="checkbox" id="add_bss_is_ssid_hidden_cbox" />
+                    </td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Back-haul BSS Support</td>
+                    <td>
+                        <input type="checkbox" id="add_bss_bh_cbox" />
+                    </td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Front-haul BSS Support</td>
+                    <td>
+                        <input type="checkbox" id="add_bss_fh_cbox" onclick="CheckWPA3Setting()" />
+                    </td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>FH Vlan ID</td>
+                    <td>
+                        <input type="text" name="fhVlanId" id="add_bss_fh_vlan_id" /> (valid values: 3-4094, disabled value: 4095)
+                    </td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Primary Vlan</td>
+                    <td>
+                        <input type="checkbox" id="add_bss_pvlan_cbox" onclick="togglePCP(this)" />
+                    </td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Default PCP</td>
+                    <td>
+                        <input type="text" id="add_bss_def_pcp" maxlength="1" disabled /> (valid values: 0-7)
+                    </td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="cbi-page-actions" id="add_bss_cfgs_validate_almac_band_div">
+            <input class="cbi-button cbi-button-apply" type="button" value="Validate AL-MAC & Band" onclick="addBssPreConditionCheck()" />
+        </div>
+        <div class="cbi-page-actions" id="add_bss_cfgs_form_submit_div" style="display:none">
+            <input class="cbi-button cbi-button-apply" name="__apply" value="Save and Apply" type="submit" />
+            <input class="cbi-button cbi-button-apply" value="Save" type="submit" />
+            <input class="cbi-button cbi-button-reset" value="Reset" type="reset" />
+        </div>
+    </form>
+
+    <div class="alert-message" id='no_bss_cfg_msg_div' style="display:none">
+        <strong>No BSS Configuration has been added yet!</strong>
+    </div>
+
+    <fieldset class="cbi-section" id='cfg_bss_info_hdr_fset' style='display:none'>
+        <legend>
+            Configured BSS Information
+        </legend>
+        <div id="bss_overview_div">
+            <!-- JavaScript will create table with BSS Information -->
+        </div>
+    </fieldset>
+
+</div>
+
+<script type="text/javascript">
+
+    function checkInjection(str)
+    {
+        for (var i=0; i < str.length; i++) {
+            if ( str.charAt(i) == '\r' || str.charAt(i) == '\n'){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function validate_security()
+    {
+        var authModeSel = document.getElementById('add_bss_auth_mode_sel');
+        var encTypeSel = document.getElementById('add_bss_enc_type_sel');
+        var passPhraseId = document.getElementById('add_bss_pass_phrase_inp_text');
+        var passPhrase = passPhraseId.value;
+        if(authModeSel.value == '0x0001' && encTypeSel.value == '0x0001'){
+            //AUTH_MODE = OPEN and ENCRYPTION_TYPE = NONE
+            passPhraseId.value = '';
+        }
+        else if((authModeSel.value == '0x0020' || authModeSel.value == '0x0040' || authModeSel.value == '0x0060' || authModeSel.value == '0x00A0' || authModeSel.value == '0x00C0' || authModeSel.value == '0x00E0') && encTypeSel.value == '0x0008'){
+            //AUTH_MODE = WPA2-Personal and ENCRYPTION_TYPE = AES
+            if (passPhrase.length == 0){
+                alert('Pass-phrase is empty!\n' +
+                    'Please enter 8~63 ASCII or 64 Hexadecimal characters as Pass-phrase.');
+                passPhraseId.select();
+                passPhraseId.focus();
+                return false;
+            }
+            if (passPhrase.length < 8){
+                alert('Pass-phrase is short!\n' +
+                    'Please enter 8~63 ASCII or 64 Hexadecimal characters as Pass-phrase.');
+                passPhraseId.select();
+                passPhraseId.focus();
+                return false;
+            }
+            var nonHexPat = /[^A-Fa-f0-9]/;
+            if(nonHexPat.test(passPhrase)){
+                // ASCII
+                if (passPhrase.length > 63) {
+                    alert('Too many characters in Pass-phrase!\n' +
+                        'Please enter 8~63 ASCII or 64 Hexadecimal characters as Pass-phrase.');
+                    passPhraseId.select();
+                    passPhraseId.focus();
+                    return false;
+                }
+            }
+            else{
+                // Hexadecimal
+                if (passPhrase.length > 64 ){
+                    alert('Too many characters in Pass-phrase!\n' +
+                        'Please enter 64 Hexadecimal or 8~63 ASCII characters as Pass-phrase.');
+                    passPhraseId.select();
+                    passPhraseId.focus();
+                    return false;
+                }
+            }
+            if(checkInjection(passPhrase) == false){
+                alert('Please enter 8~63 ASCII or 64 Hexadecimal characters as Pass-phrase.');
+                passPhraseId.select();
+                passPhraseId.focus();
+                return false;
+            }
+        }
+        else{
+            alert('Invalid security settings!\n'+
+                'Please select valid Authentication Mode and Encryption Type.');
+            authModeSel.focus();
+            return false;
+        }
+        return true;
+    }
+
+    function validate_ssid()
+    {
+        var ssidInp = document.getElementById("add_bss_ssid_inp_text");
+        var ssid = ssidInp.value;
+        if(ssid.length == 0){
+            alert('SSID is empty!\n' +
+                'Please enter SSID with 1 to 32 characters.');
+            ssidInp.select();
+            ssidInp.focus();
+            return false;
+        }
+        if(ssid.length > 32){
+            alert('Too many characters in SSID!\n' +
+                'Please enter SSID with 1 to 32 characters.');
+            ssidInp.select();
+            ssidInp.focus();
+            return false;
+        }
+        if(checkInjection(ssid) == false){
+            alert('Please enter SSID with 1 to 32 characters.');
+            ssidInp.select();
+            ssidInp.focus();
+            return false;
+        }
+        return true;
+    }
+
+    function validate_al_mac()
+    {
+        var alMacInp = document.getElementById('add_bss_almac_inp_text');
+        var macRegExp = /[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}/;
+        if (!macRegExp.test(alMacInp.value)) {
+            alert("Please fill AL-MAC in correct format! (XX:XX:XX:XX:XX:XX)");
+            alMacInp.focus();
+            alMacInp.select();
+            return false;
+        }
+        return true;
+    }
+
+    function validate_all()
+    {
+        if (validate_al_mac() &&
+            validate_ssid() &&
+            validate_security()){
+            var fhChbox = document.getElementById('add_bss_fh_cbox');
+            var fhHdInp = document.getElementById('add_bss_fh_hid_inp');
+            var bhChbox = document.getElementById('add_bss_bh_cbox');
+            var bhHdInp = document.getElementById('add_bss_bh_hid_inp');
+            var isSsidHiddenChbox = document.getElementById('add_bss_is_ssid_hidden_cbox');
+            var isSsidHiddenHdInp = document.getElementById('add_bss_is_ssid_hidden_hid_inp');
+            var pvLanChBox = document.getElementById('add_bss_pvlan_cbox');
+            var pvLanHdInp = document.getElementById('add_bss_prim_vlan_hid_inp');
+            var defPcpHdInp = document.getElementById('add_bss_def_pcp_hid_inp');
+            fhChbox.checked ? fhHdInp.value = "1" : fhHdInp.value = "0";
+            bhChbox.checked ? bhHdInp.value = "1" : bhHdInp.value = "0";
+            isSsidHiddenChbox.checked ? isSsidHiddenHdInp.value = "hidden-Y" : isSsidHiddenHdInp.value = "hidden-N";
+            if(pvLanChBox.checked){
+                pvLanHdInp.value = "pvid";
+                defPcpHdInp.value = document.getElementById('add_bss_def_pcp').value;
+            }
+            else{
+                pvLanHdInp.value = "N/A";
+                defPcpHdInp.value = "N/A";
+            }
+            var tmpVal = document.getElementById("add_bss_def_pcp");
+            if(tmpVal.disabled == false && (isNaN(tmpVal.value) || parseInt(tmpVal.value) < 0 || parseInt(tmpVal.value) > 7)){
+                alert("Default PCP is incorrect!\nPlease enter a value between 0 to 7.");
+                document.getElementById("add_bss_def_pcp").focus();
+                document.getElementById("add_bss_def_pcp").select();
+                return false;
+            }
+            tmpVal = document.getElementById("add_bss_fh_vlan_id");
+            if(isNaN(tmpVal.value) || parseInt(tmpVal.value) < 3 || parseInt(tmpVal.value) > 4095){
+                alert("FH Vlan ID is incorrect!\nPlease enter a value between 3 to 4094.");
+                document.getElementById("add_bss_fh_vlan_id").focus();
+                document.getElementById("add_bss_fh_vlan_id").select();
+                return false;
+            }
+            document.getElementById('bss_cfgs_display').style.display = 'none';
+            document.getElementById('bss_cfgs_loading_div').style.display = '';
+            return true;
+        }
+        return false;
+    }
+
+    function AuthModeOnChange(authModeCode)
+    {
+        var encTypeSel = document.getElementById('add_bss_enc_type_sel');
+        switch(authModeCode){
+            case "0x0001":  // OPEN
+                for (var idx=0; idx < encTypeSel.length; idx++) {
+                    // NONE
+                    if (encTypeSel.options[idx].value == '0x0001'){
+                        encTypeSel.options[idx].selected = true;
+                        encTypeSel.options[idx].disabled = false;
+                    }
+                    else{
+                        encTypeSel.options[idx].selected = false;
+                        encTypeSel.options[idx].disabled = true;
+                    }
+                }
+                break;
+            case "0x0020":
+            case "0x0040":
+            case "0x0060":
+            case "0x00A0":
+            case "0x00C0":
+            case "0x00E0":  // WPA2 - Personal
+                for (var idx=0; idx < encTypeSel.length; idx++) {
+                    // AES
+                    if (encTypeSel.options[idx].value == '0x0008'){
+                        encTypeSel.options[idx].selected = true;
+                        encTypeSel.options[idx].disabled = false;
+                    }
+                    else{
+                        encTypeSel.options[idx].selected = false;
+                        encTypeSel.options[idx].disabled = true;
+                    }
+                }
+                break;
+            default:
+                console.log("AuthModeOnChange: unknown Authentication Code: ",authModeCode);
+        }
+        EncryptionTypeOnChange(encTypeSel.value);
+    }
+
+    function CheckWPA3Setting()
+    {
+        /* function to disable WPA3 Sae only if front haul support is enabled */
+        var checkBox = document.getElementById("add_bss_fh_cbox").checked;
+        var authModeSel = document.getElementById('add_bss_auth_mode_sel');
+        for (var idx=0; idx < authModeSel.length; idx++) {
+            if (authModeSel.options[idx].value == "0x0040"){
+                break;
+            }
+        }
+        if(checkBox){
+            authModeSel.options[idx].disabled = true;
+            var WPA3SAE = document.getElementById("add_bss_auth_mode_sel").options[idx].selected;
+            if(WPA3SAE){
+                document.getElementById("add_bss_auth_mode_sel").options[idx].selected = false;
+                document.getElementById("add_bss_auth_mode_sel").options[idx+1].selected = true;
+            }
+        }
+        else{
+            document.getElementById("add_bss_auth_mode_sel").options[idx].disabled = false;
+        }
+    }
+
+    function EncryptionTypeOnChange(encType)
+    {
+        var passPhraseInp = document.getElementById('add_bss_pass_phrase_inp_text');
+        passPhraseInp.value = '';
+        switch(encType){
+            case "0x0001": // NONE
+                passPhraseInp.parentNode.parentNode.style.display = 'none';
+                break;
+            case "0x0008": // AES
+                passPhraseInp.parentNode.parentNode.style.display = '';
+                break;
+            default:
+                return "Unknown Encryption Code: " + encType;
+        }
+    }
+
+    function addNewBssCfgs()
+    {
+        document.getElementById('add_bss_cfgs_form').style.display = '';
+        document.getElementById('add_bss_cfgs_fields_tbody').style.display = 'none';
+        var alMacInp = document.getElementById('add_bss_almac_inp_text');
+        alMacInp.value = '';
+        alMacInp.readOnly = false;
+        var bandSel = document.getElementById('add_bss_band_sel');
+        for (var idx=0; idx < bandSel.length; idx++) {
+            bandSel.options[idx].disabled = false;
+        }
+        bandSel.selectedIndex = 0;
+        document.getElementById('add_bss_cfgs_validate_almac_band_div').style.display = '';
+        document.getElementById('add_bss_cfgs_form_submit_div').style.display = 'none';
+    }
+
+    function addBssPreConditionCheck()
+    {
+        var bandSel = document.getElementById('add_bss_band_sel');
+        var alMacInp = document.getElementById('add_bss_almac_inp_text');
+        if (!validate_al_mac()) {
+            return;
+        }
+        addBssCfg(alMacInp.value,bandSel.value);
+    }
+
+    function addBssCfg(alMac,band)
+    {
+        /* Value of __IS_EDIT should be set to 1 only by onClick Edit button Action. */
+        document.getElementById('edit_bss_hid_inp').value = "0";
+        document.getElementById('edit_bss_ssid_hid_inp').value = '';
+        document.getElementById('edit_bss_auth_mode_hid_inp').value = '';
+        document.getElementById('edit_bss_enc_type_hid_inp').value = '';
+        document.getElementById('edit_bss_pass_phrase_hid_inp').value = '';
+        document.getElementById('edit_bss_bh_support_hid_inp').value = '';
+        document.getElementById('edit_bss_fh_support_hid_inp').value = '';
+        document.getElementById('edit_bss_is_ssid_hidden_hid_inp').value = '';
+        document.getElementById('edit_bss_fh_vlan_hidden_hid_inp').value = '';
+        document.getElementById('edit_bss_prim_vlan_hidden_hid_inp').value = '';
+        document.getElementById('edit_bss_def_pcp_hidden_hid_inp').value = '';
+        document.getElementById('bss_cfgs_display').style.display = 'none';
+        document.getElementById('bss_cfgs_loading_div').style.display = '';
+        XHR.get('<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "validate_add_easymesh_bss_req")%>/' + alMac + '/' + band, null,
+            function(x)
+            {
+                console.log(x);
+                try{
+                    var r = JSON.parse(x.response);
+                    if(r['status'] == 'SUCCESS'){
+                        document.getElementById('add_bss_cfgs_form').style.display = '';
+                        document.getElementById('add_bss_cfgs_fields_tbody').style.display = '';
+                        var alMacInp = document.getElementById('add_bss_almac_inp_text');
+                        alMacInp.value = alMac;
+                        alMacInp.readOnly = true;
+                        var bandSel = document.getElementById('add_bss_band_sel');
+                        for (var idx=0; idx < bandSel.length; idx++) {
+                            if (bandSel.options[idx].value == band){
+                                bandSel.options[idx].selected = true;
+                                bandSel.options[idx].disabled = false;
+                            }
+                            else{
+                                bandSel.options[idx].selected = false;
+                                bandSel.options[idx].disabled = true;
+                            }
+                        }
+                        document.getElementById('add_bss_ssid_inp_text').value = '';
+                        document.getElementById('add_bss_auth_mode_sel').selectedIndex = 0;
+                        document.getElementById('add_bss_enc_type_sel').selectedIndex = 0;
+                        document.getElementById('add_bss_pass_phrase_inp_text').value = '';
+                        document.getElementById('add_bss_bh_cbox').checked = false;
+                        document.getElementById('add_bss_fh_cbox').checked = false;
+                        document.getElementById('add_bss_is_ssid_hidden_cbox').checked = false;
+                        document.getElementById('add_bss_fh_vlan_id').value = 1;
+                        document.getElementById('add_bss_pvlan_cbox').checked = false;
+                        document.getElementById('add_bss_def_pcp').value = 'N/A';
+                        AuthModeOnChange(document.getElementById('add_bss_auth_mode_sel').value);
+                        document.getElementById('add_bss_cfgs_validate_almac_band_div').style.display = 'none';
+                        document.getElementById('add_bss_cfgs_form_submit_div').style.display = '';
+                    }
+                    else{
+                        alert('No more BSS could be added in ' +
+                            (band == '8x' ? '2G' : band == '11x' ? '5GL' : '5GH') +
+                            ' band of Device with AL-MAC ' + alMac + ' !\nStatus: ' + r['status']);
+                        location.reload(true);
+                    }
+                }
+                catch(e){
+                    alert("Failed to add a new BSS!\nERROR: Incorrect response received!");
+                    console.log("Failed to add a new BSS!\nERROR: [" + e.name + "] " + e.message);
+                    location.reload(true);
+                }
+                finally{
+                    document.getElementById('bss_cfgs_display').style.display = '';
+                    document.getElementById('bss_cfgs_loading_div').style.display = 'none';
+                }
+            }
+        );
+    }
+
+    function editBssCfg(alMac,band,bssInfoGrpObj,btnIdStr)
+    {
+        var bssInfo;
+        var bssIdx;
+        if(typeof(btnIdStr) == 'string'){
+            var bssIdxArr = btnIdStr.match(/\d{1,}$/);
+            if(bssIdxArr){
+                bssIdx = bssIdxArr[0];
+            }
+        }
+        if(typeof(bssIdx) == 'string' && typeof(bssInfoGrpObj) == 'object'){
+            bssInfo = bssInfoGrpObj[bssIdx];
+        }
+        if(typeof(bssInfo) != 'object' ||
+            !bssInfo.hasOwnProperty('ssid') ||
+            !bssInfo.hasOwnProperty('authMode') ||
+            !bssInfo.hasOwnProperty('encType') ||
+            !bssInfo.hasOwnProperty('passPhrase') ||
+            !bssInfo.hasOwnProperty('isBhBssSupported') ||
+            !bssInfo.hasOwnProperty('isFhBssSupported') ||
+            !bssInfo.hasOwnProperty('isHidden') ||
+            !bssInfo.hasOwnProperty('fhVlanId') ||
+            !bssInfo.hasOwnProperty('primVlan') ||
+            !bssInfo.hasOwnProperty('defPCP')){
+            alert('BSS could not be edited!\nIt does not have all required information to edit!');
+            location.reload(true);
+            return;
+        }
+        document.getElementById('add_bss_cfgs_form').style.display = '';
+        document.getElementById('add_bss_cfgs_fields_tbody').style.display = '';
+        var alMacInp = document.getElementById('add_bss_almac_inp_text');
+        alMacInp.value = alMac;
+        alMacInp.readOnly = true;
+        var bandSel = document.getElementById('add_bss_band_sel');
+        for (var idx=0; idx < bandSel.length; idx++) {
+            if (bandSel.options[idx].value == band){
+                bandSel.options[idx].selected = true;
+                bandSel.options[idx].disabled = false;
+            }
+            else{
+                bandSel.options[idx].selected = false;
+                bandSel.options[idx].disabled = true;
+            }
+        }
+        document.getElementById('add_bss_ssid_inp_text').value = bssInfo['ssid'];
+        var authModeSel = document.getElementById('add_bss_auth_mode_sel');
+        for (var idx=0; idx < authModeSel.length; idx++) {
+            if (authModeSel.options[idx].value == bssInfo['authMode']){
+                authModeSel.options[idx].selected = true;
+            }
+            authModeSel.options[idx].disabled = false;
+        }
+        AuthModeOnChange(authModeSel.value);
+        var encTypeSel = document.getElementById('add_bss_enc_type_sel');
+        for (var idx=0; idx < encTypeSel.length; idx++) {
+            if (encTypeSel.options[idx].value == bssInfo['encType']){
+                encTypeSel.options[idx].selected = true;
+                encTypeSel.options[idx].disabled = false;
+            }
+        }
+        EncryptionTypeOnChange(encTypeSel.value);
+        // Populate Pass-phrase field only when EncryptionType is not NONE.
+        if(encTypeSel.value != '0x0001'){
+            document.getElementById('add_bss_pass_phrase_inp_text').value = bssInfo['passPhrase'];
+        }
+        document.getElementById('add_bss_is_ssid_hidden_cbox').checked = (bssInfo['isHidden'] == 'hidden-Y') ? true : false;
+        document.getElementById('add_bss_bh_cbox').checked = (parseInt(bssInfo['isBhBssSupported']) == 1) ? true : false;
+        document.getElementById('add_bss_fh_cbox').checked = (parseInt(bssInfo['isFhBssSupported']) == 1) ? true : false;
+        document.getElementById('add_bss_fh_vlan_id').value = bssInfo['fhVlanId'];
+        document.getElementById('add_bss_pvlan_cbox').checked = bssInfo['primVlan'] == "pvid" ? true : false;
+        if(bssInfo['primVlan'] !== 'pvid'){
+            document.getElementById('add_bss_def_pcp').setAttribute('disabled', true);
+            document.getElementById('add_bss_def_pcp').value = "N/A";
+        }
+        else{
+            document.getElementById('add_bss_def_pcp').removeAttribute('disabled');
+            document.getElementById('add_bss_def_pcp').value = bssInfo['defPCP'];
+        }
+        /* Value of __IS_EDIT should be set to 1 here. */
+        document.getElementById('edit_bss_hid_inp').value = "1";
+        document.getElementById('edit_bss_ssid_hid_inp').value = bssInfo['ssid'];
+        document.getElementById('edit_bss_auth_mode_hid_inp').value = bssInfo['authMode'];
+        document.getElementById('edit_bss_enc_type_hid_inp').value = bssInfo['encType'];
+        document.getElementById('edit_bss_pass_phrase_hid_inp').value = bssInfo['passPhrase'];
+        document.getElementById('edit_bss_is_ssid_hidden_hid_inp').value = bssInfo['isHidden'];
+        document.getElementById('edit_bss_bh_support_hid_inp').value = bssInfo['isBhBssSupported'];
+        document.getElementById('edit_bss_fh_support_hid_inp').value = bssInfo['isFhBssSupported'];
+        document.getElementById('edit_bss_fh_vlan_hidden_hid_inp').value = bssInfo['fhVlanId'];
+        document.getElementById('edit_bss_prim_vlan_hidden_hid_inp').value = bssInfo['primVlan'];
+        document.getElementById('edit_bss_def_pcp_hidden_hid_inp').value = bssInfo['defPCP'];
+        document.getElementById('add_bss_cfgs_validate_almac_band_div').style.display = 'none';
+        document.getElementById('add_bss_cfgs_form_submit_div').style.display = '';
+        window.scrollTo(0, 0);
+        CheckWPA3Setting();
+    }
+
+    function removeBssCfg(alMac,band,bssInfoGrpObj,btnIdStr)
+    {
+        var bssInfo;
+        var bssIdx;
+        if(typeof(btnIdStr) == 'string'){
+            var bssIdxArr = btnIdStr.match(/\d{1,}$/);
+            if(bssIdxArr){
+                bssIdx = bssIdxArr[0];
+            }
+        }
+        if(typeof(bssIdx) == 'string' && typeof(bssInfoGrpObj) == 'object'){
+            bssInfo = bssInfoGrpObj[bssIdx];
+        }
+        if(!alMac ||
+            !band ||
+            !bssInfo ||
+            !bssInfo['ssid'] ||
+            !bssInfo['authMode'] ||
+            !bssInfo['encType'] ||
+            !bssInfo['passPhrase'] ||
+            !bssInfo['isBhBssSupported'] ||
+            !bssInfo['isFhBssSupported'] ||
+            !bssInfo['isHidden'] ||
+            !bssInfo.hasOwnProperty('fhVlanId') ||
+            !bssInfo.hasOwnProperty('primVlan') ||
+            !bssInfo.hasOwnProperty('defPCP')){
+            console.log('Failed to remove BSS!\nERROR: BSSINFO is incorrect!\nbssInfo=',bssInfo);
+            alert('Failed to remove BSS!\nERROR: BSSINFO is incorrect!');
+            return;
+        }
+        document.getElementById('bss_cfgs_display').style.display = 'none';
+        document.getElementById('bss_cfgs_loading_div').style.display = '';
+        var devBssObj = {
+            "alMac":alMac,
+            "band":band,
+            "ssid":bssInfo['ssid'],
+            "authMode":bssInfo['authMode'],
+            "encType":bssInfo['encType'],
+            "passPhrase":bssInfo['passPhrase'],
+            "isBhBssSupported":bssInfo['isBhBssSupported'],
+            "isFhBssSupported":bssInfo['isFhBssSupported'],
+            "isHidden":bssInfo['isHidden'],
+            "fhVlanId":bssInfo['fhVlanId'],
+            "primVlan":bssInfo['primVlan'],
+            "defPCP":bssInfo['defPCP']
+        };
+        (new XHR()).post("<%=luci.dispatcher.build_url("admin", "mtk", "multi_ap", "remove_easymesh_bss_cfg_req")%>",
+            devBssObj,
+            function(x) {
+                try{
+                    var res = JSON.parse(x.response);
+                    if(res["status"] == "SUCCESS"){
+                        alert("BSS has been removed successfully.");
+                    }else{
+                        alert("Failed to remove BSS!\nError: " + res["status"]);
+                    }
+                }
+                catch(e){
+                    console.log("Failed to remove BSS!\nError: Incorrect response received!\n",e.name,e.message);
+                    alert("Failed to remove BSS!\nError: Incorrect response received!\n" + e.name + '\n'+ e.message);
+                }
+                finally{
+                    location.reload(true);
+                }
+            }
+        );
+    }
+
+    function get_auth_mode_str(authModeCode)
+    {
+        switch(authModeCode){
+            case "0x0001":
+                return "OPEN";
+            case "0x0002":
+                return "WPA - Personal";
+            case "0x0004":
+                return "Shared";
+            case "0x0008":
+                return "WPA - Enterprise";
+            case "0x0010":
+                return "WPA2 - Enterprise";
+            case "0x0020":
+                return "WPA2 - Personal";
+            case "0x0022":
+                return "WPA - Personal/WPA2 - Personal";
+            case "0x0040":
+                return "WPA3 - SAE Only";
+            case "0x0060":
+                return "WPA3 - Transition Mode";
+            case "0x00A0":
+                return "DPP + WPA2 - Personal";
+            case "0x00C0":
+                return "DPP + WPA3 - SAE";
+            case "0x00E0":
+                return "DPP + WPA3 - Transition Mode";
+            default:
+                return "Unknown Authentication Code: " + authModeCode;
+        }
+    }
+
+    function get_encryption_str(encryptionCode)
+    {
+        switch(encryptionCode){
+            case "0x0001":
+                return "NONE";
+            case "0x0002":
+                return "WEP";
+            case "0x0004":
+                return "TKIP";
+            case "0x0008":
+                return "AES";
+            case "0x000c":
+                return "TKIP/AES";
+            default:
+                return "Unknown Encryption Code: " + encryptionCode;
+        }
+    }
+
+    function get_band_str(bandCode)
+    {
+        switch(bandCode){
+            case "8x":
+                return "2G";
+            case "11x":
+                return "5GL";
+            case "12x":
+                return "5GH";
+            default:
+                return "Unknown Band Code: " + bandCode;
+        }
+    }
+
+    function set_rowspan_auth_mode(o)
+    {
+        var rowspan = 0;
+        for(var k in o){
+            var v = o[k];
+            if(((typeof v) == "object") && v != null){
+                rowspan = rowspan + set_rowspan_auth_mode(v);
+            }
+            else{
+                /* Pass-phrase row is not required for OPEN/NONE Security. */
+                if(k != 'passPhrase' || !(o['authMode'] == '0x0001' && o['encType'] == '0x0001')){
+                    rowspan++;
+                }
+            }
+        }
+        return rowspan;
+    }
+
+    function draw_bssinfo_cells(alMacTbl, row, alMac, band, bssInfoGrpObj)
+    {
+        var cell,s,t,i;
+        for(var bssIdx in bssInfoGrpObj){
+            var bssInfo = bssInfoGrpObj[bssIdx];
+            var bssRowSpan = set_rowspan_auth_mode(bssInfo);
+            /* BSS-Idx */
+            cell = row.insertCell(-1);
+            cell.style.verticalAlign  = "middle";
+            cell.rowSpan = bssRowSpan;
+            s = document.createElement('STRONG');
+            t = document.createTextNode(get_band_str(band) +' : BSS-' + bssIdx);
+            s.appendChild(t);
+            cell.appendChild(s);
+
+            /* SSID Key */
+            cell = row.insertCell(-1);
+            s = document.createElement('STRONG');
+            t = document.createTextNode('SSID');
+            s.appendChild(t);
+            cell.appendChild(s);
+
+            /* SSID Value */
+            cell = row.insertCell(-1);
+            t = document.createTextNode(bssInfo['ssid']);
+            cell.appendChild(t);
+
+            /* Action Button : Edit BSS */
+            cell = row.insertCell(-1);
+            cell.style.verticalAlign  = "middle";
+            cell.rowSpan = bssRowSpan;
+            i = document.createElement('INPUT');
+            i.setAttribute("class", "cbi-button cbi-button-edit");
+            i.setAttribute("type", "button");
+            i.setAttribute("value", "Edit BSS");
+            i.setAttribute("id", "edit-bss-" + alMac + '-' + band + '-' + bssIdx);
+            if (document.addEventListener) {
+                // For all major browsers, except IE 8 and earlier
+                i.addEventListener("click", function(){editBssCfg(alMac,band,bssInfoGrpObj,this.id);});
+            } else if (document.attachEvent) {
+                // For IE 8 and earlier versions
+                i.attachEvent("onclick", function(){editBssCfg(alMac,band,bssInfoGrpObj,this.id);});
+            }
+            cell.appendChild(i);
+
+            /* Action Button : Remove BSS */
+            cell = row.insertCell(-1);
+            cell.style.verticalAlign  = "middle";
+            cell.rowSpan = bssRowSpan;
+            i = document.createElement('INPUT');
+            i.setAttribute("class", "cbi-button cbi-button-remove");
+            i.setAttribute("type", "button");
+            i.setAttribute("value", "Remove BSS");
+            i.setAttribute("id", "remove-bss-" + alMac + '-' + band + '-' + bssIdx);
+            if (document.addEventListener) {
+                // For all major browsers, except IE 8 and earlier
+                i.addEventListener("click", function(){removeBssCfg(alMac,band,bssInfoGrpObj,this.id);});
+            } else if (document.attachEvent) {
+                // For IE 8 and earlier versions
+                i.attachEvent("onclick", function(){removeBssCfg(alMac,band,bssInfoGrpObj,this.id);});
+            }
+            cell.appendChild(i);
+
+            /* AuthMode Key */
+            row = alMacTbl.insertRow(-1);
+            cell = row.insertCell(-1);
+            s = document.createElement('STRONG');
+            t = document.createTextNode('Authentication Mode');
+            s.appendChild(t);
+            cell.appendChild(s);
+
+            /* AuthMode Value */
+            cell = row.insertCell(-1);
+            t = document.createTextNode(get_auth_mode_str(bssInfo['authMode']));
+            cell.appendChild(t);
+
+            /* Encryption Type Key */
+            row = alMacTbl.insertRow(-1);
+            cell = row.insertCell(-1);
+            s = document.createElement('STRONG');
+            t = document.createTextNode('Encryption Type');
+            s.appendChild(t);
+            cell.appendChild(s);
+
+            /* Encryption Type Value */
+            cell = row.insertCell(-1);
+            t = document.createTextNode(get_encryption_str(bssInfo['encType']));
+            cell.appendChild(t);
+
+            /* Pass-phrase row will not be inserted for OPEN/NONE Security. */
+            if (!(bssInfo['authMode'] == '0x0001' && bssInfo['encType'] == '0x0001')){
+                /* Pass-phrase Key */
+                row = alMacTbl.insertRow(-1);
+                cell = row.insertCell(-1);
+                s = document.createElement('STRONG');
+                t = document.createTextNode('Pass-phrase');
+                s.appendChild(t);
+                cell.appendChild(s);
+
+                /* Pass-phrase Value */
+                cell = row.insertCell(-1);
+                t = document.createTextNode(bssInfo['passPhrase']);
+                cell.appendChild(t);
+            }
+
+            /* Hidden SSID Key */
+            row = alMacTbl.insertRow(-1);
+            cell = row.insertCell(-1);
+            s = document.createElement('STRONG');
+            t = document.createTextNode('Hidden');
+            s.appendChild(t);
+            cell.appendChild(s);
+
+            /* Hidden SSID Value */
+            cell = row.insertCell(-1);
+            t = document.createTextNode(bssInfo['isHidden'] == 'hidden-Y' ? 'Enabled' : 'Disabled');
+            cell.appendChild(t);
+
+            /* BH BSS Support Key */
+            row = alMacTbl.insertRow(-1);
+            cell = row.insertCell(-1);
+            s = document.createElement('STRONG');
+            t = document.createTextNode('BH BSS Support');
+            s.appendChild(t);
+            cell.appendChild(s);
+
+            /* BH BSS Support Value */
+            cell = row.insertCell(-1);
+            t = document.createTextNode(parseInt(bssInfo['isBhBssSupported']) == 1 ? 'Enabled' : 'Disabled');
+            cell.appendChild(t);
+
+            /* FH BSS Support Key */
+            row = alMacTbl.insertRow(-1);
+            cell = row.insertCell(-1);
+            s = document.createElement('STRONG');
+            t = document.createTextNode('FH BSS Support');
+            s.appendChild(t);
+            cell.appendChild(s);
+
+            /* FH BSS Support Value */
+            cell = row.insertCell(-1);
+            t = document.createTextNode(parseInt(bssInfo['isFhBssSupported']) == 1 ? 'Enabled' : 'Disabled');
+            cell.appendChild(t);
+
+            /* FH Vlan ID Key */
+            row = alMacTbl.insertRow(-1);
+            cell = row.insertCell(-1);
+            s = document.createElement('STRONG');
+            t = document.createTextNode('FH Vlan ID');
+            s.appendChild(t);
+            cell.appendChild(s);
+
+            /* FH Vlan ID Value */
+            cell = row.insertCell(-1);
+            t = document.createTextNode(((parseInt(bssInfo['fhVlanId']) >= 3) && (parseInt(bssInfo['fhVlanId']) <= 4094)) ? parseInt(bssInfo['fhVlanId']) : 'Disabled');
+            cell.appendChild(t);
+
+            /* Primary Vlan Key */
+            row = alMacTbl.insertRow(-1);
+            cell = row.insertCell(-1);
+            s = document.createElement('STRONG');
+            t = document.createTextNode('Primary Vlan');
+            s.appendChild(t);
+            cell.appendChild(s);
+
+            /* Primary Vlan Value */
+            cell = row.insertCell(-1);
+            if(parseInt(bssInfo['fhVlanId']) == 4095)
+                t = document.createTextNode("Disabled");
+            else
+                t = document.createTextNode(bssInfo['primVlan'] == "pvid" ? "Enabled" : 'N/A');
+            cell.appendChild(t);
+
+            /* Default PCP Key */
+            row = alMacTbl.insertRow(-1);
+            cell = row.insertCell(-1);
+            s = document.createElement('STRONG');
+            t = document.createTextNode('Default PCP');
+            s.appendChild(t);
+            cell.appendChild(s);
+
+            /* Default PCP Value */
+            cell = row.insertCell(-1);
+            t = document.createTextNode(bssInfo['defPCP']);
+            cell.appendChild(t);
+
+            row = alMacTbl.insertRow(-1);
+        }
+        /* Action Button : Add BSS */
+        cell = row.insertCell(-1);
+        /* (1)BSS-Idx (2)BSS-Key (3)BSS-Value (4)Edit (5)Remove
+         *  First cell is Band and the below Add BSS button will be placed at second cell with colspan of 5.
+         */
+        cell.colSpan = 5;
+        i = document.createElement('INPUT');
+        i.setAttribute("class", "cbi-button cbi-button-add");
+        i.setAttribute("type", "button");
+        i.setAttribute("value", "Add BSS");
+        if (document.addEventListener) {
+            // For all major browsers, except IE 8 and earlier
+            i.addEventListener("click", function(){addBssCfg(alMac,band);});
+        } else if (document.attachEvent) {
+            // For IE 8 and earlier versions
+            i.attachEvent("onclick", function(){addBssCfg(alMac,band);});
+        }
+        cell.appendChild(i);
+    }
+
+    function chk_vlan(len){
+        if(len == 0){
+            document.getElementById("bss_cfgs_info").style.display = "";
+        }
+        else if(len == 1){
+            document.getElementById("bss_cfgs_error").style.display = "none";
+            document.getElementById("bss_cfgs_info").style.display = "none";
+        }
+        else{
+            document.getElementById("bss_cfgs_error").style.display = "";
+            return;
+       }
+    }
+
+    function togglePCP(chk){
+        var inpDisabled = document.getElementById('add_bss_def_pcp');
+        var chkInp;
+        if(chk.checked){
+            inpDisabled.removeAttribute('disabled');
+            chkInp = confirm("You have already enabled Primary Vlan. If you persist to enable Primary Vlan here again, the previousone will be cancelled.");
+            if(!chkInp){
+                chk.checked = false;
+                inpDisabled.setAttribute('disabled', true);
+            }
+        }
+        else{
+            alert("You cannot disabled Primary Vlan for this bss. Please enable Primary Vlan of another bss to disable this Primary Vlan.")
+            chk.checked = true;
+        }
+    }
+
+    function draw_easymesh_bss_overview_table(alMac, alMacInfo)
+    {
+        var cfgBssInfoHdrFset = document.getElementById('cfg_bss_info_hdr_fset');
+        var bssCfgOverviewDiv = document.getElementById('bss_overview_div');
+        var alMacTbl = document.createElement("TABLE");
+        alMacTbl.setAttribute("class", "cbi-section-table");
+        var row = alMacTbl.insertRow(-1);
+        var cell = row.insertCell(-1);
+        /* (1)Band (2)BSS-Idx (3)BSS-Key (4)BSS-Value (5)Edit (6)Remove */
+        cell.colSpan = 6;
+        cell.style.textAlign = "center";
+        var b = document.createElement('BIG');
+        var s = document.createElement('STRONG');
+        var t = document.createTextNode('AL-MAC: ' + alMac);
+        s.appendChild(t);
+        b.appendChild(s);
+        cell.appendChild(b);
+        var i, alMac8x, alMac11x, alMac12x;
+        var vlan = [];
+        /* 2G Band */
+        if(alMacInfo.hasOwnProperty('8x')){
+            alMac8x = alMacInfo["8x"];
+            for(i=1; i<=Object.keys(alMac8x).length; i++){
+                if(alMac8x[i].primVlan == "pvid")
+                    vlan.push(alMac8x[i].primVlan)
+            }
+            chk_vlan(vlan.length);
+            row = alMacTbl.insertRow(-1);
+            cell = row.insertCell(-1);
+            cell.style.verticalAlign  = "middle";
+            cell.rowSpan = set_rowspan_auth_mode(alMacInfo['8x']) + 1; // One more row is required for 'Add New BSS' button.
+            s = document.createElement('STRONG');
+            t = document.createTextNode('2G');
+            s.appendChild(t);
+            cell.appendChild(s);
+            draw_bssinfo_cells(alMacTbl, row, alMac, '8x', alMacInfo['8x']);
+        }
+        /* 5GL Band */
+        if(alMacInfo.hasOwnProperty('11x')){
+            alMac11x = alMacInfo["11x"];
+            for(i=1; i<=Object.keys(alMac11x).length; i++){
+                if(alMac11x[i].primVlan == "pvid")
+                    vlan.push(alMac11x[i].primVlan)
+            }
+            chk_vlan(vlan.length);
+            row = alMacTbl.insertRow(-1);
+            cell = row.insertCell(-1);
+            cell.style.verticalAlign  = "middle";
+            cell.rowSpan = set_rowspan_auth_mode(alMacInfo['11x']) + 1; // One more row is required for 'Add New BSS' button.
+            s = document.createElement('STRONG');
+            t = document.createTextNode('5GL');
+            s.appendChild(t);
+            cell.appendChild(s);
+            draw_bssinfo_cells(alMacTbl, row, alMac, '11x', alMacInfo['11x']);
+        }
+        /* 5GH Band */
+        if(alMacInfo.hasOwnProperty('12x')){
+            alMac12x = alMacInfo["12x"];
+            for(i=1; i<=Object.keys(alMac12x).length; i++){
+                if(alMac12x[i].primVlan == "pvid")
+                    vlan.push(alMac12x[i].primVlan)
+            }
+            row = alMacTbl.insertRow(-1);
+            chk_vlan(vlan.length);
+            cell = row.insertCell(-1);
+            cell.style.verticalAlign  = "middle";
+            cell.rowSpan = set_rowspan_auth_mode(alMacInfo['12x']) + 1; // One more row is required for 'Add New BSS' button.
+            s = document.createElement('STRONG');
+            t = document.createTextNode('5GH');
+            s.appendChild(t);
+            cell.appendChild(s);
+            draw_bssinfo_cells(alMacTbl, row, alMac, '12x', alMacInfo['12x']);
+        }
+        bssCfgOverviewDiv.appendChild(alMacTbl);
+        cfgBssInfoHdrFset.style.display = '';
+    }
+
+    function get_easymesh_bss_overview_info()
+    {
+        var cfgsJs = {};
+        cfgsJs['distinctAlMacCfgs'] = {};
+        cfgsJs['wildCardAlMacCfgs'] = {};
+        <% if cfgs then %>
+            <% for alMac,alMacTbl in pairs(cfgs['distinctAlMacCfgs']) do %>
+                cfgsJs['distinctAlMacCfgs']['<%=alMac%>'] = {};
+                <% for band,bssInfoTbl in pairs(alMacTbl) do %>
+                    cfgsJs['distinctAlMacCfgs']['<%=alMac%>']['<%=band%>'] = {};
+                    <% for bssIdx,bssInfo in pairs(bssInfoTbl) do %>
+                        cfgsJs['distinctAlMacCfgs']['<%=alMac%>']['<%=band%>']['<%=bssIdx%>'] = {};
+                        <% for k,v in pairs(bssInfo) do %>
+                            cfgsJs['distinctAlMacCfgs']['<%=alMac%>']['<%=band%>']['<%=bssIdx%>']['<%=k%>'] = '<%=v:gsub("\'","\\\'")%>';
+                        <% end %>
+                    <% end %>
+                <% end %>
+            <% end %>
+            <% for alMac,alMacTbl in pairs(cfgs['wildCardAlMacCfgs']) do %>
+                cfgsJs['wildCardAlMacCfgs']['<%=alMac%>'] = {};
+                <% for band,bssInfoTbl in pairs(alMacTbl) do %>
+                    cfgsJs['wildCardAlMacCfgs']['<%=alMac%>']['<%=band%>'] = {};
+                    <% for bssIdx,bssInfo in pairs(bssInfoTbl) do %>
+                        cfgsJs['wildCardAlMacCfgs']['<%=alMac%>']['<%=band%>']['<%=bssIdx%>'] = {};
+                        <% for k,v in pairs(bssInfo) do %>
+                            cfgsJs['wildCardAlMacCfgs']['<%=alMac%>']['<%=band%>']['<%=bssIdx%>']['<%=k%>'] = '<%=v:gsub("\'","\\\'")%>';
+                        <% end %>
+                    <% end %>
+                <% end %>
+            <% end %>
+        <% end %>
+        return cfgsJs;
+    }
+
+    function gen_easymesh_bss_overview_table()
+    {
+        var cfgsJs = get_easymesh_bss_overview_info();
+        var isCfgJsEmpty = true;
+        if(cfgsJs.hasOwnProperty('distinctAlMacCfgs')){
+            for(var alMac in cfgsJs['distinctAlMacCfgs']){
+                draw_easymesh_bss_overview_table(alMac, cfgsJs['distinctAlMacCfgs'][alMac]);
+                isCfgJsEmpty = false;
+            }
+        }
+        if(cfgsJs.hasOwnProperty('wildCardAlMacCfgs')){
+            for(var alMac in cfgsJs['wildCardAlMacCfgs']){
+                draw_easymesh_bss_overview_table(alMac, cfgsJs['wildCardAlMacCfgs'][alMac]);
+                isCfgJsEmpty = false;
+            }
+        }
+        if(isCfgJsEmpty){
+            document.getElementById('cfg_bss_info_hdr_fset').style.display = 'none';
+            document.getElementById('no_bss_cfg_msg_div').style.display = '';
+        }
+    }
+
+    window.onload = function(){
+        MonCon.ping();
+        gen_easymesh_bss_overview_table();
+    }
+
+</script>
+
+<%+footer%>
