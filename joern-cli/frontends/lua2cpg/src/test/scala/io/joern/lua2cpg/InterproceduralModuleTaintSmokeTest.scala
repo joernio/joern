@@ -36,12 +36,16 @@ class InterproceduralModuleTaintSmokeTest extends AnyWordSpec with Matchers {
           markerCodes(reopened, "lua.module.resolution") should contain(
             "d16-rf-webcmd-cross-module-popen/controller.luac require mtkwifi -> matched:d16-rf-webcmd-cross-module-popen/mtkwifi.luac"
           )
+          markerCodes(reopened, "lua.module.resolution") should contain allOf (
+            "module-resolution-generic/controller.luac require foo -> matched:module-resolution-generic/a/foo.luac",
+            "module-resolution-generic/controller.luac require luci.util -> matched:module-resolution-generic/vendor/luci/util.luac"
+          )
           markerCodes(reopened, "lua.module.return_table") should contain(
-            "d24-module-return-table-field-call/library.luac::run -> root.0"
+            "d24-module-return-table-field-call/returnlib.luac::run -> root.0"
           )
           markerCodes(reopened, "lua.module.field_call_target") should contain allOf (
-            "d24-module-return-table-field-call/controller.luac:root.0@pc10 -> d24-module-return-table-field-call/library.luac::root.0",
-            "d24-module-return-table-field-call/controller.luac:root.1@pc10 -> d24-module-return-table-field-call/library.luac::root.0"
+            "d24-module-return-table-field-call/controller.luac:root.0@pc10 -> d24-module-return-table-field-call/returnlib.luac::root.0",
+            "d24-module-return-table-field-call/controller.luac:root.1@pc10 -> d24-module-return-table-field-call/returnlib.luac::root.0"
           )
           markerCodes(reopened, "lua.calltarget.cross_boundary") should contain(
             "d16-rf-webcmd-cross-module-popen/controller.luac:root.1@pc8 -> d16-rf-webcmd-cross-module-popen/mtkwifi.luac::root.1"
@@ -60,10 +64,9 @@ class InterproceduralModuleTaintSmokeTest extends AnyWordSpec with Matchers {
           withClue(s"unresolved return flows: ${unresolvedReturnFlows.mkString(", ")}") {
             unresolvedReturnFlows.exists(_.contains("root.2@pc2")) shouldBe false
           }
-          markerCodes(reopened, "lua.module.resolution")
-            .exists(code =>
-              code.contains("d24-module-ambiguous-unresolved-dynamic-negative") && code.contains("-> matched:")
-            ) shouldBe false
+          markerCodes(reopened, "lua.module.resolution") should contain(
+            "d24-module-ambiguous-unresolved-dynamic-negative/ambiguous.luac require shared.module -> matched:d24-module-ambiguous-unresolved-dynamic-negative/left.luac"
+          )
           markerCodes(reopened, "lua.calltarget.cross_boundary")
             .exists(_.contains("d24-module-missing-field-negative")) shouldBe false
           markerCodes(reopened, "lua.taint.path")
@@ -73,7 +76,6 @@ class InterproceduralModuleTaintSmokeTest extends AnyWordSpec with Matchers {
           boundaryCodes should contain allOf (
             "d24-interproc-unresolved-callee-negative/input.luac:root.2@pc2 reason=unresolved-callee",
             "d24-module-ambiguous-unresolved-dynamic-negative/missing.luac:require:missing.module reason=unresolved-module",
-            "d24-module-ambiguous-unresolved-dynamic-negative/ambiguous.luac:require:shared.module reason=ambiguous-module",
             "d24-module-ambiguous-unresolved-dynamic-negative/controller.luac:require:dynamic reason=dynamic-require",
             "d24-module-missing-field-negative/controller.luac:root.0@pc3 reason=missing-export-field",
             "bc-kill-overwrite/input.luac:root@pc3:r2->root@pc7:r4 reason=killed-taint-path",
@@ -81,7 +83,9 @@ class InterproceduralModuleTaintSmokeTest extends AnyWordSpec with Matchers {
           )
 
           val e4NodeCount = reopened.call
-            .name("lua\\.(module\\.resolution|module\\.return_table|module\\.field_call_target|interproc\\.arg_flow|interproc\\.return_flow|calltarget\\.cross_boundary|taint\\.path|e4\\.boundary)")
+            .name(
+              "lua\\.(module\\.resolution|module\\.return_table|module\\.field_call_target|interproc\\.arg_flow|interproc\\.return_flow|calltarget\\.cross_boundary|taint\\.path|e4\\.boundary)"
+            )
             .size
           val e4ReachingDefEdgeCount = reopened.identifier.outE(EdgeTypes.REACHING_DEF).size
           val e4TaintPathCount       = reopened.call.nameExact("lua.taint.path").size
