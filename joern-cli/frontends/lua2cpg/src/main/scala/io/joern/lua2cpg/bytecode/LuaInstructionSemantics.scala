@@ -301,7 +301,8 @@ object LuaInstructionSemantics {
 
     private var reaching           = (0 until prototype.numParams).map(slot => slot -> Set(staticSlotRef(slot))).toMap
     private var closuresBySlot     = Map.empty[Int, LuaClosureValue]
-    private var tableWrites        = Map.empty[(Int, String), Set[String]]
+    private var tableObjectsBySlot = (0 until prototype.numParams).map(slot => slot -> staticSlotRef(slot)).toMap
+    private var tableWrites        = Map.empty[(String, String), Set[String]]
     private var closureTableWrites = Map.empty[(Int, String), LuaClosureValue]
     private var globalWrites       = Map.empty[String, Set[String]]
     private var mutatedUpvalues    = Set.empty[Int]
@@ -311,11 +312,13 @@ object LuaInstructionSemantics {
       conditionalWriteUntilPc = conditionalWriteUntilPc.filter(instruction.pc < _)
       instruction.opcode match {
         case LuaOpcode.Move =>
-          val source = readSlot(instruction, instruction.b)
+          val source           = readSlot(instruction, instruction.b)
+          val movedTableObject = tableObjectsBySlot.get(instruction.b)
           val movedTableClosures = closureTableWrites.collect {
             case ((tableSlot, key), closure) if tableSlot == instruction.b => key -> closure
           }
           writeSlot(instruction, instruction.a, Set(source), "move")
+          movedTableObject.foreach(tableObject => tableObjectsBySlot += instruction.a -> tableObject)
           closuresBySlot.get(instruction.b).foreach { closure =>
             val moved = closure.copy(slot = instruction.a, valueRef = slotRef(instruction.pc, instruction.a))
             closuresBySlot += instruction.a -> moved
@@ -329,7 +332,10 @@ object LuaInstructionSemantics {
           }
         case LuaOpcode.LoadK =>
           writeSlot(instruction, instruction.a, Set(constantRef(instruction.b)), "loadk")
-        case LuaOpcode.LoadBool | LuaOpcode.LoadNil | LuaOpcode.NewTable | LuaOpcode.Vararg =>
+        case LuaOpcode.NewTable =>
+          writeSlot(instruction, instruction.a, Set(slotRef(instruction.pc, instruction.a)), "newtable")
+          tableObjectsBySlot += instruction.a -> slotRef(instruction.pc, instruction.a)
+        case LuaOpcode.LoadBool | LuaOpcode.LoadNil | LuaOpcode.Vararg =>
           writeSlot(
             instruction,
             instruction.a,
@@ -378,6 +384,7 @@ object LuaInstructionSemantics {
           val write = slotRef(instruction.pc, instruction.a)
           writeSlot(instruction, instruction.a, Set(write), "getglobal")
           stringConstant(instruction.b).foreach { name =>
+            tableObjectsBySlot += instruction.a -> s"global:$name"
             globalWrites.get(name).foreach { sources =>
               sources.foreach { source =>
                 globalFlows += LuaGlobalFlow(name, source, write, source, BytecodeProvenance)
@@ -472,16 +479,17 @@ object LuaInstructionSemantics {
     }
 
     private def handleGetTable(instruction: LuaInstruction): Unit = {
-      val tableSlot = instruction.b
-      val tableRead = readSlot(instruction, tableSlot)
-      val keyReads  = instruction.c.flatMap(rkRegister).map(readSlot(instruction, _)).toSet
-      val write     = slotRef(instruction.pc, instruction.a)
+      val tableSlot   = instruction.b
+      val tableObject = tableObjectsBySlot.get(tableSlot)
+      val tableRead   = readSlot(instruction, tableSlot)
+      val keyReads    = instruction.c.flatMap(rkRegister).map(readSlot(instruction, _)).toSet
+      val write       = slotRef(instruction.pc, instruction.a)
       val loadedClosure = instruction.c
         .flatMap(rkConstantName)
         .flatMap(key => closureTableWrites.get((tableSlot, key)))
       writeSlot(instruction, instruction.a, keyReads + tableRead, "gettable")
       instruction.c.flatMap(rkConstantRef).foreach { key =>
-        tableWrites.get((tableSlot, key)).foreach { sources =>
+        tableObject.flatMap(identity => tableWrites.get((identity, key))).foreach { sources =>
           sources.foreach { source =>
             tableFieldFlows += LuaTableFieldFlow(
               slotRef(instruction.pc, tableSlot),
@@ -515,8 +523,11 @@ object LuaInstructionSemantics {
       rkRegister(instruction.b).foreach(readSlot(instruction, _))
       val valueSlot = instruction.c.flatMap(rkRegister)
       val valueRefs = valueSlot.map(readSlot(instruction, _)).toSet
-      instruction.bOptionConstantString.foreach { key =>
-        tableWrites += (tableSlot, key) -> valueRefs
+      for {
+        tableObject <- tableObjectsBySlot.get(tableSlot)
+        key         <- instruction.bOptionConstantString
+      } {
+        tableWrites += (tableObject, key) -> valueRefs
       }
       instruction.bOptionConstantName.foreach { key =>
         valueSlot.flatMap(closuresBySlot.get).foreach { closure =>
@@ -535,11 +546,12 @@ object LuaInstructionSemantics {
     private def handleSetList(instruction: LuaInstruction): Unit = {
       val tableSlot = instruction.a
       readSlot(instruction, tableSlot)
-      if (instruction.b > 0) {
-        val valueRefs = (1 to instruction.b).map(offset => readSlot(instruction, tableSlot + offset))
+      if (instruction.b > 0 && tableObjectsBySlot.contains(tableSlot)) {
+        val tableObject = tableObjectsBySlot(tableSlot)
+        val valueRefs   = (1 to instruction.b).map(offset => readSlot(instruction, tableSlot + offset))
         instruction.c.foreach { block =>
           valueRefs.zipWithIndex.foreach { case (valueRef, index) =>
-            tableWrites += (tableSlot, setListElementKey(block, index)) -> Set(valueRef)
+            tableWrites += (tableObject, setListElementKey(block, index)) -> Set(valueRef)
           }
         }
       }
@@ -610,6 +622,7 @@ object LuaInstructionSemantics {
         }
         reaching += slot -> Set(write)
         closuresBySlot -= slot
+        tableObjectsBySlot -= slot
         closureTableWrites = closureTableWrites.filterNot { case ((tableSlot, _), _) => tableSlot == slot }
       }
     }

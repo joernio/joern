@@ -19,7 +19,7 @@ class LuaBytecodeModelPass(
 
   private given ValidationMode = ValidationMode.Disabled
 
-  private final case class PrototypeAst(ast: Ast, reachingDefEdges: Vector[(NewIdentifier, NewIdentifier, String)])
+  private final case class PrototypeAst(ast: Ast, reachingDefEdges: Vector[(NewNode, NewNode, String)])
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     val decoded          = decodedInputs.getOrElse(LuaBytecodeModelPass.decodeInputs(config))
     val programSemantics = LuaProgramSemantics.normalize(decoded.map(item => item.relativeName -> item.result))
@@ -430,12 +430,12 @@ class LuaBytecodeModelPass(
       .lineNumber(order)
       .columnNumber(0)
 
-  private def reachingDefEdges(
-    ast: Ast,
-    semantics: LuaPrototypeSemantics
-  ): Vector[(NewIdentifier, NewIdentifier, String)] = {
-    val nodesByCode = ast.nodes.collect { case node: NewIdentifier => node.code -> node }.toMap
-    val edges       = mutable.LinkedHashSet.empty[(NewIdentifier, NewIdentifier, String)]
+  private def reachingDefEdges(ast: Ast, semantics: LuaPrototypeSemantics): Vector[(NewNode, NewNode, String)] = {
+    val nodesByCode = ast.nodes.collect {
+      case node: NewIdentifier        => node.code -> node
+      case node: NewMethodParameterIn => node.code -> node
+    }.toMap
+    val edges = mutable.LinkedHashSet.empty[(NewNode, NewNode, String)]
     semantics.localFlows.foreach { flow =>
       addEdge(nodesByCode, edges, flow.sourceRef, flow.sinkRef, flow.sourceRef)
     }
@@ -452,8 +452,8 @@ class LuaBytecodeModelPass(
   }
 
   private def addEdge(
-    nodesByCode: Map[String, NewIdentifier],
-    edges: mutable.LinkedHashSet[(NewIdentifier, NewIdentifier, String)],
+    nodesByCode: Map[String, NewNode],
+    edges: mutable.LinkedHashSet[(NewNode, NewNode, String)],
     sourceRef: String,
     sinkRef: String,
     variable: String

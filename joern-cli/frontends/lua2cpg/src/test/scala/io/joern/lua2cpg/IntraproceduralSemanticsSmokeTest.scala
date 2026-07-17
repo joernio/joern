@@ -2,7 +2,7 @@ package io.joern.lua2cpg
 
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, StoredNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, StoredNode}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.FileUtil
 import org.scalatest.matchers.should.Matchers
@@ -27,9 +27,17 @@ class IntraproceduralSemanticsSmokeTest extends AnyWordSpec with Matchers {
         try {
           hasReachingDef(reopened, "bc-kill-overwrite", "root@pc4:r2", "root@pc7:r4") shouldBe true
           hasReachingDef(reopened, "d24-defuse-transitive-chain", "root@pc3:r2", "root@pc8:r6") shouldBe true
+          hasReachingDef(reopened, "local-value-flow-generic", "root.0:r0", "root.0@pc6:r4") shouldBe true
+          hasReachingDef(reopened, "local-value-flow-generic", "root.2:r0", "root.2@pc6:r3") shouldBe true
 
           hasReachingDef(reopened, "bc-kill-overwrite", "root@pc3:r2", "root@pc7:r4") shouldBe false
-          hasReachingDef(reopened, "d24-defuse-unrelated-register-negative", "root@pc4:r2", "root@pc9:r6") shouldBe false
+          hasReachingDef(reopened, "local-value-flow-generic", "root.1:r0", "root.1@pc6:r3") shouldBe false
+          hasReachingDef(
+            reopened,
+            "d24-defuse-unrelated-register-negative",
+            "root@pc4:r2",
+            "root@pc9:r6"
+          ) shouldBe false
           hasReachingDef(reopened, "d24-table-dynamic-key-negative", "root@pc3:r2", "root@pc4:r3") shouldBe false
           hasReachingDef(reopened, "d24-table-dynamic-key-negative", "root@pc3:r2", "root@pc5:r4") shouldBe false
           hasReachingDef(reopened, "d24-global-dynamic-env-negative", "root@pc3:r1", "root@pc4:r2") shouldBe false
@@ -44,7 +52,13 @@ class IntraproceduralSemanticsSmokeTest extends AnyWordSpec with Matchers {
             "root.0@pc3:r3"
           ) shouldBe true
           hasReachingDef(reopened, "bc-table-global-upvalue", "root.0@pc6:r3", "root.0@pc8:r2") shouldBe true
-          hasSemanticEdge(reopened, "bc-table-global-upvalue", "upvalue:root.0:u0", "root.0@pc4:r4", "root.0@pc4:r4") shouldBe true
+          hasSemanticEdge(
+            reopened,
+            "bc-table-global-upvalue",
+            "upvalue:root.0:u0",
+            "root.0@pc4:r4",
+            "root.0@pc4:r4"
+          ) shouldBe true
 
           reopened.call
             .nameExact("lua.calltarget.candidate")
@@ -91,7 +105,12 @@ class IntraproceduralSemanticsSmokeTest extends AnyWordSpec with Matchers {
     sourceCode: String,
     sinkCode: String
   ): Boolean =
-    hasSemanticEdge(cpg, fixtureId, sourceCode, sourceCode, sinkCode) || transitiveReachingDef(cpg, fixtureId, sourceCode, sinkCode)
+    hasSemanticEdge(cpg, fixtureId, sourceCode, sourceCode, sinkCode) || transitiveReachingDef(
+      cpg,
+      fixtureId,
+      sourceCode,
+      sinkCode
+    )
 
   private def hasSemanticEdge(
     cpg: io.shiftleft.codepropertygraph.generated.Cpg,
@@ -100,13 +119,13 @@ class IntraproceduralSemanticsSmokeTest extends AnyWordSpec with Matchers {
     sourceCode: String,
     sinkCode: String
   ): Boolean = {
-    val fixtureIdentifiers = identifiersInFixture(cpg, fixtureId)
-    val sinkIds = fixtureIdentifiers
+    val fixtureNodes = semanticNodesInFixture(cpg, fixtureId)
+    val sinkIds = fixtureNodes
       .filter(_.code == sinkCode)
       .map(_.id)
       .toSet
 
-    fixtureIdentifiers
+    fixtureNodes
       .filter(_.code == sourceCode)
       .outE(EdgeTypes.REACHING_DEF)
       .filter(edge => Option(edge.property).contains(variable))
@@ -122,18 +141,18 @@ class IntraproceduralSemanticsSmokeTest extends AnyWordSpec with Matchers {
     sourceCode: String,
     sinkCode: String
   ): Boolean = {
-    val fixtureIdentifiers = identifiersInFixture(cpg, fixtureId)
-    val fixtureIdentifierCodes = fixtureIdentifiers
+    val fixtureNodes = semanticNodesInFixture(cpg, fixtureId)
+    val fixtureNodeCodes = fixtureNodes
       .map(identifier => identifier.id -> identifier.code)
       .toMap
 
-    val graph = fixtureIdentifiers
+    val graph = fixtureNodes
       .outE(EdgeTypes.REACHING_DEF)
       .flatMap { edge =>
         val sourceNode = edge.src.asInstanceOf[StoredNode]
         val sinkNode   = edge.dst.asInstanceOf[StoredNode]
-        val source     = fixtureIdentifierCodes.get(sourceNode.id)
-        val sink       = fixtureIdentifierCodes.get(sinkNode.id)
+        val source     = fixtureNodeCodes.get(sourceNode.id)
+        val sink       = fixtureNodeCodes.get(sinkNode.id)
         source.zip(sink).headOption
       }
       .foldLeft(Map.empty[String, Set[String]]) { case (acc, (source, sink)) =>
@@ -154,6 +173,11 @@ class IntraproceduralSemanticsSmokeTest extends AnyWordSpec with Matchers {
     false
   }
 
-  private def identifiersInFixture(cpg: io.shiftleft.codepropertygraph.generated.Cpg, fixtureId: String): List[Identifier] =
-    cpg.method.filename(s".*$fixtureId/input\\.luac").ast.isIdentifier.l
+  private def semanticNodesInFixture(
+    cpg: io.shiftleft.codepropertygraph.generated.Cpg,
+    fixtureId: String
+  ): List[CfgNode] =
+    cpg.method.filename(s".*$fixtureId/input\\.luac").parameter.l ++
+      cpg.method.filename(s".*$fixtureId/input\\.luac").ast.isIdentifier.l
+
 }
