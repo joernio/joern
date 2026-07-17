@@ -127,6 +127,38 @@ The evidence directory contains:
 This export is optional. The primary `lua2cpg` output is the CPG written by
 `--output`.
 
+## Self-Contained Reviewer Corpus
+
+The test resources include a self-contained OpenWrt-derived Lua corpus for
+review and regression checks:
+
+```text
+joern-cli/frontends/lua2cpg/src/test/resources/openwrt-derived-firmware-lua/usr/lib/lua
+```
+
+The corpus preserves the original `usr/lib/lua` layout and contains:
+
+- 42 `.lua` source files recorded in the CPG file inventory.
+- 42 Lua 5.1 `.luac` bytecode files analyzed by the bytecode pipeline.
+
+A generated native JSON analysis report is committed for quick inspection:
+
+```text
+joern-cli/frontends/lua2cpg/src/test/resources/openwrt-derived-firmware-lua-report
+```
+
+To regenerate that report from the Joern repository root:
+
+```bash
+joern-cli/frontends/lua2cpg/target/universal/stage/bin/lua2cpg \
+  joern-cli/frontends/lua2cpg/src/test/resources/openwrt-derived-firmware-lua/usr/lib/lua \
+  --output /tmp/openwrt-derived-firmware-lua.cpg.bin \
+  --lua-real-firmware-output-dir /tmp/openwrt-derived-firmware-lua-report
+```
+
+The committed report contains native JSON evidence only. The generated CPG
+binary is not committed.
+
 ## Supported Analysis
 
 - Lua version: Lua 5.1.
@@ -176,6 +208,7 @@ sbt 'lua2cpg/testOnly io.joern.lua2cpg.BytecodeModelSmokeTest'
 sbt 'lua2cpg/testOnly io.joern.lua2cpg.IntraproceduralSemanticsSmokeTest'
 sbt 'lua2cpg/testOnly io.joern.lua2cpg.InterproceduralModuleTaintSmokeTest'
 sbt 'lua2cpg/testOnly io.joern.lua2cpg.RulesSanitizerReportSmokeTest'
+sbt 'lua2cpg/testOnly io.joern.lua2cpg.OpenWrtDerivedFirmwareCorpusSmokeTest'
 sbt 'lua2cpg/testOnly io.joern.lua2cpg.RealFirmwareEvidenceExportSmokeTest'
 ```
 
