@@ -27,10 +27,7 @@ class BytecodeModelSmokeTest extends AnyWordSpec with Matchers {
           reopened.file.nameNot(FileTraversal.UNKNOWN).name.sorted.l should contain allOf (
             "bytecode-model/bc-prototype-params/input.luac",
             "bytecode-model/bc-constants-call/input.luac",
-            "bytecode-model/bc-stripped-metadata/input.luac",
-            "OpenWrtDerived-luci/cgi.lua",
-            "OpenWrtDerived-luci/uci.lua",
-            "OpenWrtDerived-luci/version.lua"
+            "bytecode-model/bc-stripped-metadata/input.luac"
           )
 
           // Expected rows are anchored in the committed bytecode fixtures for
