@@ -1,5 +1,6 @@
 package io.joern.rust2cpg.astcreation
 
+import io.joern.rust2cpg.astcreation.RustFullNames.PathSep
 import io.joern.rust2cpg.parser.RustNodeSyntax.*
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
@@ -449,13 +450,12 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     impl.typ match {
       case implTrait :: implType :: Nil =>
         val typeDecl = typeDeclForTraitImpl(impl, implTrait, implType)
-        accumulator.registerTraitImpl(typeFullNameForType(implType), typeDecl.fullName)
         methodAstParentStack.push(typeDecl)
         val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn =>
           visitFn(fn).withChild(Ast(NewModifier().modifierType(ModifierTypes.VIRTUAL)))
         }
         methodAstParentStack.pop()
-        addDetachedBindingAsts(typeDecl, methodAsts)
+        addDetachedBindingAsts(typeDecl, methodAsts, signature = typeFullNameForType(implTrait))
         Ast(typeDecl).withChildren(methodAsts)
       case _ => notHandledYet(impl)
     }
@@ -478,20 +478,22 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  (((':' TypeBoundList?)? WhereClause? AssocItemList) |
   //  ('=' TypeBoundList? WhereClause? ';'))
   private def visitTrait(trait_ : Trait): Ast = {
-    val name = code(trait_.name)
+    val name     = code(trait_.name)
+    val fullName = composeRustFullName(name)
     val typeDecl = typeDeclNode(
       node = trait_,
       name = name,
-      fullName = composeRustFullName(name),
+      fullName = fullName,
       filename = parseResult.filename,
-      code = code(trait_)
+      code = code(trait_),
+      genericSignature = Some(fullName)
     )
     methodAstParentStack.push(typeDecl)
     val methodAsts = trait_.assocItemList.toSeq.flatMap(_.assocItem).collect { case fn: Fn =>
       visitFn(fn).withChild(Ast(NewModifier().modifierType(ModifierTypes.VIRTUAL)))
     }
     methodAstParentStack.pop()
-    addDetachedBindingAsts(typeDecl, methodAsts)
+    addDetachedBindingAsts(typeDecl, methodAsts, signature = fullName)
     Ast(typeDecl).withChildren(methodAsts)
   }
 
@@ -529,11 +531,13 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         val typeFullName    = typeFullNameForExpr(callExpr)
         val argExprs        = callExpr.argList.expr
         val hasSelfReceiver = callExpr.hasSelfReceiver.isDefined && argExprs.nonEmpty
-        val dispatch =
-          if (hasSelfReceiver && isTraitObject(typeFullNameForExpr(argExprs.head))) DispatchTypes.DYNAMIC_DISPATCH
-          else DispatchTypes.STATIC_DISPATCH
+        val (dispatch, signature) =
+          if (hasSelfReceiver && isTraitObject(typeFullNameForExpr(argExprs.head))) {
+            // TODO: avoid this trait name extraction from the methodFullName
+            (DispatchTypes.DYNAMIC_DISPATCH, Some(methodFullName.split(PathSep).dropRight(1).mkString(PathSep)))
+          } else { (DispatchTypes.STATIC_DISPATCH, None) }
         val call =
-          callNode(callExpr, code(callExpr), name, methodFullName, dispatch, None, Some(typeFullName))
+          callNode(callExpr, code(callExpr), name, methodFullName, dispatch, signature, Some(typeFullName))
         val args = argExprs.map(visitExpr)
         if (hasSelfReceiver) {
           callAst(call, args.tail, base = Some(args.head))
@@ -1054,9 +1058,20 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val methodFullName = methodFullNameForMethodCallExpr(methodCallExpr)
     val typeFullName   = typeFullNameForExpr(methodCallExpr)
     val receiverType   = typeFullNameForExpr(methodCallExpr.expr)
-    val dispatch = if (isTraitObject(receiverType)) DispatchTypes.DYNAMIC_DISPATCH else DispatchTypes.STATIC_DISPATCH
+    val (dispatch, signature) = if (isTraitObject(receiverType)) {
+      // TODO: avoid this trait name extraction from the methodFullName
+      (DispatchTypes.DYNAMIC_DISPATCH, Some(methodFullName.split(PathSep).dropRight(1).mkString(PathSep)))
+    } else { (DispatchTypes.STATIC_DISPATCH, None) }
     val call =
-      callNode(methodCallExpr, code(methodCallExpr), methodName, methodFullName, dispatch, None, Some(typeFullName))
+      callNode(
+        methodCallExpr,
+        code(methodCallExpr),
+        methodName,
+        methodFullName,
+        dispatch,
+        signature,
+        Some(typeFullName)
+      )
     val receiverAst = visitExpr(methodCallExpr.expr)
     val args        = methodCallExpr.argList.expr.map(visitExpr)
     callAst(call, args, base = Some(receiverAst))
@@ -1093,7 +1108,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  | TupleFieldList WhereClause? ';'
   //  )
   private def visitStruct(struct: Struct): Ast = {
-    val typeDecl = typeDeclForStruct(struct)
+    val implementedTraits = struct.implementedTraits.getOrElse(Nil)
+    val structFullName    = composeRustFullName(code(struct.name))
+    val inheritsFrom      = implementedTraits.map(traitFullName => s"<$structFullName as $traitFullName>")
+    val typeDecl          = typeDeclForStruct(struct, inheritsFrom)
     (struct.recordFieldList, struct.tupleFieldList) match {
       case (Some(recordFieldList), _) =>
         methodAstParentStack.push(typeDecl)

@@ -191,6 +191,10 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
 
+    "have the trait fullName as signature" in {
+      cpg.call.nameExact("hello").signature.l shouldBe List("rust2cpgtest::Greet")
+    }
+
     "have the adjusted trait object as receiver" in {
       inside(cpg.call.nameExact("hello").receiver.l) { case (receiver: Call) :: Nil =>
         receiver.name shouldBe Operators.addressOf
@@ -294,6 +298,44 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
           recv.typeFullName shouldBe "&dyn rust2cpgtest::Tr"
           recv.argumentIndex shouldBe 0
         }
+      }
+    }
+
+    "have the trait fullName as signature" in {
+      cpg.call.codeExact("Tr::m(g)").signature.l shouldBe List("rust2cpgtest::Tr")
+    }
+  }
+
+  "method call of a `&dyn Trait`" should {
+    val cpg = code("""
+        |trait Tr { fn m(&self); }
+        |struct S;
+        |impl Tr for S { fn m(&self) {} }
+        |fn f(g: &dyn Tr) { g.m(); }
+        |""".stripMargin)
+
+    "have the trait's methodFullName and signature" in {
+      inside(cpg.call.nameExact("m").l) { case call :: Nil =>
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.methodFullName shouldBe "rust2cpgtest::Tr::m"
+        call.signature shouldBe "rust2cpgtest::Tr"
+      }
+    }
+
+    "match the trait's binding node" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::Tr").bindsOut.nameExact("m").l) { case binding :: Nil =>
+        binding.signature shouldBe "rust2cpgtest::Tr"
+        binding.methodFullName shouldBe "rust2cpgtest::Tr::m"
+        binding.refOut.fullName.l shouldBe List("rust2cpgtest::Tr::m")
+      }
+    }
+
+    "match the impl's binding node" in {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::S as rust2cpgtest::Tr>").bindsOut.nameExact("m").l) {
+        case binding :: Nil =>
+          binding.signature shouldBe "rust2cpgtest::Tr"
+          binding.methodFullName shouldBe "<rust2cpgtest::S as rust2cpgtest::Tr>::m"
+          binding.refOut.fullName.l shouldBe List("<rust2cpgtest::S as rust2cpgtest::Tr>::m")
       }
     }
   }

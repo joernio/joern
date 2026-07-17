@@ -352,7 +352,7 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
     "create binding node for the method" in {
       inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>").bindsOut.l) { case binding :: Nil =>
         binding.name shouldBe "do_stuff"
-        binding.signature shouldBe ""
+        binding.signature shouldBe "rust2cpgtest::Bar"
         binding.methodFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff"
         binding.refOut.fullName.l shouldBe List("<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff")
       }
@@ -374,7 +374,7 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
     "create a binding node for the overriding method" in {
       inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>").bindsOut.l) { case binding :: Nil =>
         binding.name shouldBe "b"
-        binding.signature shouldBe ""
+        binding.signature shouldBe "rust2cpgtest::Bar"
         binding.methodFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>::b"
         binding.refOut.fullName.l shouldBe List("<rust2cpgtest::Foo as rust2cpgtest::Bar>::b")
       }
@@ -539,7 +539,7 @@ class ImplTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
       inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo as core::default::Default>").bindsOut.l) {
         case binding :: Nil =>
           binding.name shouldBe "default"
-          binding.signature shouldBe ""
+          binding.signature shouldBe "core::default::Default"
           binding.methodFullName shouldBe "<rust2cpgtest::Foo as core::default::Default>::default"
           binding.refOut.fullName.l shouldBe List("<rust2cpgtest::Foo as core::default::Default>::default")
       }

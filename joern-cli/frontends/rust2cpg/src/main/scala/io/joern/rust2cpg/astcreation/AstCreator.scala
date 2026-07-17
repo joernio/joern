@@ -6,7 +6,6 @@ import io.joern.rust2cpg.parser.RustJsonParser.{ParseResult, isMacroExpanded}
 import io.joern.rust2cpg.parser.RustNodeSyntax
 import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
 import io.joern.rust2cpg.parser.RustNodeSyntaxExtensions.op
-import io.joern.rust2cpg.passes.AstCreationPass
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.AstNodeBuilder.bindingNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
@@ -17,9 +16,8 @@ import org.slf4j.LoggerFactory
 
 import java.nio.charset.StandardCharsets
 
-class AstCreator(val config: Config, val parseResult: ParseResult, val accumulator: AstCreationPass.Accumulator)(
-  implicit withSchemaValidation: ValidationMode
-) extends AstCreatorBase[RustNode, AstCreator](parseResult.filename)
+class AstCreator(val config: Config, val parseResult: ParseResult)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase[RustNode, AstCreator](parseResult.filename)
     with RustVisitor
     with RustFullNames {
 
@@ -40,9 +38,9 @@ class AstCreator(val config: Config, val parseResult: ParseResult, val accumulat
     detachedAsts = ast :: detachedAsts
   }
 
-  protected def addDetachedBindingAsts(typeDecl: NewTypeDecl, methodAsts: Seq[Ast]): Unit = {
+  protected def addDetachedBindingAsts(typeDecl: NewTypeDecl, methodAsts: Seq[Ast], signature: String): Unit = {
     methodAsts.flatMap(_.root).collect { case method: NewMethod =>
-      val binding = bindingNode(method.name, "", method.fullName)
+      val binding = bindingNode(method.name, signature, method.fullName)
       addDetachedAst(Ast(binding).withBindsEdge(typeDecl, binding).withRefEdge(binding, method))
     }
   }
@@ -142,7 +140,7 @@ class AstCreator(val config: Config, val parseResult: ParseResult, val accumulat
     )
   }
 
-  protected def typeDeclForStruct(struct: RustNodeSyntax.Struct): NewTypeDecl = {
+  protected def typeDeclForStruct(struct: RustNodeSyntax.Struct, inheritsFrom: Seq[String]): NewTypeDecl = {
     val name   = code(struct.name)
     val parent = methodAstParentStack.head
     typeDeclNode(
@@ -152,7 +150,8 @@ class AstCreator(val config: Config, val parseResult: ParseResult, val accumulat
       filename = parseResult.filename,
       code = code(struct),
       astParentType = parent.label,
-      astParentFullName = parent.properties(PropertyNames.FullName).toString
+      astParentFullName = parent.properties(PropertyNames.FullName).toString,
+      inherits = inheritsFrom
     )
   }
 

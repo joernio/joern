@@ -18,6 +18,10 @@ class TraitTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.typeDecl.nameExact("Foo").fullName.l shouldBe List("rust2cpgtest::Foo")
     }
 
+    "have the fullName as genericSignature" in {
+      cpg.typeDecl.nameExact("Foo").genericSignature.l shouldBe List("rust2cpgtest::Foo")
+    }
+
     "lower each as an AST child of the corresponding TYPE_DECL" in {
       cpg.typeDecl.nameExact("Foo").method.fullName.sorted.l shouldBe List(
         "rust2cpgtest::Foo::a",
@@ -53,16 +57,16 @@ class TraitTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "create binding nodes for each method" in {
-      inside(cpg.typeDecl.nameExact("Foo").bindsOut.sortBy(_.name).l) { case List(methodA, methodB) =>
-        methodA.name shouldBe "a"
-        methodA.signature shouldBe ""
-        methodA.methodFullName shouldBe "rust2cpgtest::Foo::a"
-        methodA.refOut.fullName.l shouldBe List("rust2cpgtest::Foo::a")
+      inside(cpg.typeDecl.nameExact("Foo").bindsOut.sortBy(_.name).l) { case bindingA :: bindingB :: Nil =>
+        bindingA.name shouldBe "a"
+        bindingA.signature shouldBe "rust2cpgtest::Foo"
+        bindingA.methodFullName shouldBe "rust2cpgtest::Foo::a"
+        bindingA.refOut.fullName.l shouldBe List("rust2cpgtest::Foo::a")
 
-        methodB.name shouldBe "b"
-        methodB.signature shouldBe ""
-        methodB.methodFullName shouldBe "rust2cpgtest::Foo::b"
-        methodB.refOut.fullName.l shouldBe List("rust2cpgtest::Foo::b")
+        bindingB.name shouldBe "b"
+        bindingB.signature shouldBe "rust2cpgtest::Foo"
+        bindingB.methodFullName shouldBe "rust2cpgtest::Foo::b"
+        bindingB.refOut.fullName.l shouldBe List("rust2cpgtest::Foo::b")
       }
     }
   }
