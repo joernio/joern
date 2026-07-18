@@ -962,26 +962,29 @@ object LuaProgramSemantics {
       val sinkPrototype   = prototypeRef(sink.modulePath, sink.prototypeId)
       val distanceToSink  = representativeDistancesToSink(sinkPrototype)
       val pending =
-        scala.collection.mutable.Queue((sourceEndpoint.sourceRef, Vector(sourceEndpoint.sourceRef), sourcePrototype, 0))
-      val seen                          = scala.collection.mutable.Set(sourceEndpoint.sourceRef)
+        scala.collection.mutable.Queue(
+          (sourceEndpoint.sourceRef, Vector(sourceEndpoint.sourceRef), sourcePrototype, List.empty[String], 0)
+        )
+      val seen                          = scala.collection.mutable.Set((sourceEndpoint.sourceRef, List.empty[String]))
       val maxDepth                      = 4
       var found: Option[Vector[String]] = None
 
       while (pending.nonEmpty && found.isEmpty) {
-        val (currentRef, pathPrefix, currentPrototype, depth) = pending.dequeue()
-        val currentPc                                         = pcFromAnyValueRef(currentRef)
-        val currentIsEntryParameter                           = isPrototypeEntryParameterRef(currentRef)
-        val currentDistance                                   = distanceToSink.getOrElse(currentPrototype, Int.MaxValue)
+        val (currentRef, pathPrefix, currentPrototype, callContext, depth) = pending.dequeue()
+        val currentPc                                                      = pcFromAnyValueRef(currentRef)
+        val currentIsEntryParameter                                        = isPrototypeEntryParameterRef(currentRef)
+        val currentDistance = distanceToSink.getOrElse(currentPrototype, Int.MaxValue)
         val candidateFlows =
           (if (depth == 0) argumentFlowsBySourcePrototype else representativeFlowsBySourcePrototype)
             .getOrElse(currentPrototype, Vector.empty)
+            .flatMap(flow => advanceCallContext(flow, callContext).map(flow -> _))
             .filter { flow =>
               attribution.increment("bridge_argument_provenance_candidate_count")
               val pcAccepted =
-                if (depth == 0) flow.callsitePc > source.pc
-                else if (!flow.isArgumentFlow) true
+                if (depth == 0) flow._1.callsitePc > source.pc
+                else if (!flow._1.isArgumentFlow) true
                 else {
-                  val flowPc = flow.callsitePc
+                  val flowPc = flow._1.callsitePc
                   currentPc match {
                     case Some(pc) if flowPc >= pc        => true
                     case Some(_)                         => false
@@ -1001,40 +1004,51 @@ object LuaProgramSemantics {
             .filter { flow =>
               val reachable =
                 if (depth == 0 && sourcePrototype == sinkPrototype)
-                  flow.targetPrototype != sinkPrototype && distanceToSink.contains(flow.targetPrototype)
-                else distanceToSink.get(flow.targetPrototype).contains(currentDistance - 1)
+                  flow._1.targetPrototype != sinkPrototype && distanceToSink.contains(flow._1.targetPrototype)
+                else distanceToSink.get(flow._1.targetPrototype).contains(currentDistance - 1)
               if (!reachable) {
                 attribution.increment("bridge_candidate_reachability_pruned_count")
                 attribution.increment("early_candidate_short_circuit_count")
               }
               reachable
             }
-            .sortBy(flow => (flow.callsitePc, flow.targetPrototype, flow.sortIndex))
+            .sortBy { case (flow, _) => (flow.callsitePc, flow.targetPrototype, flow.sortIndex) }
 
         val reachableBridgePrefixes =
           reachableRepresentativeBridgePrefixes(
             pathSearch,
             currentRef,
-            candidateFlows,
+            candidateFlows.map(_._1),
             includeArgumentRepresentativeValues = depth > 0
           )
 
-        val candidateIterator = candidateFlows.filter(flow => reachableBridgePrefixes.contains(flow.fromRef)).iterator
+        val candidateIterator = candidateFlows.filter { case (flow, _) =>
+          reachableBridgePrefixes.contains(flow.fromRef)
+        }.iterator
         while (candidateIterator.hasNext && found.isEmpty) {
-          val flow         = candidateIterator.next()
-          val bridgePrefix = pathPrefix ++ reachableBridgePrefixes(flow.fromRef).drop(1) :+ flow.toRef
+          val (flow, nextCallContext) = candidateIterator.next()
+          val bridgePrefix            = pathPrefix ++ reachableBridgePrefixes(flow.fromRef).drop(1) :+ flow.toRef
           if (flow.targetPrototype == sinkPrototype) {
             found = preferredLocalPathForBridgeFlow(pathSearch, flow, sinkEndpoint.sinkRef)
               .map(targetToSink => bridgePrefix ++ targetToSink.drop(1))
-          } else if (depth < maxDepth && !seen(flow.toRef)) {
-            seen += flow.toRef
-            pending.enqueue((flow.toRef, bridgePrefix, flow.targetPrototype, depth + 1))
+          } else if (depth < maxDepth && !seen((flow.toRef, nextCallContext))) {
+            seen += ((flow.toRef, nextCallContext))
+            pending.enqueue((flow.toRef, bridgePrefix, flow.targetPrototype, nextCallContext, depth + 1))
           }
         }
       }
 
       found
     }
+
+    private def advanceCallContext(flow: BridgeFlow, callContext: List[String]): Option[List[String]] =
+      if (flow.isArgumentFlow) Some(flow.callsiteId :: callContext)
+      else
+        callContext match {
+          case callsiteId :: tail if callsiteId == flow.callsiteId => Some(tail)
+          case Nil                                                 => Some(Nil)
+          case _                                                   => None
+        }
 
     private def reachableRepresentativeBridgePrefixes(
       pathSearch: LocalPathSearch,
@@ -1092,28 +1106,31 @@ object LuaProgramSemantics {
         sourceEndpoint.sourceRef, {
           val source          = parseQualifiedValueRef(sourceEndpoint.sourceRef)
           val sourcePrototype = prototypeRef(source.modulePath, source.prototypeId)
-          val pending         = scala.collection.mutable.Queue((sourceEndpoint.sourceRef, sourcePrototype, 0, false))
-          val seen            = scala.collection.mutable.Set((sourceEndpoint.sourceRef, sourcePrototype, 0, false))
-          val reachable       = scala.collection.mutable.Set.empty[String]
-          val maxDepth        = 4
+          val pending =
+            scala.collection.mutable.Queue((sourceEndpoint.sourceRef, sourcePrototype, List.empty[String], 0, false))
+          val seen =
+            scala.collection.mutable.Set((sourceEndpoint.sourceRef, sourcePrototype, List.empty[String], 0, false))
+          val reachable = scala.collection.mutable.Set.empty[String]
+          val maxDepth  = 4
 
           while (pending.nonEmpty) {
-            val (currentRef, currentPrototype, depth, usedReturnBridge) = pending.dequeue()
-            val currentPc                                               = pcFromAnyValueRef(currentRef)
-            val currentIsEntryParameter                                 = isPrototypeEntryParameterRef(currentRef)
+            val (currentRef, currentPrototype, callContext, depth, usedReturnBridge) = pending.dequeue()
+            val currentPc                                                            = pcFromAnyValueRef(currentRef)
+            val currentIsEntryParameter = isPrototypeEntryParameterRef(currentRef)
             val candidateFlows =
               (if (depth == 0) argumentFlowsBySourcePrototype else representativeFlowsBySourcePrototype)
                 .getOrElse(currentPrototype, Vector.empty)
+                .flatMap(flow => advanceCallContext(flow, callContext).map(flow -> _))
                 .filter { flow =>
                   attribution.increment("bridge_argument_provenance_candidate_count")
                   val pcAccepted =
-                    if (depth == 0) flow.callsitePc > source.pc
-                    else if (!flow.isArgumentFlow) true
+                    if (depth == 0) flow._1.callsitePc > source.pc
+                    else if (!flow._1.isArgumentFlow) true
                     else {
                       currentPc match {
-                        case Some(pc) if flow.callsitePc >= pc => true
-                        case Some(_)                           => false
-                        case None if currentIsEntryParameter   => true
+                        case Some(pc) if flow._1.callsitePc >= pc => true
+                        case Some(_)                              => false
+                        case None if currentIsEntryParameter      => true
                         case None =>
                           throw new IllegalStateException(
                             s"missing pc provenance for cross-module bridge ref: current_ref=$currentRef"
@@ -1131,17 +1148,17 @@ object LuaProgramSemantics {
               reachableRepresentativeBridgePrefixes(
                 pathSearch,
                 currentRef,
-                candidateFlows,
+                candidateFlows.map(_._1),
                 includeArgumentRepresentativeValues = depth > 0
               )
             candidateFlows
-              .filter(flow => reachableBridgePrefixes.contains(flow.fromRef))
-              .sortBy(flow => (flow.callsitePc, flow.targetPrototype, flow.sortIndex))
-              .foreach { flow =>
+              .filter { case (flow, _) => reachableBridgePrefixes.contains(flow.fromRef) }
+              .sortBy { case (flow, _) => (flow.callsitePc, flow.targetPrototype, flow.sortIndex) }
+              .foreach { case (flow, nextCallContext) =>
                 val nextUsedReturnBridge = usedReturnBridge || !flow.isArgumentFlow
                 if (nextUsedReturnBridge) reachable += flow.targetPrototype
                 if (depth < maxDepth) {
-                  val state = (flow.toRef, flow.targetPrototype, depth + 1, nextUsedReturnBridge)
+                  val state = (flow.toRef, flow.targetPrototype, nextCallContext, depth + 1, nextUsedReturnBridge)
                   if (!seen(state)) {
                     seen += state
                     pending.enqueue(state)

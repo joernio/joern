@@ -65,6 +65,11 @@ class InterproceduralModuleTaintSmokeTest extends AnyWordSpec with Matchers {
           withClue(s"generic bridge paths: ${genericBridgePaths.mkString(", ")}") {
             genericBridgePaths.exists(_.contains("bridge-flow-generic/bridge.luac")) shouldBe true
           }
+          val callContextNegativePaths = markerCodes(reopened, "lua.taint.path")
+            .filter(_.contains("call-context-negative"))
+          withClue(s"call-context negative paths: ${callContextNegativePaths.mkString(", ")}") {
+            callContextNegativePaths shouldBe empty
+          }
 
           val unresolvedArgFlows = markerCodes(reopened, "lua.interproc.arg_flow")
             .filter(_.contains("d24-interproc-unresolved-callee-negative"))
