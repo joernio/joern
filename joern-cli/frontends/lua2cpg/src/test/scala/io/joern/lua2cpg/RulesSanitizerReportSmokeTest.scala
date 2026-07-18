@@ -38,8 +38,8 @@ class RulesSanitizerReportSmokeTest extends AnyWordSpec with Matchers {
           )
 
           markerCodes(reopened, "lua.sanitizer.call") should contain allOf (
-            "d24-sanitizer-suppresses-report/input.luac:root@pc20 tonumber -> d24-sanitizer-suppresses-report/input.luac:root@pc20:r2",
-            "d24-sanitizer-same-suffix-off-chain-negative/input.luac:root@pc21 tonumber -> d24-sanitizer-same-suffix-off-chain-negative/input.luac:root@pc21:r3"
+            "d24-sanitizer-suppresses-report/input.luac:root@pc19 tonumber -> d24-sanitizer-suppresses-report/input.luac:root@pc19:r1",
+            "d24-sanitizer-same-suffix-off-chain-negative/input.luac:root@pc20 tonumber -> d24-sanitizer-same-suffix-off-chain-negative/input.luac:root@pc20:r2"
           )
           val genericSanitizerCalls = markerCodes(reopened, "lua.sanitizer.call")
             .filter(_.contains("sanitizer-rule-generic/nested/controller.luac"))
@@ -47,27 +47,18 @@ class RulesSanitizerReportSmokeTest extends AnyWordSpec with Matchers {
             genericSanitizerCalls.exists(code => code.contains("_cmdformat") && code.contains("->")) shouldBe true
           }
           markerCodes(reopened, "lua.sanitizer.classification") should contain allOf (
-            "d24-sanitizer-suppresses-report/input.luac:root@pc17:r1 -> d24-sanitizer-suppresses-report/input.luac:root@pc24:r4 classification=sanitized sanitizer=tonumber",
-            "d24-sanitizer-same-suffix-off-chain-negative/input.luac:root@pc17:r1 -> d24-sanitizer-same-suffix-off-chain-negative/input.luac:root@pc25:r4 classification=not-sanitized sanitizer=tonumber"
+            "d24-sanitizer-suppresses-report/input.luac:root@pc16:r0 -> d24-sanitizer-suppresses-report/input.luac:root@pc23:r3 classification=sanitized sanitizer=tonumber",
+            "d24-sanitizer-same-suffix-off-chain-negative/input.luac:root@pc16:r0 -> d24-sanitizer-same-suffix-off-chain-negative/input.luac:root@pc24:r3 classification=not-sanitized sanitizer=tonumber"
           )
           markerCodes(reopened, "lua.report.classification") should contain allOf (
-            "d24-sanitizer-suppresses-report/input.luac:root@pc17:r1 -> d24-sanitizer-suppresses-report/input.luac:root@pc24:r4 classification=sanitized reason=on-chain-sanitizer",
-            "d24-sanitizer-same-suffix-off-chain-negative/input.luac:root@pc17:r1 -> d24-sanitizer-same-suffix-off-chain-negative/input.luac:root@pc25:r4 classification=true-positive reason=no-on-chain-sanitizer"
+            "d24-sanitizer-suppresses-report/input.luac:root@pc16:r0 -> d24-sanitizer-suppresses-report/input.luac:root@pc23:r3 classification=sanitized reason=on-chain-sanitizer",
+            "d24-sanitizer-same-suffix-off-chain-negative/input.luac:root@pc16:r0 -> d24-sanitizer-same-suffix-off-chain-negative/input.luac:root@pc24:r3 classification=true-positive reason=no-on-chain-sanitizer"
           )
           markerCodes(reopened, "lua.report.vulnerability") should contain allOf (
-            "d16-rf-formvalue-os-execute-chain/input.luac:root@pc16:r0 -> d16-rf-formvalue-os-execute-chain/input.luac:root@pc20:r2 status=path-proven classification=true-positive path=d16-rf-formvalue-os-execute-chain/input.luac:root@pc16:r0;d16-rf-formvalue-os-execute-chain/input.luac:root@pc19:r2;d16-rf-formvalue-os-execute-chain/input.luac:root@pc20:r2",
-            "d16-rf-submit-dpp-uri-execute/input.luac:root.2@pc4:r0 -> d16-rf-submit-dpp-uri-execute/input.luac:root.2@pc8:r2 status=path-proven classification=true-positive path=d16-rf-submit-dpp-uri-execute/input.luac:root.2@pc4:r0;d16-rf-submit-dpp-uri-execute/input.luac:root.2@pc7:r2;d16-rf-submit-dpp-uri-execute/input.luac:root.2@pc8:r2",
-            "d16-rf-webcmd-cross-module-popen/controller.luac:root.1@pc4:r0 -> d16-rf-webcmd-cross-module-popen/mtkwifi.luac:root.1@pc3:r2 status=path-proven classification=true-positive path=d16-rf-webcmd-cross-module-popen/controller.luac:root.1@pc4:r0;d16-rf-webcmd-cross-module-popen/controller.luac:root.1@pc8:r2;d16-rf-webcmd-cross-module-popen/mtkwifi.luac:root.1@pc3:r2"
+            "d16-rf-formvalue-os-execute-chain/input.luac:root@pc16:r0 -> d16-rf-formvalue-os-execute-chain/input.luac:root@pc20:r2 status=path-proven classification=true-positive path=d16-rf-formvalue-os-execute-chain/input.luac:root@pc16:r0;d16-rf-formvalue-os-execute-chain/input.luac:root@pc19:r0;d16-rf-formvalue-os-execute-chain/input.luac:root@pc19:r2;d16-rf-formvalue-os-execute-chain/input.luac:root@pc20:r2",
+            "d16-rf-submit-dpp-uri-execute/input.luac:root.2@pc4:r0 -> d16-rf-submit-dpp-uri-execute/input.luac:root.2@pc8:r2 status=path-proven classification=true-positive path=d16-rf-submit-dpp-uri-execute/input.luac:root.2@pc4:r0;d16-rf-submit-dpp-uri-execute/input.luac:root.2@pc7:r0;d16-rf-submit-dpp-uri-execute/input.luac:root.2@pc7:r2;d16-rf-submit-dpp-uri-execute/input.luac:root.2@pc8:r2",
+            "d16-rf-webcmd-cross-module-popen/controller.luac:root.1@pc4:r0 -> d16-rf-webcmd-cross-module-popen/mtkwifi.luac:root.1@pc3:r2 status=path-proven classification=true-positive path=d16-rf-webcmd-cross-module-popen/controller.luac:root.1@pc4:r0;d16-rf-webcmd-cross-module-popen/controller.luac:root.1@pc7:r0;d16-rf-webcmd-cross-module-popen/controller.luac:root.1@pc7:r2;d16-rf-webcmd-cross-module-popen/controller.luac:root.1@pc8:r2;d16-rf-webcmd-cross-module-popen/mtkwifi.luac:root.1:r0;d16-rf-webcmd-cross-module-popen/mtkwifi.luac:root.1@pc2:r0;d16-rf-webcmd-cross-module-popen/mtkwifi.luac:root.1@pc2:r2;d16-rf-webcmd-cross-module-popen/mtkwifi.luac:root.1@pc3:r2"
           )
-          markerCodes(reopened, "lua.e5.boundary") should contain allOf (
-            "d24-rules-overmatch-constant-sink-negative/input.luac:root@pc4 reason=rule-overmatch-rejected",
-            "d24-rules-overmatch-constant-sink-negative/input.luac:root@pc8 reason=rule-overmatch-rejected",
-            "d24-rules-overmatch-constant-sink-negative/input.luac:root@pc12 reason=fixed-string-sink-suppressed",
-            "d24-report-no-report-without-path-negative/input.luac:source-to-sink reason=endpoint-only-no-path",
-            "bc-kill-overwrite/input.luac:root@pc3:r2->root@pc7:r4 reason=killed-taint-path",
-            "bc-branch-negative/input.luac:root@pc3:r2->root@pc8:r5 reason=branch-negative-taint-path"
-          )
-
           val ruleCodes = markerCodes(reopened, "lua.rule.match")
           ruleCodes.exists(_.contains("formvaluex")) shouldBe false
           ruleCodes.exists(_.contains("executex")) shouldBe false

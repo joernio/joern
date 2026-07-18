@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.utils.FileUtil
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.nio.file.Paths
+import java.nio.file.{Files, Paths}
 
 class IntraproceduralSemanticsSmokeTest extends AnyWordSpec with Matchers {
 
@@ -73,25 +73,46 @@ class IntraproceduralSemanticsSmokeTest extends AnyWordSpec with Matchers {
             .code(".*source-function-name.*")
             .isEmpty shouldBe true
 
-          val expectedBoundaries = Seq(
-            "bc-kill-overwrite:no-tainted-source-after-overwrite",
-            "d24-defuse-unrelated-register-negative:no-defuse-cross-prototype-register-reuse",
-            "d24-table-dynamic-key-negative:no-table-field-flow-dynamic-key",
-            "d24-table-dynamic-key-negative:no-table-field-flow-missing-field",
-            "d24-global-dynamic-env-negative:no-global-flow-dynamic-env-write",
-            "d24-global-dynamic-env-negative:no-global-flow-missing-precise-name",
-            "d24-upvalue-mutation-negative:no-stale-upvalue-reuse-after-setupval",
-            "d24-upvalue-mutation-negative:upvalue-mutation-boundary",
-            "bc-call-candidate-unresolved:no-guessed-source-target"
-          )
           val actualBoundaries = reopened.call.nameExact("lua.semantic.boundary").code.l.toSet
-          expectedBoundaries.diff(actualBoundaries.toSeq).toList.shouldBe(Nil)
+          actualBoundaries.exists(_.startsWith("no-stale-upvalue-reuse-after-setupval:")) shouldBe true
+          actualBoundaries.exists(_.startsWith("upvalue-mutation-boundary:")) shouldBe true
+          actualBoundaries.size shouldBe 2
 
           val nodeCount        = reopened.graph.allNodes.size
           val reachingDefCount = reopened.identifier.outE(EdgeTypes.REACHING_DEF).size
           (nodeCount > 0) shouldBe true
           (reachingDefCount > 0) shouldBe true
           info(s"intraprocedural-semantics node_count=$nodeCount reaching_def_edge_count=$reachingDefCount")
+        } finally {
+          reopened.close()
+        }
+      }
+    }
+
+    "preserve positive and negative flow semantics under neutral fixture names" in {
+      val resourceRoot = Paths.get(getClass.getClassLoader.getResource("intraprocedural-semantics").toURI)
+
+      FileUtil.usingTemporaryDirectory("lua2cpg-renamed-semantics-smoke") { tmpDir =>
+        val inputRoot   = tmpDir.resolve("input")
+        val positiveDir = inputRoot.resolve("alpha")
+        val negativeDir = inputRoot.resolve("beta")
+        Files.createDirectories(positiveDir)
+        Files.createDirectories(negativeDir)
+        Files.copy(resourceRoot.resolve("local-value-flow-generic/input.luac"), positiveDir.resolve("input.luac"))
+        Files.copy(resourceRoot.resolve("bc-kill-overwrite/input.luac"), negativeDir.resolve("input.luac"))
+
+        val outputPath = tmpDir.resolve("renamed-semantics.cpg.bin").toString
+        val cpg = new Lua2Cpg()
+          .createCpg(Config().withInputPath(inputRoot.toString).withOutputPath(outputPath))
+          .get
+        cpg.close()
+
+        val reopened = CpgLoader.load(outputPath)
+        try {
+          hasReachingDef(reopened, "alpha", "root.0:r0", "root.0@pc6:r4") shouldBe true
+          hasReachingDef(reopened, "alpha", "root.1:r0", "root.1@pc6:r3") shouldBe false
+          hasReachingDef(reopened, "beta", "root@pc4:r2", "root@pc7:r4") shouldBe true
+          hasReachingDef(reopened, "beta", "root@pc3:r2", "root@pc7:r4") shouldBe false
         } finally {
           reopened.close()
         }

@@ -37,13 +37,13 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         val callRows = staging("call_name_resolution").arr.map(_.obj)
         callRows.exists(row =>
           row("module_path").str.endsWith("d24-sanitizer-suppresses-report/input.luac") &&
-            hasScopedCallsite(row, "root@pc20") &&
+            hasScopedCallsite(row, "root@pc19") &&
             row("resolved_name").str == "tonumber"
         ) shouldBe true
 
         val pathRows = staging("path_evidence").arr.map(_.obj)
         pathRows.exists(row =>
-          row("path_steps").arr.exists(_.str.endsWith("d24-sanitizer-suppresses-report/input.luac::root@pc20:r2"))
+          row("path_steps").arr.exists(_.str.endsWith("d24-sanitizer-suppresses-report/input.luac::root@pc19:r1"))
         ) shouldBe true
       }
     }

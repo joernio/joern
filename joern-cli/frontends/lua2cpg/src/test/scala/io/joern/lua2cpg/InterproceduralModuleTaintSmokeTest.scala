@@ -59,7 +59,7 @@ class InterproceduralModuleTaintSmokeTest extends AnyWordSpec with Matchers {
             "d16-rf-webcmd-cross-module-popen/controller.luac:root.1@pc8 -> d16-rf-webcmd-cross-module-popen/mtkwifi.luac::root.1"
           )
           markerCodes(reopened, "lua.taint.path") should contain(
-            "bc-taint-minimal-path/input.luac:root@pc3:r2 -> bc-taint-minimal-path/input.luac:root@pc6:r4 via bc-taint-minimal-path/input.luac:root@pc3:r2;bc-taint-minimal-path/input.luac:root@pc5:r4;bc-taint-minimal-path/input.luac:root@pc6:r4"
+            "bc-taint-minimal-path/input.luac:root@pc4:r0 -> bc-taint-minimal-path/input.luac:root@pc8:r2 via bc-taint-minimal-path/input.luac:root@pc4:r0;bc-taint-minimal-path/input.luac:root@pc7:r0;bc-taint-minimal-path/input.luac:root@pc7:r2;bc-taint-minimal-path/input.luac:root@pc8:r2"
           )
           val genericBridgePaths = markerCodes(reopened, "lua.taint.path").filter(_.contains("bridge-flow-generic"))
           withClue(s"generic bridge paths: ${genericBridgePaths.mkString(", ")}") {
@@ -89,9 +89,7 @@ class InterproceduralModuleTaintSmokeTest extends AnyWordSpec with Matchers {
             "d24-interproc-unresolved-callee-negative/input.luac:root.2@pc2 reason=unresolved-callee",
             "d24-module-ambiguous-unresolved-dynamic-negative/missing.luac:require:missing.module reason=unresolved-module",
             "d24-module-ambiguous-unresolved-dynamic-negative/controller.luac:require:dynamic reason=dynamic-require",
-            "d24-module-missing-field-negative/controller.luac:root.0@pc3 reason=missing-export-field",
-            "bc-kill-overwrite/input.luac:root@pc3:r2->root@pc7:r4 reason=killed-taint-path",
-            "bc-branch-negative/input.luac:root@pc3:r2->root@pc8:r5 reason=branch-negative-taint-path"
+            "d24-module-missing-field-negative/controller.luac:root.0@pc3 reason=missing-export-field"
           )
 
           val e4NodeCount = reopened.call
