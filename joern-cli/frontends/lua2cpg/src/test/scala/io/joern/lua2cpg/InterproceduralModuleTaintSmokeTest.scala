@@ -70,6 +70,16 @@ class InterproceduralModuleTaintSmokeTest extends AnyWordSpec with Matchers {
           withClue(s"call-context negative paths: ${callContextNegativePaths.mkString(", ")}") {
             callContextNegativePaths shouldBe empty
           }
+          val tableFieldNegativePaths = markerCodes(reopened, "lua.taint.path")
+            .filter(_.contains("table-field-provenance-negative"))
+          withClue(s"table field provenance negative paths: ${tableFieldNegativePaths.mkString(", ")}") {
+            tableFieldNegativePaths shouldBe empty
+          }
+          val tableFieldPositivePaths = markerCodes(reopened, "lua.taint.path")
+            .filter(_.contains("table-field-provenance-positive"))
+          withClue(s"table field provenance positive paths: ${tableFieldPositivePaths.mkString(", ")}") {
+            tableFieldPositivePaths should not be empty
+          }
 
           val unresolvedArgFlows = markerCodes(reopened, "lua.interproc.arg_flow")
             .filter(_.contains("d24-interproc-unresolved-callee-negative"))

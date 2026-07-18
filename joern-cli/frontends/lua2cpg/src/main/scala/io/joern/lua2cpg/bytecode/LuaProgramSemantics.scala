@@ -1890,12 +1890,31 @@ object LuaProgramSemantics {
   private def representativeTableValueEdges(module: ModuleSummary): Vector[(String, String)] =
     module.prototypes.flatMap { prototype =>
       val tableSourcesBySlot = scala.collection.mutable.Map.empty[Int, Set[String]].withDefaultValue(Set.empty)
-      val edges              = Vector.newBuilder[(String, String)]
+      val fieldSourcesBySlotAndKey =
+        scala.collection.mutable.Map.empty[(Int, LuaConstantValue), Set[String]].withDefaultValue(Set.empty)
+      val edges = Vector.newBuilder[(String, String)]
+      def fixedKey(encoded: Int): Option[LuaConstantValue] =
+        Option.when(encoded >= RkConstantBase)(encoded - RkConstantBase).flatMap { index =>
+          prototype.constants.collectFirst { case LuaConstant(`index`, _, value) => value }
+        }
       prototype.instructions.sortBy(_.pc).foreach { instruction =>
         if (instruction.opcode == LuaOpcode.GetTable && tableSourcesBySlot(instruction.b).nonEmpty) {
           val tableRead = valueRef(prototype.prototypeId, instruction.pc, instruction.b)
           val result    = valueRef(prototype.prototypeId, instruction.pc, instruction.a)
           edges += qualify(module.path, tableRead) -> qualify(module.path, result)
+        }
+        if (instruction.opcode == LuaOpcode.GetTable) {
+          instruction.c.flatMap(fixedKey).foreach { fieldKey =>
+            val sources = fieldSourcesBySlotAndKey((instruction.b, fieldKey))
+            if (sources.nonEmpty) {
+              val tableRead = valueRef(prototype.prototypeId, instruction.pc, instruction.b)
+              val result    = valueRef(prototype.prototypeId, instruction.pc, instruction.a)
+              sources.foreach { source =>
+                edges += qualify(module.path, source) -> qualify(module.path, tableRead)
+              }
+              edges += qualify(module.path, tableRead) -> qualify(module.path, result)
+            }
+          }
         }
         representativeReadSlots(prototype, instruction).foreach { slot =>
           val read = valueRef(prototype.prototypeId, instruction.pc, slot)
@@ -1903,14 +1922,14 @@ object LuaProgramSemantics {
             edges += qualify(module.path, source) -> qualify(module.path, read)
           }
         }
-        if (instruction.opcode == LuaOpcode.SetTable && instruction.b >= RkConstantBase) {
+        if (instruction.opcode == LuaOpcode.SetTable) {
           for {
             valueSlot <- instruction.c.filter(_ < RkConstantBase)
+            fieldKey  <- fixedKey(instruction.b)
           } {
-            val tableRead = valueRef(prototype.prototypeId, instruction.pc, instruction.a)
             val valueRead = valueRef(prototype.prototypeId, instruction.pc, valueSlot)
-            edges += qualify(module.path, valueRead) -> qualify(module.path, tableRead)
-            tableSourcesBySlot += instruction.a      -> (tableSourcesBySlot(instruction.a) + valueRead)
+            fieldSourcesBySlotAndKey += ((instruction.a, fieldKey) ->
+              (fieldSourcesBySlotAndKey((instruction.a, fieldKey)) + valueRead))
           }
         }
         if (instruction.opcode == LuaOpcode.SetList && instruction.b > 0) {
