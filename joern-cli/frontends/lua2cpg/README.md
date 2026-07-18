@@ -12,7 +12,7 @@ file inventory.
 
 ## Prerequisites
 
-- Use the JDK and `sbt` versions required by the Joern repository.
+- Use JDK 21 and `sbt` 1.12.5, matching the Joern repository configuration.
 - Run the commands below from the Joern repository root.
 - Install `luac5.1` when starting from Lua source files.
 
@@ -218,5 +218,5 @@ Full frontend test suite:
 sbt 'lua2cpg/test'
 ```
 
-The full `lua2cpg/test` suite is intentionally broader and can take about an
-hour in this development environment.
+The full suite covers the decoder, CPG modeling, program semantics, evidence
+export, and self-contained corpus regression tests.

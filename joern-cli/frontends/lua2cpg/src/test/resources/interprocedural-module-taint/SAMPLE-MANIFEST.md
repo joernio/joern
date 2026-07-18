@@ -1,4 +1,4 @@
-# E4 Interprocedural Module Taint Samples
+# Interprocedural Module Taint Samples
 
 Source family: committed Lua 5.1 bytecode fixtures covering interprocedural
 module and taint behavior.
@@ -27,5 +27,5 @@ JAVA_TOOL_OPTIONS='-Dsbt.watch.mode=polling -Dsbt.io.jdktimestamps=true' sbt 'lu
 JAVA_TOOL_OPTIONS='-Dsbt.watch.mode=polling -Dsbt.io.jdktimestamps=true' sbt 'lua2cpg/stage'
 git status --short
 
-This subset is sufficient for reviewer smoke of E4 semantics and is consumed
-entirely from the `lua2cpg` test resources.
+This subset is sufficient for reviewer smoke of interprocedural module and
+taint semantics and is consumed entirely from the `lua2cpg` test resources.
