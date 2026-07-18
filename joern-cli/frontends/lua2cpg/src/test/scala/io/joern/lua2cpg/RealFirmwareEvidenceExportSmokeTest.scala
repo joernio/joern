@@ -89,16 +89,16 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         "report_count"
       )
       val counters = counterNames.map(_ -> 0L).toMap ++ Map(
-        "source_reachability_check_count"   -> 1L,
+        "source_reachability_check_count"    -> 1L,
         "source_reachability_accepted_count" -> 1L,
-        "parameter_position_check_count"    -> 1L,
-        "parameter_position_accepted_count" -> 1L,
-        "path_constructor_check_count"      -> 1L,
-        "path_constructor_accepted_count"   -> 1L,
-        "local_path_search_count"           -> 1L,
-        "distinct_local_path_query_count"   -> 1L,
-        "local_path_cache_miss_count"       -> 1L,
-        "taint_path_count"                  -> 1L
+        "parameter_position_check_count"     -> 1L,
+        "parameter_position_accepted_count"  -> 1L,
+        "path_constructor_check_count"       -> 1L,
+        "path_constructor_accepted_count"    -> 1L,
+        "local_path_search_count"            -> 1L,
+        "distinct_local_path_query_count"    -> 1L,
+        "local_path_cache_miss_count"        -> 1L,
+        "taint_path_count"                   -> 1L
       )
       val sourceRef = "bc-endpoint-contract/input.luac:root@pc1:r0"
       val sinkRef   = "bc-endpoint-contract/input.luac:root@pc2:r1"
@@ -118,7 +118,8 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
         interproceduralArgFlows = Vector.empty,
         interproceduralReturnFlows = Vector.empty,
         crossBoundaryCallTargets = Vector.empty,
-        taintPaths = Vector(LuaTaintPath(sourceRef, sinkRef, Vector(sourceRef, sinkRef), "true-positive", "bytecode-only")),
+        taintPaths =
+          Vector(LuaTaintPath(sourceRef, sinkRef, Vector(sourceRef, sinkRef), "true-positive", "bytecode-only")),
         boundaries = Vector.empty,
         ruleMatches = Vector.empty,
         sourceEndpoints = Vector.empty,

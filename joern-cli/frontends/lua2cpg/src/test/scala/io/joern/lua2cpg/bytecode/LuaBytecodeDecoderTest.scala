@@ -44,11 +44,11 @@ class LuaBytecodeDecoderTest extends AnyWordSpec with Matchers {
 
     "return diagnostics without accepted prototype models for malformed inputs" in {
       val cases = Seq(
-        "not-lua-bytecode.luac"      -> "not-lua-bytecode",
-        "truncated.luac"            -> "truncated-bytecode",
-        "unsupported-version.luac"  -> "unsupported-bytecode-version",
-        "unsupported-profile.luac"  -> "unsupported-bytecode-profile",
-        "malformed-constant.luac"   -> "malformed-constant"
+        "not-lua-bytecode.luac"    -> "not-lua-bytecode",
+        "truncated.luac"           -> "truncated-bytecode",
+        "unsupported-version.luac" -> "unsupported-bytecode-version",
+        "unsupported-profile.luac" -> "unsupported-bytecode-profile",
+        "malformed-constant.luac"  -> "malformed-constant"
       )
 
       cases.foreach { case (fileName, expectedKind) =>
