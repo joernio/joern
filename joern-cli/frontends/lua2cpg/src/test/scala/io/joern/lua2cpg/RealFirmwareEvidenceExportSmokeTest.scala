@@ -184,11 +184,11 @@ class RealFirmwareEvidenceExportSmokeTest extends AnyWordSpec with Matchers {
     "export OpenWrt-derived path report totals with scoped path steps" in {
       withOpenWrtDerivedExportDir { exportDir =>
         val profile = ujson.read(Files.readString(exportDir.resolve("path-search-profile.json"))).obj
-        profile("taint_path_count").num.toInt shouldBe 18
-        profile("report_count").num.toInt shouldBe 18
+        profile("taint_path_count").num.toInt shouldBe 20
+        profile("report_count").num.toInt shouldBe 20
 
         val pathRows = stagingRows(exportDir).flatMap(_("path_evidence").arr.map(_.obj))
-        pathRows.size shouldBe 18
+        pathRows.size shouldBe 20
         pathRows.foreach { row =>
           row("source_module_path").str should not be empty
           row("sink_module_path").str should not be empty
