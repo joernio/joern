@@ -306,9 +306,11 @@ object LuaInstructionSemantics {
     private var closureTableWrites = Map.empty[(Int, String), LuaClosureValue]
     private var globalWrites       = Map.empty[String, Set[String]]
     private var mutatedUpvalues    = Set.empty[Int]
-    private var conditionalReachingAtPc = Map.empty[Int, Map[Int, Set[String]]]
+    private var conditionalReachingAtPc  = Map.empty[Int, Map[Int, Set[String]]]
+    private var controlPredicatesUntilPc = Vector.empty[(Int, Set[String])]
 
     def visit(instruction: LuaInstruction): Unit = {
+      controlPredicatesUntilPc = controlPredicatesUntilPc.filter { case (targetPc, _) => instruction.pc < targetPc }
       conditionalReachingAtPc.get(instruction.pc).foreach { bypassReaching =>
         reaching = mergeReaching(reaching, bypassReaching)
         conditionalReachingAtPc -= instruction.pc
@@ -419,6 +421,9 @@ object LuaInstructionSemantics {
       conditionalForwardJumpTargetPc(instruction).foreach { target =>
         val existing = conditionalReachingAtPc.getOrElse(target, Map.empty)
         conditionalReachingAtPc += target -> mergeReaching(existing, reaching)
+        previousInstruction(instruction).map(conditionalPredicateRefs).filter(_.nonEmpty).foreach { predicates =>
+          controlPredicatesUntilPc :+= target -> predicates
+        }
       }
     }
 
@@ -606,6 +611,9 @@ object LuaInstructionSemantics {
         localFlows += LuaLocalFlow(source, write, "same-instruction-dependence", BytecodeProvenance)
         semanticSteps += LuaSemanticStep(source, write, kind)
       }
+      controlPredicatesUntilPc.iterator.flatMap(_._2).toSet.filterNot(_ == write).foreach { predicate =>
+        localFlows += LuaLocalFlow(predicate, write, "conditional-assignment-dependence", BytecodeProvenance)
+      }
       reaching.get(slot).foreach { prior =>
         if (prior.nonEmpty && !prior.contains(write)) {
           prior.foreach { first =>
@@ -640,6 +648,17 @@ object LuaInstructionSemantics {
 
     private def isConditionalBranch(instruction: LuaInstruction): Boolean =
       Set(LuaOpcode.Eq, LuaOpcode.Lt, LuaOpcode.Le, LuaOpcode.Test, LuaOpcode.TestSet).contains(instruction.opcode)
+
+    private def conditionalPredicateRefs(instruction: LuaInstruction): Set[String] =
+      instruction.opcode match {
+        case LuaOpcode.Eq | LuaOpcode.Lt | LuaOpcode.Le =>
+          Vector(rkRegister(instruction.b), instruction.c.flatMap(rkRegister)).flatten
+            .map(slotRef(instruction.pc, _))
+            .toSet
+        case LuaOpcode.Test    => Set(slotRef(instruction.pc, instruction.a))
+        case LuaOpcode.TestSet => Set(slotRef(instruction.pc, instruction.b))
+        case _                 => Set.empty
+      }
 
     private def mergeReaching(left: Map[Int, Set[String]], right: Map[Int, Set[String]]): Map[Int, Set[String]] =
       (left.keySet ++ right.keySet).iterator.map { slot =>

@@ -90,6 +90,21 @@ class InterproceduralModuleTaintSmokeTest extends AnyWordSpec with Matchers {
           withClue(s"conditional merge paths: ${conditionalMergePaths.mkString(", ")}") {
             conditionalMergePaths should not be empty
           }
+          val controlSelectionPaths = markerCodes(reopened, "lua.taint.path")
+            .filter(_.contains("control-selection-positive"))
+          withClue(s"control selection paths: ${controlSelectionPaths.mkString(", ")}") {
+            controlSelectionPaths should not be empty
+          }
+          val unrelatedControlPaths = markerCodes(reopened, "lua.taint.path")
+            .filter(_.contains("control-unrelated-negative"))
+          withClue(s"unrelated control paths: ${unrelatedControlPaths.mkString(", ")}") {
+            unrelatedControlPaths shouldBe empty
+          }
+          val overwrittenControlPaths = markerCodes(reopened, "lua.taint.path")
+            .filter(_.contains("control-overwrite-negative"))
+          withClue(s"overwritten control paths: ${overwrittenControlPaths.mkString(", ")}") {
+            overwrittenControlPaths shouldBe empty
+          }
 
           val unresolvedArgFlows = markerCodes(reopened, "lua.interproc.arg_flow")
             .filter(_.contains("d24-interproc-unresolved-callee-negative"))
