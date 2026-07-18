@@ -306,10 +306,13 @@ object LuaInstructionSemantics {
     private var closureTableWrites = Map.empty[(Int, String), LuaClosureValue]
     private var globalWrites       = Map.empty[String, Set[String]]
     private var mutatedUpvalues    = Set.empty[Int]
-    private var conditionalWriteUntilPc = Option.empty[Int]
+    private var conditionalReachingAtPc = Map.empty[Int, Map[Int, Set[String]]]
 
     def visit(instruction: LuaInstruction): Unit = {
-      conditionalWriteUntilPc = conditionalWriteUntilPc.filter(instruction.pc < _)
+      conditionalReachingAtPc.get(instruction.pc).foreach { bypassReaching =>
+        reaching = mergeReaching(reaching, bypassReaching)
+        conditionalReachingAtPc -= instruction.pc
+      }
       instruction.opcode match {
         case LuaOpcode.Move =>
           val source           = readSlot(instruction, instruction.b)
@@ -413,8 +416,9 @@ object LuaInstructionSemantics {
             rkRegister(c).foreach(readSlot(instruction, _))
           }
       }
-      forwardJumpTargetPc(instruction).foreach { target =>
-        conditionalWriteUntilPc = Some(math.max(conditionalWriteUntilPc.getOrElse(target), target))
+      conditionalForwardJumpTargetPc(instruction).foreach { target =>
+        val existing = conditionalReachingAtPc.getOrElse(target, Map.empty)
+        conditionalReachingAtPc += target -> mergeReaching(existing, reaching)
       }
     }
 
@@ -602,42 +606,45 @@ object LuaInstructionSemantics {
         localFlows += LuaLocalFlow(source, write, "same-instruction-dependence", BytecodeProvenance)
         semanticSteps += LuaSemanticStep(source, write, kind)
       }
-      if (conditionalWriteUntilPc.isDefined && isConditionalDefaultWrite(instruction)) {
-        reaching += slot -> (reaching.getOrElse(slot, Set.empty) + write)
-      } else {
-        reaching.get(slot).foreach { prior =>
-          if (prior.nonEmpty && !prior.contains(write)) {
-            prior.foreach { first =>
-              killOverwrites += LuaKillOverwrite(
-                s"${prototype.prototypeId}:pc${instruction.pc}:r$slot:kills:$first",
-                prototype.prototypeId,
-                first,
-                write,
-                write,
-                write,
-                "same-slot-overwrite-kills-prior-definition"
-              )
-            }
+      reaching.get(slot).foreach { prior =>
+        if (prior.nonEmpty && !prior.contains(write)) {
+          prior.foreach { first =>
+            killOverwrites += LuaKillOverwrite(
+              s"${prototype.prototypeId}:pc${instruction.pc}:r$slot:kills:$first",
+              prototype.prototypeId,
+              first,
+              write,
+              write,
+              write,
+              "same-slot-overwrite-kills-prior-definition"
+            )
           }
         }
-        reaching += slot -> Set(write)
-        closuresBySlot -= slot
-        tableObjectsBySlot -= slot
-        closureTableWrites = closureTableWrites.filterNot { case ((tableSlot, _), _) => tableSlot == slot }
       }
+      reaching += slot -> Set(write)
+      closuresBySlot -= slot
+      tableObjectsBySlot -= slot
+      closureTableWrites = closureTableWrites.filterNot { case ((tableSlot, _), _) => tableSlot == slot }
     }
 
-    private def forwardJumpTargetPc(instruction: LuaInstruction): Option[Int] =
-      if (instruction.opcode == LuaOpcode.Jmp) {
+    private def conditionalForwardJumpTargetPc(instruction: LuaInstruction): Option[Int] =
+      if (instruction.opcode == LuaOpcode.Jmp && previousInstruction(instruction).exists(isConditionalBranch)) {
         val target = instruction.pc + 1 + instruction.b
         Option.when(target > instruction.pc + 1)(target)
       } else {
         None
       }
 
-    private def isConditionalDefaultWrite(instruction: LuaInstruction): Boolean =
-      instruction.opcode == LuaOpcode.LoadK || instruction.opcode == LuaOpcode.LoadBool ||
-        instruction.opcode == LuaOpcode.LoadNil
+    private def previousInstruction(instruction: LuaInstruction): Option[LuaInstruction] =
+      prototype.instructions.find(_.pc == instruction.pc - 1)
+
+    private def isConditionalBranch(instruction: LuaInstruction): Boolean =
+      Set(LuaOpcode.Eq, LuaOpcode.Lt, LuaOpcode.Le, LuaOpcode.Test, LuaOpcode.TestSet).contains(instruction.opcode)
+
+    private def mergeReaching(left: Map[Int, Set[String]], right: Map[Int, Set[String]]): Map[Int, Set[String]] =
+      (left.keySet ++ right.keySet).iterator.map { slot =>
+        slot -> (left.getOrElse(slot, Set.empty) ++ right.getOrElse(slot, Set.empty))
+      }.toMap
 
     private def isParamDerived(slot: Int): Boolean =
       reachesParameter(reaching.getOrElse(slot, Set.empty), Set.empty)

@@ -9,6 +9,7 @@ Positive samples:
 - d24-module-return-table-field-call/controller.luac and library.luac: returned table field call target.
 - bc-taint-minimal-path/input.luac: minimal same-artifact taint path.
 - table-field-provenance-positive/input.luac: same fixed table key preserves taint provenance.
+- conditional-merge-positive/input.luac: an optional overwrite preserves the bypassed source at branch merge.
 
 Negative samples:
 - d24-interproc-unresolved-callee-negative/input.luac: unresolved callee boundary.
@@ -16,6 +17,7 @@ Negative samples:
 - d24-module-missing-field-negative/*.luac: missing export field boundary.
 - bc-kill-overwrite/input.luac and bc-branch-negative/input.luac: killed/no-flow taint boundaries.
 - table-field-provenance-negative/input.luac: distinct fixed table keys do not share taint provenance.
+- nested-branch-overwrite-negative/input.luac: an entered branch overwrite kills the prior source before its sink.
 
 Reviewer command:
 JAVA_TOOL_OPTIONS='-Dsbt.watch.mode=polling -Dsbt.io.jdktimestamps=true' sbt 'lua2cpg/testOnly io.joern.lua2cpg.InterproceduralModuleTaintSmokeTest'

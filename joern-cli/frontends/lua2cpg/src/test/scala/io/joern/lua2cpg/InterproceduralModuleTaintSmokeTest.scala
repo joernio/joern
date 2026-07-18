@@ -80,6 +80,16 @@ class InterproceduralModuleTaintSmokeTest extends AnyWordSpec with Matchers {
           withClue(s"table field provenance positive paths: ${tableFieldPositivePaths.mkString(", ")}") {
             tableFieldPositivePaths should not be empty
           }
+          val nestedBranchOverwritePaths = markerCodes(reopened, "lua.taint.path")
+            .filter(_.contains("nested-branch-overwrite-negative"))
+          withClue(s"nested branch overwrite paths: ${nestedBranchOverwritePaths.mkString(", ")}") {
+            nestedBranchOverwritePaths shouldBe empty
+          }
+          val conditionalMergePaths = markerCodes(reopened, "lua.taint.path")
+            .filter(_.contains("conditional-merge-positive"))
+          withClue(s"conditional merge paths: ${conditionalMergePaths.mkString(", ")}") {
+            conditionalMergePaths should not be empty
+          }
 
           val unresolvedArgFlows = markerCodes(reopened, "lua.interproc.arg_flow")
             .filter(_.contains("d24-interproc-unresolved-callee-negative"))
