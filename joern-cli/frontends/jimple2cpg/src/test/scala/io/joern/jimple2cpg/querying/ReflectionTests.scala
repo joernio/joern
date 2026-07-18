@@ -35,6 +35,6 @@ class ReflectionTests extends JimpleCode2CpgFixture {
         }
       case None => fail("Should be the child of an <operator>.assignment call")
     }
-    fooMethod.typeFullName shouldBe "java.lang.reflect.Method"
+    fooMethod.typeFullName shouldBe "java.lang.Class"
   }
 }

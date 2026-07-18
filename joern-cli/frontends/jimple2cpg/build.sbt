@@ -13,6 +13,7 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
   "org.benf"       % "cfr"               % Versions.cfr
 )
+dependencyOverrides += "com.google.guava" % "guava" % "33.5.0-jre" // required currently because of the dependencies of soot 4.7.1
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 trapExit    := false

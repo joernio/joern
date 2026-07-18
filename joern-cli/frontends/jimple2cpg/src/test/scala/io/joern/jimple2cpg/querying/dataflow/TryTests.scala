@@ -102,6 +102,7 @@ class TryTests extends JimpleDataFlowCodeToCpgSuite {
         |
         |    public void test8() {
         |        String s = "MALICIOUS";
+        |        System.out.printf("don't optimize away: %s", s);
         |
         |        try {
         |            s = "SAFE";
@@ -115,6 +116,7 @@ class TryTests extends JimpleDataFlowCodeToCpgSuite {
         |
         |    public void test9() {
         |        String s = "MALICIOUS";
+        |        System.out.printf("don't optimize away: %s", s);
         |
         |        try {
         |            s = "MALICIOUS";
@@ -129,6 +131,7 @@ class TryTests extends JimpleDataFlowCodeToCpgSuite {
         |
         |    public void test10() {
         |        String s = "MALICIOUS";
+        |        System.out.printf("don't optimize away: %s", s);
         |
         |        try {
         |            spooky();
@@ -175,7 +178,6 @@ class TryTests extends JimpleDataFlowCodeToCpgSuite {
     }
 
     "find a path if the sink is in a `FINALLY`" in {
-      // Jimple's flat AST evaluates multiple paths that will end at the FINALLY sink but it is a conservative result
       val (source, sink) = getConstSourceSink("test3")
       sink.reachableBy(source).size shouldBe 3
     }
@@ -197,9 +199,8 @@ class TryTests extends JimpleDataFlowCodeToCpgSuite {
     }
 
     "find a path if `MALICIOUS` is assigned in `FINALLY`" in {
-      // Jimple's flat AST evaluates multiple paths that will end at the FINALLY sink but it is a conservative result
       val (source, sink) = getConstSourceSink("test7")
-      sink.reachableBy(source).size shouldBe 3
+      sink.reachableBy(source).size shouldBe 1
     }
 
     "not find a path if `MALICIOUS` is reassigned in both TRY/CATCH" in {
