@@ -41,6 +41,11 @@ class RulesSanitizerReportSmokeTest extends AnyWordSpec with Matchers {
             "d24-sanitizer-suppresses-report/input.luac:root@pc20 tonumber -> d24-sanitizer-suppresses-report/input.luac:root@pc20:r2",
             "d24-sanitizer-same-suffix-off-chain-negative/input.luac:root@pc21 tonumber -> d24-sanitizer-same-suffix-off-chain-negative/input.luac:root@pc21:r3"
           )
+          val genericSanitizerCalls = markerCodes(reopened, "lua.sanitizer.call")
+            .filter(_.contains("sanitizer-rule-generic/nested/controller.luac"))
+          withClue(s"generic sanitizer calls: ${genericSanitizerCalls.mkString(", ")}") {
+            genericSanitizerCalls.exists(code => code.contains("_cmdformat") && code.contains("->")) shouldBe true
+          }
           markerCodes(reopened, "lua.sanitizer.classification") should contain allOf (
             "d24-sanitizer-suppresses-report/input.luac:root@pc17:r1 -> d24-sanitizer-suppresses-report/input.luac:root@pc24:r4 classification=sanitized sanitizer=tonumber",
             "d24-sanitizer-same-suffix-off-chain-negative/input.luac:root@pc17:r1 -> d24-sanitizer-same-suffix-off-chain-negative/input.luac:root@pc25:r4 classification=not-sanitized sanitizer=tonumber"
@@ -68,16 +73,28 @@ class RulesSanitizerReportSmokeTest extends AnyWordSpec with Matchers {
           ruleCodes.exists(_.contains("executex")) shouldBe false
           markerCodes(reopened, "lua.sink.endpoint")
             .exists(_.contains("d24-rules-overmatch-constant-sink-negative")) shouldBe false
+          markerCodes(reopened, "lua.sanitizer.call")
+            .exists(_.contains("sanitizer-rule-lookalike")) shouldBe false
 
           markerCodes(reopened, "lua.report.vulnerability")
             .exists(_.contains("d24-sanitizer-suppresses-report")) shouldBe false
+          markerCodes(reopened, "lua.report.classification")
+            .exists(code =>
+              code.contains("sanitizer-rule-generic") && code.contains("classification=sanitized")
+            ) shouldBe true
+          markerCodes(reopened, "lua.report.vulnerability")
+            .exists(_.contains("sanitizer-rule-generic")) shouldBe false
+          markerCodes(reopened, "lua.report.vulnerability")
+            .exists(_.contains("sanitizer-rule-lookalike")) shouldBe true
           markerCodes(reopened, "lua.report.vulnerability")
             .exists(_.contains("d24-report-no-report-without-path-negative")) shouldBe false
           markerCodes(reopened, "lua.report.vulnerability")
             .exists(code => code.contains("bc-kill-overwrite") || code.contains("bc-branch-negative")) shouldBe false
 
           val e5NodeCount = reopened.call
-            .name("lua\\.(rule\\.match|source\\.endpoint|sink\\.endpoint|sanitizer\\.call|sanitizer\\.classification|report\\.classification|report\\.vulnerability|e5\\.boundary)")
+            .name(
+              "lua\\.(rule\\.match|source\\.endpoint|sink\\.endpoint|sanitizer\\.call|sanitizer\\.classification|report\\.classification|report\\.vulnerability|e5\\.boundary)"
+            )
             .size
           val reportCount = reopened.call.nameExact("lua.report.vulnerability").size
           info(s"e5_node_count=$e5NodeCount")
