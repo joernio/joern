@@ -33,6 +33,14 @@ class InterproceduralModuleTaintSmokeTest extends AnyWordSpec with Matchers {
           markerCodes(reopened, "lua.interproc.return_flow") should contain(
             "d16-rf-interprocedural-formvalue-execute/input.luac::root.2@pc4:r0 -> d16-rf-interprocedural-formvalue-execute/input.luac:root@pc15:r2"
           )
+          markerCodes(reopened, "lua.interproc.arg_flow")
+            .exists(code =>
+              code.contains("bridge-flow-generic/controller.luac") && code.contains("bridge.luac:root.0:r0")
+            ) shouldBe true
+          markerCodes(reopened, "lua.interproc.return_flow")
+            .exists(code =>
+              code.contains("bridge-flow-generic/bridge.luac::root.0") && code.contains("controller.luac")
+            ) shouldBe true
           markerCodes(reopened, "lua.module.resolution") should contain(
             "d16-rf-webcmd-cross-module-popen/controller.luac require mtkwifi -> matched:d16-rf-webcmd-cross-module-popen/mtkwifi.luac"
           )
@@ -53,6 +61,10 @@ class InterproceduralModuleTaintSmokeTest extends AnyWordSpec with Matchers {
           markerCodes(reopened, "lua.taint.path") should contain(
             "bc-taint-minimal-path/input.luac:root@pc3:r2 -> bc-taint-minimal-path/input.luac:root@pc6:r4 via bc-taint-minimal-path/input.luac:root@pc3:r2;bc-taint-minimal-path/input.luac:root@pc5:r4;bc-taint-minimal-path/input.luac:root@pc6:r4"
           )
+          val genericBridgePaths = markerCodes(reopened, "lua.taint.path").filter(_.contains("bridge-flow-generic"))
+          withClue(s"generic bridge paths: ${genericBridgePaths.mkString(", ")}") {
+            genericBridgePaths.exists(_.contains("bridge-flow-generic/bridge.luac")) shouldBe true
+          }
 
           val unresolvedArgFlows = markerCodes(reopened, "lua.interproc.arg_flow")
             .filter(_.contains("d24-interproc-unresolved-callee-negative"))
