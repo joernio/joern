@@ -441,7 +441,7 @@ class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
       inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.WHILE).l) {
         case List(whileNode: ControlStructure) =>
           inside(whileNode.condition.l) { case List(expr: Expression) =>
-            expr.code shouldBe "const char* c = read() != 0"
+            expr.code shouldBe "* c = read()" // assignment calls are no canditates for synthetic loop equal checks
           }
 
           inside(cpg.local.nameExact("c").l) { case List(cLocal: Local) =>
