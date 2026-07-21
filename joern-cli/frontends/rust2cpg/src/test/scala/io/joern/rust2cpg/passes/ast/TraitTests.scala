@@ -1,7 +1,7 @@
 package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes}
 import io.shiftleft.semanticcpg.language.*
 
 class TraitTests extends Rust2CpgSuite(noSysRoot = true) {
@@ -37,6 +37,11 @@ class TraitTests extends Rust2CpgSuite(noSysRoot = true) {
     "have correct return typeFullName" in {
       cpg.method.nameExact("a").methodReturn.typeFullName.l shouldBe List("()")
       cpg.method.nameExact("b").methodReturn.typeFullName.l shouldBe List("i32")
+    }
+
+    "have a virtual modifiers" in {
+      cpg.method.nameExact("a").modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL)
+      cpg.method.nameExact("b").modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL)
     }
 
     "lower the method without a body" in {

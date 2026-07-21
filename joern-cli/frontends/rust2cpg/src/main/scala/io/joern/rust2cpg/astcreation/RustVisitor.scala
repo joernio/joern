@@ -356,7 +356,9 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       case implTrait :: implType :: Nil =>
         val typeDecl = typeDeclForTraitImpl(impl, implTrait, implType)
         methodAstParentStack.push(typeDecl)
-        val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn => visitFn(fn) }
+        val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn =>
+          visitFn(fn).withChild(Ast(NewModifier().modifierType(ModifierTypes.VIRTUAL)))
+        }
         methodAstParentStack.pop()
         Ast(typeDecl).withChildren(methodAsts)
       case _ => notHandledYet(impl)
@@ -389,7 +391,9 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       code = code(trait_)
     )
     methodAstParentStack.push(typeDecl)
-    val methodAsts = trait_.assocItemList.toSeq.flatMap(_.assocItem).collect { case fn: Fn => visitFn(fn) }
+    val methodAsts = trait_.assocItemList.toSeq.flatMap(_.assocItem).collect { case fn: Fn =>
+      visitFn(fn).withChild(Ast(NewModifier().modifierType(ModifierTypes.VIRTUAL)))
+    }
     methodAstParentStack.pop()
     Ast(typeDecl).withChildren(methodAsts)
   }

@@ -25,6 +25,10 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
         main.astParentFullName shouldBe s"$libPath:rust2cpgtest::$globalNamespaceName"
       }
     }
+
+    "have no modifiers" in {
+      cpg.method.name("main").modifier shouldBe empty
+    }
   }
 
   "a fn with a single parameter and a tail expression" should {
