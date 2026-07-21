@@ -65,8 +65,7 @@ class TraitTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "have correct return typeFullName" in {
-      // TODO(rust_ast_gen): even though `Self` is correct, for the lowering its not what we want to show.
-      pendingUntilFixed(cpg.method.nameExact("new").methodReturn.typeFullName.l shouldBe List("rust2cpgtest::Foo"))
+      cpg.method.nameExact("new").methodReturn.typeFullName.l shouldBe List("rust2cpgtest::Foo")
     }
   }
 
