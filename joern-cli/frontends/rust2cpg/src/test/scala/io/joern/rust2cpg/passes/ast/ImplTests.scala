@@ -1,7 +1,7 @@
 package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.FileUtil.PathExt
@@ -37,6 +37,10 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "be an AST child of the corresponding TYPE_DECL" in {
       cpg.typeDecl.nameExact("Foo").method.nameExact("bar").fullName.l shouldBe List("rust2cpgtest::Foo::bar")
+    }
+
+    "have no modifiers" in {
+      cpg.method.nameExact("bar").modifier shouldBe empty
     }
 
     "not create a duplicate TYPE_DECL" in {
@@ -286,6 +290,14 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
         .methodReturn
         .typeFullName
         .l shouldBe List("i32")
+    }
+
+    "have a virtual modifier on the trait-impl method" in {
+      cpg.method
+        .fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff")
+        .modifier
+        .modifierType
+        .l shouldBe List(ModifierTypes.VIRTUAL)
     }
   }
 
