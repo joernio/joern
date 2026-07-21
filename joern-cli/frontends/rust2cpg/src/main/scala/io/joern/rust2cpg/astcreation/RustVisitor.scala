@@ -4,7 +4,13 @@ import io.joern.rust2cpg.parser.RustNodeSyntax.*
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewModifier, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  ExpressionNew,
+  NewFile,
+  NewModifier,
+  NewNamespaceBlock,
+  NewTypeDecl
+}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, ModifierTypes, Operators}
 import io.joern.rust2cpg.parser.RustNodeSyntaxExtensions.*
 
@@ -822,37 +828,79 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
   // RecordExpr =
   //  Attr* Path RecordExprFieldList
-  // Lowers a record expression e.g. `Foo { x: 1, y: 2 }` into an alloc-followed-by-field-assignments-block:
+  private def visitRecordExpr(recordExpr: RecordExpr): Ast = {
+    recordExpr.recordExprFieldList.expr match {
+      case None       => recordCtorCallAst(recordExpr)
+      case Some(base) => recordCtorCallWithSpreadAst(recordExpr, base)
+    }
+  }
+
+  // Lowers a record expression e.g. `Foo { x: 1, y: 2 }` as follows:
   // BLOCK
   //   LOCAL tmp
   //   tmp = <operator>.alloc
-  //   tmp.x = 1
-  //   tmp.y = 2
+  //   Foo::<init>(&tmp, x:1, y:2)
   //   tmp
-  // In case of spreads e.g. `Foo { x: y, ..bar }` we include the assignment `tmp = bar` for flow purposes.
-  private def visitRecordExpr(recordExpr: RecordExpr): Ast = {
+  private def recordCtorCallAst(recordExpr: RecordExpr): Ast = {
     val structType = typeFullNameForExpr(recordExpr)
-    val fieldList  = recordExpr.recordExprFieldList
     val tmpName    = "tmp"
 
-    allocBlockAst(recordExpr, tmpName, structType) { mktmpIdent =>
-      // tmp = base
-      val spreadAssignAst = fieldList.expr.map { base =>
-        val tmpAst = mktmpIdent(recordExpr)
-        callAst(assignmentNode(recordExpr, s"$tmpName = ${code(base)}"), Seq(tmpAst, visitExpr(base)))
-      }.toSeq
+    allocBlockAst(recordExpr, tmpName, structType) { mkTmp =>
 
-      // tmp.x = 1; tmp.y = 2; etc.
-      val fieldAssignAsts = fieldList.recordExprField.map { field =>
+      val initCall = callNode(
+        recordExpr,
+        code(recordExpr),
+        Defines.ConstructorMethodName,
+        combineRustFullName(structType, Defines.ConstructorMethodName),
+        DispatchTypes.STATIC_DISPATCH,
+        None,
+        Some("()")
+      )
+
+      val addressOfTmp = {
+        val addressOf = operatorCallNode(recordExpr, s"&$tmpName", Operators.addressOf, Some(s"&$structType"))
+        callAst(addressOf, Seq(mkTmp(recordExpr)))
+      }
+
+      val fieldArgs = recordExpr.recordExprFieldList.recordExprField.map { field =>
+        val fieldName = field.nameRef.orElse(viewExprAsNameRef(field.expr)).map(code)
+        val argAst    = visitExpr(field.expr)
+        argAst.root.foreach { case expr: ExpressionNew => expr.argumentName(fieldName) }
+        argAst
+      }
+      callAst(initCall, fieldArgs, base = Some(addressOfTmp)) :: Nil
+    }
+  }
+
+  // Lowers a spread record expression e.g. `Foo { x: 1, ..base }` as follows:
+  // BLOCK
+  //   LOCAL tmp
+  //   tmp = <operator>.alloc
+  //   tmp = base
+  //   tmp.x = y
+  //   tmp
+  private def recordCtorCallWithSpreadAst(recordExpr: RecordExpr, base: Expr): Ast = {
+    val structType = typeFullNameForExpr(recordExpr)
+    val tmpName    = "tmp"
+
+    allocBlockAst(recordExpr, tmpName, structType) { mkTmp =>
+      // tmp = base
+      val spreadAssignAst = {
+        val tmpAst = mkTmp(recordExpr)
+        callAst(assignmentNode(recordExpr, s"$tmpName = ${code(base)}"), Seq(tmpAst, visitExpr(base)))
+      }
+
+      // tmp.x = 1; etc.
+      val fieldAssignAsts = recordExpr.recordExprFieldList.recordExprField.map { field =>
         val fieldNameRef = field.nameRef.orElse(viewExprAsNameRef(field.expr)).get
         val fieldName    = code(fieldNameRef)
         val fieldType    = typeFullNameForExpr(field.expr)
-        val baseAst      = mktmpIdent(field)
+        val baseAst      = mkTmp(field)
         val lhs = fieldAccessAst(fieldNameRef, fieldNameRef, baseAst, s"$tmpName.$fieldName", fieldName, fieldType)
         callAst(assignmentNode(field, s"$tmpName.$fieldName = ${code(field.expr)}"), Seq(lhs, visitExpr(field.expr)))
       }
 
-      spreadAssignAst ++ fieldAssignAsts
+      spreadAssignAst +: fieldAssignAsts
     }
   }
 
@@ -961,14 +1009,81 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  | TupleFieldList WhereClause? ';'
   //  )
   private def visitStruct(struct: Struct): Ast = {
+    val typeDecl = typeDeclForStruct(struct)
     (struct.recordFieldList, struct.tupleFieldList) match {
       case (Some(recordFieldList), _) =>
-        Ast(typeDeclForStruct(struct)).withChildren(visitRecordFieldList(recordFieldList))
+        methodAstParentStack.push(typeDecl)
+        val ctorAst = structCtorMethodAst(struct, typeDecl)
+        methodAstParentStack.pop()
+        Ast(typeDecl).withChildren(visitRecordFieldList(recordFieldList) :+ ctorAst)
       case (None, Some(tupleFieldList)) =>
-        Ast(typeDeclForStruct(struct)).withChildren(visitTupleFieldList(tupleFieldList))
+        Ast(typeDecl).withChildren(visitTupleFieldList(tupleFieldList))
       case (None, None) =>
-        Ast(typeDeclForStruct(struct))
+        Ast(typeDecl)
     }
+  }
+
+  private def structFieldData(struct: Struct): Seq[(node: RustNode, name: String, typ: String)] = {
+    struct.recordFieldList.toSeq.flatMap(_.recordField.map { field =>
+      (node = field, name = code(field.name), typ = typeFullNameForType(field.typ))
+    })
+  }
+
+  private def structCtorMethodAst(struct: Struct, typeDecl: NewTypeDecl): Ast = {
+    val selfName = "self"
+    val fields   = structFieldData(struct)
+    val method   = methodNode(struct, Defines.ConstructorMethodName).code(Defines.ConstructorMethodName)
+    val selfParam = parameterInNode(
+      node = struct,
+      name = selfName,
+      code = selfName,
+      index = 0,
+      isVariadic = false,
+      evaluationStrategy = EvaluationStrategies.BY_SHARING,
+      typeFullName = typeDecl.fullName
+    )
+    val fieldParams = fields.zipWithIndex.map { case (fieldData, idx) =>
+      parameterInNode(
+        node = fieldData.node,
+        name = fieldData.name,
+        code = fieldData.name,
+        index = idx + 1,
+        isVariadic = false,
+        evaluationStrategy = EvaluationStrategies.BY_SHARING,
+        typeFullName = fieldData.typ
+      )
+    }
+
+    // (*self).x = x; etc.
+    val fieldAssignAsts = fields.zip(fieldParams).map { case (fieldData, fieldParam) =>
+      val selfIdent = identifierNode(fieldData.node, selfName, selfName, s"&${typeDecl.fullName}")
+      val selfAst   = Ast(selfIdent).withRefEdge(selfIdent, selfParam) // TODO: remove once ref linker is in.
+      val derefSelf = callAst(
+        operatorCallNode(fieldData.node, s"*$selfName", Operators.indirection, Some(typeDecl.fullName)),
+        Seq(selfAst)
+      )
+      val lhs = fieldAccessAst(
+        fieldData.node,
+        fieldData.node,
+        derefSelf,
+        s"(*$selfName).${fieldData.name}",
+        fieldData.name,
+        fieldData.typ
+      )
+      val rhsIdent = identifierNode(fieldData.node, fieldData.name, fieldData.name, fieldData.typ)
+      val rhs      = Ast(rhsIdent).withRefEdge(rhsIdent, fieldParam) // TODO: remove once ref linker is in.
+      callAst(assignmentNode(fieldData.node, s"(*$selfName).${fieldData.name} = ${fieldData.name}"), Seq(lhs, rhs))
+    }
+
+    val paramAsts = (selfParam +: fieldParams).map(Ast(_))
+    val bodyAst   = blockAst(blockNode(struct), fieldAssignAsts.toList)
+    methodAst(
+      method = method,
+      parameters = paramAsts,
+      body = bodyAst,
+      methodReturn = methodReturnNode(struct, "()"),
+      modifiers = Seq(modifierNode(struct, ModifierTypes.CONSTRUCTOR))
+    )
   }
 
   // RecordFieldList =

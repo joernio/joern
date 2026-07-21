@@ -120,7 +120,7 @@ class OperatorTests extends Rust2CpgSuite(noSysRoot = true) {
         |""".stripMargin)
 
     "lower to a fieldAccess call" in {
-      inside(cpg.call.nameExact(Operators.fieldAccess).l) { case fieldAccess :: Nil =>
+      inside(cpg.method.name("get_bar").call.nameExact(Operators.fieldAccess).l) { case fieldAccess :: Nil =>
         fieldAccess.code shouldBe "self.bar"
         fieldAccess.methodFullName shouldBe Operators.fieldAccess
         fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
@@ -129,22 +129,24 @@ class OperatorTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "have the lhs as the first argument" in {
-      inside(cpg.call.nameExact(Operators.fieldAccess).argument(1).l) { case (deref: Call) :: Nil =>
-        deref.name shouldBe Operators.indirection
-        deref.code shouldBe "*self"
-        deref.typeFullName shouldBe "rust2cpgtest::Foo"
-        inside(deref.argument.l) { case (self: Identifier) :: Nil =>
-          self.name shouldBe "self"
-          self.code shouldBe "self"
-          self.typeFullName shouldBe "&rust2cpgtest::Foo"
-        }
+      inside(cpg.method.name("get_bar").call.nameExact(Operators.fieldAccess).argument(1).l) {
+        case (deref: Call) :: Nil =>
+          deref.name shouldBe Operators.indirection
+          deref.code shouldBe "*self"
+          deref.typeFullName shouldBe "rust2cpgtest::Foo"
+          inside(deref.argument.l) { case (self: Identifier) :: Nil =>
+            self.name shouldBe "self"
+            self.code shouldBe "self"
+            self.typeFullName shouldBe "&rust2cpgtest::Foo"
+          }
       }
     }
 
     "have the field as the second argument" in {
-      inside(cpg.call.nameExact(Operators.fieldAccess).argument(2).l) { case (field: FieldIdentifier) :: Nil =>
-        field.code shouldBe "bar"
-        field.canonicalName shouldBe "bar"
+      inside(cpg.method.name("get_bar").call.nameExact(Operators.fieldAccess).argument(2).l) {
+        case (field: FieldIdentifier) :: Nil =>
+          field.code shouldBe "bar"
+          field.canonicalName shouldBe "bar"
       }
     }
   }
