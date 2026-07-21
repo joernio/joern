@@ -109,6 +109,19 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "an associated function returning `Self`" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo {
+        |  fn new() -> Self { Foo }
+        |}
+        |""".stripMargin)
+
+    "have correct return typeFullName" in {
+      cpg.method.nameExact("new").methodReturn.typeFullName.l shouldBe List("rust2cpgtest::Foo")
+    }
+  }
+
   "multiple methods in a single impl block" should {
     val cpg = code("""
         |struct Foo;
@@ -298,6 +311,26 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
         .modifier
         .modifierType
         .l shouldBe List(ModifierTypes.VIRTUAL)
+    }
+  }
+
+  "a trait-impl function returning `Self`" should {
+    val cpg = code("""
+        |trait Bar {
+        |  fn make() -> Self;
+        |}
+        |struct Foo;
+        |impl Bar for Foo {
+        |  fn make() -> Self { Foo }
+        |}
+        |""".stripMargin)
+
+    "have correct return typeFullName" in {
+      cpg.method
+        .fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>::make")
+        .methodReturn
+        .typeFullName
+        .l shouldBe List("rust2cpgtest::Foo")
     }
   }
 
