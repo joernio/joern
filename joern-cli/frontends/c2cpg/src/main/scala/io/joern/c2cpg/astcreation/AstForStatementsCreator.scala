@@ -335,15 +335,36 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     scope.pushNewBlockScope(forNode)
 
-    val initAstsRaw = forStmt match {
+    // C++ for-loop condition is either an expression or a declaration, never both (C++11 §6.5.3).
+    // getConditionDeclaration and getConditionExpression are therefore mutually exclusive.
+    val (localAsts, initAsts, compareAst) = forStmt match {
       case statement: CASTForStatement =>
-        nullSafeAst(statement.getInitializerStatement)
+        val (locals, inits) =
+          nullSafeAst(statement.getInitializerStatement).partition(_.root.exists(_.isInstanceOf[NewLocal]))
+        val cmp = wrapInNullComparison(
+          forStmt.getConditionExpression,
+          astForConditionExpression(forStmt.getConditionExpression)
+        )
+        (locals, inits, cmp)
+      case statement: ICPPASTForStatement if statement.getConditionDeclaration != null =>
+        val condRaw                     = nullSafeAst(statement.getConditionDeclaration)
+        val (condLocals, condOtherAsts) = condRaw.partition(_.root.exists(_.isInstanceOf[NewLocal]))
+        val initRaw                     = nullSafeAst(statement.getInitializerStatement)
+        val (initLocals, initOtherAsts) = initRaw.partition(_.root.exists(_.isInstanceOf[NewLocal]))
+        val cmp = wrapInNullComparison(
+          statement.getConditionDeclaration,
+          wrapMultipleInBlock(condOtherAsts, line(statement.getConditionDeclaration))
+        )
+        (condLocals ++ initLocals, initOtherAsts, cmp)
       case statement: ICPPASTForStatement =>
-        nullSafeAst(statement.getInitializerStatement) ++ nullSafeAst(statement.getConditionDeclaration)
+        val (locals, inits) =
+          nullSafeAst(statement.getInitializerStatement).partition(_.root.exists(_.isInstanceOf[NewLocal]))
+        val cmp = wrapInNullComparison(
+          forStmt.getConditionExpression,
+          astForConditionExpression(forStmt.getConditionExpression)
+        )
+        (locals, inits, cmp)
     }
-    val (localAsts, initAsts) = initAstsRaw.partition(_.root.exists(_.isInstanceOf[NewLocal]))
-    val compareAst =
-      wrapInNullComparison(forStmt.getConditionExpression, astForConditionExpression(forStmt.getConditionExpression))
     val updateAst = nullSafeAst(forStmt.getIterationExpression)
     val bodyAsts  = nullSafeBodyAst(forStmt.getBody)
     scope.popScope()
@@ -516,6 +537,7 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astsForWhile(whileStmt: IASTWhileStatement): Seq[Ast] = {
+    // C++ while condition is either an expression or a declaration, never both (C++11 §6.5.1).
     val (conditionNode, localAsts, conditionAst) = whileStmt match {
       case statement: CASTWhileStatement =>
         val node = statement.getCondition
@@ -573,6 +595,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       case s: ICPPASTIfStatement => nullSafeAst(s.getInitializerStatement)
       case _                     => Seq.empty
     }
+    // C++ if condition is either an expression or a declaration, never both (C++11 §6.4).
     val (conditionAstRaw, node) = ifStmt match {
       case s @ (_: CASTIfStatement | _: CPPASTIfStatement) if s.getConditionExpression != null =>
         (astForConditionExpression(s.getConditionExpression), s.getConditionExpression)

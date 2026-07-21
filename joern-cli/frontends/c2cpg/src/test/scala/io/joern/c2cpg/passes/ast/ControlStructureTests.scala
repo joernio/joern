@@ -425,7 +425,7 @@ class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
     }
   }
 
-  "while loop with const assigment" should {
+  "while loop with const pointer assignment condition" should {
     val cpg = code(
       """
         |void main() {
@@ -437,15 +437,69 @@ class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
       fileName = "test.cpp"
     )
 
-    "emit a condition edge with correct content`" in {
+    "emit a condition edge with correct content" in {
       inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.WHILE).l) {
         case List(whileNode: ControlStructure) =>
           inside(whileNode.condition.l) { case List(expr: Expression) =>
-            expr.code shouldBe "* c = read()" // assignment calls are no canditates for synthetic loop equal checks
+            expr.code shouldBe "c = read()" // assignment calls are no candidates for synthetic loop equal checks
           }
 
           inside(cpg.local.nameExact("c").l) { case List(cLocal: Local) =>
             cLocal.astParent shouldBe cpg.method.nameExact("main").block.loneElement
+          }
+      }
+    }
+  }
+
+  "while loop with non-pointer condition declaration" should {
+    val cpg = code(
+      """
+        |void main() {
+        |  while (int n = count()) {
+        |    process(n);
+        |  }
+        |}
+        |""".stripMargin,
+      fileName = "test.cpp"
+    )
+
+    "emit a condition edge with correct content" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.WHILE).l) {
+        case List(whileNode: ControlStructure) =>
+          inside(whileNode.condition.l) { case List(expr: Expression) =>
+            expr.code shouldBe "n = count()" // assignment calls are no candidates for synthetic loop equal checks
+          }
+
+          inside(cpg.local.nameExact("n").l) { case List(nLocal: Local) =>
+            nLocal.typeFullName shouldBe "int"
+            nLocal.astParent shouldBe cpg.method.nameExact("main").block.loneElement
+          }
+      }
+    }
+  }
+
+  "for loop with pointer condition declaration" should {
+    val cpg = code(
+      """
+        |void main() {
+        |  for (int i = 0; char* p = getNext(); i++) {
+        |    process(p);
+        |  }
+        |}
+        |""".stripMargin,
+      fileName = "test.cpp"
+    )
+
+    "emit a condition edge with correct content and place the local under the for node" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.FOR).l) {
+        case List(forNode: ControlStructure) =>
+          inside(forNode.condition.l) { case List(expr: Expression) =>
+            expr.code shouldBe "p = getNext()" // assignment calls are no candidates for synthetic loop equal checks
+          }
+
+          inside(cpg.local.nameExact("p").l) { case List(pLocal: Local) =>
+            pLocal.typeFullName shouldBe "char*"
+            pLocal.astParent shouldBe forNode
           }
       }
     }

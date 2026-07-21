@@ -382,7 +382,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
       succOf("ptr") should contain theSameElementsAs expected(("foo", AlwaysEdge))
       succOf("ptr", 1) should contain theSameElementsAs expected(("*ptr", AlwaysEdge))
       succOf("foo") should contain theSameElementsAs expected(("&&foo", AlwaysEdge))
-      succOf("*ptr = &&foo") should contain theSameElementsAs expected(("goto *;", AlwaysEdge))
+      succOf("ptr = &&foo") should contain theSameElementsAs expected(("goto *;", AlwaysEdge))
       succOf("goto *;") should contain theSameElementsAs expected(("foo: someCall();", AlwaysEdge))
       succOf("foo: someCall();") should contain theSameElementsAs expected(("someCall()", AlwaysEdge))
       succOf("otherCall()") should contain theSameElementsAs expected(("foo: someCall();", AlwaysEdge))
