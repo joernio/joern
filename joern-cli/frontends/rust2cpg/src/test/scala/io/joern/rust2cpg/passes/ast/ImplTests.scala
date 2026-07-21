@@ -256,10 +256,14 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
     val cpg = code("""
         |trait Bar {
         |  fn do_stuff(&self) -> i32;
+        |  fn do_mut(&mut self);
+        |  fn do_take(self);
         |}
         |struct Foo;
         |impl Bar for Foo {
         |  fn do_stuff(&self) -> i32 { 1 }
+        |  fn do_mut(&mut self) {}
+        |  fn do_take(self) {}
         |}
         |""".stripMargin)
 
@@ -282,18 +286,44 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
         .fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>")
         .method
         .fullName
-        .l shouldBe List("<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff")
+        .sorted
+        .l shouldBe List(
+        "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_mut",
+        "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff",
+        "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_take"
+      )
     }
 
-    "have correct self properties" in {
+    "have correct `&self` properties" in {
       inside(cpg.method.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff").parameter.l) {
         case self :: Nil =>
           self.name shouldBe "self"
           self.index shouldBe 0
           self.order shouldBe 0
           self.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
-          // TODO(rust_ast_gen): resolve self/Self.
-          pendingUntilFixed(self.typeFullName shouldBe "&rust2cpgtest::Foo")
+          self.typeFullName shouldBe "&rust2cpgtest::Foo"
+      }
+    }
+
+    "have correct `&mut self` properties" in {
+      inside(cpg.method.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_mut").parameter.l) {
+        case self :: Nil =>
+          self.name shouldBe "self"
+          self.index shouldBe 0
+          self.order shouldBe 0
+          self.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
+          self.typeFullName shouldBe "&mut rust2cpgtest::Foo"
+      }
+    }
+
+    "have correct `self` properties" in {
+      inside(cpg.method.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_take").parameter.l) {
+        case self :: Nil =>
+          self.name shouldBe "self"
+          self.index shouldBe 0
+          self.order shouldBe 0
+          self.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
+          self.typeFullName shouldBe "rust2cpgtest::Foo"
       }
     }
 
