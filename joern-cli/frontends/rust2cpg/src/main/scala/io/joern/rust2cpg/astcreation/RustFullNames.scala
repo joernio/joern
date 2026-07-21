@@ -129,6 +129,19 @@ trait RustFullNames { this: AstCreator =>
     expr.typeFullName.getOrElse(Defines.Any)
   }
 
+  protected def typeFullNameForSelfParam(selfParam: RustNodeSyntax.SelfParam): String = {
+    selfParam.typeFullName.getOrElse {
+      val enclosingType = enclosingTypeDeclFullName.getOrElse(Defines.Any)
+      selfParam.typ match {
+        case Some(typ) => typeFullNameForType(typ)
+        case None if selfParam.ampToken.isDefined =>
+          val mut = Option.when(selfParam.mutKwToken.isDefined)("mut ").getOrElse("")
+          s"&$mut$enclosingType"
+        case None => enclosingType
+      }
+    }
+  }
+
   protected def typeFullNameForTupleExpr(tupleExpr: RustNodeSyntax.TupleExpr): String = {
     tupleExpr.typeFullName.getOrElse {
       val childTypes = tupleExpr.expr.map(typeFullNameForExpr)

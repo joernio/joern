@@ -523,14 +523,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // SelfParam =
   //  Attr* ( ('&' Lifetime?)? 'mut'? Name | 'mut'? Name ':' Type )
   private def visitSelfParam(selfParam: SelfParam): Ast = {
-    val enclosingType = enclosingTypeDeclFullName.getOrElse(Defines.Any)
-    val typeFullName = selfParam.typ match {
-      case Some(typ) => typeFullNameForType(typ)
-      case None if selfParam.ampToken.isDefined =>
-        val mut = Option.when(selfParam.mutKwToken.isDefined)("mut ").getOrElse("")
-        s"&$mut$enclosingType"
-      case None => enclosingType
-    }
+    val typeFullName = typeFullNameForSelfParam(selfParam)
     val evaluationStrategy =
       if (selfParam.ampToken.isDefined) EvaluationStrategies.BY_SHARING else EvaluationStrategies.BY_VALUE
     val paramNode = parameterInNode(
