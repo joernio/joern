@@ -198,9 +198,14 @@ trait AstForTypesCreator { this: AstCreator =>
   }
 
   private def astForIASTEqualsInitializer(declarator: IASTDeclarator, leftAst: Ast, rightAst: Ast) = {
+    // Strip leading pointer/reference markers (* or &) from the declarator code since they are part of
+    // the type specifier (stored in IASTSimpleDeclaration.getDeclSpecifier), not the variable name.
+    // E.g. for `const char* c = read()`, CDT gives declarator code `* c = read()` but the assignment
+    // expression should be `c = read()`.
+    val assignmentCode = code(declarator).replaceFirst("^[*&]+\\s*", "")
     val assignmentCallNode = callNode(
       declarator,
-      code(declarator),
+      assignmentCode,
       Operators.assignment,
       Operators.assignment,
       DispatchTypes.STATIC_DISPATCH,
