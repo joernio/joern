@@ -460,4 +460,25 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
     }
   }
 
+  "auto-property setter (`{ get; set; }`, no explicit body)" should {
+    val cpg = code("""
+        |class C
+        |{
+        |  public int MyProperty { get; set; }
+        |}
+        |""".stripMargin)
+
+    "be lowered into a set_* method that has a (empty) block body" in {
+      inside(cpg.method.nameExact("set_MyProperty").l) { case setter :: Nil =>
+        setter.astChildren.isBlock.size shouldBe 1
+        setter.astChildren.isBlock.astChildren shouldBe empty
+      }
+    }
+
+    "not raise a schema violation on method.block / method.local" in {
+      noException should be thrownBy cpg.method.nameExact("set_MyProperty").block.l
+      noException should be thrownBy cpg.method.nameExact("set_MyProperty").local.l
+    }
+  }
+
 }
