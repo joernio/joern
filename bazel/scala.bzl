@@ -4,7 +4,7 @@ _rules = make_scala_rules(
     scala_version = "3.7.4",
     common_scalacopts = [
         "-java-output-version",
-        "17",
+        "11",
         "-no-indent",
         "-old-syntax",
         "-Wshadow:type-parameter-shadow",
