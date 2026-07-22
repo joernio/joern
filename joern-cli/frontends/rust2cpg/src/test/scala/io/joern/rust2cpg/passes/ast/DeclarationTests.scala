@@ -480,6 +480,128 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "let with a tuple pattern" should {
+    val cpg = code("""
+        |fn main() {
+        | let (x, y) = (1, "a");
+        |}
+        |""".stripMargin)
+
+    "lower into a LOCAL and an assignment for tmp and each binding" in {
+      inside(cpg.method.name("main").block.astChildren.l) {
+        case (tmpLocal: Local) :: (tmpAssign: Call) :: (xLocal: Local) :: (xAssign: Call) ::
+            (yLocal: Local) :: (yAssign: Call) :: Nil =>
+          tmpLocal.name shouldBe "tmp"
+          tmpLocal.typeFullName shouldBe "(i32, &str)"
+          tmpAssign.code shouldBe "tmp = (1, \"a\")"
+
+          xLocal.name shouldBe "x"
+          xLocal.typeFullName shouldBe "i32"
+          xAssign.code shouldBe "x = tmp.0"
+
+          yLocal.name shouldBe "y"
+          yLocal.typeFullName shouldBe "&str"
+          yAssign.code shouldBe "y = tmp.1"
+      }
+    }
+
+    "lower the initializer into an assignment to tmp" in {
+      inside(cpg.assignment.codeExact("tmp = (1, \"a\")").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "tmp"
+          lhs.typeFullName shouldBe "(i32, &str)"
+          rhs.name shouldBe "<operator>.tupleLiteral"
+          rhs.typeFullName shouldBe "(i32, &str)"
+      }
+    }
+
+    "lower each binding as an assignment of a tmp field access" in {
+      inside(cpg.assignment.codeExact("x = tmp.0").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "x"
+          lhs.typeFullName shouldBe "i32"
+          rhs.name shouldBe Operators.fieldAccess
+          rhs.typeFullName shouldBe "i32"
+          inside(rhs.argument.sortBy(_.argumentIndex).l) { case (base: Identifier) :: (field: FieldIdentifier) :: Nil =>
+            base.name shouldBe "tmp"
+            field.canonicalName shouldBe "0"
+          }
+      }
+      inside(cpg.assignment.codeExact("y = tmp.1").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "y"
+          lhs.typeFullName shouldBe "&str"
+          rhs.name shouldBe Operators.fieldAccess
+          rhs.typeFullName shouldBe "&str"
+          inside(rhs.argument.sortBy(_.argumentIndex).l) { case (base: Identifier) :: (field: FieldIdentifier) :: Nil =>
+            base.name shouldBe "tmp"
+            field.canonicalName shouldBe "1"
+          }
+      }
+    }
+  }
+
+  "let with a tuple pattern with `_`" should {
+    val cpg = code("""
+        |fn main() {
+        | let (x, _) = (1, 2);
+        |}
+        |""".stripMargin)
+
+    "lower into a LOCAL and an assignment for the single binding" in {
+      inside(cpg.method.name("main").block.astChildren.l) { case (xLocal: Local) :: (xAssign: Call) :: Nil =>
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "i32"
+        xAssign.code shouldBe "x = (1, 2).0"
+      }
+    }
+
+    "lower the binding as an assignment of a field access on the initializer" in {
+      inside(cpg.assignment.codeExact("x = (1, 2).0").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "x"
+          lhs.typeFullName shouldBe "i32"
+          rhs.name shouldBe Operators.fieldAccess
+          rhs.typeFullName shouldBe "i32"
+          inside(rhs.argument.sortBy(_.argumentIndex).l) { case (base: Call) :: (field: FieldIdentifier) :: Nil =>
+            base.name shouldBe "<operator>.tupleLiteral"
+            base.code shouldBe "(1, 2)"
+            field.canonicalName shouldBe "0"
+          }
+      }
+    }
+  }
+
+  "let with a nested tuple pattern" should {
+    val cpg = code("""
+        |fn main() {
+        | let ((a, b), c) = ((1, 2), 3);
+        |}
+        |""".stripMargin)
+
+    "lower into a LOCAL and an assignment for tmp and each binding" in {
+      inside(cpg.method.name("main").block.astChildren.l) {
+        case (tmpLocal: Local) :: (tmpAssign: Call) :: (aLocal: Local) :: (aAssign: Call) ::
+            (bLocal: Local) :: (bAssign: Call) :: (cLocal: Local) :: (cAssign: Call) :: Nil =>
+          tmpLocal.name shouldBe "tmp"
+          tmpLocal.typeFullName shouldBe "((i32, i32), i32)"
+          tmpAssign.code shouldBe "tmp = ((1, 2), 3)"
+
+          aLocal.name shouldBe "a"
+          aLocal.typeFullName shouldBe "i32"
+          aAssign.code shouldBe "a = tmp.0.0"
+
+          bLocal.name shouldBe "b"
+          bLocal.typeFullName shouldBe "i32"
+          bAssign.code shouldBe "b = tmp.0.1"
+
+          cLocal.name shouldBe "c"
+          cLocal.typeFullName shouldBe "i32"
+          cAssign.code shouldBe "c = tmp.1"
+      }
+    }
+  }
+
   "let to a function" should {
     val cpg = code("""
         |fn handler(x: i64) -> i64 { x }

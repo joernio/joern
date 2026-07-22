@@ -157,6 +157,18 @@ trait RustFullNames { this: AstCreator =>
     identPat.typeFullName.getOrElse(Defines.Any)
   }
 
+  protected def typeFullNameForPat(pat: RustNodeSyntax.Pat): String = {
+    // TODO(rust_ast_gen): add typeFullName to patterns.
+    pat.typeFullName.getOrElse {
+      pat match {
+        case tuplePat: RustNodeSyntax.TuplePat =>
+          val childTypes = tuplePat.pat.map(typeFullNameForPat)
+          s"(${childTypes.mkString(", ")})"
+        case _ => Defines.Any
+      }
+    }
+  }
+
   private def typeFullNameForLiteralToken(tok: RustNodeSyntax.RustToken): String = tok match {
     case _: RustNodeSyntax.IntNumberToken   => "i32"
     case _: RustNodeSyntax.FloatNumberToken => "f64"
