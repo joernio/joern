@@ -4,7 +4,7 @@ _rules = make_java_rules(
     java_common_opts = [
         "-g",
         "-Xlint",
-        "--release=11",
+        "--release=17",
     ],
     common_java_binary_runtime_deps = [
         # We bring in the linked version of codepropertygraph domain classes as default/common
