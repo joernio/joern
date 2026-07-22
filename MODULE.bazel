@@ -1,11 +1,11 @@
 module(name = "joern")
 
-bazel_dep(name = "rules_scala", version = "7.2.4")
+bazel_dep(name = "rules_scala", version = "7.2.5")
 bazel_dep(name = "codepropertygraph")
 
-CODEPROPERTYGRAPH_VERSION = "daefb4aa74a9e41f96eeca11ae79fae4f4600a8e"
+CODEPROPERTYGRAPH_VERSION = "bd34f991c710fb616d8c26e3d9385043bb22820f"
 
-BAZEL_TOOLING_VERSION = "a07fda4f8bc736081ad9921831bc9973e77e6e19"
+BAZEL_TOOLING_VERSION = "4bcf42cc81b574b91699d696b504637677640871"
 
 git_override(
     module_name = "codepropertygraph",
@@ -25,7 +25,7 @@ scala_config = use_extension(
     "scala_config",
 )
 scala_config.settings(
-    scala_version = "3.7.4",
+    scala_version = "3.8.3",
 )
 
 scala_deps = use_extension(

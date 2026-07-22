@@ -21,10 +21,10 @@
     "com.squareup.tools.build:maven-archeologist": 943047605,
     "com.typesafe:config": 324143406,
     "io.joern:eclipse-cdt-core": -500108536,
-    "io.joern:flatgraph-core_3": -299976332,
-    "io.joern:flatgraph-domain-classes-generator_3": 1040736120,
-    "io.joern:flatgraph-help_3": -1498345706,
-    "io.joern:flatgraph-odb-convert_3": 599666178,
+    "io.joern:flatgraph-core_3": -1427372425,
+    "io.joern:flatgraph-domain-classes-generator_3": -86659973,
+    "io.joern:flatgraph-help_3": 1669225497,
+    "io.joern:flatgraph-odb-convert_3": -527729915,
     "net.java.dev.javacc:javacc": -1966826500,
     "net.lingala.zip4j:zip4j": 967189992,
     "net.sf.trove4j:core": 1808260229,
@@ -63,8 +63,8 @@
     "com.github.javaparser:javaparser-core:jar:sources": 939883591,
     "com.github.javaparser:javaparser-symbol-solver-core": -1037567007,
     "com.github.javaparser:javaparser-symbol-solver-core:jar:sources": -2137537229,
-    "com.github.luben:zstd-jni": -201271141,
-    "com.github.luben:zstd-jni:jar:sources": 2122765034,
+    "com.github.luben:zstd-jni": 1886873774,
+    "com.github.luben:zstd-jni:jar:sources": -1190847340,
     "com.github.scopt:scopt_3": 148843063,
     "com.github.scopt:scopt_3:jar:sources": 776003799,
     "com.github.sh4869:semver-parser-scala_3": -1402857073,
@@ -134,14 +134,14 @@
     "io.get-coursier:interface:jar:sources": -37171318,
     "io.joern:eclipse-cdt-core": 956507630,
     "io.joern:eclipse-cdt-core:jar:sources": -1789927640,
-    "io.joern:flatgraph-core_3": 1753885189,
-    "io.joern:flatgraph-core_3:jar:sources": -755678090,
-    "io.joern:flatgraph-domain-classes-generator_3": 1301386557,
-    "io.joern:flatgraph-domain-classes-generator_3:jar:sources": 1912497518,
-    "io.joern:flatgraph-help_3": 1715122948,
-    "io.joern:flatgraph-help_3:jar:sources": -1070617857,
-    "io.joern:flatgraph-odb-convert_3": 805764456,
-    "io.joern:flatgraph-odb-convert_3:jar:sources": 793830638,
+    "io.joern:flatgraph-core_3": -2129334140,
+    "io.joern:flatgraph-core_3:jar:sources": 1584220606,
+    "io.joern:flatgraph-domain-classes-generator_3": -902397633,
+    "io.joern:flatgraph-domain-classes-generator_3:jar:sources": -1946518416,
+    "io.joern:flatgraph-help_3": -1335185182,
+    "io.joern:flatgraph-help_3:jar:sources": -444523173,
+    "io.joern:flatgraph-odb-convert_3": 1755290238,
+    "io.joern:flatgraph-odb-convert_3:jar:sources": -1249652390,
     "io.shiftleft:overflowdb-core_3": -1655377345,
     "io.shiftleft:overflowdb-core_3:jar:sources": 422126785,
     "javax.inject:javax.inject": 698155243,
@@ -360,10 +360,10 @@
     },
     "com.github.luben:zstd-jni": {
       "shasums": {
-        "jar": "c5530c6fe99df04f9ac041e1b11fcb5772a7f4218c727d7273e0a6e5948b5d12",
-        "sources": "5bef1c8433fe03e605017d82112f42d0c59d337e85c000248781343203e225c4"
+        "jar": "e45c18832293934924e4f2f1dd97ee2083a74def46caeeea1346cf817a37cea4",
+        "sources": "d00e8cf840b8ccc5958e031da9bc387a6886182e8d4eee2f59ec28924a32bddd"
       },
-      "version": "1.5.7-2"
+      "version": "1.5.7-11"
     },
     "com.github.scopt:scopt_3": {
       "shasums": {
@@ -611,31 +611,31 @@
     },
     "io.joern:flatgraph-core_3": {
       "shasums": {
-        "jar": "aaee2aa044223e2225ac6d67e1cba8c6628961638e94bf2faffbb6be406d9885",
-        "sources": "4440b7804c08d4e2bed1e7166736ddf778878c04de5fa64b2e9a58ae6945e439"
+        "jar": "c14dd8e8510f6762078005d747ae8b5e87047db74f94d51bfd18c158a9623699",
+        "sources": "283034a39afd10d88985cdc8c7c11ebda0bcd7604e61c3dde3ced502cf0ce786"
       },
-      "version": "0.1.31"
+      "version": "0.1.34"
     },
     "io.joern:flatgraph-domain-classes-generator_3": {
       "shasums": {
-        "jar": "9ce9480526043121e6d3ba21b67a5ed3944ad6dd4f36c1a8b6506c4793568977",
-        "sources": "1506ced55181b6e635fe46df7c7119b1a5c8e7358cdd2539fb4acbedcebde3c0"
+        "jar": "32a10cb32e154c6b6a6c1e77590d0200199474bb24d7edd7e204bd9c5a1ba53d",
+        "sources": "e86feedf36b139e74d0e7b9ee4d29c4e6a0ac2d8837fa9f5a0b552ace993854d"
       },
-      "version": "0.1.31"
+      "version": "0.1.34"
     },
     "io.joern:flatgraph-help_3": {
       "shasums": {
-        "jar": "3e1ff963cc9a87ff100a6311a4ef753d954340c3e600b6d580682616504229f8",
-        "sources": "7d8ea575fe7ad98af7e660e592a8348167dfe7cbf82a85f1ada72b159b210622"
+        "jar": "9b50d84a9959bbc739ae3d7a2d423c97f6b862705831ce04c9bcc6096450b596",
+        "sources": "074a0ba8ba70d1acd8d69e165fff2990862dc53909241f6ac7cf7cffb2fadcc3"
       },
-      "version": "0.1.31"
+      "version": "0.1.34"
     },
     "io.joern:flatgraph-odb-convert_3": {
       "shasums": {
-        "jar": "99512d443f609a5028ec1c1e060f8a997bae1c2dbbcb203b1880c87a16326944",
-        "sources": "0af913bac0c502ed4d615cd85c9f77abda6d7ceaf30ae8e5bd6c9aacc6222ba3"
+        "jar": "6cc159d5a4714b353ebb7325c3af1807cacaeaca18393ccbd1b1b5fd511ad966",
+        "sources": "da5131ec07dfa4687695fdeb1c246abc1e09e14a06e45cfcb73879a7eaa8100f"
       },
-      "version": "0.1.31"
+      "version": "0.1.34"
     },
     "io.shiftleft:overflowdb-core_3": {
       "shasums": {
