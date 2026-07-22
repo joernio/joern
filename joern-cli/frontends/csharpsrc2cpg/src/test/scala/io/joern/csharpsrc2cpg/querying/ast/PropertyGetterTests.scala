@@ -338,8 +338,6 @@ class PropertyGetterTests extends CSharpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    // Regression: an expression-bodied property used to throw `Expected ujson.Obj (data: null)` during
-    // pre-parse, which silently dropped the entire enclosing file from the CPG.
     "not drop the enclosing file, so the type and its other members are present" in {
       val methodNames = cpg.typeDecl.nameExact("C").method.name.l.toSet
       methodNames should contain("get_N")
