@@ -294,8 +294,24 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     pat match {
       case identPat: IdentPat       => lowerIdentPatternMatch(identPat, sourceExpr, codeOverride)
       case parenPat: ParenPat       => lowerPatternMatch(parenPat.pat, sourceExpr, codeOverride)
+      case tuplePat: TuplePat       => lowerTuplePatternMatch(tuplePat, sourceExpr)
       case wildcardPat: WildcardPat => Nil
       case _                        => notHandledYet(pat) :: Nil
+    }
+  }
+
+  private def lowerTuplePatternMatch(tuplePat: TuplePat, sourceExpr: Ast): Seq[Ast] = {
+    if (tuplePat.pat.exists(_.isInstanceOf[RestPat])) {
+      // TODO: patterns (x, .., y). From rust_ast_gen, we should type patterns as well.
+      notHandledYet(tuplePat) :: Nil
+    } else {
+      tuplePat.pat.zipWithIndex.flatMap { case (pat, index) =>
+        val fieldName   = index.toString
+        val fieldType   = typeFullNameForPat(pat)
+        val accessCode  = s"${sourceExpr.rootCodeOrEmpty}.$fieldName"
+        val fieldAccess = fieldAccessAst(pat, pat, cloneAst(sourceExpr), accessCode, fieldName, fieldType)
+        lowerPatternMatch(pat, fieldAccess)
+      }
     }
   }
 
