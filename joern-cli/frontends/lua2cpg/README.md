@@ -141,13 +141,7 @@ The corpus preserves the original `usr/lib/lua` layout and contains:
 - 42 `.lua` source files recorded in the CPG file inventory.
 - 42 Lua 5.1 `.luac` bytecode files analyzed by the bytecode pipeline.
 
-A generated native JSON analysis report is committed for quick inspection:
-
-```text
-joern-cli/frontends/lua2cpg/src/test/resources/openwrt-derived-firmware-lua-report
-```
-
-To regenerate that report from the Joern repository root:
+To generate a native JSON analysis report from the Joern repository root:
 
 ```bash
 joern-cli/frontends/lua2cpg/target/universal/stage/bin/lua2cpg \
@@ -156,8 +150,10 @@ joern-cli/frontends/lua2cpg/target/universal/stage/bin/lua2cpg \
   --lua-real-firmware-output-dir /tmp/openwrt-derived-firmware-lua-report
 ```
 
-The committed report contains native JSON evidence only. The generated CPG
-binary is not committed.
+The generated report and CPG are reproducible outputs and are intentionally not
+tracked by Git. A successful corpus run decodes all 42 bytecode inputs with no
+diagnostics and emits 164 source endpoints, 94 sink endpoints, 20 taint paths,
+and 20 reports.
 
 ## Supported Analysis
 
