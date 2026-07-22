@@ -299,6 +299,187 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "untyped let with `@`" should {
+    val cpg = code("""
+        |fn main() {
+        | let a @ b = 1;
+        |}
+        |""".stripMargin)
+
+    "lower into a LOCAL and an assignment for tmp and each binding" in {
+      inside(cpg.method.name("main").block.astChildren.l) {
+        case (tmpLocal: Local) :: (tmpAssign: Call) :: (aLocal: Local) :: (aAssign: Call) ::
+            (bLocal: Local) :: (bAssign: Call) :: Nil =>
+          tmpLocal.name shouldBe "tmp"
+          tmpLocal.typeFullName shouldBe "i32"
+          tmpAssign.code shouldBe "tmp = 1"
+
+          aLocal.name shouldBe "a"
+          aLocal.typeFullName shouldBe "i32"
+          aAssign.code shouldBe "a = tmp"
+
+          bLocal.name shouldBe "b"
+          bLocal.typeFullName shouldBe "i32"
+          bAssign.code shouldBe "b = tmp"
+      }
+    }
+
+    "lower the initializer into an assignment to tmp" in {
+      inside(cpg.assignment.codeExact("tmp = 1").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Literal) :: Nil =>
+          lhs.name shouldBe "tmp"
+          lhs.typeFullName shouldBe "i32"
+          rhs.code shouldBe "1"
+          rhs.typeFullName shouldBe "i32"
+      }
+    }
+
+    "lower each binding as a tmp assignment" in {
+      inside(cpg.assignment.codeExact("a = tmp").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Identifier) :: Nil =>
+          lhs.name shouldBe "a"
+          lhs.typeFullName shouldBe "i32"
+          rhs.name shouldBe "tmp"
+      }
+      inside(cpg.assignment.codeExact("b = tmp").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Identifier) :: Nil =>
+          lhs.name shouldBe "b"
+          lhs.typeFullName shouldBe "i32"
+          rhs.name shouldBe "tmp"
+      }
+    }
+  }
+
+  "typed let with `@`" should {
+    val cpg = code("""
+        |fn main() {
+        | let a @ b: u8 = 1;
+        |}
+        |""".stripMargin)
+
+    "lower into a LOCAL and an assignment for tmp and each binding" in {
+      inside(cpg.method.name("main").block.astChildren.l) {
+        case (tmpLocal: Local) :: (tmpAssign: Call) :: (aLocal: Local) :: (aAssign: Call) ::
+            (bLocal: Local) :: (bAssign: Call) :: Nil =>
+          tmpLocal.name shouldBe "tmp"
+          tmpLocal.typeFullName shouldBe "u8"
+          tmpAssign.code shouldBe "tmp = 1"
+
+          aLocal.name shouldBe "a"
+          aLocal.typeFullName shouldBe "u8"
+          aAssign.code shouldBe "a = tmp"
+
+          bLocal.name shouldBe "b"
+          bLocal.typeFullName shouldBe "u8"
+          bAssign.code shouldBe "b = tmp"
+      }
+    }
+
+    "lower the initializer into an assignment to tmp" in {
+      inside(cpg.assignment.codeExact("tmp = 1").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Literal) :: Nil =>
+          lhs.name shouldBe "tmp"
+          lhs.typeFullName shouldBe "u8"
+          rhs.code shouldBe "1"
+          rhs.typeFullName shouldBe "u8"
+      }
+    }
+
+    "lower each binding as a tmp assignment" in {
+      inside(cpg.assignment.codeExact("a = tmp").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Identifier) :: Nil =>
+          lhs.name shouldBe "a"
+          lhs.typeFullName shouldBe "u8"
+          rhs.name shouldBe "tmp"
+      }
+      inside(cpg.assignment.codeExact("b = tmp").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Identifier) :: Nil =>
+          lhs.name shouldBe "b"
+          lhs.typeFullName shouldBe "u8"
+          rhs.name shouldBe "tmp"
+      }
+    }
+  }
+
+  "let with _" should {
+    val cpg = code("""
+        |fn main() {
+        | let _ = 1;
+        |}
+        |""".stripMargin)
+
+    "lower into a LOCAL and an assignment for tmp" in {
+      inside(cpg.method.name("main").block.astChildren.l) { case (tmpLocal: Local) :: (tmpAssign: Call) :: Nil =>
+        tmpLocal.name shouldBe "tmp"
+        tmpLocal.typeFullName shouldBe "i32"
+        tmpAssign.code shouldBe "tmp = 1"
+      }
+    }
+
+    "lower the initializer into an assignment to tmp" in {
+      inside(cpg.assignment.codeExact("tmp = 1").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Literal) :: Nil =>
+          lhs.name shouldBe "tmp"
+          lhs.typeFullName shouldBe "i32"
+          rhs.code shouldBe "1"
+          rhs.typeFullName shouldBe "i32"
+      }
+    }
+  }
+
+  "let with nested `@`" should {
+    val cpg = code("""
+        |fn foo() -> i32 { 1 }
+        |fn main() {
+        | let x @ (z @ _) = foo();
+        |}
+        |""".stripMargin)
+
+    "lower into a LOCAL and an assignment for tmp and each binding" in {
+      inside(cpg.method.name("main").block.astChildren.l) {
+        case (tmpLocal: Local) :: (tmpAssign: Call) :: (xLocal: Local) :: (xAssign: Call) ::
+            (zLocal: Local) :: (zAssign: Call) :: Nil =>
+          tmpLocal.name shouldBe "tmp"
+          tmpLocal.typeFullName shouldBe "i32"
+          tmpAssign.code shouldBe "tmp = foo()"
+
+          xLocal.name shouldBe "x"
+          xLocal.typeFullName shouldBe "i32"
+          xAssign.code shouldBe "x = tmp"
+
+          zLocal.name shouldBe "z"
+          zLocal.typeFullName shouldBe "i32"
+          zAssign.code shouldBe "z = tmp"
+      }
+    }
+
+    "lower the initializer into an assignment to tmp" in {
+      inside(cpg.assignment.codeExact("tmp = foo()").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "tmp"
+          lhs.typeFullName shouldBe "i32"
+          rhs.name shouldBe "foo"
+          rhs.methodFullName shouldBe "rust2cpgtest::foo"
+          rhs.typeFullName shouldBe "i32"
+      }
+    }
+
+    "lower each binding as a tmp assignment" in {
+      inside(cpg.assignment.codeExact("x = tmp").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Identifier) :: Nil =>
+          lhs.name shouldBe "x"
+          lhs.typeFullName shouldBe "i32"
+          rhs.name shouldBe "tmp"
+      }
+      inside(cpg.assignment.codeExact("z = tmp").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Identifier) :: Nil =>
+          lhs.name shouldBe "z"
+          lhs.typeFullName shouldBe "i32"
+          rhs.name shouldBe "tmp"
+      }
+    }
+  }
+
   "let to a function" should {
     val cpg = code("""
         |fn handler(x: i64) -> i64 { x }

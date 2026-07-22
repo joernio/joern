@@ -5,6 +5,7 @@ import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNodeNew,
   ExpressionNew,
   NewFile,
   NewModifier,
@@ -13,6 +14,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 }
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, ModifierTypes, Operators}
 import io.joern.rust2cpg.parser.RustNodeSyntaxExtensions.*
+
+import scala.annotation.tailrec
 
 trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -226,7 +229,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     (const.name.flatMap(_.identToken), const.expr) match {
       case (Some(identToken), Some(rhsExpr)) =>
         val typeFullName = typeFullNameForType(const.typ)
-        lowerIdentifierDecl(identToken, rhsExpr, typeFullName, code(const))
+        lowerIdentifierDecl(identToken, visitExpr(rhsExpr), typeFullName, code(const))
       case _ => notHandledYet(const) :: Nil
     }
   }
@@ -239,7 +242,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     (static.name.identToken, static.expr) match {
       case (Some(identToken), Some(rhsExpr)) =>
         val typeFullName = typeFullNameForType(static.typ)
-        lowerIdentifierDecl(identToken, rhsExpr, typeFullName, code(static))
+        lowerIdentifierDecl(identToken, visitExpr(rhsExpr), typeFullName, code(static))
       case _ => notHandledYet(static) :: Nil
     }
   }
@@ -250,30 +253,98 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  LetElse?
   //  ';'
   private def visitLetStmt(letStmt: LetStmt): Seq[Ast] = {
-    letStmt.pat match {
-      case identPat: IdentPat =>
-        identPat.name.identToken match {
-          case Some(identToken) =>
-            val typeFullName = letStmt.typ.map(typeFullNameForType).getOrElse(typeFullNameForIdentPat(identPat))
-            letStmt.expr match {
-              case Some(rhsExpr) => lowerIdentifierDecl(identToken, rhsExpr, typeFullName, code(letStmt))
-              case None =>
-                val lhsName = code(identToken)
-                val local   = localNode(identToken, lhsName, lhsName, typeFullName)
-                Ast(local) :: Nil
-            }
-          case None => notHandledYet(letStmt) :: Nil
+    letStmt.expr match {
+      case Some(rhsExpr) =>
+        // When there are 2+ bindings in the pattern, e.g. `let (x,y) = e`, assign the RHS to a tmp variable
+        // and use that variable to create each binding, e.g. `tmp = e; x = tmp.0; y = tmp.1` .
+        // If there's only 1 binding, it's a regular variable declaration, so no need hoist.
+        // If there are no bindings, e.g. `let _ = foo();`, we still assign the RHS to a tmp variable.
+        if (countBindings(letStmt.pat) == 1) {
+          lowerPatternMatch(letStmt.pat, visitExpr(rhsExpr), codeOverride = Some(code(letStmt)))
+        } else {
+          val tmpName      = "tmp"
+          val rhsAst       = visitExpr(rhsExpr)
+          val typeFullName = letStmt.typ.map(typeFullNameForType).orElse(rhsAst.rootType).getOrElse(Defines.Any)
+          val tmpLocalAst  = Ast(localNode(letStmt, tmpName, tmpName, typeFullName))
+          val tmpIdentAst  = Ast(identifierNode(letStmt, tmpName, tmpName, typeFullName))
+          val rhsAssign    = assignmentNode(letStmt, s"$tmpName = ${code(rhsExpr)}")
+          val rhsAssignAst = callAst(rhsAssign, Seq(tmpIdentAst, rhsAst))
+
+          tmpLocalAst +: rhsAssignAst +: lowerPatternMatch(letStmt.pat, cloneAst(tmpIdentAst))
         }
-      case _ => notHandledYet(letStmt) :: Nil
+      case None =>
+        // TODO: other patterns. We should maybe refactor lowerPattern to decouple the locals creation from their
+        //  assignments. Otherwise, this will look pretty much like lowerPattern.
+        letStmt.pat match {
+          case identPat: IdentPat if identPat.pat.isEmpty =>
+            identPat.name.identToken match {
+              case Some(identToken) =>
+                val typeFullName = letStmt.typ.map(typeFullNameForType).getOrElse(typeFullNameForIdentPat(identPat))
+                val lhsName      = code(identToken)
+                Ast(localNode(identToken, lhsName, lhsName, typeFullName)) :: Nil
+              case None => notHandledYet(letStmt) :: Nil
+            }
+          case _ => notHandledYet(letStmt) :: Nil
+        }
     }
+  }
+
+  @tailrec
+  private def lowerPatternMatch(pat: Pat, sourceExpr: Ast, codeOverride: Option[String] = None): Seq[Ast] = {
+    pat match {
+      case identPat: IdentPat       => lowerIdentPatternMatch(identPat, sourceExpr, codeOverride)
+      case parenPat: ParenPat       => lowerPatternMatch(parenPat.pat, sourceExpr, codeOverride)
+      case wildcardPat: WildcardPat => Nil
+      case _                        => notHandledYet(pat) :: Nil
+    }
+  }
+
+  private def lowerIdentPatternMatch(
+    identPat: IdentPat,
+    sourceExpr: Ast,
+    codeOverride: Option[String] = None
+  ): Seq[Ast] = {
+    identPat.name.identToken match {
+      case Some(identToken) =>
+        val typeFullName    = typeFullNameForIdentPat(identPat)
+        val assignCode      = codeOverride.getOrElse(s"${code(identToken)} = ${sourceExpr.rootCodeOrEmpty}")
+        val loweredIdentAst = lowerIdentifierDecl(identToken, sourceExpr, typeFullName, assignCode)
+        val loweredPatAst   = identPat.pat.toList.flatMap(lowerPatternMatch(_, cloneAst(sourceExpr)))
+        loweredIdentAst ++ loweredPatAst
+      case None => notHandledYet(identPat) :: Nil
+    }
+  }
+
+  private def cloneAst(ast: Ast): Ast = {
+    ast.subTreeCopy(ast.root.get.asInstanceOf[AstNodeNew])
+  }
+
+  private def countBindings(pat: Pat): Int = pat match {
+    case boxPat: BoxPat               => countBindings(boxPat.pat)
+    case constBlockPat: ConstBlockPat => 0
+    case derefPat: DerefPat           => countBindings(derefPat.pat)
+    case identPat: IdentPat           => 1 + identPat.pat.map(countBindings).getOrElse(0)
+    case literalPat: LiteralPat       => 0
+    case macroPat: MacroPat           => 0 // TODO: needs to see the macro expansion.
+    case orPat: OrPat                 => orPat.pat.headOption.map(countBindings).getOrElse(0)
+    case parenPat: ParenPat           => countBindings(parenPat.pat)
+    case pathPat: PathPat             => 0
+    case rangePat: RangePat           => 0
+    case recordPat: RecordPat => recordPat.recordPatFieldList.recordPatField.map(field => countBindings(field.pat)).sum
+    case refPat: RefPat       => countBindings(refPat.pat)
+    case restPat: RestPat     => 0
+    case slicePat: SlicePat   => slicePat.pat.map(countBindings).sum
+    case tuplePat: TuplePat   => tuplePat.pat.map(countBindings).sum
+    case tupleStructPat: TupleStructPat => tupleStructPat.pat.map(countBindings).sum
+    case wildcardPat: WildcardPat       => 0
   }
 
   // Creates:
   // - LOCAL (lhsToken) with given typeFullName
-  // - CALL (assignment) for lhsToken = rhsExpr
+  // - CALL (assignment) for lhsToken = rhsAst
   private def lowerIdentifierDecl(
     lhsToken: IdentToken,
-    rhsExpr: Expr,
+    rhsAst: Ast,
     typeFullName: String,
     declCode: String
   ): Seq[Ast] = {
@@ -283,7 +354,6 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val ident = identifierNode(lhsToken, lhsName, code(lhsToken), typeFullName)
 
     val lhsAst        = Ast(ident).withRefEdge(ident, local) // TODO: remove once ref linker is in.
-    val rhsAst        = visitExpr(rhsExpr)
     val localAst      = Ast(local)
     val assignmentAst = callAst(assignmentNode(lhsToken, declCode), Seq(lhsAst, rhsAst))
 
