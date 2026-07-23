@@ -763,6 +763,26 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
     }
   }
 
+  "`throw` statements" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public static void foo(Exception ex) {
+        |    throw ex;
+        |  }
+        |}
+        |""".stripMargin)
+
+    "lower as a THROW control structure with the thrown expression as its argument" in {
+      inside(cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.THROW).l) {
+        case List(throwNode: ControlStructure) =>
+          throwNode.code shouldBe "throw ex;"
+          val List(thrownExpr) = throwNode.astChildren.l
+          thrownExpr.code shouldBe "ex"
+          throwNode.argumentOut.l shouldBe List(thrownExpr)
+      }
+    }
+  }
+
   "`for-loop` statements" should {
     val cpg = code("""
         |public class Foo {
