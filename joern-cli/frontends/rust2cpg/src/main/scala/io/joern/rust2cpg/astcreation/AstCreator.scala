@@ -41,7 +41,7 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
   protected def addDetachedBindingAsts(typeDecl: NewTypeDecl, methodAsts: Seq[Ast], signature: String): Unit = {
     methodAsts.flatMap(_.root).collect { case method: NewMethod =>
       val binding = bindingNode(method.name, signature, method.fullName)
-      addDetachedAst(Ast(binding).withBindsEdge(typeDecl, binding).withRefEdge(binding, method))
+      addDetachedAst(Ast(binding).withBindsEdge(typeDecl, binding))
     }
   }
 

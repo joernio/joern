@@ -323,19 +323,17 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "match the trait's binding node" in {
-      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::Tr").bindsOut.nameExact("m").l) { case binding :: Nil =>
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::Tr").methodBinding.nameExact("m").l) { case binding :: Nil =>
         binding.signature shouldBe "rust2cpgtest::Tr"
         binding.methodFullName shouldBe "rust2cpgtest::Tr::m"
-        binding.refOut.fullName.l shouldBe List("rust2cpgtest::Tr::m")
       }
     }
 
     "match the impl's binding node" in {
-      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::S as rust2cpgtest::Tr>").bindsOut.nameExact("m").l) {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::S as rust2cpgtest::Tr>").methodBinding.nameExact("m").l) {
         case binding :: Nil =>
           binding.signature shouldBe "rust2cpgtest::Tr"
           binding.methodFullName shouldBe "<rust2cpgtest::S as rust2cpgtest::Tr>::m"
-          binding.refOut.fullName.l shouldBe List("<rust2cpgtest::S as rust2cpgtest::Tr>::m")
       }
     }
   }

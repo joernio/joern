@@ -57,16 +57,14 @@ class TraitTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "create binding nodes for each method" in {
-      inside(cpg.typeDecl.nameExact("Foo").bindsOut.sortBy(_.name).l) { case bindingA :: bindingB :: Nil =>
+      inside(cpg.typeDecl.nameExact("Foo").methodBinding.sortBy(_.name).l) { case bindingA :: bindingB :: Nil =>
         bindingA.name shouldBe "a"
         bindingA.signature shouldBe "rust2cpgtest::Foo"
         bindingA.methodFullName shouldBe "rust2cpgtest::Foo::a"
-        bindingA.refOut.fullName.l shouldBe List("rust2cpgtest::Foo::a")
 
         bindingB.name shouldBe "b"
         bindingB.signature shouldBe "rust2cpgtest::Foo"
         bindingB.methodFullName shouldBe "rust2cpgtest::Foo::b"
-        bindingB.refOut.fullName.l shouldBe List("rust2cpgtest::Foo::b")
       }
     }
   }
