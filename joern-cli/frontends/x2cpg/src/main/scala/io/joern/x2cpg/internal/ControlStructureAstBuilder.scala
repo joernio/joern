@@ -392,6 +392,32 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
   def gotoAst(node: Node, codeStr: String, labelName: String): Ast =
     jumpAst(node, ControlStructureTypes.GOTO, codeStr, Option(labelName))
 
+  /** Creates an AST for a `throw` statement.
+    *
+    * When `thrownExprAsts` contains exactly one element it is attached directly; when it contains more than one they
+    * are first wrapped in a synthetic block via `wrapMultipleInBlock`. The resulting child is connected via an
+    * `ARGUMENT` edge so that the CFG creator can reach it via `_argumentOut`.
+    *
+    * @param node
+    *   the source AST node representing the `throw` statement (used for position and code)
+    * @param thrownExprAsts
+    *   ASTs for the thrown expression(s); pass an empty sequence when there is no operand
+    * @param code
+    *   explicit source-code string; falls back to `this.code(node)` when absent
+    */
+  def throwAst(node: Node, thrownExprAsts: Seq[Ast], code: Option[String] = None): Ast = {
+    val throwNode = controlStructureFromNode(node, ControlStructureTypes.THROW, code)
+    thrownExprAsts match {
+      case Nil => Ast(throwNode)
+      case _ =>
+        val argAst = wrapMultipleInBlock(thrownExprAsts, line(node))
+        argAst.root match {
+          case Some(argRoot) => Ast(throwNode).withChild(argAst).withArgEdge(throwNode, argRoot)
+          case None          => Ast(throwNode).withChild(argAst)
+        }
+    }
+  }
+
   /** Creates an AST for a `try-catch-finally` statement.
     *
     * The try body, catch clauses, and optional finally block receive `TRY_BODY`, `CATCH_BODY`, and `FINALLY_BODY` edges
