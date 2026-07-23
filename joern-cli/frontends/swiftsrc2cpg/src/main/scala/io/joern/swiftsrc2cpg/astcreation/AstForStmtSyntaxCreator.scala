@@ -537,12 +537,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForThenStmtSyntax(node: ThenStmtSyntax): Ast = notHandledYet(node)
 
   private def astForThrowStmtSyntax(node: ThrowStmtSyntax): Ast = {
-    val op  = "<operator>.throw"
-    val tpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
-    registerType(tpe)
-    val callNode_ = createStaticCallNode(node, code(node), op, op, tpe)
-    val exprAst   = astForNode(node.expression)
-    callAst(callNode_, List(exprAst))
+    throwAst(node, List(astForNode(node.expression)))
   }
 
   private def astForWhileStmtSyntax(node: WhileStmtSyntax): Ast = {
