@@ -89,7 +89,7 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
           case1.name shouldBe "case (a, b)"
           case1.code shouldBe "(a, b)"
           inside(arm1.astChildren.l) {
-            case (aLocal: Local) :: (aAssign: Call) :: (bLocal: Local) :: (bAssign: Call) :: (body: Call) :: Nil =>
+            case (aLocal: Local) :: (bLocal: Local) :: (aAssign: Call) :: (bAssign: Call) :: (body: Call) :: Nil =>
               aLocal.name shouldBe "a"
               aLocal.typeFullName shouldBe "i32"
               aAssign.code shouldBe "a = tmp.0"
