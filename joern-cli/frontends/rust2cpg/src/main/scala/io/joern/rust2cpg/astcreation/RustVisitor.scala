@@ -253,55 +253,51 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  LetElse?
   //  ';'
   private def visitLetStmt(letStmt: LetStmt): Seq[Ast] = {
+    val localAsts = createLocalsForBindings(collectPatternBindings(letStmt.pat))
     letStmt.expr match {
+      case None          => localAsts
       case Some(rhsExpr) =>
         // When there are 2+ bindings in the pattern, e.g. `let (x,y) = e`, assign the RHS to a tmp variable
         // and use that variable to create each binding, e.g. `tmp = e; x = tmp.0; y = tmp.1` .
         // If there's only 1 binding, it's a regular variable declaration, so no need hoist.
         // If there are no bindings, e.g. `let _ = foo();`, we still assign the RHS to a tmp variable.
-        if (countBindings(letStmt.pat) == 1) {
-          lowerPatternMatch(letStmt.pat, visitExpr(rhsExpr), codeOverride = Some(code(letStmt)))
+        if (localAsts.length == 1) {
+          val assignments = createAssignmentsForPattern(letStmt.pat, visitExpr(rhsExpr), Some(code(letStmt)))
+          localAsts ++ assignments
         } else {
           val tmpName      = "tmp"
           val rhsAst       = visitExpr(rhsExpr)
           val typeFullName = letStmt.typ.map(typeFullNameForType).orElse(rhsAst.rootType).getOrElse(Defines.Any)
           val tmpLocalAst  = Ast(localNode(letStmt, tmpName, tmpName, typeFullName))
           val tmpIdentAst  = Ast(identifierNode(letStmt, tmpName, tmpName, typeFullName))
-          val rhsAssign    = assignmentNode(letStmt, s"$tmpName = ${code(rhsExpr)}")
-          val rhsAssignAst = callAst(rhsAssign, Seq(tmpIdentAst, rhsAst))
+          val tmpAssignAst = callAst(assignmentNode(letStmt, s"$tmpName = ${code(rhsExpr)}"), Seq(tmpIdentAst, rhsAst))
+          val assignments  = createAssignmentsForPattern(letStmt.pat, cloneAst(tmpIdentAst))
 
-          tmpLocalAst +: rhsAssignAst +: lowerPatternMatch(letStmt.pat, cloneAst(tmpIdentAst))
-        }
-      case None =>
-        // TODO: other patterns. We should maybe refactor lowerPattern to decouple the locals creation from their
-        //  assignments. Otherwise, this will look pretty much like lowerPattern.
-        letStmt.pat match {
-          case identPat: IdentPat if identPat.pat.isEmpty =>
-            identPat.name.identToken match {
-              case Some(identToken) =>
-                val typeFullName = letStmt.typ.map(typeFullNameForType).getOrElse(typeFullNameForIdentPat(identPat))
-                val lhsName      = code(identToken)
-                Ast(localNode(identToken, lhsName, lhsName, typeFullName)) :: Nil
-              case None => notHandledYet(letStmt) :: Nil
-            }
-          case _ => notHandledYet(letStmt) :: Nil
+          (tmpLocalAst +: localAsts) ++ (tmpAssignAst +: assignments)
         }
     }
   }
 
+  private def createLocalsForBindings(bindings: Seq[(IdentToken, String)]): Seq[Ast] = {
+    bindings.map { case (identToken, typeFullName) =>
+      val name = code(identToken)
+      Ast(localNode(identToken, name, name, typeFullName))
+    }
+  }
+
   @tailrec
-  private def lowerPatternMatch(pat: Pat, sourceExpr: Ast, codeOverride: Option[String] = None): Seq[Ast] = {
+  private def createAssignmentsForPattern(pat: Pat, sourceExpr: Ast, codeOverride: Option[String] = None): Seq[Ast] = {
     pat match {
-      case identPat: IdentPat       => lowerIdentPatternMatch(identPat, sourceExpr, codeOverride)
-      case parenPat: ParenPat       => lowerPatternMatch(parenPat.pat, sourceExpr, codeOverride)
-      case tuplePat: TuplePat       => lowerTuplePatternMatch(tuplePat, sourceExpr)
+      case identPat: IdentPat       => createAssignmentsForIdentPattern(identPat, sourceExpr, codeOverride)
+      case parenPat: ParenPat       => createAssignmentsForPattern(parenPat.pat, sourceExpr, codeOverride)
+      case tuplePat: TuplePat       => createAssignmentsForTuplePattern(tuplePat, sourceExpr)
       case wildcardPat: WildcardPat => Nil
       case literalPat: LiteralPat   => Nil
       case _                        => notHandledYet(pat) :: Nil
     }
   }
 
-  private def lowerTuplePatternMatch(tuplePat: TuplePat, sourceExpr: Ast): Seq[Ast] = {
+  private def createAssignmentsForTuplePattern(tuplePat: TuplePat, sourceExpr: Ast): Seq[Ast] = {
     if (tuplePat.pat.exists(_.isInstanceOf[RestPat])) {
       // TODO: patterns (x, .., y). From rust_ast_gen, we should type patterns as well.
       notHandledYet(tuplePat) :: Nil
@@ -311,23 +307,24 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         val fieldType   = typeFullNameForPat(pat)
         val accessCode  = s"${sourceExpr.rootCodeOrEmpty}.$fieldName"
         val fieldAccess = fieldAccessAst(pat, pat, cloneAst(sourceExpr), accessCode, fieldName, fieldType)
-        lowerPatternMatch(pat, fieldAccess)
+        createAssignmentsForPattern(pat, fieldAccess)
       }
     }
   }
 
-  private def lowerIdentPatternMatch(
+  private def createAssignmentsForIdentPattern(
     identPat: IdentPat,
     sourceExpr: Ast,
     codeOverride: Option[String] = None
   ): Seq[Ast] = {
     identPat.name.identToken match {
       case Some(identToken) =>
-        val typeFullName    = typeFullNameForIdentPat(identPat)
-        val assignCode      = codeOverride.getOrElse(s"${code(identToken)} = ${sourceExpr.rootCodeOrEmpty}")
-        val loweredIdentAst = lowerIdentifierDecl(identToken, sourceExpr, typeFullName, assignCode)
-        val loweredPatAst   = identPat.pat.toList.flatMap(lowerPatternMatch(_, cloneAst(sourceExpr)))
-        loweredIdentAst ++ loweredPatAst
+        val lhsName      = code(identToken)
+        val typeFullName = typeFullNameForIdentPat(identPat)
+        val identAst     = Ast(identifierNode(identToken, lhsName, lhsName, typeFullName))
+        val assignCode   = codeOverride.getOrElse(s"$lhsName = ${sourceExpr.rootCodeOrEmpty}")
+        val assignAst    = callAst(assignmentNode(identToken, assignCode), Seq(identAst, sourceExpr))
+        assignAst +: identPat.pat.toList.flatMap(createAssignmentsForPattern(_, cloneAst(sourceExpr)))
       case None => notHandledYet(identPat) :: Nil
     }
   }
@@ -336,24 +333,28 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     ast.subTreeCopy(ast.root.get.asInstanceOf[AstNodeNew])
   }
 
-  private def countBindings(pat: Pat): Int = pat match {
-    case boxPat: BoxPat               => countBindings(boxPat.pat)
-    case constBlockPat: ConstBlockPat => 0
-    case derefPat: DerefPat           => countBindings(derefPat.pat)
-    case identPat: IdentPat           => 1 + identPat.pat.map(countBindings).getOrElse(0)
-    case literalPat: LiteralPat       => 0
-    case macroPat: MacroPat           => 0 // TODO: needs to see the macro expansion.
-    case orPat: OrPat                 => orPat.pat.headOption.map(countBindings).getOrElse(0)
-    case parenPat: ParenPat           => countBindings(parenPat.pat)
-    case pathPat: PathPat             => 0
-    case rangePat: RangePat           => 0
-    case recordPat: RecordPat => recordPat.recordPatFieldList.recordPatField.map(field => countBindings(field.pat)).sum
-    case refPat: RefPat       => countBindings(refPat.pat)
-    case restPat: RestPat     => 0
-    case slicePat: SlicePat   => slicePat.pat.map(countBindings).sum
-    case tuplePat: TuplePat   => tuplePat.pat.map(countBindings).sum
-    case tupleStructPat: TupleStructPat => tupleStructPat.pat.map(countBindings).sum
-    case wildcardPat: WildcardPat       => 0
+  private def collectPatternBindings(pat: Pat): Seq[(IdentToken, String)] = pat match {
+    case boxPat: BoxPat               => collectPatternBindings(boxPat.pat)
+    case constBlockPat: ConstBlockPat => Nil
+    case derefPat: DerefPat           => collectPatternBindings(derefPat.pat)
+    case identPat: IdentPat =>
+      val nameBindings = identPat.name.identToken.toList.map(ident => (ident, typeFullNameForIdentPat(identPat)))
+      val patBindings  = identPat.pat.toList.flatMap(collectPatternBindings)
+      nameBindings ++ patBindings
+    case literalPat: LiteralPat => Nil
+    case macroPat: MacroPat     => Nil // TODO: needs to see the macro expansion.
+    case orPat: OrPat           => orPat.pat.headOption.map(collectPatternBindings).getOrElse(Nil)
+    case parenPat: ParenPat     => collectPatternBindings(parenPat.pat)
+    case pathPat: PathPat       => Nil
+    case rangePat: RangePat     => Nil
+    case recordPat: RecordPat =>
+      recordPat.recordPatFieldList.recordPatField.flatMap(field => collectPatternBindings(field.pat))
+    case refPat: RefPat                 => collectPatternBindings(refPat.pat)
+    case restPat: RestPat               => Nil
+    case slicePat: SlicePat             => slicePat.pat.flatMap(collectPatternBindings)
+    case tuplePat: TuplePat             => tuplePat.pat.flatMap(collectPatternBindings)
+    case tupleStructPat: TupleStructPat => tupleStructPat.pat.flatMap(collectPatternBindings)
+    case wildcardPat: WildcardPat       => Nil
   }
 
   // Creates:
@@ -1302,7 +1303,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  MATCH (tmp) {
   //    JUMP_TARGET
   //    BLOCK {
-  //      <lowerPatternMatch(pat, tmp)>
+  //      <createLocalsForBindings(pat)>
+  //      <createAssignmentsForPattern(pat, tmp)>
   //      body
   //    }
   //    ...
@@ -1325,7 +1327,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
   // TODO: handle guards.
   private def lowerMatchArm(matchArm: MatchArm, tmpIdentAst: Ast): Seq[Ast] = {
-    val bindingAsts   = lowerPatternMatch(matchArm.pat, tmpIdentAst)
+    val bindingAsts = createLocalsForBindings(collectPatternBindings(matchArm.pat)) ++ createAssignmentsForPattern(
+      matchArm.pat,
+      tmpIdentAst
+    )
     val bodyAst       = visitExpr(matchArm.expr)
     val matchArmBlock = blockAst(blockNode(matchArm), (bindingAsts :+ bodyAst).toList)
     val jumpTargetAst = Ast(jumpTargetNode(matchArm.pat, s"case ${code(matchArm.pat)}", code(matchArm.pat)))

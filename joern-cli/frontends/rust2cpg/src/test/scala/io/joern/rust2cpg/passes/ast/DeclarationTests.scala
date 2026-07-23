@@ -299,6 +299,103 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "`let (a, b): (i32, bool);`" should {
+    val cpg = code("""
+        |fn main() {
+        | let (a, b): (i32, bool);
+        |}
+        |""".stripMargin)
+
+    "have a LOCAL for each binding" in {
+      inside(cpg.method.name("main").block.local.l) { case aLocal :: bLocal :: Nil =>
+        aLocal.name shouldBe "a"
+        aLocal.typeFullName shouldBe "i32"
+        aLocal.code shouldBe "a"
+
+        bLocal.name shouldBe "b"
+        bLocal.typeFullName shouldBe "bool"
+        bLocal.code shouldBe "b"
+      }
+    }
+  }
+
+  "`let Point { x, y };`" should {
+    val cpg = code("""
+        |struct Point { x: i32, y: bool }
+        |fn main() {
+        | let Point { x, y };
+        |}
+        |""".stripMargin)
+
+    "have a LOCAL for each binding" in {
+      inside(cpg.method.name("main").block.local.l) { case xLocal :: yLocal :: Nil =>
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "i32"
+        xLocal.code shouldBe "x"
+
+        yLocal.name shouldBe "y"
+        yLocal.typeFullName shouldBe "bool"
+        yLocal.code shouldBe "y"
+      }
+    }
+  }
+
+  "`let Point { x: a, y };`" should {
+    val cpg = code("""
+        |struct Point { x: i32, y: bool }
+        |fn main() {
+        | let Point { x: a, y };
+        |}
+        |""".stripMargin)
+
+    "have a LOCAL for each binding, named after the binding rather than the field" in {
+      inside(cpg.method.name("main").block.local.l) { case aLocal :: yLocal :: Nil =>
+        aLocal.name shouldBe "a"
+        aLocal.typeFullName shouldBe "i32"
+        aLocal.code shouldBe "a"
+
+        yLocal.name shouldBe "y"
+        yLocal.typeFullName shouldBe "bool"
+        yLocal.code shouldBe "y"
+      }
+    }
+  }
+
+  "`let Foo(a);`" should {
+    val cpg = code("""
+        |struct Foo(i32);
+        |fn main() {
+        | let Foo(a);
+        |}
+        |""".stripMargin)
+
+    "have a LOCAL i32" in {
+      inside(cpg.method.name("main").block.local.name("a").l) { case local :: Nil =>
+        local.typeFullName shouldBe "i32"
+        local.code shouldBe "a"
+      }
+    }
+  }
+
+  "`let [a, b]: [i32; 2];`" should {
+    val cpg = code("""
+        |fn main() {
+        | let [a, b]: [i32; 2];
+        |}
+        |""".stripMargin)
+
+    "have a LOCAL for each binding" in {
+      inside(cpg.method.name("main").block.local.l) { case aLocal :: bLocal :: Nil =>
+        aLocal.name shouldBe "a"
+        aLocal.typeFullName shouldBe "i32"
+        aLocal.code shouldBe "a"
+        bLocal.name shouldBe "b"
+        bLocal.typeFullName shouldBe "i32"
+        bLocal.code shouldBe "b"
+      }
+    }
+  }
+
   "untyped let with `@`" should {
     val cpg = code("""
         |fn main() {
@@ -308,8 +405,8 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "lower into a LOCAL and an assignment for tmp and each binding" in {
       inside(cpg.method.name("main").block.astChildren.l) {
-        case (tmpLocal: Local) :: (tmpAssign: Call) :: (aLocal: Local) :: (aAssign: Call) ::
-            (bLocal: Local) :: (bAssign: Call) :: Nil =>
+        case (tmpLocal: Local) :: (aLocal: Local) :: (bLocal: Local) :: (tmpAssign: Call) ::
+            (aAssign: Call) :: (bAssign: Call) :: Nil =>
           tmpLocal.name shouldBe "tmp"
           tmpLocal.typeFullName shouldBe "i32"
           tmpAssign.code shouldBe "tmp = 1"
@@ -359,8 +456,8 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "lower into a LOCAL and an assignment for tmp and each binding" in {
       inside(cpg.method.name("main").block.astChildren.l) {
-        case (tmpLocal: Local) :: (tmpAssign: Call) :: (aLocal: Local) :: (aAssign: Call) ::
-            (bLocal: Local) :: (bAssign: Call) :: Nil =>
+        case (tmpLocal: Local) :: (aLocal: Local) :: (bLocal: Local) :: (tmpAssign: Call) ::
+            (aAssign: Call) :: (bAssign: Call) :: Nil =>
           tmpLocal.name shouldBe "tmp"
           tmpLocal.typeFullName shouldBe "u8"
           tmpAssign.code shouldBe "tmp = 1"
@@ -437,8 +534,8 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "lower into a LOCAL and an assignment for tmp and each binding" in {
       inside(cpg.method.name("main").block.astChildren.l) {
-        case (tmpLocal: Local) :: (tmpAssign: Call) :: (xLocal: Local) :: (xAssign: Call) ::
-            (zLocal: Local) :: (zAssign: Call) :: Nil =>
+        case (tmpLocal: Local) :: (xLocal: Local) :: (zLocal: Local) :: (tmpAssign: Call) ::
+            (xAssign: Call) :: (zAssign: Call) :: Nil =>
           tmpLocal.name shouldBe "tmp"
           tmpLocal.typeFullName shouldBe "i32"
           tmpAssign.code shouldBe "tmp = foo()"
@@ -489,8 +586,8 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "lower into a LOCAL and an assignment for tmp and each binding" in {
       inside(cpg.method.name("main").block.astChildren.l) {
-        case (tmpLocal: Local) :: (tmpAssign: Call) :: (xLocal: Local) :: (xAssign: Call) ::
-            (yLocal: Local) :: (yAssign: Call) :: Nil =>
+        case (tmpLocal: Local) :: (xLocal: Local) :: (yLocal: Local) :: (tmpAssign: Call) ::
+            (xAssign: Call) :: (yAssign: Call) :: Nil =>
           tmpLocal.name shouldBe "tmp"
           tmpLocal.typeFullName shouldBe "(i32, &str)"
           tmpAssign.code shouldBe "tmp = (1, \"a\")"
@@ -581,8 +678,8 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "lower into a LOCAL and an assignment for tmp and each binding" in {
       inside(cpg.method.name("main").block.astChildren.l) {
-        case (tmpLocal: Local) :: (tmpAssign: Call) :: (aLocal: Local) :: (aAssign: Call) ::
-            (bLocal: Local) :: (bAssign: Call) :: (cLocal: Local) :: (cAssign: Call) :: Nil =>
+        case (tmpLocal: Local) :: (aLocal: Local) :: (bLocal: Local) :: (cLocal: Local) ::
+            (tmpAssign: Call) :: (aAssign: Call) :: (bAssign: Call) :: (cAssign: Call) :: Nil =>
           tmpLocal.name shouldBe "tmp"
           tmpLocal.typeFullName shouldBe "((i32, i32), i32)"
           tmpAssign.code shouldBe "tmp = ((1, 2), 3)"
