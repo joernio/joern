@@ -699,6 +699,177 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "let with a record pattern" should {
+    val cpg = code("""
+        |struct Point { x: i32, y: i64 }
+        |fn f(p: Point) {
+        | let Point { x, y } = p;
+        |}
+        |""".stripMargin)
+
+    "lower into a LOCAL and an assignment for tmp and each binding" in {
+      inside(cpg.method.name("f").block.astChildren.l) {
+        case (tmpLocal: Local) :: (xLocal: Local) :: (yLocal: Local) ::
+            (tmpAssign: Call) :: (xAssign: Call) :: (yAssign: Call) :: Nil =>
+          tmpLocal.name shouldBe "tmp"
+          tmpLocal.typeFullName shouldBe "rust2cpgtest::Point"
+          tmpAssign.code shouldBe "tmp = p"
+
+          xLocal.name shouldBe "x"
+          xLocal.typeFullName shouldBe "i32"
+          xAssign.code shouldBe "x = tmp.x"
+
+          yLocal.name shouldBe "y"
+          yLocal.typeFullName shouldBe "i64"
+          yAssign.code shouldBe "y = tmp.y"
+      }
+    }
+
+    "lower each binding as an assignment of a tmp field access" in {
+      inside(cpg.assignment.codeExact("x = tmp.x").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "x"
+          lhs.typeFullName shouldBe "i32"
+          rhs.name shouldBe Operators.fieldAccess
+          rhs.typeFullName shouldBe "i32"
+          inside(rhs.argument.sortBy(_.argumentIndex).l) { case (tmp: Identifier) :: (field: FieldIdentifier) :: Nil =>
+            tmp.name shouldBe "tmp"
+            tmp.typeFullName shouldBe "rust2cpgtest::Point"
+            field.canonicalName shouldBe "x"
+          }
+      }
+      inside(cpg.assignment.codeExact("y = tmp.y").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "y"
+          lhs.typeFullName shouldBe "i64"
+          rhs.name shouldBe Operators.fieldAccess
+          rhs.typeFullName shouldBe "i64"
+          inside(rhs.argument.sortBy(_.argumentIndex).l) { case (tmp: Identifier) :: (field: FieldIdentifier) :: Nil =>
+            tmp.name shouldBe "tmp"
+            tmp.typeFullName shouldBe "rust2cpgtest::Point"
+            field.canonicalName shouldBe "y"
+          }
+      }
+    }
+  }
+
+  "let with a record pattern with `x: a`" should {
+    val cpg = code("""
+        |struct Point { x: i32, y: i64 }
+        |fn f(p: Point) {
+        | let Point { x: a, y: b } = p;
+        |}
+        |""".stripMargin)
+
+    "lower into a LOCAL and an assignment for tmp and each binding" in {
+      inside(cpg.method.name("f").block.astChildren.l) {
+        case (tmpLocal: Local) :: (aLocal: Local) :: (bLocal: Local) ::
+            (tmpAssign: Call) :: (aAssign: Call) :: (bAssign: Call) :: Nil =>
+          tmpLocal.name shouldBe "tmp"
+          tmpLocal.typeFullName shouldBe "rust2cpgtest::Point"
+          tmpAssign.code shouldBe "tmp = p"
+
+          aLocal.name shouldBe "a"
+          aLocal.typeFullName shouldBe "i32"
+          aAssign.code shouldBe "a = tmp.x"
+
+          bLocal.name shouldBe "b"
+          bLocal.typeFullName shouldBe "i64"
+          bAssign.code shouldBe "b = tmp.y"
+      }
+    }
+
+    "lower each binding as an assignment of a tmp field access" in {
+      inside(cpg.assignment.codeExact("a = tmp.x").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "a"
+          lhs.typeFullName shouldBe "i32"
+          rhs.name shouldBe Operators.fieldAccess
+          rhs.typeFullName shouldBe "i32"
+          inside(rhs.argument.sortBy(_.argumentIndex).l) { case (tmp: Identifier) :: (field: FieldIdentifier) :: Nil =>
+            tmp.name shouldBe "tmp"
+            tmp.typeFullName shouldBe "rust2cpgtest::Point"
+            field.canonicalName shouldBe "x"
+          }
+      }
+      inside(cpg.assignment.codeExact("b = tmp.y").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "b"
+          lhs.typeFullName shouldBe "i64"
+          rhs.name shouldBe Operators.fieldAccess
+          rhs.typeFullName shouldBe "i64"
+          inside(rhs.argument.sortBy(_.argumentIndex).l) { case (tmp: Identifier) :: (field: FieldIdentifier) :: Nil =>
+            tmp.name shouldBe "tmp"
+            tmp.typeFullName shouldBe "rust2cpgtest::Point"
+            field.canonicalName shouldBe "y"
+          }
+      }
+    }
+  }
+
+  "let with a record pattern with `..`" should {
+    val cpg = code("""
+        |struct Point { x: i32, y: i64 }
+        |fn f(p: Point) {
+        | let Point { x, .. } = p;
+        |}
+        |""".stripMargin)
+
+    "lower into a LOCAL and an assignment for the single binding" in {
+      inside(cpg.method.name("f").block.astChildren.l) { case (xLocal: Local) :: (xAssign: Call) :: Nil =>
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "i32"
+        xAssign.code shouldBe "x = p.x"
+      }
+    }
+
+    "lower the binding as an assignment of a field access on the initializer" in {
+      inside(cpg.assignment.codeExact("x = p.x").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "x"
+          lhs.typeFullName shouldBe "i32"
+          rhs.name shouldBe Operators.fieldAccess
+          rhs.typeFullName shouldBe "i32"
+          inside(rhs.argument.sortBy(_.argumentIndex).l) { case (tmp: Identifier) :: (field: FieldIdentifier) :: Nil =>
+            tmp.name shouldBe "p"
+            field.canonicalName shouldBe "x"
+          }
+      }
+    }
+  }
+
+  "let with a nested record pattern" should {
+    val cpg = code("""
+        |struct Point { x: i32, y: i64 }
+        |struct Line { start: Point, end: Point }
+        |fn foo(ln: Line) {
+        | let Line { start: Point { x, y }, end } = ln;
+        |}
+        |""".stripMargin)
+
+    "lower into a LOCAL and an assignment for tmp and each binding" in {
+      inside(cpg.method.name("foo").block.astChildren.l) {
+        case (tmpLocal: Local) :: (xLocal: Local) :: (yLocal: Local) :: (endLocal: Local) ::
+            (tmpAssign: Call) :: (xAssign: Call) :: (yAssign: Call) :: (endAssign: Call) :: Nil =>
+          tmpLocal.name shouldBe "tmp"
+          tmpLocal.typeFullName shouldBe "rust2cpgtest::Line"
+          tmpAssign.code shouldBe "tmp = ln"
+
+          xLocal.name shouldBe "x"
+          xLocal.typeFullName shouldBe "i32"
+          xAssign.code shouldBe "x = tmp.start.x"
+
+          yLocal.name shouldBe "y"
+          yLocal.typeFullName shouldBe "i64"
+          yAssign.code shouldBe "y = tmp.start.y"
+
+          endLocal.name shouldBe "end"
+          endLocal.typeFullName shouldBe "rust2cpgtest::Point"
+          endAssign.code shouldBe "end = tmp.end"
+      }
+    }
+  }
+
   "let to a function" should {
     val cpg = code("""
         |fn handler(x: i64) -> i64 { x }

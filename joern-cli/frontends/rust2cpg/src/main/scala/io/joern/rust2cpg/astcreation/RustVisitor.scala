@@ -290,6 +290,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     pat match {
       case identPat: IdentPat       => createAssignmentsForIdentPattern(identPat, sourceExpr, codeOverride)
       case parenPat: ParenPat       => createAssignmentsForPattern(parenPat.pat, sourceExpr, codeOverride)
+      case recordPat: RecordPat     => createAssignmentsForRecordPattern(recordPat, sourceExpr)
       case tuplePat: TuplePat       => createAssignmentsForTuplePattern(tuplePat, sourceExpr)
       case wildcardPat: WildcardPat => Nil
       case literalPat: LiteralPat   => Nil
@@ -309,6 +310,30 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         val fieldAccess = fieldAccessAst(pat, pat, cloneAst(sourceExpr), accessCode, fieldName, fieldType)
         createAssignmentsForPattern(pat, fieldAccess)
       }
+    }
+  }
+
+  private def createAssignmentsForRecordPattern(recordPat: RecordPat, sourceExpr: Ast): Seq[Ast] = {
+    recordPat.recordPatFieldList.recordPatField.flatMap { field =>
+      fieldNameForRecordPatField(field) match {
+        case Some(fieldName) =>
+          val fieldType   = typeFullNameForPat(field.pat)
+          val accessCode  = s"${sourceExpr.rootCodeOrEmpty}.$fieldName"
+          val fieldAccess = fieldAccessAst(field, field, cloneAst(sourceExpr), accessCode, fieldName, fieldType)
+          createAssignmentsForPattern(field.pat, fieldAccess)
+        case None => notHandledYet(field) :: Nil
+      }
+    }
+  }
+
+  private def fieldNameForRecordPatField(field: RecordPatField): Option[String] = {
+    field.nameRef match {
+      case Some(nameRef) => Some(code(nameRef))
+      case None =>
+        field.pat match {
+          case identPat: IdentPat => identPat.name.identToken.map(code)
+          case _                  => None
+        }
     }
   }
 
