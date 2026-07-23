@@ -1,0 +1,4 @@
+usr/lib/lua/*.lua -text -diff
+usr/lib/lua/**/*.lua -text -diff
+usr/lib/lua/*.luac -text -diff
+usr/lib/lua/**/*.luac -text -diff

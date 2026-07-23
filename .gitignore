@@ -102,3 +102,4 @@ flake.lock
 ##############
 user.bazelrc
 bazel-*
+/joern-cli/frontends/lua2cpg/src/test/resources/openwrt-derived-firmware-lua-report/
