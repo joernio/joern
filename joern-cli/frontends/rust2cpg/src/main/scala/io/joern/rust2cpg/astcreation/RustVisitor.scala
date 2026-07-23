@@ -109,7 +109,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     case literal: Literal               => visitLiteral(literal)
     case loopExpr: LoopExpr             => visitLoopExpr(loopExpr)
     case macroExpr: MacroExpr           => visitMacroExpr(macroExpr)
-    case x: MatchExpr                   => notHandledYet(x)
+    case matchExpr: MatchExpr           => visitMatchExpr(matchExpr)
     case methodCallExpr: MethodCallExpr => visitMethodCallExpr(methodCallExpr)
     case x: OffsetOfExpr                => notHandledYet(x)
     case expr: ParenExpr                => visitExpr(expr.expr)
@@ -296,6 +296,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       case parenPat: ParenPat       => lowerPatternMatch(parenPat.pat, sourceExpr, codeOverride)
       case tuplePat: TuplePat       => lowerTuplePatternMatch(tuplePat, sourceExpr)
       case wildcardPat: WildcardPat => Nil
+      case literalPat: LiteralPat   => Nil
       case _                        => notHandledYet(pat) :: Nil
     }
   }
@@ -1288,6 +1289,47 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
           (start.map(mkAssign("start", _)) ++ end.map(mkAssign("end", _))).toSeq
         }
     }
+  }
+
+  // MatchExpr =
+  //  Attr* 'match' Expr MatchArmList
+  //
+  // `match e { pat => body, ... }` becomes:
+  //
+  // BLOCK {
+  //  LOCAL tmp
+  //  tmp = e
+  //  MATCH (tmp) {
+  //    JUMP_TARGET
+  //    BLOCK {
+  //      <lowerPatternMatch(pat, tmp)>
+  //      body
+  //    }
+  //    ...
+  //  }
+  // }
+  private def visitMatchExpr(matchExpr: MatchExpr): Ast = {
+    val tmpName      = "tmp"
+    val typeFullName = typeFullNameForExpr(matchExpr.expr)
+    val tmpLocalAst  = Ast(localNode(matchExpr.expr, tmpName, tmpName, typeFullName))
+    val tmpIdentAst  = Ast(identifierNode(matchExpr.expr, tmpName, tmpName, typeFullName))
+    val tmpAssignAst = callAst(
+      assignmentNode(matchExpr.expr, s"$tmpName = ${code(matchExpr.expr)}"),
+      Seq(tmpIdentAst, visitExpr(matchExpr.expr))
+    )
+    val armAsts      = matchExpr.matchArmList.matchArm.flatMap(lowerMatchArm(_, cloneAst(tmpIdentAst)))
+    val matchBodyAst = blockAst(blockNode(matchExpr.matchArmList), armAsts.toList)
+    val matchExprAst = matchAst(matchExpr, Some(cloneAst(tmpIdentAst)), Seq(matchBodyAst))
+    Ast(blockNode(matchExpr)).withChildren(Seq(tmpLocalAst, tmpAssignAst, matchExprAst))
+  }
+
+  // TODO: handle guards.
+  private def lowerMatchArm(matchArm: MatchArm, tmpIdentAst: Ast): Seq[Ast] = {
+    val bindingAsts   = lowerPatternMatch(matchArm.pat, tmpIdentAst)
+    val bodyAst       = visitExpr(matchArm.expr)
+    val matchArmBlock = blockAst(blockNode(matchArm), (bindingAsts :+ bodyAst).toList)
+    val jumpTargetAst = Ast(jumpTargetNode(matchArm.pat, s"case ${code(matchArm.pat)}", code(matchArm.pat)))
+    Seq(jumpTargetAst, matchArmBlock)
   }
 
 }
