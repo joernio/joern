@@ -350,11 +350,20 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "create binding node for the method" in {
-      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>").methodBinding.l) {
-        case binding :: Nil =>
-          binding.name shouldBe "do_stuff"
-          binding.signature shouldBe "rust2cpgtest::Bar"
-          binding.methodFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff"
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>").methodBinding.sortBy(_.name).l) {
+        case bindingMut :: bindingStuff :: bindingTake :: Nil =>
+          bindingMut.name shouldBe "do_mut"
+          bindingMut.signature shouldBe "rust2cpgtest::Bar"
+          bindingMut.methodFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_mut"
+
+          bindingStuff.name shouldBe "do_stuff"
+          bindingStuff.signature shouldBe "rust2cpgtest::Bar"
+          bindingStuff.methodFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff"
+
+          bindingTake.name shouldBe "do_take"
+          bindingTake.signature shouldBe "rust2cpgtest::Bar"
+          bindingTake.methodFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_take"
+
       }
     }
   }
