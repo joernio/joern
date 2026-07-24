@@ -93,7 +93,8 @@ createDistribution := {
     case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.ARMv8) => "linux-arm64"
     case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.X86)     => "macos-x86_64"
     case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.ARMv8)   => "macos-arm64"
-    case (Environment.OperatingSystemType.Windows, _)                                => "windows-x86_64"
+    case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.ARMv8) => "windows-arm64"
+    case (Environment.OperatingSystemType.Windows, _)                                 => "windows-x86_64"
     case _                                                                            => "unknown"
   }
   val distributionFile    = file(s"target/joern-cli-$platformSuffix.zip")

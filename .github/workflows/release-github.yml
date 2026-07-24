@@ -32,12 +32,14 @@ jobs:
             platform: linux-x86_64
           - os: ubuntu-24.04-arm
             platform: linux-arm64
-          - os: macos-13
+          - os: macos-15-intel
             platform: macos-x86_64
           - os: macos-latest
             platform: macos-arm64
           - os: windows-latest
             platform: windows-x86_64
+          - os: windows-11-arm
+            platform: windows-arm64
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -80,7 +82,7 @@ jobs:
             target/joern-cli-${{ matrix.platform }}.zip
             target/joern-cli-${{ matrix.platform }}.zip.sha512
           retention-days: 1
-      - name: Dump query database and upload artifacts
+      - name: Dump query database
         if: matrix.platform == 'linux-x86_64'
         run: sbt "querydb/runMain io.joern.dumpq.Main"
       - uses: actions/upload-artifact@v4
@@ -128,5 +130,7 @@ jobs:
             target/dist/joern-cli-macos-arm64.zip.sha512
             target/dist/joern-cli-windows-x86_64.zip
             target/dist/joern-cli-windows-x86_64.zip.sha512
+            target/dist/joern-cli-windows-arm64.zip
+            target/dist/joern-cli-windows-arm64.zip.sha512
             querydb-artifacts/querydb.zip
             querydb-artifacts/querydb.json

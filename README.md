@@ -102,8 +102,9 @@ Each release publishes platform-specific distribution zips:
 - `joern-cli-macos-x86_64.zip`
 - `joern-cli-macos-arm64.zip`
 - `joern-cli-windows-x86_64.zip`
+- `joern-cli-windows-arm64.zip`
 
-`joern-install.sh` detects the current platform automatically and downloads the correct zip.
+`joern-install.sh` detects the current platform automatically and downloads the correct zip. Windows users should download the appropriate zip directly from the [releases page](https://github.com/joernio/joern/releases/latest) and extract it manually.
 
 ## Developers
 
