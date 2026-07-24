@@ -243,15 +243,15 @@ trait AstForPrimitivesCreator { this: AstCreator =>
         def fieldAccesses(names: List[IASTNode]): Ast = names match {
           case Nil         => Ast()
           case head :: Nil => astForNode(head)
-          case _ =>
-            val init       = names.init
-            val last       = names.last
-            val codeString = names.map(code).mkString("::")
-            val callNode_  = callNode(names.head, codeString, op, op, dispatchType, None, Some(Defines.Any))
-            val arg1       = fieldAccesses(init)
-            val lastCode   = code(last)
-            val arg2       = Ast(fieldIdentifierNode(last, lastCode, lastCode))
-            callAst(callNode_, List(arg1, arg2))
+          case head :: tail =>
+            val (resultAst, _) = tail.foldLeft((astForNode(head), code(head))) { case ((accAst, accCode), nameNode) =>
+              val nameCode  = code(nameNode)
+              val newCode   = s"$accCode::$nameCode"
+              val callNode_ = callNode(names.head, newCode, op, op, dispatchType, None, Some(Defines.Any))
+              val arg2      = Ast(fieldIdentifierNode(nameNode, nameCode, nameCode))
+              (callAst(callNode_, List(accAst, arg2)), newCode)
+            }
+            resultAst
         }
         val qualifier = fieldAccesses(qualId.getQualifier.toIndexedSeq.toList)
         val owner = if (qualifier != Ast()) { qualifier }

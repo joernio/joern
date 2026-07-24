@@ -8,7 +8,10 @@ object RestrictedImports {
 
   /** If a file is within any of the packages defined below, it will not be checked for restricted imports.
     */
-  private val ignoredPackages: Seq[String] = Seq()
+  private val ignoredPackages: Seq[String] = Seq(
+    // We want long-lived processes for the server classes, the ExternalCommand Import from shiftleft does not allow us to do this.
+    "io.joern.x2cpg.utils.server"
+  )
 
   /** The rules for restricted imports.
     */

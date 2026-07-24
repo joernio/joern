@@ -95,14 +95,15 @@ case class ProgramScope(fileName: String) extends TypeLikeScope {
   * @param fullName
   *   the type full name.
   */
-case class ModuleScope(fullName: String) extends TypeLikeScope
+case class ModuleScope(fullName: String, visibilityMap: Map[String, String] = Map.empty) extends TypeLikeScope
 
 /** A class or interface.
   *
   * @param fullName
   *   the type full name.
   */
-case class TypeScope(fullName: String, fields: List[FieldDecl]) extends TypeLikeScope
+case class TypeScope(fullName: String, fields: List[FieldDecl], visibilityMap: Map[String, String] = Map.empty)
+    extends TypeLikeScope
 
 /** Represents scope objects that map to a method node.
   */

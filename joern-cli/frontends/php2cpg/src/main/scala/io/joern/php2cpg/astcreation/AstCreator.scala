@@ -3,7 +3,7 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.passes.SymbolSummaryPass.SymbolSummary
-import io.joern.php2cpg.utils.{NamespaceScope, Scope}
+import io.joern.php2cpg.utils.{BlockScope, NamespaceScope, Scope}
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
@@ -161,10 +161,13 @@ class AstCreator(
       .fullName(fullName)
 
     scope.pushNewScope(NamespaceScope(namespaceBlock, namespaceBlock.fullName))
+    val block = blockNode(stmt)
+    scope.pushNewScope(BlockScope(block, ""))
     val bodyStmts = astsForClassLikeBody(stmt, stmt.stmts, createDefaultConstructor = false, None)
     scope.popScope()
+    scope.popScope()
 
-    Ast(namespaceBlock).withChildren(bodyStmts)
+    Ast(namespaceBlock).withChild(Ast(block).withChildren(bodyStmts))
   }
 
   private def astForHaltCompilerStmt(stmt: PhpHaltCompilerStmt): Ast = {

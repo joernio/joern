@@ -280,11 +280,11 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         thisParam.name shouldBe "this"
         thisParam.code shouldBe "this"
         thisParam.typeFullName shouldBe "Foo"
-        thisParam.index shouldBe Some(0)
+        thisParam.index shouldBe 0
 
         inputParam.name shouldBe "input"
         inputParam.typeFullName shouldBe "java.lang.String"
-        inputParam.index shouldBe Some(1)
+        inputParam.index shouldBe 1
       }
     }
   }
@@ -311,12 +311,12 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         thisParam.code shouldBe "this"
         thisParam.typeFullName shouldBe "Foo"
         thisParam.order shouldBe 0
-        thisParam.index shouldBe Some(0)
+        thisParam.index shouldBe 0
 
         inputParam.name shouldBe "input"
         inputParam.typeFullName shouldBe "java.lang.String"
         inputParam.order shouldBe 1
-        inputParam.index shouldBe Some(1)
+        inputParam.index shouldBe 1
       }
     }
   }
@@ -353,7 +353,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         thisClosureBinding.closureBindingId shouldBe Some("Test0.java:<lambda>0:this")
         inside(thisClosureBinding._refOut.l) { case List(capturedParam: MethodParameterIn) =>
           capturedParam.name shouldBe "this"
-          capturedParam.index shouldBe Some(0)
+          capturedParam.index shouldBe 0
           capturedParam.method.fullName shouldBe "Test.test:void()"
         }
       }
@@ -418,7 +418,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         thisClosureBinding.closureBindingId shouldBe Some("Test0.java:<lambda>0:this")
         inside(thisClosureBinding._refOut.l) { case List(capturedParam: MethodParameterIn) =>
           capturedParam.name shouldBe "this"
-          capturedParam.index shouldBe Some(0)
+          capturedParam.index shouldBe 0
           capturedParam.method.fullName shouldBe "Test.test:void().LocalClass.localClassMethod:void()"
         }
       }
@@ -488,7 +488,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         thisClosureBinding.closureBindingId shouldBe Some("Test0.java:<lambda>0:this")
         inside(thisClosureBinding._refOut.l) { case List(capturedParam: MethodParameterIn) =>
           capturedParam.name shouldBe "this"
-          capturedParam.index shouldBe Some(0)
+          capturedParam.index shouldBe 0
           capturedParam.method.fullName shouldBe "Test.test:void().LocalClass.localClassMethod:void()"
         }
       }
@@ -536,7 +536,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         inputParam.name shouldBe "input"
         inputParam.typeFullName shouldBe "java.lang.String"
         inputParam.order shouldBe 1
-        inputParam.index shouldBe Some(1)
+        inputParam.index shouldBe 1
       }
     }
   }
@@ -666,13 +666,13 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
           input.code shouldBe "java.lang.Integer input"
           input.typeFullName shouldBe "java.lang.Integer"
           input.order shouldBe 1
-          input.index shouldBe Some(1)
+          input.index shouldBe 1
 
           moreInput.name shouldBe "moreInput"
           moreInput.code shouldBe "java.lang.Integer moreInput"
           moreInput.typeFullName shouldBe "java.lang.Integer"
           moreInput.order shouldBe 2
-          moreInput.index shouldBe Some(2)
+          moreInput.index shouldBe 2
         }
       }
     }

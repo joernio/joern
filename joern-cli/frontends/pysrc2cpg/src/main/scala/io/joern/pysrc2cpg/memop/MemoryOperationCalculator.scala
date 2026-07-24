@@ -24,9 +24,11 @@ import MemoryOperation.{Del, Load, Store}
 import scala.collection.mutable
 
 class MemoryOperationCalculator extends AstVisitor[Unit] {
-  private val stack  = mutable.Stack.empty[MemoryOperation]
-  val astNodeToMemOp = new AstNodeToMemoryOperationMap()
-  val names          = mutable.Set.empty[String]
+  private val stack             = mutable.Stack.empty[MemoryOperation]
+  val astNodeToMemOp            = new AstNodeToMemoryOperationMap()
+  val names                     = mutable.Set.empty[String]
+  val scopeNames                = new ScopeNameCollection()
+  private var argumentNameScope = Option.empty[ast.iast]
 
   private def accept(astNode: ast.iast): Unit = {
     astNode.accept(this)
@@ -44,41 +46,81 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
     stack.pop()
   }
 
+  private def pushScope(scope: ast.iast): Unit = {
+    scopeNames.pushScope(scope)
+  }
+
+  private def popScope(): Unit = {
+    scopeNames.popScope()
+  }
+
+  private def addName(name: String): Unit = {
+    scopeNames.addName(name)
+  }
+
+  private def addArgumentName(name: String): Unit = {
+    argumentNameScope match {
+      case Some(scope) => scopeNames.addName(scope, name)
+      case None        => addName(name)
+    }
+  }
+
+  private def acceptArgumentsInScope(arguments: ast.Arguments, scope: ast.iast): Unit = {
+    val previousArgumentNameScope = argumentNameScope
+    argumentNameScope = Some(scope)
+    try {
+      accept(arguments)
+    } finally {
+      argumentNameScope = previousArgumentNameScope
+    }
+  }
+
   override def visit(astNode: ast.iast): Unit = ???
 
   override def visit(mod: ast.imod): Unit = ???
 
   override def visit(module: ast.Module): Unit = {
+    pushScope(module)
     accept(module.stmts)
+    popScope()
   }
 
   override def visit(stmt: ast.istmt): Unit = ???
 
   override def visit(functionDef: ast.FunctionDef): Unit = {
+    addName(functionDef.name)
     push(Load)
     accept(functionDef.decorator_list)
-    accept(functionDef.args)
+    acceptArgumentsInScope(functionDef.args, functionDef)
     accept(functionDef.returns)
     pop()
+    pushScope(functionDef)
     accept(functionDef.body)
+    popScope()
   }
 
   override def visit(functionDef: ast.AsyncFunctionDef): Unit = {
+    addName(functionDef.name)
     push(Load)
     accept(functionDef.decorator_list)
-    accept(functionDef.args)
+    acceptArgumentsInScope(functionDef.args, functionDef)
     accept(functionDef.returns)
     pop()
+    pushScope(functionDef)
     accept(functionDef.body)
+    popScope()
   }
 
   override def visit(classDef: ast.ClassDef): Unit = {
+    addName(classDef.name)
     push(Load)
     accept(classDef.decorator_list)
     accept(classDef.bases)
     accept(classDef.keywords)
     pop()
+    pushScope(classDef)
     accept(classDef.body)
+    popScope()
   }
 
   override def visit(ret: ast.Return): Unit = {
@@ -199,13 +241,13 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
     pop()
   }
 
-  override def visit(importStmt: ast.Import): Unit = {}
+  override def visit(importStmt: ast.Import): Unit = accept(importStmt.names)
 
-  override def visit(importFrom: ast.ImportFrom): Unit = {}
+  override def visit(importFrom: ast.ImportFrom): Unit = accept(importFrom.names)
 
-  override def visit(global: ast.Global): Unit = {}
+  override def visit(global: ast.Global): Unit = global.names.foreach(addName)
 
-  override def visit(nonlocal: ast.Nonlocal): Unit = {}
+  override def visit(nonlocal: ast.Nonlocal): Unit = nonlocal.names.foreach(addName)
 
   override def visit(expr: ast.Expr): Unit = {
     push(Load)
@@ -253,9 +295,11 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
 
   override def visit(lambda: ast.Lambda): Unit = {
     push(Load)
-    accept(lambda.args)
+    acceptArgumentsInScope(lambda.args, lambda)
     pop()
+    pushScope(lambda)
     accept(lambda.body)
+    popScope()
   }
 
   override def visit(ifExp: ast.IfExp): Unit = {
@@ -274,24 +318,32 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
   }
 
   override def visit(listComp: ast.ListComp): Unit = {
+    pushScope(listComp)
     accept(listComp.elt)
     accept(listComp.generators)
+    popScope()
   }
 
   override def visit(setComp: ast.SetComp): Unit = {
+    pushScope(setComp)
     accept(setComp.elt)
     accept(setComp.generators)
+    popScope()
   }
 
   override def visit(dictComp: ast.DictComp): Unit = {
+    pushScope(dictComp)
     accept(dictComp.key)
     accept(dictComp.value)
     accept(dictComp.generators)
+    popScope()
   }
 
   override def visit(generatorExp: ast.GeneratorExp): Unit = {
+    pushScope(generatorExp)
     accept(generatorExp.elt)
     accept(generatorExp.generators)
+    popScope()
   }
 
   override def visit(await: ast.Await): Unit = {
@@ -353,6 +405,7 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
   override def visit(name: ast.Name): Unit = {
     astNodeToMemOp.put(name, stack.head)
     names.add(name.id)
+    addName(name.id)
   }
 
   override def visit(list: ast.List): Unit = {
@@ -453,13 +506,21 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
   }
 
   override def visit(exceptHandler: ast.ExceptHandler): Unit = {
+    pushScope(exceptHandler)
+    exceptHandler.name.foreach(addName)
     push(Load)
     accept(exceptHandler.typ)
     pop()
     accept(exceptHandler.body)
+    popScope()
   }
 
   override def visit(arguments: ast.Arguments): Unit = {
+    arguments.posonlyargs.foreach(arg => addArgumentName(arg.arg))
+    arguments.args.foreach(arg => addArgumentName(arg.arg))
+    arguments.vararg.foreach(arg => addArgumentName(arg.arg))
+    arguments.kwonlyargs.foreach(arg => addArgumentName(arg.arg))
+    arguments.kw_arg.foreach(arg => addArgumentName(arg.arg))
     accept(arguments.posonlyargs)
     accept(arguments.args)
     accept(arguments.vararg)
@@ -496,7 +557,9 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
     accept(keyword.value)
   }
 
-  override def visit(alias: ast.Alias): Unit = {}
+  override def visit(alias: ast.Alias): Unit = {
+    addName(alias.asName.getOrElse(alias.name).split('.').head)
+  }
 
   override def visit(withItem: ast.Withitem): Unit = {
     push(Load)
@@ -526,6 +589,7 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
   override def visit(matchMapping: MatchMapping): Unit = {
     accept(matchMapping.keys)
     accept(matchMapping.patterns)
+    matchMapping.rest.foreach(addName)
   }
 
   override def visit(matchClass: MatchClass): Unit = {
@@ -534,10 +598,11 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
     accept(matchClass.kwd_patterns)
   }
 
-  override def visit(matchStar: MatchStar): Unit = {}
+  override def visit(matchStar: MatchStar): Unit = matchStar.name.foreach(addName)
 
   override def visit(matchAs: MatchAs): Unit = {
     accept(matchAs.pattern)
+    matchAs.name.foreach(addName)
   }
 
   override def visit(matchOr: MatchOr): Unit = {

@@ -1,7 +1,7 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, ControlStructure, Identifier, Local}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, ControlStructure, Identifier, JumpLabel, Local}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
@@ -717,4 +717,79 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
   }
 
   // TODO: also add test for the loop range, when it is with downTo or whatever
+
+  "CPG for code with labeled break statement" should {
+    val cpg = code("""
+        |package mypkg
+        |fun foo() {
+        |  outer@ for (i in 0..10) {
+        |    for (j in 0..10) {
+        |      if (j == 5) break@outer
+        |    }
+        |  }
+        |}""".stripMargin)
+
+    "should contain a BREAK with a JUMP_LABEL child" in {
+      val List(breakNode) = cpg.controlStructure.isBreak.l
+      breakNode.code shouldBe "break@outer"
+      val List(jumpLabel) = breakNode.astChildren.collectAll[JumpLabel].l
+      jumpLabel.name shouldBe "outer"
+      jumpLabel.order shouldBe 1
+    }
+
+    "should have a JUMP_ARGUMENT edge from break to the JUMP_LABEL" in {
+      val List(breakNode) = cpg.controlStructure.isBreak.l
+      val List(jumpLabel) = breakNode.jumpArgumentOut.collectAll[JumpLabel].l
+      jumpLabel.name shouldBe "outer"
+    }
+  }
+
+  "CPG for code with labeled continue statement" should {
+    val cpg = code("""
+        |package mypkg
+        |fun foo() {
+        |  outer@ for (i in 0..10) {
+        |    for (j in 0..10) {
+        |      if (j == 3) continue@outer
+        |    }
+        |  }
+        |}""".stripMargin)
+
+    "should contain a CONTINUE with a JUMP_LABEL child" in {
+      val List(continueNode) = cpg.controlStructure.isContinue.l
+      continueNode.code shouldBe "continue@outer"
+      val List(jumpLabel) = continueNode.astChildren.collectAll[JumpLabel].l
+      jumpLabel.name shouldBe "outer"
+      jumpLabel.order shouldBe 1
+    }
+
+    "should have a JUMP_ARGUMENT edge from continue to the JUMP_LABEL" in {
+      val List(continueNode) = cpg.controlStructure.isContinue.l
+      val List(jumpLabel)    = continueNode.jumpArgumentOut.collectAll[JumpLabel].l
+      jumpLabel.name shouldBe "outer"
+    }
+  }
+
+  "CPG for code with unlabeled break/continue" should {
+    val cpg = code("""
+        |package mypkg
+        |fun foo() {
+        |  for (i in 0..10) {
+        |    if (i == 5) break
+        |    if (i == 3) continue
+        |  }
+        |}""".stripMargin)
+
+    "should have no JUMP_LABEL child and no JUMP_ARGUMENT edge on break" in {
+      val List(breakNode) = cpg.controlStructure.isBreak.l
+      breakNode.astChildren.collectAll[JumpLabel].size shouldBe 0
+      breakNode.jumpArgumentOut.size shouldBe 0
+    }
+
+    "should have no JUMP_LABEL child and no JUMP_ARGUMENT edge on continue" in {
+      val List(continueNode) = cpg.controlStructure.isContinue.l
+      continueNode.astChildren.collectAll[JumpLabel].size shouldBe 0
+      continueNode.jumpArgumentOut.size shouldBe 0
+    }
+  }
 }

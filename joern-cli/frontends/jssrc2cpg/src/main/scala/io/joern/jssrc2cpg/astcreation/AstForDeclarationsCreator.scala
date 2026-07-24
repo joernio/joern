@@ -343,8 +343,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       diffGraph.addEdge(importNode, _dependencyNode, EdgeTypes.IMPORTS)
       assignment
     } else {
-      val specs = impDecl.json("specifiers").arr
-      val requireCalls = specs.map { importSpecifier =>
+      val requireCalls = specifiers.map { importSpecifier =>
         val isImportN = createBabelNodeInfo(importSpecifier).node match {
           case ImportSpecifier => true
           case _               => false
@@ -352,7 +351,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         val name             = importSpecifier("local")("name").str
         val (alias, reqName) = reqNameFromImportSpecifier(importSpecifier, name)
         val assignment       = astForRequireCallFromImport(reqName, alias, source, isImportN = isImportN, impDecl)
-        val importedName     = importSpecifier("local")("name").str
+        val importedName     = name
         val call             = assignment.nodes.collectFirst { case x: NewCall if x.name == "require" => x }
         val importNode       = createImportNodeAndAttachToCall(impDecl, s"$source:$reqName", importedName, call)
         val _dependencyNode  = dependencyNode(importedName, source, ImportKeyword)

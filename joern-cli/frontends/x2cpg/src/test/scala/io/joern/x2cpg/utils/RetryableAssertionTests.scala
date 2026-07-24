@@ -2,7 +2,7 @@ package io.joern.x2cpg.utils
 
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
-import RetryableAssertion.*
+import io.joern.x2cpg.testfixtures.RetryableAssertion.*
 import org.scalatest.Assertion
 
 import scala.concurrent.duration.*

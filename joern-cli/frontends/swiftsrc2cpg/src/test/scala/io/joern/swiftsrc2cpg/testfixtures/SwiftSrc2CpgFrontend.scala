@@ -12,7 +12,7 @@ trait SwiftSrc2CpgFrontend extends LanguageFrontend {
     val pathAsString = sourceCodePath.getAbsolutePath
     val config       = getConfig().getOrElse(Config()).withInputPath(pathAsString)
     val tmp          = new SwiftSrc2Cpg().createCpg(config).get
-    new PostFrontendValidator(tmp, ValidationLevel.V2).run()
+    new PostFrontendValidator(tmp, ValidationLevel.V3).run()
     tmp
   }
 }

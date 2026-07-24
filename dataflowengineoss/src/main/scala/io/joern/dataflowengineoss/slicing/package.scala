@@ -254,18 +254,18 @@ package object slicing {
   /** Represents data introduced via a parameter.
     *
     * @param position
-    *   the index of the parameter, or None if the parameter has no positional index (e.g. keyword-only params).
+    *   the index of the parameter.
     */
   case class ParamDef(
     name: String,
     typeFullName: String,
-    position: Option[Int],
+    position: Integer,
     lineNumber: Option[Int] = None,
     columnNumber: Option[Int] = None,
     label: String = "PARAM"
   ) extends DefComponent
       derives ReadWriter {
-    override def toString: String = super.toString + position.map(pos => s" @ pos #$pos").getOrElse("")
+    override def toString: String = super.toString + s" @ pos #$position"
   }
 
   /** Represents data introduced by the return value of a call.

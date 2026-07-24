@@ -51,16 +51,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     case node: RubyCallWithBlock[_]             => astForCallWithBlock(node)
     case node: SelfIdentifier                   => astForSelfIdentifier(node)
     case node: StatementList                    => astForStatementList(node)
+    case node: DefaultMultipleAssignment        => astForDefaultMultipleAssignmentExpr(node)
     case node: MultipleAssignment               => blockAst(blockNode(node), astsForStatement(node).toList)
     case node: ReturnExpression                 => astForReturnExpression(node)
-    case node: AccessModifier                   => astForSimpleIdentifier(node.toSimpleIdentifier)
+    case node: AccessModifier                   => astForAccessModifierCall(node)
+    case node: MethodAccessModifier             => astForMethodAccessModifierExpr(node)
     case node: ArrayPattern                     => astForArrayPattern(node)
     case node: DummyNode                        => Ast(node.node)
     case node: DummyAst                         => node.ast
     case node: EmptyExpression                  => Ast()
     case node: Unknown                          => astForUnknown(node)
-    case x =>
-      logger.warn(s"Unhandled expression of type ${x.getClass.getSimpleName}")
+    case xs =>
+      logger.warn(s"Unhandled expression of type ${xs.getClass.getSimpleName}")
       astForUnknown(node)
   }
 
@@ -407,7 +409,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
    * ```
    */
   protected def astForCallWithBlock[C <: RubyCall](node: RubyExpression & RubyCallWithBlock[C]): Ast = {
-    val Seq(typeRef, _)  = astForDoBlock(node.block): @unchecked
+    val typeRef          = astForDoBlock(node.block).typeRef
     val typeRefDummyNode = typeRef.root.map(DummyNode(_)(node.span)).toList
 
     // Create call with argument referencing the MethodRef
@@ -471,7 +473,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val argumentAsts = node match {
       case x: SimpleObjectInstantiation => x.arguments.map(astForMethodCallArgument)
       case x: ObjectInstantiationWithBlock =>
-        val Seq(typeRef, _) = astForDoBlock(x.block): @unchecked
+        val typeRef = astForDoBlock(x.block).typeRef
         x.arguments.map(astForMethodCallArgument) :+ typeRef
     }
 
@@ -670,6 +672,21 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForMandatoryParameter(node: RubyExpression): Ast = handleVariableOccurrence(node)
+
+  protected def astForAccessModifierCall(node: RubyExpression & AccessModifier): Ast = {
+    val operatorName = node match {
+      case _: PublicModifier    => RubyOperators.publicModifier
+      case _: PrivateModifier   => RubyOperators.privateModifier
+      case _: ProtectedModifier => RubyOperators.protectedModifier
+    }
+    val argAsts = node.arguments.map(astForExpression)
+    val call    = callNode(node, code(node), operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, argAsts)
+  }
+
+  protected def astForMethodAccessModifierExpr(node: RubyExpression & MethodAccessModifier): Ast = {
+    blockAst(blockNode(node), astForMethodAccessModifier(node).toList)
+  }
 
   protected def astForSimpleCall(node: SimpleCall): Ast = {
     node.target match {
@@ -961,8 +978,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       Ast(astForEnsureClause).withChild(astForStatementList(x.thenClause.asStatementList))
     }
 
-    val tryNode = controlStructureNode(node.body.asStatementList, ControlStructureTypes.TRY, "try")
-    tryCatchAst(tryNode, tryAst, rescueAsts ++ elseAst, ensureAst)
+    tryCatchAst(node.body.asStatementList, tryAst, rescueAsts ++ elseAst, ensureAst, Some("try"))
   }
 
   private def astForSelfIdentifier(node: SelfIdentifier): Ast = {
@@ -1034,8 +1050,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForProcOrLambdaExpr(node: ProcOrLambdaExpr): Ast = {
-    val Seq(typeRef, _) = astForDoBlock(node.block): @unchecked
-    typeRef
+    astForDoBlock(node.block).typeRef
   }
 
   private def astForSingletonObjectMethodDeclaration(node: SingletonObjectMethodDeclaration): Ast = {
@@ -1057,11 +1072,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       // Associations in method calls are keyword arguments
       case assoc: Association => astForKeywordArgument(assoc)
       case block: RubyBlock =>
-        val Seq(methodDecl, typeDecl, typeRef, _) = astForDoBlock(block)
-        Ast.storeInDiffGraph(methodDecl, diffGraph)
-        Ast.storeInDiffGraph(typeDecl, diffGraph)
-
-        typeRef
+        astForDoBlock(block).typeRef
       case selfMethod: SingletonMethodDeclaration =>
         // Last element is the method declaration, the prefix methods would be `foo = def foo (...)` pointers in other
         // contexts, but this would be empty as a method call argument

@@ -60,22 +60,22 @@ class AstQueryTests extends C2CpgSuite {
         .l shouldBe List()
     }
 
-    "identify three control structures" in {
+    "identify the two `if` control structures without emitting `else` nodes" in {
       cpg.method
         .name("foo")
         .ast
         .isControlStructure
         .isIf
-        .l
-        .size shouldBe 2
+        .condition
+        .code
+        .l shouldBe List("x > 10", "y > x")
 
       cpg.method
         .name("foo")
         .ast
         .isControlStructure
         .isElse
-        .l
-        .size shouldBe 1
+        .l shouldBe List()
     }
 
     "allow basic calling basic 'is' methods on AST node" in {

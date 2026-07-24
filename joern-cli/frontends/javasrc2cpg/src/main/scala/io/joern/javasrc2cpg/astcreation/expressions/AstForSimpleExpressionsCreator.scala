@@ -415,6 +415,8 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
   }
 
   private[expressions] def astForSwitchExpr(expr: SwitchExpr, expectedType: ExpectedType): Ast = {
-    astForSwitch(expr, expr.getSelector, expr.getEntries, ControlStructureTypes.MATCH)
+    val (selectorAst, selectorReferenceAst) = astForSwitchSelector(expr.getSelector, expr.getEntries)
+    val switchBodyAst                       = astForSwitchBody(expr, expr.getEntries, selectorReferenceAst)
+    matchAst(expr, Some(selectorAst), Seq(switchBodyAst), Some(s"switch(${code(expr.getSelector)})"))
   }
 }

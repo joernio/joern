@@ -145,7 +145,7 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
     name: String,
     isVariadic: Boolean,
     lineAndColumn: LineAndColumn,
-    index: Option[Int] = None,
+    index: Int,
     typeHint: Option[ast.iexpr] = None
   ): nodes.NewMethodParameterIn = {
     val methodParameterNode = nodes
@@ -154,12 +154,12 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .code(name)
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
       .typeFullName(extractTypesFromHint(typeHint).getOrElse(Constants.ANY))
+      .index(index)
       .isVariadic(isVariadic)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
       .offset(lineAndColumn.offset)
       .offsetEnd(lineAndColumn.endOffset)
-    index.foreach(idx => methodParameterNode.index(idx))
     addNodeToDiff(methodParameterNode)
   }
 

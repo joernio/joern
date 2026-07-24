@@ -31,12 +31,12 @@ class InitDeinitTests extends SwiftCompilerSrc2CpgSuite {
       val List(paramA) = constructorA.parameter.l
       val List(paramB) = constructorB.parameter.l
 
-      paramA.index shouldBe Some(0)
+      paramA.index shouldBe 0
       paramA.order shouldBe 0
       paramA.name shouldBe "self"
       paramA.typeFullName shouldBe "Sources/main.swift:<global>.FooStructConstructorA"
 
-      paramB.index shouldBe Some(0)
+      paramB.index shouldBe 0
       paramB.order shouldBe 0
       paramB.name shouldBe "self"
       paramB.typeFullName shouldBe "SwiftTest.FooStructConstructorA"
@@ -62,12 +62,12 @@ class InitDeinitTests extends SwiftCompilerSrc2CpgSuite {
       val List(paramA) = constructorA.parameter.l
       val List(paramB) = constructorB.parameter.l
 
-      paramA.index shouldBe Some(0)
+      paramA.index shouldBe 0
       paramA.order shouldBe 0
       paramA.name shouldBe "self"
       paramA.typeFullName shouldBe "Sources/main.swift:<global>.FooStructConstructorA"
 
-      paramB.index shouldBe Some(0)
+      paramB.index shouldBe 0
       paramB.order shouldBe 0
       paramB.name shouldBe "self"
       paramB.typeFullName shouldBe "SwiftTest.FooStructConstructorA"
@@ -90,12 +90,12 @@ class InitDeinitTests extends SwiftCompilerSrc2CpgSuite {
       val List(paramA) = deinitA.parameter.l
       val List(paramB) = deinitB.parameter.l
 
-      paramA.index shouldBe Some(0)
+      paramA.index shouldBe 0
       paramA.order shouldBe 0
       paramA.name shouldBe "self"
       paramA.typeFullName shouldBe "Sources/main.swift:<global>.FooStructDeinitializerA"
 
-      paramB.index shouldBe Some(0)
+      paramB.index shouldBe 0
       paramB.order shouldBe 0
       paramB.name shouldBe "self"
       paramB.typeFullName shouldBe "SwiftTest.FooStructDeinitializerA"
@@ -121,12 +121,12 @@ class InitDeinitTests extends SwiftCompilerSrc2CpgSuite {
       val List(paramA) = constructorA.parameter.l
       val List(paramB) = constructorB.parameter.l
 
-      paramA.index shouldBe Some(0)
+      paramA.index shouldBe 0
       paramA.order shouldBe 0
       paramA.name shouldBe "self"
       paramA.typeFullName shouldBe "Sources/main.swift:<global>.BarUnion"
 
-      paramB.index shouldBe Some(0)
+      paramB.index shouldBe 0
       paramB.order shouldBe 0
       paramB.name shouldBe "self"
       paramB.typeFullName shouldBe "SwiftTest.BarUnion"
@@ -153,12 +153,12 @@ class InitDeinitTests extends SwiftCompilerSrc2CpgSuite {
       val List(paramA) = constructorA.parameter.l
       val List(paramB) = constructorB.parameter.l
 
-      paramA.index shouldBe Some(0)
+      paramA.index shouldBe 0
       paramA.order shouldBe 0
       paramA.name shouldBe "self"
       paramA.typeFullName shouldBe "Sources/main.swift:<global>.BarClass"
 
-      paramB.index shouldBe Some(0)
+      paramB.index shouldBe 0
       paramB.order shouldBe 0
       paramB.name shouldBe "self"
       paramB.typeFullName shouldBe "SwiftTest.BarClass"
@@ -172,12 +172,12 @@ class InitDeinitTests extends SwiftCompilerSrc2CpgSuite {
       val List(deinitParamA) = deinitA.parameter.l
       val List(deinitParamB) = deinitB.parameter.l
 
-      deinitParamA.index shouldBe Some(0)
+      deinitParamA.index shouldBe 0
       deinitParamA.order shouldBe 0
       deinitParamA.name shouldBe "self"
       deinitParamA.typeFullName shouldBe "Sources/main.swift:<global>.BarClass"
 
-      deinitParamB.index shouldBe Some(0)
+      deinitParamB.index shouldBe 0
       deinitParamB.order shouldBe 0
       deinitParamB.name shouldBe "self"
       deinitParamB.typeFullName shouldBe "SwiftTest.BarClass"
@@ -204,22 +204,22 @@ class InitDeinitTests extends SwiftCompilerSrc2CpgSuite {
       val List(paramA, xA) = constructorA.parameter.l
       val List(paramB, xB) = constructorB.parameter.l
 
-      paramA.index shouldBe Some(0)
+      paramA.index shouldBe 0
       paramA.order shouldBe 0
       paramA.name shouldBe "self"
       paramA.typeFullName shouldBe "Sources/main.swift:<global>.BarClass"
 
-      paramB.index shouldBe Some(0)
+      paramB.index shouldBe 0
       paramB.order shouldBe 0
       paramB.name shouldBe "self"
       paramB.typeFullName shouldBe "SwiftTest.BarClass"
 
-      xA.index shouldBe Some(1)
+      xA.index shouldBe 1
       xA.order shouldBe 1
       xA.name shouldBe "a"
       xA.typeFullName shouldBe "Swift.Int"
 
-      xB.index shouldBe Some(1)
+      xB.index shouldBe 1
       xB.order shouldBe 1
       xB.name shouldBe "a"
       xB.typeFullName shouldBe "Swift.Int"
@@ -253,12 +253,12 @@ class InitDeinitTests extends SwiftCompilerSrc2CpgSuite {
       val List(paramA) = constructorA.parameter.l
       val List(paramB) = constructorB.parameter.l
 
-      paramA.index shouldBe Some(0)
+      paramA.index shouldBe 0
       paramA.order shouldBe 0
       paramA.name shouldBe "self"
       paramA.typeFullName shouldBe "Sources/main.swift:<global>.BarProtocol"
 
-      paramB.index shouldBe Some(0)
+      paramB.index shouldBe 0
       paramB.order shouldBe 0
       paramB.name shouldBe "self"
       paramB.typeFullName shouldBe "SwiftTest.BarProtocol"

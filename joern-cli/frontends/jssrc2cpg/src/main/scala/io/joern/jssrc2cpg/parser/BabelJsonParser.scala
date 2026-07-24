@@ -18,8 +18,14 @@ object BabelJsonParser {
     fileLoc: Int
   ) extends BaseParserResult
 
+  /** Strips the last file extension, i.e. everything after and including the final '.'. */
+  def stripExtension(path: String): String = {
+    val dotIndex = path.lastIndexOf('.')
+    if (dotIndex >= 0) path.substring(0, dotIndex) else path
+  }
+
   private def loadTypeMap(file: Path): Try[Map[String, String]] = Try {
-    val typeMapPathString = file.toString.replaceAll("\\.[^.]*$", "") + ".typemap"
+    val typeMapPathString = stripExtension(file.toString) + ".typemap"
     val typeMapPath       = Paths.get(typeMapPathString)
     if (typeMapPath.toFile.exists()) {
       val typeMapJsonContent = IOUtils.readEntireFile(typeMapPath)

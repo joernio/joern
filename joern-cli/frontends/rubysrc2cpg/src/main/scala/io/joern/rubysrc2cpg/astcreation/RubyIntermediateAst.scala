@@ -514,34 +514,41 @@ object RubyIntermediateAst {
       extends RubyExpression(span)
       with RubyCall
 
-  sealed trait AccessModifier extends AllowedTypeDeclarationChild {
+  sealed trait AccessModifier {
     def toSimpleIdentifier: SimpleIdentifier
+    def arguments: List[RubyExpression]
   }
 
-  sealed trait MethodAccessModifier extends AllowedTypeDeclarationChild {
+  sealed trait MethodAccessModifier {
     def toSimpleIdentifier: SimpleIdentifier
-    def method: RubyExpression
+    def arguments: List[RubyExpression]
   }
 
-  final case class PublicModifier()(span: TextSpan) extends RubyExpression(span) with AccessModifier {
+  final case class PublicModifier(arguments: List[RubyExpression] = Nil)(span: TextSpan)
+      extends RubyExpression(span)
+      with AccessModifier {
     override def toSimpleIdentifier: SimpleIdentifier = SimpleIdentifier(None)(span)
   }
 
-  final case class PrivateModifier()(span: TextSpan) extends RubyExpression(span) with AccessModifier {
+  final case class PrivateModifier(arguments: List[RubyExpression] = Nil)(span: TextSpan)
+      extends RubyExpression(span)
+      with AccessModifier {
     override def toSimpleIdentifier: SimpleIdentifier = SimpleIdentifier(None)(span)
   }
 
-  final case class ProtectedModifier()(span: TextSpan) extends RubyExpression(span) with AccessModifier {
+  final case class ProtectedModifier(arguments: List[RubyExpression] = Nil)(span: TextSpan)
+      extends RubyExpression(span)
+      with AccessModifier {
     override def toSimpleIdentifier: SimpleIdentifier = SimpleIdentifier(None)(span)
   }
 
-  final case class PrivateMethodModifier(method: RubyExpression)(span: TextSpan)
+  final case class PrivateMethodModifier(arguments: List[RubyExpression])(span: TextSpan)
       extends RubyExpression(span)
       with MethodAccessModifier {
     override def toSimpleIdentifier: SimpleIdentifier = SimpleIdentifier(None)(span.spanStart("private_class_method"))
   }
 
-  final case class PublicMethodModifier(method: RubyExpression)(span: TextSpan)
+  final case class PublicMethodModifier(arguments: List[RubyExpression])(span: TextSpan)
       extends RubyExpression(span)
       with MethodAccessModifier {
     override def toSimpleIdentifier: SimpleIdentifier = SimpleIdentifier(None)(span.spanStart("public_class_method"))

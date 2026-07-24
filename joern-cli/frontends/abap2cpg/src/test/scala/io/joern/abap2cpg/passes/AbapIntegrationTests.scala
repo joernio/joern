@@ -252,7 +252,7 @@ class AbapIntegrationTests extends Abap2CpgSuite {
 
     "set order equal to index on parsed method parameters" in {
       val cpg = code(abapCode, fileName)
-      cpg.parameter.filter(!_.method.isExternal).l.foreach(p => p.index shouldBe Some(p.order))
+      cpg.parameter.filter(!_.method.isExternal).l.foreach(p => p.order shouldBe p.index)
     }
 
     "set isVariadic to false on all parameters" in {

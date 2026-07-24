@@ -1,10 +1,9 @@
 package io.joern.c2cpg.parser
 
 import io.joern.c2cpg.Config
-import io.joern.c2cpg.passes.AstCreationPass
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CompilationDatabase
+import io.joern.c2cpg.passes.AstCreationPass
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.utils.IOUtils
 import org.eclipse.cdt.core.dom.ast.gnu.c.GCCLanguage
@@ -103,13 +102,17 @@ class CdtParser(config: Config, headerFileFinder: HeaderFileFinder, compilationD
   private val parserConfig = ParserConfig.fromConfig(config, compilationDatabase)
   private val log          = new DefaultLogService
 
-  private var opts: Int =
-    ILanguage.OPTION_NO_IMAGE_LOCATIONS | // performance optimization, allows the parser not to create image-locations
-      ILanguage.OPTION_SKIP_TRIVIAL_EXPRESSIONS_IN_AGGREGATE_INITIALIZERS // performance optimization, skips trivial expressions in aggregate initializers
-  // instructs the parser to skip function and method bodies
-  if (config.skipFunctionBodies) opts |= ILanguage.OPTION_SKIP_FUNCTION_BODIES
-  // enables parsing of code behind disabled preprocessor defines
-  if (config.compilationDatabaseFilename.isEmpty && config.defines.isEmpty) opts |= ILanguage.OPTION_PARSE_INACTIVE_CODE
+  private val opts: Int = {
+    var flags =
+      ILanguage.OPTION_NO_IMAGE_LOCATIONS | // performance optimization, allows the parser not to create image-locations
+        ILanguage.OPTION_SKIP_TRIVIAL_EXPRESSIONS_IN_AGGREGATE_INITIALIZERS // performance optimization, skips trivial expressions in aggregate initializers
+    // instructs the parser to skip function and method bodies
+    if (config.skipFunctionBodies) flags |= ILanguage.OPTION_SKIP_FUNCTION_BODIES
+    // enables parsing of code behind disabled preprocessor defines
+    if (config.compilationDatabaseFilename.isEmpty && config.defines.isEmpty)
+      flags |= ILanguage.OPTION_PARSE_INACTIVE_CODE
+    flags
+  }
 
   def preprocessorStatements(
     file: Path,

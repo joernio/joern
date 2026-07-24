@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
   NewCall,
   NewControlStructure,
+  NewJumpLabel,
   NewLiteral,
   NewMethod,
   NewMethodReturn
@@ -428,6 +429,39 @@ class CfgCreationControlStructureEdgeTests extends AnyWordSpec with Matchers {
 
       val continueCfgNode = method.out(EdgeTypes.CFG).cast[CfgNode].head
       continueCfgNode.code shouldBe "continue"
+    }
+
+    "prefer JUMP_ARGUMENT edge over legacy AST order in GOTO statements" in {
+      val cpg   = Cpg.empty
+      val graph = cpg.graph
+
+      val method       = graph.addNode(NewMethod().name("testGoto").fullName("testGoto").signature("void()"))
+      val methodReturn = graph.addNode(NewMethodReturn().typeFullName("void").order(2))
+      val methodBlock  = graph.addNode(NewBlock().code("methodBlock").order(1))
+
+      val gotoStatement =
+        graph.addNode(NewControlStructure().controlStructureType(ControlStructureTypes.GOTO).code("goto realLabel"))
+      // Dummy JumpLabel at order(1) — this is the old order-based fallback target
+      val dummyJumpLabel = graph.addNode(NewJumpLabel().name("dummyLabel").code("dummyLabel").order(1))
+      // Real JumpLabel at order(2) — connected via JUMP_ARGUMENT and should be preferred
+      val realJumpLabel = graph.addNode(NewJumpLabel().name("realLabel").code("realLabel").order(2))
+
+      graph.applyDiff { diffGraphBuilder =>
+        diffGraphBuilder.addEdge(method, methodReturn, EdgeTypes.AST)
+        diffGraphBuilder.addEdge(method, methodBlock, EdgeTypes.AST)
+        diffGraphBuilder.addEdge(methodBlock, gotoStatement, EdgeTypes.AST)
+
+        diffGraphBuilder.addEdge(gotoStatement, dummyJumpLabel, EdgeTypes.AST)
+        diffGraphBuilder.addEdge(gotoStatement, realJumpLabel, EdgeTypes.AST)
+        // Set JUMP_ARGUMENT specifically to realJumpLabel
+        diffGraphBuilder.addEdge(gotoStatement, realJumpLabel, EdgeTypes.JUMP_ARGUMENT)
+      }
+
+      new CfgCreationPass(cpg).createAndApply()
+
+      // The goto's jumpsToLabel must resolve to "realLabel" (from JUMP_ARGUMENT), not "dummyLabel" (from order(1))
+      val gotoCfgNode = method.out(EdgeTypes.CFG).cast[CfgNode].head
+      gotoCfgNode.code shouldBe "goto realLabel"
     }
 
   }

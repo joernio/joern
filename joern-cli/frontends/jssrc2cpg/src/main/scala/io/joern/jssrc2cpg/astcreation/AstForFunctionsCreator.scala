@@ -112,7 +112,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             EvaluationStrategies.BY_VALUE,
             typeFullName
           ).possibleTypes(possibleTypes)
-          additionalBlockStatements.addAll(nodeInfo.json("elements").arr.map {
+          additionalBlockStatements.addAll(nodeInfo.json("elements").arr.iterator.map {
             case element if !element.isNull =>
               val elementNodeInfo = createBabelNodeInfo(element)
               elementNodeInfo.node match {
@@ -180,7 +180,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           ).possibleTypes(possibleTypes)
           scope.addVariable(paramName, param, typeFullName, VariableScopeManager.ScopeType.MethodScope)
 
-          additionalBlockStatements.addAll(nodeInfo.json("properties").arr.map { element =>
+          additionalBlockStatements.addAll(nodeInfo.json("properties").arr.iterator.map { element =>
             val elementNodeInfo = createBabelNodeInfo(element)
             elementNodeInfo.node match {
               case ObjectProperty =>

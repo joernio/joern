@@ -28,12 +28,12 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
     }
 
     "have correct parameters" in {
-      inside(cpg.method.nameExact("set_MyProperty").parameter.sortBy(_.order).l) { case thisArg :: valueArg :: Nil =>
-        thisArg.index shouldBe Some(0)
+      inside(cpg.method.nameExact("set_MyProperty").parameter.sortBy(_.index).l) { case thisArg :: valueArg :: Nil =>
+        thisArg.index shouldBe 0
         thisArg.name shouldBe "this"
         thisArg.typeFullName shouldBe "C"
 
-        valueArg.index shouldBe Some(1)
+        valueArg.index shouldBe 1
         valueArg.name shouldBe "value"
         valueArg.typeFullName shouldBe "System.Int32"
       }
@@ -70,8 +70,8 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
     }
 
     "have correct parameters" in {
-      inside(cpg.method.nameExact("set_MyProperty").parameter.l) { case valueArg :: Nil =>
-        valueArg.index shouldBe Some(1)
+      inside(cpg.method.nameExact("set_MyProperty").parameter.sortBy(_.index).l) { case valueArg :: Nil =>
+        valueArg.index shouldBe 1
         valueArg.name shouldBe "value"
         valueArg.typeFullName shouldBe "System.Int32"
       }
@@ -457,6 +457,27 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
 
     "have correct arguments to the synthetic getter call" in {
       cpg.call.nameExact("get_MyProperty").argument shouldBe empty
+    }
+  }
+
+  "auto-property setter (`{ get; set; }`, no explicit body)" should {
+    val cpg = code("""
+        |class C
+        |{
+        |  public int MyProperty { get; set; }
+        |}
+        |""".stripMargin)
+
+    "be lowered into a set_* method that has a (empty) block body" in {
+      inside(cpg.method.nameExact("set_MyProperty").l) { case setter :: Nil =>
+        setter.astChildren.isBlock.size shouldBe 1
+        setter.astChildren.isBlock.astChildren shouldBe empty
+      }
+    }
+
+    "not raise a schema violation on method.block / method.local" in {
+      noException should be thrownBy cpg.method.nameExact("set_MyProperty").block.l
+      noException should be thrownBy cpg.method.nameExact("set_MyProperty").local.l
     }
   }
 

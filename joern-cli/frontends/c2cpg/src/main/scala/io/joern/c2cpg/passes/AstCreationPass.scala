@@ -86,7 +86,7 @@ class AstCreationPass(
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
   private val headerFileFinder: HeaderFileFinder = new HeaderFileFinder(config)
-  private val parser: CdtParser                  = new CdtParser(config, headerFileFinder, compilationDatabase)
+  private val cdtParser: CdtParser               = new CdtParser(config, headerFileFinder, compilationDatabase)
 
   private var _finalAccumulator: Accumulator = Accumulator()
 
@@ -177,7 +177,7 @@ class AstCreationPass(
     val (path, language) = fileAndLanguage
     val relPath          = SourceFiles.toRelativePath(path.toString, config.inputPath)
     val (gotCpg, duration) = TimeUtils.time {
-      val parseResult = parser.parse(path, language, accumulator)
+      val parseResult = cdtParser.parse(path, language, accumulator)
       parseResult match {
         case Some(translationUnit) =>
           val fileLOC = translationUnit.getRawSignature.linesIterator.size
@@ -185,8 +185,9 @@ class AstCreationPass(
           try {
             val languageSuffix = suffixFromLanguage(relPath, language)
             val localDiff =
-              new AstCreator(relPath, accumulator, config, translationUnit, headerFileFinder, languageSuffix)
-                .createAst()
+              new AstCreator(relPath, accumulator, config, translationUnit, headerFileFinder, languageSuffix)(
+                config.schemaValidation
+              ).createAst()
             diffGraph.absorb(localDiff)
             logger.debug(s"Generated a CPG for: '$relPath'")
             true

@@ -25,7 +25,7 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
     val builder = HttpRequest
       .newBuilder()
       .uri(URI.create(s"http://localhost:$port/run"))
-      .header("Content-Type", "application/x-www-form-urlencoded")
+      .header("Content-Type", "application/json")
 
     val req = method match {
       case "POST" => builder.POST(BodyPublishers.ofString(body)).build()
@@ -109,7 +109,7 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
       try {
         sender.submit(new Runnable {
           override def run(): Unit = {
-            try post(port, "input=/tmp/in&output=/tmp/out")
+            try post(port, """{"input":"/tmp/in","output":"/tmp/out"}""")
             catch { case _: Throwable => () }
           }
         })
@@ -193,7 +193,7 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
         (1 to 2).foreach { _ =>
           senders.submit(new Runnable {
             override def run(): Unit = {
-              try post(port, "input=/tmp/in&output=/tmp/out")
+              try post(port, """{"input":"/tmp/in","output":"/tmp/out"}""")
               catch { case _: Throwable => () }
             }
           })
@@ -221,7 +221,7 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
     "invoke the handler with the parsed arguments and respond with 200 + the output path" in {
       val captured = new AtomicReference[Array[String]](Array.empty)
       withServer(args => captured.set(args)) { (_, port) =>
-        val resp = post(port, "input=/tmp/in&output=/tmp/out&flag=")
+        val resp = post(port, """{"input":"/tmp/in","output":"/tmp/out","flag":null}""")
         resp.statusCode() shouldBe 200
         resp.body() shouldBe "/tmp/out"
         val args = captured.get().toSet
@@ -232,19 +232,19 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
       }
     }
 
-    "URL-decode keys and values in the form-encoded body" in {
+    "preserve spaces and punctuation in JSON values" in {
       val captured = new AtomicReference[Array[String]](Array.empty)
       withServer(args => captured.set(args)) { (_, port) =>
-        val resp = post(port, "input=%2Ftmp%2Fa%20b&output=%2Ftmp%2Fout")
+        val resp = post(port, """{"input":"/tmp/a b=c&d","output":"/tmp/out"}""")
         resp.statusCode() shouldBe 200
         resp.body() shouldBe "/tmp/out"
-        captured.get().toSet should contain("/tmp/a b")
+        captured.get().toSet should contain("/tmp/a b=c&d")
       }
     }
 
     "fall back to the default output path when none is provided" in {
       withServer(_ => ()) { (_, port) =>
-        val resp = post(port, "input=/tmp/in")
+        val resp = post(port, """{"input":"/tmp/in"}""")
         resp.statusCode() shouldBe 200
         resp.body() shouldBe io.joern.x2cpg.X2CpgConfig.defaultOutputPath
       }
@@ -252,18 +252,16 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
 
     "respond with 400 and the exception message when the handler throws" in {
       withServer(_ => throw new RuntimeException("boom")) { (_, port) =>
-        val resp = post(port, "input=/tmp/in&output=/tmp/out")
+        val resp = post(port, """{"input":"/tmp/in","output":"/tmp/out"}""")
         resp.statusCode() shouldBe 400
         resp.body() shouldBe "boom"
       }
     }
 
-    "tolerate an empty request body" in {
-      val captured = new AtomicReference[Array[String]](Array.empty)
-      withServer(args => captured.set(args)) { (_, port) =>
-        val resp = post(port, "")
-        resp.statusCode() shouldBe 200
-        captured.get() shouldBe empty
+    "reject malformed JSON" in {
+      withServer(_ => ()) { (_, port) =>
+        val resp = post(port, "{")
+        resp.statusCode() shouldBe 400
       }
     }
   }
@@ -274,7 +272,7 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
       val captured = new AtomicReference[Array[String]](Array.empty)
       withServer(args => captured.set(args)) { (_, port) =>
         val client = FrontendHTTPClient(port)
-        val req    = client.buildRequest(Array("input=/tmp/in", "output=/tmp/out"))
+        val req    = client.buildRequest("input" -> Some("/tmp/in"), "output" -> Some("/tmp/out"))
         client.sendRequest(req).get shouldBe "/tmp/out"
         captured.get().toSet should contain("/tmp/in")
       }
@@ -283,7 +281,7 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
     "return a Failure when the handler throws" in {
       withServer(_ => throw new RuntimeException("nope")) { (_, port) =>
         val client = FrontendHTTPClient(port)
-        val req    = client.buildRequest(Array("input=/tmp/in"))
+        val req    = client.buildRequest("input" -> Some("/tmp/in"))
         val result = client.sendRequest(req)
         result.isFailure shouldBe true
         result.failed.get.getMessage should include("400")

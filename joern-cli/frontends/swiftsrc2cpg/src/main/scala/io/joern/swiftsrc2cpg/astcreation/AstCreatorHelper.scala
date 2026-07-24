@@ -3,8 +3,13 @@ package io.joern.swiftsrc2cpg.astcreation
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, EvaluationStrategies, PropertyNames}
+import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.datastructures.VariableScopeManager
+import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.apache.commons.lang3.StringUtils
+
+import scala.collection.mutable
 
 object AstCreatorHelper {
 
@@ -119,6 +124,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   import AstCreatorHelper.*
 
+  private val optionalBindingNames: mutable.HashMap[String, (baseName: String, fieldPath: List[String])] =
+    mutable.HashMap.empty
+
   protected def notHandledYet(node: SwiftNode): Ast = {
     val text =
       s"""Node type '${node.toString}' not handled yet!
@@ -132,13 +140,22 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def astsForBlockElements(elements: List[SwiftNode]): List[Ast] = {
-    val (deferElements: List[SwiftNode], otherElements: List[SwiftNode]) = elements.partition(n =>
-      n.isInstanceOf[CodeBlockItemSyntax] && n.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[DeferStmtSyntax]
-    )
-    val deferElementsAstsOrdered = deferElements.reverse.map(astForNode)
-    val indexOfGuardStmt = otherElements.indexWhere(n =>
-      n.isInstanceOf[CodeBlockItemSyntax] && n.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[GuardStmtSyntax]
-    )
+    def isDefer(node: SwiftNode): Boolean =
+      node.isInstanceOf[CodeBlockItemSyntax] &&
+        node.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[DeferStmtSyntax]
+    def isGuard(node: SwiftNode): Boolean =
+      node.isInstanceOf[CodeBlockItemSyntax] &&
+        node.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[GuardStmtSyntax]
+
+    // Most blocks contain neither a defer nor a guard, so map directly and skip the partition/indexWhere
+    // scans (which each allocate) in that common case.
+    if (!elements.exists(node => isDefer(node) || isGuard(node))) {
+      return elements.map(astForNode)
+    }
+
+    val (deferElements: List[SwiftNode], otherElements: List[SwiftNode]) = elements.partition(isDefer)
+    val deferElementsAstsOrdered                                         = deferElements.reverse.map(astForNode)
+    val indexOfGuardStmt                                                 = otherElements.indexWhere(isGuard)
     if (indexOfGuardStmt < 0) {
       otherElements.map(astForNode) ++ deferElementsAstsOrdered
     } else {
@@ -147,34 +164,71 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         otherElements(indexOfGuardStmt).asInstanceOf[CodeBlockItemSyntax].item.asInstanceOf[GuardStmtSyntax]
       val elementsAfterGuard = otherElements.slice(indexOfGuardStmt + 1, otherElements.size)
 
-      val code         = this.code(guardStmt)
-      val ifNode       = controlStructureNode(guardStmt, ControlStructureTypes.IF, code)
-      val conditionAst = astForNode(guardStmt.conditions)
+      // Apply optional binding desugaring for guard let
+      // Create the block that will hold the unwrapped variables (blockNode argument is only used for location info)
+      val thenBlockNode = if (elementsAfterGuard.nonEmpty) blockNode(elementsAfterGuard.head) else blockNode(guardStmt)
 
-      val thenAst = astsForBlockElements(elementsAfterGuard) ++ deferElementsAstsOrdered match {
-        case Nil =>
-          blockAst(blockNode(guardStmt), List.empty)
-        case blockElement :: Nil =>
-          blockElement
-        case blockChildren =>
-          val block = blockNode(elementsAfterGuard.head)
-          blockAst(block, blockChildren)
-      }
+      val (conditionAst, unwrapAsts) = handleOptionalBindingConditions(
+        guardStmt.conditions.children,
+        // Handles Swift optional binding (guard-let) constructs.
+        //
+        // De-sugars `guard let x = foo() else { exit }` into:
+        //   Condition:  { (<tmp>0 = foo()) != nil }
+        //   Then block: { let x = <tmp>0 }
+        //   Else block: { exit }
+        //
+        // For multiple bindings `guard let a = foo(), let b = bar() else { exit }`:
+        //   Condition:  { ((<tmp>0 = foo()) != nil) && ((<tmp>1 = bar()) != nil) }
+        //   Then block: { a = <tmp>0; b = <tmp>1 }
+        //
+        // For mixed cases with/without initializers `guard let a = foo(), let b else { exit }`:
+        //   Condition:  { ((<tmp>0 = foo()) != nil) && (b != nil) }
+        //   Then block: { a = <tmp>0 }
+        onAllSimple = simpleBindings => {
+          val bindingInfos = collectBindingInfos(simpleBindings)
+          val condAst      = buildOptionalBindingCondition(guardStmt, bindingInfos)
+          scope.pushNewBlockScope(thenBlockNode)
+          localAstParentStack.push(thenBlockNode)
+          val unwraps = buildUnwrapAssignments(bindingInfos)
+          (condAst, unwraps)
+        },
+        // Handles partial optional binding desugaring with other conditions.
+        //
+        // De-sugars `guard let a = foo(), someCondition else { exit }` into:
+        //   Condition:  { ((<tmp>0 = foo()) != nil) && someCondition }
+        //   Then block: { let a = <tmp>0 }
+        onPartial = (simpleBindings, tupleBindings, otherConditions) => {
+          val bindingInfos = collectBindingInfos(simpleBindings)
+          val condAst      = buildOptionalBindingCondition(guardStmt, bindingInfos, otherConditions)
+          scope.pushNewBlockScope(thenBlockNode)
+          localAstParentStack.push(thenBlockNode)
+          val unwraps = buildUnwrapAssignments(bindingInfos) ++ tupleBindings.map(astForNode)
+          (condAst, unwraps)
+        },
+        onStandard = () => {
+          scope.pushNewBlockScope(thenBlockNode)
+          localAstParentStack.push(thenBlockNode)
+          val condAst = astForNode(guardStmt.conditions)
+          (condAst, List.empty)
+        }
+      )
+
+      val allThenChildren = unwrapAsts ++ astsForBlockElements(elementsAfterGuard) ++ deferElementsAstsOrdered
+
+      // Closing the scope opened at the handleOptionalBindingConditions handler
+      scope.popScope()
+      localAstParentStack.pop()
+
+      val thenAst = blockAst(thenBlockNode, allThenChildren)
       val elseAst = astForNode(guardStmt.body)
-      setOrderExplicitly(elseAst, 3)
 
-      val ifAst = ifThenElseAst(ifNode, Option(conditionAst), thenAst, Option(elseAst))
+      val ifAst = ifThenElseAst(guardStmt, Some(conditionAst), thenAst, Some(elseAst))
       astsForBlockElements(elementsBeforeGuard) :+ ifAst
     }
   }
 
-  protected def astParentInfo(): (String, String) = {
-    val astParentType     = methodAstParentStack.head.label
-    val astParentFullName = methodAstParentStack.head.properties(PropertyNames.FullName).toString
-    (astParentType, astParentFullName)
-  }
-
   /** Creates the AST for an identifier expression. Resolves the identifier to one of:
+    *   - A variable used during optional binding de-sugaring
     *   - A `Self` type reference (enclosing type).
     *   - An implicit `self.member` field access when the identifier is a member of the enclosing type declaration.
     *   - An implicit `self.member` field access inferred from compiler metadata (swift-build mode only).
@@ -192,15 +246,18 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         Ast(typeRefNode(node, "Self", fullNameOfEnclosingTypeDecl()))
       // Identifier found as a member of the surrounding type decl.
       // Swift does not allow accessing members of an outer class instance,
-      // so we synthesise an implicit `self.<member>` (or `Self.<member>` in static contexts).
-      case name if scope.variableIsInTypeDeclScope(name) =>
+      // so we synthesize an implicit `self.<member>` (or `Self.<member>` in static contexts).
+      case name if scope.variableIsInTypeDeclScope(name) && !optionalBindingNames.contains(identifierName) =>
         val tpe     = scope.typeDeclFullNameForMember(name).getOrElse(fullNameOfEnclosingTypeDecl())
         val callTpe = variableOption.map(_._2).getOrElse(Defines.Any)
         fieldAccessAstForSelf(node, name, tpe, callTpe)
       // In swift-build mode the compiler may know this identifier is a member even though
       // it is not yet visible in our scope. If the identifier is unresolved locally but
       // the compiler provides a declaration full name, treat it as an implicit self-access.
-      case name if config.swiftBuild && isUnresolved && fullnameProvider.declFullname(node).nonEmpty =>
+      case name
+          if config.swiftBuild && isUnresolved &&
+            fullnameProvider.declFullname(node).nonEmpty &&
+            !optionalBindingNames.contains(identifierName) =>
         val tpe     = fullNameOfEnclosingTypeDecl()
         val callTpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
         registerType(callTpe)
@@ -209,21 +266,31 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       // with `.Type` is a reference to a type (e.g. `MyStruct` used as a value).
       case name
           if config.swiftBuild && isUnresolved &&
-            fullnameProvider.typeFullnameRaw(node).exists(_.endsWith(".Type")) =>
+            fullnameProvider.typeFullnameRaw(node).exists(_.endsWith(".Type"))
+            && !optionalBindingNames.contains(identifierName) =>
         val tpe = fullnameProvider.typeFullname(node).get
         registerType(tpe)
         Ast(typeRefNode(node, name, tpe))
       // Fallback: a regular variable or a captured variable from an outer scope.
       case name =>
-        val identNode = identifierNode(node, name)
-        val tpe = variableOption match {
-          case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
-          case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
-          case _                                                              => Defines.Any
+        // For the de-sugaring of condition ASTs during `buildOptionalBindingCondition`,
+        // we replace the identifier names of dependent optional binding variables to model
+        // dependencies through the generated &&- and nil-check chain.
+        optionalBindingNames.get(name) match {
+          case Some((baseName, fieldPath)) if fieldPath.nonEmpty =>
+            createFieldAccessChain(baseName, fieldPath, node)
+          case other =>
+            val resolvedName = other.map(_.baseName).getOrElse(name)
+            val identNode    = identifierNode(node, resolvedName)
+            val tpe = variableOption match {
+              case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
+              case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
+              case _                                                              => Defines.Any
+            }
+            identNode.typeFullName = tpe
+            scope.addVariableReference(resolvedName, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
+            Ast(identNode)
         }
-        identNode.typeFullName = tpe
-        scope.addVariableReference(name, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
-        Ast(identNode)
     }
   }
 
@@ -513,6 +580,375 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case i: InitializerDeclSyntax   => "init"
       case s: SubscriptDeclSyntax     => "subscript"
       case _                          => nextClosureName()
+    }
+  }
+
+  /** Checks if a pattern is tuple-like (direct TuplePatternSyntax or ExpressionPatternSyntax wrapping TupleExprSyntax).
+    * Used to detect tuple patterns in optional binding conditions.
+    */
+  protected def isTupleLikePattern(pattern: PatternSyntax): Boolean = pattern match {
+    case _: TuplePatternSyntax                                                      => true
+    case ep: ExpressionPatternSyntax if ep.expression.isInstanceOf[TupleExprSyntax] => true
+    case _                                                                          => false
+  }
+
+  /** Information about an optional binding for desugaring if-let/while-let constructs.
+    *
+    * Contains the CPG-level names for optional binding desugaring. The localName is the unwrapped variable name that
+    * appears in the then/body block. The tmpName (when present) holds the optional value from the initializer and is
+    * used for the nil check in the condition block, ensuring single evaluation of the initializer expression.
+    *
+    * @param localName
+    *   CPG name for the unwrapped variable in the then/body block (e.g., "a" in `if let a = foo()`)
+    * @param tmpName
+    *   CPG name for temporary holding the optional value in condition (e.g., "<tmp>0" in the nil check)
+    * @param binding
+    *   The source-level OptionalBindingConditionSyntax node
+    * @param isWildcard
+    *   True if the pattern is a wildcard (e.g., `if let _ = foo()`), requiring generated name
+    * @param tuplePattern
+    *   The tuple pattern for tuple optional bindings (e.g., `(a, b)` in `if let (a, b) = foo()`); None for simple
+    *   bindings
+    */
+  protected case class BindingInfo(
+    localName: String,
+    tmpName: Option[String],
+    binding: OptionalBindingConditionSyntax,
+    isWildcard: Boolean,
+    tuplePattern: Option[PatternSyntax] = None
+  )
+
+  /** Recursively walks a tuple pattern or tuple expression and registers every leaf variable name into
+    * [[optionalBindingNames]] so that identifier resolution in [[astForIdentifier]] does not wrongly treat those names
+    * as implicit `self.member` accesses.
+    *
+    * Handles:
+    *   - `TuplePatternSyntax` — recurse into each element's `.pattern`, accumulating field index path
+    *   - `ExpressionPatternSyntax` wrapping `TupleExprSyntax` — recurse into each element's `.expression`
+    *   - `IdentifierPatternSyntax` — register `code(identifier)` → `(tmpName, fieldPath)`
+    *   - `ValueBindingPatternSyntax(IdentifierPatternSyntax)` — register inner identifier name → `(tmpName, fieldPath)`
+    *   - `WildcardPatternSyntax` — skip (wildcard, nothing to register)
+    *
+    * @param pattern
+    *   The top-level pattern from the binding (either a `TuplePatternSyntax` or `ExpressionPatternSyntax` wrapping a
+    *   `TupleExprSyntax`)
+    * @param tmpName
+    *   The generated temporary name to associate with each bound variable
+    * @param fieldPath
+    *   The accumulated list of field index strings representing the path from `tmpName` to the leaf variable
+    */
+  private def registerTuplePatternBindings(
+    pattern: PatternSyntax,
+    tmpName: String,
+    fieldPath: List[String] = List.empty
+  ): Unit = {
+    def walkExpr(expr: ExprSyntax, currentPath: List[String]): Unit = expr match {
+      case inner: TupleExprSyntax =>
+        inner.elements.children.zipWithIndex.foreach { case (elem, idx) =>
+          walkExpr(elem.expression, currentPath :+ idx.toString)
+        }
+      case patExpr: PatternExprSyntax =>
+        walkPattern(patExpr.pattern, currentPath)
+      case declRef: DeclReferenceExprSyntax =>
+        optionalBindingNames.put(code(declRef), (tmpName, currentPath))
+      case _: DiscardAssignmentExprSyntax =>
+      // skip wildcards
+      case other =>
+        // Unreachable in valid Swift tuple patterns; over-registers at worst, never under-registers
+        optionalBindingNames.put(code(other), (tmpName, currentPath))
+    }
+
+    def walkPattern(pat: PatternSyntax, currentPath: List[String]): Unit = pat match {
+      case tuplePat: TuplePatternSyntax =>
+        tuplePat.elements.children.zipWithIndex.foreach { case (elem, idx) =>
+          walkPattern(elem.pattern, currentPath :+ idx.toString)
+        }
+      case ep: ExpressionPatternSyntax =>
+        walkExpr(ep.expression, currentPath)
+      case ident: IdentifierPatternSyntax =>
+        optionalBindingNames.put(code(ident.identifier), (tmpName, currentPath))
+      case vb: ValueBindingPatternSyntax =>
+        vb.pattern match {
+          case ident: IdentifierPatternSyntax =>
+            optionalBindingNames.put(code(ident.identifier), (tmpName, currentPath))
+          case inner =>
+            walkPattern(inner, currentPath)
+        }
+      case _: WildcardPatternSyntax =>
+      // skip wildcards
+      case other =>
+        logger.debug(s"Unhandled pattern type in tuple binding: ${other.getClass.getSimpleName}")
+    }
+
+    walkPattern(pattern, fieldPath)
+  }
+
+  protected def collectBindingInfos(bindings: Seq[OptionalBindingConditionSyntax]): Seq[BindingInfo] = {
+    bindings.map { binding =>
+      if (isTupleLikePattern(binding.pattern)) {
+        val tmpName = binding.initializer.map(_ => scopeLocalUniqueName("tmp"))
+        if (tmpName.isDefined) {
+          registerTuplePatternBindings(binding.pattern, tmpName.get)
+        }
+        BindingInfo(
+          scopeLocalUniqueName("tupleWildcard"),
+          tmpName,
+          binding,
+          isWildcard = true,
+          tuplePattern = Some(binding.pattern)
+        )
+      } else {
+        val (localName, isWildcard) = binding.pattern match {
+          case ident: IdentifierPatternSyntax => (code(ident.identifier), false)
+          case _                              => (scopeLocalUniqueName("wildcard"), true)
+        }
+        val tmpName = binding.initializer.map(_ => scopeLocalUniqueName("tmp"))
+        if (!isWildcard && tmpName.isDefined) {
+          optionalBindingNames.put(localName, (tmpName.get, List.empty))
+        }
+        BindingInfo(localName, tmpName, binding, isWildcard, tuplePattern = None)
+      }
+    }
+  }
+
+  protected def handleOptionalBindingConditions[T](
+    conditions: Iterable[ConditionElementSyntax],
+    onAllSimple: Seq[OptionalBindingConditionSyntax] => T,
+    onPartial: (
+      Seq[OptionalBindingConditionSyntax],
+      Seq[OptionalBindingConditionSyntax],
+      Seq[ConditionElementSyntax]
+    ) => T,
+    onStandard: () => T
+  ): T = {
+    val conditionsSeq = conditions.toSeq
+    val optionalBindings = conditionsSeq.collect {
+      case condElem if condElem.condition.isInstanceOf[OptionalBindingConditionSyntax] =>
+        condElem.condition.asInstanceOf[OptionalBindingConditionSyntax]
+    }
+
+    val (simpleBindings, tupleBindings) = optionalBindings.partition(binding => !isTupleLikePattern(binding.pattern))
+    val otherConditions =
+      conditionsSeq.filterNot(condElem => condElem.condition.isInstanceOf[OptionalBindingConditionSyntax])
+
+    val allBindings = simpleBindings ++ tupleBindings
+
+    if (allBindings.isEmpty) {
+      // No optional bindings at all — standard handling
+      onStandard()
+    } else if (otherConditions.isEmpty) {
+      // All conditions are optional bindings (simple and tuple-like)
+      onAllSimple(allBindings)
+    } else {
+      // Optional bindings plus other conditions (e.g. boolean guards)
+      onPartial(allBindings, Seq.empty, otherConditions)
+    }
+  }
+
+  /** Combines multiple nil check ASTs with logical AND operator. If only one check exists, returns it directly.
+    *
+    * @param node
+    *   The control structure node for creating operator nodes
+    * @param nilCheckAsts
+    *   The nil check ASTs to combine
+    * @return
+    *   Single AST representing all checks combined with &&
+    */
+  private def combineNilChecksWithAnd(node: SwiftNode, nilCheckAsts: Seq[Ast]): Ast = {
+    if (nilCheckAsts.size == 1) {
+      nilCheckAsts.head
+    } else {
+      nilCheckAsts.reduce { (left, right) =>
+        val leftCode    = left.root.map(codeOf).getOrElse("")
+        val rightCode   = right.root.map(codeOf).getOrElse("")
+        val andCode     = s"($leftCode) && ($rightCode)"
+        val andCallNode = createStaticCallNode(node, andCode, Operators.logicalAnd, Operators.logicalAnd, Defines.Bool)
+        callAst(andCallNode, List(left, right))
+      }
+    }
+  }
+
+  /** Builds the condition AST for optional binding constructs (if-let/while-let). If any binding has an initializer,
+    * creates a block with temp variable assignments and nil checks. Otherwise, creates a simple combined nil check.
+    *
+    * @param node
+    *   The control structure node (IfExprSyntax or WhileStmtSyntax)
+    * @param bindingInfos
+    *   Information about each optional binding
+    * @param additionalConditions
+    *   Additional condition elements to AND with the nil checks
+    * @return
+    *   Condition AST (either block or direct nil check)
+    */
+  protected def buildOptionalBindingCondition(
+    node: SwiftNode,
+    bindingInfos: Seq[BindingInfo],
+    additionalConditions: Seq[ConditionElementSyntax] = Seq.empty
+  ): Ast = {
+    val hasAnyInitializer = bindingInfos.exists(_.tmpName.isDefined)
+
+    val conditionAst = if (hasAnyInitializer) {
+      bindingInfos.foreach { info =>
+        info.tmpName.foreach { tmpName =>
+          val tmpLocalNode = localNode(info.binding, tmpName, tmpName, Defines.Any).order(0)
+          diffGraph.addEdge(localAstParentStack.head, tmpLocalNode, EdgeTypes.AST)
+          scope.addVariable(tmpName, tmpLocalNode, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
+        }
+      }
+
+      val condBlockNode = blockNode(node)
+      scope.pushNewBlockScope(condBlockNode)
+      localAstParentStack.push(condBlockNode)
+
+      val nilCheckAsts = bindingInfos.map { info =>
+        info.tmpName match {
+          case Some(tmpName) =>
+            val tmpIdentNode = identifierNode(info.binding, tmpName, tmpName, Defines.Any)
+            scope.addVariableReference(tmpName, tmpIdentNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+            val initAst = astForNode(info.binding.initializer.get.value)
+            val assignAst = createAssignmentCallAst(
+              info.binding,
+              Ast(tmpIdentNode),
+              initAst,
+              s"$tmpName = ${codeOf(initAst.root.get)}"
+            )
+
+            val nilNode = literalNode(info.binding, "nil", Option(Defines.Nil))
+            val checkCallNode = createStaticCallNode(
+              info.binding,
+              s"($tmpName = ${codeOf(initAst.root.get)}) != nil",
+              Operators.notEquals,
+              Operators.notEquals,
+              Defines.Bool
+            )
+            callAst(checkCallNode, List(assignAst, Ast(nilNode)))
+          case None =>
+            val patternAst = astForNode(info.binding.pattern)
+            val nilNode    = literalNode(info.binding, "nil", Option(Defines.Nil))
+            val checkCallNode = createStaticCallNode(
+              info.binding,
+              s"${info.localName} != nil",
+              Operators.notEquals,
+              Operators.notEquals,
+              Defines.Bool
+            )
+            callAst(checkCallNode, List(patternAst, Ast(nilNode)))
+        }
+      }
+
+      val additionalConditionAsts = additionalConditions.map(condElem => astForNode(condElem.condition))
+      val allChecks               = nilCheckAsts ++ additionalConditionAsts
+      val combinedCheckAst        = combineNilChecksWithAnd(node, allChecks)
+
+      scope.popScope()
+      localAstParentStack.pop()
+
+      blockAst(condBlockNode, List(combinedCheckAst))
+    } else {
+      val nilCheckAsts = bindingInfos.map { info =>
+        val patternAst = astForNode(info.binding.pattern)
+        val nilNode    = literalNode(info.binding, "nil", Option(Defines.Nil))
+        val checkCallNode = createStaticCallNode(
+          info.binding,
+          s"${info.localName} != nil",
+          Operators.notEquals,
+          Operators.notEquals,
+          Defines.Bool
+        )
+        callAst(checkCallNode, List(patternAst, Ast(nilNode)))
+      }
+
+      val additionalConditionAsts = additionalConditions.map(condElem => astForNode(condElem.condition))
+      val allChecks               = nilCheckAsts ++ additionalConditionAsts
+      combineNilChecksWithAnd(node, allChecks)
+    }
+    optionalBindingNames.clear()
+    conditionAst
+  }
+
+  /** Builds the body AST with optional unwrapping assignments prepended. For bindings with initializers, creates locals
+    * and unwrapping assignments in the body block.
+    *
+    * @param bodyNode
+    *   The body syntax node for creating the block
+    * @param bodyStatements
+    *   The statements to include in the body
+    * @param bindingInfos
+    *   Information about each optional binding
+    * @return
+    *   Body AST with unwrapping assignments (if needed) followed by original body statements
+    */
+  protected def buildBodyWithUnwrapping(
+    bodyNode: SwiftNode,
+    bodyStatements: Iterable[SwiftNode],
+    bindingInfos: Seq[BindingInfo]
+  ): Ast = {
+    val bindingsWithInitializer = bindingInfos.filter(info => info.tmpName.isDefined && !info.isWildcard)
+    val tupleBindingsWithInitializer =
+      bindingInfos.filter(info => info.tmpName.isDefined && info.tuplePattern.isDefined)
+    val hasUnwrapping = bindingsWithInitializer.nonEmpty || tupleBindingsWithInitializer.nonEmpty
+
+    if (hasUnwrapping) {
+      val bodyBlockNode = blockNode(bodyNode)
+      scope.pushNewBlockScope(bodyBlockNode)
+      localAstParentStack.push(bodyBlockNode)
+
+      val unwrapAsts = bindingInfos.filter(_.tmpName.isDefined).flatMap { info =>
+        unwrapAssignmentsForBindingInfo(info, bodyBlockNode)
+      }
+
+      val bodyAsts = astsForBlockElements(bodyStatements.toList)
+
+      scope.popScope()
+      localAstParentStack.pop()
+
+      if (unwrapAsts.isEmpty && bodyAsts.isEmpty) {
+        Ast(bodyBlockNode)
+      } else {
+        blockAst(bodyBlockNode, unwrapAsts.toList ++ bodyAsts)
+      }
+    } else {
+      astForNode(bodyNode)
+    }
+  }
+
+  private def buildUnwrapAssignments(bindingInfos: Seq[BindingInfo]): List[Ast] = {
+    bindingInfos
+      .filter(_.tmpName.isDefined)
+      .flatMap(info => unwrapAssignmentsForBindingInfo(info, localAstParentStack.head))
+      .toList
+  }
+
+  private def unwrapAssignmentsForBindingInfo(info: BindingInfo, localParent: NewBlock): List[Ast] = {
+    info.tuplePattern match {
+      case Some(tp: TuplePatternSyntax) =>
+        astsForBindingTuplePattern(tp, info.tmpName.get, List.empty, info.binding)
+      case Some(ep: ExpressionPatternSyntax) if ep.expression.isInstanceOf[TupleExprSyntax] =>
+        astsForBindingTupleExpr(ep.expression.asInstanceOf[TupleExprSyntax], info.tmpName.get, List.empty, info.binding)
+      case _ if !info.isWildcard =>
+        val binding = info.binding
+        val tmpName = info.tmpName.get
+
+        val typeFullName =
+          binding.typeAnnotation.map(typeAnn => AstCreatorHelper.cleanType(code(typeAnn.`type`))).getOrElse(Defines.Any)
+        val kind = code(binding.bindingSpecifier)
+        val scopeType =
+          if (kind == "let") VariableScopeManager.ScopeType.BlockScope
+          else VariableScopeManager.ScopeType.MethodScope
+
+        val tpeFromTypeMap = fullnameProvider.typeFullname(binding.pattern).getOrElse(typeFullName)
+        registerType(tpeFromTypeMap)
+        val localNode_ = localNode(binding, info.localName, info.localName, tpeFromTypeMap).order(0)
+        scope.addVariable(info.localName, localNode_, tpeFromTypeMap, scopeType)
+        diffGraph.addEdge(localParent, localNode_, EdgeTypes.AST)
+
+        val localIdentNode = identifierNode(binding, info.localName, info.localName, tpeFromTypeMap)
+        scope.addVariableReference(info.localName, localIdentNode, tpeFromTypeMap, EvaluationStrategies.BY_REFERENCE)
+
+        val tmpIdent = identifierNode(binding, tmpName, tmpName, Defines.Any)
+        scope.addVariableReference(tmpName, tmpIdent, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+        List(createAssignmentCallAst(binding, Ast(localIdentNode), Ast(tmpIdent), s"${info.localName} = $tmpName"))
+      case _ => List.empty
     }
   }
 

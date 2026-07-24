@@ -8,9 +8,10 @@ import java.util.regex.Pattern
 
 trait TypeHelper { this: AstCreator =>
 
-  private val TypeAnnotationKey = "typeAnnotation"
-  private val ReturnTypeKey     = "returnType"
-  private val ImportMatcher     = Pattern.compile("(typeof )?import\\([\"'](.*)[\"']\\)")
+  private val TypeAnnotationKey   = "typeAnnotation"
+  private val ReturnTypeKey       = "returnType"
+  private val ImportMatcher       = Pattern.compile("(typeof )?import\\([\"'](.*)[\"']\\)")
+  private val ArrayReplacePattern = ":[^,.]+\\[]".r
 
   private val TypeReplacements = Map(
     " any"       -> s" ${Defines.Any}",
@@ -96,37 +97,40 @@ trait TypeHelper { this: AstCreator =>
 
   private def typeFromTypeMap(node: BabelNodeInfo): String =
     range(node.json).flatMap(parserResult.typeMap.get) match {
-      case Some(value) if value == "any"                         => Defines.Any
-      case Some(value) if value == "boolean"                     => Defines.Boolean
-      case Some(value) if value == "null"                        => Defines.Null
-      case Some(value) if isStringType(value)                    => Defines.String
-      case Some(value) if isNumberType(value)                    => Defines.Number
-      case Some(value) if ImportMatcher.matcher(value).matches() => importToModule(value)
-      case Some(value)                                           => value
-      case None                                                  => Defines.Any
+      case Some(value) if value == "any"      => Defines.Any
+      case Some(value) if value == "boolean"  => Defines.Boolean
+      case Some(value) if value == "null"     => Defines.Null
+      case Some(value) if isStringType(value) => Defines.String
+      case Some(value) if isNumberType(value) => Defines.Number
+      case Some(value) =>
+        val matcher = ImportMatcher.matcher(value)
+        if (matcher.matches()) importToModule(value, matcher) else value
+      case None => Defines.Any
     }
 
-  private def importToModule(value: String): String = {
-    val matcher = ImportMatcher.matcher(value)
+  private def importToModule(value: String, matcher: java.util.regex.Matcher): String =
     this.rootTypeDecl.headOption match {
       case Some(typeDecl)            => typeDecl.fullName
       case None if matcher.matches() => matcher.group(2).stripSuffix(".js").concat(s".js:${Defines.Program}")
       case None                      => value
     }
-  }
 
   protected def typeFor(node: BabelNodeInfo): String = {
     val tpe = Seq(TypeAnnotationKey, ReturnTypeKey).find(hasKey(node.json, _)) match {
       case Some(key) => typeForTypeAnnotation(createBabelNodeInfo(node.json(key)))
       case None      => typeFromTypeMap(node)
     }
-    val tpeWithTypeReplacements = TypeReplacements.foldLeft(tpe) { case (typeStr, (m, r)) =>
-      if (typeStr.contains(m)) typeStr.replace(m, r) else typeStr
-    }
+    // Every replacement key contains a space or a '{'; if the type has neither, none of them can match, so we can skip
+    // the twelve String.contains scans entirely.
+    val tpeWithTypeReplacements = if (tpe.indexOf(' ') >= 0 || tpe.indexOf('{') >= 0) {
+      TypeReplacements.foldLeft(tpe) { case (typeStr, (searchStr, replacement)) =>
+        if (typeStr.contains(searchStr)) typeStr.replace(searchStr, replacement) else typeStr
+      }
+    } else tpe
     val tpeWithArrayReplacements = if (tpeWithTypeReplacements.endsWith("[]")) {
       Defines.Array
     } else {
-      tpeWithTypeReplacements.replaceAll(":[^,.]+\\[]", s": ${Defines.Array}")
+      ArrayReplacePattern.replaceAllIn(tpeWithTypeReplacements, s": ${Defines.Array}")
     }
     if (!tpeWithArrayReplacements.contains("{") && !tpe.contains("(")) {
       registerType(tpeWithArrayReplacements)

@@ -2,6 +2,7 @@ package io.joern.x2cpg.utils.dependency
 
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
+import org.apache.commons.text.StringEscapeUtils
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
 import org.gradle.tooling.model.build.BuildEnvironment
@@ -35,6 +36,14 @@ object GradleDependencies {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
+  private def getGradleHome: Option[JFile] = {
+    sys.env
+      .get("GRADLE_HOME")
+      .filterNot(_.isBlank)
+      .map(new JFile(_))
+      .filter(gradleHome => gradleHome.exists && gradleHome.isDirectory)
+  }
+
   // works with Gradle 5.1+ because the script makes use of `task.register`:
   //   https://docs.gradle.org/current/userguide/task_configuration_avoidance.html
   private def getInitScriptContent(
@@ -49,20 +58,26 @@ object GradleDependencies {
       case _                                                       => "tasks.create"
     }
 
-    def addSurroundingQuotes(input: String): String = s"\"$input\""
+    // Emits a Groovy double-quoted string literal. Groovy accepts the same escape vocabulary
+    // as Java, so `escapeJava` is the right tool — without it, backslashes in Windows paths
+    // (e.g. `C:\Users\RUNNER~1\...`) would blow up Groovy's escape-sequence parser.
+    def addSurroundingQuotes(input: String): String = s"\"${StringEscapeUtils.escapeJava(input)}\""
     val projectNameOverrideString       = s"[${projectNameOverride.map(addSurroundingQuotes).getOrElse("")}]"
     val configurationNameOverrideString = s"[${configurationNameOverride.map(addSurroundingQuotes).getOrElse("")}]"
 
+    // `replace` (CharSequence overload) is a literal substitution. `replaceAll` interprets the
+    // replacement as a regex replacement string, which would consume backslashes in Windows
+    // paths (e.g. `C:\Users\...` → `C:Users...`) and corrupt the generated init script.
     Source
       .fromResource("io/joern/x2cpg/utils/dependency/dependency-fetcher-init.gradle")
       .getLines()
       .mkString(System.lineSeparator())
-      .replaceAll("__projectNameOverrides__", projectNameOverrideString)
-      .replaceAll("__configurationNameOverrides__", configurationNameOverrideString)
-      .replaceAll("__taskNameString__", addSurroundingQuotes(taskName))
-      .replaceAll("__destinationDirString__", addSurroundingQuotes(destinationDir))
-      .replaceAll("__defaultProjectNameString__", addSurroundingQuotes(defaultGradleAppName))
-      .replaceAll("tasks.register", taskCreationFunction)
+      .replace("__projectNameOverrides__", projectNameOverrideString)
+      .replace("__configurationNameOverrides__", configurationNameOverrideString)
+      .replace("__taskNameString__", addSurroundingQuotes(taskName))
+      .replace("__destinationDirString__", addSurroundingQuotes(destinationDir))
+      .replace("__defaultProjectNameString__", addSurroundingQuotes(defaultGradleAppName))
+      .replace("tasks.register", taskCreationFunction)
   }
 
   private def getGradleVersionMajorMinor(connection: ProjectConnection): GradleVersion = {
@@ -98,7 +113,12 @@ object GradleDependencies {
   }
 
   private[dependency] def makeConnection(projectDir: JFile): ProjectConnection = {
-    GradleConnector.newConnector().forProjectDirectory(projectDir).connect()
+    val connector = GradleConnector.newConnector().forProjectDirectory(projectDir)
+    getGradleHome.foreach { gradleHome =>
+      logger.info(s"Using gradle distribution from GRADLE_HOME at ${gradleHome.getAbsolutePath}")
+      connector.useInstallation(gradleHome)
+    }
+    connector.connect()
   }
 
   private def dependencyMapFromOutputDir(outputDir: Path): List[(String, List[String])] = {

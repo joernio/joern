@@ -5,7 +5,7 @@ import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.Operator
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewIdentifier, NewLocal}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import ujson.Value
 
 import scala.util.Try
@@ -143,52 +143,43 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     val conditionParserNode = createParserNodeInfo(ifStmt.json(ParserKeys.Cond))
     val conditionAst        = astForConditionExpression(conditionParserNode)
-
-    val ifNode = controlStructureNode(ifStmt, ControlStructureTypes.IF, s"if ${conditionParserNode.code}")
+    val ifCode              = s"if ${conditionParserNode.code}"
 
     val thenAst = astForBlockStatement(createParserNodeInfo(ifStmt.json(ParserKeys.Body)))
 
-    val elseAst = Try(ifStmt.json(ParserKeys.Else)).toOption match {
-      case Some(elseStmt) if createParserNodeInfo(elseStmt).node == BlockStmt =>
-        val elseParserNode = createParserNodeInfo(elseStmt)
-        val elseNode       = controlStructureNode(elseParserNode, ControlStructureTypes.ELSE, "else")
-        val elseAst        = astForBlockStatement(elseParserNode)
-        Ast(elseNode).withChild(elseAst)
+    val elseNode = Try(ifStmt.json(ParserKeys.Else)).toOption.map(createParserNodeInfo)
+    val elseAst = elseNode match {
+      case Some(elseStmt) if elseStmt.node == BlockStmt =>
+        Some(astForBlockStatement(elseStmt))
       case Some(elseStmt) =>
-        val elseParserNode = createParserNodeInfo(elseStmt)
-        val elseNode       = controlStructureNode(elseParserNode, ControlStructureTypes.ELSE, "else")
-        val elseBlock      = blockNode(elseParserNode, Defines.empty, Defines.voidTypeName)
+        val elseBlock = blockNode(elseStmt, Defines.empty, Defines.voidTypeName)
         scope.pushNewScope(elseBlock)
-        val a = astsForStatement(elseParserNode)
-        setArgumentIndices(a)
+        val statementAsts = astsForStatement(elseStmt)
+        setArgumentIndices(statementAsts)
         scope.popScope()
-        Ast(elseNode).withChild(blockAst(elseBlock, a.toList))
-      case _ => Ast()
+        Some(blockAst(elseBlock, statementAsts.toList))
+      case _ => None
     }
-    Seq(initAst, controlStructureAst(ifNode, Some(conditionAst), Seq(thenAst, elseAst)))
+    Seq(initAst, ifThenElseAst(ifStmt, Some(conditionAst), thenAst, elseAst, Some(ifCode)))
   }
 
   private def astForSwitchStatement(switchStmt: ParserNodeInfo): Ast = {
-
     val conditionParserNode = Try(createParserNodeInfo(switchStmt.json(ParserKeys.Tag)))
     val (code, conditionAst) = conditionParserNode.toOption match {
       case Some(node) => (node.code, Some(astForConditionExpression(node)))
       case _          => ("", None)
     }
-    val switchNode = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, s"switch $code")
-    val stmtAsts   = astsForStatement(createParserNodeInfo(switchStmt.json(ParserKeys.Body)))
-    controlStructureAst(switchNode, conditionAst, stmtAsts)
+    val stmtAsts = astsForStatement(createParserNodeInfo(switchStmt.json(ParserKeys.Body)))
+    switchAst(switchStmt, conditionAst, stmtAsts, Some(s"switch $code"))
   }
 
   private def astForTypeSwitchStatement(typeSwitchStmt: ParserNodeInfo): Ast = {
-
     val conditionParserNode = Try(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Assign)))
     val (code, conditionAst) = conditionParserNode.toOption match {
       case Some(node) => (node.code, astForNode(node))
       case _          => ("", Seq.empty)
     }
-    val switchNode = controlStructureNode(typeSwitchStmt, ControlStructureTypes.SWITCH, s"switch $code")
-    val stmtAsts   = astsForStatement(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Body)))
+    val stmtAsts = astsForStatement(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Body)))
     val id = conditionAst
       .flatMap(_.root)
       .collectFirst {
@@ -202,7 +193,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val condition = Option(callAst(isOp, Seq(identifier)))
 
     val newStmtAst = stmtAsts // TODO: Push conditionAst to the front of the block
-    controlStructureAst(switchNode, condition, newStmtAst)
+    switchAst(typeSwitchStmt, condition, newStmtAst, Some(s"switch $code"))
   }
 
   private def astForCaseClause(caseStmt: ParserNodeInfo): Seq[Ast] = {
@@ -224,13 +215,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForForStatement(forStmt: ParserNodeInfo): Ast = {
-
     val initParserNode = nullSafeCreateParserNodeInfo(forStmt.json.obj.get(ParserKeys.Init))
     val condParserNode = nullSafeCreateParserNodeInfo(forStmt.json.obj.get(ParserKeys.Cond))
     val iterParserNode = nullSafeCreateParserNodeInfo(forStmt.json.obj.get(ParserKeys.Post))
-
-    val code    = s"for ${initParserNode.code};${condParserNode.code};${iterParserNode.code}"
-    val forNode = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
+    val code           = s"for ${initParserNode.code};${condParserNode.code};${iterParserNode.code}"
 
     val initAstBlock = blockNode(forStmt, Defines.empty, Defines.voidTypeName)
     scope.pushNewScope(initAstBlock)
@@ -240,39 +228,37 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val compareAst = astForConditionExpression(condParserNode, Some(2))
     val updateAst  = astsForStatement(iterParserNode, 3)
     val bodyAsts   = astsForStatement(createParserNodeInfo(forStmt.json(ParserKeys.Body)), 4)
-    forAst(forNode, Seq(), Seq(initAst), Seq(compareAst), updateAst, bodyAsts)
+    forAst(forStmt, Seq(), Seq(initAst), Seq(compareAst), updateAst, bodyAsts, Some(code))
 
   }
 
   private def astForRangeStatement(rangeStmt: ParserNodeInfo): Ast = {
-
     rangeStmt.json.obj.contains(ParserKeys.Key) match {
       case true =>
         val keyParserNode  = createParserNodeInfo(rangeStmt.json(ParserKeys.Key))
         val declParserNode = createParserNodeInfo(keyParserNode.json(ParserKeys.Obj)(ParserKeys.Decl))
         val code           = s"for ${declParserNode.code}"
-        val forNode        = controlStructureNode(rangeStmt, ControlStructureTypes.FOR, code)
         val declAst        = astsForStatement(declParserNode)
         val initAst        = astForNode(rangeStmt.json(ParserKeys.X))
         val stmtAst        = astsForStatement(rangeStmt.json(ParserKeys.Body))
-        controlStructureAst(forNode, None, initAst ++ declAst ++ stmtAst)
+        forAst(rangeStmt, Nil, initAst, Nil, declAst, stmtAst, Some(code))
       case false =>
         val initAst = astForNode(rangeStmt.json(ParserKeys.X))
         val code    = s"for range ${createParserNodeInfo(rangeStmt.json(ParserKeys.X)).code}"
-        val forNode = controlStructureNode(rangeStmt, ControlStructureTypes.FOR, code)
         val stmtAst = astsForStatement(rangeStmt.json(ParserKeys.Body))
-        controlStructureAst(forNode, None, initAst ++ stmtAst)
+        forAst(rangeStmt, Nil, initAst, Nil, Nil, stmtAst, Some(code))
     }
   }
 
   private def astForBranchStatement(branchStmt: ParserNodeInfo): Ast = {
     branchStmt.json(ParserKeys.Tok).str match {
-      case "break"    => Ast(controlStructureNode(branchStmt, ControlStructureTypes.BREAK, branchStmt.code))
-      case "continue" => Ast(controlStructureNode(branchStmt, ControlStructureTypes.CONTINUE, branchStmt.code))
+      case "break"    => breakAst(branchStmt, branchStmt.code)
+      case "continue" => continueAst(branchStmt, branchStmt.code)
       case "goto"     =>
         // To update the cache of parserNode with the labelled statement
         Try(createParserNodeInfo(branchStmt.json(ParserKeys.Label)(ParserKeys.Obj)(ParserKeys.Decl)))
-        Ast(controlStructureNode(branchStmt, ControlStructureTypes.GOTO, branchStmt.code))
+        val labelName = branchStmt.json(ParserKeys.Label)(ParserKeys.Name).str
+        gotoAst(branchStmt, branchStmt.code, labelName)
       case "fallthrough" => // TODO handling for FALLTHROUGH
         Ast()
     }

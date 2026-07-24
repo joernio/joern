@@ -72,7 +72,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
   def llvm: Frontend            = new BinaryFrontend("llvm", Languages.LLVM, "LLVM Bitcode Frontend")
   def php: SourceBasedFrontend  = new SourceBasedFrontend("php", Languages.PHP, "PHP source frontend", "php")
   def ruby: SourceBasedFrontend = SourceBasedFrontend("ruby", Languages.RUBYSRC, "Ruby source frontend", "rb")
-  def rust: SourceBasedFrontend = new SourceBasedFrontend("rust", Languages.RUST, "Rust Source Frontend", "rs")
+  def rust: RustFrontend        = new RustFrontend()
   def abap: SourceBasedFrontend = new SourceBasedFrontend("abap", Languages.ABAP, "ABAP Source Frontend", "abap")
 
   private def allFrontends: List[Frontend] =
@@ -179,11 +179,41 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
   class CFrontend(name: String, extension: String = "c")
       extends SourceBasedFrontend(name, Languages.NEWC, "Eclipse CDT Based Frontend for C/C++", extension)
 
-  private def withCodeInTmpFile(str: String, filename: String)(f: Path => Cpg): Try[Cpg] = {
+  class RustFrontend extends SourceBasedFrontend("rust", Languages.RUST, "Rust Source Frontend", "rs") {
+    override def fromString(str: String, args: List[String] = List()): Cpg = {
+      fromStringWithExtraDeps(str, Nil, args)
+    }
+
+    def fromStringWithExtraDeps(
+      str: String,
+      extraDeps: collection.Seq[String],
+      args: collection.Seq[String] = Nil
+    ): Cpg = {
+      FileUtil.usingTemporaryDirectory("console") { dir =>
+        Files.writeString(
+          dir / "Cargo.toml",
+          s"""[package]
+             |name = "importCode"
+             |version = "0.1.0"
+             |edition = "2021"
+             |
+             |
+             |[dependencies]
+             |${extraDeps.mkString("\n")}
+             |""".stripMargin
+        )
+        Files.createDirectory(dir / "src")
+        Files.writeString(dir / "src" / "lib.rs", str)
+        super.apply(dir.toString, args = args.toList)
+      }
+    }
+  }
+
+  private def withCodeInTmpFile(str: String, filename: String)(callback: Path => Cpg): Try[Cpg] = {
     FileUtil.usingTemporaryDirectory("console") { dir =>
       Try {
         Files.writeString((dir / filename), str)
-        f(dir)
+        callback(dir)
       }
     }
   }

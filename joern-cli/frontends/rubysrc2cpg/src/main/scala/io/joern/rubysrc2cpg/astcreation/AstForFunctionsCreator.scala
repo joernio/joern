@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.x2cpg.AstNodeBuilder.{bindingNode, closureBindingNode}
 import io.joern.x2cpg.{Ast, AstEdge, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -124,13 +125,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     // For yield statements where there isn't an explicit proc parameter
     val anonProcParam = scope.procParamName.map { p =>
       val nextIndex =
-        parameterAsts
-          .flatMap(_.root)
-          .collect { case m: NewMethodParameterIn => m.index }
-          .flatten
-          .maxOption
-          .map(_ + 1)
-          .getOrElse(1)
+        parameterAsts.flatMap(_.root).lastOption.map { case m: NewMethodParameterIn => m.index + 1 }.getOrElse(0)
 
       Ast(p.index(nextIndex))
     }
@@ -163,7 +158,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       // <main> functions are private functions on the Object class
       else if (isSurroundedByProgramScope) ModifierTypes.PRIVATE
       // Else, use whatever modifier has been user-defined (or is default for current scope)
-      else currentAccessModifier
+      else scope.visibilityForMethod(methodName).getOrElse(currentAccessModifier)
     val modifiers = mutable.Buffer(ModifierTypes.VIRTUAL, accessModifier)
     if (isClosure) modifiers.addOne(ModifierTypes.LAMBDA)
     if (isConstructor) modifiers.addOne(ModifierTypes.CONSTRUCTOR)
@@ -200,28 +195,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def astForMethodAccessModifier(node: MethodAccessModifier): Seq[Ast] = {
-    val originalAccessModifier = currentAccessModifier
-    popAccessModifier()
-
-    node match {
-      case _: PrivateMethodModifier =>
-        pushAccessModifier(ModifierTypes.PRIVATE)
-      case _: PublicMethodModifier =>
-        pushAccessModifier(ModifierTypes.PUBLIC)
+    val (operatorName, expr) = node match {
+      case x: PrivateMethodModifier => (RubyOperators.privateClassMethod, x: RubyExpression)
+      case x: PublicMethodModifier  => (RubyOperators.publicClassMethod, x: RubyExpression)
     }
 
-    val methodAst = node.method match {
+    val methodAsts = node.arguments.flatMap {
       case m: ProcedureDeclaration => astsForStatement(m)
-      case x                       =>
-        // Not sure how we should represent dynamically setting access modifiers based on method refs
-        logger.debug(s"Unhandled method reference from AST type ${x.getClass}")
-        Nil
+      case _                       => Nil
     }
 
-    popAccessModifier()
-    pushAccessModifier(originalAccessModifier)
-
-    methodAst
+    val argAsts = node.arguments.map(astForExpression)
+    val call    = callNode(expr, code(expr), operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
+    methodAsts :+ callAst(call, argAsts)
   }
 
   private def transformAsClosureBody(originNode: RubyExpression, refs: List[Ast], baseStmtBlockAst: Ast): Ast = {
@@ -466,13 +452,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         val anonProcParam = scope.procParamName.map { p =>
           val nextIndex =
-            parameterAsts
-              .flatMap(_.root)
-              .collect { case m: NewMethodParameterIn => m.index }
-              .flatten
-              .maxOption
-              .map(_ + 1)
-              .getOrElse(1)
+            parameterAsts.flatMap(_.root).lastOption.map { case m: NewMethodParameterIn => m.index + 1 }.getOrElse(0)
 
           Ast(p.index(nextIndex))
         }
@@ -498,7 +478,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             parameterAsts ++ anonProcParam,
             stmtBlockAst,
             methodReturnNode(node, Defines.Any),
-            modifierNode(node, ModifierTypes.VIRTUAL) :: modifierNode(node, currentAccessModifier) :: Nil
+            modifierNode(node, ModifierTypes.VIRTUAL) :: modifierNode(
+              node,
+              scope.visibilityForMethod(node.methodName).getOrElse(currentAccessModifier)
+            ) :: Nil
           )
 
         _methodAst :: methodTypeDeclAst :: Nil foreach (Ast.storeInDiffGraph(_, diffGraph))

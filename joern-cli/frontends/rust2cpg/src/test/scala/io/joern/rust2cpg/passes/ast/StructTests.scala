@@ -1,7 +1,7 @@
 package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, NodeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
@@ -34,6 +34,45 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
         y.name shouldBe "y"
         y.code shouldBe "y: i32"
         y.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have a constructor method" in {
+      inside(cpg.typeDecl.nameExact("Foo").method.l) { case init :: Nil =>
+        init.name shouldBe "<init>"
+        init.fullName shouldBe "rust2cpgtest::Foo::<init>"
+        init.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR)
+        init.methodReturn.typeFullName shouldBe "()"
+      }
+    }
+
+    "have one parameter per field, plus self" in {
+      inside(cpg.typeDecl.nameExact("Foo").method.parameter.sortBy(_.index).l) {
+        case paramSelf :: paramX :: paramY :: Nil =>
+          paramSelf.name shouldBe "self"
+          paramSelf.index shouldBe 0
+          paramSelf.typeFullName shouldBe "rust2cpgtest::Foo"
+          paramX.name shouldBe "x"
+          paramX.index shouldBe 1
+          paramX.typeFullName shouldBe "i32"
+          paramY.name shouldBe "y"
+          paramY.index shouldBe 2
+          paramY.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have one field assignment per parameter" in {
+      inside(cpg.typeDecl.nameExact("Foo").method.body.astChildren.isCall.l) { case assignX :: assignY :: Nil =>
+        assignX.code shouldBe "(*self).x = x"
+        inside(assignX.argument(1)) { case fieldAccess: Call =>
+          fieldAccess.code shouldBe "(*self).x"
+          fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        }
+        inside(assignX.argument(2)) { case ident: Identifier =>
+          ident.name shouldBe "x"
+          ident.typeFullName shouldBe "i32"
+        }
+        assignY.code shouldBe "(*self).y = y"
       }
     }
   }
@@ -166,7 +205,7 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
         |""".stripMargin)
 
     "lower to a fieldAccess call" in {
-      inside(cpg.call.nameExact(Operators.fieldAccess).l) { case fieldAccess :: Nil =>
+      inside(cpg.method.nameExact("foo").call.nameExact(Operators.fieldAccess).l) { case fieldAccess :: Nil =>
         fieldAccess.code shouldBe "point.x"
         fieldAccess.methodFullName shouldBe Operators.fieldAccess
         fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
@@ -175,18 +214,206 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "have the lhs as the first argument" in {
-      inside(cpg.call.nameExact(Operators.fieldAccess).argument(1).l) { case (base: Identifier) :: Nil =>
-        base.code shouldBe "point"
-        base.argumentIndex shouldBe 1
-        base.typeFullName shouldBe "rust2cpgtest::Point"
+      inside(cpg.method.nameExact("foo").call.nameExact(Operators.fieldAccess).argument(1).l) {
+        case (base: Identifier) :: Nil =>
+          base.code shouldBe "point"
+          base.argumentIndex shouldBe 1
+          base.typeFullName shouldBe "rust2cpgtest::Point"
       }
     }
 
     "have the field as the second argument" in {
-      inside(cpg.call.nameExact(Operators.fieldAccess).argument(2).l) { case (field: FieldIdentifier) :: Nil =>
-        field.code shouldBe "x"
-        field.canonicalName shouldBe "x"
-        field.argumentIndex shouldBe 2
+      inside(cpg.method.nameExact("foo").call.nameExact(Operators.fieldAccess).argument(2).l) {
+        case (field: FieldIdentifier) :: Nil =>
+          field.code shouldBe "x"
+          field.canonicalName shouldBe "x"
+          field.argumentIndex shouldBe 2
+      }
+    }
+  }
+
+  "a struct-typed member" should {
+    val cpg = code("""
+        |struct Foo { x: i32 }
+        |struct Bar { baz: Foo }
+        |""".stripMargin)
+
+    "have correct typeFullName for `baz`" in {
+      inside(cpg.typeDecl.nameExact("Bar").member.nameExact("baz").l) { case baz :: Nil =>
+        baz.typeFullName shouldBe "rust2cpgtest::Foo"
+      }
+    }
+  }
+
+  "an internal named-field record expression" should {
+    val cpg = code("""
+        |struct Foo { x: i32, y: i32 }
+        |fn main() {
+        | Foo { x: 1, y: 2 };
+        |}
+        |""".stripMargin)
+
+    "lower into a block with appropriate type and number of children" in {
+      inside(cpg.method.name("main").body.astChildren.isBlock.l) { case block :: Nil =>
+        block.code shouldBe "Foo { x: 1, y: 2 }"
+        block.typeFullName shouldBe "rust2cpgtest::Foo"
+        block.astChildren.size shouldBe 4 // 1 (local) + 1 (.alloc) + 1 (<init> call) + 1 (ident)
+      }
+    }
+
+    "the block's first child is a LOCAL declaration" in {
+      inside(cpg.block.codeExact("Foo { x: 1, y: 2 }").astChildren.order(1).l) { case (local: Local) :: Nil =>
+        local.name shouldBe "tmp"
+        local.typeFullName shouldBe "rust2cpgtest::Foo"
+      }
+    }
+
+    "the block's second child is an alloc assignment" in {
+      inside(cpg.block.codeExact("Foo { x: 1, y: 2 }").astChildren.order(2).l) { case (assign: Call) :: Nil =>
+        assign.code shouldBe s"tmp = ${Operators.alloc}"
+
+        inside(assign.argument(1)) { case tmp: Identifier =>
+          tmp.typeFullName shouldBe "rust2cpgtest::Foo"
+          tmp.name shouldBe "tmp"
+          tmp.code shouldBe "tmp"
+        }
+
+        inside(assign.argument(2)) { case alloc: Call =>
+          alloc.methodFullName shouldBe Operators.alloc
+          alloc.name shouldBe Operators.alloc
+          alloc.argument shouldBe empty
+        }
+      }
+    }
+
+    "the block's third child is a constructor call" in {
+      inside(cpg.block.codeExact("Foo { x: 1, y: 2 }").astChildren.order(3).l) { case (init: Call) :: Nil =>
+        init.name shouldBe "<init>"
+        init.methodFullName shouldBe "rust2cpgtest::Foo::<init>"
+        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        init.typeFullName shouldBe "()"
+
+        inside(init.argument(0)) { case addressOf: Call =>
+          addressOf.name shouldBe Operators.addressOf
+          addressOf.code shouldBe "&tmp"
+          addressOf.typeFullName shouldBe "&rust2cpgtest::Foo"
+
+          inside(addressOf.argument(1)) { case tmp: Identifier =>
+            tmp.name shouldBe "tmp"
+            tmp.typeFullName shouldBe "rust2cpgtest::Foo"
+          }
+        }
+
+        inside(init.argument(1)) { case lit: Literal =>
+          lit.code shouldBe "1"
+          lit.typeFullName shouldBe "i32"
+          lit.argumentName shouldBe Some("x")
+        }
+
+        inside(init.argument(2)) { case lit: Literal =>
+          lit.code shouldBe "2"
+          lit.typeFullName shouldBe "i32"
+          lit.argumentName shouldBe Some("y")
+        }
+      }
+    }
+
+    "the block's fourth child is an identifier" in {
+      inside(cpg.block.codeExact("Foo { x: 1, y: 2 }").astChildren.order(4).l) { case (ident: Identifier) :: Nil =>
+        ident.name shouldBe "tmp"
+        ident.typeFullName shouldBe "rust2cpgtest::Foo"
+      }
+    }
+  }
+
+  "an internal record expression with a shorthand field" should {
+    val cpg = code("""
+        |struct Foo { x: i32, y: i32 }
+        |fn main(x: i32) {
+        | Foo { x, y: 2 };
+        |}
+        |""".stripMargin)
+
+    "source the shorthand field argument from the in-scope identifier" in {
+      inside(cpg.call.nameExact("<init>").l) { case init :: Nil =>
+        inside(init.argument(1)) { case ident: Identifier =>
+          ident.name shouldBe "x"
+          ident.argumentName shouldBe Some("x")
+        }
+
+        inside(init.argument(2)) { case lit: Literal =>
+          lit.code shouldBe "2"
+          lit.argumentName shouldBe Some("y")
+        }
+      }
+    }
+  }
+
+  "an internal record expression of a unit struct" should {
+    val cpg = code("""
+        |struct Bar;
+        |fn main() {
+        | Bar {};
+        |}
+        |""".stripMargin)
+
+    "lower into a constructor call with only the receiver argument" in {
+      inside(cpg.call.nameExact("<init>").l) { case init :: Nil =>
+        init.methodFullName shouldBe "rust2cpgtest::Bar::<init>"
+
+        inside(init.argument.l.sortBy(_.argumentIndex)) { case (addressOf: Call) :: Nil =>
+          addressOf.name shouldBe Operators.addressOf
+          addressOf.code shouldBe "&tmp"
+          addressOf.typeFullName shouldBe "&rust2cpgtest::Bar"
+        }
+      }
+    }
+  }
+
+  "an internal record expression with a spread base" should {
+    val cpg = code("""
+        |struct Foo { x: i32, y: i32 }
+        |fn main(base: Foo) {
+        | Foo { x: 9, ..base };
+        |}
+        |""".stripMargin)
+
+    "lower into a block with appropriate type and number of children" in {
+      inside(cpg.method.name("main").body.astChildren.isBlock.l) { case block :: Nil =>
+        block.code shouldBe "Foo { x: 9, ..base }"
+        block.typeFullName shouldBe "rust2cpgtest::Foo"
+        block.astChildren.size shouldBe 5 // 1 (local) + 1 (.alloc) + 1 (tmp = base) + 1 (tmp.x = v) + 1 (ident)
+      }
+    }
+
+    "the block's third child is a base-copy assignment" in {
+      inside(cpg.block.codeExact("Foo { x: 9, ..base }").astChildren.order(3).l) { case (assign: Call) :: Nil =>
+        assign.code shouldBe "tmp = base"
+
+        inside(assign.argument(1)) { case tmp: Identifier =>
+          tmp.name shouldBe "tmp"
+          tmp.typeFullName shouldBe "rust2cpgtest::Foo"
+        }
+
+        inside(assign.argument(2)) { case base: Identifier =>
+          base.name shouldBe "base"
+        }
+      }
+    }
+
+    "the block's fourth child is a field assignment" in {
+      inside(cpg.block.codeExact("Foo { x: 9, ..base }").astChildren.order(4).l) { case (assign: Call) :: Nil =>
+        assign.code shouldBe "tmp.x = 9"
+
+        inside(assign.argument(1)) { case fieldAccess: Call =>
+          fieldAccess.code shouldBe "tmp.x"
+          fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        }
+
+        inside(assign.argument(2)) { case lit: Literal =>
+          lit.code shouldBe "9"
+          lit.typeFullName shouldBe "i32"
+        }
       }
     }
   }
@@ -201,7 +428,7 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
         |""".stripMargin)
 
     "lower to a fieldAccess call" in {
-      inside(cpg.call.nameExact(Operators.fieldAccess).l) { case fieldAccess :: Nil =>
+      inside(cpg.method.nameExact("foo").call.nameExact(Operators.fieldAccess).l) { case fieldAccess :: Nil =>
         fieldAccess.code shouldBe "pair.0"
         fieldAccess.methodFullName shouldBe Operators.fieldAccess
         fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
@@ -210,18 +437,20 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "have the lhs as the first argument" in {
-      inside(cpg.call.nameExact(Operators.fieldAccess).argument(1).l) { case (base: Identifier) :: Nil =>
-        base.code shouldBe "pair"
-        base.argumentIndex shouldBe 1
-        base.typeFullName shouldBe "rust2cpgtest::Pair"
+      inside(cpg.method.nameExact("foo").call.nameExact(Operators.fieldAccess).argument(1).l) {
+        case (base: Identifier) :: Nil =>
+          base.code shouldBe "pair"
+          base.argumentIndex shouldBe 1
+          base.typeFullName shouldBe "rust2cpgtest::Pair"
       }
     }
 
     "have the positional index as the second argument" in {
-      inside(cpg.call.nameExact(Operators.fieldAccess).argument(2).l) { case (field: FieldIdentifier) :: Nil =>
-        field.code shouldBe "0"
-        field.canonicalName shouldBe "0"
-        field.argumentIndex shouldBe 2
+      inside(cpg.method.nameExact("foo").call.nameExact(Operators.fieldAccess).argument(2).l) {
+        case (field: FieldIdentifier) :: Nil =>
+          field.code shouldBe "0"
+          field.canonicalName shouldBe "0"
+          field.argumentIndex shouldBe 2
       }
     }
   }

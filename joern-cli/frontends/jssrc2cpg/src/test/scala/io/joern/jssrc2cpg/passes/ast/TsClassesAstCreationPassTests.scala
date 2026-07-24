@@ -49,6 +49,44 @@ class TsClassesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
       cpg.typeDecl.nameExact("D").method.isConstructor.parameter.name.l shouldBe List("this", "widen")
     }
 
+    "not create dangling locals from class members with initialization" in {
+      val cpg = code("""
+          |class Foo {
+          |  a = 1
+          |  static b = 2
+          |}
+          |""".stripMargin)
+      cpg.local.not(_.method) shouldBe empty
+
+      inside(cpg.typeDecl.nameExact("Foo").method.nameExact("<init>").l) { case List(init) =>
+        init.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL, ModifierTypes.CONSTRUCTOR)
+        init.block.astChildren.isCall.code.loneElement shouldBe "a = 1"
+      }
+
+      inside(cpg.typeDecl.nameExact("Foo").method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l) {
+        case List(init) =>
+          init.modifier.modifierType.l shouldBe List(ModifierTypes.STATIC, ModifierTypes.CONSTRUCTOR)
+          init.block.astChildren.isCall.code.loneElement shouldBe "static b = 2"
+      }
+    }
+
+    "not create dangling locals from enum members with initialization" in {
+      val cpg = code("""
+          |export enum Foo {
+          |  A = '1',
+          |  B = '2',
+          |  C = '3',
+          |}
+          |""".stripMargin)
+      cpg.local.not(_.method) shouldBe empty
+
+      inside(cpg.typeDecl.nameExact("Foo").method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l) {
+        case List(init) =>
+          init.modifier.modifierType.l shouldBe List(ModifierTypes.STATIC, ModifierTypes.CONSTRUCTOR)
+          init.block.astChildren.isCall.code.l shouldBe List("A = '1'", "B = '2'", "C = '3'")
+      }
+    }
+
     "have correct structure for simple enum" in {
       val cpg = code("""
         |enum Direction {

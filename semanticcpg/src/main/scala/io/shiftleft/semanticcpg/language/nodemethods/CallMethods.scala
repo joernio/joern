@@ -34,10 +34,10 @@ class CallMethods(val node: Call) extends AnyVal with NodeExtension {
     node._argumentOut.collectAll[Expression]
 
   def argument(index: Int): Expression =
-    arguments(index).next
+    arguments(index).next()
 
   def argumentOption(index: Int): Option[Expression] =
-    arguments(index).nextOption
+    arguments(index).nextOption()
 
   def macroExpansion: Iterator[Expression] = {
     if (node.dispatchType != DispatchTypes.INLINED) return Iterator.empty

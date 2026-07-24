@@ -2,8 +2,8 @@ package io.joern.c2cpg.passes.ast
 
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.C2CpgSuite
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import org.apache.commons.lang3.StringUtils
 
@@ -44,7 +44,7 @@ class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
         |""".stripMargin)
 
     "should identify `try` block" in {
-      cpg.method("foo").tryBlock.code.l shouldBe List("try")
+      cpg.method("foo").tryBlock.code.loneElement should startWith("try {")
     }
 
     "should identify `if` block" in {
@@ -254,16 +254,14 @@ class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
         case List(ifOne: ControlStructure, ifTwo: ControlStructure) =>
           ifOne.condition.code.l shouldBe List("c > 10")
           ifOne.trueBodyOut.astChildren.code.l shouldBe List("c -= 10")
-          inside(ifOne.falseBodyOut.l) { case List(elseNode: ControlStructure) =>
-            elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-            elseNode.astChildren.isBlock.astChildren.l shouldBe List(ifTwo)
+          inside(ifOne.falseBodyOut.l) { case List(elseBlock: Block) =>
+            elseBlock.astChildren.l shouldBe List(ifTwo)
           }
 
           ifTwo.condition.code.l shouldBe List("c < 10")
           ifTwo.trueBodyOut.astChildren.code.l shouldBe List("c += 10")
-          inside(ifTwo.falseBodyOut.l) { case List(elseNode: ControlStructure) =>
-            elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-            elseNode.astChildren.isBlock.astChildren.code.l shouldBe List("c = 10")
+          inside(ifTwo.falseBodyOut.l) { case List(elseBlock: Block) =>
+            elseBlock.astChildren.code.l shouldBe List("c = 10")
           }
       }
     }
@@ -377,6 +375,132 @@ class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
           loopLocalX.typeFullName shouldBe "float"
           loopLocalX.referencingIdentifiers.nameExact("x").typeFullName.l shouldBe List("float")
         }
+      }
+    }
+  }
+
+  "control structures with semicolon body (empty body via null statement)" should {
+    val cpg = code(
+      """
+        |void checkSemicolon(int a, int b) {
+        |  if (a == b); {
+        |    something();
+        |  }
+        |  for (int i = 0; i < 10; i++); {
+        |    something();
+        |  }
+        |  while (a < b); {
+        |    something();
+        |  }
+        |}
+        |""".stripMargin,
+      fileName = "test.c"
+    )
+
+    "emit an empty block as true body for `if (cond);`" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l) {
+        case List(ifNode: ControlStructure) =>
+          inside(ifNode.trueBodyOut.l) { case List(emptyBlock: Block) =>
+            emptyBlock.astChildren.l shouldBe List.empty
+          }
+      }
+    }
+
+    "emit an empty block as for-body for `for (...);`" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.FOR).l) {
+        case List(forNode: ControlStructure) =>
+          inside(forNode.forBodyOut.l) { case List(emptyBlock: Block) =>
+            emptyBlock.astChildren.l shouldBe List.empty
+          }
+      }
+    }
+
+    "emit an empty block as true body for `while (cond);`" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.WHILE).l) {
+        case List(whileNode: ControlStructure) =>
+          inside(whileNode.trueBodyOut.l) { case List(emptyBlock: Block) =>
+            emptyBlock.astChildren.l shouldBe List.empty
+          }
+      }
+    }
+  }
+
+  "while loop with const pointer assignment condition" should {
+    val cpg = code(
+      """
+        |void main() {
+        |  while (const char* c = read()) {
+        |    foo(c);
+        |  }
+        |}
+        |""".stripMargin,
+      fileName = "test.cpp"
+    )
+
+    "emit a condition edge with correct content" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.WHILE).l) {
+        case List(whileNode: ControlStructure) =>
+          inside(whileNode.condition.l) { case List(expr: Expression) =>
+            expr.code shouldBe "c = read()" // assignment calls are no candidates for synthetic loop equal checks
+          }
+
+          inside(cpg.local.nameExact("c").l) { case List(cLocal: Local) =>
+            cLocal.astParent shouldBe cpg.method.nameExact("main").block.loneElement
+          }
+      }
+    }
+  }
+
+  "while loop with non-pointer condition declaration" should {
+    val cpg = code(
+      """
+        |void main() {
+        |  while (int n = count()) {
+        |    process(n);
+        |  }
+        |}
+        |""".stripMargin,
+      fileName = "test.cpp"
+    )
+
+    "emit a condition edge with correct content" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.WHILE).l) {
+        case List(whileNode: ControlStructure) =>
+          inside(whileNode.condition.l) { case List(expr: Expression) =>
+            expr.code shouldBe "n = count()" // assignment calls are no candidates for synthetic loop equal checks
+          }
+
+          inside(cpg.local.nameExact("n").l) { case List(nLocal: Local) =>
+            nLocal.typeFullName shouldBe "int"
+            nLocal.astParent shouldBe cpg.method.nameExact("main").block.loneElement
+          }
+      }
+    }
+  }
+
+  "for loop with pointer condition declaration" should {
+    val cpg = code(
+      """
+        |void main() {
+        |  for (int i = 0; char* p = getNext(); i++) {
+        |    process(p);
+        |  }
+        |}
+        |""".stripMargin,
+      fileName = "test.cpp"
+    )
+
+    "emit a condition edge with correct content and place the local under the for node" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.FOR).l) {
+        case List(forNode: ControlStructure) =>
+          inside(forNode.condition.l) { case List(expr: Expression) =>
+            expr.code shouldBe "p = getNext()" // assignment calls are no candidates for synthetic loop equal checks
+          }
+
+          inside(cpg.local.nameExact("p").l) { case List(pLocal: Local) =>
+            pLocal.typeFullName shouldBe "char*"
+            pLocal.astParent shouldBe forNode
+          }
       }
     }
   }

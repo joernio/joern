@@ -156,4 +156,18 @@ class ControlStructureTests extends JsSrc2CpgSuite {
     }
   }
 
+  "while loop without body" in {
+    val cpg = code("""
+        |function method() {
+        |  while (true);
+        |  foo();
+        |}
+        |""".stripMargin)
+
+    inside(cpg.controlStructure.isWhile.l) { case List(whileNode: ControlStructure) =>
+      whileNode.condition.code.l shouldBe List("true")
+      whileNode.trueBodyOut.isBlock.astChildren shouldBe empty
+    }
+  }
+
 }

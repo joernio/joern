@@ -41,7 +41,7 @@ trait KotlinFrontend extends LanguageFrontend {
     }
 
     val tmp = new Kotlin2Cpg().createCpg(config.withInputPath(sourceCodeFile.getAbsolutePath)).get
-    new PostFrontendValidator(tmp, ValidationLevel.V1).run()
+    new PostFrontendValidator(tmp, ValidationLevel.V3).run()
     tmp
   }
 }

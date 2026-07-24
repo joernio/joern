@@ -41,7 +41,15 @@ trait TypeNameProvider { this: AstCreator =>
       "virtual"
     )
 
+  private val ReservedKeywordsAtTypesPatterns: List[(String, String)] =
+    ReservedKeywordsAtTypes.map(keyword => (s"$keyword ", s" $keyword "))
+
+  private val ReservedKeywordsAtTypesSet: Set[String] = ReservedKeywordsAtTypes.toSet
+
   private val KeywordsAtTypesToKeep: List[String] = List("unsigned", "volatile")
+
+  private val KeywordsAtTypesToKeepPatterns: List[(String, String)] =
+    KeywordsAtTypesToKeep.map(keyword => (s"$keyword ", s" $keyword "))
 
   protected def typeForDeclSpecifier(spec: IASTNode, index: Int = 0): String = {
     val tpeString = spec match {
@@ -52,10 +60,10 @@ trait TypeNameProvider { this: AstCreator =>
         val parentDecl = s.getParent.asInstanceOf[IASTFunctionDefinition].getDeclarator
         ASTStringUtil.getReturnTypeString(s, parentDecl)
       case s: IASTSimpleDeclaration if s.getParent.isInstanceOf[ICASTKnRFunctionDeclarator] =>
-        val decl = s.getDeclarators.toList(index)
+        val decl = s.getDeclarators()(index)
         pointersAsString(s.getDeclSpecifier, decl)
       case s: IASTSimpleDeclSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
-        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
+        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators()(index)
         pointersAsString(s, parentDecl)
       case s: IASTSimpleDeclSpecifier =>
         ASTStringUtil.getReturnTypeString(s, null)
@@ -63,23 +71,23 @@ trait TypeNameProvider { this: AstCreator =>
         val parentDecl = s.getParent.asInstanceOf[IASTParameterDeclaration].getDeclarator
         pointersAsString(s, parentDecl)
       case s: IASTNamedTypeSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
-        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
+        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators()(index)
         pointersAsString(s, parentDecl)
       case s: IASTNamedTypeSpecifier =>
         ASTStringUtil.getSimpleName(s.getName)
       case s: IASTCompositeTypeSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
-        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
+        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators()(index)
         pointersAsString(s, parentDecl)
       case s: IASTCompositeTypeSpecifier => ASTStringUtil.getSimpleName(s.getName)
       case s: IASTEnumerationSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
-        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
+        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators()(index)
         pointersAsString(s, parentDecl)
       case s: IASTEnumerationSpecifier => ASTStringUtil.getSimpleName(s.getName)
       case s: IASTElaboratedTypeSpecifier if s.getParent.isInstanceOf[IASTParameterDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTParameterDeclaration].getDeclarator
         pointersAsString(s, parentDecl)
       case s: IASTElaboratedTypeSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
-        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
+        val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators()(index)
         pointersAsString(s, parentDecl)
       case s: IASTElaboratedTypeSpecifier => ASTStringUtil.getSignatureString(s, null)
       // TODO: handle other types of IASTDeclSpecifier
@@ -91,25 +99,27 @@ trait TypeNameProvider { this: AstCreator =>
   protected def cleanType(rawType: String): String = {
     if (rawType == Defines.Any) return rawType
     val normalizedTpe = StringUtils.normalizeSpace(rawType.stripSuffix(" ()"))
-    val tpe = ReservedKeywordsAtTypes.foldLeft(normalizedTpe) { (cur, repl) =>
-      if (cur.startsWith(s"$repl ") || cur.contains(s" $repl ")) {
-        cur.replace(s" $repl ", " ").stripPrefix(s"$repl ")
-      } else cur
-    }
+    val tpe =
+      if (!ReservedKeywordsAtTypesSet.exists(normalizedTpe.contains)) normalizedTpe
+      else
+        ReservedKeywordsAtTypesPatterns.foldLeft(normalizedTpe) { case (cur, (prefix, infix)) =>
+          if (cur.startsWith(prefix) || cur.contains(infix)) cur.replace(infix, " ").stripPrefix(prefix)
+          else cur
+        }
     stripTemplateTags(replaceWhitespaceAfterKeyword(tpe)) match {
       // Empty or problematic types
-      case ""                                                                      => Defines.Any
-      case t if t.contains("?")                                                    => Defines.Any
-      case t if t.contains("#")                                                    => Defines.Any
-      case t if t.contains("::{") || t.contains("}::")                             => Defines.Any
-      case t if (t.contains("{") || t.contains("}")) && !isThisLambdaCapture(t)    => Defines.Any
-      case t if t.contains("org.eclipse.cdt.internal.core.dom.parser.ProblemType") => Defines.Any
+      case ""                                                                           => Defines.Any
+      case tpe if tpe.contains("?")                                                     => Defines.Any
+      case tpe if tpe.contains("#")                                                     => Defines.Any
+      case tpe if tpe.contains("::{") || tpe.contains("}::")                            => Defines.Any
+      case tpe if (tpe.contains("{") || tpe.contains("}")) && !isThisLambdaCapture(tpe) => Defines.Any
+      case tpe if tpe.contains("org.eclipse.cdt.internal.core.dom.parser.ProblemType")  => Defines.Any
       // Special patterns with specific handling
-      case t if t.startsWith("[") && t.endsWith("]")       => Defines.Array
-      case t if isThisLambdaCapture(t) || t.contains("->") => Defines.Function
-      case t if t.contains("( ") => replaceQualifiedNameSeparator(t.substring(0, t.indexOf("( ")))
+      case tpe if tpe.startsWith("[") && tpe.endsWith("]")       => Defines.Array
+      case tpe if isThisLambdaCapture(tpe) || tpe.contains("->") => Defines.Function
+      case tpe if tpe.contains("( ") => applyQualifiedNameSeparator(tpe.substring(0, tpe.indexOf("( ")))
       // Default case
-      case typeStr => replaceQualifiedNameSeparator(typeStr)
+      case typeStr => applyQualifiedNameSeparator(typeStr)
     }
   }
 
@@ -320,16 +330,17 @@ trait TypeNameProvider { this: AstCreator =>
   }
 
   private def replaceWhitespaceAfterKeyword(tpe: String): String = {
-    if (KeywordsAtTypesToKeep.exists(k => tpe.startsWith(s"$k ") || tpe.contains(s" $k "))) {
-      KeywordsAtTypesToKeep.foldLeft(tpe) { (cur, repl) =>
-        val prefixStartsWith = s"$repl "
-        val prefixContains   = s" $repl "
-        if (cur.startsWith(prefixStartsWith)) {
-          prefixStartsWith + replaceWhitespaceAfterKeyword(cur.substring(prefixStartsWith.length))
-        } else if (cur.contains(prefixContains)) {
-          val front = tpe.substring(0, tpe.indexOf(prefixContains))
-          val back  = tpe.substring(tpe.indexOf(prefixContains) + prefixContains.length)
-          s"${replaceWhitespaceAfterKeyword(front)}$prefixContains${replaceWhitespaceAfterKeyword(back)}"
+    if (
+      KeywordsAtTypesToKeepPatterns.exists { case (prefix, infix) => tpe.startsWith(prefix) || tpe.contains(infix) }
+    ) {
+      KeywordsAtTypesToKeepPatterns.foldLeft(tpe) { case (cur, (prefix, infix)) =>
+        if (cur.startsWith(prefix)) {
+          prefix + replaceWhitespaceAfterKeyword(cur.substring(prefix.length))
+        } else if (cur.contains(infix)) {
+          val idx   = cur.indexOf(infix)
+          val front = cur.substring(0, idx)
+          val back  = cur.substring(idx + infix.length)
+          s"${replaceWhitespaceAfterKeyword(front)}$infix${replaceWhitespaceAfterKeyword(back)}"
         } else {
           cur
         }
@@ -353,7 +364,7 @@ trait TypeNameProvider { this: AstCreator =>
     }
     val pointers = parentDecl.getPointerOperators
     val arr = parentDecl match {
-      case p: IASTArrayDeclarator => p.getArrayModifiers.toList.map(_.getRawSignature).mkString
+      case p: IASTArrayDeclarator => p.getArrayModifiers.iterator.map(_.getRawSignature).mkString
       case _                      => ""
     }
     if (pointers.isEmpty) {
@@ -400,11 +411,12 @@ trait TypeNameProvider { this: AstCreator =>
   @nowarn
   private def typeForIASTArrayDeclarator(a: IASTArrayDeclarator): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
-    if (safeGetNodeType(a).startsWith("? ")) {
+    val nodeType = safeGetNodeType(a)
+    if (nodeType.startsWith("? ")) {
       val tpe = getNodeSignature(a).replace("[]", "").strip()
-      val arr = safeGetNodeType(a).replace("? ", "")
+      val arr = nodeType.replace("? ", "")
       s"$tpe$arr"
-    } else if (safeGetNodeType(a).contains("} ") || safeGetNodeType(a).contains(" [")) {
+    } else if (nodeType.contains("} ") || nodeType.contains(" [")) {
       val tpe = getNodeSignature(a).replace("[]", "").strip()
       val arr = a.getArrayModifiers.map {
         case m if m.getConstantExpression != null => s"[${nodeSignature(m.getConstantExpression)}]"
@@ -417,7 +429,7 @@ trait TypeNameProvider { this: AstCreator =>
       }.mkString
       s"$tpe$arr"
     } else {
-      safeGetNodeType(a)
+      nodeType
     }
   }
 

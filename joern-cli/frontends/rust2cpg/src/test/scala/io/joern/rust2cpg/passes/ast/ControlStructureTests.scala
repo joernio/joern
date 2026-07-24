@@ -64,8 +64,8 @@ class ControlStructureTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.ifBlock.whenTrue.isBlock.astChildren.isCall.name.l shouldBe List("foo")
     }
 
-    "place bar in the ELSE body" in {
-      cpg.elseBlock.astChildren.isBlock.astChildren.isCall.name.l shouldBe List("bar")
+    "place bar in the else-branch" in {
+      cpg.ifBlock.whenFalse.isBlock.astChildren.isCall.name.l shouldBe List("bar")
     }
   }
 
@@ -86,20 +86,16 @@ class ControlStructureTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.ifBlock.size shouldBe 2
     }
 
-    "place the inner IF inside the outer ELSE" in {
-      inside(cpg.ifBlock.condition("x < y").whenFalse.l) { case (outerElse: ControlStructure) :: Nil =>
-        outerElse.controlStructureType shouldBe ControlStructureTypes.ELSE
-        inside(outerElse.astChildren.l) { case (innerIf: ControlStructure) :: Nil =>
-          innerIf.controlStructureType shouldBe ControlStructureTypes.IF
-          innerIf.condition.code.l shouldBe List("x == y")
-        }
+    "place the inner IF directly in the outer else-branch" in {
+      inside(cpg.ifBlock.condition("x < y").whenFalse.l) { case (innerIf: ControlStructure) :: Nil =>
+        innerIf.controlStructureType shouldBe ControlStructureTypes.IF
+        innerIf.condition.code.l shouldBe List("x == y")
       }
     }
 
-    "place baz inside the inner ELSE" in {
-      inside(cpg.ifBlock.condition("x == y").whenFalse.l) { case (innerElse: ControlStructure) :: Nil =>
-        innerElse.controlStructureType shouldBe ControlStructureTypes.ELSE
-        innerElse.astChildren.isBlock.astChildren.isCall.name.l shouldBe List("baz")
+    "place baz in the inner else-branch" in {
+      inside(cpg.ifBlock.condition("x == y").whenFalse.isBlock.l) { case innerElse :: Nil =>
+        innerElse.astChildren.isCall.name.l shouldBe List("baz")
       }
     }
   }

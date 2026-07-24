@@ -18,12 +18,12 @@ class MethodParameterTraversal(val traversal: Iterator[MethodParameterIn]) exten
   /** Traverse to all parameters with index greater or equal than `num` */
   @Doc(info = "Traverse to all parameters with index greater or equal than `num`")
   def indexFrom(num: Int): Iterator[MethodParameterIn] =
-    traversal.filter(_.index.exists(_ >= num))
+    traversal.filter(_.index >= num)
 
   /** Traverse to all parameters with index smaller or equal than `num` */
   @Doc(info = "Traverse to all parameters with index smaller or equal than `num`")
   def indexTo(num: Int): Iterator[MethodParameterIn] =
-    traversal.filter(_.index.exists(_ <= num))
+    traversal.filter(_.index <= num)
 
   /** Traverse to arguments (actual parameters) associated with this formal parameter */
   @Doc(info = "Traverse to arguments (actual parameters) associated with this formal parameter")
@@ -34,8 +34,7 @@ class MethodParameterTraversal(val traversal: Iterator[MethodParameterIn]) exten
       case (arg: Expression) <- call._argumentOut
       if arg.argumentName match {
         case Some(name) => name == paramIn.name
-        case None =>
-          paramIn.index.exists(idx => arg.argumentIndex == idx || (paramIn.isVariadic && arg.argumentIndex > idx))
+        case None => arg.argumentIndex == paramIn.index || (paramIn.isVariadic && arg.argumentIndex > paramIn.index)
       }
     } yield arg
   }

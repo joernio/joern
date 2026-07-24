@@ -1,9 +1,7 @@
 package io.joern.c2cpg
 
 import io.joern.c2cpg.Frontend.*
-import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import io.joern.x2cpg.{SourceFiles, X2CpgConfig, X2CpgMain}
-import org.slf4j.LoggerFactory
 import scopt.OParser
 
 final case class Config(

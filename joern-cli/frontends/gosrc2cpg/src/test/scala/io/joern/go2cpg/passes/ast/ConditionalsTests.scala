@@ -47,11 +47,9 @@ class ConditionalsTests extends GoCodeToCpgSuite {
           |  }
           |}
       """.stripMargin)
-      inside(cpg.method.name("method").controlStructure.l) { case List(ifStmt, elseStmt) =>
+      inside(cpg.method.name("method").controlStructure.l) { case List(ifStmt) =>
         ifStmt.controlStructureType shouldBe ControlStructureTypes.IF
         ifStmt.code shouldBe "if (x > 0)"
-        elseStmt.controlStructureType shouldBe ControlStructureTypes.ELSE
-        elseStmt.code shouldBe "else"
 
         inside(ifStmt.condition.l) { case List(cndNode) =>
           cndNode.code shouldBe "x > 0"

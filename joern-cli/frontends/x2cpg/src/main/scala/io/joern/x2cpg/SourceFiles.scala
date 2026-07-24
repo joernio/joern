@@ -4,7 +4,7 @@ import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.slf4j.LoggerFactory
 
 import java.io.FileNotFoundException
-import java.nio.file.{FileVisitOption, FileVisitResult, FileVisitor, Files, Path, Paths}
+import java.nio.file.{FileVisitOption, FileVisitResult, FileVisitor, Files, LinkOption, Path, Paths}
 import java.nio.file.attribute.BasicFileAttributes
 import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.util.matching.Regex
@@ -294,15 +294,17 @@ object SourceFiles {
     absolutePath.normalize().toString
   }
 
-  /** Constructs a relative path against rootPath. If the given path is not inside rootPath, path is returned unaltered.
-    * Otherwise, the path relative to rootPath is returned.
+  /** Constructs a relative path against rootPath. If the given path is not inside rootPath, path is returned unaltered
+    * — unless `allowParentTraversal` is true, in which case the path is still relativised and the result may include
+    * `..` segments (e.g. `../sibling/foo.kt`). This is necessary for javasrc and kotlin subproject scans which may
+    * include sources from the subprojects dependencies.
     */
-  def toRelativePath(path: String, rootPath: String): String = {
+  def toRelativePath(path: String, rootPath: String, allowParentTraversal: Boolean = false): String = {
     // Helper to resolve path, using toRealPath() if file exists (which resolves Windows 8.3 short names),
     // otherwise fall back to toAbsolutePath.normalize()
     def resolvePath(p: String): Path = {
       val pathObj = Paths.get(p)
-      Try(pathObj.toRealPath()).getOrElse(pathObj.toAbsolutePath.normalize())
+      Try(pathObj.toRealPath(LinkOption.NOFOLLOW_LINKS)).getOrElse(pathObj.toAbsolutePath.normalize())
     }
 
     // Convert to absolute, normalized paths for proper comparison
@@ -313,7 +315,7 @@ object SourceFiles {
     // - Case-insensitive filesystems (Windows, macOS)
     // - Proper path component boundaries
     // - OS-specific path handling
-    if (absolutePath.startsWith(projectPath)) {
+    if (absolutePath.startsWith(projectPath) || allowParentTraversal) {
       if (absolutePath.equals(projectPath)) {
         absolutePath.fileName
       } else {

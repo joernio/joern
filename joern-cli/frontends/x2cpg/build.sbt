@@ -9,6 +9,7 @@ libraryDependencies ++= Seq(
   "com.michaelpollmeier" % "versionsort"  % Versions.versionSort,
   "org.apache.commons"   % "commons-exec" % Versions.commonsExec,
   /* End: AST Gen Dependencies */
+  "org.apache.maven" % "maven-artifact"     % Versions.mavenArtifact,
   "org.gradle"     % "gradle-tooling-api" % Versions.gradleTooling % Optional,
   "org.scalatest" %% "scalatest"          % Versions.scalatest     % Test
 )

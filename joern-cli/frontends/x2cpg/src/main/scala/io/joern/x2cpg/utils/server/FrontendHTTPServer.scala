@@ -4,7 +4,7 @@ import io.joern.x2cpg.X2CpgConfig
 import org.slf4j.LoggerFactory
 
 import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
-import java.net.{InetSocketAddress, URLDecoder}
+import java.net.InetSocketAddress
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ExecutorService, Executors, TimeUnit}
@@ -88,9 +88,10 @@ class FrontendHTTPServer(executor: ExecutorService, handleRequest: Array[String]
     /** Handles POST requests to the "/run" endpoint.
       *
       * The request is expected to include `input`, `output`, and (optionally) frontend arguments (unbounded). The
-      * request is expected to be sent `application/x-www-form-urlencoded`. The provided `X2CpgFrontend` is run with
-      * these input/output/arguments and the resulting CPG output path is returned in the response and status code 200.
-      * In case of a failure, status code 400 is sent together with a response containing the reason.
+      * request is expected to be sent as a JSON object. String values become option values and null values become
+      * flags. The provided `X2CpgFrontend` is run with these input/output/arguments and the resulting CPG output path
+      * is returned in the response and status code 200. In case of a failure, status code 400 is sent together with a
+      * response containing the reason.
       */
     override def handle(exchange: HttpExchange): Unit = {
       if (exchange.getRequestMethod != "POST") {
@@ -110,22 +111,27 @@ class FrontendHTTPServer(executor: ExecutorService, handleRequest: Array[String]
           _.mkString
         }.getOrElse("")
 
-        val params = parseFormUrlEncoded(requestBody)
+        Try {
+          val params = parseFromJson(requestBody)
 
-        val outputDir = params.getOrElse("output", X2CpgConfig.defaultOutputPath)
-        val arguments = params.flatMap {
-          case ("input", value)                      => List(value)
-          case (arg, value) if value.strip().isEmpty => List(s"--$arg")
-          case (arg, value)                          => List(s"--$arg", value)
-        }.toArray
+          var outputDir = X2CpgConfig.defaultOutputPath
+          val arguments = params.flatMap {
+            case ("output", Some(value)) =>
+              outputDir = value
+              List("--output", value)
+            case ("input", Some(value)) => List(value)
+            case (arg, None)            => List(s"--$arg")
+            case (arg, Some(value))     => List(s"--$arg", value)
+          }.toArray
 
-        logger.debug("Got POST with arguments: " + arguments.mkString(" "))
-
-        Try(handleRequest(arguments)) match {
+          logger.debug("Got POST with arguments: " + arguments.mkString(" "))
+          handleRequest(arguments)
+          outputDir
+        } match {
           case Failure(exception) =>
             exception.printStackTrace()
             sendResponse(exchange, 400, exception.getMessage)
-          case Success(_) =>
+          case Success(outputDir) =>
             sendResponse(exchange, 200, outputDir)
         }
       } finally {
@@ -138,19 +144,15 @@ class FrontendHTTPServer(executor: ExecutorService, handleRequest: Array[String]
       }
     }
 
-    /** Parses an application/x-www-form-urlencoded body (e.g. "key1=val1&key2=val2") into key-value pairs. */
-    private def parseFormUrlEncoded(body: String): Map[String, String] = {
-      if (body.isEmpty) return Map.empty
-
-      def decode(s: String): String = URLDecoder.decode(s, StandardCharsets.UTF_8)
-
-      val pairs = body.split("&")
-      pairs.map { pair =>
-        val keyAndValue = pair.split("=", 2) // limit 2 so value may contain '='
-        val key         = decode(keyAndValue(0))
-        val value       = if (keyAndValue.length > 1) decode(keyAndValue(1)) else ""
-        key -> value
-      }.toMap
+    private def parseFromJson(body: String): List[(String, Option[String])] = {
+      val list = ujson.read(body).obj.toList
+      list.flatMap {
+        case (key, ujson.Str(value)) => Some((key, Some(value)))
+        case (key, ujson.Null)       => Some((key, None))
+        case (key, anything) =>
+          logger.warn("Ignoring HTTP request argument {} with unsupported json type {}", key, anything.getClass)
+          None
+      }
     }
 
     private def sendResponse(exchange: HttpExchange, statusCode: Int, body: String): Unit = {

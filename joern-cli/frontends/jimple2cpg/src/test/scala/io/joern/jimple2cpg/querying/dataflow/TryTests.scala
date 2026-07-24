@@ -197,9 +197,8 @@ class TryTests extends JimpleDataFlowCodeToCpgSuite {
     }
 
     "find a path if `MALICIOUS` is assigned in `FINALLY`" in {
-      // Jimple's flat AST evaluates multiple paths that will end at the FINALLY sink but it is a conservative result
       val (source, sink) = getConstSourceSink("test7")
-      sink.reachableBy(source).size shouldBe 3
+      sink.reachableBy(source).size shouldBe 2
     }
 
     "not find a path if `MALICIOUS` is reassigned in both TRY/CATCH" in {

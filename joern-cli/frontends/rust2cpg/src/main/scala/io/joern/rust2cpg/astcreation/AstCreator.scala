@@ -2,19 +2,14 @@ package io.joern.rust2cpg.astcreation
 
 import flatgraph.DiffGraphBuilder
 import io.joern.rust2cpg.Config
-import io.joern.rust2cpg.parser.RustJsonParser.ParseResult
+import io.joern.rust2cpg.parser.RustJsonParser.{ParseResult, isMacroExpanded}
 import io.joern.rust2cpg.parser.RustNodeSyntax
 import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
+import io.joern.rust2cpg.parser.RustNodeSyntaxExtensions.op
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.AstNodeBuilder.bindingNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewCall,
-  NewControlStructure,
-  NewMethod,
-  NewNamespaceBlock,
-  NewNode,
-  NewTypeDecl
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, Operators, PropertyDefaults, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
@@ -29,24 +24,44 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
   private val logger = LoggerFactory.getLogger(getClass)
 
   protected val methodAstParentStack = new Stack[NewNode]
+  private var detachedAsts           = List.empty[Ast]
 
   override def createAst(): DiffGraphBuilder = {
     val sourceFile = parseResult.ast.asInstanceOf[RustNodeSyntax.SourceFile]
     val ast        = visitSourceFile(sourceFile)
     Ast.storeInDiffGraph(ast, diffGraph)
+    detachedAsts.foreach(Ast.storeInDiffGraph(_, diffGraph))
     diffGraph
   }
 
+  protected def addDetachedAst(ast: Ast): Unit = {
+    detachedAsts = ast :: detachedAsts
+  }
+
+  protected def addDetachedBindingAsts(typeDecl: NewTypeDecl, methodAsts: Seq[Ast], signature: String): Unit = {
+    methodAsts.flatMap(_.root).collect { case method: NewMethod =>
+      val binding = bindingNode(method.name, signature, method.fullName)
+      addDetachedAst(Ast(binding).withBindsEdge(typeDecl, binding))
+    }
+  }
+
   // NB: rust_ast_gen uses 0-based line/column
-  override protected def line(node: RustNode): Option[Int]      = node.startLine.map(_ + 1)
-  override protected def column(node: RustNode): Option[Int]    = node.startColumn.map(_ + 1)
+  override protected def line(node: RustNode): Option[Int] =
+    if (node.isMacroExpanded) None else node.startLine.map(_ + 1)
+  override protected def column(node: RustNode): Option[Int] =
+    if (node.isMacroExpanded) None else node.startColumn.map(_ + 1)
+
   override protected def lineEnd(node: RustNode): Option[Int]   = None
   override protected def columnEnd(node: RustNode): Option[Int] = None
   override protected def code(node: RustNode): String = text(node).map(shortenCode(_)).getOrElse(PropertyDefaults.Code)
 
-  protected def text(node: RustNode): Option[String] = (node.startOffset, node.endOffset) match {
-    case (Some(start), Some(end)) => Some(String(parseResult.contentBytes.slice(start, end), StandardCharsets.UTF_8))
-    case _                        => None
+  protected def text(node: RustNode): Option[String] = if (node.isMacroExpanded) {
+    node.text
+  } else {
+    (node.startOffset, node.endOffset) match {
+      case (Some(start), Some(end)) => Some(String(parseResult.contentBytes.slice(start, end), StandardCharsets.UTF_8))
+      case _                        => None
+    }
   }
 
   protected def notHandledYet(node: RustNode): Ast = {
@@ -59,6 +74,19 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
          |  """.stripMargin
     logger.warn(text)
     Ast(unknownNode(node, code(node)))
+  }
+
+  protected def macroNotExpanded(macroCall: RustNodeSyntax.MacroCall): Ast = {
+    val name = code(macroCall.path)
+    val text =
+      s"""Macro '$name' not expanded!
+         |  Code: '${code(macroCall)}'
+         |  File: '${parseResult.fullPath}'
+         |  Line: ${line(macroCall).getOrElse(-1)}
+         |  Column: ${column(macroCall).getOrElse(-1)}
+         |  """.stripMargin
+    logger.warn(text)
+    Ast(unknownNode(macroCall, code(macroCall)))
   }
 
   protected def assignmentNode(node: RustNodeSyntax.RustNode, code: String): NewCall = {
@@ -112,7 +140,7 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     )
   }
 
-  protected def typeDeclForStruct(struct: RustNodeSyntax.Struct): NewTypeDecl = {
+  protected def typeDeclForStruct(struct: RustNodeSyntax.Struct, inheritsFrom: Seq[String]): NewTypeDecl = {
     val name   = code(struct.name)
     val parent = methodAstParentStack.head
     typeDeclNode(
@@ -122,8 +150,48 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
       filename = parseResult.filename,
       code = code(struct),
       astParentType = parent.label,
+      astParentFullName = parent.properties(PropertyNames.FullName).toString,
+      inherits = inheritsFrom
+    )
+  }
+
+  protected def typeDeclForImpl(impl: RustNodeSyntax.Impl): NewTypeDecl = {
+    val implType = typeFullNameForType(impl.typ.last)
+    val name     = implType.split(RustFullNames.PathSep).lastOption.getOrElse(implType)
+    val parent   = methodAstParentStack.head
+    typeDeclNode(
+      node = impl,
+      name = name,
+      fullName = implType,
+      filename = parseResult.filename,
+      code = code(impl),
+      astParentType = parent.label,
       astParentFullName = parent.properties(PropertyNames.FullName).toString
     )
+  }
+
+  protected def typeDeclForTraitImpl(
+    impl: RustNodeSyntax.Impl,
+    implTrait: RustNodeSyntax.Type,
+    implType: RustNodeSyntax.Type
+  ): NewTypeDecl = {
+    val implTypeFullName  = typeFullNameForType(implType)
+    val traitTypeFullName = typeFullNameForType(implTrait)
+    val name              = implTypeFullName.split(RustFullNames.PathSep).lastOption.getOrElse(implTypeFullName)
+    typeDeclNode(
+      node = impl,
+      name = name,
+      fullName = traitImplFullName(implTypeFullName, traitTypeFullName),
+      filename = parseResult.filename,
+      code = code(impl),
+      inherits = Seq(traitTypeFullName)
+    )
+  }
+
+  protected def enclosingTypeDeclFullName: Option[String] = {
+    methodAstParentStack.collectFirst { case typeDecl: NewTypeDecl =>
+      typeDecl.properties(PropertyNames.FullName).toString
+    }
   }
 
   protected def operatorNameFor(binExpr: RustNodeSyntax.BinExpr): Option[String] = binExpr.op match {
@@ -164,14 +232,6 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     case Some(_: RustNodeSyntax.BangToken)  => Some(Operators.logicalNot)
     case Some(_: RustNodeSyntax.StarToken)  => Some(Operators.indirection)
     case _                                  => None
-  }
-
-  protected def whileBodyAst(whileNode: NewControlStructure, conditionAst: Ast, bodyAst: Ast): Ast = {
-    val ast = controlStructureAst(whileNode, Some(conditionAst), Seq(bodyAst))
-    bodyAst.root match {
-      case Some(bodyRoot) => ast.withTrueBodyEdge(whileNode, bodyRoot)
-      case None           => ast
-    }
   }
 
 }

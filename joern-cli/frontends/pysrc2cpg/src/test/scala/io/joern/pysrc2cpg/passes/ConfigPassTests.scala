@@ -29,6 +29,13 @@ class ConfigPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     config.content should include("verify_ssl = true")
   }
 
+  "`.jinja2` files should be included" in {
+    val cpg = code("{{ secret }}", "config.jinja2")
+
+    val config = cpg.configFile.name("config.jinja2").head
+    config.content shouldBe "{{ secret }}"
+  }
+
   "Pipfile.lock should be included" in {
     val cpg = code(
       """

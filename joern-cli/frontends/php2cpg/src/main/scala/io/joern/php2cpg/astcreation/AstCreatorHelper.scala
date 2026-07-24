@@ -1,9 +1,8 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
+import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
-import io.joern.php2cpg.passes.SymbolSummaryPass.PhpFunction
 import io.joern.php2cpg.utils.{BlockScope, MethodScope}
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
@@ -11,8 +10,6 @@ import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-
-import scala.collection.mutable
 
 trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -36,10 +33,6 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         new String(fileContentBytes.slice(0, phpNode.attributes.endFilePos), fileCharset).length
       (startPos, endPos)
     }
-  }
-
-  protected def intToLiteralAst(num: Int): Ast = {
-    Ast(NewLiteral().code(num.toString).typeFullName(TypeConstants.Int))
   }
 
   protected def getTmpIdentifier(
@@ -157,22 +150,6 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     modifiers: List[String] = List.empty
   ): NewNode = {
     scope.lookupVariable(name) match {
-      case None =>
-        val localCode = if (name == NameConstants.Self) NameConstants.Self else s"$$$name"
-        val local     = localNode(expr, name, code.getOrElse(localCode), tfn.getOrElse(Defines.Any))
-
-        modifiers.foreach { modifier =>
-          val modNode = modifierNode(expr, modifier)
-          diffGraph.addEdge(local, modNode, EdgeTypes.AST)
-        }
-
-        scope.addToScope(name, local) match {
-          case BlockScope(block, _)                 => diffGraph.addEdge(block, local, EdgeTypes.AST)
-          case MethodScope(_, block, _, _, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
-          case _                                    => // do nothing
-        }
-
-        local
       case Some(local: NewLocal)
           if scope.isSurroundedByArrowClosure && local.closureBindingId.exists(_.contains("<lambda>")) =>
         local // the contains check ensures that we can capture global variables into an arrow closure
@@ -181,7 +158,26 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         createClosureBindingsForArrowClosure(expr, name)
       case Some(_: NewLocal) if scope.isSurroundedByArrowClosure =>
         createClosureBindingsForArrowClosure(expr, name)
-      case Some(local) => local
+      case _ =>
+        scope.lookupVariableInCurrentMethod(name) match {
+          case Some(existing) => existing
+          case None =>
+            val localCode = if (name == NameConstants.Self) NameConstants.Self else s"$$$name"
+            val local     = localNode(expr, name, code.getOrElse(localCode), tfn.getOrElse(Defines.Any))
+
+            modifiers.foreach { modifier =>
+              val modNode = modifierNode(expr, modifier)
+              diffGraph.addEdge(local, modNode, EdgeTypes.AST)
+            }
+
+            scope.addToScope(name, local) match {
+              case BlockScope(block, _)                 => diffGraph.addEdge(block, local, EdgeTypes.AST)
+              case MethodScope(_, block, _, _, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
+              case _                                    => // do nothing
+            }
+
+            local
+        }
     }
   }
 
@@ -257,12 +253,15 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
 
   protected def getArgsCode(call: PhpCallExpr, arguments: Seq[Ast]): String = {
     arguments
-      .zip(call.args.collect { case x: PhpArg => x.unpack })
+      .zip(call.args.collect { case PhpArg(_, parameterName, _, unpack, _) =>
+        val nameCode = parameterName.map(name => s"$name: ").getOrElse("")
+        (nameCode, unpack)
+      })
       .map {
-        case (arg, true)  => s"...${arg.rootCodeOrEmpty}"
-        case (arg, false) => arg.rootCodeOrEmpty
+        case (arg, (parameterName, true))  => s"$parameterName...${arg.rootCodeOrEmpty}"
+        case (arg, (parameterName, false)) => s"$parameterName${arg.rootCodeOrEmpty}"
       }
-      .mkString(",")
+      .mkString(", ")
   }
 
   protected def getCallName(call: PhpCallExpr, nameAst: Option[Ast]): String = {

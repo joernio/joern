@@ -3,6 +3,7 @@ package io.joern.javasrc2cpg.passes
 import io.joern.javasrc2cpg.Config
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.x2cpg.passes.frontend.JavaConfigFileCreationPass
+import io.joern.x2cpg.utils.JoernRunfilesLocator
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewMetaData
 import io.shiftleft.semanticcpg.language.*
@@ -13,8 +14,9 @@ import java.nio.file.Paths
 
 class ConfigFileCreationPassTests extends JavaSrcCode2CpgFixture {
 
-  private val testConfigDir: String =
-    ProjectRoot.relativise("joern-cli/frontends/javasrc2cpg/src/test/resources/config_tests")
+  private val testConfigDir: String = JoernRunfilesLocator
+    .resolve("joern/joern-cli/frontends/javasrc2cpg/src/test/resources/config_tests")
+    .getOrElse(ProjectRoot.relativise("joern-cli/frontends/javasrc2cpg/src/test/resources/config_tests"))
 
   "it should find the correct config files" in {
     val cpg    = Cpg.from(_.addNode(NewMetaData().root(testConfigDir)))

@@ -77,7 +77,7 @@ class RubySrc2Cpg(sharedJRubyEnv: Option[JRubyEnvironment] = None) extends X2Cpg
           case Failure(exception) => logger.warn(s"Unable to pre-parse Ruby file, skipping - ", exception); None
           case Success(summary)   => Option(summary)
         }
-        .foldLeft(RubyProgramSummary(RubyProgramSummary.BuiltinTypes(config.typeStubMetaData)))(_ ++= _)
+        .foldLeft(RubyProgramSummary(RubyProgramSummary.BuiltinTypes(config)))(_ ++= _)
 
       val dependencySummary =
         if (config.downloadDependencies) DependencyDownloader(cpg).download() else RubyProgramSummary()

@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg.testfixtures
 
-import io.joern.x2cpg.utils.TestCodeWriter
+import io.joern.x2cpg.testfixtures.TestCodeWriter
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

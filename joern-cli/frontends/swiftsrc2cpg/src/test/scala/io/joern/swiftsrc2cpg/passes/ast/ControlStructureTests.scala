@@ -112,4 +112,20 @@ class ControlStructureTests extends SwiftSrc2CpgSuite {
     }
   }
 
+  "`throw` statements lower as a THROW control structure" in {
+    val cpg = code("""
+      |func method() {
+      |  throw MyError.someCase
+      |}
+      |""".stripMargin)
+
+    inside(cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.THROW).l) {
+      case List(throwNode: ControlStructure) =>
+        throwNode.code shouldBe "throw MyError.someCase"
+        val List(thrownExpr) = throwNode.astChildren.l
+        thrownExpr.code shouldBe "MyError.someCase"
+        throwNode.argumentOut.l shouldBe List(thrownExpr)
+    }
+  }
+
 }

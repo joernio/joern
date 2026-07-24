@@ -158,9 +158,9 @@ class TypeDeclMembersAndMemberMethodsTest extends GoCodeToCpgSuite {
       cpg.parameter.name("re").size shouldBe 2
       val List(thisParam, thisParamsec) = cpg.parameter.name("re").l
       thisParam.order shouldBe 0
-      thisParam.index shouldBe Some(0)
+      thisParam.index shouldBe 0
       thisParamsec.order shouldBe 0
-      thisParamsec.index shouldBe Some(0)
+      thisParamsec.index shouldBe 0
     }
 
     "Traversal from 'this'/receiver parameter to method node" in {

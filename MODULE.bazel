@@ -1,0 +1,289 @@
+module(name = "joern")
+
+bazel_dep(name = "rules_scala", version = "7.2.5")
+bazel_dep(name = "codepropertygraph")
+
+CODEPROPERTYGRAPH_VERSION = "bd34f991c710fb616d8c26e3d9385043bb22820f"
+
+BAZEL_TOOLING_VERSION = "4bcf42cc81b574b91699d696b504637677640871"
+
+git_override(
+    module_name = "codepropertygraph",
+    commit = "{}".format(CODEPROPERTYGRAPH_VERSION),
+    remote = "git@github.com:ShiftLeftSecurity/codepropertygraph.git",
+)
+
+bazel_dep(name = "bazel_tooling")
+git_override(
+    module_name = "bazel_tooling",
+    commit = "{}".format(BAZEL_TOOLING_VERSION),
+    remote = "git@github.com:joernio/bazel_tooling.git",
+)
+
+scala_config = use_extension(
+    "@rules_scala//scala/extensions:config.bzl",
+    "scala_config",
+)
+scala_config.settings(
+    scala_version = "3.8.3",
+)
+
+scala_deps = use_extension(
+    "@rules_scala//scala/extensions:deps.bzl",
+    "scala_deps",
+)
+scala_deps.scala()
+scala_deps.scalatest()
+
+register_toolchains("@bazel_tooling//scala_toolchain:plus_one_toolchain")
+
+bazel_dep(name = "rules_jvm_external", version = "7.0")
+
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+maven.install(
+    name = "maven",
+    artifacts = [
+        "org.slf4j:slf4j-api:2.0.7",
+        "com.github.javaparser:javaparser-symbol-solver-core:3.28.0",
+        "org.ow2.asm:asm:9.9.1",
+        "org.projectlombok:lombok:1.18.42",
+        "net.lingala.zip4j:zip4j:2.11.5",
+        "org.gradle:gradle-tooling-api:8.3",
+        "com.lihaoyi:ujson_3:4.0.2",
+        "com.lihaoyi:upickle_3:4.0.2",
+        "org.json4s:json4s-native_3:4.0.7",
+        "com.michaelpollmeier:scala-repl-pp_3.3.6:0.6.3",
+        "org.apache.commons:commons-lang3:3.14.0",
+        "org.apache.commons:commons-text:1.12.0",
+        "org.apache.commons:commons-exec:1.4.0",
+        "org.apache.commons:commons-compress:1.26.2",
+        "org.scala-lang.modules:scala-xml_3:2.2.0",
+        "com.typesafe:config:1.4.3",
+        "com.michaelpollmeier:versionsort:1.0.11",
+        "org.scala-lang.modules:scala-parser-combinators_3:2.4.0",
+        "org.scala-lang.modules:scala-parallel-collections_3:1.0.4",
+        "net.java.dev.javacc:javacc:7.0.12",
+        "org.antlr:antlr4:4.7.2",
+        "org.antlr:antlr4-runtime:4.7.2",
+        "com.github.scopt:scopt_3:4.1.0",
+        "org.apache.logging.log4j:log4j-slf4j2-impl:2.20.0",
+        "com.google.code.gson:gson:2.13.1",
+        "com.googlecode.plist:dd-plist:1.28",
+        "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.21",
+        "org.jetbrains.kotlin:kotlin-stdlib:2.3.21",
+        "org.jetbrains.kotlin:kotlin-compiler-embeddable:2.3.21",
+        "org.jetbrains.kotlin:kotlin-allopen:2.3.21",
+        "org.jruby:jruby-complete:9.4.9.0",
+        "com.github.albfernandez:juniversalchardet:2.5.0",
+        "io.joern:eclipse-cdt-core:9.2.100.202507101054+1",
+        "org.eclipse.platform:org.eclipse.core.resources:3.23.0",
+        "org.eclipse.platform:org.eclipse.text:3.14.400",
+        "org.jline:jline:3.27.1",
+        "org.apache.maven:maven-artifact:3.9.16",
+        # TODO remove dependencies below this. They do not have production quality.
+        "com.squareup.tools.build:maven-archeologist:0.0.10",
+        "com.lihaoyi:requests_3:0.8.0",
+        "com.github.sh4869:semver-parser-scala_3:0.0.6",
+    ],
+    excluded_artifacts = [
+        # Exclude any scala libraries which might come in transitively.
+        # rules_scala will add the correct scala library for the configured Scala version.
+        # That way we do not have conflicts between different scala library versions on
+        # the build classpath.
+        "org.scala-lang:scala3-library_3",
+        "org.scala-lang:scala-library",
+    ],
+    fetch_sources = True,
+    lock_file = "//:maven_install.json",
+    repositories = [
+        "https://repo1.maven.org/maven2",
+        "https://repo.gradle.org/gradle/libs-releases/",
+    ],
+)
+use_repo(maven, "maven")
+
+maven.install(
+    name = "format_maven",
+    artifacts = [
+        "org.scalameta:scalafmt-cli_2.13:3.9.6",
+    ],
+    lock_file = "//:format_maven_install.json",
+    repositories = [
+        "https://repo1.maven.org/maven2",
+    ],
+)
+use_repo(maven, "format_maven")
+
+bazel_dep(name = "rules_pkg", version = "1.0.1")
+bazel_dep(name = "aspect_rules_lint", version = "2.5.2")
+bazel_dep(name = "buildifier_prebuilt", version = "8.5.1.2")
+bazel_dep(name = "rules_java", version = "9.6.1")
+
+# ASTGEN dependency section
+http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+JSSRC2CPG_ASTGEN_VERSION = "3.47.0"
+
+SWIFTSRC2CPG_ASTGEN_VERSION = "0.4.2"
+
+RUBYSRC2CPG_ASTGEN_VERSION = "0.58.0"
+
+RUBYSRC2CPG_TYPE_STUBS_VERSION = "0.6.0"
+
+RUST2CPG_ASTGEN_VERSION = "0.13.1"
+
+PHP_PARSER_VERSION = "4.15.10"
+
+# jssrc2cpg astgen binary imports
+http_file(
+    name = "jssrc2cpg_astgen_macos_arm",
+    executable = True,
+    sha256 = "dc47e619b3c4bea1f98de7b89a59a6351b83c75777f143055d1a6c38fe3bec5d",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv{}/astgen-macos-arm".format(JSSRC2CPG_ASTGEN_VERSION),
+)
+
+http_file(
+    name = "jssrc2cpg_astgen_macos_x86",
+    executable = True,
+    sha256 = "2b4dac59661fc29bd659a0324f477042a1206e29d572b50212e0b0da22794aae",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv{}/astgen-macos".format(JSSRC2CPG_ASTGEN_VERSION),
+)
+
+http_file(
+    name = "jssrc2cpg_astgen_linux_arm",
+    executable = True,
+    sha256 = "551203388b237b1642cbb73619202363ca24cbb1ad6aba85f0a3740443718986",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2fv{}/astgen-linux-arm".format(JSSRC2CPG_ASTGEN_VERSION),
+)
+
+http_file(
+    name = "jssrc2cpg_astgen_linux_x86",
+    executable = True,
+    sha256 = "88b83632f6e8149d51b8d47503bda802c04501c099da98ce8ee3597fe1835f17",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv{}/astgen-linux".format(JSSRC2CPG_ASTGEN_VERSION),
+)
+
+http_file(
+    name = "jssrc2cpg_astgen_win_x86",
+    executable = True,
+    sha256 = "95f7b4f63d98170607a37d186ee11131d6456c41082feb9c68ac73c0affdae0d",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv{}/astgen-win.exe".format(JSSRC2CPG_ASTGEN_VERSION),
+)
+
+#swiftsrc2cpg astgen binary imports
+http_file(
+    name = "swiftsrc2cpg_astgen_macos",
+    executable = True,
+    sha256 = "2ea737b2fb7e3e87a6e930753bb69601fc37bcb7ed36ac39cfdd29560d5810c3",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv{}/SwiftAstGen-mac".format(SWIFTSRC2CPG_ASTGEN_VERSION),
+)
+
+http_file(
+    name = "swiftsrc2cpg_astgen_linux_arm",
+    executable = True,
+    sha256 = "49da64aa0ebb3ef1ddd00742fb378081adc2e972d97b6766ac25208510e3503b",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv{}/SwiftAstGen-linux-arm64".format(SWIFTSRC2CPG_ASTGEN_VERSION),
+)
+
+http_file(
+    name = "swiftsrc2cpg_astgen_linux_x86",
+    executable = True,
+    sha256 = "1697e43e720768480d32468e02625129817ac770b58f536273f78378c064832e",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv{}/SwiftAstGen-linux".format(SWIFTSRC2CPG_ASTGEN_VERSION),
+)
+
+http_file(
+    name = "swiftsrc2cpg_astgen_win_x86",
+    executable = True,
+    sha256 = "f7d0e15f69c971a169b27819166ff01201e59908fa440f4d61a0ec7dc77f1f65",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv{}/SwiftAstGen-win.exe".format(SWIFTSRC2CPG_ASTGEN_VERSION),
+)
+
+#rubysrc2cpg astgen zip
+http_archive(
+    name = "rubysrc2cpg_astgen",
+    build_file = "//joern-cli/frontends/rubysrc2cpg:rubysrc2cpg_astgen.BUILD",
+    sha256 = "66a2a61e822b1a4e391f86571b4a796c01c75b53c105fe544733b222843d06c7",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/ruby-astgen%2Fv{}/ruby_ast_gen_v{}.zip".format(RUBYSRC2CPG_ASTGEN_VERSION, RUBYSRC2CPG_ASTGEN_VERSION),
+)
+
+http_file(
+    name = "rubysrc2cpg_type_stubs",
+    sha256 = "1b14a87a5e2080bf22b83b7af76805b621f2d959cf21a35b7b21f207f53e755d",
+    url = "https://github.com/joernio/joern-type-stubs/releases/download/v{}/rubysrc_builtin_types.zip".format(RUBYSRC2CPG_TYPE_STUBS_VERSION),
+)
+
+#rust2cpg astgen binary imports and syntax imports
+
+http_file(
+    name = "rust2cpg_node_syntax",
+    downloaded_file_path = "RustNodeSyntax.scala",
+    # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
+    # to update this all the time.
+    sha256 = "",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/RustNodeSyntax.scala".format(RUST2CPG_ASTGEN_VERSION),
+)
+
+http_file(
+    name = "rust2cpg_astgen_macos_arm",
+    executable = True,
+    # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
+    # to update this all the time.
+    sha256 = "",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-macos-arm".format(RUST2CPG_ASTGEN_VERSION),
+)
+
+http_file(
+    name = "rust2cpg_astgen_macos_x86",
+    executable = True,
+    # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
+    # to update this all the time.
+    sha256 = "",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-macos".format(RUST2CPG_ASTGEN_VERSION),
+)
+
+http_file(
+    name = "rust2cpg_astgen_linux_arm",
+    executable = True,
+    # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
+    # to update this all the time.
+    sha256 = "",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-linux-arm".format(RUST2CPG_ASTGEN_VERSION),
+)
+
+http_file(
+    name = "rust2cpg_astgen_linux_x86",
+    executable = True,
+    # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
+    # to update this all the time.
+    sha256 = "",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-linux".format(RUST2CPG_ASTGEN_VERSION),
+)
+
+http_file(
+    name = "rust2cpg_astgen_win_arm",
+    executable = True,
+    # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
+    # to update this all the time.
+    sha256 = "",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-win-arm.exe".format(RUST2CPG_ASTGEN_VERSION),
+)
+
+http_file(
+    name = "rust2cpg_astgen_win_x86",
+    executable = True,
+    # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
+    # to update this all the time.
+    sha256 = "",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-win.exe".format(RUST2CPG_ASTGEN_VERSION),
+)
+
+#php parser artefact
+http_file(
+    name = "php-parser",
+    executable = True,
+    sha256 = "9e33ef03889717059ee6fccb00f47ef05831599c10065ecc762d5d32ddd8b931",
+    url = "https://github.com/joernio/PHP-Parser/releases/download/v{}/php-parser.phar".format(PHP_PARSER_VERSION),
+)

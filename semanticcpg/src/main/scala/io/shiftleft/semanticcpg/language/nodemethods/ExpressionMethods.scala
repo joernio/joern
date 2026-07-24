@@ -59,8 +59,7 @@ class ExpressionMethods(val node: Expression) extends AnyVal with NodeExtension 
   def parameter(implicit callResolver: ICallResolver): Iterator[MethodParameterIn] = {
     val predicate: MethodParameterIn => Boolean = node.argumentName match {
       case Some(name) => _.name == name
-      case None =>
-        param => param.index.exists(idx => idx == node.argumentIndex || (param.isVariadic && idx < node.argumentIndex))
+      case None => param => param.index == node.argumentIndex || (param.isVariadic && param.index < node.argumentIndex)
     }
 
     for {

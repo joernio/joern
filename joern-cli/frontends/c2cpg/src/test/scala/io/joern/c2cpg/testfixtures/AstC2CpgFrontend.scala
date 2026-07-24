@@ -46,7 +46,7 @@ trait AstC2CpgFrontend extends LanguageFrontend {
       )
     headerPass.createAndApply()
     new FunctionDeclNodePass(cpg, headerPass.unhandledMethodDeclarations(), config).createAndApply()
-    new PostFrontendValidator(cpg, ValidationLevel.V2).run()
+    new PostFrontendValidator(cpg, ValidationLevel.V3).run()
     cpg
   }
 }

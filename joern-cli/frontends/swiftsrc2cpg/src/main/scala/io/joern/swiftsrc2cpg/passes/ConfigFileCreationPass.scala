@@ -25,22 +25,23 @@ class ConfigFileCreationPass(cpg: Cpg, config: Config)
 
   override val configFileFilters: List[Path => Boolean] = List(extensionFilter(PlistExt), extensionFilter(".xib"))
 
-  private def isBinaryPlist(file: Path): Boolean = {
-    if (!file.extension().contains(PlistExt)) return false
-    Try(IOUtils.readLinesInFile(file)) match {
-      case Success(dataBeginning :: _) => dataBeginning.trim.startsWith("bplist")
-      case _                           => false
+  /** Reads the file once and returns its content together with an optional source comment. Binary plists are converted
+    * to XML via [[PropertyListParser]] and annotated with a comment recording their origin; text files are returned
+    * as-is with an empty comment.
+    */
+  private def parseConfigFile(file: Path): Try[(String, String)] = Try {
+    val content       = IOUtils.readEntireFile(file)
+    val isBinaryPlist = file.extension().contains(PlistExt) && content.trim.startsWith("bplist")
+    if (isBinaryPlist) {
+      val sourceComment = s"\n<!--This file was generated from ${file.toAbsolutePath}-->"
+      (PropertyListParser.parse(file.toFile).toXMLPropertyList, sourceComment)
+    } else {
+      (content, "")
     }
   }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, file: Path): Unit = {
-    val parseResult = if (isBinaryPlist(file)) {
-      val sourceComment = s"\n<!--This file was generated from ${file.toAbsolutePath}-->"
-      Try((PropertyListParser.parse(file.toFile).toXMLPropertyList, sourceComment))
-    } else {
-      Try((IOUtils.readEntireFile(file), ""))
-    }
-    parseResult match {
+    parseConfigFile(file) match {
       case Success((content, sourceComment)) =>
         val configFileContent = s"$content$sourceComment"
         val name              = configFileName(file)

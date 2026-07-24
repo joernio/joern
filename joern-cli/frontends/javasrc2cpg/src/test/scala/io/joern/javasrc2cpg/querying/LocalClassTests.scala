@@ -107,20 +107,20 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         case List(thisParam, outerClassParam, capturedLocalParam, capturedParamParam) =>
           thisParam.name shouldBe "this"
           thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
-          thisParam.index shouldBe Some(0)
+          thisParam.index shouldBe 0
           thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod:void(int).Local")
 
           outerClassParam.name shouldBe "outerClass"
           outerClassParam.typeFullName shouldBe "foo.Foo"
-          outerClassParam.index shouldBe Some(1)
+          outerClassParam.index shouldBe 1
 
           capturedLocalParam.name shouldBe "capturedLocal"
           capturedLocalParam.typeFullName shouldBe "int"
-          capturedLocalParam.index shouldBe Some(2)
+          capturedLocalParam.index shouldBe 2
 
           capturedParamParam.name shouldBe "capturedParam"
           capturedParamParam.typeFullName shouldBe "int"
-          capturedParamParam.index shouldBe Some(3)
+          capturedParamParam.index shouldBe 3
       }
     }
 
@@ -252,16 +252,16 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         case List(thisParam, capturedLocalParam, capturedParamParam) =>
           thisParam.name shouldBe "this"
           thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
-          thisParam.index shouldBe Some(0)
+          thisParam.index shouldBe 0
           thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod:void(int).Local")
 
           capturedLocalParam.name shouldBe "capturedLocal"
           capturedLocalParam.typeFullName shouldBe "int"
-          capturedLocalParam.index shouldBe Some(1)
+          capturedLocalParam.index shouldBe 1
 
           capturedParamParam.name shouldBe "capturedParam"
           capturedParamParam.typeFullName shouldBe "int"
-          capturedParamParam.index shouldBe Some(2)
+          capturedParamParam.index shouldBe 2
       }
     }
 
@@ -339,13 +339,13 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
     "have an init parameter for the captured outer class" in {
       inside(localDecl.method.nameExact("<init>").parameter.l) { case List(thisParam, outerClassParam) =>
         thisParam.name shouldBe "this"
-        thisParam.index shouldBe Some(0)
+        thisParam.index shouldBe 0
         thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
         thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod:void(int).Local")
 
         outerClassParam.name shouldBe "outerClass"
         outerClassParam.typeFullName shouldBe "foo.Foo"
-        outerClassParam.index shouldBe Some(1)
+        outerClassParam.index shouldBe 1
 
       }
     }
@@ -403,7 +403,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
     "not have an init parameter for the outer class" in {
       inside(localDecl.method.nameExact("<init>").parameter.l) { case List(thisParam) =>
         thisParam.name shouldBe "this"
-        thisParam.index shouldBe Some(0)
+        thisParam.index shouldBe 0
         thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
         thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod:void(int).Local")
       }
@@ -497,16 +497,16 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         case List(thisParam, outerClassParam, capturedLocalParam) =>
           thisParam.name shouldBe "this"
           thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
-          thisParam.index shouldBe Some(0)
+          thisParam.index shouldBe 0
           thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod:void(int).Local")
 
           outerClassParam.name shouldBe "outerClass"
           outerClassParam.typeFullName shouldBe "foo.Foo"
-          outerClassParam.index shouldBe Some(1)
+          outerClassParam.index shouldBe 1
 
           capturedLocalParam.name shouldBe "capturedLocal"
           capturedLocalParam.typeFullName shouldBe "int"
-          capturedLocalParam.index shouldBe Some(2)
+          capturedLocalParam.index shouldBe 2
       }
     }
 
@@ -577,19 +577,19 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       inside(localConstructor.parameter.l) {
         case List(thisParam, ctxParam, outerClassParam, outerLocalParam, outerParamParam) =>
           thisParam.name shouldBe "this"
-          thisParam.index shouldBe Some(0)
+          thisParam.index shouldBe 0
 
           ctxParam.name shouldBe "ctxParam"
-          ctxParam.index shouldBe Some(1)
+          ctxParam.index shouldBe 1
 
           outerClassParam.name shouldBe "outerClass"
-          outerClassParam.index shouldBe Some(2)
+          outerClassParam.index shouldBe 2
 
           outerLocalParam.name shouldBe "outerLocal"
-          outerLocalParam.index shouldBe Some(3)
+          outerLocalParam.index shouldBe 3
 
           outerParamParam.name shouldBe "outerParam"
-          outerParamParam.index shouldBe Some(4)
+          outerParamParam.index shouldBe 4
       }
     }
 

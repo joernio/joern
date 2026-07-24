@@ -18,7 +18,9 @@ class ObjcCallFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     for {
-      call <- cpg.call.isStatic.nameExact("init").methodFullName(".+\\.init:\\(.*\\)->.+")
+      // Lead with the indexed exact-name lookup: putting `.isStatic` first would scan every call node and
+      // defeat the NAME index, whereas `nameExact` keeps the modifier check and regex on `init` calls only.
+      call <- cpg.call.nameExact("init").isStatic.methodFullName(".+\\.init:\\(.*\\)->.+")
       if call.typeFullName != PropertyDefaults.TypeFullName &&
         call.signature != PropertyDefaults.Signature &&
         AstCreatorHelper.isObjcCall(call.methodFullName)

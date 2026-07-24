@@ -5,6 +5,7 @@ import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.{ExecutionEnvironment, JRuby
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult, DefaultAstGenRunnerResult}
 import io.joern.x2cpg.astgen.AstGenRunner
+import io.joern.x2cpg.utils.JoernRunfilesLocator
 import org.jruby.RubyInstanceConfig
 import org.jruby.embed.{LocalContextScope, LocalVariableBehavior, PathType, ScriptingContainer}
 import org.slf4j.LoggerFactory
@@ -214,7 +215,10 @@ object RubyAstGenRunner {
 
   object JRubyEnvironment {
     def apply(): JRubyEnvironment = {
-      val env       = prepareExecutionEnvironment("ruby_ast_gen")
+      val env = JoernRunfilesLocator
+        .resolve("rubysrc2cpg_astgen/")
+        .map(path => LocalDir(Path.of(path)))
+        .getOrElse(prepareExecutionEnvironment("ruby_ast_gen"))
       val cwd       = env.path.toAbsolutePath.toString
       val gemPath   = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
       val container = new ScriptingContainer(LocalContextScope.THREADSAFE, LocalVariableBehavior.TRANSIENT)

@@ -2,6 +2,7 @@ package io.joern.php2cpg.parser
 
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain.PhpFile
+import io.joern.x2cpg.utils.JoernRunfilesLocator
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.LoggerFactory
@@ -115,7 +116,7 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
     var mode    = PARSE_MODE.SKIP_TRAILER
     val linesIt = lines.iterator
     while (linesIt.hasNext) {
-      val line = linesIt.next
+      val line = linesIt.next()
       mode match {
         case PARSE_MODE.PARSE_INFO =>
           if (line != "==> JSON dump:") {
@@ -164,11 +165,13 @@ object PhpParser {
   private val PhpParserBinEnvVar = "PHP_PARSER_BIN"
 
   private def defaultPhpParserBin: String = {
-    val packagePath = Paths.get(this.getClass.getProtectionDomain.getCodeSource.getLocation.toURI)
-    ExternalCommand
-      .executableDir(packagePath)
-      .resolve("php-parser/php-parser.php")
-      .toString
+    JoernRunfilesLocator.resolve("php-parser/file/downloaded").getOrElse {
+      val packagePath = Paths.get(this.getClass.getProtectionDomain.getCodeSource.getLocation.toURI)
+      ExternalCommand
+        .executableDir(packagePath)
+        .resolve("php-parser/php-parser.php")
+        .toString
+    }
   }
 
   private def configOverrideOrDefaultPath(

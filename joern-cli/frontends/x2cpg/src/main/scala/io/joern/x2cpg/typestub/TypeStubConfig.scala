@@ -18,11 +18,6 @@ trait TypeStubConfig { this: X2CpgConfig[?] =>
     */
   def withTypeStubs(value: Boolean): OwnType
 
-  /** Creates a meta-data class of information about the type stub management.
-    */
-  def typeStubMetaData: TypeStubMetaData =
-    TypeStubMetaData(useTypeStubs, getClass.getProtectionDomain.getCodeSource.getLocation)
-
 }
 
 /** The meta data around managing type stub resources for this frontend.

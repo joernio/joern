@@ -95,12 +95,12 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
   /** Traverse only to methods that are stubs, e.g., their code is not available or the method body is empty.
     */
   def isStub: Iterator[Method] =
-    traversal.where(_.not(_._cfgOut.not(_.collectAll[MethodReturn])))
+    traversal.filter(_.isStub)
 
   /** Traverse only to methods that are not stubs.
     */
   def isNotStub: Iterator[Method] =
-    traversal.where(_._cfgOut.not(_.collectAll[MethodReturn]))
+    traversal.filterNot(_.isStub)
 
   /** Traverse only to methods that accept variadic arguments.
     */

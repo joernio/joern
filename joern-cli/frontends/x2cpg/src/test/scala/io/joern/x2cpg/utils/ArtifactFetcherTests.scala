@@ -1,7 +1,8 @@
 package io.joern.x2cpg.utils
 
+import io.joern.x2cpg.testfixtures.NetworkTest
 import io.joern.x2cpg.utils.ArtifactFetcherTests.artifactFetcherTest
-import io.joern.x2cpg.utils.RetryableAssertion.eventually
+import io.joern.x2cpg.testfixtures.RetryableAssertion.eventually
 import io.shiftleft.semanticcpg.utils.FileUtil
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

@@ -1,23 +1,27 @@
 package io.joern.c2cpg.astcreation
 
-import io.joern.c2cpg.passes.{AstCreationPass, FunctionDeclNodePass}
+import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.AstNodeBuilder.dependencyNode
-import io.joern.x2cpg.{Ast, AstNodeBuilder, SourceFiles}
+import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall}
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTArrayRangeDesignator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTArrayRangeDesignator, ICPPEvaluation}
 
+import java.nio.file.{Path, Paths}
 import scala.collection.mutable
 import scala.util.{Success, Try}
 
 trait AstCreatorHelper { this: AstCreator =>
 
+  private val resolvedInputPath: Path = Paths.get(config.inputPath).toAbsolutePath.normalize()
+
   private val scopeLocalUniqueNames: mutable.Map[String, Int] = mutable.HashMap.empty
   private val file2OffsetTable: Array[Int]                    = genFileOffsetTable()
+  private val relativePathCache: mutable.Map[String, String]  = mutable.HashMap.empty
 
   // We use our own call ast creation function since the version in x2cpg treats
   // base as receiver if no receiver is given which does not fit the needs of this
@@ -39,8 +43,9 @@ trait AstCreatorHelper { this: AstCreator =>
     val bse = base.getOrElse(Ast())
     var ast = Ast(callNode).withChild(bse)
 
+    val receiverRoot = receiver.flatMap(_.root)
     if (receiver.isDefined && receiver != base) {
-      receiver.get.root.get.asInstanceOf[ExpressionNew].argumentIndex = -1
+      receiverRoot.get.asInstanceOf[ExpressionNew].argumentIndex = -1
       ast = ast.withChild(receiver.get)
     }
 
@@ -49,8 +54,8 @@ trait AstCreatorHelper { this: AstCreator =>
       .withArgEdges(callNode, baseRoot)
       .withArgEdges(callNode, arguments.flatMap(_.root))
 
-    if (receiver.isDefined) {
-      ast = ast.withReceiverEdge(callNode, receiver.get.root.get)
+    receiverRoot.foreach { root =>
+      ast = ast.withReceiverEdge(callNode, root)
     }
     ast
   }
@@ -177,7 +182,7 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def astsForDependenciesAndImports(iASTTranslationUnit: IASTTranslationUnit): Seq[Ast] = {
-    val allIncludes = iASTTranslationUnit.getIncludeDirectives.toList.filterNot(isIncludedNode)
+    val allIncludes = iASTTranslationUnit.getIncludeDirectives.iterator.filterNot(isIncludedNode).toSeq
     allIncludes.map { include =>
       val name       = include.getName.toString
       val dependency = dependencyNode(name, name, "include")
@@ -190,18 +195,29 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def astsForComments(iASTTranslationUnit: IASTTranslationUnit): Seq[Ast] = {
     if (config.includeComments)
-      iASTTranslationUnit.getComments.toList.filterNot(isIncludedNode).map(comment => astForComment(comment))
+      iASTTranslationUnit.getComments.iterator.filterNot(isIncludedNode).map(comment => astForComment(comment)).toSeq
     else Seq.empty
   }
 
   protected def isIncludedNode(node: IASTNode): Boolean = fileName(node) != filename
 
   protected def fileName(node: IASTNode): String = {
-    val path = Try(node.getContainingFilename) match {
+    val rawPath = Try(node.getContainingFilename) match {
       case Success(value) if value.nonEmpty => value
       case _                                => filename
     }
-    SourceFiles.toRelativePath(path, config.inputPath)
+    relativePathCache.getOrElseUpdate(
+      rawPath, {
+        val absPath = Paths.get(rawPath).normalize()
+        if (absPath.equals(resolvedInputPath)) {
+          absPath.getFileName.toString
+        } else if (absPath.startsWith(resolvedInputPath)) {
+          resolvedInputPath.relativize(absPath).toString
+        } else {
+          rawPath
+        }
+      }
+    )
   }
 
   protected def astForNode(node: IASTNode): Ast = {
@@ -232,7 +248,14 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def genFileOffsetTable(): Array[Int] = {
-    cdtAst.getRawSignature.toCharArray.zipWithIndex.collect { case ('\n', idx) => idx + 1 }
+    val chars   = cdtAst.getRawSignature.toCharArray
+    val buf     = new scala.collection.mutable.ArrayBuffer[Int](256)
+    var charIdx = 0
+    while (charIdx < chars.length) {
+      if (chars(charIdx) == '\n') buf += charIdx + 1
+      charIdx += 1
+    }
+    buf.toArray
   }
 
   private def notHandledText(node: IASTNode): String = {

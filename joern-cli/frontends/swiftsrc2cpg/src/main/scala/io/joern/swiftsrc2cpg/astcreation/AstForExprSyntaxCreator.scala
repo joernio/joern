@@ -196,6 +196,18 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
+  /** Builds the argument ASTs for a call: positional arguments followed by the trailing closure and any additional
+    * trailing closures. The trailing-closure ASTs are evaluated before the positional arguments so that the side
+    * effects of `astForNode` (scope references, unique-name counters) run in that order.
+    */
+  private def argAstsForCall(callExpr: FunctionCallExprSyntax): Seq[Ast] = {
+    val trailingClosureAsts =
+      callExpr.trailingClosure.map(astForNode).toList
+    val additionalTrailingClosuresAsts =
+      callExpr.additionalTrailingClosures.children.map(element => astForNode(element.closure))
+    callExpr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
+  }
+
   private def createBuiltinStaticCall(callExpr: FunctionCallExprSyntax, callee: ExprSyntax, fullName: String): Ast = {
     val callName = callee match {
       case m: MemberAccessExprSyntax => code(m.declName)
@@ -204,17 +216,11 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val callNode = createStaticCallNode(callee, code(callExpr), callName, fullName, Defines.Any)
     setFullNameInfoForCall(callExpr, callNode)
 
-    val trailingClosureAsts            = callExpr.trailingClosure.toList.map(astForNode)
-    val additionalTrailingClosuresAsts = callExpr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
-    val argAsts = callExpr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
-    callAst(callNode, argAsts)
+    callAst(callNode, argAstsForCall(callExpr))
   }
 
   private def handleCallNodeArgs(callExpr: FunctionCallExprSyntax, baseAst: Ast, callName: String): Ast = {
-    val trailingClosureAsts            = callExpr.trailingClosure.toList.map(astForNode)
-    val additionalTrailingClosuresAsts = callExpr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
-
-    val args = callExpr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
+    val args = argAstsForCall(callExpr)
 
     val callExprCode = code(callExpr)
     val callCode = if (callExprCode.startsWith(".")) {
@@ -320,9 +326,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     )
     finalizeInitCall(expr, constructorCallNode, tpe)
 
-    val trailingClosureAsts            = expr.trailingClosure.toList.map(astForNode)
-    val additionalTrailingClosuresAsts = expr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
-    val args = expr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
+    val args = argAstsForCall(expr)
 
     val constructorCallAst = callAst(constructorCallNode, args, base = Some(Ast(baseNode)))
 
@@ -350,9 +354,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       callNode.typeFullName(typeFullName)
     }
 
-    val trailingClosureAsts            = node.trailingClosure.toList.map(astForNode)
-    val additionalTrailingClosuresAsts = node.additionalTrailingClosures.children.map(c => astForNode(c.closure))
-    val argAsts = node.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
+    val argAsts = argAstsForCall(node)
     setArgumentIndices(argAsts)
 
     val baseRoot = baseAst.root.toList
@@ -422,9 +424,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val callMethodFullname = s"${Defines.Function}<$signature>.$callName:$signature"
     val baseAst            = astForIdentifier(expr.calledExpression)
 
-    val trailingClosureAsts            = expr.trailingClosure.toList.map(astForNode)
-    val additionalTrailingClosuresAsts = expr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
-    val args = expr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
+    val args = argAstsForCall(expr)
 
     val callExprCode = code(expr)
     val callNode_ = callNode(
@@ -498,16 +498,74 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForIfExprSyntax(node: IfExprSyntax): Ast = {
-    val code            = this.code(node)
-    val ifNode          = controlStructureNode(node, ControlStructureTypes.IF, code)
-    val conditionAstRaw = astForNode(node.conditions)
-    val conditionAst = conditionAstRaw.root match {
-      case Some(_) => conditionAstRaw
-      case None    => blockAst(blockNode(node.conditions), List.empty)
-    }
-    val thenAst = astForNode(node.body)
-    val elseAst = node.elseBody.map(astForNode)
-    ifThenElseAst(ifNode, Option(conditionAst), thenAst, elseAst)
+    handleOptionalBindingConditions(
+      node.conditions.children,
+      onAllSimple = simpleBindings => astForIfLetExprSyntax(node, simpleBindings, node.body, node.elseBody),
+      onPartial = (simpleBindings, tupleBindings, otherConditions) =>
+        astForIfLetExprSyntaxPartial(node, simpleBindings, tupleBindings, otherConditions, node.body, node.elseBody),
+      onStandard = () => {
+        val conditionAst = astForNode(node.conditions)
+        val thenAst      = astForNode(node.body)
+        val elseAst      = node.elseBody.map(astForNode)
+        ifThenElseAst(node, Some(conditionAst), thenAst, elseAst)
+      }
+    )
+  }
+
+  /** Handles Swift optional binding (if-let) constructs.
+    *
+    * De-sugars `if let baz = foo() { body }` into:
+    *
+    * Condition: { (<tmp>0 = foo()) != nil }
+    *
+    * Then block: { let baz = <tmp>0; body }
+    *
+    * For multiple bindings `if let a = foo(), let b = bar() { body }`:
+    *
+    * Condition: { (<tmp>0 = foo()) != nil && (<tmp>1 = bar()) != nil }
+    *
+    * Then block: { a = <tmp>0; b = <tmp>1; body }
+    *
+    * For mixed cases with/without initializers `if let a = foo(), let b { body }`:
+    *
+    * Condition: { (<tmp>0 = foo()) != nil && b != nil }
+    *
+    * Then block: { a = <tmp>0; body }
+    */
+  private def astForIfLetExprSyntax(
+    node: IfExprSyntax,
+    optionalBindings: Seq[OptionalBindingConditionSyntax],
+    thenBody: CodeBlockSyntax,
+    elseBody: Option[IfExprSyntax | CodeBlockSyntax]
+  ): Ast = {
+    val bindingInfos = collectBindingInfos(optionalBindings)
+    val conditionAst = buildOptionalBindingCondition(node, bindingInfos)
+    val thenAst      = buildBodyWithUnwrapping(thenBody, thenBody.statements.children, bindingInfos)
+    val elseAst      = elseBody.map(astForNode)
+    ifThenElseAst(node, Some(conditionAst), thenAst, elseAst)
+  }
+
+  /** Handles partial optional binding desugaring with other conditions.
+    *
+    * De-sugars `if let a = foo(), #unavailable(...) { body }` into:
+    *
+    * Condition: { ((<tmp>0 = foo()) != nil) && #unavailable(...) }
+    *
+    * Then block: { let a = <tmp>0; body }
+    */
+  private def astForIfLetExprSyntaxPartial(
+    node: IfExprSyntax,
+    simpleBindings: Seq[OptionalBindingConditionSyntax],
+    tupleBindings: Seq[OptionalBindingConditionSyntax],
+    otherConditions: Seq[ConditionElementSyntax],
+    thenBody: CodeBlockSyntax,
+    elseBody: Option[IfExprSyntax | CodeBlockSyntax]
+  ): Ast = {
+    val bindingInfos = collectBindingInfos(simpleBindings)
+    val conditionAst = buildOptionalBindingCondition(node, bindingInfos, otherConditions)
+    val thenAst      = buildBodyWithUnwrapping(thenBody, tupleBindings ++ thenBody.statements.children, bindingInfos)
+    val elseAst      = elseBody.map(astForNode)
+    ifThenElseAst(node, Some(conditionAst), thenAst, elseAst)
   }
 
   private def astForInOutExprSyntax(node: InOutExprSyntax): Ast = {
@@ -724,7 +782,9 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     * issues.
     */
   protected def createFieldAccessChain(baseName: String, fields: List[String], node: SwiftNode): Ast = {
-    val baseAst = Ast(identifierNode(node, baseName))
+    val baseNode = identifierNode(node, baseName)
+    val baseAst  = Ast(baseNode)
+    scope.addVariableReference(baseName, baseNode, baseNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
     fields.foldLeft(baseAst) { (accAst, field) =>
       createFieldAccessCallAst(node, accAst, fieldIdentifierNode(node, field, field))
     }
@@ -750,15 +810,15 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val elements = tupleExpr.elements.children.toList
     val equalityAsts = elements.zipWithIndex.map { case (element, idx) =>
       val currentPath = subjectFieldPath :+ s"$idx"
-      val subjectCode = (subjectBase :: currentPath).mkString(".")
-      val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
       element.expression match {
         case inner: TupleExprSyntax =>
           astForExpressionTuplePattern(inner, subjectBase, currentPath, node)
         case _ =>
-          val rhsAst = astForNode(element)
-          val eqCode = s"$subjectCode == ${code(element.expression)}"
-          val eqNode = createStaticCallNode(node, eqCode, Operators.equals, Operators.equals, Defines.Bool)
+          val subjectCode = (subjectBase :: currentPath).mkString(".")
+          val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
+          val rhsAst      = astForNode(element)
+          val eqCode      = s"$subjectCode == ${code(element.expression)}"
+          val eqNode      = createStaticCallNode(node, eqCode, Operators.equals, Operators.equals, Defines.Bool)
           callAst(eqNode, List(subjectAst, rhsAst))
       }
     }
@@ -826,7 +886,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     */
 
   /** Creates an instanceOf check for an IsTypePatternSyntax against a subject field access. */
-  protected def astForIsTypePatternInTupleContext(
+  private def astForIsTypePatternInTupleContext(
     isType: IsTypePatternSyntax,
     subjectAst: Ast,
     subjectCode: String,
@@ -843,7 +903,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   /** Creates an equality check for an expression pattern against a subject field access. */
-  protected def astForExpressionPatternInTupleContext(
+  private def astForExpressionPatternInTupleContext(
     ep: ExpressionPatternSyntax,
     subjectAst: Ast,
     subjectCode: String,
@@ -856,7 +916,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   /** Creates a variable binding assignment for a pattern element against a subject field access. */
-  protected def astForBindingInTupleContext(
+  private def astForBindingInTupleContext(
     varName: String,
     subjectAst: Ast,
     subjectCode: String,
@@ -878,32 +938,37 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   ): List[Ast] = {
     tuplePat.elements.children.toList.zipWithIndex.flatMap { case (element, idx) =>
       val currentPath = subjectFieldPath :+ s"$idx"
-      val subjectCode = (subjectBase :: currentPath).mkString(".")
-      val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
       element.pattern match {
         case inner: TuplePatternSyntax =>
           astsForBindingTuplePattern(inner, subjectBase, currentPath, node)
-        case isType: IsTypePatternSyntax =>
-          astForIsTypePatternInTupleContext(isType, subjectAst, subjectCode, node)
-        case ep: ExpressionPatternSyntax =>
-          astForExpressionPatternInTupleContext(ep, subjectAst, subjectCode, node)
-        case _: WildcardPatternSyntax =>
-          List.empty
         case vb: ValueBindingPatternSyntax =>
           vb.pattern match {
             case inner: TuplePatternSyntax =>
               astsForBindingTuplePattern(inner, subjectBase, currentPath, node)
             case _ =>
+              val subjectCode = (subjectBase :: currentPath).mkString(".")
+              val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
               astForBindingInTupleContext(code(vb.pattern), subjectAst, subjectCode, tuplePat)
           }
-        case _ =>
-          astForBindingInTupleContext(code(element.pattern), subjectAst, subjectCode, tuplePat)
+        case _: WildcardPatternSyntax =>
+          List.empty
+        case other =>
+          val subjectCode = (subjectBase :: currentPath).mkString(".")
+          val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
+          other match {
+            case isType: IsTypePatternSyntax =>
+              astForIsTypePatternInTupleContext(isType, subjectAst, subjectCode, node)
+            case ep: ExpressionPatternSyntax =>
+              astForExpressionPatternInTupleContext(ep, subjectAst, subjectCode, node)
+            case _ =>
+              astForBindingInTupleContext(code(other), subjectAst, subjectCode, tuplePat)
+          }
       }
     }
   }
 
   /** Determines whether an expression inside a tuple represents a binding (let/var pattern). */
-  protected def isBindingExpression(expr: ExprSyntax): Boolean = expr match {
+  private def isBindingExpression(expr: ExprSyntax): Boolean = expr match {
     case p: PatternExprSyntax =>
       p.pattern match {
         case _: ValueBindingPatternSyntax => true
@@ -914,7 +979,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   /** Dispatches a PatternSyntax inside a tuple context to the appropriate de-sugaring. */
-  protected def astsForPatternInTupleContext(
+  private def astsForPatternInTupleContext(
     pattern: PatternSyntax,
     subjectAst: Ast,
     subjectCode: String,
@@ -942,23 +1007,28 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   ): List[Ast] = {
     tupleExpr.elements.children.toList.zipWithIndex.flatMap { case (element, idx) =>
       val currentPath = subjectFieldPath :+ s"$idx"
-      val subjectCode = (subjectBase :: currentPath).mkString(".")
-      val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
       element.expression match {
         case inner: TupleExprSyntax =>
           astsForBindingTupleExpr(inner, subjectBase, currentPath, node, allBindings)
-        case _ if allBindings || isBindingExpression(element.expression) =>
-          val varName = extractBindingName(element.expression)
-          astForBindingInTupleContext(varName, subjectAst, subjectCode, tupleExpr)
-        case p: PatternExprSyntax =>
-          astsForPatternInTupleContext(p.pattern, subjectAst, subjectCode, node)
         case _: DiscardAssignmentExprSyntax =>
           List.empty
-        case _ =>
-          val rhsAst = astForNode(element)
-          val eqCode = s"$subjectCode == ${code(element.expression)}"
-          val eqNode = createStaticCallNode(node, eqCode, Operators.equals, Operators.equals, Defines.Bool)
-          List(callAst(eqNode, List(subjectAst, rhsAst)))
+        case expr =>
+          val subjectCode = (subjectBase :: currentPath).mkString(".")
+          val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
+          if (allBindings || isBindingExpression(expr)) {
+            val varName = extractBindingName(expr)
+            astForBindingInTupleContext(varName, subjectAst, subjectCode, tupleExpr)
+          } else {
+            expr match {
+              case p: PatternExprSyntax =>
+                astsForPatternInTupleContext(p.pattern, subjectAst, subjectCode, node)
+              case _ =>
+                val rhsAst = astForNode(element)
+                val eqCode = s"$subjectCode == ${code(expr)}"
+                val eqNode = createStaticCallNode(node, eqCode, Operators.equals, Operators.equals, Defines.Bool)
+                List(callAst(eqNode, List(subjectAst, rhsAst)))
+            }
+          }
       }
     }
   }
@@ -967,7 +1037,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     *   - `DeclReferenceExprSyntax` (`a` in `case let (a, b):`)
     *   - `PatternExprSyntax(ValueBindingPatternSyntax(IdentifierPatternSyntax))` (`var a` in `case (var a, var b):`)
     */
-  protected def extractBindingName(expr: ExprSyntax): String = {
+  private def extractBindingName(expr: ExprSyntax): String = {
     expr match {
       case d: DeclReferenceExprSyntax => code(d)
       case p: PatternExprSyntax =>
@@ -993,9 +1063,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
             val childrenFlowAsts = children.collect {
               case child if child.whereClause.isDefined =>
                 val whereClause = child.whereClause.get
-                val ifNode =
-                  controlStructureNode(whereClause.condition, ControlStructureTypes.IF, code(whereClause.condition))
-                val whereAst = astForNode(whereClause)
+                val whereAst    = astForNode(whereClause)
 
                 val op = Operators.logicalNot
                 val whereClauseCallNode =
@@ -1009,9 +1077,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
                 val argAsts = List(whereAst)
                 val testAst = callAst(whereClauseCallNode, argAsts)
-                val consequentAst =
-                  Ast(controlStructureNode(whereClause.condition, ControlStructureTypes.CONTINUE, "continue"))
-                ifThenElseAst(ifNode, Option(testAst), consequentAst, None)
+                val thenAst = continueAst(whereClause.condition, "continue")
+                ifThenElseAst(whereClause, Some(testAst), thenAst, None)
             }
             (childrenTestAsts, childrenFlowAsts)
           case other => (List(astForNode(other)), List.empty)
@@ -1020,7 +1087,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         val statementsAsts      = if (s.statements.children.isEmpty) List.empty else List(astForNode(s.statements))
         val asts                = flowAst ++ statementsAsts
         val cAsts = if (needsSyntheticBreak) {
-          asts :+ Ast(controlStructureNode(s, ControlStructureTypes.BREAK, "break"))
+          asts :+ breakAst(s, "break")
         } else asts
         (tAsts, cAsts.toList)
       case i: IfConfigDeclSyntax =>
@@ -1052,11 +1119,9 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       val subjectAssignAst =
         createAssignmentCallAst(node, Ast(subjectIdentNode), subjectExprAst, s"$subjectTmpName = ${code(node.subject)}")
 
-      val switchNode    = controlStructureNode(node, ControlStructureTypes.SWITCH, code(node))
       val condIdentNode = identifierNode(node, subjectTmpName, subjectTmpName, Defines.Tuple)
       scope.addVariableReference(subjectTmpName, condIdentNode, Defines.Tuple, EvaluationStrategies.BY_REFERENCE)
       val condAst = Ast(condIdentNode)
-      setOrderExplicitly(condAst, 1)
 
       val switchBlockNode = blockNode(node).order(2)
       scope.pushNewBlockScope(switchBlockNode)
@@ -1066,22 +1131,16 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       localAstParentStack.pop()
 
       val switchBlockAst  = blockAst(switchBlockNode, casesAsts)
-      val switchAstResult = switchAst(switchNode, condAst, Seq(switchBlockAst))
+      val switchAstResult = switchAst(node, Some(condAst), Seq(switchBlockAst))
 
       scope.popScope()
       localAstParentStack.pop()
 
       blockAst(outerBlockNode, List(subjectAssignAst, switchAstResult))
     } else {
-      // The semantics of switch statement children is partially defined by their order value.
-      // The blockAst must have order == 2. Only to avoid collision we set switchExpressionAst to 1
-      // because the semantics of it is already indicated via the condition edge.
-      val switchNode = controlStructureNode(node, ControlStructureTypes.SWITCH, code(node))
-
       val switchExpressionAst = astForNode(node.subject)
-      setOrderExplicitly(switchExpressionAst, 1)
 
-      val blockNode_ = blockNode(node).order(2)
+      val blockNode_ = blockNode(node)
       scope.pushNewBlockScope(blockNode_)
       localAstParentStack.push(blockNode_)
       val casesAsts = cases.flatMap(astsForSwitchCase(_, None))
@@ -1089,7 +1148,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       localAstParentStack.pop()
 
       val switchBlockAst = blockAst(blockNode_, casesAsts)
-      switchAst(switchNode, switchExpressionAst, Seq(switchBlockAst))
+      switchAst(node, Some(switchExpressionAst), Seq(switchBlockAst))
     }
   }
 

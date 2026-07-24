@@ -42,4 +42,11 @@ object RustJsonParser {
     ParseResult(filename, fullPath, ast, crateName, modulePath, sourceFileContent, contentBytes, loc)
   }
 
+  // Concrete nodes have `range` but no `text`. Macro-expanded nodes have `text` but a zeroed range.
+  // Instead of checking if a node lives under some `macroExpansion` in the tree, we can simply check
+  // whether `text` is defined.
+  extension (node: RustNode) {
+    def isMacroExpanded: Boolean = node.text.isDefined
+  }
+
 }

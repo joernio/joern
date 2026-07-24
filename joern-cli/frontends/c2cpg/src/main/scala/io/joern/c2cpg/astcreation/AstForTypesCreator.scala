@@ -198,9 +198,14 @@ trait AstForTypesCreator { this: AstCreator =>
   }
 
   private def astForIASTEqualsInitializer(declarator: IASTDeclarator, leftAst: Ast, rightAst: Ast) = {
+    // Strip leading pointer/reference markers (* or &) from the declarator code since they are part of
+    // the type specifier (stored in IASTSimpleDeclaration.getDeclSpecifier), not the variable name.
+    // E.g. for `const char* c = read()`, CDT gives declarator code `* c = read()` but the assignment
+    // expression should be `c = read()`.
+    val assignmentCode = code(declarator).replaceFirst("^[*&]+\\s*", "")
     val assignmentCallNode = callNode(
       declarator,
-      code(declarator),
+      assignmentCode,
       Operators.assignment,
       Operators.assignment,
       DispatchTypes.STATIC_DISPATCH,
@@ -264,20 +269,21 @@ trait AstForTypesCreator { this: AstCreator =>
       case declStmt: CPPASTSimpleDeclaration if isUnsupportedCoroutineKeyword(declStmt) =>
         Seq(astForUnsupportedCoroutineNode(declStmt))
       case declaration: IASTSimpleDeclaration =>
+        val declarators = declaration.getDeclarators
         declaration.getDeclSpecifier match {
           case spec: IASTCompositeTypeSpecifier =>
-            astsForCompositeType(spec, declaration.getDeclarators.toList)
+            astsForCompositeType(spec, declarators.toList)
           case spec: IASTEnumerationSpecifier =>
-            astsForEnum(spec, declaration.getDeclarators.toList)
+            astsForEnum(spec, declarators.toList)
           case spec: IASTElaboratedTypeSpecifier =>
-            astsForElaboratedType(spec, declaration.getDeclarators.toList)
-          case spec: IASTNamedTypeSpecifier if declaration.getDeclarators.isEmpty =>
+            astsForElaboratedType(spec, declarators.toList)
+          case spec: IASTNamedTypeSpecifier if declarators.isEmpty =>
             val filename  = fileName(spec)
             val name      = shortName(spec)
             val fullName_ = fullName(spec)
             Seq(Ast(typeDeclNode(spec, name, registerType(fullName_), filename, code(spec), alias = Option(name))))
-          case _ if declaration.getDeclarators.nonEmpty =>
-            declaration.getDeclarators.toIndexedSeq.zipWithIndex.map {
+          case _ if declarators.nonEmpty =>
+            declarators.toIndexedSeq.zipWithIndex.map {
               case (d: IASTFunctionDeclarator, _) =>
                 astForFunctionDeclarator(d)
               case (d: IASTSimpleDeclaration, _) if d.getInitializer != null =>
@@ -287,9 +293,9 @@ trait AstForTypesCreator { this: AstCreator =>
             }
           case _ if code(declaration) == ";" =>
             Seq.empty // dangling decls from unresolved macros; we ignore them
-          case _ if declaration.getDeclarators.isEmpty && declaration.getParent.isInstanceOf[IASTTranslationUnit] =>
+          case _ if declarators.isEmpty && declaration.getParent.isInstanceOf[IASTTranslationUnit] =>
             Seq.empty // dangling decls from unresolved macros; we ignore them
-          case _ if declaration.getDeclarators.isEmpty => Seq(astForNode(declaration))
+          case _ if declarators.isEmpty => Seq(astForNode(declaration))
         }
       case alias: CPPASTAliasDeclaration                         => Seq(astForAliasDeclaration(alias))
       case functionDefinition: IASTFunctionDefinition            => Seq(astForFunctionDefinition(functionDefinition))
@@ -578,8 +584,9 @@ trait AstForTypesCreator { this: AstCreator =>
     typeRefNodeMaybe.foreach(typeRefIdStack.push)
     scope.pushNewMethodScope(typeDecl.fullName, typeDecl.name, typeDecl, None)
 
-    val memberNodesWithInitializer = typeSpecifier.getEnumerators.toList.filter(_.getValue != null)
-    val memberAsts                 = typeSpecifier.getEnumerators.toList.map(memberAstForEnumerator)
+    val enumerators                = typeSpecifier.getEnumerators.toList
+    val memberNodesWithInitializer = enumerators.filter(_.getValue != null)
+    val memberAsts                 = enumerators.map(memberAstForEnumerator)
 
     typeRefNodeMaybe.foreach(_ => typeRefIdStack.pop())
     methodAstParentStack.pop()

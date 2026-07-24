@@ -164,6 +164,19 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
   def isSurroundedByArrowClosure: Boolean =
     stack.map(_.scopeNode).collectFirst { case nm: MethodScope if nm.isArrowFunc => nm }.isDefined
 
+  /** Looks up a variable, but only within the current method boundary, i.e. the block scopes up to and including the
+    * nearest enclosing method scope.
+    */
+  def lookupVariableInCurrentMethod(identifier: String): Option[NewNode] = {
+    val (upToMethod, methodAndBelow) = stack.span {
+      case ScopeElement(_: MethodScope, _) => false
+      case _                               => true
+    }
+    (upToMethod ++ methodAndBelow.take(1)).collectFirst {
+      case scopeElement if scopeElement.variables.contains(identifier) => scopeElement.variables(identifier)
+    }
+  }
+
   def isTopLevel: Boolean =
     getEnclosingTypeDeclTypeName.forall(_ == NamespaceTraversal.globalNamespaceName)
 
@@ -254,14 +267,16 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
   }
 
   def getScopedClosureName: String = {
-    stack.headOption match {
-      case Some(ScopeElement(ns: NamespaceScope, _)) => ns.getClosureMethodName
-      case Some(ScopeElement(ts: TypeScope, _))      => ts.getClosureMethodName
-      case Some(ScopeElement(ms: MethodScope, _))    => ms.getClosureMethodName
-      case _ =>
-        logger.warn("BUG: Attempting to get scopedClosureName, but no scope has been push. Defaulting to unscoped")
+    stack
+      .collectFirst {
+        case ScopeElement(ns: NamespaceScope, _) => ns.getClosureMethodName
+        case ScopeElement(ts: TypeScope, _)      => ts.getClosureMethodName
+        case ScopeElement(ms: MethodScope, _)    => ms.getClosureMethodName
+      }
+      .getOrElse {
+        logger.warn("Attempting to get scopedClosureName, but no scope has been pushed. Defaulting to unscoped.")
         NameConstants.Closure
-    }
+      }
   }
 
   private def addInitToScope(init: PhpInit, initList: List[mutable.ArrayBuffer[PhpInit]]): Unit = {

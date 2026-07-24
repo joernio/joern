@@ -26,20 +26,23 @@ case class FrontendHTTPClient(port: Int) {
   /** Builds an HTTP POST request with the given arguments.
     *
     * The request is sent to the configured host and port, with a URI path defined by `FrontendHTTPDefaults.route`. The
-    * request body is constructed from the `args` array, which is concatenated into a single string separated by "&" and
-    * sent as `application/x-www-form-urlencoded`.
+    * request body is a JSON object. Arguments with values are encoded as strings and flags are encoded as null.
     *
     * @param args
     *   An array of arguments to be included in the POST request body.
     * @return
     *   The constructed `HttpRequest` object.
     */
-  def buildRequest(args: Array[String]): HttpRequest = {
+  def buildRequest(args: (String, Option[String])*): HttpRequest = {
+    val body = ujson.Obj.from(args.map {
+      case (key, Some(value)) => key -> ujson.Str(value)
+      case (key, None)        => key -> ujson.Null
+    })
     HttpRequest
       .newBuilder()
       .uri(URI.create(s"http://localhost:$port/run"))
-      .header("Content-Type", "application/x-www-form-urlencoded")
-      .POST(BodyPublishers.ofString(args.mkString("&")))
+      .header("Content-Type", "application/json")
+      .POST(BodyPublishers.ofString(body.render()))
       .build()
   }
 

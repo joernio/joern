@@ -10,15 +10,17 @@ class RustDefaultTestCpg extends DefaultTestCpg with Rust2CpgFrontend {
 
   override protected def codeDirPreProcessing(rootFile: Path, codeFiles: List[Path]): Unit = {
     val cargoTomlPath = rootFile.resolve("Cargo.toml")
-    val cargoTomlContents =
-      """
-        |[package]
-        |name = "rust2cpgtest"
-        |version = "0.1.0"
-        |edition = "2021"
-        |""".stripMargin
+    if (!Files.exists(cargoTomlPath)) {
+      val cargoTomlContents =
+        """
+          |[package]
+          |name = "rust2cpgtest"
+          |version = "0.1.0"
+          |edition = "2021"
+          |""".stripMargin
 
-    Files.writeString(cargoTomlPath, cargoTomlContents)
+      Files.writeString(cargoTomlPath, cargoTomlContents)
+    }
   }
 
 }

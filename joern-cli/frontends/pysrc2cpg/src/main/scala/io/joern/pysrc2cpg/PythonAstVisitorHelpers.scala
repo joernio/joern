@@ -33,17 +33,8 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
     )
   }
 
-  private var tmpCounter = 0
-
   protected def getUnusedName(prefix: String = null): String = {
-    // TODO check that result name does not collide with existing variables.
-    val result = if (prefix != null) {
-      s"${prefix}_tmp$tmpCounter"
-    } else {
-      s"tmp$tmpCounter"
-    }
-    tmpCounter += 1
-    result
+    contextStack.getUnusedName(Option(prefix))
   }
 
   protected def createTry(

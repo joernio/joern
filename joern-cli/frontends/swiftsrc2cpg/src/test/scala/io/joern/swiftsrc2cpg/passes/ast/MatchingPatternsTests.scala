@@ -458,22 +458,32 @@ class MatchingPatternsTests extends SwiftSrc2CpgSuite {
         |  }
         |}
         |""".stripMargin)
-      val List(ifNode)                      = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
-      val condBlock                         = ifNode.condition.isBlock.l.head
-      val tmpName                           = condBlock.ast.isLocal.name.filter(_.startsWith("<tmp>")).loneElement
-      val List(_)                           = condBlock.ast.isLocal.nameExact("a").l
-      val List(_)                           = condBlock.ast.isLocal.nameExact("b").l
-      val List(tmpAssign, assignA, assignB) = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
-      tmpAssign.code shouldBe s"$tmpName = x"
-      tmpAssign.order shouldBe 1
-      assignA.code shouldBe s"a = $tmpName.0"
-      assignA.order shouldBe 2
-      assignB.code shouldBe s"b = $tmpName.1"
-      assignB.order shouldBe 3
-      val isTupleOp         = Defines.createIsTupleOperator(2)
-      val List(isTupleCall) = condBlock.astChildren.isCall.nameExact(isTupleOp).l
-      isTupleCall.code shouldBe s"$isTupleOp($tmpName)"
-      isTupleCall.order shouldBe 4
+      val List(methodBlock) = cpg.method.nameExact("foo").block.l
+      val List(tmpLocal)    = methodBlock.local.nameNot("self", "x").l
+      val tmpName           = tmpLocal.name
+      tmpName shouldBe "<tmp>0"
+
+      val List(ifNode) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
+
+      // Condition: { (<tmp>0 = x) != nil }
+      val List(condBlock) = ifNode.condition.isBlock.l
+      val List(condCheck) = condBlock.astChildren.isCall.nameExact(Operators.notEquals).l
+      condCheck.code shouldBe s"($tmpName = x) != nil"
+
+      // Then block: { a = <tmp>0.0; b = <tmp>0.1; print(a); print(b) }
+      val List(thenBlock) = ifNode.whenTrue.isBlock.l
+
+      val List(assignA) = thenBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"a = $tmpName.0").l
+      assignA.argument(1).code shouldBe "a"
+      assignA.argument(2).code shouldBe s"$tmpName.0"
+
+      val List(assignB) = thenBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"b = $tmpName.1").l
+      assignB.argument(1).code shouldBe "b"
+      assignB.argument(2).code shouldBe s"$tmpName.1"
+
+      val List(printA, printB) = thenBlock.astChildren.isCall.nameExact("print").l
+      printA.code shouldBe "print(a)"
+      printB.code shouldBe "print(b)"
     }
 
   }

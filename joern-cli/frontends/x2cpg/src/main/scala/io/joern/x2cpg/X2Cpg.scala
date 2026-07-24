@@ -111,6 +111,7 @@ object DependencyDownloadConfig {
       opt[Unit]("download-dependencies")
         .text("Download the dependencies of the target project and use their symbols to resolve types.")
         .action((_, c) => c.withDownloadDependencies(true))
+        .unbounded()
     )
   }
 }

@@ -44,34 +44,27 @@ class ConditionalTests extends CSharpCode2CpgFixture {
           | a--;
           |}
           |""".stripMargin))
-      cpg.method("Main").controlStructure.size shouldBe 2
-
-      inside(cpg.method("Main").controlStructure.l) { case ifNode :: elseNode :: Nil =>
+      inside(cpg.method("Main").controlStructure.l) { case ifNode :: Nil =>
         ifNode.code shouldBe "if (a == 1)"
-        elseNode.code shouldBe "else"
-
         ifNode.controlStructureType shouldBe ControlStructureTypes.IF
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
 
         inside(ifNode.condition.l) { case List(cndNode) =>
           cndNode.code shouldBe "a == 1"
         }
 
-        inside(ifNode.astChildren.isBlock.l) { case blockNode :: Nil =>
+        inside(ifNode.whenTrue.isBlock.l) { case blockNode :: Nil =>
           val List(incCall) = blockNode.ast.isCall.l
           incCall.code shouldBe "a++"
           incCall.astParent shouldBe blockNode
         }
 
-        inside(elseNode.astChildren.isBlock.l) { case blockNode :: Nil =>
+        inside(ifNode.whenFalse.isBlock.l) { case blockNode :: Nil =>
           val List(decCall) = blockNode.ast.isCall.l
           decCall.code shouldBe "a--"
           decCall.astParent shouldBe blockNode
-
         }
 
         ifNode.whenTrue.assignment.code.l shouldBe List("a++")
-
       }
 
     }
@@ -88,39 +81,38 @@ class ConditionalTests extends CSharpCode2CpgFixture {
           |}
           |""".stripMargin))
 
-      inside(cpg.method("Main").controlStructure.sortBy(_.lineNumber).l) {
-        case ifNode :: elseIfNode :: elseNode :: Nil =>
-          ifNode.code shouldBe "if (a < 5)"
-          ifNode.controlStructureType shouldBe ControlStructureTypes.IF
-          inside(ifNode.condition.l) { case List(cndNode) =>
-            cndNode.code shouldBe "a < 5"
-          }
-          inside(ifNode.astChildren.isBlock.l) { case blockNode :: Nil =>
-            val List(incCall) = blockNode.ast.isCall.l
-            incCall.code shouldBe "a++"
-            incCall.astParent shouldBe blockNode
-          }
+      inside(cpg.method("Main").controlStructure.sortBy(_.lineNumber).l) { case ifNode :: elseIfNode :: Nil =>
+        ifNode.code shouldBe "if (a < 5)"
+        ifNode.controlStructureType shouldBe ControlStructureTypes.IF
+        inside(ifNode.condition.l) { case List(cndNode) =>
+          cndNode.code shouldBe "a < 5"
+        }
+        inside(ifNode.whenTrue.isBlock.l) { case blockNode :: Nil =>
+          val List(incCall) = blockNode.ast.isCall.l
+          incCall.code shouldBe "a++"
+          incCall.astParent shouldBe blockNode
+        }
 
-          elseIfNode.code shouldBe "if (a > 5)"
-          elseIfNode.controlStructureType shouldBe ControlStructureTypes.IF
-          inside(elseIfNode.condition.l) { case List(cndNode) =>
-            cndNode.code shouldBe "a > 5"
-          }
-          inside(elseIfNode.astChildren.isBlock.l) { case blockNode :: Nil =>
-            val List(decCall) = blockNode.ast.isCall.l
-            decCall.code shouldBe "a--"
-            decCall.astParent shouldBe blockNode
-          }
+        // the `else if` is wired directly as the false branch of the outer `if`
+        ifNode.whenFalse.l shouldBe List(elseIfNode)
 
-          elseNode.code shouldBe "else"
-          elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-          inside(elseNode.astChildren.isBlock.l) { case blockNode :: Nil =>
-            val List(plusEqualsCall) = blockNode.ast.isCall.l
-            plusEqualsCall.code shouldBe "a += 2"
-            plusEqualsCall.astParent shouldBe blockNode
+        elseIfNode.code shouldBe "if (a > 5)"
+        elseIfNode.controlStructureType shouldBe ControlStructureTypes.IF
+        inside(elseIfNode.condition.l) { case List(cndNode) =>
+          cndNode.code shouldBe "a > 5"
+        }
+        inside(elseIfNode.whenTrue.isBlock.l) { case blockNode :: Nil =>
+          val List(decCall) = blockNode.ast.isCall.l
+          decCall.code shouldBe "a--"
+          decCall.astParent shouldBe blockNode
+        }
 
-          }
-
+        // the final `else` block is wired directly as the false branch of the `else if`
+        inside(elseIfNode.whenFalse.isBlock.l) { case blockNode :: Nil =>
+          val List(plusEqualsCall) = blockNode.ast.isCall.l
+          plusEqualsCall.code shouldBe "a += 2"
+          plusEqualsCall.astParent shouldBe blockNode
+        }
       }
     }
 

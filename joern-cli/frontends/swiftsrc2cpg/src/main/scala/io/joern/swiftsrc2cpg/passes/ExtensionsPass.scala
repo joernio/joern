@@ -31,6 +31,11 @@ class ExtensionsPass(
   inheritsMapping: Map[String, Set[String]]
 ) extends CpgPass(cpg) {
 
+  /** Set view over `memberPropertyMapping.values` for O(1) membership tests (the subscript handlers only need to know
+    * whether a derived subscript fullName is a known computed-property value, not which key maps to it).
+    */
+  private lazy val memberPropertyValues: Set[String] = memberPropertyMapping.values.toSet
+
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     handleSubscriptGetterCalls(diffGraph)
     handleExtensionMembers(diffGraph)
@@ -107,6 +112,7 @@ class ExtensionsPass(
     *   - removes the receiver edge from the call node
     */
   private def handleExtensionCalls(diffGraph: DiffGraphBuilder): Unit = {
+    if (extensionFullNameMapping.isEmpty) return
     val callCandidates = cpg.call
       .methodFullNameNot(io.joern.x2cpg.Defines.DynamicCallUnknownFullName)
       .filterNot(_.methodFullName.startsWith("<operator"))
@@ -143,6 +149,7 @@ class ExtensionsPass(
     *       not from an extension
     */
   private def handleMemberPropertyGetterCalls(diffGraph: DiffGraphBuilder): Unit = {
+    if (memberPropertyMapping.isEmpty) return
     for {
       fieldAccess <- cpg.fieldAccess
       if !fieldAccess.astIn.isCall.isAssignment.target.contains(fieldAccess)
@@ -183,6 +190,7 @@ class ExtensionsPass(
     *       not from an extension
     */
   private def handleSubscriptGetterCalls(diffGraph: DiffGraphBuilder): Unit = {
+    if (extensionFullNameMapping.isEmpty && memberPropertyValues.isEmpty) return
     for {
       subscriptCall <- cpg.call.nameExact(Operators.indexAccess)
       if !subscriptCall.astIn.isCall.isAssignment.target.contains(subscriptCall)
@@ -194,7 +202,9 @@ class ExtensionsPass(
       Seq(s"subscript.getter", "subscript").foreach { memberName =>
         val subscriptFullNameAndSignature = s"$baseFullName.$memberName:($indexTypeFullName)->$indexTypeFullName"
         val fullNamesFromExtensions       = extensionFullNameMapping.get(subscriptFullNameAndSignature).toList
-        val fullNamesFromMembers          = memberPropertyMapping.values.find(_ == subscriptFullNameAndSignature).toList
+        val fullNamesFromMembers =
+          if (memberPropertyValues.contains(subscriptFullNameAndSignature)) subscriptFullNameAndSignature :: Nil
+          else Nil
         (fullNamesFromExtensions ++ fullNamesFromMembers).foreach { subscriptFullName =>
           diffGraph.setNodeProperty(subscriptCall, PropertyNames.Name, memberName)
           diffGraph.setNodeProperty(subscriptCall, PropertyNames.MethodFullName, subscriptFullName)
@@ -227,6 +237,7 @@ class ExtensionsPass(
     *     - removes intermediate `fieldAccess` and member identifier nodes/edges that are no longer needed
     */
   private def handleMemberPropertySetterCalls(diffGraph: DiffGraphBuilder): Unit = {
+    if (memberPropertyMapping.isEmpty) return
     for {
       assignmentCall      <- cpg.assignment
       sourceNode          <- assignmentCall.source
@@ -274,6 +285,7 @@ class ExtensionsPass(
     *     - removes intermediate `indexAccess` and index nodes/edges that are no longer needed
     */
   private def handleSubscriptSetterCalls(diffGraph: DiffGraphBuilder): Unit = {
+    if (extensionFullNameMapping.isEmpty && memberPropertyValues.isEmpty) return
     for {
       assignmentCall    <- cpg.assignment
       sourceNode        <- assignmentCall.source
@@ -286,7 +298,8 @@ class ExtensionsPass(
       val memberName                    = "subscript.setter"
       val subscriptFullNameAndSignature = s"$baseFullName.$memberName:($indexTypeFullName)->$indexTypeFullName"
       val fullNamesFromExtensions       = extensionFullNameMapping.get(subscriptFullNameAndSignature).toList
-      val fullNamesFromMembers          = memberPropertyMapping.values.find(_ == subscriptFullNameAndSignature).toList
+      val fullNamesFromMembers =
+        if (memberPropertyValues.contains(subscriptFullNameAndSignature)) subscriptFullNameAndSignature :: Nil else Nil
       (fullNamesFromExtensions ++ fullNamesFromMembers).foreach { subscriptFullName =>
         diffGraph.setNodeProperty(assignmentCall, PropertyNames.Name, memberName)
         diffGraph.setNodeProperty(assignmentCall, PropertyNames.MethodFullName, subscriptFullName)

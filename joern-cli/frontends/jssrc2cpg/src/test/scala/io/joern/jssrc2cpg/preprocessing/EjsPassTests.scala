@@ -17,7 +17,7 @@ class EjsPassTests extends JsSrc2CpgSuite {
         "index.js.ejs"
       )
       cpg.file.name.l shouldBe List("index.js.ejs")
-      cpg.call.code.l.sorted shouldBe List("user.name")
+      cpg.call.name("escapeFn").argument(1).code.l shouldBe List("user.name")
     }
 
     "be ignored at folders excluded by default" in {
@@ -31,7 +31,7 @@ class EjsPassTests extends JsSrc2CpgSuite {
         .moreCode(codeString, "vendor/bar.js.ejs")
         .moreCode(codeString, "www/baz.js.ejs")
       cpg.file.name.l shouldBe List("index.js.ejs")
-      cpg.call.code.l.sorted shouldBe List("user.name")
+      cpg.call.name("escapeFn").argument(1).code.l shouldBe List("user.name")
     }
 
     "be handled correctly" in {
@@ -66,25 +66,21 @@ class EjsPassTests extends JsSrc2CpgSuite {
         "index.ejs"
       )
       cpg.file.name.l shouldBe List("index.ejs")
-      cpg.call.code.l.sorted shouldBe
-        List(
-          "console.log",
-          "console.log(user)",
-          "exampleWrite = 'some value'",
-          "foo.callUnescaped",
-          "foo.callUnescaped()",
-          "foo.callWithWhitespaces",
-          "foo.callWithWhitespaces()",
-          "friend.name",
-          "friend.name",
-          "friend.name === selected",
-          "friend.name === selected ? \"selected\" : \"\"",
-          "friends.forEach",
-          "friends.forEach(function(friend, index) { %>\n        <li class=\"<%= index === 0 ? \"first\" : \"\" %> <%= friend.name === selected ? \"selected\" : \"\" %>\"><%= friend.name %></li>\n    <% })",
-          "index === 0",
-          "index === 0 ? \"first\" : \"\"",
-          "user.name"
-        )
+      // unescaped output <%- %> -> __append wrapping the raw expression
+      cpg.call.name("__append").argument(1).code.l shouldBe List("foo.callUnescaped()")
+      // escaped output <%= %> -> escapeFn, one per output expression
+      cpg.call.name("escapeFn").argument(1).code.sorted.l shouldBe List(
+        "friend.name",
+        "friend.name === selected ? \"selected\" : \"\"",
+        "index === 0 ? \"first\" : \"\"",
+        "user.name"
+      )
+      // the throwaway `ap` identifier never surfaces as a call name OR an identifier;
+      // scriptlet/slurp blocks keep their real call names
+      val callNames = cpg.call.name.toSet
+      callNames should contain allOf ("callWithWhitespaces", "forEach", "log", "callUnescaped")
+      callNames should not contain "ap"
+      cpg.identifier.name.toSet should not contain "ap"
     }
 
     "invalid EJS file test" in {

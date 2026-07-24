@@ -107,6 +107,50 @@ class OperatorTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "a field access on `self`" should {
+    val cpg = code("""
+        |struct Foo {
+        | bar: i32,
+        |}
+        |impl Foo {
+        | fn get_bar(&self) -> i32 {
+        |   self.bar
+        | }
+        |}
+        |""".stripMargin)
+
+    "lower to a fieldAccess call" in {
+      inside(cpg.method.name("get_bar").call.nameExact(Operators.fieldAccess).l) { case fieldAccess :: Nil =>
+        fieldAccess.code shouldBe "self.bar"
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        fieldAccess.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have the lhs as the first argument" in {
+      inside(cpg.method.name("get_bar").call.nameExact(Operators.fieldAccess).argument(1).l) {
+        case (deref: Call) :: Nil =>
+          deref.name shouldBe Operators.indirection
+          deref.code shouldBe "*self"
+          deref.typeFullName shouldBe "rust2cpgtest::Foo"
+          inside(deref.argument.l) { case (self: Identifier) :: Nil =>
+            self.name shouldBe "self"
+            self.code shouldBe "self"
+            self.typeFullName shouldBe "&rust2cpgtest::Foo"
+          }
+      }
+    }
+
+    "have the field as the second argument" in {
+      inside(cpg.method.name("get_bar").call.nameExact(Operators.fieldAccess).argument(2).l) {
+        case (field: FieldIdentifier) :: Nil =>
+          field.code shouldBe "bar"
+          field.canonicalName shouldBe "bar"
+      }
+    }
+  }
+
   "unary operators" should {
     val cpg = code("""
         |fn main(x: i32, b: bool, p: *const i32) {
@@ -159,6 +203,76 @@ class OperatorTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.call.nameExact(Operators.indirection).argument.l) { case (p: Identifier) :: Nil =>
         p.name shouldBe "p"
         p.typeFullName shouldBe "*const i32"
+      }
+    }
+  }
+
+  "a shared reference expression" should {
+    val cpg = code("""
+        |fn main(x: i32) {
+        | let r = &x;
+        |}
+        |""".stripMargin)
+
+    "lower `&x` as an addressOf call with &i32 typeFullName" in {
+      inside(cpg.call.nameExact(Operators.addressOf).l) { case addressOf :: Nil =>
+        addressOf.code shouldBe "&x"
+        addressOf.methodFullName shouldBe Operators.addressOf
+        addressOf.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        addressOf.typeFullName shouldBe "&i32"
+      }
+    }
+
+    "have correct arguments in `&x`" in {
+      inside(cpg.call.nameExact(Operators.addressOf).argument.l) { case (ident: Identifier) :: Nil =>
+        ident.name shouldBe "x"
+        ident.typeFullName shouldBe "i32"
+      }
+    }
+  }
+
+  "a mutable reference expression" should {
+    val cpg = code("""
+        |fn main(mut x: i32) {
+        | let m = &mut x;
+        |}
+        |""".stripMargin)
+
+    "lower `&mut x` as an addressOf call with &mut i32 typeFullName" in {
+      inside(cpg.call.nameExact(Operators.addressOf).l) { case addressOf :: Nil =>
+        addressOf.code shouldBe "&mut x"
+        addressOf.methodFullName shouldBe Operators.addressOf
+        addressOf.typeFullName shouldBe "&mut i32"
+      }
+    }
+
+    "have correct arguments in `&mut x`" in {
+      inside(cpg.call.nameExact(Operators.addressOf).argument.l) { case (ident: Identifier) :: Nil =>
+        ident.name shouldBe "x"
+        ident.typeFullName shouldBe "i32"
+      }
+    }
+  }
+
+  "a raw reference expression" should {
+    val cpg = code("""
+        |fn main(x: i32) {
+        | let p = &raw const x;
+        |}
+        |""".stripMargin)
+
+    "lower `&raw const x` as an addressOf call with *const i32 typeFullName" in {
+      inside(cpg.call.nameExact(Operators.addressOf).l) { case addressOf :: Nil =>
+        addressOf.code shouldBe "&raw const x"
+        addressOf.methodFullName shouldBe Operators.addressOf
+        addressOf.typeFullName shouldBe "*const i32"
+      }
+    }
+
+    "have correct arguments in `&raw const x`" in {
+      inside(cpg.call.nameExact(Operators.addressOf).argument.l) { case (ident: Identifier) :: Nil =>
+        ident.name shouldBe "x"
+        ident.typeFullName shouldBe "i32"
       }
     }
   }

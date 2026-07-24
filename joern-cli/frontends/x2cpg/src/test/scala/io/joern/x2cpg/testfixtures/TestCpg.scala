@@ -1,7 +1,6 @@
 package io.joern.x2cpg.testfixtures
 
 import flatgraph.Graph
-import io.joern.x2cpg.utils.TestCodeWriter
 import io.shiftleft.codepropertygraph.generated.Cpg
 
 import java.nio.file.{Files, Path}

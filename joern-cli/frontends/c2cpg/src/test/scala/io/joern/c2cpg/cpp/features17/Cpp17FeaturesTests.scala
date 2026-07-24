@@ -135,7 +135,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       argsParam.name shouldBe "args"
       argsParam.typeFullName shouldBe "Args"
       argsParam.isVariadic shouldBe true
-      argsParam.index shouldBe Some(1)
+      argsParam.index shouldBe 1
       val List(retExpr) = cpg.method.nameExact("logicalAnd").ast.isReturn.astChildren.isCall.l
       retExpr.name shouldBe "<operator>.fold"
       retExpr.typeFullName shouldBe "bool"
@@ -161,7 +161,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       argsParam.name shouldBe "args"
       argsParam.typeFullName shouldBe "Args"
       argsParam.isVariadic shouldBe true
-      argsParam.index shouldBe Some(1)
+      argsParam.index shouldBe 1
       val List(retExpr) = cpg.method.nameExact("sum").ast.isReturn.astChildren.isCall.l
       retExpr.name shouldBe "<operator>.fold"
       retExpr.typeFullName shouldBe "Args"
@@ -576,8 +576,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |static_assert(isIntegral<S>() == false);
           |""".stripMargin)
       cpg.method.nameExact("isIntegral").controlStructure.code.map(StringUtils.normalizeSpace).l shouldBe List(
-        "if constexpr (std::is_integral<T>::value) { return true; } else { return false; }",
-        "else"
+        "if constexpr (std::is_integral<T>::value) { return true; } else { return false; }"
       )
     }
 

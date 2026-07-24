@@ -3,9 +3,8 @@ package io.joern.javasrc2cpg.querying
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.edges.Ref
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal, MethodParameterIn}
-import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language.*
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
@@ -321,7 +320,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
       inside(cpg.method.name("test").call.name("foo").argument(0).outE.collectAll[Ref].l) { case List(ref) =>
         inside(ref.dst) { case param: MethodParameterIn =>
           param.name shouldBe "this"
-          param.index shouldBe Some(0)
+          param.index shouldBe 0
           param.method.fullName shouldBe "Foo.test:void()"
         }
       }
@@ -340,7 +339,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
       inside(cpg.method.name("test").call.name("foo").argument(0).outE.collectAll[Ref].l) { case List(ref) =>
         inside(ref.dst) { case param: MethodParameterIn =>
           param.name shouldBe "this"
-          param.index shouldBe Some(0)
+          param.index shouldBe 0
           param.method.fullName shouldBe "Foo.test:void()"
         }
       }

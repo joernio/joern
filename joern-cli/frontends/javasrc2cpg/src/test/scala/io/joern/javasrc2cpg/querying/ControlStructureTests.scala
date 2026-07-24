@@ -519,6 +519,15 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
         item.refOut.toSet should contain(itemLocal)
       }
     }
+
+    "connect the desugared FOR init, update and body via control structure edges" in {
+      val List(forNode) = cpg.controlStructure.controlStructureType(ControlStructureTypes.FOR).l
+      forNode.forInitOut.code.l shouldBe List("int $idx0 = 0")
+      forNode.forUpdateOut.code.l shouldBe List("$idx0++")
+      inside(forNode.forBodyOut.l) { case List(body: Block) =>
+        body.astChildren.isCall.name.l shouldBe List(Operators.assignment, "sink")
+      }
+    }
   }
 
   "foreach loops over collections" should {
@@ -694,16 +703,14 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
         case List(ifOne: ControlStructure, ifTwo: ControlStructure) =>
           ifOne.condition.code.l shouldBe List("c > 10")
           ifOne.trueBodyOut.astChildren.code.l shouldBe List("c -= 10")
-          inside(ifOne.falseBodyOut.l) { case List(elseNode: ControlStructure) =>
-            elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-            elseNode.astChildren.isBlock.astChildren.l shouldBe List(ifTwo)
+          inside(ifOne.falseBodyOut.l) { case List(elseBlock: Block) =>
+            elseBlock.astChildren.l shouldBe List(ifTwo)
           }
 
           ifTwo.condition.code.l shouldBe List("c < 10")
           ifTwo.trueBodyOut.astChildren.code.l shouldBe List("c += 10")
-          inside(ifTwo.falseBodyOut.l) { case List(elseNode: ControlStructure) =>
-            elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-            elseNode.astChildren.isBlock.astChildren.code.l shouldBe List("c = 10")
+          inside(ifTwo.falseBodyOut.l) { case List(elseBlock: Block) =>
+            elseBlock.astChildren.code.l shouldBe List("c = 10")
           }
       }
     }
@@ -752,6 +759,26 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
         inside(tryNode.finallyBodyOut.l) { case List(finallyNode: ControlStructure) =>
           finallyNode.astChildren.isBlock.astChildren.code.l shouldBe List("printf(\"finally\")")
         }
+      }
+    }
+  }
+
+  "`throw` statements" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public static void foo(Exception ex) {
+        |    throw ex;
+        |  }
+        |}
+        |""".stripMargin)
+
+    "lower as a THROW control structure with the thrown expression as its argument" in {
+      inside(cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.THROW).l) {
+        case List(throwNode: ControlStructure) =>
+          throwNode.code shouldBe "throw ex;"
+          val List(thrownExpr) = throwNode.astChildren.l
+          thrownExpr.code shouldBe "ex"
+          throwNode.argumentOut.l shouldBe List(thrownExpr)
       }
     }
   }
@@ -893,7 +920,7 @@ class ControlStructureTests extends JavaSrcCode2CpgFixture {
   "should identify an else block" in {
     val ifBlock = cpg.method.name("elseTest").ifBlock.head
     ifBlock.code shouldBe "if (b)"
-    val List(condition: Identifier, thenBlock: Block, elseBlock: ControlStructure) = ifBlock.astChildren.l: @unchecked
+    val List(condition: Identifier, thenBlock: Block, elseBlock: Block) = ifBlock.astChildren.l: @unchecked
     condition.code shouldBe "b"
     condition.order shouldBe 1
 
@@ -904,10 +931,8 @@ class ControlStructureTests extends JavaSrcCode2CpgFixture {
     thenBody.argument.l.tail.head.code shouldBe "42"
     thenBody.order shouldBe 1
 
-    elseBlock.code shouldBe "else"
-    elseBlock.controlStructureType shouldBe "ELSE"
     elseBlock.order shouldBe 3
-    val elseAssign = elseBlock.astChildren.head.astChildren.head.asInstanceOf[Call]
+    val elseAssign = elseBlock.astChildren.head.asInstanceOf[Call]
     elseAssign.order shouldBe 1
     elseAssign.code shouldBe "x = 39"
   }

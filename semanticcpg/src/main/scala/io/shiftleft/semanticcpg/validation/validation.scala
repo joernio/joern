@@ -1,13 +1,14 @@
 package io.shiftleft.semanticcpg.validation
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, EdgeTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, EdgeTypes, PropertyDefaults, nodes}
 import io.shiftleft.passes.CpgPass
-
-import scala.collection.mutable
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.validation.PostFrontendValidator.ErrorType
 import org.slf4j.{Logger, LoggerFactory}
+
+import scala.collection.mutable
 
 class ValidationError(msg: String) extends RuntimeException(msg) {}
 
@@ -15,6 +16,7 @@ enum ValidationLevel(val value: Int) extends Ordered[ValidationLevel] {
   case V0 extends ValidationLevel(0)
   case V1 extends ValidationLevel(1)
   case V2 extends ValidationLevel(2)
+  case V3 extends ValidationLevel(3)
 
   override def compare(that: ValidationLevel): Int = this.value.compareTo(that.value)
 }
@@ -52,7 +54,7 @@ abstract class AbstractValidator(cpg: Cpg) extends CpgPass(cpg) {
 object PostFrontendValidator {
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  /** Newly added error types should have an `addedInLevel` one level higher than the highest (currently V2) */
+  /** Newly added error types should have an `addedInLevel` one level higher than the highest */
   enum ErrorType(val addedInLevel: ValidationLevel) {
     case FULLNAME_UNIQUE_METHOD                    extends ErrorType(ValidationLevel.V1)
     case FULLNAME_UNIQUE_TYPE                      extends ErrorType(ValidationLevel.V1)
@@ -68,6 +70,7 @@ object PostFrontendValidator {
     case CTRL_EDGE_CONTROL_STRUCTURE_TYPE_MISMATCH extends ErrorType(ValidationLevel.V2)
     case CTRL_EDGE_USING_LEGACY                    extends ErrorType(ValidationLevel.V2)
     case CTRL_EDGE_REQUIRED_MISSING                extends ErrorType(ValidationLevel.V2)
+    case DANGLING_AST_NODE                         extends ErrorType(ValidationLevel.V3)
   }
 }
 
@@ -78,11 +81,11 @@ object PostFrontendValidator {
   * faster checking code, then enable in sptests and prod.
   *
   * NOTE: All validation checks with a level lower or equal to [[fatalValidationLevel]] will result in an exception. See
-  * [[ValidationLevel]] and [[ErrorType]] for the highest validation level.
+  * [[ValidationLevel]] and [[PostFrontendValidator.ErrorType]] for the highest validation level.
   */
 class PostFrontendValidator(cpg: Cpg, fatalValidationLevel: ValidationLevel) extends AbstractValidator(cpg) {
-  import PostFrontendValidator.logger
   import PostFrontendValidator.ErrorType.*
+  import PostFrontendValidator.logger
 
   /** Run the validator using the standard pass mechanism. */
   def run(): Unit = createAndApply()
@@ -229,10 +232,27 @@ class PostFrontendValidator(cpg: Cpg, fatalValidationLevel: ValidationLevel) ext
     case _ => // Do nothing: other nodes worth checking?
   }
 
-  /** Ensure a node has at most one incoming AST edge. */
+  /** Ensure all AST nodes have exactly one AST parent. */
   private def checkAstIn(node: nodes.StoredNode): Unit = {
     if (node._astIn.size > 1) {
       registerViolation(MULTI_AST_IN, s"Node $node should have at most one incoming AST edge")
+    }
+
+    node match {
+      // root of the hierarchy
+      case _: File =>
+      // none of the frontends have historically added these below a file, so it seems this acts as alternative root of the hierarchy
+      case namespaceBlock: NamespaceBlock if namespaceBlock.fullName == "<global>" =>
+
+      // handled after the frontend in AstLinkerPass
+      case astNode: (Method | TypeDecl | Member)
+          if astNode.astParentFullName != PropertyDefaults.AstParentFullName &&
+            astNode.astParentType != PropertyDefaults.AstParentType =>
+
+      case astNode: AstNode if node._astIn.isEmpty =>
+        registerViolation(DANGLING_AST_NODE, s"Node $node has no AST parent")
+
+      case _ =>
     }
   }
 
@@ -381,113 +401,6 @@ class PostFrontendValidator(cpg: Cpg, fatalValidationLevel: ValidationLevel) ext
     }
   }
 
-  /** Detect control structures using the legacy AST-order fallback in CfgCreator instead of the dedicated body edges.
-    * Mirrors the exact fallback conditions in CfgCreator: each check fires when the corresponding new edge is absent
-    * but the order-based AST child that CfgCreator would use as a fallback is present.
-    *
-    * Checks covered (matching each CfgCreator warnOnce call):
-    *   - DO: no DO_BODY edge, but astChildren.order(1) exists
-    *   - FOR: no FOR_INIT/FOR_UPDATE/FOR_BODY edge, but astChildren.order(nLocals+1/3/4) exists
-    *   - IF/WHILE/SWITCH: no TRUE_BODY or FALSE_BODY edge, but astChildren at order 2/3 exist
-    *   - TRY: no TRY_BODY/CATCH_BODY/FINALLY_BODY edge, but matching AST children exist
-    */
-  private def checkControlStructureLegacyFallback(node: nodes.StoredNode): Unit = {
-    node match {
-      case controlStructure: nodes.ControlStructure =>
-        val structureType = controlStructure.controlStructureType
-        structureType match {
-          case ControlStructureTypes.DO =>
-            if (controlStructure._doBodyOut.isEmpty && controlStructure.astChildren.order(1).nonEmpty)
-              registerViolation(
-                CTRL_EDGE_USING_LEGACY,
-                s"DO ControlStructure '${controlStructure.code}' is missing DO_BODY edge (CfgCreator will use legacy order fallback)"
-              )
-
-          case ControlStructureTypes.FOR =>
-            val numLocals = controlStructure.astChildren.count(_.isInstanceOf[nodes.Local])
-            if (controlStructure._forInitOut.isEmpty && controlStructure.astChildren.order(numLocals + 1).nonEmpty)
-              registerViolation(
-                CTRL_EDGE_USING_LEGACY,
-                s"FOR ControlStructure '${controlStructure.code}' is missing FOR_INIT edge (CfgCreator will use legacy order fallback)"
-              )
-            if (controlStructure._forUpdateOut.isEmpty && controlStructure.astChildren.order(numLocals + 3).nonEmpty)
-              registerViolation(
-                CTRL_EDGE_USING_LEGACY,
-                s"FOR ControlStructure '${controlStructure.code}' is missing FOR_UPDATE edge (CfgCreator will use legacy order fallback)"
-              )
-            if (controlStructure._forBodyOut.isEmpty && controlStructure.astChildren.order(numLocals + 4).nonEmpty)
-              registerViolation(
-                CTRL_EDGE_USING_LEGACY,
-                s"FOR ControlStructure '${controlStructure.code}' is missing FOR_BODY edge (CfgCreator will use legacy order fallback)"
-              )
-
-          case ControlStructureTypes.IF | ControlStructureTypes.WHILE | ControlStructureTypes.SWITCH =>
-            if (controlStructure._trueBodyOut.isEmpty && controlStructure.astChildren.order(2).nonEmpty)
-              registerViolation(
-                CTRL_EDGE_USING_LEGACY,
-                s"$structureType ControlStructure '${controlStructure.code}' is missing TRUE_BODY edge (CfgCreator will use legacy order fallback)"
-              )
-            if (controlStructure._falseBodyOut.isEmpty && controlStructure.astChildren.order(3).nonEmpty)
-              registerViolation(
-                CTRL_EDGE_USING_LEGACY,
-                s"$structureType ControlStructure '${controlStructure.code}' is missing FALSE_BODY edge (CfgCreator will use legacy order fallback)"
-              )
-
-          case ControlStructureTypes.TRY =>
-            // TRY_BODY: CfgCreator falls back to astChildren.order(1).where(_.astChildren)
-            if (
-              controlStructure._tryBodyOut.isEmpty && controlStructure.astChildren
-                .order(1)
-                .where(_.astChildren)
-                .nonEmpty
-            )
-              registerViolation(
-                CTRL_EDGE_USING_LEGACY,
-                s"TRY ControlStructure '${controlStructure.code}' is missing TRY_BODY edge (CfgCreator will use legacy order fallback)"
-              )
-            // CATCH_BODY: CfgCreator falls back to CATCH ControlStructure children, or astChildren.order(2)
-            // but we should not warn if the child at order(2) is a FINALLY control structure (try-finally case)
-            val hasCatchFallback =
-              controlStructure.astChildren.isControlStructure
-                .filter(_.controlStructureType == ControlStructureTypes.CATCH)
-                .nonEmpty ||
-                (controlStructure.astChildren.order(2).nonEmpty &&
-                  controlStructure.astChildren
-                    .order(2)
-                    .collectFirst {
-                      case cs: nodes.ControlStructure if cs.controlStructureType == ControlStructureTypes.FINALLY => cs
-                    }
-                    .isEmpty)
-            if (controlStructure._catchBodyOut.isEmpty && hasCatchFallback)
-              registerViolation(
-                CTRL_EDGE_USING_LEGACY,
-                s"TRY ControlStructure '${controlStructure.code}' is missing CATCH_BODY edge (CfgCreator will use legacy order fallback)"
-              )
-            // FINALLY_BODY: CfgCreator falls back to FINALLY ControlStructure children, or astChildren.order(3)
-            // but we should not warn if the child at order(3) is a CATCH control structure (multiple catches case)
-            val hasFinallyFallback =
-              controlStructure.astChildren.isControlStructure
-                .filter(_.controlStructureType == ControlStructureTypes.FINALLY)
-                .nonEmpty ||
-                (controlStructure.astChildren.order(3).nonEmpty &&
-                  controlStructure.astChildren
-                    .order(3)
-                    .collectFirst {
-                      case cs: nodes.ControlStructure if cs.controlStructureType == ControlStructureTypes.CATCH => cs
-                    }
-                    .isEmpty)
-            if (controlStructure._finallyBodyOut.isEmpty && hasFinallyFallback)
-              registerViolation(
-                CTRL_EDGE_USING_LEGACY,
-                s"TRY ControlStructure '${controlStructure.code}' is missing FINALLY_BODY edge (CfgCreator will use legacy order fallback)"
-              )
-
-          case _ =>
-        }
-      case _ =>
-    }
-  }
-
   /** Log compressed violations and optionally throw on error. */
   private def reportViolations(): Unit = {
     val violations = getViolationsCompressedWithKey
@@ -518,7 +431,6 @@ class PostFrontendValidator(cpg: Cpg, fatalValidationLevel: ValidationLevel) ext
       checkArgumentIn(node)
       checkDuplicateOrder(node)
       checkControlStructureEdges(node)
-      checkControlStructureLegacyFallback(node)
     }
     reportViolations()
   }

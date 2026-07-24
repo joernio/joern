@@ -1,11 +1,11 @@
 package io.joern.pysrc2cpg
 
-import PythonAstVisitor.{keywordDictArgName, logger, metaClassSuffix, noLineAndColumn}
+import PythonAstVisitor.{keywordDictArgName, logger, metaClassSuffix, noLineAndColumn, redefinedSuffix}
 import io.joern.pysrc2cpg.memop.*
 import io.joern.pysrc2cpg.memop.MemoryOperation.{Del, Load, Store}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants.builtinPrefix
 import io.joern.pythonparser.{AstPrinter, ast}
-import io.joern.pythonparser.ast.{Arguments, MatchAs, iast, iexpr, istmt}
+import io.joern.pythonparser.ast.{Arguments, AsyncFunctionDef, FunctionDef, MatchAs, iast, iexpr, istmt}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
 import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
@@ -36,8 +36,6 @@ class PythonAstVisitor(
     extends AstCreatorBase[ast.iast, PythonAstVisitor](relFileName)
     with PythonAstVisitorHelpers {
 
-  private val redefintionSuffix = "$redefinition"
-
   private val diffGraph     = Cpg.newDiffGraphBuilder
   protected val nodeBuilder = new NodeBuilder(diffGraph)
   protected val edgeBuilder = new EdgeBuilder(diffGraph)
@@ -45,6 +43,9 @@ class PythonAstVisitor(
   protected val contextStack = new ContextStack()
 
   private var memOpMap: AstNodeToMemoryOperationMap = scala.compiletime.uninitialized
+  private var scopeNames: ScopeNameCollection       = scala.compiletime.uninitialized
+
+  private val defToRedefinedIndex = mutable.Map.empty[ClassOrFunctionDef, Int]
 
   private val members = mutable.Map.empty[NewTypeDecl, List[String]]
 
@@ -81,6 +82,9 @@ class PythonAstVisitor(
     val memOpCalculator = new MemoryOperationCalculator()
     module.accept(memOpCalculator)
     memOpMap = memOpCalculator.astNodeToMemOp
+    scopeNames = memOpCalculator.scopeNames
+
+    defToRedefinedIndex ++= new RedefinitionCalculator().calculate(module)
 
     val contentOption = if (enableFileContent) Some(nodeToCode.content) else None
     val fileNode      = nodeBuilder.fileNode(relFileName, contentOption)
@@ -116,7 +120,8 @@ class PythonAstVisitor(
         isAsync = false,
         methodRefNode = None,
         returnTypeHint = None,
-        LineAndColumn(line, column, endLine, endColumn, offset, endOffset)
+        LineAndColumn(line, column, endLine, endColumn, offset, endOffset),
+        reservedNames = scopeNames.namesInScope(module)
       )
 
     createIdentifierLinks()
@@ -263,18 +268,21 @@ class PythonAstVisitor(
     body: ast.CollType[istmt],
     returns: Option[iexpr],
     isAsync: Boolean,
-    functionDef: istmt
+    functionDef: FunctionDef | AsyncFunctionDef
   ): NewNode = {
     val methodIdentifierNode =
       createIdentifierNode(name, Store, lineAndColOf(functionDef))
+    val suffix = redefinedSuffixFor(functionDef)
     val (methodNode, methodRefNode) = createMethodAndMethodRef(
       name,
-      Some(name),
+      Some(name + suffix),
       createParameterProcessingFunction(args, isStaticMethod(decoratorList)),
       () => body.map(convert),
       returns,
       isAsync,
-      lineAndColOf(functionDef)
+      lineAndColOf(functionDef),
+      reservedNames = scopeNames.namesInScope(functionDef),
+      redefinedSuffix = suffix
     )
     functionDefToMethod.put(functionDef, methodNode)
 
@@ -340,16 +348,11 @@ class PythonAstVisitor(
     returns: Option[ast.iexpr],
     isAsync: Boolean,
     lineAndColumn: LineAndColumn,
-    additionalModifiers: List[String] = List.empty
+    additionalModifiers: List[String] = List.empty,
+    reservedNames: Iterable[String],
+    redefinedSuffix: String = ""
   ): (nodes.NewMethod, nodes.NewMethodRef) = {
-    val suffix =
-      contextStack.methodCounter.get(methodName) match {
-        case Some(counter) =>
-          redefintionSuffix + counter.toString
-        case None =>
-          ""
-      }
-    val methodFullName = calculateFullNameFromContext(methodName) + suffix
+    val methodFullName = calculateFullNameFromContext(methodName) + redefinedSuffix
 
     val methodRefNode =
       nodeBuilder.methodRefNode("def " + methodName + "(...)", methodFullName, lineAndColumn)
@@ -366,13 +369,9 @@ class PythonAstVisitor(
         isAsync = true,
         Some(methodRefNode),
         returnTypeHint = None,
-        lineAndColumn
+        lineAndColumn,
+        reservedNames
       )
-
-    contextStack.methodCounter.updateWith(methodName) {
-      case None          => Some(1)
-      case Some(counter) => Some(counter + 1)
-    }
 
     (methodNode, methodRefNode)
   }
@@ -391,7 +390,8 @@ class PythonAstVisitor(
     isAsync: Boolean,
     methodRefNode: Option[nodes.NewMethodRef],
     returnTypeHint: Option[String],
-    lineAndColumn: LineAndColumn
+    lineAndColumn: LineAndColumn,
+    reservedNames: Iterable[String]
   ): nodes.NewMethod = {
     val methodNode = nodeBuilder.methodNode(name, fullName, relFileName, lineAndColumn)
     edgeBuilder.astEdge(methodNode, contextStack.astParent, contextStack.order.getAndInc)
@@ -399,7 +399,7 @@ class PythonAstVisitor(
     val blockNode = nodeBuilder.blockNode("", lineAndColumn)
     edgeBuilder.astEdge(blockNode, methodNode, 1)
 
-    contextStack.pushMethod(scopeName, methodNode, blockNode, methodRefNode)
+    contextStack.pushMethod(scopeName, methodNode, blockNode, methodRefNode, reservedNames)
 
     var order = 0
     for (modifier <- modifiers) {
@@ -451,7 +451,7 @@ class PythonAstVisitor(
   def convert(classDef: ast.ClassDef): NewNode = {
     // Create type for the meta class object
     val metaTypeDeclName     = classDef.name + metaClassSuffix
-    val metaTypeDeclFullName = calculateFullNameFromContext(metaTypeDeclName)
+    val metaTypeDeclFullName = classFullNameWithRedefinedSuffix(classDef, metaTypeDeclName)
 
     val metaTypeNode = nodeBuilder.typeNode(metaTypeDeclName, metaTypeDeclFullName)
     val metaTypeDeclNode =
@@ -466,7 +466,7 @@ class PythonAstVisitor(
 
     // Create type for class instances
     val instanceTypeDeclName     = classDef.name
-    val instanceTypeDeclFullName = calculateFullNameFromContext(instanceTypeDeclName)
+    val instanceTypeDeclFullName = classFullNameWithRedefinedSuffix(classDef, instanceTypeDeclName)
 
     // TODO for now we just take the code of the base expression and pretend they are full names, converting special
     //  nodes as we go.
@@ -497,7 +497,8 @@ class PythonAstVisitor(
     edgeBuilder.astEdge(instanceTypeDecl, contextStack.astParent, contextStack.order.getAndInc)
 
     // Create <body> function which contains the code defining the class
-    contextStack.pushClass(Some(classDef.name), instanceTypeDecl)
+    val className = classDef.name + redefinedSuffixFor(classDef)
+    contextStack.pushClass(Some(className), instanceTypeDecl, scopeNames.namesInScope(classDef))
     val classBodyFunctionName = "<body>"
     val (_, methodRefNode) = createMethodAndMethodRef(
       classBodyFunctionName,
@@ -505,17 +506,18 @@ class PythonAstVisitor(
       parameterProvider = () =>
         MethodParameters(
           0,
-          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColOf(classDef), Option(0)) :: Nil
+          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColOf(classDef), 0) :: Nil
         ),
       bodyProvider = () => classDef.body.map(convert),
       None,
       isAsync = false,
-      lineAndColOf(classDef)
+      lineAndColOf(classDef),
+      reservedNames = scopeNames.namesInScope(classDef)
     )
 
     contextStack.pop()
 
-    contextStack.pushClass(Some(classDef.name), metaTypeDeclNode)
+    contextStack.pushClass(Some(className), metaTypeDeclNode, scopeNames.namesInScope(classDef))
 
     // Create meta class call handling method and bind it to meta class type.
     val functions = classDef.body.collect { case func: ast.FunctionDef => func }
@@ -665,7 +667,7 @@ class PythonAstVisitor(
       parameterProvider = () => {
         MethodParameters(
           0,
-          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColumn, Option(0)) :: Nil ++
+          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColumn, 0) :: Nil ++
             convert(parameters, 1)
         )
       },
@@ -680,7 +682,8 @@ class PythonAstVisitor(
       isAsync = false,
       methodRefNode = None,
       returnTypeHint = None,
-      lineAndColumn
+      lineAndColumn,
+      reservedNames = Nil
     )
   }
 
@@ -782,7 +785,8 @@ class PythonAstVisitor(
       isAsync = false,
       methodRefNode = None,
       returnTypeHint = Some(instanceTypeDeclFullName),
-      lineAndColumn
+      lineAndColumn,
+      reservedNames = Nil
     )
   }
 
@@ -809,7 +813,7 @@ class PythonAstVisitor(
       parameterProvider = () => {
         MethodParameters(
           0,
-          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColumn, Some(0)) :: Nil ++
+          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColumn, 0) :: Nil ++
             convert(parametersWithoutSelf, 1)
         )
       },
@@ -843,7 +847,8 @@ class PythonAstVisitor(
       isAsync = false,
       methodRefNode = None,
       returnTypeHint = None,
-      lineAndColumn
+      lineAndColumn,
+      reservedNames = Nil
     )
   }
 
@@ -852,9 +857,16 @@ class PythonAstVisitor(
   }
 
   def convert(delete: ast.Delete): NewNode = {
-    val deleteArgs = delete.targets.map(convert)
+    val code = "del " + delete.targets.map(nodeToCode.getCode).mkString(", ")
 
-    val code     = "del " + deleteArgs.map(codeOf).mkString(", ")
+    def flattenDeleteTargets(exprs: Iterable[ast.iexpr]): Iterable[NewNode] =
+      exprs.flatMap {
+        case listNode: ast.List   => flattenDeleteTargets(listNode.elts)
+        case tupleNode: ast.Tuple => flattenDeleteTargets(tupleNode.elts)
+        case other                => Seq(convert(other))
+      }
+
+    val deleteArgs = flattenDeleteTargets(delete.targets)
     val callNode = nodeBuilder.callNode(code, "<operator>.delete", DispatchTypes.STATIC_DISPATCH, lineAndColOf(delete))
 
     addAstChildrenAsArguments(callNode, 1, deleteArgs)
@@ -1511,7 +1523,8 @@ class PythonAstVisitor(
       returns = None,
       isAsync = false,
       lineAndColOf(lambda),
-      ModifierTypes.LAMBDA :: Nil
+      ModifierTypes.LAMBDA :: Nil,
+      reservedNames = scopeNames.namesInScope(lambda)
     )
     methodRefNode
   }
@@ -1598,7 +1611,7 @@ class PythonAstVisitor(
     */
   // TODO test
   def convert(listComp: ast.ListComp): NewNode = {
-    contextStack.pushSpecialContext()
+    contextStack.pushSpecialContext(scopeNames.namesInScope(listComp))
     val tmpVariableName = getUnusedName()
 
     // Create tmp = list()
@@ -1635,7 +1648,7 @@ class PythonAstVisitor(
     */
   // TODO test
   def convert(setComp: ast.SetComp): NewNode = {
-    contextStack.pushSpecialContext()
+    contextStack.pushSpecialContext(scopeNames.namesInScope(setComp))
     val tmpVariableName = getUnusedName()
 
     val setOperatorCall =
@@ -1671,7 +1684,7 @@ class PythonAstVisitor(
     */
   // TODO test
   def convert(dictComp: ast.DictComp): NewNode = {
-    contextStack.pushSpecialContext()
+    contextStack.pushSpecialContext(scopeNames.namesInScope(dictComp))
     val tmpVariableName = getUnusedName()
 
     val dictOperatorCall =
@@ -1709,7 +1722,7 @@ class PythonAstVisitor(
     */
   // TODO test
   def convert(generatorExp: ast.GeneratorExp): NewNode = {
-    contextStack.pushSpecialContext()
+    contextStack.pushSpecialContext(scopeNames.namesInScope(generatorExp))
     val tmpVariableName = getUnusedName()
 
     // Create tmp = list()
@@ -2041,10 +2054,6 @@ class PythonAstVisitor(
   }
 
   def convert(list: ast.List): nodes.NewNode = {
-    // Must be a List as part of a Load memory operation because a List literal
-    // is not permitted as argument to a Del and List as part of a Store does not
-    // reach here.
-    assert(memOpMap.get(list).get == Load)
     val listElementNodes = list.elts.map(convert)
     val code             = listElementNodes.map(codeOf).mkString("[", ", ", "]")
 
@@ -2110,7 +2119,7 @@ class PythonAstVisitor(
   // is right and that we convert the exception handler body.
   // TODO tests
   def convert(exceptHandler: ast.ExceptHandler): NewNode = {
-    contextStack.pushSpecialContext()
+    contextStack.pushSpecialContext(scopeNames.namesInScope(exceptHandler))
     val specialTargetLocals = mutable.ArrayBuffer.empty[nodes.NewLocal]
     if (exceptHandler.name.isDefined) {
       val localNode = nodeBuilder.localNode(exceptHandler.name.get, None)
@@ -2132,43 +2141,31 @@ class PythonAstVisitor(
     parameters.posonlyargs.map(convertPosOnlyArg(_, autoIncIndex)) ++
       parameters.args.map(convertNormalArg(_, autoIncIndex)) ++
       parameters.vararg.map(convertVarArg(_, autoIncIndex)) ++
-      parameters.kwonlyargs.map(convertKeywordOnlyArg) ++
-      parameters.kw_arg.map(convertKwArg)
+      parameters.kwonlyargs.map(convertKeywordOnlyArg(_, autoIncIndex)) ++
+      parameters.kw_arg.map(convertKwArg(_, autoIncIndex))
   }
 
   // TODO for now the different arg convert functions are all the same but
   // will all be slightly different in the future when we can represent the
   // different types in the cpg.
   private def convertPosOnlyArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(
-      arg.arg,
-      isVariadic = false,
-      lineAndColOf(arg),
-      Option(index.getAndInc),
-      arg.annotation
-    )
+    nodeBuilder.methodParameterNode(arg.arg, isVariadic = false, lineAndColOf(arg), index.getAndInc, arg.annotation)
   }
 
   private def convertNormalArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(
-      arg.arg,
-      isVariadic = false,
-      lineAndColOf(arg),
-      Option(index.getAndInc),
-      arg.annotation
-    )
+    nodeBuilder.methodParameterNode(arg.arg, isVariadic = false, lineAndColOf(arg), index.getAndInc, arg.annotation)
   }
 
   private def convertVarArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, isVariadic = true, lineAndColOf(arg), Option(index.getAndInc))
+    nodeBuilder.methodParameterNode(arg.arg, isVariadic = true, lineAndColOf(arg), index.getAndInc)
   }
 
-  private def convertKeywordOnlyArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, isVariadic = false, lineAndColOf(arg))
+  private def convertKeywordOnlyArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
+    nodeBuilder.methodParameterNode(arg.arg, isVariadic = false, lineAndColOf(arg), index.getAndInc)
   }
 
-  private def convertKwArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, isVariadic = false, lineAndColOf(arg))
+  private def convertKwArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
+    nodeBuilder.methodParameterNode(arg.arg, isVariadic = false, lineAndColOf(arg), index.getAndInc)
   }
 
   def convert(keyword: ast.Keyword): NewNode = unhandled(keyword)
@@ -2180,6 +2177,15 @@ class PythonAstVisitor(
   private def calculateFullNameFromContext(name: String): String = {
     val contextQualName = contextStack.qualName
     if (contextQualName != "") relFileName + ":" + contextQualName + "." + name else relFileName + ":" + name
+  }
+
+  // See RedefinitionCalculator for why only the last occurrence stays unmangled.
+  private def classFullNameWithRedefinedSuffix(classDef: ast.ClassDef, simpleName: String): String = {
+    calculateFullNameFromContext(simpleName) + redefinedSuffixFor(classDef)
+  }
+
+  private def redefinedSuffixFor(definition: ClassOrFunctionDef): String = {
+    defToRedefinedIndex.get(definition).map(idx => s"$redefinedSuffix$idx").getOrElse("")
   }
 
   override protected def line(node: iast): Option[Int]         = None
@@ -2195,6 +2201,7 @@ object PythonAstVisitor {
   val typingPrefix       = "typing."
   val metaClassSuffix    = "<meta>"
   val keywordDictArgName = "<keyword_dict>"
+  val redefinedSuffix    = "<redefined>"
 
   val noLineAndColumn = LineAndColumn(-1, -1, -1, -1, -1, -1)
 

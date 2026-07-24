@@ -2,13 +2,12 @@ package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.BlockScope
-import io.joern.rubysrc2cpg.parser.RubyJsonHelpers
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.prefixAsKernelDefined
-import io.joern.x2cpg.datastructures.MethodLike
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewControlStructure}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, NodeTypes, Operators}
+
+import scala.collection.mutable
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -27,6 +26,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case node: MethodDeclaration          => astForMethodDeclaration(node)
       case node: MethodAccessModifier       => astForMethodAccessModifier(node)
       case node: SingletonMethodDeclaration => astForSingletonMethodDeclaration(node)
+      case node: DefaultMultipleAssignment  => astForDefaultMultipleAssignment(node, isExpression = false)
       case node: MultipleAssignment         => node.assignments.map(astForExpression)
       case node: BreakExpression            => astForBreakExpression(node) :: Nil
       case node: SingletonStatementList     => astForSingletonStatementList(node)
@@ -41,22 +41,30 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForAccessModifier(node: AccessModifier): Seq[Ast] = {
-    scope.surroundingAstLabel match {
-      case Some(x) if x == NodeTypes.METHOD =>
-        val simpleIdent = node.toSimpleIdentifier
-        astForSimpleCall(SimpleCall(simpleIdent, List.empty)(simpleIdent.span)) :: Nil
-      case _ =>
-        registerAccessModifier(node)
+    val (operatorName, expr) = node match {
+      case x: PublicModifier    => (RubyOperators.publicModifier, x: RubyExpression)
+      case x: PrivateModifier   => (RubyOperators.privateModifier, x: RubyExpression)
+      case x: ProtectedModifier => (RubyOperators.protectedModifier, x: RubyExpression)
     }
+
+    scope.surroundingAstLabel match {
+      case Some(x) if x == NodeTypes.METHOD => // no scope state change inside a method
+      case _ if node.arguments.nonEmpty     => // targeted modifier, no scope change
+      case _                                => registerAccessModifier(node)
+    }
+
+    val argAsts = node.arguments.map(astForExpression)
+    val call    = callNode(expr, code(expr), operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, argAsts) :: Nil
   }
 
   /** Registers the currently set access modifier for the current type (until it is reset later).
     */
   private def registerAccessModifier(node: AccessModifier): Seq[Ast] = {
     val modifier = node match {
-      case PrivateModifier()   => ModifierTypes.PRIVATE
-      case ProtectedModifier() => ModifierTypes.PROTECTED
-      case PublicModifier()    => ModifierTypes.PUBLIC
+      case _: PrivateModifier   => ModifierTypes.PRIVATE
+      case _: ProtectedModifier => ModifierTypes.PROTECTED
+      case _: PublicModifier    => ModifierTypes.PUBLIC
     }
     popAccessModifier()          // pop off the current modifier in scope
     pushAccessModifier(modifier) // push new one on
@@ -103,12 +111,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     blockAst(block, statementAsts)
   }
 
-  protected def astForDoBlock(block: Block & RubyExpression): Seq[Ast] = {
+  protected def astForDoBlock(block: Block & RubyExpression): (typeRef: Ast, methodRef: Ast) = {
     if (closureToRefs.contains(block)) {
-      closureToRefs(block).map(x => Ast(x.copy))
+      val cached = closureToRefs(block).map(ref => Ast(ref.copy))
+      (typeRef = cached(0), methodRef = cached(1))
     } else {
       val methodName = scope.getNewClosureName
-      // Create closure structures: [TypeRef, MethodRef]
       val methodRefAsts = block.body match {
         case x: Block =>
           astForMethodDeclaration(x.toMethodDeclaration(methodName, Option(block.parameters)), isClosure = true)
@@ -116,7 +124,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           astForMethodDeclaration(block.toMethodDeclaration(methodName, Option(block.parameters)), isClosure = true)
       }
       closureToRefs.put(block, methodRefAsts.flatMap(_.root))
-      methodRefAsts
+      (typeRef = methodRefAsts(0), methodRef = methodRefAsts(1))
     }
   }
 
@@ -127,12 +135,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForNextExpression(node: NextExpression): Ast = {
-    val nextNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.CONTINUE)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-      .code(code(node))
-    Ast(nextNode)
+    // Ruby has no labeled `next`, so no jump argument is emitted.
+    continueAst(node, code(node))
   }
 
   protected def astForStatementListReturningLastExpression(node: StatementList): Ast = {
@@ -173,28 +177,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           case x =>
             astsForStatement(transform(expr))
         }
-      case node: DefaultMultipleAssignment =>
-        astsForStatement(node) ++ astsForImplicitReturnStatement(ArrayLiteral(node.assignments.map(_.lhs))(node.span))
       case ret: ReturnExpression => astForReturnExpression(ret) :: Nil
       case node: (MethodDeclaration | SingletonMethodDeclaration) =>
         (astsForStatement(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
-      case node: MethodAccessModifier =>
-        val simpleIdent = node.toSimpleIdentifier
-
-        val methodIdentName = node.method match {
-          case x: StaticLiteral     => x.span.text
-          case x: MethodDeclaration => x.methodName
-          case x =>
-            logger.warn(s"Unknown node type for method identifier name: ${x.getClass} (${this.relativeFileName})")
-            x.span.text
-        }
-
-        val methodIdent = SimpleIdentifier(None)(simpleIdent.span.spanStart(methodIdentName))
-
-        val simpleCall = SimpleCall(simpleIdent, List(methodIdent))(
-          simpleIdent.span.spanStart(s"${simpleIdent.span.text} ${methodIdent.span.text}")
-        )
-        astForReturnExpression(ReturnExpression(List(simpleCall))(node.span)) :: Nil
       case node: FieldsDeclaration =>
         val nilReturnSpan    = node.span.spanStart("return nil")
         val nilReturnLiteral = StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(nilReturnSpan)
@@ -210,8 +195,107 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def returnAst(node: RubyExpression): Ast = {
-    val nodeAst = astsForStatement(node)
-    returnAst(returnNode(node, code(node)), nodeAst)
+    val nodeAst = astForExpression(node)
+    returnAst(returnNode(node, code(node)), nodeAst :: Nil)
+  }
+
+  protected def astForDefaultMultipleAssignmentExpr(node: DefaultMultipleAssignment): Ast = {
+    blockAst(
+      blockNode(node, code(node), Defines.Any),
+      astForDefaultMultipleAssignment(node, isExpression = true).toList
+    )
+  }
+
+  protected def astForDefaultMultipleAssignment(node: DefaultMultipleAssignment, isExpression: Boolean): Seq[Ast] = {
+    if (!isExpression) {
+      node.assignments.map(astForExpression)
+    } else {
+      val assignmentAsts  = mutable.ListBuffer.empty[Ast]
+      val returnExprNames = mutable.ListBuffer.empty[String]
+
+      node.assignments.foreach { assignment =>
+        if (isSimpleExpression(assignment.lhs)) {
+          assignmentAsts += astForExpression(assignment)
+          returnExprNames += simpleExpressionName(assignment.lhs)
+        } else {
+          val tmpName = scope.getNewVarTmp
+
+          val tmpLhsAst = handleVariableOccurrence(tmpName, assignment)
+          val rhsAst    = astForExpression(assignment.rhs)
+          val tmpAssignCall = callNode(
+            assignment,
+            s"$tmpName = ${code(assignment.rhs)}",
+            Operators.assignment,
+            Operators.assignment,
+            DispatchTypes.STATIC_DISPATCH
+          )
+          assignmentAsts += callAst(tmpAssignCall, Seq(tmpLhsAst, rhsAst))
+
+          val lhsAst    = astForExpression(assignment.lhs)
+          val tmpRhsAst = handleVariableOccurrence(tmpName, assignment)
+          val lhsAssignCall = callNode(
+            assignment,
+            s"${code(assignment.lhs)} = $tmpName",
+            Operators.assignment,
+            Operators.assignment,
+            DispatchTypes.STATIC_DISPATCH
+          )
+          assignmentAsts += callAst(lhsAssignCall, Seq(lhsAst, tmpRhsAst))
+
+          returnExprNames += tmpName
+        }
+      }
+      val arrayTmpName = scope.getNewVarTmp
+
+      val allocCall = callNode(node, Operators.alloc, Operators.alloc, Operators.alloc, DispatchTypes.STATIC_DISPATCH)
+      val arrayAssignCall = callNode(
+        node,
+        s"$arrayTmpName = ${Operators.alloc}",
+        Operators.assignment,
+        Operators.assignment,
+        DispatchTypes.STATIC_DISPATCH
+      )
+      assignmentAsts += callAst(arrayAssignCall, Seq(handleVariableOccurrence(arrayTmpName, node), callAst(allocCall)))
+
+      returnExprNames.toList.zipWithIndex.foreach { case (exprName, idx) =>
+        val idxLiteral = literalNode(node, idx.toString, Defines.prefixAsCoreType(Defines.Integer))
+        val indexAccessCall =
+          callNode(
+            node,
+            s"$arrayTmpName[$idx]",
+            Operators.indexAccess,
+            Operators.indexAccess,
+            DispatchTypes.STATIC_DISPATCH
+          )
+        val indexAccessAst =
+          callAst(indexAccessCall, Seq(handleVariableOccurrence(arrayTmpName, node), Ast(idxLiteral)))
+
+        val elemAssignCall = callNode(
+          node,
+          s"$arrayTmpName[$idx] = $exprName",
+          Operators.assignment,
+          Operators.assignment,
+          DispatchTypes.STATIC_DISPATCH
+        )
+        assignmentAsts += callAst(elemAssignCall, Seq(indexAccessAst, handleVariableOccurrence(exprName, node)))
+      }
+
+      assignmentAsts += handleVariableOccurrence(arrayTmpName, node)
+      assignmentAsts.toSeq
+    }
+  }
+
+  private def isSimpleExpression(expr: RubyExpression): Boolean = expr match {
+    case _: RubyIdentifier | _: SelfIdentifier => true
+    case _: LiteralExpr                        => true
+    case _                                     => false
+  }
+
+  private def simpleExpressionName(expr: RubyExpression): String = expr match {
+    case _: SelfIdentifier    => Defines.Self
+    case node: RubyIdentifier => node.span.text
+    case node: LiteralExpr    => node.span.text
+    case node                 => code(node)
   }
 
   // The evaluation of a MethodDeclaration returns its name in symbol form.
@@ -223,12 +307,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForBreakExpression(node: BreakExpression): Ast = {
-    val _node = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.BREAK)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-      .code(code(node))
-    Ast(_node)
+    // Ruby has no labeled `break`, so no jump argument is emitted.
+    breakAst(node, code(node))
   }
 
   protected def astForSingletonStatementList(list: SingletonStatementList): Seq[Ast] = {

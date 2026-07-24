@@ -56,7 +56,7 @@ class TestRunner:
             "jssrc": FrontendConfig(3, "lookForProperty"), 
             "javasrc": FrontendConfig(7, "callsExternalMethod"),
             "java": FrontendConfig(7, "callsExternalMethod"),
-            "ghidra": FrontendConfig(100, "reallocarray"),
+            "ghidra": FrontendConfig(8, "_printf"),
             "pythonsrc": FrontendConfig(2, "my_fun"),
             "php": FrontendConfig(3, "foo"),
         }

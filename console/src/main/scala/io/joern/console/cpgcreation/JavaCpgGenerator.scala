@@ -36,7 +36,7 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
       var command = rootPath.resolve("java2cpg.sh").toString
       var arguments =
         Seq(inputPath, "-o", outputPath) ++ jvmLanguages ++ config.cmdLineParams
-      if (System.getProperty("os.name").startsWith("Windows")) {
+      if (scala.util.Properties.isWin) {
         command = "powershell"
         arguments = Seq(rootPath.resolve("java2cpg.ps1").toString) ++ arguments
       }
