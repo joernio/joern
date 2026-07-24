@@ -2,7 +2,29 @@ name: release to github
 on:
   workflow_dispatch: # triggered by 'release' workflow via github REST api
 jobs:
+  check-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      exists: ${{ steps.check.outputs.exists }}
+    steps:
+      - name: Check if release exists
+        id: check
+        run: |
+          if gh release view "${{ github.ref_name }}" > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release ${{ github.ref_name }} already exists, skipping"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Release ${{ github.ref_name }} does not exist, will create it"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
   build-distribution:
+    needs: check-release
+    if: needs.check-release.outputs.exists == 'false'
     strategy:
       matrix:
         include:
@@ -58,11 +80,16 @@ jobs:
             target/joern-cli-${{ matrix.platform }}.zip
             target/joern-cli-${{ matrix.platform }}.zip.sha512
           retention-days: 1
+      - name: Dump query database and upload artifacts
+        if: matrix.platform == 'linux-x86_64'
+        run: sbt "querydb/runMain io.joern.dumpq.Main"
       - uses: actions/upload-artifact@v4
         if: matrix.platform == 'linux-x86_64'
         with:
           name: querydb
-          path: querydb/target/querydb.zip
+          path: |
+            querydb/target/querydb.zip
+            /tmp/querydb.json
           retention-days: 1
 
   release-github:
@@ -73,13 +100,6 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7
-      - name: Set up JDK
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: sbt
-      - uses: sbt/setup-sbt@v1
       - uses: actions/download-artifact@v4
         with:
           pattern: dist-*
@@ -88,22 +108,8 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: querydb
-          path: querydb/target
-      - run: sbt "querydb/runMain io.joern.dumpq.Main"
-      - name: Check if release exists
-        id: check_release
-        run: |
-          if gh release view "${{ github.ref_name }}" > /dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Release ${{ github.ref_name }} already exists, will skip creation"
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Release ${{ github.ref_name }} does not exist, will create it"
-          fi
-        env:
-          GH_TOKEN: ${{ github.token }}
+          path: querydb-artifacts
       - name: Create Release and Upload Assets
-        if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
@@ -122,5 +128,5 @@ jobs:
             target/dist/joern-cli-macos-arm64.zip.sha512
             target/dist/joern-cli-windows-x86_64.zip
             target/dist/joern-cli-windows-x86_64.zip.sha512
-            querydb/target/querydb.zip
-            /tmp/querydb.json
+            querydb-artifacts/querydb.zip
+            querydb-artifacts/querydb.json
