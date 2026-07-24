@@ -69,7 +69,7 @@ jobs:
         run: |
           $hash = (Get-FileHash -Algorithm SHA512 "target\joern-cli-${{ matrix.platform }}.zip").Hash.ToLower()
           "$hash  joern-cli-${{ matrix.platform }}.zip" | Out-File -Encoding ASCII "target\joern-cli-${{ matrix.platform }}.zip.sha512"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-${{ matrix.platform }}
           path: |
@@ -79,13 +79,16 @@ jobs:
       - name: Dump query database
         if: matrix.platform == 'linux-x86_64'
         run: sbt "querydb/runMain io.joern.dumpq.Main"
-      - uses: actions/upload-artifact@v4
+      - name: Prepare querydb artifacts
+        if: matrix.platform == 'linux-x86_64'
+        run: cp /tmp/querydb.json querydb/target/querydb.json
+      - uses: actions/upload-artifact@v7
         if: matrix.platform == 'linux-x86_64'
         with:
           name: querydb
           path: |
             querydb/target/querydb.zip
-            /tmp/querydb.json
+            querydb/target/querydb.json
           retention-days: 1
 
   release-github:
@@ -96,12 +99,12 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: dist-*
           path: target/dist
           merge-multiple: true
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: querydb
           path: querydb-artifacts
@@ -126,5 +129,5 @@ jobs:
             target/dist/joern-cli-windows-x86_64.zip.sha512
             target/dist/joern-cli-windows-arm64.zip
             target/dist/joern-cli-windows-arm64.zip.sha512
-            querydb-artifacts/querydb.zip
-            querydb-artifacts/querydb.json
+            querydb-artifacts/querydb/target/querydb.zip
+            querydb-artifacts/querydb/target/querydb.json
