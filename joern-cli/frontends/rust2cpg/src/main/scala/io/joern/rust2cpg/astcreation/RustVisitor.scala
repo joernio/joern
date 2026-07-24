@@ -62,7 +62,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     case macroDef: MacroDef     => visitMacroDef(macroDef)
     case module: Module         => visitModule(module)
     case static: Static         => visitStatic(static)
-    case struct: Struct         => visitStruct(struct) :: Nil
+    case struct: Struct         => visitStruct(struct)
     case trait_ : Trait         => visitTrait(trait_) :: Nil
     case x: TypeAlias           => notHandledYet(x) :: Nil
     case x: Union               => notHandledYet(x) :: Nil
@@ -1132,33 +1132,169 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //    WhereClause? (RecordFieldList | ';')
   //  | TupleFieldList WhereClause? ';'
   //  )
-  private def visitStruct(struct: Struct): Ast = {
+  private def visitStruct(struct: Struct): Seq[Ast] = {
+    (struct.recordFieldList, struct.tupleFieldList) match {
+      case (Some(recordFieldList), _)   => lowerRecordStruct(struct, recordFieldList) :: Nil
+      case (None, Some(tupleFieldList)) => lowerTupleStruct(struct, tupleFieldList)
+      case (None, None)                 => lowerUnitStruct(struct) :: Nil
+    }
+  }
+
+  // `struct Foo;` becomes:
+  // TYPE_DECL Foo
+  //   CONSTRUCTOR <init>(&self: Foo) -> () {}
+  private def lowerUnitStruct(struct: Struct): Ast = {
     val implementedTraits = struct.implementedTraits.getOrElse(Nil)
     val structFullName    = composeRustFullName(code(struct.name))
     val inheritsFrom      = implementedTraits.map(traitFullName => s"<$structFullName as $traitFullName>")
     val typeDecl          = typeDeclForStruct(struct, inheritsFrom)
-    (struct.recordFieldList, struct.tupleFieldList) match {
-      case (Some(recordFieldList), _) =>
-        methodAstParentStack.push(typeDecl)
-        val ctorAst = structCtorMethodAst(struct, typeDecl)
-        methodAstParentStack.pop()
-        Ast(typeDecl).withChildren(visitRecordFieldList(recordFieldList) :+ ctorAst)
-      case (None, Some(tupleFieldList)) =>
-        Ast(typeDecl).withChildren(visitTupleFieldList(tupleFieldList))
-      case (None, None) =>
-        Ast(typeDecl)
+
+    methodAstParentStack.push(typeDecl)
+    val ctorAst = structCtorMethodAst(struct, typeDecl, Nil)
+    methodAstParentStack.pop()
+
+    Ast(typeDecl).withChild(ctorAst)
+  }
+
+  // `struct Foo { x: T, ... }` becomes:
+  // TYPE_DECL Foo
+  //   MEMBER x: T
+  //   ...
+  //   CONSTRUCTOR <init>(&self: Foo, x: T, ...) -> () {
+  //     (*self).x = x
+  //     ...
+  //   }
+  private def lowerRecordStruct(struct: Struct, recordFieldList: RecordFieldList): Ast = {
+    val implementedTraits = struct.implementedTraits.getOrElse(Nil)
+    val structFullName    = composeRustFullName(code(struct.name))
+    val inheritsFrom      = implementedTraits.map(traitFullName => s"<$structFullName as $traitFullName>")
+    val typeDecl          = typeDeclForStruct(struct, inheritsFrom)
+
+    methodAstParentStack.push(typeDecl)
+    val ctorAst = structCtorMethodAst(struct, typeDecl, recordStructFieldData(struct))
+    methodAstParentStack.pop()
+
+    Ast(typeDecl).withChildren(visitRecordFieldList(recordFieldList) :+ ctorAst)
+  }
+
+  // `struct Foo(T1, T2, ...);` becomes:
+  //  TYPE_DECL Foo
+  //    MEMBER 0: T1
+  //    MEMBER 1: T2
+  //    ...
+  //    CONSTRUCTOR <init>(&self: Foo, 0: T1, 1: T2, ...)` -> () {
+  //      (*self).0 = 0
+  //      (*self).1 = 1
+  //      ...
+  //    }
+  //  METHOD Foo(0: T1, 1: T2, ...) -> Foo {
+  //    LOCAL tmp
+  //    tmp = <operator>.alloc
+  //    Foo::<init>(&tmp, 0, 1)
+  //    return tmp
+  //  }
+  // NB: tuple struct literals, e.g. `Foo(1, 2)`, are regular calls, hence the extra method.
+  private def lowerTupleStruct(struct: Struct, tupleFieldList: TupleFieldList): Seq[Ast] = {
+    val implementedTraits = struct.implementedTraits.getOrElse(Nil)
+    val structFullName    = composeRustFullName(code(struct.name))
+    val inheritsFrom      = implementedTraits.map(traitFullName => s"<$structFullName as $traitFullName>")
+    val typeDecl          = typeDeclForStruct(struct, inheritsFrom)
+    val fields            = tupleStructFieldData(tupleFieldList)
+
+    methodAstParentStack.push(typeDecl)
+    val ctorAst = structCtorMethodAst(struct, typeDecl, fields)
+    methodAstParentStack.pop()
+
+    val typeDeclAst    = Ast(typeDecl).withChildren(visitTupleFieldList(tupleFieldList) :+ ctorAst)
+    val ctorWrapperAst = tupleStructCtorWrapperAst(struct, typeDecl, fields)
+
+    Seq(typeDeclAst, ctorWrapperAst)
+  }
+
+  private def tupleStructCtorWrapperAst(
+    struct: Struct,
+    typeDecl: NewTypeDecl,
+    fields: Seq[(node: RustNode, name: String, typ: String)]
+  ): Ast = {
+    val tmpName  = "tmp"
+    val fnName   = code(struct.name)
+    val fullName = struct.methodFullName.getOrElse(composeRustFullName(fnName))
+    val method   = methodNode(struct, fnName).code(fnName).fullName(fullName)
+
+    val fieldParams = fields.zipWithIndex.map { case (fieldData, index) =>
+      parameterInNode(
+        node = fieldData.node,
+        name = fieldData.name,
+        code = fieldData.name,
+        index = index + 1,
+        isVariadic = false,
+        evaluationStrategy = EvaluationStrategies.BY_SHARING,
+        typeFullName = fieldData.typ
+      )
+    }
+
+    val local = localNode(struct, tmpName, tmpName, typeDecl.fullName)
+
+    // tmp = <operator>.alloc
+    val allocAssignAst = {
+      val allocCall   = operatorCallNode(struct, Operators.alloc, Operators.alloc, Some(typeDecl.fullName))
+      val tmpIdentAst = Ast(identifierNode(struct, tmpName, tmpName, typeDecl.fullName))
+      callAst(assignmentNode(struct, s"$tmpName = ${Operators.alloc}"), Seq(tmpIdentAst, Ast(allocCall)))
+    }
+
+    // Foo::<init>(&tmp, 0, 1, ...)
+    val initCallAst = {
+      val initName = Defines.ConstructorMethodName
+      val initCode = s"$fnName::$initName(${(s"&$tmpName" +: fields.map(_.name)).mkString(", ")})"
+      val initCall = callNode(
+        node = struct,
+        code = initCode,
+        name = initName,
+        methodFullName = combineRustFullName(typeDecl.fullName, initName),
+        dispatchType = DispatchTypes.STATIC_DISPATCH,
+        signature = None,
+        typeFullName = Some("()")
+      )
+      val addressOfTmp = {
+        val addressOf   = operatorCallNode(struct, s"&$tmpName", Operators.addressOf, Some(s"&${typeDecl.fullName}"))
+        val tmpIdentAst = Ast(identifierNode(struct, tmpName, tmpName, typeDecl.fullName))
+        callAst(addressOf, Seq(tmpIdentAst))
+      }
+      val fieldArgs = fields.map { fieldData =>
+        Ast(identifierNode(fieldData.node, fieldData.name, fieldData.name, fieldData.typ))
+      }
+
+      callAst(initCall, fieldArgs, base = Some(addressOfTmp))
+    }
+
+    // return tmp
+    val retAst = returnAst(
+      returnNode(struct, s"return $tmpName"),
+      Seq(Ast(identifierNode(struct, tmpName, tmpName, typeDecl.fullName)))
+    )
+
+    val bodyAst = blockAst(blockNode(struct), List(Ast(local), allocAssignAst, initCallAst, retAst))
+    methodAst(method, fieldParams.map(Ast(_)), bodyAst, methodReturnNode(struct, typeDecl.fullName))
+  }
+
+  private def tupleStructFieldData(tupleFieldList: TupleFieldList): Seq[(node: RustNode, name: String, typ: String)] = {
+    tupleFieldList.tupleField.zipWithIndex.map { case (field, index) =>
+      (node = field, name = index.toString, typ = typeFullNameForType(field.typ))
     }
   }
 
-  private def structFieldData(struct: Struct): Seq[(node: RustNode, name: String, typ: String)] = {
+  private def recordStructFieldData(struct: Struct): Seq[(node: RustNode, name: String, typ: String)] = {
     struct.recordFieldList.toSeq.flatMap(_.recordField.map { field =>
       (node = field, name = code(field.name), typ = typeFullNameForType(field.typ))
     })
   }
 
-  private def structCtorMethodAst(struct: Struct, typeDecl: NewTypeDecl): Ast = {
+  private def structCtorMethodAst(
+    struct: Struct,
+    typeDecl: NewTypeDecl,
+    fields: Seq[(node: RustNode, name: String, typ: String)]
+  ): Ast = {
     val selfName = "self"
-    val fields   = structFieldData(struct)
     val method   = methodNode(struct, Defines.ConstructorMethodName).code(Defines.ConstructorMethodName)
     val selfParam = parameterInNode(
       node = struct,

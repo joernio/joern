@@ -133,6 +133,7 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "lower each as an AST child of the corresponding TYPE_DECL" in {
       cpg.typeDecl.nameExact("Foo").method.fullName.sorted.l shouldBe List(
+        "rust2cpgtest::Foo::<init>",
         "rust2cpgtest::Foo::a",
         "rust2cpgtest::Foo::b"
       )
@@ -152,6 +153,7 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "merge all methods under the same TYPE_DECL" in {
       cpg.typeDecl.nameExact("Foo").method.fullName.sorted.l shouldBe List(
+        "rust2cpgtest::Foo::<init>",
         "rust2cpgtest::Foo::a",
         "rust2cpgtest::Foo::b"
       )
@@ -187,6 +189,7 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "merge all methods under the same TYPE_DECL" in {
       cpg.typeDecl.nameExact("Foo").method.fullName.sorted.l shouldBe List(
+        "rust2cpgtest::Foo::<init>",
         "rust2cpgtest::Foo::a",
         "rust2cpgtest::Foo::b"
       )

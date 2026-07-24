@@ -102,6 +102,91 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
         one.typeFullName shouldBe "bool"
       }
     }
+
+    "have a constructor method" in {
+      inside(cpg.typeDecl.nameExact("Pair").method.l) { case init :: Nil =>
+        init.name shouldBe "<init>"
+        init.fullName shouldBe "rust2cpgtest::Pair::<init>"
+        init.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR)
+        init.methodReturn.typeFullName shouldBe "()"
+      }
+    }
+
+    "have correct constructor parameters" in {
+      inside(cpg.typeDecl.nameExact("Pair").method.parameter.sortBy(_.index).l) {
+        case paramSelf :: param0 :: param1 :: Nil =>
+          paramSelf.name shouldBe "self"
+          paramSelf.index shouldBe 0
+          paramSelf.typeFullName shouldBe "rust2cpgtest::Pair"
+
+          param0.name shouldBe "0"
+          param0.index shouldBe 1
+          param0.typeFullName shouldBe "i32"
+
+          param1.name shouldBe "1"
+          param1.index shouldBe 2
+          param1.typeFullName shouldBe "bool"
+      }
+    }
+
+    "have an assignment for each parameter" in {
+      inside(cpg.typeDecl.nameExact("Pair").method.body.astChildren.isCall.l) { case assign0 :: assign1 :: Nil =>
+        assign0.code shouldBe "(*self).0 = 0"
+        inside(assign0.argument(1)) { case fieldAccess: Call =>
+          fieldAccess.code shouldBe "(*self).0"
+          fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        }
+        inside(assign0.argument(2)) { case ident: Identifier =>
+          ident.name shouldBe "0"
+          ident.typeFullName shouldBe "i32"
+        }
+        assign1.code shouldBe "(*self).1 = 1"
+      }
+    }
+
+    "have a standalone ctor wrapper" in {
+      inside(cpg.method.nameExact("Pair").l) { case ctor :: Nil =>
+        ctor.fullName shouldBe "rust2cpgtest::Pair"
+        ctor.astParentType shouldBe NodeTypes.METHOD
+        ctor.astParentFullName shouldBe s"$libPath:rust2cpgtest::$globalNamespaceName"
+        ctor.modifier shouldBe empty
+        ctor.methodReturn.typeFullName shouldBe "rust2cpgtest::Pair"
+      }
+    }
+
+    "have correct ctor wrapper parameters" in {
+      inside(cpg.method.nameExact("Pair").parameter.sortBy(_.index).l) { case param0 :: param1 :: Nil =>
+        param0.name shouldBe "0"
+        param0.index shouldBe 1
+        param0.typeFullName shouldBe "i32"
+
+        param1.name shouldBe "1"
+        param1.index shouldBe 2
+        param1.typeFullName shouldBe "bool"
+      }
+    }
+
+    "have correct ctor wrapper body" in {
+      inside(cpg.method.nameExact("Pair").body.astChildren.isCall.l) { case allocAssign :: initCall :: Nil =>
+        allocAssign.code shouldBe s"tmp = ${Operators.alloc}"
+        initCall.name shouldBe "<init>"
+        initCall.methodFullName shouldBe "rust2cpgtest::Pair::<init>"
+        initCall.code shouldBe "Pair::<init>(&tmp, 0, 1)"
+
+        inside(initCall.argument.sortBy(_.argumentIndex).l) {
+          case (addressOf: Call) :: (arg0: Identifier) :: (arg1: Identifier) :: Nil =>
+            addressOf.code shouldBe "&tmp"
+            addressOf.argumentIndex shouldBe 0
+            addressOf.typeFullName shouldBe "&rust2cpgtest::Pair"
+
+            arg0.name shouldBe "0"
+            arg0.typeFullName shouldBe "i32"
+
+            arg1.name shouldBe "1"
+            arg1.typeFullName shouldBe "bool"
+        }
+      }
+    }
   }
 
   "a top-level tuple struct with one field" should {
@@ -126,6 +211,27 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
     "have no members" in {
       cpg.typeDecl.nameExact("Empty").member shouldBe empty
     }
+
+    "have a constructor method" in {
+      inside(cpg.typeDecl.nameExact("Empty").method.l) { case init :: Nil =>
+        init.name shouldBe "<init>"
+        init.fullName shouldBe "rust2cpgtest::Empty::<init>"
+        init.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR)
+        inside(init.parameter.l) { case self :: Nil =>
+          self.name shouldBe "self"
+          self.index shouldBe 0
+          self.typeFullName shouldBe "rust2cpgtest::Empty"
+        }
+      }
+    }
+
+    "have a standalone ctor wrapper" in {
+      inside(cpg.method.nameExact("Empty").l) { case ctorFn :: Nil =>
+        ctorFn.fullName shouldBe "rust2cpgtest::Empty"
+        ctorFn.parameter shouldBe empty
+        ctorFn.methodReturn.typeFullName shouldBe "rust2cpgtest::Empty"
+      }
+    }
   }
 
   "a top-level unit struct" should {
@@ -137,6 +243,19 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have no members" in {
       cpg.typeDecl.nameExact("Bar").member shouldBe empty
+    }
+
+    "have a constructor method" in {
+      inside(cpg.typeDecl.nameExact("Bar").method.l) { case init :: Nil =>
+        init.name shouldBe "<init>"
+        init.fullName shouldBe "rust2cpgtest::Bar::<init>"
+        init.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR)
+        inside(init.parameter.l) { case self :: Nil =>
+          self.name shouldBe "self"
+          self.index shouldBe 0
+          self.typeFullName shouldBe "rust2cpgtest::Bar"
+        }
+      }
     }
   }
 
