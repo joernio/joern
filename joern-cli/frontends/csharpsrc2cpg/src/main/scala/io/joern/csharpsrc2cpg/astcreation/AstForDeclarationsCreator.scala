@@ -576,17 +576,18 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForSetAccessorDeclaration(accessorDecl: DotNetNodeInfo, propertyDecl: DotNetNodeInfo): Seq[Ast] = {
-    val name         = composeSetterName(nameFromNode(propertyDecl))
-    val modifiers    = modifiersForNode(propertyDecl)
-    val returnType   = BuiltinTypes.Void
-    val valueType    = nodeTypeFullName(propertyDecl)
-    val baseType     = scope.surroundingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace)
-    val isStatic     = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
-    val valueParam   = Ast(NewMethodParameterIn().typeFullName(valueType).name("value").index(1))
-    val parameters   = Option.unless(isStatic)(astForThisParameter(propertyDecl)).toList :+ valueParam
-    val signature    = composeMethodLikeSignature(returnType, parameters)
-    val fullName     = composeMethodFullName(baseType, name, signature)
-    val body         = Try(astForBlock(createDotNetNodeInfo(accessorDecl.json(ParserKeys.Body)))).getOrElse(Ast())
+    val name       = composeSetterName(nameFromNode(propertyDecl))
+    val modifiers  = modifiersForNode(propertyDecl)
+    val returnType = BuiltinTypes.Void
+    val valueType  = nodeTypeFullName(propertyDecl)
+    val baseType   = scope.surroundingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace)
+    val isStatic   = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
+    val valueParam = Ast(NewMethodParameterIn().typeFullName(valueType).name("value").index(1))
+    val parameters = Option.unless(isStatic)(astForThisParameter(propertyDecl)).toList :+ valueParam
+    val signature  = composeMethodLikeSignature(returnType, parameters)
+    val fullName   = composeMethodFullName(baseType, name, signature)
+    val body =
+      Try(astForBlock(createDotNetNodeInfo(accessorDecl.json(ParserKeys.Body)))).getOrElse(Ast(blockNode(accessorDecl)))
     val methodReturn = methodReturnNode(accessorDecl, returnType)
     val methodNode_  = methodNode(accessorDecl, name, fullName, signature, relativeFileName)
 
