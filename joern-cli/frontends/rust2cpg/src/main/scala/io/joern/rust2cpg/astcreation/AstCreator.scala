@@ -7,6 +7,7 @@ import io.joern.rust2cpg.parser.RustNodeSyntax
 import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
 import io.joern.rust2cpg.parser.RustNodeSyntaxExtensions.op
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.AstNodeBuilder.bindingNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, Operators, PropertyDefaults, PropertyNames}
@@ -35,6 +36,13 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
 
   protected def addDetachedAst(ast: Ast): Unit = {
     detachedAsts = ast :: detachedAsts
+  }
+
+  protected def addDetachedBindingAsts(typeDecl: NewTypeDecl, methodAsts: Seq[Ast], signature: String): Unit = {
+    methodAsts.flatMap(_.root).collect { case method: NewMethod =>
+      val binding = bindingNode(method.name, signature, method.fullName)
+      addDetachedAst(Ast(binding).withBindsEdge(typeDecl, binding))
+    }
   }
 
   // NB: rust_ast_gen uses 0-based line/column
@@ -132,7 +140,7 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     )
   }
 
-  protected def typeDeclForStruct(struct: RustNodeSyntax.Struct): NewTypeDecl = {
+  protected def typeDeclForStruct(struct: RustNodeSyntax.Struct, inheritsFrom: Seq[String]): NewTypeDecl = {
     val name   = code(struct.name)
     val parent = methodAstParentStack.head
     typeDeclNode(
@@ -142,7 +150,8 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
       filename = parseResult.filename,
       code = code(struct),
       astParentType = parent.label,
-      astParentFullName = parent.properties(PropertyNames.FullName).toString
+      astParentFullName = parent.properties(PropertyNames.FullName).toString,
+      inherits = inheritsFrom
     )
   }
 
