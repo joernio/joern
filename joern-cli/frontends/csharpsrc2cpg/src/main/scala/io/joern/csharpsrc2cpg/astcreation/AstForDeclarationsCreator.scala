@@ -551,9 +551,18 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForPropertyDeclaration(propertyDecl: DotNetNodeInfo): Seq[Ast] = {
-    val accessorList = createDotNetNodeInfo(propertyDecl.json(ParserKeys.AccessorList))
-    val accessors    = accessorList.json(ParserKeys.Accessors).arr.map(createDotNetNodeInfo)
-    accessors.flatMap(astForPropertyAccessor(_, propertyDecl)).toList
+    Try(propertyDecl.json(ParserKeys.AccessorList)).toOption.filterNot(_.isNull) match {
+      case Some(accessorListJson) =>
+        val accessorList = createDotNetNodeInfo(accessorListJson)
+        val accessors    = accessorList.json(ParserKeys.Accessors).arr.map(createDotNetNodeInfo)
+        accessors.flatMap(astForPropertyAccessor(_, propertyDecl)).toList
+      case None =>
+        Try(propertyDecl.json(ParserKeys.ExpressionBody)).toOption.filterNot(_.isNull) match {
+          case Some(expressionBody) =>
+            astForGetAccessorDeclaration(createDotNetNodeInfo(expressionBody), propertyDecl)
+          case None => Nil
+        }
+    }
   }
 
   private def astForPropertyAccessor(accessorDecl: DotNetNodeInfo, propertyDecl: DotNetNodeInfo): Seq[Ast] = {

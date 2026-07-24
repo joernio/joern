@@ -274,4 +274,74 @@ class PropertyGetterTests extends CSharpCode2CpgFixture {
       cpg.method.nameExact("get_MyProperty").body.astChildren shouldBe empty
     }
   }
+
+  "expression-bodied property declaration" should {
+    val cpg = code("""
+        |class C
+        |{
+        |  public int MyProperty => 42;
+        |}
+        |""".stripMargin)
+
+    "be lowered into a get_* method" in {
+      inside(cpg.method.nameExact("get_MyProperty").l) { case method :: Nil =>
+        method.fullName shouldBe "C.get_MyProperty:System.Int32(C)"
+        method.signature shouldBe "System.Int32(C)"
+      }
+    }
+
+    "have correct modifiers" in {
+      cpg.method.nameExact("get_MyProperty").modifier.modifierType.sorted.l shouldBe List(ModifierTypes.PUBLIC)
+    }
+
+    "have correct parameters" in {
+      inside(cpg.method.nameExact("get_MyProperty").parameter.l) { case thisParam :: Nil =>
+        thisParam.typeFullName shouldBe "C"
+        thisParam.name shouldBe "this"
+      }
+    }
+  }
+
+  "static expression-bodied property declaration" should {
+    val cpg = code("""
+        |public class C
+        |{
+        |  public static string MyProperty => "x";
+        |}
+        |""".stripMargin)
+
+    "be lowered into a get_* method" in {
+      inside(cpg.method.nameExact("get_MyProperty").l) { case method :: Nil =>
+        method.fullName shouldBe "C.get_MyProperty:System.String()"
+        method.signature shouldBe "System.String()"
+      }
+    }
+
+    "have correct modifiers" in {
+      cpg.method.nameExact("get_MyProperty").modifier.modifierType.sorted.l shouldBe List(
+        ModifierTypes.PUBLIC,
+        ModifierTypes.STATIC
+      )
+    }
+
+    "have no parameters" in {
+      cpg.method.nameExact("get_MyProperty").parameter shouldBe empty
+    }
+  }
+
+  "a type declaring an expression-bodied property alongside other members" should {
+    val cpg = code("""
+        |class C
+        |{
+        |  public int N => 0;
+        |  public void Run() {}
+        |}
+        |""".stripMargin)
+
+    "not drop the enclosing file, so the type and its other members are present" in {
+      val methodNames = cpg.typeDecl.nameExact("C").method.name.l.toSet
+      methodNames should contain("get_N")
+      methodNames should contain("Run")
+    }
+  }
 }
