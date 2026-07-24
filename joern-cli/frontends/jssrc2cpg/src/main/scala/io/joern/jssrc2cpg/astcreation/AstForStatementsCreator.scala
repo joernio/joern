@@ -181,11 +181,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForThrowStatement(throwStmt: BabelNodeInfo): Ast = {
-    val argumentAst = astForNodeWithFunctionReference(throwStmt.json("argument"))
-    val throwCallNode =
-      callNode(throwStmt, throwStmt.code, "<operator>.throw", DispatchTypes.STATIC_DISPATCH)
-    val argAsts = List(argumentAst)
-    callAst(throwCallNode, argAsts)
+    throwAst(throwStmt, List(astForNodeWithFunctionReference(throwStmt.json("argument"))))
   }
 
   private def astsForSwitchCase(switchCase: BabelNodeInfo): List[Ast] = {

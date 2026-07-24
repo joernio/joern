@@ -352,17 +352,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
   }
 
   private[statements] def astForThrow(stmt: ThrowStmt): Ast = {
-    val throwNode = NewCall()
-      .name("<operator>.throw")
-      .methodFullName("<operator>.throw")
-      .lineNumber(line(stmt))
-      .columnNumber(column(stmt))
-      .code(code(stmt))
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-
-    val args = astsForExpression(stmt.getExpression, ExpectedType.empty)
-
-    callAst(throwNode, args)
+    throwAst(stmt, astsForExpression(stmt.getExpression, ExpectedType.empty))
   }
 
   private[statements] def astForCatchClause(catchClause: CatchClause): Ast = {

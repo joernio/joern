@@ -298,25 +298,24 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForUnaryExpression(unaryExpr: BabelNodeInfo): Ast = {
-    val op = unaryExpr.json("operator").str match {
-      case "void"   => "<operator>.void"
-      case "throw"  => "<operator>.throw"
-      case "delete" => Operators.delete
-      case "!"      => Operators.logicalNot
-      case "+"      => Operators.plus
-      case "-"      => Operators.minus
-      case "~"      => "<operator>.bitNot"
-      case "typeof" => Operators.instanceOf
-      case other =>
-        logger.warn(s"Unknown update operator: '$other'")
-        Operators.assignment
-    }
-
     val argumentAst = astForNodeWithFunctionReference(unaryExpr.json("argument"))
-
-    val node    = callNode(unaryExpr, unaryExpr.code, op, DispatchTypes.STATIC_DISPATCH)
-    val argAsts = List(argumentAst)
-    callAst(node, argAsts)
+    unaryExpr.json("operator").str match {
+      case "throw" => throwAst(unaryExpr, List(argumentAst))
+      case op =>
+        val operator = op match {
+          case "void"   => "<operator>.void"
+          case "delete" => Operators.delete
+          case "!"      => Operators.logicalNot
+          case "+"      => Operators.plus
+          case "-"      => Operators.minus
+          case "~"      => "<operator>.bitNot"
+          case "typeof" => Operators.instanceOf
+          case other =>
+            logger.warn(s"Unknown update operator: '$other'")
+            Operators.assignment
+        }
+        callAst(callNode(unaryExpr, unaryExpr.code, operator, DispatchTypes.STATIC_DISPATCH), List(argumentAst))
+    }
   }
 
   protected def astForSequenceExpression(seq: BabelNodeInfo): Ast = {

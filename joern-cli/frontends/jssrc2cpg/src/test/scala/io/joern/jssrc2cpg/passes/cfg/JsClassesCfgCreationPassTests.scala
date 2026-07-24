@@ -67,8 +67,7 @@ class JsClassesCfgCreationPassTests extends CfgTestFixture(() => new JsSrcCfgTes
       succOf("Foo") should contain theSameElementsAs expected(("_tmp_0", 1, AlwaysEdge))
       succOf("_tmp_0", 1) should contain theSameElementsAs expected(("new Foo()", AlwaysEdge))
       succOf("new Foo()", NodeTypes.CALL) should contain theSameElementsAs expected(("_tmp_0", 2, AlwaysEdge))
-      succOf("_tmp_0", 2) should contain theSameElementsAs expected(("new Foo()", AlwaysEdge))
-      succOf("new Foo()") should contain theSameElementsAs expected(("throw new Foo()", AlwaysEdge))
+      succOf("_tmp_0", 2) should contain theSameElementsAs expected(("throw new Foo()", AlwaysEdge))
       succOf("throw new Foo()") should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
   }

@@ -1,6 +1,5 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.CSharpOperators
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -302,8 +301,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case Some(_expr: ujson.Obj) => astForNode(createDotNetNodeInfo(_expr))
       case _                      => Seq.empty[Ast]
     }
-    val throwCall = operatorCallNode(throwStmt, CSharpOperators.throws, Some(getTypeFullNameFromAstNode(argsAst)))
-    Seq(callAst(throwCall, argsAst))
+    Seq(throwAst(throwStmt, argsAst))
   }
 
   protected def astForTryStatement(tryStmt: DotNetNodeInfo): Seq[Ast] = {

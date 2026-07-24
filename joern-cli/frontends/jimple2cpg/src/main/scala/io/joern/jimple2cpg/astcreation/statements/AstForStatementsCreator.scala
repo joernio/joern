@@ -126,18 +126,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astsForThrowStmt(throwStmt: ThrowStmt): Seq[Ast] = {
-    val opAst = astsForValue(throwStmt.getOp, throwStmt)
-    val throwNode = NewCall()
-      .name("<operator>.throw")
-      .methodFullName("<operator>.throw")
-      .lineNumber(line(throwStmt))
-      .columnNumber(column(throwStmt))
-      .code(s"throw new ${throwStmt.getOp.getType}()")
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-    Seq(
-      Ast(throwNode)
-        .withChildren(opAst)
-    )
+    val codeStr = s"throw new ${throwStmt.getOp.getType}()"
+    Seq(throwAst(throwStmt, astsForValue(throwStmt.getOp, throwStmt), Some(codeStr)))
   }
 
   private def astsForMonitorStmt(monitorStmt: MonitorStmt): Seq[Ast] = {
