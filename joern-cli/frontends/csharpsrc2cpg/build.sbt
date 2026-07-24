@@ -40,8 +40,6 @@ lazy val AstgenLinux    = "dotnetastgen-linux"
 lazy val AstgenLinuxArm = "dotnetastgen-linux-arm64"
 lazy val AstgenMac      = "dotnetastgen-macos"
 
-lazy val AllPlatforms = Seq(AstgenWin, AstgenLinux, AstgenLinuxArm, AstgenMac)
-
 lazy val astGenDlUrl = settingKey[String]("astgen download url")
 astGenDlUrl := s"https://github.com/joernio/astgen-monorepo/releases/download/dotnet-astgen/v${astGenVersion.value}/"
 
@@ -53,12 +51,10 @@ def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
   }
 }
 
-lazy val astGenBinaryNames = taskKey[Seq[String]]("asstgen binary names")
+lazy val astGenBinaryNames = taskKey[Seq[String]]("astgen binary names")
 astGenBinaryNames := {
   if (hasCompatibleAstGenVersion(astGenVersion.value)) {
     Seq.empty
-  } else if (sys.props.get("ALL_PLATFORMS").contains("TRUE")) {
-    AllPlatforms
   } else {
     Environment.operatingSystem match {
       case Environment.OperatingSystemType.Windows => Seq(AstgenWin)
@@ -69,7 +65,7 @@ astGenBinaryNames := {
         }
       case Environment.OperatingSystemType.Mac => Seq(AstgenMac)
       case Environment.OperatingSystemType.Unknown =>
-        AllPlatforms
+        Seq(AstgenWin, AstgenLinux, AstgenLinuxArm, AstgenMac)
     }
   }
 }
@@ -92,14 +88,6 @@ astGenDlTask := {
 }
 
 Compile / compile := ((Compile / compile) dependsOn astGenDlTask).value
-
-lazy val astGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
-astGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
-
-stage := Def
-  .sequential(astGenSetAllPlatforms, Universal / stage)
-  .andFinally(System.setProperty("ALL_PLATFORMS", "FALSE"))
-  .value
 
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None

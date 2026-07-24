@@ -52,8 +52,6 @@ lazy val goAstGenBinaryNames = taskKey[Seq[String]]("goastgen binary names")
 goAstGenBinaryNames := {
   if (hasCompatibleAstGenVersion(goAstGenVersion.value)) {
     Seq.empty
-  } else if (sys.props.get("ALL_PLATFORMS").contains("TRUE")) {
-    Seq(GoAstgenWin, GoAstgenLinux, GoAstgenLinuxArm, GoAstgenMac, GoAstgenMacArm)
   } else {
     Environment.operatingSystem match {
       case Environment.OperatingSystemType.Windows =>
@@ -91,14 +89,6 @@ goAstGenDlTask := {
 }
 
 Compile / compile := ((Compile / compile) dependsOn goAstGenDlTask).value
-
-lazy val goAstGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
-goAstGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
-
-stage := Def
-  .sequential(goAstGenSetAllPlatforms, Universal / stage)
-  .andFinally(System.setProperty("ALL_PLATFORMS", "FALSE"))
-  .value
 
 /** write the astgen version to the manifest for downstream usage */
 Compile / packageBin / packageOptions +=

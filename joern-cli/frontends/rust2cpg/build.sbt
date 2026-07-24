@@ -52,8 +52,6 @@ lazy val astGenBinaryNames = taskKey[Seq[String]]("rust_ast_gen binary names")
 astGenBinaryNames := {
   if (hasCompatibleAstGenVersion(astGenVersion.value)) {
     Seq.empty
-  } else if (sys.props.get("ALL_PLATFORMS").contains("TRUE")) {
-    Seq(AstgenWin, AstgenWinArm, AstgenLinux, AstgenLinuxArm, AstgenMac, AstgenMacArm)
   } else {
     Environment.operatingSystem match {
       case Environment.OperatingSystemType.Windows =>
@@ -103,14 +101,6 @@ rustNodeSyntaxDlTask := {
 }
 
 Compile / sourceGenerators += rustNodeSyntaxDlTask
-
-lazy val astGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
-astGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
-
-stage := Def
-  .sequential(astGenSetAllPlatforms, Universal / stage)
-  .andFinally(System.setProperty("ALL_PLATFORMS", "FALSE"))
-  .value
 
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None

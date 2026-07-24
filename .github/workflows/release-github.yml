@@ -2,13 +2,25 @@ name: release to github
 on:
   workflow_dispatch: # triggered by 'release' workflow via github REST api
 jobs:
-  release-github:
-    concurrency: release
-    runs-on: ubuntu-latest
+  build-distribution:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x86_64
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+          - os: macos-13
+            platform: macos-x86_64
+          - os: macos-latest
+            platform: macos-arm64
+          - os: windows-latest
+            platform: windows-x86_64
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Set up JDK
@@ -31,7 +43,52 @@ jobs:
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
       - run: sbt stage createDistribution
-      - run: sha512sum target/joern-cli.zip > target/joern-cli.zip.sha512
+      - run: sha512sum target/joern-cli-${{ matrix.platform }}.zip > target/joern-cli-${{ matrix.platform }}.zip.sha512
+        if: runner.os != 'Windows'
+      - name: Generate SHA512 checksum
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash -Algorithm SHA512 "target\joern-cli-${{ matrix.platform }}.zip").Hash.ToLower()
+          "$hash  joern-cli-${{ matrix.platform }}.zip" | Out-File -Encoding ASCII "target\joern-cli-${{ matrix.platform }}.zip.sha512"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.platform }}
+          path: |
+            target/joern-cli-${{ matrix.platform }}.zip
+            target/joern-cli-${{ matrix.platform }}.zip.sha512
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        if: matrix.platform == 'linux-x86_64'
+        with:
+          name: querydb
+          path: querydb/target/querydb.zip
+          retention-days: 1
+
+  release-github:
+    needs: build-distribution
+    concurrency: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          path: target/dist
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: querydb
+          path: querydb/target
       - run: sbt "querydb/runMain io.joern.dumpq.Main"
       - name: Check if release exists
         id: check_release
@@ -55,7 +112,15 @@ jobs:
           prerelease: false
           files: |
             ./joern-install.sh
-            target/joern-cli.zip
-            target/joern-cli.zip.sha512
+            target/dist/joern-cli-linux-x86_64.zip
+            target/dist/joern-cli-linux-x86_64.zip.sha512
+            target/dist/joern-cli-linux-arm64.zip
+            target/dist/joern-cli-linux-arm64.zip.sha512
+            target/dist/joern-cli-macos-x86_64.zip
+            target/dist/joern-cli-macos-x86_64.zip.sha512
+            target/dist/joern-cli-macos-arm64.zip
+            target/dist/joern-cli-macos-arm64.zip.sha512
+            target/dist/joern-cli-windows-x86_64.zip
+            target/dist/joern-cli-windows-x86_64.zip.sha512
             querydb/target/querydb.zip
             /tmp/querydb.json

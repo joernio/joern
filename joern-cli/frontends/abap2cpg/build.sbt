@@ -38,19 +38,15 @@ lazy val AbapgenMacArm   = "abapgen-macos-arm"
 lazy val abapgenDlUrl = settingKey[String]("abapgen download url")
 abapgenDlUrl := s"https://github.com/joernio/astgen-monorepo/releases/download/abap-astgen/v${abapgenVersion.value}/"
 
-lazy val abapgenBinaryNames = taskKey[Seq[String]]("abapgen binary names for current or all platforms")
+lazy val abapgenBinaryNames = taskKey[Seq[String]]("abapgen binary names for current platform")
 abapgenBinaryNames := {
-  if (sys.props.get("ALL_PLATFORMS").contains("TRUE")) {
-    Seq(AbapgenWinX86, AbapgenLinuxX86, AbapgenLinuxArm, AbapgenMacX86, AbapgenMacArm)
-  } else {
-    (Environment.operatingSystem, Environment.architecture) match {
-      case (Environment.OperatingSystemType.Windows, _)                                => Seq(AbapgenWinX86)
-      case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.X86)   => Seq(AbapgenLinuxX86)
-      case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.ARMv8) => Seq(AbapgenLinuxArm)
-      case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.X86)     => Seq(AbapgenMacX86)
-      case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.ARMv8)   => Seq(AbapgenMacArm)
-      case _ => Seq(AbapgenWinX86, AbapgenLinuxX86, AbapgenLinuxArm, AbapgenMacX86, AbapgenMacArm)
-    }
+  (Environment.operatingSystem, Environment.architecture) match {
+    case (Environment.OperatingSystemType.Windows, _)                                => Seq(AbapgenWinX86)
+    case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.X86)   => Seq(AbapgenLinuxX86)
+    case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.ARMv8) => Seq(AbapgenLinuxArm)
+    case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.X86)     => Seq(AbapgenMacX86)
+    case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.ARMv8)   => Seq(AbapgenMacArm)
+    case _ => Seq(AbapgenWinX86, AbapgenLinuxX86, AbapgenLinuxArm, AbapgenMacX86, AbapgenMacArm)
   }
 }
 
@@ -71,14 +67,6 @@ abapgenDlTask := {
 }
 
 Compile / compile := ((Compile / compile) dependsOn abapgenDlTask).value
-
-lazy val abapgenSetAllPlatforms = taskKey[Unit]("Set ALL_PLATFORMS flag")
-abapgenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
-
-stage := Def
-  .sequential(abapgenSetAllPlatforms, Universal / stage)
-  .andFinally(System.setProperty("ALL_PLATFORMS", "FALSE"))
-  .value
 
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None

@@ -88,13 +88,19 @@ ThisBuild / scalacOptions ++= Seq(
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
 createDistribution := {
-  val distributionFile = file("target/joern-cli.zip")
-  val zip              = (joerncli / Universal / packageBin).value
-
+  val platformSuffix = (Environment.operatingSystem, Environment.architecture) match {
+    case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.X86)   => "linux-x86_64"
+    case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.ARMv8) => "linux-arm64"
+    case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.X86)     => "macos-x86_64"
+    case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.ARMv8)   => "macos-arm64"
+    case (Environment.OperatingSystemType.Windows, _)                                => "windows-x86_64"
+    case _                                                                            => "unknown"
+  }
+  val distributionFile    = file(s"target/joern-cli-$platformSuffix.zip")
+  val zip                 = (joerncli / Universal / packageBin).value
   IO.copyFile(zip, distributionFile)
   val querydbDistribution = (querydb / createDistribution).value
-
-  println(s"created distribution - resulting files: $distributionFile")
+  println(s"created distribution - resulting files: $distributionFile, $querydbDistribution")
   distributionFile
 }
 

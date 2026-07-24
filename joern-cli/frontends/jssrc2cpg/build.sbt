@@ -56,8 +56,6 @@ lazy val astGenBinaryNames = taskKey[Seq[String]]("astgen binary names")
 astGenBinaryNames := {
   if (hasCompatibleAstGenVersion(astGenVersion.value)) {
     Seq.empty
-  } else if (sys.props.get("ALL_PLATFORMS").contains("TRUE")) {
-    Seq(AstgenWinAmd64, AstgenLinuxAmd64, AstgenLinuxArmV8, AstgenMacAmd64, AstgenMacArmV8)
   } else {
     (Environment.operatingSystem, Environment.architecture) match {
       case (Environment.OperatingSystemType.Windows, _)                                => Seq(AstgenWinAmd64)
@@ -87,14 +85,6 @@ astGenDlTask := {
 }
 
 Compile / compile := ((Compile / compile) dependsOn astGenDlTask).value
-
-lazy val astGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
-astGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
-
-stage := Def
-  .sequential(astGenSetAllPlatforms, Universal / stage)
-  .andFinally(System.setProperty("ALL_PLATFORMS", "FALSE"))
-  .value
 
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None
