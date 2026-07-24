@@ -29,9 +29,6 @@ class AstCreator(
     with AstForTypesCreator
     with AstSummaryVisitor {
 
-  val tmpGen: FreshNameGenerator[String]                      = FreshNameGenerator(i => s"<tmp-$i>")
-  val procParamGen: FreshNameGenerator[Left[String, Nothing]] = FreshNameGenerator(i => Left(s"<proc-param-$i>"))
-
   /* Used to track variable names and their LOCAL nodes.
    */
   protected val scope: RubyScope = new RubyScope(programSummary, projectRoot)
