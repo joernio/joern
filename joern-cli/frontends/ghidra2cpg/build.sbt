@@ -23,4 +23,7 @@ enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
 fork        := true
 Test / scalacOptions += "-language:implicitConversions"
-javaOptions := Seq("-Djava.protocol.handler.pkgs=ghidra.framework.protocol")
+javaOptions := Seq(
+  "-Djava.protocol.handler.pkgs=ghidra.framework.protocol",
+  "-Djdk.serialFilterFactory=ghidra.framework.remote.GhidraSerialFilterFactory"
+)
