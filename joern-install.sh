@@ -154,18 +154,40 @@ mkdir -p $JOERN_INSTALL_DIR
 check_installed "curl"
 check_installed "unzip"
 
+detect_platform() {
+  OS=$(uname -s)
+  ARCH=$(uname -m)
+  case "$OS" in
+    Linux)
+      case "$ARCH" in
+        aarch64|arm64) echo "linux-arm64" ;;
+        *)             echo "linux-x86_64" ;;
+      esac ;;
+    Darwin)
+      case "$ARCH" in
+        arm64) echo "macos-arm64" ;;
+        *)     echo "macos-x86_64" ;;
+      esac ;;
+    *)
+      echo "linux-x86_64" ;;
+  esac
+}
+
+PLATFORM=$(detect_platform)
+JOERN_ZIP="joern-cli-${PLATFORM}.zip"
+
 if [ $NO_DOWNLOAD = true ]; then
     sbt createDistribution
     sbt clean
 else
   if [ "$JOERN_VERSION" = "" ]; then
-    curl -L "https://github.com/joernio/joern/releases/latest/download/joern-cli.zip" -o "$SCRIPT_ABS_DIR/joern-cli.zip"
+    curl -L "https://github.com/joernio/joern/releases/latest/download/${JOERN_ZIP}" -o "$SCRIPT_ABS_DIR/${JOERN_ZIP}"
   else
-    curl -L "https://github.com/joernio/joern/releases/download/$JOERN_VERSION/joern-cli.zip" -o "$SCRIPT_ABS_DIR/joern-cli.zip"
+    curl -L "https://github.com/joernio/joern/releases/download/$JOERN_VERSION/${JOERN_ZIP}" -o "$SCRIPT_ABS_DIR/${JOERN_ZIP}"
   fi
 fi
 
-unzip -qo -d "$JOERN_INSTALL_DIR" "$SCRIPT_ABS_DIR"/joern-cli.zip
+unzip -qo -d "$JOERN_INSTALL_DIR" "$SCRIPT_ABS_DIR"/${JOERN_ZIP}
 
 if [ $INTERACTIVE = false ] && [ "$(whoami)" != "root" ]; then
   echo "==============================================================="
