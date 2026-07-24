@@ -16,6 +16,13 @@ dependsOn(
 
 libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % Versions.scalatest % Test)
 
+// ghidra2cpg (test->test) ships a fat jar with a bundled old log4j; exclude the newer
+// standalone log4j jars to avoid class-loading conflicts (same fix as in ghidra2cpg/build.sbt)
+excludeDependencies ++= Seq(
+  ExclusionRule("org.apache.logging.log4j", "log4j-slf4j2-impl"),
+  ExclusionRule("org.apache.logging.log4j", "log4j-core")
+)
+
 topLevelDirectory := Some(name.value)
 
 lazy val createDistribution = taskKey[File]("Create binary distribution of extension")
@@ -65,6 +72,10 @@ createDistribution := {
 
 Compile / scalacOptions += "-language:implicitConversions"
 
-fork := true
+fork        := true
+javaOptions := Seq(
+  "-Djava.protocol.handler.pkgs=ghidra.framework.protocol",
+  "-Djdk.serialFilterFactory=ghidra.framework.remote.GhidraSerialFilterFactory"
+)
 
 maintainer := "fabs@shiftleft.io"
