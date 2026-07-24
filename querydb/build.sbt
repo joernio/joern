@@ -72,8 +72,8 @@ createDistribution := {
 
 Compile / scalacOptions += "-language:implicitConversions"
 
-fork        := true
-javaOptions := Seq(
+fork               := true
+Test / javaOptions := Seq(
   "-Djava.protocol.handler.pkgs=ghidra.framework.protocol",
   "-Djdk.serialFilterFactory=ghidra.framework.remote.GhidraSerialFilterFactory"
 )
