@@ -45,11 +45,24 @@ class Ghidra2Cpg extends X2CpgFrontend {
         var project: GhidraProject = null;
 
         try {
-          // The 'true' parameter indicates this is a temporary project
-          project =
-            GhidraProject.createProject(tempWorkingDir.absolutePathAsString, CommandLineConfig.projectName, true)
-          program = project.importProgram(inputFile)
-          addProgramToCpg(program, inputFile.getCanonicalPath, cpg)
+          // .gpr is the extension of Ghidra projects
+          if (inputFile.getName().endsWith(".gpr")) {
+            project = GhidraProject.openProject(inputFile.getParent(), inputFile.getName())
+            if (!project.getRootFolder().isEmpty()) {
+              // In the current implementation we use the first domain file
+              // It is the user's responsibility to provide a Ghidra project with one domain file
+              val domainFile = project.getRootFolder().getFiles().head
+              // This is a project path, which is OS-indepenent and always uses the forward-slash notation
+              program = project.openProgram("/", domainFile.getName(), true)
+              addProgramToCpg(program, inputFile.getCanonicalPath, cpg)
+            }
+          } else {
+            // The 'true' parameter indicates this is a temporary project
+            project =
+              GhidraProject.createProject(tempWorkingDir.absolutePathAsString, CommandLineConfig.projectName, true)
+            program = project.importProgram(inputFile)
+            addProgramToCpg(program, inputFile.getCanonicalPath, cpg)
+          }
         } catch {
           case e: Exception =>
             e.printStackTrace()
