@@ -44,7 +44,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Set up JDK
@@ -53,15 +54,20 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@v1
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+        with:
+          disk-cache: false # https://github.com/sbt/setup-sbt/issues/114
       - name: Delete `.rustup` directory
         run: rm -rf /home/runner/.rustup # to save disk space
         if: runner.os == 'Linux'
       - name: Delete `.cargo` directory # to save disk space
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
-      - run: sbt stage createDistribution
-      - run: sha512sum target/joern-cli-${{ matrix.platform }}.zip > target/joern-cli-${{ matrix.platform }}.zip.sha512
+      - name: Build distribution
+        run: sbt stage createDistribution
+      - name: Generate SHA512 checksum
+        run: sha512sum target/joern-cli-${{ matrix.platform }}.zip > target/joern-cli-${{ matrix.platform }}.zip.sha512
         if: runner.os != 'Windows'
       - name: Generate SHA512 checksum
         if: runner.os == 'Windows'
@@ -69,7 +75,8 @@ jobs:
         run: |
           $hash = (Get-FileHash -Algorithm SHA512 "target\joern-cli-${{ matrix.platform }}.zip").Hash.ToLower()
           "$hash  joern-cli-${{ matrix.platform }}.zip" | Out-File -Encoding ASCII "target\joern-cli-${{ matrix.platform }}.zip.sha512"
-      - uses: actions/upload-artifact@v7
+      - name: Upload distribution artifact
+        uses: actions/upload-artifact@v7
         with:
           name: dist-${{ matrix.platform }}
           path: |
@@ -82,7 +89,8 @@ jobs:
       - name: Prepare querydb artifacts
         if: matrix.platform == 'linux-x86_64'
         run: cp /tmp/querydb.json querydb/target/querydb.json
-      - uses: actions/upload-artifact@v7
+      - name: Upload querydb artifact
+        uses: actions/upload-artifact@v7
         if: matrix.platform == 'linux-x86_64'
         with:
           name: querydb
@@ -98,13 +106,16 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Download distribution artifacts
+        uses: actions/download-artifact@v8
         with:
           pattern: dist-*
           path: target/dist
           merge-multiple: true
-      - uses: actions/download-artifact@v8
+      - name: Download querydb artifact
+        uses: actions/download-artifact@v8
         with:
           name: querydb
           path: querydb-artifacts
@@ -129,5 +140,5 @@ jobs:
             target/dist/joern-cli-windows-x86_64.zip.sha512
             target/dist/joern-cli-windows-arm64.zip
             target/dist/joern-cli-windows-arm64.zip.sha512
-            querydb-artifacts/querydb/target/querydb.zip
-            querydb-artifacts/querydb/target/querydb.json
+            querydb-artifacts/querydb.zip
+            querydb-artifacts/querydb.json
