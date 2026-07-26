@@ -23,6 +23,7 @@ null
 /joern-cli/${sys:LOG_DIR}/
 .local
 .carabiner
+$HOME
 **/astgen-win.exe
 **/astgen-macos
 **/astgen-macos-arm
