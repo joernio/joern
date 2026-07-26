@@ -22,7 +22,7 @@ null
 /gnupg-*
 /joern-cli/${sys:LOG_DIR}/
 .local
-.carabiner
+**/.carabiner
 $HOME
 **/astgen-win.exe
 **/astgen-macos
