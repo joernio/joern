@@ -186,6 +186,10 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
         rhs.typeFullName shouldBe "i32"
       }
     }
+
+    "have correct REF edges for the local" in {
+      cpg.local.nameExact("x").referencingIdentifiers.lineNumber.l shouldBe List(3)
+    }
   }
 
   "a typed let bound to an integer literal" should {
@@ -296,6 +300,65 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
         local.typeFullName shouldBe "i32"
         local.code shouldBe "x"
       }
+    }
+
+    "have correct REF edges for the local" in {
+      cpg.local.nameExact("x").referencingIdentifiers.lineNumber.l shouldBe List(4)
+    }
+  }
+
+  "`let x = 1;` shadowed in the next statement" should {
+    val cpg = code("""
+        |fn main() {
+        | let x = 1;
+        | let x = 2;
+        | let y = x;
+        |}
+        |""".stripMargin)
+
+    "have a LOCAL per binding" in {
+      cpg.local.nameExact("x").lineNumber.l shouldBe List(3, 4)
+    }
+
+    "have correct REF edges for each local" in {
+      cpg.local.nameExact("x").lineNumber(3).referencingIdentifiers.lineNumber.l shouldBe List(3)
+      cpg.local.nameExact("x").lineNumber(4).referencingIdentifiers.lineNumber.l shouldBe List(4, 5)
+    }
+  }
+
+  "`let x = 1;` shadowed inside a nested block" should {
+    val cpg = code("""
+        |fn main() {
+        | let x = 1;
+        | {
+        |   let x = 2;
+        |   let inner = x;
+        | }
+        | let outer = x;
+        |}
+        |""".stripMargin)
+
+    "have a LOCAL per binding" in {
+      cpg.local.nameExact("x").lineNumber.l shouldBe List(3, 5)
+    }
+
+    "have correct REF edges for each local" in {
+      cpg.local.nameExact("x").lineNumber(3).referencingIdentifiers.lineNumber.l shouldBe List(3, 8)
+      cpg.local.nameExact("x").lineNumber(5).referencingIdentifiers.lineNumber.l shouldBe List(5, 6)
+    }
+  }
+
+  "shadowed `let x = x + 1;`" should {
+    val cpg = code("""
+        |fn main() {
+        | let x = 1;
+        | let x = x + 1;
+        |}
+        |""".stripMargin)
+
+    "have correct REF edges for each local" in {
+      cpg.local.nameExact("x").lineNumber(3).referencingIdentifiers.lineNumber.l shouldBe List(3, 4)
+      cpg.local.nameExact("x").lineNumber(4).referencingIdentifiers.lineNumber.l shouldBe List(4)
     }
   }
 
