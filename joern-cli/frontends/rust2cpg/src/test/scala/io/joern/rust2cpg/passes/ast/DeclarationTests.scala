@@ -470,24 +470,24 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.method.name("main").block.astChildren.l) {
         case (tmpLocal: Local) :: (aLocal: Local) :: (bLocal: Local) :: (tmpAssign: Call) ::
             (aAssign: Call) :: (bAssign: Call) :: Nil =>
-          tmpLocal.name shouldBe "tmp"
+          tmpLocal.name shouldBe "<tmp>0"
           tmpLocal.typeFullName shouldBe "i32"
-          tmpAssign.code shouldBe "tmp = 1"
+          tmpAssign.code shouldBe "<tmp>0 = 1"
 
           aLocal.name shouldBe "a"
           aLocal.typeFullName shouldBe "i32"
-          aAssign.code shouldBe "a = tmp"
+          aAssign.code shouldBe "a = <tmp>0"
 
           bLocal.name shouldBe "b"
           bLocal.typeFullName shouldBe "i32"
-          bAssign.code shouldBe "b = tmp"
+          bAssign.code shouldBe "b = <tmp>0"
       }
     }
 
     "lower the initializer into an assignment to tmp" in {
-      inside(cpg.assignment.codeExact("tmp = 1").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("<tmp>0 = 1").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Literal) :: Nil =>
-          lhs.name shouldBe "tmp"
+          lhs.name shouldBe "<tmp>0"
           lhs.typeFullName shouldBe "i32"
           rhs.code shouldBe "1"
           rhs.typeFullName shouldBe "i32"
@@ -495,17 +495,17 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "lower each binding as a tmp assignment" in {
-      inside(cpg.assignment.codeExact("a = tmp").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("a = <tmp>0").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Identifier) :: Nil =>
           lhs.name shouldBe "a"
           lhs.typeFullName shouldBe "i32"
-          rhs.name shouldBe "tmp"
+          rhs.name shouldBe "<tmp>0"
       }
-      inside(cpg.assignment.codeExact("b = tmp").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("b = <tmp>0").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Identifier) :: Nil =>
           lhs.name shouldBe "b"
           lhs.typeFullName shouldBe "i32"
-          rhs.name shouldBe "tmp"
+          rhs.name shouldBe "<tmp>0"
       }
     }
   }
@@ -521,24 +521,24 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.method.name("main").block.astChildren.l) {
         case (tmpLocal: Local) :: (aLocal: Local) :: (bLocal: Local) :: (tmpAssign: Call) ::
             (aAssign: Call) :: (bAssign: Call) :: Nil =>
-          tmpLocal.name shouldBe "tmp"
+          tmpLocal.name shouldBe "<tmp>0"
           tmpLocal.typeFullName shouldBe "u8"
-          tmpAssign.code shouldBe "tmp = 1"
+          tmpAssign.code shouldBe "<tmp>0 = 1"
 
           aLocal.name shouldBe "a"
           aLocal.typeFullName shouldBe "u8"
-          aAssign.code shouldBe "a = tmp"
+          aAssign.code shouldBe "a = <tmp>0"
 
           bLocal.name shouldBe "b"
           bLocal.typeFullName shouldBe "u8"
-          bAssign.code shouldBe "b = tmp"
+          bAssign.code shouldBe "b = <tmp>0"
       }
     }
 
     "lower the initializer into an assignment to tmp" in {
-      inside(cpg.assignment.codeExact("tmp = 1").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("<tmp>0 = 1").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Literal) :: Nil =>
-          lhs.name shouldBe "tmp"
+          lhs.name shouldBe "<tmp>0"
           lhs.typeFullName shouldBe "u8"
           rhs.code shouldBe "1"
           rhs.typeFullName shouldBe "u8"
@@ -546,17 +546,17 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "lower each binding as a tmp assignment" in {
-      inside(cpg.assignment.codeExact("a = tmp").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("a = <tmp>0").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Identifier) :: Nil =>
           lhs.name shouldBe "a"
           lhs.typeFullName shouldBe "u8"
-          rhs.name shouldBe "tmp"
+          rhs.name shouldBe "<tmp>0"
       }
-      inside(cpg.assignment.codeExact("b = tmp").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("b = <tmp>0").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Identifier) :: Nil =>
           lhs.name shouldBe "b"
           lhs.typeFullName shouldBe "u8"
-          rhs.name shouldBe "tmp"
+          rhs.name shouldBe "<tmp>0"
       }
     }
   }
@@ -570,19 +570,61 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "lower into a LOCAL and an assignment for tmp" in {
       inside(cpg.method.name("main").block.astChildren.l) { case (tmpLocal: Local) :: (tmpAssign: Call) :: Nil =>
-        tmpLocal.name shouldBe "tmp"
+        tmpLocal.name shouldBe "<tmp>0"
         tmpLocal.typeFullName shouldBe "i32"
-        tmpAssign.code shouldBe "tmp = 1"
+        tmpAssign.code shouldBe "<tmp>0 = 1"
       }
     }
 
     "lower the initializer into an assignment to tmp" in {
-      inside(cpg.assignment.codeExact("tmp = 1").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("<tmp>0 = 1").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Literal) :: Nil =>
-          lhs.name shouldBe "tmp"
+          lhs.name shouldBe "<tmp>0"
           lhs.typeFullName shouldBe "i32"
           rhs.code shouldBe "1"
           rhs.typeFullName shouldBe "i32"
+      }
+    }
+  }
+
+  "two `let _` in the same fn" should {
+    val cpg = code("""
+        |fn main() {
+        | let _ = 1;
+        | let _ = 2;
+        |}
+        |""".stripMargin)
+
+    "lower into a LOCAL and an assignment for each tmp" in {
+      inside(cpg.method.nameExact("main").block.astChildren.l) {
+        case (firstLocal: Local) :: (firstAssign: Call) :: (secondLocal: Local) :: (secondAssign: Call) :: Nil =>
+          firstLocal.name shouldBe "<tmp>0"
+          firstAssign.code shouldBe "<tmp>0 = 1"
+
+          secondLocal.name shouldBe "<tmp>1"
+          secondAssign.code shouldBe "<tmp>1 = 2"
+      }
+    }
+  }
+
+  "two `let _` in different fn" should {
+    val cpg = code("""
+        |fn foo() {
+        | let _ = 1;
+        |}
+        |fn bar() {
+        | let _ = 2;
+        |}
+        |""".stripMargin)
+
+    "have same tmp name" in {
+      inside(cpg.method.nameExact("foo").block.astChildren.l) { case (tmpLocal: Local) :: (tmpAssign: Call) :: Nil =>
+        tmpLocal.name shouldBe "<tmp>0"
+        tmpAssign.code shouldBe "<tmp>0 = 1"
+      }
+      inside(cpg.method.nameExact("bar").block.astChildren.l) { case (tmpLocal: Local) :: (tmpAssign: Call) :: Nil =>
+        tmpLocal.name shouldBe "<tmp>0"
+        tmpAssign.code shouldBe "<tmp>0 = 2"
       }
     }
   }
@@ -599,24 +641,24 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.method.name("main").block.astChildren.l) {
         case (tmpLocal: Local) :: (xLocal: Local) :: (zLocal: Local) :: (tmpAssign: Call) ::
             (xAssign: Call) :: (zAssign: Call) :: Nil =>
-          tmpLocal.name shouldBe "tmp"
+          tmpLocal.name shouldBe "<tmp>0"
           tmpLocal.typeFullName shouldBe "i32"
-          tmpAssign.code shouldBe "tmp = foo()"
+          tmpAssign.code shouldBe "<tmp>0 = foo()"
 
           xLocal.name shouldBe "x"
           xLocal.typeFullName shouldBe "i32"
-          xAssign.code shouldBe "x = tmp"
+          xAssign.code shouldBe "x = <tmp>0"
 
           zLocal.name shouldBe "z"
           zLocal.typeFullName shouldBe "i32"
-          zAssign.code shouldBe "z = tmp"
+          zAssign.code shouldBe "z = <tmp>0"
       }
     }
 
     "lower the initializer into an assignment to tmp" in {
-      inside(cpg.assignment.codeExact("tmp = foo()").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("<tmp>0 = foo()").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-          lhs.name shouldBe "tmp"
+          lhs.name shouldBe "<tmp>0"
           lhs.typeFullName shouldBe "i32"
           rhs.name shouldBe "foo"
           rhs.methodFullName shouldBe "rust2cpgtest::foo"
@@ -625,17 +667,17 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "lower each binding as a tmp assignment" in {
-      inside(cpg.assignment.codeExact("x = tmp").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("x = <tmp>0").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Identifier) :: Nil =>
           lhs.name shouldBe "x"
           lhs.typeFullName shouldBe "i32"
-          rhs.name shouldBe "tmp"
+          rhs.name shouldBe "<tmp>0"
       }
-      inside(cpg.assignment.codeExact("z = tmp").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("z = <tmp>0").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Identifier) :: Nil =>
           lhs.name shouldBe "z"
           lhs.typeFullName shouldBe "i32"
-          rhs.name shouldBe "tmp"
+          rhs.name shouldBe "<tmp>0"
       }
     }
   }
@@ -651,24 +693,24 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.method.name("main").block.astChildren.l) {
         case (tmpLocal: Local) :: (xLocal: Local) :: (yLocal: Local) :: (tmpAssign: Call) ::
             (xAssign: Call) :: (yAssign: Call) :: Nil =>
-          tmpLocal.name shouldBe "tmp"
+          tmpLocal.name shouldBe "<tmp>0"
           tmpLocal.typeFullName shouldBe "(i32, &str)"
-          tmpAssign.code shouldBe "tmp = (1, \"a\")"
+          tmpAssign.code shouldBe "<tmp>0 = (1, \"a\")"
 
           xLocal.name shouldBe "x"
           xLocal.typeFullName shouldBe "i32"
-          xAssign.code shouldBe "x = tmp.0"
+          xAssign.code shouldBe "x = <tmp>0.0"
 
           yLocal.name shouldBe "y"
           yLocal.typeFullName shouldBe "&str"
-          yAssign.code shouldBe "y = tmp.1"
+          yAssign.code shouldBe "y = <tmp>0.1"
       }
     }
 
     "lower the initializer into an assignment to tmp" in {
-      inside(cpg.assignment.codeExact("tmp = (1, \"a\")").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("<tmp>0 = (1, \"a\")").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-          lhs.name shouldBe "tmp"
+          lhs.name shouldBe "<tmp>0"
           lhs.typeFullName shouldBe "(i32, &str)"
           rhs.name shouldBe "<operator>.tupleLiteral"
           rhs.typeFullName shouldBe "(i32, &str)"
@@ -676,25 +718,25 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "lower each binding as an assignment of a tmp field access" in {
-      inside(cpg.assignment.codeExact("x = tmp.0").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("x = <tmp>0.0").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Call) :: Nil =>
           lhs.name shouldBe "x"
           lhs.typeFullName shouldBe "i32"
           rhs.name shouldBe Operators.fieldAccess
           rhs.typeFullName shouldBe "i32"
           inside(rhs.argument.sortBy(_.argumentIndex).l) { case (base: Identifier) :: (field: FieldIdentifier) :: Nil =>
-            base.name shouldBe "tmp"
+            base.name shouldBe "<tmp>0"
             field.canonicalName shouldBe "0"
           }
       }
-      inside(cpg.assignment.codeExact("y = tmp.1").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("y = <tmp>0.1").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Call) :: Nil =>
           lhs.name shouldBe "y"
           lhs.typeFullName shouldBe "&str"
           rhs.name shouldBe Operators.fieldAccess
           rhs.typeFullName shouldBe "&str"
           inside(rhs.argument.sortBy(_.argumentIndex).l) { case (base: Identifier) :: (field: FieldIdentifier) :: Nil =>
-            base.name shouldBe "tmp"
+            base.name shouldBe "<tmp>0"
             field.canonicalName shouldBe "1"
           }
       }
@@ -743,21 +785,21 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.method.name("main").block.astChildren.l) {
         case (tmpLocal: Local) :: (aLocal: Local) :: (bLocal: Local) :: (cLocal: Local) ::
             (tmpAssign: Call) :: (aAssign: Call) :: (bAssign: Call) :: (cAssign: Call) :: Nil =>
-          tmpLocal.name shouldBe "tmp"
+          tmpLocal.name shouldBe "<tmp>0"
           tmpLocal.typeFullName shouldBe "((i32, i32), i32)"
-          tmpAssign.code shouldBe "tmp = ((1, 2), 3)"
+          tmpAssign.code shouldBe "<tmp>0 = ((1, 2), 3)"
 
           aLocal.name shouldBe "a"
           aLocal.typeFullName shouldBe "i32"
-          aAssign.code shouldBe "a = tmp.0.0"
+          aAssign.code shouldBe "a = <tmp>0.0.0"
 
           bLocal.name shouldBe "b"
           bLocal.typeFullName shouldBe "i32"
-          bAssign.code shouldBe "b = tmp.0.1"
+          bAssign.code shouldBe "b = <tmp>0.0.1"
 
           cLocal.name shouldBe "c"
           cLocal.typeFullName shouldBe "i32"
-          cAssign.code shouldBe "c = tmp.1"
+          cAssign.code shouldBe "c = <tmp>0.1"
       }
     }
   }
@@ -774,41 +816,41 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.method.name("f").block.astChildren.l) {
         case (tmpLocal: Local) :: (xLocal: Local) :: (yLocal: Local) ::
             (tmpAssign: Call) :: (xAssign: Call) :: (yAssign: Call) :: Nil =>
-          tmpLocal.name shouldBe "tmp"
+          tmpLocal.name shouldBe "<tmp>0"
           tmpLocal.typeFullName shouldBe "rust2cpgtest::Point"
-          tmpAssign.code shouldBe "tmp = p"
+          tmpAssign.code shouldBe "<tmp>0 = p"
 
           xLocal.name shouldBe "x"
           xLocal.typeFullName shouldBe "i32"
-          xAssign.code shouldBe "x = tmp.x"
+          xAssign.code shouldBe "x = <tmp>0.x"
 
           yLocal.name shouldBe "y"
           yLocal.typeFullName shouldBe "i64"
-          yAssign.code shouldBe "y = tmp.y"
+          yAssign.code shouldBe "y = <tmp>0.y"
       }
     }
 
     "lower each binding as an assignment of a tmp field access" in {
-      inside(cpg.assignment.codeExact("x = tmp.x").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("x = <tmp>0.x").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Call) :: Nil =>
           lhs.name shouldBe "x"
           lhs.typeFullName shouldBe "i32"
           rhs.name shouldBe Operators.fieldAccess
           rhs.typeFullName shouldBe "i32"
           inside(rhs.argument.sortBy(_.argumentIndex).l) { case (tmp: Identifier) :: (field: FieldIdentifier) :: Nil =>
-            tmp.name shouldBe "tmp"
+            tmp.name shouldBe "<tmp>0"
             tmp.typeFullName shouldBe "rust2cpgtest::Point"
             field.canonicalName shouldBe "x"
           }
       }
-      inside(cpg.assignment.codeExact("y = tmp.y").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("y = <tmp>0.y").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Call) :: Nil =>
           lhs.name shouldBe "y"
           lhs.typeFullName shouldBe "i64"
           rhs.name shouldBe Operators.fieldAccess
           rhs.typeFullName shouldBe "i64"
           inside(rhs.argument.sortBy(_.argumentIndex).l) { case (tmp: Identifier) :: (field: FieldIdentifier) :: Nil =>
-            tmp.name shouldBe "tmp"
+            tmp.name shouldBe "<tmp>0"
             tmp.typeFullName shouldBe "rust2cpgtest::Point"
             field.canonicalName shouldBe "y"
           }
@@ -828,41 +870,41 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.method.name("f").block.astChildren.l) {
         case (tmpLocal: Local) :: (aLocal: Local) :: (bLocal: Local) ::
             (tmpAssign: Call) :: (aAssign: Call) :: (bAssign: Call) :: Nil =>
-          tmpLocal.name shouldBe "tmp"
+          tmpLocal.name shouldBe "<tmp>0"
           tmpLocal.typeFullName shouldBe "rust2cpgtest::Point"
-          tmpAssign.code shouldBe "tmp = p"
+          tmpAssign.code shouldBe "<tmp>0 = p"
 
           aLocal.name shouldBe "a"
           aLocal.typeFullName shouldBe "i32"
-          aAssign.code shouldBe "a = tmp.x"
+          aAssign.code shouldBe "a = <tmp>0.x"
 
           bLocal.name shouldBe "b"
           bLocal.typeFullName shouldBe "i64"
-          bAssign.code shouldBe "b = tmp.y"
+          bAssign.code shouldBe "b = <tmp>0.y"
       }
     }
 
     "lower each binding as an assignment of a tmp field access" in {
-      inside(cpg.assignment.codeExact("a = tmp.x").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("a = <tmp>0.x").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Call) :: Nil =>
           lhs.name shouldBe "a"
           lhs.typeFullName shouldBe "i32"
           rhs.name shouldBe Operators.fieldAccess
           rhs.typeFullName shouldBe "i32"
           inside(rhs.argument.sortBy(_.argumentIndex).l) { case (tmp: Identifier) :: (field: FieldIdentifier) :: Nil =>
-            tmp.name shouldBe "tmp"
+            tmp.name shouldBe "<tmp>0"
             tmp.typeFullName shouldBe "rust2cpgtest::Point"
             field.canonicalName shouldBe "x"
           }
       }
-      inside(cpg.assignment.codeExact("b = tmp.y").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("b = <tmp>0.y").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Call) :: Nil =>
           lhs.name shouldBe "b"
           lhs.typeFullName shouldBe "i64"
           rhs.name shouldBe Operators.fieldAccess
           rhs.typeFullName shouldBe "i64"
           inside(rhs.argument.sortBy(_.argumentIndex).l) { case (tmp: Identifier) :: (field: FieldIdentifier) :: Nil =>
-            tmp.name shouldBe "tmp"
+            tmp.name shouldBe "<tmp>0"
             tmp.typeFullName shouldBe "rust2cpgtest::Point"
             field.canonicalName shouldBe "y"
           }
@@ -914,21 +956,21 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.method.name("foo").block.astChildren.l) {
         case (tmpLocal: Local) :: (xLocal: Local) :: (yLocal: Local) :: (endLocal: Local) ::
             (tmpAssign: Call) :: (xAssign: Call) :: (yAssign: Call) :: (endAssign: Call) :: Nil =>
-          tmpLocal.name shouldBe "tmp"
+          tmpLocal.name shouldBe "<tmp>0"
           tmpLocal.typeFullName shouldBe "rust2cpgtest::Line"
-          tmpAssign.code shouldBe "tmp = ln"
+          tmpAssign.code shouldBe "<tmp>0 = ln"
 
           xLocal.name shouldBe "x"
           xLocal.typeFullName shouldBe "i32"
-          xAssign.code shouldBe "x = tmp.start.x"
+          xAssign.code shouldBe "x = <tmp>0.start.x"
 
           yLocal.name shouldBe "y"
           yLocal.typeFullName shouldBe "i64"
-          yAssign.code shouldBe "y = tmp.start.y"
+          yAssign.code shouldBe "y = <tmp>0.start.y"
 
           endLocal.name shouldBe "end"
           endLocal.typeFullName shouldBe "rust2cpgtest::Point"
-          endAssign.code shouldBe "end = tmp.end"
+          endAssign.code shouldBe "end = <tmp>0.end"
       }
     }
   }

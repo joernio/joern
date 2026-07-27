@@ -23,9 +23,20 @@ object ContextStack {
   final class BlockContext(val items: mutable.Map[String, NewLocal])  extends Context
   final class LocalContext(val local: NewLocal)                       extends Context
 
-  class MethodContext(val method: NewMethod, val parameters: mutable.Map[String, NewMethodParameterIn]) extends Context
+  class MethodContext(
+    val method: NewMethod,
+    val parameters: mutable.Map[String, NewMethodParameterIn],
+    var tmpCounter: Int
+  ) extends Context {
 
-  final class GlobalMethodContext(method: NewMethod) extends MethodContext(method, mutable.Map.empty)
+    def nextTmpName(): String = {
+      val name = s"<tmp>$tmpCounter"
+      tmpCounter += 1
+      name
+    }
+  }
+
+  final class GlobalMethodContext(method: NewMethod) extends MethodContext(method, mutable.Map.empty, 0)
 
   @tailrec
   private def rustItemParentFullName(stack: List[Context]): String = stack match {
@@ -88,7 +99,7 @@ class ContextStack {
   }
 
   def pushMethod(method: NewMethod): Unit = {
-    push(new MethodContext(method, mutable.Map.empty))
+    push(new MethodContext(method, mutable.Map.empty, 0))
   }
 
   def pushGlobalMethod(method: NewMethod): Unit = {
@@ -103,6 +114,10 @@ class ContextStack {
 
   def declareLocal(local: NewLocal): Unit = {
     push(new LocalContext(local))
+  }
+
+  def nextTmpName(): String = {
+    stack.collectFirst { case method: MethodContext => method }.get.nextTmpName()
   }
 
   def declareParameter(parameter: NewMethodParameterIn): Unit = {

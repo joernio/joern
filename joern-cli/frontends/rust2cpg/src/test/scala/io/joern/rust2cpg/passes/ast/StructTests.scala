@@ -168,14 +168,14 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct ctor wrapper body" in {
       inside(cpg.method.nameExact("Pair").body.astChildren.isCall.l) { case allocAssign :: initCall :: Nil =>
-        allocAssign.code shouldBe s"tmp = ${Operators.alloc}"
+        allocAssign.code shouldBe s"<tmp>0 = ${Operators.alloc}"
         initCall.name shouldBe "<init>"
         initCall.methodFullName shouldBe "rust2cpgtest::Pair::<init>"
-        initCall.code shouldBe "Pair::<init>(&tmp, 0, 1)"
+        initCall.code shouldBe "Pair::<init>(&<tmp>0, 0, 1)"
 
         inside(initCall.argument.sortBy(_.argumentIndex).l) {
           case (addressOf: Call) :: (arg0: Identifier) :: (arg1: Identifier) :: Nil =>
-            addressOf.code shouldBe "&tmp"
+            addressOf.code shouldBe "&<tmp>0"
             addressOf.argumentIndex shouldBe 0
             addressOf.typeFullName shouldBe "&rust2cpgtest::Pair"
 
@@ -382,19 +382,19 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "the block's first child is a LOCAL declaration" in {
       inside(cpg.block.codeExact("Foo { x: 1, y: 2 }").astChildren.order(1).l) { case (local: Local) :: Nil =>
-        local.name shouldBe "tmp"
+        local.name shouldBe "<tmp>0"
         local.typeFullName shouldBe "rust2cpgtest::Foo"
       }
     }
 
     "the block's second child is an alloc assignment" in {
       inside(cpg.block.codeExact("Foo { x: 1, y: 2 }").astChildren.order(2).l) { case (assign: Call) :: Nil =>
-        assign.code shouldBe s"tmp = ${Operators.alloc}"
+        assign.code shouldBe s"<tmp>0 = ${Operators.alloc}"
 
         inside(assign.argument(1)) { case tmp: Identifier =>
           tmp.typeFullName shouldBe "rust2cpgtest::Foo"
-          tmp.name shouldBe "tmp"
-          tmp.code shouldBe "tmp"
+          tmp.name shouldBe "<tmp>0"
+          tmp.code shouldBe "<tmp>0"
         }
 
         inside(assign.argument(2)) { case alloc: Call =>
@@ -414,11 +414,11 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
 
         inside(init.argument(0)) { case addressOf: Call =>
           addressOf.name shouldBe Operators.addressOf
-          addressOf.code shouldBe "&tmp"
+          addressOf.code shouldBe "&<tmp>0"
           addressOf.typeFullName shouldBe "&rust2cpgtest::Foo"
 
           inside(addressOf.argument(1)) { case tmp: Identifier =>
-            tmp.name shouldBe "tmp"
+            tmp.name shouldBe "<tmp>0"
             tmp.typeFullName shouldBe "rust2cpgtest::Foo"
           }
         }
@@ -439,7 +439,7 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "the block's fourth child is an identifier" in {
       inside(cpg.block.codeExact("Foo { x: 1, y: 2 }").astChildren.order(4).l) { case (ident: Identifier) :: Nil =>
-        ident.name shouldBe "tmp"
+        ident.name shouldBe "<tmp>0"
         ident.typeFullName shouldBe "rust2cpgtest::Foo"
       }
     }
@@ -482,7 +482,7 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
 
         inside(init.argument.l.sortBy(_.argumentIndex)) { case (addressOf: Call) :: Nil =>
           addressOf.name shouldBe Operators.addressOf
-          addressOf.code shouldBe "&tmp"
+          addressOf.code shouldBe "&<tmp>0"
           addressOf.typeFullName shouldBe "&rust2cpgtest::Bar"
         }
       }
@@ -507,10 +507,10 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "the block's third child is a base-copy assignment" in {
       inside(cpg.block.codeExact("Foo { x: 9, ..base }").astChildren.order(3).l) { case (assign: Call) :: Nil =>
-        assign.code shouldBe "tmp = base"
+        assign.code shouldBe "<tmp>0 = base"
 
         inside(assign.argument(1)) { case tmp: Identifier =>
-          tmp.name shouldBe "tmp"
+          tmp.name shouldBe "<tmp>0"
           tmp.typeFullName shouldBe "rust2cpgtest::Foo"
         }
 
@@ -522,10 +522,10 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "the block's fourth child is a field assignment" in {
       inside(cpg.block.codeExact("Foo { x: 9, ..base }").astChildren.order(4).l) { case (assign: Call) :: Nil =>
-        assign.code shouldBe "tmp.x = 9"
+        assign.code shouldBe "<tmp>0.x = 9"
 
         inside(assign.argument(1)) { case fieldAccess: Call =>
-          fieldAccess.code shouldBe "tmp.x"
+          fieldAccess.code shouldBe "<tmp>0.x"
           fieldAccess.methodFullName shouldBe Operators.fieldAccess
         }
 
