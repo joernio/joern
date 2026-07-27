@@ -88,6 +88,8 @@ jobs:
           swift-version: "6.1"
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+        with:
+          toolchain: stable
       - name: Run tests
         run: sbt clean test
 
