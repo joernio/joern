@@ -32,23 +32,7 @@ trait RustFullNames { this: AstCreator =>
   }
 
   protected def composeRustFullName(name: String): String = {
-    combineRustFullName(rustParentFullName, name)
-  }
-
-  private def rustParentFullName: String = {
-    // We don't want to have the "global method"'s fullname propagated since that
-    // would not match rust_ast_gen's full names.
-    val parent = methodAstParentStack.find {
-      case method: NewMethod if method.name == NamespaceTraversal.globalNamespaceName => false
-      case _                                                                          => true
-    }.get
-    // When the parent is a namespace_block, we don't want its fullName since it's
-    // file-prefix in order to be unique, but rather its name. For other nodes,
-    // we do want the fullName.
-    parent match {
-      case ns: NewNamespaceBlock => ns.name
-      case other                 => other.properties(PropertyNames.FullName).toString
-    }
+    combineRustFullName(contextStack.rustParentFullName, name)
   }
 
   protected def methodFullNameForCallExpr(

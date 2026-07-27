@@ -10,7 +10,7 @@ import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.AstNodeBuilder.bindingNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
-import io.shiftleft.codepropertygraph.generated.{NodeTypes, Operators, PropertyDefaults, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, PropertyDefaults, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 
@@ -23,14 +23,17 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  protected val methodAstParentStack = new Stack[NewNode]
-  private var detachedAsts           = List.empty[Ast]
+  protected val contextStack = new ContextStack
+  private var detachedAsts   = List.empty[Ast]
 
   override def createAst(): DiffGraphBuilder = {
     val sourceFile = parseResult.ast.asInstanceOf[RustNodeSyntax.SourceFile]
     val ast        = visitSourceFile(sourceFile)
     Ast.storeInDiffGraph(ast, diffGraph)
     detachedAsts.foreach(Ast.storeInDiffGraph(_, diffGraph))
+    contextStack.resolvedVariableReferences.foreach { case (identifier, decl) =>
+      diffGraph.addEdge(identifier, decl, EdgeTypes.REF)
+    }
     diffGraph
   }
 
@@ -101,8 +104,8 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
       fullName = composeRustFullName(name),
       signature = Some(""),
       fileName = parseResult.filename,
-      astParentType = Some(methodAstParentStack.head.label),
-      astParentFullName = Some(methodAstParentStack.head.properties(PropertyNames.FullName).toString)
+      astParentType = Some(contextStack.astParentType),
+      astParentFullName = Some(contextStack.astParentFullName)
     )
   }
 
@@ -141,16 +144,15 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
   }
 
   protected def typeDeclForStruct(struct: RustNodeSyntax.Struct, inheritsFrom: Seq[String]): NewTypeDecl = {
-    val name   = code(struct.name)
-    val parent = methodAstParentStack.head
+    val name = code(struct.name)
     typeDeclNode(
       node = struct,
       name = name,
       fullName = composeRustFullName(name),
       filename = parseResult.filename,
       code = code(struct),
-      astParentType = parent.label,
-      astParentFullName = parent.properties(PropertyNames.FullName).toString,
+      astParentType = contextStack.astParentType,
+      astParentFullName = contextStack.astParentFullName,
       inherits = inheritsFrom
     )
   }
@@ -158,15 +160,14 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
   protected def typeDeclForImpl(impl: RustNodeSyntax.Impl): NewTypeDecl = {
     val implType = typeFullNameForType(impl.typ.last)
     val name     = implType.split(RustFullNames.PathSep).lastOption.getOrElse(implType)
-    val parent   = methodAstParentStack.head
     typeDeclNode(
       node = impl,
       name = name,
       fullName = implType,
       filename = parseResult.filename,
       code = code(impl),
-      astParentType = parent.label,
-      astParentFullName = parent.properties(PropertyNames.FullName).toString
+      astParentType = contextStack.astParentType,
+      astParentFullName = contextStack.astParentFullName
     )
   }
 
@@ -189,9 +190,19 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
   }
 
   protected def enclosingTypeDeclFullName: Option[String] = {
-    methodAstParentStack.collectFirst { case typeDecl: NewTypeDecl =>
-      typeDecl.properties(PropertyNames.FullName).toString
-    }
+    contextStack.enclosingTypeDeclFullName
+  }
+
+  protected def identifierAst(node: RustNode, name: String, code: String, typeFullName: String): Ast = {
+    val ident = identifierNode(node, name, code, typeFullName)
+    contextStack.addVariableReference(ident)
+    Ast(ident)
+  }
+
+  protected def localAst(node: RustNode, name: String, code: String, typeFullName: String): Ast = {
+    val local = localNode(node, name, code, typeFullName)
+    contextStack.declareLocal(local)
+    Ast(local)
   }
 
   protected def operatorNameFor(binExpr: RustNodeSyntax.BinExpr): Option[String] = binExpr.op match {

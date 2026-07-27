@@ -58,6 +58,28 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
         }
       }
     }
+
+    "have correct REF edges for the parameter" in {
+      cpg.method.name("id").parameter.referencingIdentifiers.lineNumber.l shouldBe List(3)
+    }
+  }
+
+  "parameter shadowed by let" should {
+    val cpg = code("""
+        |fn f(x: i32) {
+        | let y = x;
+        | let x = 2;
+        | let z = x;
+        |}
+        |""".stripMargin)
+
+    "have correct REF edges for the parameter" in {
+      cpg.method.name("f").parameter.nameExact("x").referencingIdentifiers.lineNumber.l shouldBe List(3)
+    }
+
+    "have correct REF edges for the local" in {
+      cpg.method.name("f").local.nameExact("x").referencingIdentifiers.lineNumber.l shouldBe List(4, 5)
+    }
   }
 
   "a fn with multiple parameters" should {
