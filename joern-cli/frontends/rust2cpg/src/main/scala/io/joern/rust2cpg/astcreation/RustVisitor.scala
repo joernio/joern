@@ -431,7 +431,14 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // 'fn' Name GenericParamList? ParamList RetType? WhereClause?
   // (body:BlockExpr | ';')
   private def visitFn(fn: Fn): Ast = {
-    val method          = methodNode(node = fn, name = code(fn.name))
+    val name = code(fn.name)
+    // TODO(rust_ast_gen): nested fns fullNames don't carry the outer method fn name, e.g.
+    //  crate::main::nested_fn is just crate::nested_fn. The same applies to its calls, their
+    //  methodFullName (from rust_ast_gen) is also without the outer method name.
+    val fullName =
+      if (contextStack.parentIsMethod) composeRustFullName(name)
+      else fn.methodFullName.getOrElse(composeRustFullName(name))
+    val method          = methodNode(node = fn, name = name).fullName(fullName)
     val retTypeFullName = fn.retType.map(_.typ).map(typeFullNameForType).getOrElse("()")
     val methodRet       = methodReturnNode(fn, retTypeFullName)
     val methodMods      = Seq[NewModifier]()

@@ -48,6 +48,24 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "method inside generic impl" should {
+    val cpg = code("""
+        |struct Foo<T> { v: T }
+        |impl<T> Foo<T> {
+        |  fn bar<U>(&self, u: U) {}
+        |}
+        |fn run(f: Foo<i32>) { f.bar(1); }
+        |""".stripMargin)
+
+    "have correct fullName" in {
+      cpg.method.nameExact("bar").fullName.l shouldBe List("rust2cpgtest::Foo<T>::bar<U>")
+    }
+
+    "have the same fullName as the one at the call site" in {
+      cpg.call.nameExact("bar").methodFullName.l shouldBe List("rust2cpgtest::Foo<T>::bar<U>")
+    }
+  }
+
   "an inherent method with a `&mut self` and an explicit parameter" should {
     val cpg = code("""
         |struct Foo;
