@@ -102,6 +102,25 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "generic fn" should {
+    val cpg = code("""
+        |fn id<T>(x: T) -> T {
+        | x
+        |}
+        |fn main() {
+        | id(1);
+        |}
+        |""".stripMargin)
+
+    "have generic parameters in the fullName" in {
+      cpg.method.name("id").fullName.l shouldBe List("rust2cpgtest::id<T>")
+    }
+
+    "have the same fullName as the one at the call site" in {
+      cpg.call.name("id").methodFullName.l shouldBe List("rust2cpgtest::id<T>")
+    }
+  }
+
   "a nested fn" should {
     val cpg = code("""
         |fn outer() {
