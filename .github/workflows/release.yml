@@ -41,7 +41,7 @@ jobs:
           python -m pip install requests pexpect
           sbt joerncli/stage querydb/createDistribution
           python -u ./testDistro.py
-      - run: sbt ciReleaseSkipIfAlreadyReleased ciReleaseTagNextVersion ciReleaseSonatype createDistribution
+      - run: sbt ciReleaseSkipIfAlreadyReleased ciReleaseTagNextVersion ciReleaseSonatype
         env:
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
