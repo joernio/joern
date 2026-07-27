@@ -45,17 +45,17 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       - name: Set up JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           distribution: temurin
           java-version: 21
           cache: sbt
       - name: Set up sbt
-        uses: sbt/setup-sbt@v1
+        uses: sbt/setup-sbt@f6db8ab474efba716fc7f04441ab33714e4825af # v1.5.4
       - name: Delete `.rustup` directory
         run: rm -rf /home/runner/.rustup # to save disk space
         if: runner.os == 'Linux'
@@ -74,7 +74,7 @@ jobs:
           $hash = (Get-FileHash -Algorithm SHA512 "target\joern-cli-${{ matrix.platform }}.zip").Hash.ToLower()
           "$hash  joern-cli-${{ matrix.platform }}.zip" | Out-File -Encoding ASCII "target\joern-cli-${{ matrix.platform }}.zip.sha512"
       - name: Upload distribution artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist-${{ matrix.platform }}
           path: |
@@ -88,7 +88,7 @@ jobs:
         if: matrix.platform == 'linux-x86_64'
         run: cp /tmp/querydb.json querydb/target/querydb.json
       - name: Upload querydb artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: matrix.platform == 'linux-x86_64'
         with:
           name: querydb
@@ -105,20 +105,20 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Download distribution artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: dist-*
           path: target/dist
           merge-multiple: true
       - name: Download querydb artifact
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: querydb
           path: querydb-artifacts
       - name: Create Release and Upload Assets
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
