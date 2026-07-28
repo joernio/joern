@@ -100,7 +100,7 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     methodNode(
       node = node,
       name = name,
-      code = code(node),
+      code = name,
       fullName = composeRustFullName(name),
       signature = Some(""),
       fileName = parseResult.filename,

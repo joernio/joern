@@ -54,7 +54,6 @@ class OperatorTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
 
-    // TODO (rust_ast_gen): confirm why it doesn't have a type
     "have the base as the first argument" in {
       inside(cpg.call.nameExact(Operators.indexAccess).argument(1).l) { case (xs: Identifier) :: Nil =>
         xs.name shouldBe "xs"
@@ -85,7 +84,6 @@ class OperatorTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.call.nameExact(Operators.indexAccess).codeExact("xs[i][j]").typeFullName.l shouldBe List("i32")
     }
 
-    // TODO (rust_ast_gen): confirm that no type for the inner is to be expected
     "have Any as typeFullName for the inner indexAccess" in {
       cpg.call.nameExact(Operators.indexAccess).codeExact("xs[i]").typeFullName.l shouldBe List(Defines.Any)
     }
