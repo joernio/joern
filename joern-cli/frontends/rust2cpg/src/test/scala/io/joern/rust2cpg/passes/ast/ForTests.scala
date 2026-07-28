@@ -20,16 +20,16 @@ class ForTests extends Rust2CpgSuite(noSysRoot = true) {
     "lower into a block with a local, the into_iter assignment and a WHILE" in {
       inside(cpg.method.name("main").block.astChildren.isBlock.astChildren.l) {
         case (tmp: Local) :: (intoIterAssign: Call) :: (loop: ControlStructure) :: Nil =>
-          tmp.name shouldBe "tmp"
-          intoIterAssign.code shouldBe "tmp = xs.into_iter()"
+          tmp.name shouldBe "<tmp>0"
+          intoIterAssign.code shouldBe "<tmp>0 = xs.into_iter()"
           loop.controlStructureType shouldBe ControlStructureTypes.WHILE
       }
     }
 
     "lower the iterable as an into_iter assignment" in {
-      inside(cpg.assignment.codeExact("tmp = xs.into_iter()").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("<tmp>0 = xs.into_iter()").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-          lhs.name shouldBe "tmp"
+          lhs.name shouldBe "<tmp>0"
           lhs.typeFullName shouldBe Defines.Any
           rhs.name shouldBe "into_iter"
           rhs.code shouldBe "xs.into_iter()"
@@ -52,7 +52,7 @@ class ForTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "lower the loop variable as a next assignment" in {
-      inside(cpg.assignment.codeExact("x = tmp.next()").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("x = <tmp>0.next()").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Call) :: Nil =>
           lhs.name shouldBe "x"
           lhs.typeFullName shouldBe Defines.Any
@@ -62,7 +62,7 @@ class ForTests extends Rust2CpgSuite(noSysRoot = true) {
           rhs.typeFullName shouldBe Defines.Any
 
           inside(rhs.argument(0)) { case tmp: Identifier =>
-            tmp.name shouldBe "tmp"
+            tmp.name shouldBe "<tmp>0"
             tmp.typeFullName shouldBe Defines.Any
           }
       }
@@ -85,16 +85,16 @@ class ForTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
     "lower into a block with a local, the into_iter assignment and a WHILE" in {
       inside(cpg.method.name("main").block.astChildren.isBlock.astChildren.l) {
         case (tmp: Local) :: (intoIterAssign: Call) :: (loop: ControlStructure) :: Nil =>
-          tmp.name shouldBe "tmp"
-          intoIterAssign.code shouldBe "tmp = xs.into_iter()"
+          tmp.name shouldBe "<tmp>0"
+          intoIterAssign.code shouldBe "<tmp>0 = xs.into_iter()"
           loop.controlStructureType shouldBe ControlStructureTypes.WHILE
       }
     }
 
     "lower the iterable as an into_iter assignment" in {
-      inside(cpg.assignment.codeExact("tmp = xs.into_iter()").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("<tmp>0 = xs.into_iter()").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-          lhs.name shouldBe "tmp"
+          lhs.name shouldBe "<tmp>0"
           rhs.name shouldBe "into_iter"
           rhs.methodFullName shouldBe s"${Defines.UnresolvedNamespace}::into_iter"
           rhs.typeFullName shouldBe Defines.Any
@@ -114,7 +114,7 @@ class ForTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
     }
 
     "lower the loop variable as a next assignment" in {
-      inside(cpg.assignment.codeExact("x = tmp.next()").argument.sortBy(_.argumentIndex).l) {
+      inside(cpg.assignment.codeExact("x = <tmp>0.next()").argument.sortBy(_.argumentIndex).l) {
         case (lhs: Identifier) :: (rhs: Call) :: Nil =>
           lhs.name shouldBe "x"
           lhs.typeFullName shouldBe "i32"
@@ -124,7 +124,7 @@ class ForTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
           rhs.typeFullName shouldBe "core::option::Option<i32>"
 
           inside(rhs.argument(0)) { case tmp: Identifier =>
-            tmp.name shouldBe "tmp"
+            tmp.name shouldBe "<tmp>0"
             tmp.typeFullName shouldBe Defines.Any
           }
       }

@@ -267,7 +267,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
           val assignments = createAssignmentsForPattern(letStmt.pat, () => rhsAst, Some(code(letStmt)))
           localAsts ++ assignments
         } else {
-          val tmpName       = "tmp"
+          val tmpName       = contextStack.nextTmpName()
           val rhsAst        = visitExpr(rhsExpr)
           val typeFullName  = letStmt.typ.map(typeFullNameForType).orElse(rhsAst.rootType).getOrElse(Defines.Any)
           val tmpLocalAst   = localAst(letStmt, tmpName, tmpName, typeFullName)
@@ -857,7 +857,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // TODO: revisit once match expressions are handled.
   private def lowerForExprWithIdentPattern(forExpr: ForExpr, identPat: IdentPat): Ast = {
     val iterable    = forExpr.expr
-    val tmpName     = "tmp"
+    val tmpName     = contextStack.nextTmpName()
     val tmpLocalAst = localAst(iterable, tmpName, tmpName, Defines.Any)
 
     // tmp = y.into_iter()
@@ -971,7 +971,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //   tmp
   private def recordCtorCallAst(recordExpr: RecordExpr): Ast = {
     val structType = typeFullNameForExpr(recordExpr)
-    val tmpName    = "tmp"
+    val tmpName    = contextStack.nextTmpName()
 
     allocBlockAst(recordExpr, tmpName, structType) { mkTmp =>
 
@@ -1009,7 +1009,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //   tmp
   private def recordCtorCallWithSpreadAst(recordExpr: RecordExpr, base: Expr): Ast = {
     val structType = typeFullNameForExpr(recordExpr)
-    val tmpName    = "tmp"
+    val tmpName    = contextStack.nextTmpName()
 
     allocBlockAst(recordExpr, tmpName, structType) { mkTmp =>
       // tmp = base
@@ -1235,10 +1235,12 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     typeDecl: NewTypeDecl,
     fields: Seq[(node: RustNode, name: String, typ: String)]
   ): Ast = {
-    val tmpName  = "tmp"
     val fnName   = code(struct.name)
     val fullName = struct.methodFullName.getOrElse(composeRustFullName(fnName))
     val method   = methodNode(struct, fnName).code(fnName).fullName(fullName)
+
+    contextStack.pushMethod(method)
+    val tmpName = contextStack.nextTmpName()
 
     val fieldParams = fields.zipWithIndex.map { case (fieldData, index) =>
       parameterInNode(
@@ -1293,6 +1295,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     )
 
     val bodyAst = blockAst(blockNode(struct), List(Ast(local), allocAssignAst, initCallAst, retAst))
+    contextStack.pop()
+
     methodAst(method, fieldParams.map(Ast(_)), bodyAst, methodReturnNode(struct, typeDecl.fullName))
   }
 
@@ -1479,7 +1483,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         callAst(call, Seq(visitExpr(start), visitExpr(end)))
       case (start, end, _) =>
         val rangeType = typeFullNameForExpr(rangeExpr)
-        val tmpName   = "tmp"
+        val tmpName   = contextStack.nextTmpName()
         allocBlockAst(rangeExpr, tmpName, rangeType) { mktmpIdent =>
           def mkAssign(fieldName: String, expr: Expr): Ast = {
             val fieldType = typeFullNameForExpr(expr)
@@ -1510,7 +1514,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  }
   // }
   private def visitMatchExpr(matchExpr: MatchExpr): Ast = {
-    val tmpName       = "tmp"
+    val tmpName       = contextStack.nextTmpName()
     val typeFullName  = typeFullNameForExpr(matchExpr.expr)
     val tmpLocalAst   = Ast(localNode(matchExpr.expr, tmpName, tmpName, typeFullName))
     val mkTmpIdentAst = () => Ast(identifierNode(matchExpr.expr, tmpName, tmpName, typeFullName))

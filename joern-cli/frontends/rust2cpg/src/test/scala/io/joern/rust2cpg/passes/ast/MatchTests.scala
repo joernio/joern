@@ -20,10 +20,10 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
     "lower as a block with a local, tmp assignment and MATCH" in {
       inside(cpg.method.nameExact("foo").block.astChildren.isBlock.astChildren.l) {
         case (tmp: Local) :: (tmpAssign: Call) :: (matchNode: ControlStructure) :: Nil =>
-          tmp.name shouldBe "tmp"
+          tmp.name shouldBe "<tmp>0"
           tmp.typeFullName shouldBe "i32"
 
-          tmpAssign.code shouldBe "tmp = x"
+          tmpAssign.code shouldBe "<tmp>0 = x"
           tmpAssign.methodFullName shouldBe Operators.assignment
 
           matchNode.controlStructureType shouldBe ControlStructureTypes.MATCH
@@ -33,7 +33,7 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
     "have correct match condition" in {
       inside(cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.MATCH).condition.l) {
         case (tmp: Identifier) :: Nil =>
-          tmp.name shouldBe "tmp"
+          tmp.name shouldBe "<tmp>0"
           tmp.typeFullName shouldBe "i32"
       }
     }
@@ -72,10 +72,10 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
     "assign the match block to the LHS" in {
       inside(cpg.assignment.where(_.target.isIdentifier.nameExact("y")).source.l) { case (block: Block) :: Nil =>
         inside(block.astChildren.l) { case (tmp: Local) :: (tmpAssign: Call) :: (matchNode: ControlStructure) :: Nil =>
-          tmp.name shouldBe "tmp"
+          tmp.name shouldBe "<tmp>0"
           tmp.typeFullName shouldBe "(i32, i32)"
 
-          tmpAssign.code shouldBe "tmp = p"
+          tmpAssign.code shouldBe "<tmp>0 = p"
           tmpAssign.methodFullName shouldBe Operators.assignment
 
           matchNode.controlStructureType shouldBe ControlStructureTypes.MATCH
@@ -92,11 +92,11 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
             case (aLocal: Local) :: (bLocal: Local) :: (aAssign: Call) :: (bAssign: Call) :: (body: Call) :: Nil =>
               aLocal.name shouldBe "a"
               aLocal.typeFullName shouldBe "i32"
-              aAssign.code shouldBe "a = tmp.0"
+              aAssign.code shouldBe "a = <tmp>0.0"
 
               bLocal.name shouldBe "b"
               bLocal.typeFullName shouldBe "i32"
-              bAssign.code shouldBe "b = tmp.1"
+              bAssign.code shouldBe "b = <tmp>0.1"
 
               body.code shouldBe "a + b"
               body.methodFullName shouldBe Operators.addition

@@ -24,17 +24,17 @@ class RangeTests extends Rust2CpgSuite {
 
     "the block's first child is a LOCAL declaration" in {
       inside(cpg.block.codeExact("1..2").astChildren.order(1).l) { case (local: Local) :: Nil =>
-        local.name shouldBe "tmp"
+        local.name shouldBe "<tmp>0"
         local.typeFullName shouldBe "core::ops::range::Range<i32>"
       }
     }
 
     "the block's second child is an alloc assignment" in {
       inside(cpg.block.codeExact("1..2").astChildren.order(2).l) { case (assign: Call) :: Nil =>
-        assign.code shouldBe s"tmp = ${Operators.alloc}"
+        assign.code shouldBe s"<tmp>0 = ${Operators.alloc}"
 
         inside(assign.argument(1)) { case tmp: Identifier =>
-          tmp.name shouldBe "tmp"
+          tmp.name shouldBe "<tmp>0"
           tmp.typeFullName shouldBe "core::ops::range::Range<i32>"
         }
 
@@ -47,10 +47,10 @@ class RangeTests extends Rust2CpgSuite {
 
     "the block's third child is a field assignment (start)" in {
       inside(cpg.block.codeExact("1..2").astChildren.order(3).l) { case (assign: Call) :: Nil =>
-        assign.code shouldBe "tmp.start = 1"
+        assign.code shouldBe "<tmp>0.start = 1"
 
         inside(assign.argument(1)) { case fieldAccess: Call =>
-          fieldAccess.code shouldBe "tmp.start"
+          fieldAccess.code shouldBe "<tmp>0.start"
           fieldAccess.methodFullName shouldBe Operators.fieldAccess
           fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
@@ -68,10 +68,10 @@ class RangeTests extends Rust2CpgSuite {
 
     "the block's fourth child is a field assignment (end)" in {
       inside(cpg.block.codeExact("1..2").astChildren.order(4).l) { case (assign: Call) :: Nil =>
-        assign.code shouldBe "tmp.end = 2"
+        assign.code shouldBe "<tmp>0.end = 2"
 
         inside(assign.argument(1)) { case fieldAccess: Call =>
-          fieldAccess.code shouldBe "tmp.end"
+          fieldAccess.code shouldBe "<tmp>0.end"
           fieldAccess.methodFullName shouldBe Operators.fieldAccess
 
           inside(fieldAccess.argument(2)) { case fieldIdent: FieldIdentifier =>
@@ -88,7 +88,7 @@ class RangeTests extends Rust2CpgSuite {
 
     "the block's fifth child is an identifier" in {
       inside(cpg.block.codeExact("1..2").astChildren.order(5).l) { case (ident: Identifier) :: Nil =>
-        ident.name shouldBe "tmp"
+        ident.name shouldBe "<tmp>0"
         ident.typeFullName shouldBe "core::ops::range::Range<i32>"
       }
     }
@@ -111,10 +111,10 @@ class RangeTests extends Rust2CpgSuite {
 
     "the block's third child is a field assignment (start)" in {
       inside(cpg.block.codeExact("1..").astChildren.order(3).l) { case (assign: Call) :: Nil =>
-        assign.code shouldBe "tmp.start = 1"
+        assign.code shouldBe "<tmp>0.start = 1"
 
         inside(assign.argument(1)) { case fieldAccess: Call =>
-          fieldAccess.code shouldBe "tmp.start"
+          fieldAccess.code shouldBe "<tmp>0.start"
 
           inside(fieldAccess.argument(2)) { case fieldIdent: FieldIdentifier =>
             fieldIdent.canonicalName shouldBe "start"
@@ -146,10 +146,10 @@ class RangeTests extends Rust2CpgSuite {
 
     "the block's third child is a field assignment (end)" in {
       inside(cpg.block.codeExact("..2").astChildren.order(3).l) { case (assign: Call) :: Nil =>
-        assign.code shouldBe "tmp.end = 2"
+        assign.code shouldBe "<tmp>0.end = 2"
 
         inside(assign.argument(1)) { case fieldAccess: Call =>
-          fieldAccess.code shouldBe "tmp.end"
+          fieldAccess.code shouldBe "<tmp>0.end"
 
           inside(fieldAccess.argument(2)) { case fieldIdent: FieldIdentifier =>
             fieldIdent.canonicalName shouldBe "end"
@@ -181,7 +181,7 @@ class RangeTests extends Rust2CpgSuite {
 
     "the block's third child is a field assignment (end)" in {
       inside(cpg.block.codeExact("..=2").astChildren.order(3).l) { case (assign: Call) :: Nil =>
-        assign.code shouldBe "tmp.end = 2"
+        assign.code shouldBe "<tmp>0.end = 2"
 
         inside(assign.argument(2)) { case lit: Literal =>
           lit.code shouldBe "2"
@@ -208,20 +208,20 @@ class RangeTests extends Rust2CpgSuite {
 
     "the block's first child is a LOCAL declaration" in {
       inside(cpg.block.codeExact("..").astChildren.order(1).l) { case (local: Local) :: Nil =>
-        local.name shouldBe "tmp"
+        local.name shouldBe "<tmp>0"
         local.typeFullName shouldBe "core::ops::range::RangeFull"
       }
     }
 
     "the block's second child is an alloc assignment" in {
       inside(cpg.block.codeExact("..").astChildren.order(2).l) { case (assign: Call) :: Nil =>
-        assign.code shouldBe s"tmp = ${Operators.alloc}"
+        assign.code shouldBe s"<tmp>0 = ${Operators.alloc}"
       }
     }
 
     "the block's third child is an identifier" in {
       inside(cpg.block.codeExact("..").astChildren.order(3).l) { case (ident: Identifier) :: Nil =>
-        ident.name shouldBe "tmp"
+        ident.name shouldBe "<tmp>0"
         ident.typeFullName shouldBe "core::ops::range::RangeFull"
       }
     }
