@@ -152,7 +152,14 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val exprCode     = exprAst.rootCodeOrEmpty
     val typeFullName = cast.target
     val castNode     = operatorCallNode(expr, s"$exprCode as $typeFullName", Operators.cast, Some(typeFullName))
-    val typeRefAst   = Ast(typeRefNode(expr, typeFullName, typeFullName))
+
+    // When we implicitly cast to a trait object, we lose the original concrete type.
+    // Save it as a dynamic type hint, to help with dynamic dispatch calls.
+    if (isTraitObject(typeFullName) && !isTraitObject(cast.source)) {
+      castNode.dynamicTypeHintFullName(Seq(stripReference(cast.source)))
+    }
+
+    val typeRefAst = Ast(typeRefNode(expr, typeFullName, typeFullName))
     callAst(castNode, Seq(typeRefAst, exprAst))
   }
 
@@ -1121,8 +1128,13 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
   // Currently, only `dyn` are considered dynamically dispatched. We may want to extend rust_ast_gen with semantic
   // information later.
-  private def isTraitObject(receiverType: String): Boolean =
-    receiverType.stripPrefix("&").stripPrefix("mut ").startsWith("dyn ")
+  private def isTraitObject(typeFullName: String): Boolean = {
+    stripReference(typeFullName).startsWith("dyn ")
+  }
+
+  private def stripReference(typeFullName: String): String = {
+    typeFullName.stripPrefix("&").stripPrefix("mut ")
+  }
 
   // AwaitExpr =
   //  Attr* Expr '.' 'await'

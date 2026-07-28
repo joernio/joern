@@ -293,3 +293,47 @@ class OperatorTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 }
+
+class OperatorTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
+
+  "adjustment to a trait object" should {
+    val cpg = code("""
+        |trait Foo { fn a(&self); }
+        |trait Bar: Foo { fn b(&self); }
+        |
+        |struct Baz;
+        |impl Foo for Baz { fn a(&self) {} }
+        |impl Bar for Baz { fn b(&self) {} }
+        |
+        |fn baz_bar() { let x: &dyn Bar = &Baz; }
+        |fn baz_bar_mut(mut baz: Baz) { let x: &mut dyn Bar = &mut baz; }
+        |fn bar_foo(x: &dyn Bar) { let y: &dyn Foo = x; }
+        |""".stripMargin)
+
+    "have the concrete type as dynamic type hint" in {
+      inside(cpg.method.name("baz_bar").block.assignment.source.l) { case (cast: Call) :: Nil =>
+        cast.name shouldBe Operators.cast
+        cast.code shouldBe "&*&Baz as &dyn rust2cpgtest::Bar"
+        cast.typeFullName shouldBe "&dyn rust2cpgtest::Bar"
+        cast.dynamicTypeHintFullName shouldBe Seq("rust2cpgtest::Baz")
+      }
+    }
+
+    "have the concrete type as dynamic type hint via mut" in {
+      inside(cpg.method.name("baz_bar_mut").block.assignment.source.l) { case (cast: Call) :: Nil =>
+        cast.name shouldBe Operators.cast
+        cast.code shouldBe "&*&mut baz as &mut dyn rust2cpgtest::Bar"
+        cast.typeFullName shouldBe "&mut dyn rust2cpgtest::Bar"
+        cast.dynamicTypeHintFullName shouldBe Seq("rust2cpgtest::Baz")
+      }
+    }
+
+    "have no dynamic type hint when casting from another trait object" in {
+      inside(cpg.method.name("bar_foo").block.assignment.source.l) { case (cast: Call) :: Nil =>
+        cast.name shouldBe Operators.cast
+        cast.code shouldBe "&*x as &dyn rust2cpgtest::Foo"
+        cast.dynamicTypeHintFullName shouldBe Seq()
+      }
+    }
+  }
+}
