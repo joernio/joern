@@ -2,13 +2,33 @@ load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 load("//bazel:java.bzl", "java_binary")
 load("//bazel:scala.bzl", "scala_library", "scala_test")
 
+filegroup(
+    name = "rubysrc2cpg_astgen",
+    srcs = select({
+        "@bazel_tooling//platform:all": [
+            "@rubysrc2cpg_astgen_linux_arm//:files",
+            "@rubysrc2cpg_astgen_linux_x86//:files",
+            "@rubysrc2cpg_astgen_macos_arm//:files",
+            "@rubysrc2cpg_astgen_macos_x86//:files",
+            "@rubysrc2cpg_astgen_win_arm//:files",
+            "@rubysrc2cpg_astgen_win_x86//:files",
+        ],
+        "@bazel_tooling//platform:macos-arm": ["@rubysrc2cpg_astgen_macos_arm//:files"],
+        "@bazel_tooling//platform:macos-x86": ["@rubysrc2cpg_astgen_macos_x86//:files"],
+        "@bazel_tooling//platform:linux-arm": ["@rubysrc2cpg_astgen_linux_arm//:files"],
+        "@bazel_tooling//platform:linux-x86": ["@rubysrc2cpg_astgen_linux_x86//:files"],
+        "@bazel_tooling//platform:win-arm": ["@rubysrc2cpg_astgen_win_x86//:files"],
+        "@bazel_tooling//platform:win-x86": ["@rubysrc2cpg_astgen_win_x86//:files"],
+    }),
+)
+
 scala_library(
     name = "rubysrc2cpg",
     srcs = glob([
         "src/main/scala/**/*.scala",
     ]),
     data = [
-        "@rubysrc2cpg_astgen//:files",
+        ":rubysrc2cpg_astgen",
     ],
     visibility = ["//visibility:public"],
     deps = [

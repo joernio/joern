@@ -73,7 +73,7 @@ maven.install(
         "org.jetbrains.kotlin:kotlin-stdlib:2.3.21",
         "org.jetbrains.kotlin:kotlin-compiler-embeddable:2.3.21",
         "org.jetbrains.kotlin:kotlin-allopen:2.3.21",
-        "org.jruby:jruby-complete:9.4.9.0",
+        "org.jruby:jruby-complete:10.0.6.0",
         "com.github.albfernandez:juniversalchardet:2.5.0",
         "io.joern:eclipse-cdt-core:9.2.100.202507101054+1",
         "org.eclipse.platform:org.eclipse.core.resources:3.23.0",
@@ -128,7 +128,7 @@ JSSRC2CPG_ASTGEN_VERSION = "3.47.0"
 
 SWIFTSRC2CPG_ASTGEN_VERSION = "0.4.2"
 
-RUBYSRC2CPG_ASTGEN_VERSION = "0.58.0"
+RUBYSRC2CPG_ASTGEN_VERSION = "0.59.2"
 
 RUBYSRC2CPG_TYPE_STUBS_VERSION = "0.6.0"
 
@@ -201,12 +201,47 @@ http_file(
     url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv{}/SwiftAstGen-win.exe".format(SWIFTSRC2CPG_ASTGEN_VERSION),
 )
 
-#rubysrc2cpg astgen zip
+#rubysrc2cpg astgen archive imports
 http_archive(
-    name = "rubysrc2cpg_astgen",
+    name = "rubysrc2cpg_astgen_macos_arm",
     build_file = "//joern-cli/frontends/rubysrc2cpg:rubysrc2cpg_astgen.BUILD",
-    sha256 = "66a2a61e822b1a4e391f86571b4a796c01c75b53c105fe544733b222843d06c7",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/ruby-astgen%2Fv{}/ruby_ast_gen_v{}.zip".format(RUBYSRC2CPG_ASTGEN_VERSION, RUBYSRC2CPG_ASTGEN_VERSION),
+    sha256 = "18c823845ef9ef5d064faad07f386e0849e09843544f0a433fd0228ae0392875",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/ruby-astgen%2Fv{}/ruby_ast_gen-macos-arm_v{}.zip".format(RUBYSRC2CPG_ASTGEN_VERSION, RUBYSRC2CPG_ASTGEN_VERSION),
+)
+
+http_archive(
+    name = "rubysrc2cpg_astgen_macos_x86",
+    build_file = "//joern-cli/frontends/rubysrc2cpg:rubysrc2cpg_astgen.BUILD",
+    sha256 = "0d4c160e5f2f1f4d4de5749e6ffa21961cff4457d061a7176b8fd7682a37329c",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/ruby-astgen%2Fv{}/ruby_ast_gen-macos_v{}.zip".format(RUBYSRC2CPG_ASTGEN_VERSION, RUBYSRC2CPG_ASTGEN_VERSION),
+)
+
+http_archive(
+    name = "rubysrc2cpg_astgen_linux_arm",
+    build_file = "//joern-cli/frontends/rubysrc2cpg:rubysrc2cpg_astgen.BUILD",
+    sha256 = "e6e15e10d8535cf20659502ac04589956dcd20f2ae027ff9cb20d731d8286e9a",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/ruby-astgen%2Fv{}/ruby_ast_gen-linux-arm_v{}.zip".format(RUBYSRC2CPG_ASTGEN_VERSION, RUBYSRC2CPG_ASTGEN_VERSION),
+)
+
+http_archive(
+    name = "rubysrc2cpg_astgen_linux_x86",
+    build_file = "//joern-cli/frontends/rubysrc2cpg:rubysrc2cpg_astgen.BUILD",
+    sha256 = "6ced36c454474f72f25a0533dc6298f6ea4b7c6b05ea7964dad4796cafa033ba",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/ruby-astgen%2Fv{}/ruby_ast_gen-linux_v{}.zip".format(RUBYSRC2CPG_ASTGEN_VERSION, RUBYSRC2CPG_ASTGEN_VERSION),
+)
+
+http_archive(
+    name = "rubysrc2cpg_astgen_win_arm",
+    build_file = "//joern-cli/frontends/rubysrc2cpg:rubysrc2cpg_astgen.BUILD",
+    sha256 = "d55f95e8174b204015639d545a9f16f80fe9c620e3291b99ad5c16d849d9001a",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/ruby-astgen%2Fv{}/ruby_ast_gen-win-arm_v{}.zip".format(RUBYSRC2CPG_ASTGEN_VERSION, RUBYSRC2CPG_ASTGEN_VERSION),
+)
+
+http_archive(
+    name = "rubysrc2cpg_astgen_win_x86",
+    build_file = "//joern-cli/frontends/rubysrc2cpg:rubysrc2cpg_astgen.BUILD",
+    sha256 = "ecf7f126e47eeefb07bf3d72fa39ca3d3e403d50e91d26db0497c8930f7a10a4",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/ruby-astgen%2Fv{}/ruby_ast_gen-win_v{}.zip".format(RUBYSRC2CPG_ASTGEN_VERSION, RUBYSRC2CPG_ASTGEN_VERSION),
 )
 
 http_file(

@@ -5,7 +5,7 @@ import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.{ExecutionEnvironment, JRuby
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult, DefaultAstGenRunnerResult}
 import io.joern.x2cpg.astgen.AstGenRunner
-import io.joern.x2cpg.utils.JoernRunfilesLocator
+import io.joern.x2cpg.utils.{Environment, JoernRunfilesLocator}
 import org.jruby.RubyInstanceConfig
 import org.jruby.embed.{LocalContextScope, LocalVariableBehavior, PathType, ScriptingContainer}
 import org.slf4j.LoggerFactory
@@ -193,7 +193,11 @@ class RubyAstGenRunner(config: Config, sharedJRubyEnv: Option[JRubyEnvironment] 
 object RubyAstGenRunner {
 
   private object astGenMetaData
-      extends AstGenProgramMetaData(name = "ruby_ast_gen", configPrefix = "rubysrc2cpg", multiArchitectureBuilds = true)
+      extends AstGenProgramMetaData(
+        name = "ruby_ast_gen",
+        configPrefix = "rubysrc2cpg",
+        multiArchitectureBuilds = false
+      )
 
   /** Encapsulates the expensive JRuby runtime setup (execution environment and scripting container). Can be shared
     * across multiple RubyAstGenRunner instances to avoid repeated JRuby initialization.
@@ -214,21 +218,39 @@ object RubyAstGenRunner {
   }
 
   object JRubyEnvironment {
+    private val logger = LoggerFactory.getLogger(getClass)
+
+    private def platformSuffix: String = {
+      (Environment.operatingSystem, Environment.architecture) match {
+        case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.X86)     => "linux_x86"
+        case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.ARMv8)   => "linux_arm"
+        case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.X86)       => "macos_x86"
+        case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.ARMv8)     => "macos_arm"
+        case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.X86)   => "win_x86"
+        case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.ARMv8) => "win_arm"
+        case _ =>
+          logger.warn("Could not detect OS version! Defaulting to 'Linux'.")
+          "linux_x86"
+      }
+    }
+
     def apply(): JRubyEnvironment = {
       val env = JoernRunfilesLocator
-        .resolve("rubysrc2cpg_astgen/")
+        .resolve(s"rubysrc2cpg_astgen_$platformSuffix/")
         .map(path => LocalDir(Path.of(path)))
         .getOrElse(prepareExecutionEnvironment("ruby_ast_gen"))
-      val cwd       = env.path.toAbsolutePath.toString
-      val gemPath   = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
-      val container = new ScriptingContainer(LocalContextScope.THREADSAFE, LocalVariableBehavior.TRANSIENT)
-      val config    = container.getProvider.getRubyInstanceConfig
+      val cwd        = env.path.toAbsolutePath.toString
+      val bundleBase = env.path.resolve("vendor").resolve("bundle").resolve("jruby")
+      val rubyAbi    = Files.list(bundleBase).iterator.asScala.next().getFileName.toString
+      val gemPath    = bundleBase.resolve(rubyAbi).toString
+      val container  = new ScriptingContainer(LocalContextScope.THREADSAFE, LocalVariableBehavior.TRANSIENT)
+      val config     = container.getProvider.getRubyInstanceConfig
       container.setCompileMode(RubyInstanceConfig.CompileMode.OFF)
-      container.setNativeEnabled(false)
+      container.setNativeEnabled(true)
       container.setObjectSpaceEnabled(true)
       container.setCurrentDirectory(cwd)
-      config.setLoadGemfile(true)
-      container.setEnvironment(Map("GEM_PATH" -> gemPath, "GEM_FILE" -> gemPath).asJava)
+      config.setLoadGemfile(false)
+      container.setEnvironment(Map("GEM_PATH" -> gemPath).asJava)
       config.setHasShebangLine(true)
       config.setHardExit(false)
       new JRubyEnvironment(env, container)
