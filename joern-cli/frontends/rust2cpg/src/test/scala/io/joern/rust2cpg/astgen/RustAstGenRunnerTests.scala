@@ -174,6 +174,24 @@ class RustAstGenRunnerTests extends AnyWordSpec with Matchers {
       }
     }
 
+    "collect skipped files" in {
+      FileUtil.usingTemporaryDirectory("rust2cpgTestInput") { inputDir =>
+        val config = Config().withInputPath(inputDir.toString)
+        val astGenOut =
+          List(
+            "garbage",
+            s"Skipped: ${inputDir / "src" / "broken.rs"}",
+            "  garbage ",
+            s"Skipped: ${inputDir / "src" / "utils" / "mod.rs"}",
+            "garbage "
+          )
+        new RustAstGenRunner(config).skippedFiles(inputDir, astGenOut) shouldBe List(
+          (inputDir / "src" / "broken.rs").toString,
+          (inputDir / "src" / "utils" / "mod.rs").toString
+        )
+      }
+    }
+
     "parse a project with a non-standard layout" in {
       FileUtil.usingTemporaryDirectory("rust2cpgTestInput") { inputDir =>
         writeFile(

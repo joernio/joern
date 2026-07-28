@@ -18,8 +18,8 @@ object RustAstGenRunner {
 class RustAstGenRunner(config: Config) extends AstGenRunner(RustAstGenRunner.astGenMetaData, config) {
 
   override def skippedFiles(in: Path, astGenOut: List[String]): List[String] = {
-    // TODO: extract "Skipped: <path>" entries from astGenOut. Those are files that failed in rust_ast_gen.
-    List.empty
+    // rust_ast_gen prints to stdout "Skipped: <full-file-path>" for files it failed to process.
+    astGenOut.collect { case s"Skipped: $filePath" => filePath }
   }
 
   override def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {
