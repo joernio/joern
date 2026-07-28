@@ -570,16 +570,15 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         val methodFullName =
           methodFullNameForCallExpr(callExpr, viewPathAsSequenceOfNameRefs(pathExpr.path).getOrElse(Nil), name)
         val typeFullName    = typeFullNameForExpr(callExpr)
-        val argExprs        = callExpr.argList.expr
-        val hasSelfReceiver = callExpr.hasSelfReceiver.isDefined && argExprs.nonEmpty
+        val args            = callExpr.argList.expr.map(visitExpr)
+        val hasSelfReceiver = callExpr.hasSelfReceiver.isDefined && args.nonEmpty
         val (dispatch, signature) =
-          if (hasSelfReceiver && isTraitObject(typeFullNameForExpr(argExprs.head))) {
+          if (hasSelfReceiver && args.head.rootType.exists(isTraitObject)) {
             // TODO: avoid this trait name extraction from the methodFullName
             (DispatchTypes.DYNAMIC_DISPATCH, Some(methodFullName.split(PathSep).dropRight(1).mkString(PathSep)))
           } else { (DispatchTypes.STATIC_DISPATCH, None) }
         val call =
           callNode(callExpr, code(callExpr), name, methodFullName, dispatch, signature, Some(typeFullName))
-        val args = argExprs.map(visitExpr)
         if (hasSelfReceiver) {
           callAst(call, args.tail, base = Some(args.head))
         } else {
@@ -1101,8 +1100,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val methodName     = code(methodCallExpr.nameRef)
     val methodFullName = methodFullNameForMethodCallExpr(methodCallExpr)
     val typeFullName   = typeFullNameForExpr(methodCallExpr)
-    val receiverType   = typeFullNameForExpr(methodCallExpr.expr)
-    val (dispatch, signature) = if (isTraitObject(receiverType)) {
+    val receiverAst    = visitExpr(methodCallExpr.expr)
+    val (dispatch, signature) = if (receiverAst.rootType.exists(isTraitObject)) {
       // TODO: avoid this trait name extraction from the methodFullName
       (DispatchTypes.DYNAMIC_DISPATCH, Some(methodFullName.split(PathSep).dropRight(1).mkString(PathSep)))
     } else { (DispatchTypes.STATIC_DISPATCH, None) }
@@ -1116,12 +1115,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         signature,
         Some(typeFullName)
       )
-    val receiverAst = visitExpr(methodCallExpr.expr)
-    val args        = methodCallExpr.argList.expr.map(visitExpr)
+    val args = methodCallExpr.argList.expr.map(visitExpr)
     callAst(call, args, base = Some(receiverAst))
   }
 
-  // TODO: not accounting for the Deref trait. Depending on how it gets supported, this might need to change.
   // Currently, only `dyn` are considered dynamically dispatched. We may want to extend rust_ast_gen with semantic
   // information later.
   private def isTraitObject(receiverType: String): Boolean =
