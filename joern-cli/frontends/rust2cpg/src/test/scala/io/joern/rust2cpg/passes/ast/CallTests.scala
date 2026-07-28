@@ -475,6 +475,31 @@ class CallTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
     }
   }
 
+  "method call of a `Box<dyn Trait>`" should {
+    val cpg = code("""
+        |trait Tr { fn m(&self); }
+        |struct S;
+        |impl Tr for S { fn m(&self) {} }
+        |fn f(b: Box<dyn Tr>) { b.m(); }
+        |""".stripMargin)
+
+    "have the trait's methodFullName and signature" in {
+      inside(cpg.call.nameExact("m").l) { case call :: Nil =>
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.methodFullName shouldBe "rust2cpgtest::Tr::m"
+        call.signature shouldBe "rust2cpgtest::Tr"
+      }
+    }
+
+    "have the adjusted trait object as receiver" in {
+      inside(cpg.call.nameExact("m").receiver.l) { case (receiver: Call) :: Nil =>
+        receiver.name shouldBe Operators.addressOf
+        receiver.code shouldBe "&*b"
+        receiver.typeFullName shouldBe "&dyn rust2cpgtest::Tr"
+      }
+    }
+  }
+
   "a `Vec` method call resolved against the sysroot" should {
     val cpg = code("""
         |fn foo(xs: Vec<i32>) -> usize {
