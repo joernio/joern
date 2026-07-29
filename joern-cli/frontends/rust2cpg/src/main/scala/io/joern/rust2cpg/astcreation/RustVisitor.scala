@@ -8,6 +8,7 @@ import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   ExpressionNew,
   NewFile,
+  NewMethod,
   NewModifier,
   NewNamespaceBlock,
   NewTypeDecl
@@ -99,7 +100,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     case breakExpr: BreakExpr           => visitBreakExpr(breakExpr)
     case callExpr: CallExpr             => visitCallExpr(callExpr)
     case castExpr: CastExpr             => visitCastExpr(castExpr)
-    case x: ClosureExpr                 => notHandledYet(x)
+    case closureExpr: ClosureExpr       => visitClosureExpr(closureExpr)
     case continueExpr: ContinueExpr     => visitContinueExpr(continueExpr)
     case fieldExpr: FieldExpr           => visitFieldExpr(fieldExpr)
     case forExpr: ForExpr               => visitForExpr(forExpr)
@@ -640,19 +641,16 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   private def visitParamList(paramList: ParamList): Seq[Ast] = {
     val selfParamAst = paramList.selfParam.map(visitSelfParam).toList
     val paramAsts = paramList.param.zipWithIndex.map { case (param, paramIdx) =>
-      val paramName         = param.pat.collect { case x: IdentPat => x }
-      val paramTypeFullName = param.typ.map(typeFullNameForType)
-
-      (paramName, paramTypeFullName) match {
-        case (Some(name), Some(typeFullName)) =>
+      param.pat match {
+        case Some(identPat: IdentPat) =>
           val paramNode = parameterInNode(
             node = param,
-            name = code(name),
+            name = code(identPat),
             code = code(param),
             index = paramIdx + 1,
             isVariadic = false,
             evaluationStrategy = EvaluationStrategies.BY_SHARING,
-            typeFullName = typeFullName
+            typeFullName = param.typ.map(typeFullNameForType).getOrElse(typeFullNameForIdentPat(identPat))
           )
           contextStack.declareParameter(paramNode)
           Ast(paramNode)
@@ -1549,4 +1547,33 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     Seq(jumpTargetAst, matchArmBlock)
   }
 
+  // ClosureExpr =
+  //  Attr* ForBinder? 'const'? 'static'? 'async'? 'gen'? 'move'?  ParamList RetType?
+  //  body:Expr
+  private def visitClosureExpr(closureExpr: ClosureExpr): Ast = {
+    val closureName = nextClosureName()
+    val method      = methodNode(closureExpr, closureName)
+
+    contextStack.pushMethod(method)
+    lowerClosureExprAsDetachedAst(closureExpr, method)
+    val methodRefAst = Ast(methodRefNode(closureExpr, code(closureExpr), method.fullName, method.fullName))
+    contextStack.pop()
+
+    methodRefAst
+  }
+
+  private def lowerClosureExprAsDetachedAst(closureExpr: ClosureExpr, method: NewMethod): Unit = {
+    val paramAsts = visitParamList(closureExpr.paramList)
+    val bodyAst = closureExpr.expr match {
+      case blockExpr: BlockExpr => lowerFnBody(blockExpr)
+      case expr                 => Ast(blockNode(expr)).withChild(lowerReturnExpr(expr))
+    }
+    val retTypeFullName = closureExpr.retType match {
+      case None          => typeFullNameForExpr(closureExpr.expr)
+      case Some(retType) => typeFullNameForType(retType.typ)
+    }
+    val methodRet = methodReturnNode(closureExpr, retTypeFullName)
+    val modifiers = Seq(ModifierTypes.VIRTUAL, ModifierTypes.LAMBDA).map(modifierNode(closureExpr, _))
+    addDetachedAst(methodAst(method, paramAsts, bodyAst, methodRet, modifiers))
+  }
 }
