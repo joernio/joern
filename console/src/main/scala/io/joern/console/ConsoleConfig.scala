@@ -26,15 +26,27 @@ class InstallConfig(environment: Map[String, String] = sys.env) {
     if (environment.contains("SHIFTLEFT_OCULAR_INSTALL_DIR")) {
       Paths.get(environment("SHIFTLEFT_OCULAR_INSTALL_DIR"))
     } else {
-      val uriToLibDir  = classOf[io.joern.console.InstallConfig].getProtectionDomain.getCodeSource.getLocation.toURI
-      val pathToLibDir = Paths.get(uriToLibDir).getParent
-      findRootDirectory(pathToLibDir).getOrElse {
-        val cwd = FileUtil.currentWorkingDirectory
-        findRootDirectory(cwd).getOrElse(throw new AssertionError(s"""unable to find root installation directory
+      val clazz        = classOf[InstallConfig]
+      val pathToLibDir = findCodeSourceLocation(clazz, clazz.getClassLoader).map(_.getParent)
+      val cwd          = FileUtil.currentWorkingDirectory
+      pathToLibDir.flatMap(findRootDirectory(_)).orElse(findRootDirectory(cwd)).getOrElse {
+        val searchedDirs = pathToLibDir.map(p => s"$p and $cwd").getOrElse(cwd.toString)
+        throw new AssertionError(s"""unable to find root installation directory
                                    | context: tried to find marker file `$rootDirectoryMarkerFilename`
-                                   | started search in both $pathToLibDir and $cwd and searched 
-                                   | $maxSearchDepth directories upwards""".stripMargin))
+                                   | started search in $searchedDirs, and searched
+                                   | $maxSearchDepth directories upwards""".stripMargin)
       }
+    }
+  }
+
+  @tailrec
+  private def findCodeSourceLocation(clazz: Class[?], cl: ClassLoader): Option[Path] = {
+    if (cl == null) None
+    else {
+      val location = Option(cl.loadClass(clazz.getName).getProtectionDomain.getCodeSource)
+        .flatMap(cs => Option(cs.getLocation))
+      if (location.isDefined) location.map(url => Paths.get(url.toURI))
+      else findCodeSourceLocation(clazz, cl.getParent)
     }
   }
 
