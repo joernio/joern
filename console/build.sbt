@@ -23,6 +23,9 @@ libraryDependencies ++= Seq(
   "org.scalatest"        %% "scalatest"            % Versions.scalatest % Test
 )
 
+// cask pins undertow-core 2.3.18.Final (CVE-2025-12543) — force the fixed release
+dependencyOverrides += "io.undertow" % "undertow-core" % Versions.undertow
+
 Test / compile := (Test / compile)
   .dependsOn(Projects.c2cpg / stage, Projects.jssrc2cpg / stage, Projects.swiftsrc2cpg / stage)
   .value

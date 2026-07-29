@@ -6,6 +6,9 @@ object Versions {
   // causes problems upstreams.
   val antlr      = "4.7.2"
   val cask       = "0.9.5" // 0.9.5 is actually the latest release, not 0.10.2 ¯\_(ツ)_/¯ - check the cask git commits...
+  // every cask release (incl. 0.11.3) pins undertow-core 2.3.18.Final, which is affected by
+  // CVE-2025-12543 (fixed in 2.3.21.Final) — so we override the transitive dependency
+  val undertow   = "2.3.26.Final"
   val catsCore   = "2.12.0"
   val catsEffect = "3.5.4"
   val cfr        = "0.152"
