@@ -30,7 +30,7 @@ class InstallConfig(environment: Map[String, String] = sys.env) {
       val pathToLibDir = findCodeSourceLocation(clazz, clazz.getClassLoader).map(_.getParent)
       val cwd          = FileUtil.currentWorkingDirectory
       pathToLibDir.flatMap(findRootDirectory(_)).orElse(findRootDirectory(cwd)).getOrElse {
-        val searchedDirs = pathToLibDir.map(p => s"$p and $cwd").getOrElse(cwd.toString)
+        val searchedDirs = pathToLibDir.map(path => s"$path and $cwd").getOrElse(cwd.toString)
         throw new AssertionError(s"""unable to find root installation directory
                                    | context: tried to find marker file `$rootDirectoryMarkerFilename`
                                    | started search in $searchedDirs, and searched
