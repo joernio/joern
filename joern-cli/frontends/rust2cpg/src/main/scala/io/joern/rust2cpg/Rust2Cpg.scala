@@ -1,7 +1,7 @@
 package io.joern.rust2cpg
 
 import io.joern.rust2cpg.astgen.RustAstGenRunner
-import io.joern.rust2cpg.passes.{AstCreationPass, RustTypeNodePass}
+import io.joern.rust2cpg.passes.{AstCreationPass, RustConfigFileCreationPass, RustTypeNodePass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.frontend.MetaDataPass
@@ -24,6 +24,7 @@ class Rust2Cpg extends X2CpgFrontend {
         new MetaDataPass(cpg, Languages.RUST, config.inputPath, Option(hash)).createAndApply()
         new AstCreationPass(cpg, astGenResult.parsedFiles, config)(config.schemaValidation).createAndApply()
         new RustTypeNodePass(cpg).createAndApply()
+        new RustConfigFileCreationPass(cpg, config).createAndApply()
       }
     }
   }
