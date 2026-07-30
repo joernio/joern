@@ -170,6 +170,43 @@ class CfgAttributeTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.method.name("cfg.*").fullName.sorted.l shouldBe List("rust2cpgtest::Foo::cfg_enabled")
     }
   }
+
+  "feature-gated ExprStmt" should {
+    val cpg = code("""
+        |fn main() {
+        |    #[cfg(feature = "foo")]
+        |    cfg_enabled();
+        |
+        |    #[cfg(feature = "bar")]
+        |    cfg_disabled();
+        |}
+        |
+        |fn cfg_enabled() {}
+        |
+        |fn cfg_disabled() {}
+        |""".stripMargin)
+      .moreCode(
+        """
+          |[package]
+          |name = "rust2cpgtest"
+          |version = "0.1.0"
+          |edition = "2021"
+          |
+          |[features]
+          |default = ["foo"]
+          |foo = []
+          |bar = []
+          |""".stripMargin,
+        fileName = "Cargo.toml"
+      )
+
+    "skip the inactive call" in {
+      // Since #cfg attributes are attached to the calls rather than their ExprStmt parent, rust_ast_gen's
+      // mechanism of dropping #cfg-inactive ASTs could leave ExprStmt without its mandatory .expr child,
+      // and traversals crash with NoSuchElementException.
+      cpg.method("main").call.methodFullName.l shouldBe List("rust2cpgtest::cfg_enabled")
+    }
+  }
 }
 
 class CfgAttributeTestsWithoutResolution extends Rust2CpgSuite(noSysRoot = true, noResolveCfg = true) {
