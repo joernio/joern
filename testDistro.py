@@ -350,6 +350,11 @@ class TestRunner:
         child.expect("joern>")
         child.sendline("help")
         child.expect("Welcome to the interactive help system.")
+        child.sendline('scala.util.Try(importCode("tests/code/c")).isSuccess')
+        idx = child.expect(["res[0-9]+: Boolean = true", "res[0-9]+: Boolean = false"], timeout=10)
+        if idx == 1:
+            raise RuntimeError("Joern CLI command threw an exception inside the REPL.")
+        child.expect("joern>")
         child.sendline("exit")
         child.expect(wexpect.EOF)
 
@@ -360,6 +365,11 @@ class TestRunner:
         child.expect("joern>")
         child.sendline("help")
         child.expect("Welcome to the interactive help system.", timeout=10)
+        child.sendline('scala.util.Try(importCode("tests/code/c")).isSuccess')
+        idx = child.expect(["res[0-9]+: Boolean = true", "res[0-9]+: Boolean = false"], timeout=10)
+        if idx == 1:
+            raise RuntimeError("Joern CLI command threw an exception inside the REPL.")
+        child.expect("joern>")
         child.sendline("exit")
         child.expect(pexpect.EOF, timeout=10)
 
