@@ -68,6 +68,35 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "nested tail macro call yielding two statements" should {
+    val cpg = code("""
+        |macro_rules! inner { ($x:ident) => { $x += 1; $x += 2; }; }
+        |macro_rules! outer { ($x:ident) => { inner!{$x} }; }
+        |fn main() {
+        | let mut x = 3;
+        | outer!(x);
+        |}
+        |""".stripMargin)
+
+    "inline the expanded statements" in {
+      cpg.method.nameExact("main").block.astChildren.isCall.code.l shouldBe List("let mut x = 3;", "x+=1", "x+=2")
+    }
+  }
+
+  "nested tail macro call yielding an expression" should {
+    val cpg = code("""
+        |macro_rules! inner { () => { 2 }; }
+        |macro_rules! outer { () => { inner!() }; }
+        |fn main() {
+        | outer!();
+        |}
+        |""".stripMargin)
+
+    "inline the expanded expression" in {
+      cpg.method.nameExact("main").block.astChildren.code.l shouldBe List("2")
+    }
+  }
+
   "a type macro" should {
     val cpg = code("""
         |macro_rules! int_type { () => { i128 }; }
