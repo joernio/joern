@@ -1433,7 +1433,15 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  statements:Stmt*
   //  Expr?
   private def visitMacroStmts(macroStmts: MacroStmts): Seq[Ast] = {
-    macroStmts.stmt.flatMap(visitStmt) ++ macroStmts.expr.map(visitExpr).toList
+    val stmtAsts = macroStmts.stmt.flatMap(visitStmt)
+
+    // When the tail expr is itself another macro call, expand and inline it.
+    val tailExprAst = macroStmts.expr.toList.flatMap {
+      case macroExpr: MacroExpr => visitMacroCall(macroExpr.macroCall)
+      case expr                 => visitExpr(expr) :: Nil
+    }
+
+    stmtAsts ++ tailExprAst
   }
 
   // MacroItems =
