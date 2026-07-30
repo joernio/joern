@@ -108,6 +108,22 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.all.collectAll[Unknown] shouldBe empty
     }
   }
+
+  "unparseable macro expansion" should {
+    val cpg = code("""
+        |macro_rules! broken { () => { let }; }
+        |fn main() {
+        | broken!();
+        |}
+        |""".stripMargin)
+
+    "create an unknown node" in {
+      inside(cpg.method.name("main").block.astChildren.l) { case (broken: Unknown) :: Nil =>
+        broken.code shouldBe "broken!()"
+        broken.lineNumber shouldBe Some(4)
+      }
+    }
+  }
 }
 
 class MacroTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
