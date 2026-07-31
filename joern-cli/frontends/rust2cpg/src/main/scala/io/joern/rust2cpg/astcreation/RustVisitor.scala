@@ -305,13 +305,14 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     codeOverride: Option[String] = None
   ): Seq[Ast] = {
     pat match {
-      case identPat: IdentPat       => createAssignmentsForIdentPattern(identPat, mkSourceAst, codeOverride)
-      case parenPat: ParenPat       => createAssignmentsForPattern(parenPat.pat, mkSourceAst, codeOverride)
-      case recordPat: RecordPat     => createAssignmentsForRecordPattern(recordPat, mkSourceAst)
-      case tuplePat: TuplePat       => createAssignmentsForTuplePattern(tuplePat, mkSourceAst)
-      case wildcardPat: WildcardPat => Nil
-      case literalPat: LiteralPat   => Nil
-      case _                        => notHandledYet(pat) :: Nil
+      case identPat: IdentPat             => createAssignmentsForIdentPattern(identPat, mkSourceAst, codeOverride)
+      case parenPat: ParenPat             => createAssignmentsForPattern(parenPat.pat, mkSourceAst, codeOverride)
+      case recordPat: RecordPat           => createAssignmentsForRecordPattern(recordPat, mkSourceAst)
+      case tuplePat: TuplePat             => createAssignmentsForTuplePattern(tuplePat, mkSourceAst)
+      case tupleStructPat: TupleStructPat => createAssignmentsForTupleStructPattern(tupleStructPat, mkSourceAst)
+      case wildcardPat: WildcardPat       => Nil
+      case literalPat: LiteralPat         => Nil
+      case _                              => notHandledYet(pat) :: Nil
     }
   }
 
@@ -321,6 +322,27 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       notHandledYet(tuplePat) :: Nil
     } else {
       tuplePat.pat.zipWithIndex.flatMap { case (pat, index) =>
+        val fieldName = index.toString
+        val fieldType = typeFullNameForPat(pat)
+        def fieldAccess(): Ast = {
+          val sourceAst  = mkSourceAst()
+          val accessCode = s"${sourceAst.rootCodeOrEmpty}.$fieldName"
+          fieldAccessAst(pat, pat, sourceAst, accessCode, fieldName, fieldType)
+        }
+        createAssignmentsForPattern(pat, fieldAccess)
+      }
+    }
+  }
+
+  private def createAssignmentsForTupleStructPattern(
+    tupleStructPat: TupleStructPat,
+    mkSourceAst: () => Ast
+  ): Seq[Ast] = {
+    if (tupleStructPat.pat.exists(_.isInstanceOf[RestPat])) {
+      // TODO: patterns Foo(x, .., y). From rust_ast_gen, we should type patterns as well.
+      notHandledYet(tupleStructPat) :: Nil
+    } else {
+      tupleStructPat.pat.zipWithIndex.flatMap { case (pat, index) =>
         val fieldName = index.toString
         val fieldType = typeFullNameForPat(pat)
         def fieldAccess(): Ast = {
