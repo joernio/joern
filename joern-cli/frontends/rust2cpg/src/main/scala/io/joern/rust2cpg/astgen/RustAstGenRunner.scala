@@ -28,7 +28,9 @@ class RustAstGenRunner(config: Config) extends AstGenRunner(RustAstGenRunner.ast
     val resolveCfgArgs = if (config.noResolveCfg) Seq.empty[String] else Seq("--resolve-cfg")
     val args           = baseArgs ++ sysRootArgs ++ resolveCfgArgs
     val result         = ExternalCommand.run(args).logIfFailed()
-    result.stdErr.foreach(RustAstGenRunner.logger.info)
+    if (result.successful) {
+      result.stdErr.foreach(RustAstGenRunner.logger.info)
+    }
     result.toTry
   }
 }
