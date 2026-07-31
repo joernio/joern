@@ -804,6 +804,57 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "let with a tuple-struct pattern" should {
+    val cpg = code("""
+        |struct Wrapper(i32);
+        |fn main() {
+        | let w = Wrapper(1);
+        | let Wrapper(x) = w;
+        |}
+        |""".stripMargin)
+
+    "have correct locals and assignments" in {
+      inside(cpg.method.name("main").block.astChildren.sortBy(_.order).l) {
+        case (wLocal: Local) :: (wAssign: Call) :: (xLocal: Local) :: (xAssign: Call) :: Nil =>
+          wLocal.name shouldBe "w"
+          wLocal.typeFullName shouldBe "rust2cpgtest::Wrapper"
+          wAssign.code shouldBe "let w = Wrapper(1);"
+
+          xLocal.name shouldBe "x"
+          xLocal.typeFullName shouldBe "i32"
+          xAssign.code shouldBe "x = w.0"
+      }
+    }
+  }
+
+  "let with a nested tuple-struct pattern" should {
+    val cpg = code("""
+        |fn main() {
+        | let opt: Option<(i32, i32)> = None;
+        | let Some((a, b)) = opt else { return };
+        |}
+        |""".stripMargin)
+
+    // TODO: update once let-else are lowered.
+    "have correct locals and assignments" in {
+      inside(cpg.method.name("main").block.astChildren.sortBy(_.order).l) {
+        case (optLocal: Local) :: (optAssign: Call) :: (tmpLocal: Local) :: (aLocal: Local) :: (bLocal: Local) ::
+            (tmpAssign: Call) :: (aAssign: Call) :: (bAssign: Call) :: Nil =>
+          optLocal.name shouldBe "opt"
+          optAssign.code shouldBe "let opt: Option<(i32, i32)> = None;"
+
+          tmpLocal.name shouldBe "<tmp>0"
+          tmpAssign.code shouldBe "<tmp>0 = opt"
+
+          aLocal.name shouldBe "a"
+          aAssign.code shouldBe "a = <tmp>0.0.0"
+
+          bLocal.name shouldBe "b"
+          bAssign.code shouldBe "b = <tmp>0.0.1"
+      }
+    }
+  }
+
   "let with a record pattern" should {
     val cpg = code("""
         |struct Point { x: i32, y: i64 }
@@ -971,6 +1022,37 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
           endLocal.name shouldBe "end"
           endLocal.typeFullName shouldBe "rust2cpgtest::Point"
           endAssign.code shouldBe "end = <tmp>0.end"
+      }
+    }
+  }
+
+  "let with a record pattern in a tuple pattern" should {
+    val cpg = code("""
+        |struct Point { x: i32, y: i64 }
+        |fn f(p: Point) {
+        | let (Point { x, y }, c) = (p, 3);
+        |}
+        |""".stripMargin)
+
+    "have correct locals and assignments" in {
+      inside(cpg.method.name("f").block.astChildren.sortBy(_.order).l) {
+        case (tmpLocal: Local) :: (xLocal: Local) :: (yLocal: Local) :: (cLocal: Local) ::
+            (tmpAssign: Call) :: (xAssign: Call) :: (yAssign: Call) :: (cAssign: Call) :: Nil =>
+          tmpLocal.name shouldBe "<tmp>0"
+          tmpLocal.typeFullName shouldBe "(rust2cpgtest::Point, i32)"
+          tmpAssign.code shouldBe "<tmp>0 = (p, 3)"
+
+          xLocal.name shouldBe "x"
+          xLocal.typeFullName shouldBe "i32"
+          xAssign.code shouldBe "x = <tmp>0.0.x"
+
+          yLocal.name shouldBe "y"
+          yLocal.typeFullName shouldBe "i64"
+          yAssign.code shouldBe "y = <tmp>0.0.y"
+
+          cLocal.name shouldBe "c"
+          cLocal.typeFullName shouldBe "i32"
+          cAssign.code shouldBe "c = <tmp>0.1"
       }
     }
   }
