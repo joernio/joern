@@ -17,7 +17,7 @@ object SingleLetterIdentifiers {
   private def lint(name: String, pos: Position): Patch = {
     Patch.lint(
       Diagnostic(
-        id = "SingleLetterIdentifier",
+        id = "SingleLetterIdentifierRule",
         message = s"Avoid single-letter identifier '$name'. Use a more descriptive name.",
         position = pos
       )

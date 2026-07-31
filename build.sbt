@@ -26,6 +26,7 @@ lazy val csharpsrc2cpg     = Projects.csharpsrc2cpg
 lazy val abap2cpg          = Projects.abap2cpg
 lazy val rust2cpg          = Projects.rust2cpg
 lazy val linterRules       = Projects.linterRules
+lazy val linterRulesInput  = Projects.linterRulesInput
 
 lazy val root = project
   .in(file("."))
@@ -52,6 +53,8 @@ lazy val root = project
     abap2cpg,
     rust2cpg,
     linterRules
+    // linterRulesInput is intentionally NOT aggregated: it holds scalafix-testkit fixtures only
+    // and must never be released (ciReleaseSonatype publishes root + aggregated projects)
   )
   .dependsOn(linterRules % ScalafixConfig)
 
@@ -85,6 +88,9 @@ ThisBuild / scalacOptions ++= Seq(
   "-old-syntax",
   "-Wconf:msg=Implicit parameters should be provided with a `using` clause:s",
 )
+
+ThisBuild / semanticdbEnabled := true
+ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
 createDistribution := {
