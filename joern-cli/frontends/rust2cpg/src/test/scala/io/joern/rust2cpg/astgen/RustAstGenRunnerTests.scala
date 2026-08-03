@@ -43,8 +43,7 @@ class RustAstGenRunnerTests extends AnyWordSpec with Matchers {
       }
     }
 
-    // TODO: flaky on CI (Windows). When it fails, consistently returns `main.rs.json` but not `lib.rs.json`.
-    "parse a workspace project with crates/" ignore {
+    "parse a workspace project with crates/" in {
       FileUtil.usingTemporaryDirectory("rust2cpgTestInput") { inputDir =>
         writeFile(
           inputDir / "Cargo.toml",

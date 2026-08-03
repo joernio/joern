@@ -28,6 +28,7 @@ jobs:
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
         with:
           toolchain: stable
+          components: rust-src
       - uses: sbt/setup-sbt@bfea3c5f48abd221b04a6df4798aa5eb8b6a2baf # v1.5.6
       - name: Upgrade all (internal) dependencies
         run: ./updateDependencies.sh --non-interactive
