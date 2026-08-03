@@ -40,6 +40,19 @@ astGenVersion := appProperties.value.getString("rubysrc2cpg.ruby_ast_gen_version
 lazy val astGenDlUrl = settingKey[String]("astgen download url")
 astGenDlUrl := s"https://github.com/joernio/astgen-monorepo/releases/download/ruby-astgen/v${astGenVersion.value}/"
 
+lazy val astGenPlatformSuffix = settingKey[String]("platform suffix for ruby_ast_gen archive")
+astGenPlatformSuffix := {
+  (Environment.operatingSystem, Environment.architecture) match {
+    case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.X86)       => "macos"
+    case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.ARMv8)     => "macos-arm"
+    case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.X86)     => "linux"
+    case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.ARMv8)   => "linux-arm"
+    case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.X86)   => "win"
+    case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.ARMv8) => "win-arm"
+    case _ => "linux"
+  }
+}
+
 def hasCompatibleAstGenVersion(astGenBaseDir: File, astGenVersion: String): Boolean = {
   val versionFile = astGenBaseDir / "lib" / "ruby_ast_gen" / "version.rb"
   if (!versionFile.exists) return false
@@ -56,9 +69,9 @@ def hasCompatibleAstGenVersion(astGenBaseDir: File, astGenVersion: String): Bool
 lazy val astGenResourceTask = taskKey[Seq[File]](s"Download `ruby_ast_gen` and package this under `resources`")
 astGenResourceTask := {
   val targetDir           = baseDirectory.value / "src" / "main" / "resources"
-  val gemName             = s"ruby_ast_gen_v${astGenVersion.value}.zip"
+  val gemName             = s"ruby_ast_gen-${astGenPlatformSuffix.value}_v${astGenVersion.value}.zip"
   val compressGemPath     = targetDir / gemName
-  val unpackedGemFullPath = targetDir / gemName.stripSuffix(s"_v${astGenVersion.value}.zip")
+  val unpackedGemFullPath = targetDir / "ruby_ast_gen"
   if (!hasCompatibleAstGenVersion(unpackedGemFullPath, astGenVersion.value)) {
     if (unpackedGemFullPath.exists()) IO.delete(unpackedGemFullPath)
     val url = s"${astGenDlUrl.value}$gemName"

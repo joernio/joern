@@ -44,7 +44,7 @@
     "org.jetbrains.kotlin:kotlin-stdlib": 181930543,
     "org.jetbrains.kotlin:kotlin-stdlib-jdk8": 1654605853,
     "org.jline:jline": 214767589,
-    "org.jruby:jruby-complete": -181731122,
+    "org.jruby:jruby-complete": -1254552563,
     "org.json4s:json4s-native_3": -1513317579,
     "org.ow2.asm:asm": 1206815935,
     "org.projectlombok:lombok": -1238622139,
@@ -276,8 +276,7 @@
     "org.jline:jline-terminal-jni:jar:sources": -1668611295,
     "org.jline:jline-terminal:jar:sources": -214275357,
     "org.jline:jline:jar:sources": 2039073485,
-    "org.jruby:jruby-complete": 1795657309,
-    "org.jruby:jruby-complete:jar:sources": 777557139,
+    "org.jruby:jruby-complete": -390576161,
     "org.json4s:json4s-ast_3": -507419474,
     "org.json4s:json4s-ast_3:jar:sources": 2122540071,
     "org.json4s:json4s-core_3": 1015651488,
@@ -1108,10 +1107,9 @@
     },
     "org.jruby:jruby-complete": {
       "shasums": {
-        "jar": "c069cd9240c2a341e9df4aae55c54ac81577eb161d0afd6d026d6b3fafc7fefd",
-        "sources": "0056864423d4efb65013518e833704e4c9dcdd3f5235be7a8baa90811ea85c6b"
+        "jar": "b1a83ca46053894fcfd47df4094a21eac6db7fcba6fa6d99d77e391f620e85b7"
       },
-      "version": "9.4.9.0"
+      "version": "10.0.6.0"
     },
     "org.json4s:json4s-ast_3": {
       "shasums": {
@@ -4256,12 +4254,11 @@
       "org.jruby.ext.ripper",
       "org.jruby.ext.set",
       "org.jruby.ext.socket",
-      "org.jruby.ext.syslog",
-      "org.jruby.ext.tempfile",
       "org.jruby.ext.thread",
       "org.jruby.ext.timeout",
       "org.jruby.ext.tracepoint",
       "org.jruby.ext.zlib",
+      "org.jruby.gen",
       "org.jruby.internal.runtime",
       "org.jruby.internal.runtime.methods",
       "org.jruby.ir",
@@ -4334,8 +4331,7 @@
       "org.jruby.util.func",
       "org.jruby.util.io",
       "org.jruby.util.log",
-      "org.jruby.util.time",
-      "org.jruby.util.unsafe"
+      "org.jruby.util.time"
     ],
     "org.json4s:json4s-ast_3": [
       "org.json4s",
@@ -4730,7 +4726,6 @@
       "org.jline:jline-terminal:jar:sources",
       "org.jline:jline:jar:sources",
       "org.jruby:jruby-complete",
-      "org.jruby:jruby-complete:jar:sources",
       "org.json4s:json4s-ast_3",
       "org.json4s:json4s-ast_3:jar:sources",
       "org.json4s:json4s-core_3",
@@ -5001,7 +4996,6 @@
       "org.jline:jline-terminal:jar:sources",
       "org.jline:jline:jar:sources",
       "org.jruby:jruby-complete",
-      "org.jruby:jruby-complete:jar:sources",
       "org.json4s:json4s-ast_3",
       "org.json4s:json4s-ast_3:jar:sources",
       "org.json4s:json4s-core_3",
