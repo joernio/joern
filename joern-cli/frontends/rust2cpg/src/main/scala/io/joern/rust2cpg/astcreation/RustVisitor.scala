@@ -263,9 +263,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  ';'
   private def visitLetStmt(letStmt: LetStmt): Seq[Ast] = {
     val bindings = collectPatternBindings(letStmt.pat)
-    letStmt.expr match {
-      case None          => createLocalsForBindings(bindings)
-      case Some(rhsExpr) =>
+    (letStmt.expr, letStmt.letElse) match {
+      case (None, _)                      => createLocalsForBindings(bindings)
+      case (Some(rhsExpr), Some(letElse)) => lowerLetElse(letStmt, rhsExpr, letElse, bindings)
+      case (Some(rhsExpr), None)          =>
         // When there are 2+ bindings in the pattern, e.g. `let (x,y) = e`, assign the RHS to a tmp variable
         // and use that variable to create each binding, e.g. `tmp = e; x = tmp.0; y = tmp.1` .
         // If there's only 1 binding, it's a regular variable declaration, so no need hoist.
@@ -290,6 +291,40 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
           (tmpLocalAst +: localAsts) ++ (tmpAssignAst +: assignments)
         }
     }
+  }
+
+  // `let pat = expr else { body };` becomes:
+  // LOCAL tmp
+  // <createLocalsForBindings(pat)>
+  // tmp = expr
+  // IF (UNKNOWN) {
+  //  <createAssignmentsForPattern(pat, tmp)>
+  // }
+  // ELSE {
+  //  body
+  // }
+  private def lowerLetElse(
+    letStmt: LetStmt,
+    rhsExpr: Expr,
+    letElse: LetElse,
+    bindings: Seq[(IdentToken, String)]
+  ): Seq[Ast] = {
+    val tmpName       = contextStack.nextTmpName()
+    val rhsAst        = visitExpr(rhsExpr)
+    val typeFullName  = letStmt.typ.map(typeFullNameForType).orElse(rhsAst.rootType).getOrElse(Defines.Any)
+    val tmpLocalAst   = localAst(letStmt, tmpName, tmpName, typeFullName)
+    val mkTmpIdentAst = () => identifierAst(letStmt, tmpName, tmpName, typeFullName)
+
+    val tmpAssignAst =
+      callAst(assignmentNode(letStmt, s"$tmpName = ${code(rhsExpr)}"), Seq(mkTmpIdentAst(), rhsAst))
+    val elseAst      = visitBlockExpr(letElse.blockExpr)
+    val localAsts    = createLocalsForBindings(bindings)
+    val assignments  = createAssignmentsForPattern(letStmt.pat, mkTmpIdentAst)
+    val conditionAst = Ast(unknownNode(letStmt.pat, code(letStmt.pat)))
+    val thenAst      = blockAst(blockNode(letStmt.pat), assignments.toList)
+    val ifAst        = ifThenElseAst(letStmt, Some(conditionAst), thenAst, Some(elseAst))
+
+    (tmpLocalAst +: localAsts) :+ tmpAssignAst :+ ifAst
   }
 
   private def createLocalsForBindings(bindings: Seq[(IdentToken, String)]): Seq[Ast] = {

@@ -835,23 +835,118 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
         |}
         |""".stripMargin)
 
-    // TODO: update once let-else are lowered.
     "have correct locals and assignments" in {
       inside(cpg.method.name("main").block.astChildren.sortBy(_.order).l) {
         case (optLocal: Local) :: (optAssign: Call) :: (tmpLocal: Local) :: (aLocal: Local) :: (bLocal: Local) ::
-            (tmpAssign: Call) :: (aAssign: Call) :: (bAssign: Call) :: Nil =>
+            (tmpAssign: Call) :: (ifNode: ControlStructure) :: Nil =>
           optLocal.name shouldBe "opt"
           optAssign.code shouldBe "let opt: Option<(i32, i32)> = None;"
 
           tmpLocal.name shouldBe "<tmp>0"
           tmpAssign.code shouldBe "<tmp>0 = opt"
+          ifNode.code shouldBe "let Some((a, b)) = opt else { return };"
 
           aLocal.name shouldBe "a"
-          aAssign.code shouldBe "a = <tmp>0.0.0"
-
           bLocal.name shouldBe "b"
-          bAssign.code shouldBe "b = <tmp>0.0.1"
+
+          inside(ifNode.whenTrue.isBlock.astChildren.sortBy(_.order).l) {
+            case (aAssign: Call) :: (bAssign: Call) :: Nil =>
+              aAssign.code shouldBe "a = <tmp>0.0.0"
+              bAssign.code shouldBe "b = <tmp>0.0.1"
+          }
       }
+    }
+  }
+
+  "let-else statement" should {
+    val cpg = code("""
+        |fn main() {
+        | let Some(x) = foo() else { return; };
+        | sink(x);
+        |}
+        |""".stripMargin)
+
+    "have correct locals and assignments" in {
+      inside(cpg.method.nameExact("main").block.astChildren.sortBy(_.order).l) {
+        case (tmpLocal: Local) :: (xLocal: Local) :: (tmpAssign: Call) :: (ifNode: ControlStructure) ::
+            (sink: Call) :: Nil =>
+          tmpLocal.name shouldBe "<tmp>0"
+          tmpAssign.code shouldBe "<tmp>0 = foo()"
+          xLocal.name shouldBe "x"
+          ifNode.code shouldBe "let Some(x) = foo() else { return; };"
+          sink.code shouldBe "sink(x)"
+      }
+    }
+
+    "have correct REF edges for the local" in {
+      cpg.local.nameExact("x").referencingIdentifiers.lineNumber.l shouldBe List(3, 4)
+    }
+
+    "have correct tmp assignment" in {
+      inside(cpg.assignment.codeExact("<tmp>0 = foo()").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "<tmp>0"
+          rhs.name shouldBe "foo"
+          rhs.code shouldBe "foo()"
+      }
+    }
+
+    "have correct then-branch" in {
+      cpg.ifBlock.whenTrue.isBlock.astChildren.isCall.code.l shouldBe List("x = <tmp>0.0")
+    }
+
+    "have correct else-branch" in {
+      cpg.ifBlock.whenFalse.isBlock.astChildren.isReturn.code.l shouldBe List("return")
+    }
+
+    "have correct condition" in {
+      inside(cpg.ifBlock.condition.l) { case (condition: Unknown) :: Nil =>
+        condition.code shouldBe "Some(x)"
+      }
+    }
+  }
+
+  "let-else with _" should {
+    val cpg = code("""
+        |fn main() {
+        | let Some(_) = foo() else { return; };
+        |}
+        |""".stripMargin)
+
+    "have correct locals and assignments" in {
+      inside(cpg.method.nameExact("main").block.astChildren.sortBy(_.order).l) {
+        case (tmpLocal: Local) :: (tmpAssign: Call) :: (ifNode: ControlStructure) :: Nil =>
+          tmpLocal.name shouldBe "<tmp>0"
+          tmpAssign.code shouldBe "<tmp>0 = foo()"
+          ifNode.code shouldBe "let Some(_) = foo() else { return; };"
+      }
+    }
+
+    "have an empty then-branch" in {
+      inside(cpg.ifBlock.whenTrue.isBlock.l) { case thenBlock :: Nil =>
+        thenBlock.astChildren shouldBe empty
+      }
+    }
+  }
+
+  "let-else shadowing previous let" should {
+    val cpg = code("""
+        |fn main() {
+        | let x = 1;
+        | let Some(x) = foo() else {
+        |  sink(x);
+        |  return;
+        | };
+        |}
+        |""".stripMargin)
+
+    "have a LOCAL per binding" in {
+      cpg.local.nameExact("x").lineNumber.l shouldBe List(3, 4)
+    }
+
+    "have correct REF edges for each local" in {
+      cpg.local.nameExact("x").lineNumber(3).referencingIdentifiers.lineNumber.l shouldBe List(3, 5)
+      cpg.local.nameExact("x").lineNumber(4).referencingIdentifiers.lineNumber.l shouldBe List(4)
     }
   }
 
