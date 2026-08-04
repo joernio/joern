@@ -32,7 +32,7 @@ RUN microdnf install -y php php-cli which tar zip unzip sudo shadow-utils \
     && rm linux_czkawka_cli results.txt /opt/joern/joern-cli/frontends/jssrc2cpg/bin/astgen/astgen-macos-arm /opt/joern/joern-cli/frontends/jssrc2cpg/bin/astgen/astgen-macos /opt/joern/joern-cli/frontends/jssrc2cpg/bin/astgen/astgen-win.exe \
     && useradd -ms /bin/bash joern \
     && chown -R joern:joern /opt/joern \
-    && rm /joern-cli.zip /joern-install.sh \
+    && rm /joern-cli-*.zip /joern-install.sh \
     && rm -rf /var/cache/yum \
     && microdnf clean all
 
