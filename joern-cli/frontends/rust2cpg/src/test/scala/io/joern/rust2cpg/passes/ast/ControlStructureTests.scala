@@ -129,6 +129,130 @@ class ControlStructureTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "if-let tail expression" should {
+    val cpg = code("""
+        |fn main() {
+        | if let Some(x) = foo() {
+        |  sink(x);
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct locals and assignments" in {
+      inside(cpg.method.nameExact("main").body.astChildren.isReturn.astChildren.isBlock.astChildren.sortBy(_.order).l) {
+        case (tmpLocal: Local) :: (tmpAssign: Call) :: (ifNode: ControlStructure) :: Nil =>
+          tmpLocal.name shouldBe "<tmp>0"
+          tmpAssign.code shouldBe "<tmp>0 = foo()"
+          ifNode.code shouldBe "if let Some(x) = foo() {\n  sink(x);\n }"
+      }
+    }
+
+    "have correct condition" in {
+      inside(cpg.ifBlock.condition.l) { case (condition: Unknown) :: Nil =>
+        condition.code shouldBe "Some(x)"
+      }
+    }
+
+    "have correct then-branch" in {
+      inside(cpg.ifBlock.whenTrue.isBlock.astChildren.sortBy(_.order).l) {
+        case (xLocal: Local) :: (xAssign: Call) :: (body: Call) :: Nil =>
+          xLocal.name shouldBe "x"
+          xAssign.code shouldBe "x = <tmp>0.0"
+          body.code shouldBe "sink(x)"
+      }
+    }
+
+    "have correct REF edges" in {
+      cpg.local.nameExact("x").referencingIdentifiers.lineNumber.l shouldBe List(3, 4)
+    }
+
+    "have no else-branch" in {
+      cpg.ifBlock.whenFalse shouldBe empty
+    }
+  }
+
+  "if-let-else tail expression" should {
+    val cpg = code("""
+        |fn main() {
+        | if let Some(x) = foo() {
+        |  sink(x);
+        | } else {
+        |  bar();
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct then-branch" in {
+      cpg.ifBlock.whenTrue.isBlock.astChildren.isCall.code.l shouldBe List("x = <tmp>0.0", "sink(x)")
+    }
+
+    "have correct else-branch" in {
+      cpg.ifBlock.whenFalse.isBlock.astChildren.isCall.code.l shouldBe List("bar()")
+    }
+  }
+
+  "if-let with _" should {
+    val cpg = code("""
+        |fn main() {
+        | if let Some(_) = foo() {
+        |  bar();
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct then-branch" in {
+      inside(cpg.ifBlock.whenTrue.isBlock.astChildren.l) { case (body: Call) :: Nil =>
+        body.code shouldBe "bar()"
+      }
+    }
+  }
+
+  "if-let with record struct" should {
+    val cpg = code("""
+        |struct Shape { w: i32, h: i32 }
+        |fn main(shape: Shape) {
+        | if let Shape { w, h } = shape {
+        |  sink(w, h);
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct then-branch" in {
+      inside(cpg.ifBlock.whenTrue.isBlock.astChildren.sortBy(_.order).l) {
+        case (wLocal: Local) :: (hLocal: Local) :: (wAssign: Call) :: (hAssign: Call) :: (body: Call) :: Nil =>
+          wLocal.name shouldBe "w"
+          wLocal.typeFullName shouldBe "i32"
+          hLocal.name shouldBe "h"
+          hLocal.typeFullName shouldBe "i32"
+          wAssign.code shouldBe "w = <tmp>0.w"
+          hAssign.code shouldBe "h = <tmp>0.h"
+          body.code shouldBe "sink(w, h)"
+      }
+    }
+  }
+
+  "if-let shadowing previous let" should {
+    val cpg = code("""
+        |fn main() {
+        | let x = 1;
+        | if let Some(x) = foo() {
+        |  sink(x);
+        | } else {
+        |  sink(x);
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      cpg.local.nameExact("x").lineNumber.l shouldBe List(3, 4)
+    }
+
+    "have correct REF edges for each local" in {
+      cpg.local.nameExact("x").lineNumber(3).referencingIdentifiers.lineNumber.l shouldBe List(3, 7)
+      cpg.local.nameExact("x").lineNumber(4).referencingIdentifiers.lineNumber.l shouldBe List(4, 5)
+    }
+  }
+
   "a while loop" should {
     val cpg = code("""
         |fn main(x: i32, y: i32) {
