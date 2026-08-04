@@ -12,7 +12,6 @@ jobs:
   deploy:
     if: github.repository_owner == 'joernio'
     runs-on: ubuntu-latest
-    continue-on-error: true
     permissions:
       contents: write
       packages: write
