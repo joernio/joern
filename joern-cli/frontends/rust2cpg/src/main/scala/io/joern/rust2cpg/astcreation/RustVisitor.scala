@@ -8,6 +8,7 @@ import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   ExpressionNew,
   NewFile,
+  NewImport,
   NewMethod,
   NewModifier,
   NewNamespaceBlock,
@@ -66,7 +67,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     case trait_ : Trait         => visitTrait(trait_) :: Nil
     case x: TypeAlias           => notHandledYet(x) :: Nil
     case x: Union               => notHandledYet(x) :: Nil
-    case x: Use                 => notHandledYet(x) :: Nil
+    case use: Use               => visitUse(use)
     case x: AsmExpr             => notHandledYet(x) :: Nil
   }
 
@@ -1605,5 +1606,52 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val methodRet = methodReturnNode(closureExpr, retTypeFullName)
     val modifiers = Seq(ModifierTypes.VIRTUAL, ModifierTypes.LAMBDA).map(modifierNode(closureExpr, _))
     addDetachedAst(methodAst(method, paramAsts, bodyAst, methodRet, modifiers))
+  }
+
+  // Use =
+  //  Attr* Visibility?
+  //  'use' UseTree ';'
+  //
+  // UseTree =
+  //  (Path? '::')? ('*' | UseTreeList)
+  // | Path Rename?
+  //
+  // UseTreeList =
+  //  '{' (UseTree (',' UseTree)* ','?)? '}'
+  private def visitUse(use: Use): Seq[Ast] = {
+    lowerUse(use, use.useTree, Nil).map(Ast(_))
+  }
+
+  private def lowerUse(use: Use, tree: UseTree, prefix: Seq[Path]): Seq[NewImport] = {
+    val path = prefix ++ tree.path
+    tree.useTreeList match {
+      case Some(useTreeList)                => useTreeList.useTree.flatMap(lowerUse(use, _, path))
+      case None if tree.starToken.isDefined => lowerWildcardImport(use, path).toList
+      case None                             => lowerNamedImport(use, path, tree.rename).toList
+    }
+  }
+
+  private def lowerWildcardImport(use: Use, prefix: Seq[Path]): Option[NewImport] = {
+    if (prefix.isEmpty) {
+      None
+    } else {
+      Some(mkImport(use, prefix, "*").isWildcard(true))
+    }
+  }
+
+  private def lowerNamedImport(use: Use, prefix: Seq[Path], alias: Option[Rename]): Option[NewImport] = {
+    prefix.lastOption.flatMap { last =>
+      code(last.pathSegment) match {
+        // `use a::b::{self}` means `use a::b as b`
+        case "self" => lowerNamedImport(use, prefix.init ++ last.path, alias)
+        case name =>
+          val renamedAs = alias.flatMap(rename => rename.name.orElse(rename.underscoreToken)).map(code)
+          Some(mkImport(use, prefix, renamedAs.getOrElse(name)))
+      }
+    }
+  }
+
+  private def mkImport(use: Use, path: Seq[Path], importedAs: String): NewImport = {
+    newImportNode(code(use), path.map(code).mkString(PathSep), importedAs, use)
   }
 }
