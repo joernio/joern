@@ -1,5 +1,8 @@
 name: pr
 on: pull_request
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
 jobs:
   formatting:
     runs-on: ubuntu-latest
