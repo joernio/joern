@@ -47,76 +47,90 @@ object UnorderedIteration {
   private val projectionMethods: Set[String] =
     Set("values", "keys", "keySet", "entrySet", "iterator", "keysIterator", "valuesIterator", "asScala")
 
-  // Materializing operations produce ordered output whose element order IS the encounter order.
-  private val materializingOps: Set[String] =
-    Set("toList", "toSeq", "toVector", "toArray", "toIndexedSeq", "mkString", "toString")
-
-  // Reducing operations combine elements in encounter order: folds with a non-associative
-  // combining function produce order-dependent results, and min/max-style selection keeps the
-  // first best element in encounter order — observable when the Ordering equates distinct
-  // elements (e.g. Ordering.by(_.age)). A linter cannot distinguish by the implicit Ordering
-  // in scope, so min/max are included conservatively.
-  private val reducingOps: Set[String] = Set(
-    "foldLeft",
-    "foldRight",
-    "fold",
-    "reduce",
-    "reduceLeft",
-    "reduceRight",
-    "reduceOption",
-    "scanLeft",
-    "scanRight",
-    "sum",
-    "product",
-    "min",
-    "max",
-    "minBy",
-    "maxBy",
-    "minOption",
-    "maxOption"
-  )
-
-  // Selecting operations pick an element by its position in the encounter order.
-  private val selectingOps: Set[String] = Set("find", "collectFirst", "head", "last", "headOption", "lastOption")
-
-  // Regrouping operations pair or group elements by their encounter order.
-  private val regroupingOps: Set[String] = Set("zip", "zipWithIndex", "zipAll", "grouped", "sliding", "splitAt")
-
-  // Traversing operations execute a side-effecting function in encounter order.
-  private val traversingOps: Set[String] = Set("foreach")
-
-  // Operations that return a new iteration source in the receiver's encounter order (typically
-  // Iterator/views), so order-taint propagates into derived vals (val sub = it.take(3)).
-  // Materializing ops (toList, toSeq, ...) deliberately do NOT propagate: they are flagged at the
-  // call site themselves, and re-flagging every downstream use of the result would double-report.
-  // Same-type ops (e.g. hashMap.filter) need no propagation: the result type matches unorderedTypes.
-  private val orderPreservingOps: Set[String] = Set(
-    "take",
+  // Order-sensitive operations flagged at call sites on unordered receivers (alphabetical —
+  // add new entries anywhere in the list). An operation is flagged when its result embeds the
+  // receiver's encounter order or when its side effects execute in encounter order:
+  //   - materialization (toList, mkString, ...): output order IS the encounter order
+  //   - reductions (fold, sum, minBy, ...): folds with a non-associative combining function
+  //     produce order-dependent results, and min/max-style selection keeps the first best
+  //     element in encounter order — observable when the Ordering equates distinct elements
+  //     (e.g. Ordering.by(_.age)); a linter cannot distinguish by the implicit Ordering in
+  //     scope, so min/max are included conservatively
+  //   - position-based selection (find, head, ...) and regrouping (zip, grouped, ...)
+  //   - derivations whose contents depend on source order (map, filter, take, ...)
+  // distinct is deliberately absent: its result contents do not depend on encounter order.
+  // Suppression via `// scalafix:ok UnorderedIteration` is available for documented exceptions.
+  private val flaggedOperations: Set[String] = Set(
+    "collect",
+    "collectFirst",
     "drop",
-    "slice",
-    "takeWhile",
     "dropWhile",
     "filter",
     "filterNot",
-    "withFilter",
-    "map",
-    "collect",
+    "find",
     "flatMap",
-    "distinct"
+    "fold",
+    "foldLeft",
+    "foldRight",
+    "foreach",
+    "grouped",
+    "head",
+    "headOption",
+    "last",
+    "lastOption",
+    "map",
+    "max",
+    "maxBy",
+    "maxOption",
+    "min",
+    "minBy",
+    "minOption",
+    "mkString",
+    "product",
+    "reduce",
+    "reduceLeft",
+    "reduceOption",
+    "reduceRight",
+    "scanLeft",
+    "scanRight",
+    "slice",
+    "sliding",
+    "splitAt",
+    "sum",
+    "take",
+    "takeWhile",
+    "toArray",
+    "toIndexedSeq",
+    "toList",
+    "toSeq",
+    "toString",
+    "toVector",
+    "withFilter",
+    "zip",
+    "zipAll",
+    "zipWithIndex"
   )
 
-  // Order-preserving operations whose result contents do not depend on encounter order:
-  // they propagate order-taint into derived vals but are not flagged at the call site.
-  private val propagatesOnlyOps: Set[String] = Set("distinct")
-
-  // The call sites flagged by this rule: operations whose results embed encounter order or
-  // carry order-dependent side effects. All order-preserving ops are flagged as well — the
-  // derived contents or their encounter order depend on the source order — minus the
-  // propagate-only exceptions above.
-  // Suppression via `// scalafix:ok UnorderedIteration` is available for documented exceptions.
-  private val flaggedOperations: Set[String] =
-    materializingOps ++ reducingOps ++ selectingOps ++ regroupingOps ++ traversingOps ++
-      (orderPreservingOps -- propagatesOnlyOps)
+  // Operations that return a new iteration source in the receiver's encounter order, so
+  // order-taint propagates into derived vals (val sub = it.take(3)); includes distinct,
+  // which propagates taint although it is not flagged itself. Materializing ops (toList, ...)
+  // deliberately do NOT propagate: they are flagged at the call site, and re-flagging every
+  // downstream use of the result would double-report. Same-type results (hashMap.filter)
+  // need no propagation either: the result type matches unorderedTypes.
+  private val orderPreservingOps: Set[String] = Set(
+    "collect",
+    "distinct",
+    "drop",
+    "dropWhile",
+    "filter",
+    "filterNot",
+    "flatMap",
+    "map",
+    "slice",
+    "take",
+    "takeWhile",
+    "withFilter"
+  )
 
   // Deliberately absent from the flagged operations: sorted/sortWith/sortBy. They are
   // SeqOps-only methods, so they can never appear on the unordered types above. Where they

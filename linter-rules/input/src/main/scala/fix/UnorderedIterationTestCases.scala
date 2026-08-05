@@ -6,7 +6,7 @@ package fix
 import scala.collection.mutable
 import scala.collection.immutable
 
-object UnorderedIterationInput {
+object UnorderedIterationTestCases {
 
   // --- Direct type: mutable.HashMap ---
 
