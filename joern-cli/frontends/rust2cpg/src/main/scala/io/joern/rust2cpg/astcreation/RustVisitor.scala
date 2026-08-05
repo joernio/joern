@@ -845,10 +845,51 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  Attr* 'if' condition:Expr then_branch:BlockExpr
   //  ('else' else_branch:(IfExpr | BlockExpr))?
   private def visitIfExpr(ifExpr: IfExpr): Ast = {
-    val conditionAst = visitExpr(ifExpr.expr)
-    val thenAst      = visitBlockExpr(ifExpr.thenBranch)
+    ifExpr.expr match {
+      case letExpr: LetExpr =>
+        lowerIfLet(ifExpr, letExpr)
+      case condition =>
+        val conditionAst = visitExpr(condition)
+        val thenAst      = visitBlockExpr(ifExpr.thenBranch)
+        val elseAst      = ifExpr.elseBranch.map(visitExpr)
+        ifThenElseAst(ifExpr, Some(conditionAst), thenAst, elseAst)
+    }
+  }
+
+  // `if let pat = expr { body-then } else { body-else }` becomes:
+  // BLOCK {
+  //   LOCAL tmp
+  //   tmp = expr
+  //   IF (UNKNOWN) {
+  //     <createLocalsForBindings(pat)>
+  //     <createAssignmentsForPattern(pat, tmp)>
+  //     body-then
+  //   }
+  //   ELSE {
+  //     body-else
+  //   }
+  // }
+  private def lowerIfLet(ifExpr: IfExpr, letExpr: LetExpr): Ast = {
+    val tmpName       = contextStack.nextTmpName()
+    val exprAst       = visitExpr(letExpr.expr)
+    val typeFullName  = exprAst.rootType.getOrElse(Defines.Any)
+    val tmpLocalAst   = localAst(letExpr, tmpName, tmpName, typeFullName)
+    val mkTmpIdentAst = () => identifierAst(letExpr, tmpName, tmpName, typeFullName)
+    val tmpAssignAst =
+      callAst(assignmentNode(letExpr, s"$tmpName = ${code(letExpr.expr)}"), Seq(mkTmpIdentAst(), exprAst))
+
+    contextStack.pushBlock()
+    val localAsts   = createLocalsForBindings(collectPatternBindings(letExpr.pat))
+    val assignments = createAssignmentsForPattern(letExpr.pat, mkTmpIdentAst)
+    val bodyAsts    = visitStmtList(ifExpr.thenBranch.stmtList)
+    contextStack.pop()
+
+    val conditionAst = Ast(unknownNode(letExpr.pat, code(letExpr.pat)))
+    val thenAst      = blockAst(blockNode(ifExpr.thenBranch), (localAsts ++ assignments ++ bodyAsts).toList)
     val elseAst      = ifExpr.elseBranch.map(visitExpr)
-    ifThenElseAst(ifExpr, Some(conditionAst), thenAst, elseAst)
+    val ifAst        = ifThenElseAst(ifExpr, Some(conditionAst), thenAst, elseAst)
+
+    blockAst(blockNode(ifExpr), List(tmpLocalAst, tmpAssignAst, ifAst))
   }
 
   // CastExpr =
