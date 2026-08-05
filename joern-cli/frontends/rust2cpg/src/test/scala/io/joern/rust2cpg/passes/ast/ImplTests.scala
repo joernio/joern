@@ -66,6 +66,42 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "method inside lifetime impl" should {
+    val cpg = code("""
+        |struct Foo<'a> { v: &'a str }
+        |impl<'a> Foo<'a> {
+        |  fn bar(&self) {}
+        |}
+        |fn run(f: Foo) { f.bar(); }
+        |""".stripMargin)
+
+    "have correct fullName" in {
+      cpg.method.nameExact("bar").fullName.l shouldBe List("rust2cpgtest::Foo<'a>::bar")
+    }
+
+    "have the same fullName as the one at the call site" in {
+      cpg.call.nameExact("bar").methodFullName.l shouldBe List("rust2cpgtest::Foo<'a>::bar")
+    }
+  }
+
+  "method inside const impl" should {
+    val cpg = code("""
+        |struct Foo<const N: usize>;
+        |impl<const N: usize> Foo<N> {
+        |  fn bar(&self) {}
+        |}
+        |fn run(f: Foo<3>) { f.bar(); }
+        |""".stripMargin)
+
+    "have correct fullName" in {
+      cpg.method.nameExact("bar").fullName.l shouldBe List("rust2cpgtest::Foo<N>::bar")
+    }
+
+    "have the same fullName as the one at the call site" in {
+      cpg.call.nameExact("bar").methodFullName.l shouldBe List("rust2cpgtest::Foo<N>::bar")
+    }
+  }
+
   "an inherent method with a `&mut self` and an explicit parameter" should {
     val cpg = code("""
         |struct Foo;
@@ -451,6 +487,39 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
         "<rust2cpgtest::Foo as rust2cpgtest::Bar>",
         "<rust2cpgtest::Foo as rust2cpgtest::Baz>"
       )
+    }
+  }
+
+  "impls for structs with lifetimes" should {
+    val cpg = code("""
+        |trait Bar { fn a(&self); }
+        |struct Foo<'a> { v: &'a str }
+        |struct Baz<'a> { v: &'a str }
+        |impl<'a> Bar for Foo<'a> { fn a(&self) {} }
+        |impl<'a> Bar for Baz<'a> { fn a(&self) {} }
+        |""".stripMargin)
+
+    "have correct fullNames" in {
+      cpg.typeDecl.where(_.method.nameExact("a")).fullName.sorted.l shouldBe List(
+        "<rust2cpgtest::Baz<'a> as rust2cpgtest::Bar>",
+        "<rust2cpgtest::Foo<'a> as rust2cpgtest::Bar>",
+        "rust2cpgtest::Bar"
+      )
+    }
+
+    "have correct methodFullName" in {
+      cpg.method.nameExact("a").fullName.sorted.l shouldBe List(
+        "<rust2cpgtest::Baz<'a> as rust2cpgtest::Bar>::a",
+        "<rust2cpgtest::Foo<'a> as rust2cpgtest::Bar>::a",
+        "rust2cpgtest::Bar::a"
+      )
+    }
+
+    "have correct inheritsFrom" in {
+      cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo<'a> as rust2cpgtest::Bar>").inheritsFromTypeFullName.l shouldBe
+        List("rust2cpgtest::Bar")
+      cpg.typeDecl.fullNameExact("<rust2cpgtest::Baz<'a> as rust2cpgtest::Bar>").inheritsFromTypeFullName.l shouldBe
+        List("rust2cpgtest::Bar")
     }
   }
 
