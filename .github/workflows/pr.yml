@@ -40,7 +40,7 @@ jobs:
           cache: sbt
       - uses: sbt/setup-sbt@bfea3c5f48abd221b04a6df4798aa5eb8b6a2baf # v1.5.6
       - name: Run scalafix linting
-        run: sbt "scalafix --diff-base origin/${{ github.event.pull_request.base.ref }} RestrictedImports SingleLetterIdentifiers"
+        run: sbt "scalafix --diff-base origin/${{ github.event.pull_request.base.ref }} RestrictedImports SingleLetterIdentifiers UnorderedIteration"
       - run: echo "Previous step failed because certain coding quality expectations were violated. Please check the logs."
         if: ${{ failure() }}
 
