@@ -28,7 +28,7 @@ class RustAstGenRunnerTests extends AnyWordSpec with Matchers {
             |""".stripMargin
         )
         writeFile(inputDir / "src" / "main.rs", "fn main() { println!(\"hello\"); }")
-        writeFile(inputDir / "src" / "lib.rs", "pub fn add(a: i32, b: i32) -> i32 { a + b }")
+        writeFile(inputDir / "src" / "lib.rs", "pub mod utils; pub fn add(a: i32, b: i32) -> i32 { a + b }")
         writeFile(inputDir / "src" / "utils" / "mod.rs", "pub fn greet() {}")
 
         FileUtil.usingTemporaryDirectory("rust2cpgTestOut") { outputDir =>
@@ -125,7 +125,7 @@ class RustAstGenRunnerTests extends AnyWordSpec with Matchers {
             |""".stripMargin
         )
         writeFile(inputDir / "src" / "main.rs", "fn main() {}")
-        writeFile(inputDir / "src" / "lib.rs", "pub fn add(a: i32, b: i32) -> i32 { a + b }")
+        writeFile(inputDir / "src" / "lib.rs", "pub mod utils; pub fn add(a: i32, b: i32) -> i32 { a + b }")
         writeFile(inputDir / "src" / "utils" / "mod.rs", "pub fn greet() {}")
 
         FileUtil.usingTemporaryDirectory("rust2cpgTestOut") { outputDir =>
@@ -169,6 +169,28 @@ class RustAstGenRunnerTests extends AnyWordSpec with Matchers {
             outputDir / "src" / "lib.rs.json",
             outputDir / "tests" / "integration.rs.json"
           ).map(_.toString)
+        }
+      }
+    }
+
+    "skip out-of-crate file" in {
+      FileUtil.usingTemporaryDirectory("rust2cpgTestInput") { inputDir =>
+        writeFile(
+          inputDir / "Cargo.toml",
+          """[package]
+            |name = "mylib"
+            |version = "0.1.0"
+            |edition = "2021"
+            |""".stripMargin
+        )
+        writeFile(inputDir / "src" / "lib.rs", "pub fn lib_fn() {}")
+        writeFile(inputDir / "src" / "orphan.rs", "pub fn orphan_fn() {}")
+
+        FileUtil.usingTemporaryDirectory("rust2cpgTestOut") { outputDir =>
+          val config = Config().withInputPath(inputDir.toString).withOutputPath(outputDir.toString)
+          val result = new RustAstGenRunner(config).execute(outputDir)
+          result.parsedFiles shouldBe List((outputDir / "src" / "lib.rs.json").toString)
+          result.skippedFiles shouldBe List((inputDir / "src" / "orphan.rs").toRealPath().toString)
         }
       }
     }
