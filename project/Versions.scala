@@ -21,7 +21,7 @@ object Versions {
   val gradleTooling          = "8.3"
   val jacksonDatabind        = "2.17.0"
   val javaParser             = "3.28.0"
-  val jRuby                  = "10.0.6.0"
+  val jRuby                  = "9.4.15.0"
   val json4s                 = "4.0.7"
   val lombok                 = "1.18.42"
   val mavenArtifact          = "3.9.16"
