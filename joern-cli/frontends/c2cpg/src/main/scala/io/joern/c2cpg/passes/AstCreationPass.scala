@@ -205,7 +205,6 @@ class AstCreationPass(
               false
           }
         case None =>
-          report.addReportInfo(relPath, -1)
           false
       }
     }
