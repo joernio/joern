@@ -16,6 +16,7 @@ import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.Paths
+import scala.collection.immutable.ListMap
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
@@ -38,12 +39,15 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
   def extensionMethodFullNameMapping(): Map[String, String]             = collectedExtensionMethodFullNameMapping
   def memberPropertyMapping(): Map[String, String]                      = collectedMemberPropertyMapping
 
+  // LinkedHash* collections: accumulators are merged in part order (sorted files), so
+  // insertion order — and thus iteration order — is deterministic across runs.
+  // mergeAccumulator must stay associative for this to hold.
   override def createAccumulator(): AstCreationPass.Accumulator = AstCreationPass.Accumulator(
-    usedTypes = mutable.HashSet.empty,
-    extensionInheritMapping = mutable.HashMap.empty,
-    extensionMethodFullNameMapping = mutable.HashMap.empty,
-    extensionMemberMapping = mutable.HashMap.empty,
-    memberPropertyMapping = mutable.HashMap.empty
+    usedTypes = mutable.LinkedHashSet.empty,
+    extensionInheritMapping = mutable.LinkedHashMap.empty,
+    extensionMethodFullNameMapping = mutable.LinkedHashMap.empty,
+    extensionMemberMapping = mutable.LinkedHashMap.empty,
+    memberPropertyMapping = mutable.LinkedHashMap.empty
   )
 
   override def mergeAccumulator(left: AstCreationPass.Accumulator, right: AstCreationPass.Accumulator): Unit = {
@@ -75,7 +79,9 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
   override def onAccumulatorComplete(builder: DiffGraphBuilder, accumulator: AstCreationPass.Accumulator): Unit = {
     collectedTypes = accumulator.usedTypes.toSet.removedAll(Defines.SwiftTypes)
     collectedExtensionInherits = accumulator.extensionInheritMapping.view.mapValues(_.toSet).toMap
-    collectedExtensionMembers = accumulator.extensionMemberMapping.view.mapValues(_.toList).toMap
+    // ListMap preserves the accumulator's deterministic insertion order for ExtensionsPass;
+    // `toMap` would re-hash into an unordered immutable.HashMap
+    collectedExtensionMembers = ListMap.from(accumulator.extensionMemberMapping.view.mapValues(_.toList))
     collectedExtensionMethodFullNameMapping = accumulator.extensionMethodFullNameMapping.toMap
     collectedMemberPropertyMapping = accumulator.memberPropertyMapping.toMap
   }
@@ -186,11 +192,11 @@ object AstCreationPass {
     *   Mapping from member fullName to method fullName from its computed property.
     */
   case class Accumulator(
-    usedTypes: mutable.HashSet[String],
-    extensionInheritMapping: mutable.HashMap[String, mutable.HashSet[String]],
-    extensionMethodFullNameMapping: mutable.HashMap[String, String],
-    extensionMemberMapping: mutable.HashMap[String, mutable.ArrayBuffer[MemberInfo]],
-    memberPropertyMapping: mutable.HashMap[String, String]
+    usedTypes: mutable.LinkedHashSet[String],
+    extensionInheritMapping: mutable.LinkedHashMap[String, mutable.LinkedHashSet[String]],
+    extensionMethodFullNameMapping: mutable.LinkedHashMap[String, String],
+    extensionMemberMapping: mutable.LinkedHashMap[String, mutable.ArrayBuffer[MemberInfo]],
+    memberPropertyMapping: mutable.LinkedHashMap[String, String]
   ) {
 
     def addExtensionMember(
@@ -209,7 +215,7 @@ object AstCreationPass {
     def addExtensionInherits(extensionFullName: String, inheritNames: Seq[String]): Unit = {
       extensionInheritMapping.updateWith(extensionFullName) {
         case Some(set) => Some(set ++= inheritNames)
-        case None      => Some(mutable.HashSet.from(inheritNames))
+        case None      => Some(mutable.LinkedHashSet.from(inheritNames))
       }
     }
 
