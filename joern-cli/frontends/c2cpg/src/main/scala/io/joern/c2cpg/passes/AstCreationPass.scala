@@ -19,15 +19,19 @@ import org.eclipse.cdt.core.model.ILanguage
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.{Path, Paths}
+import scala.collection.immutable.ListMap
 import scala.collection.mutable
 
 object AstCreationPass {
 
+  // LinkedHash* collections: ForkJoinParallelCpgPassWithAccumulator merges accumulators in
+  // part (i.e. sorted file) order, so insertion order — and thus iteration order — is
+  // deterministic across runs. mergeWith must stay associative for this to hold.
   case class Accumulator(
-    usedTypes: mutable.HashSet[String] = mutable.HashSet.empty,
-    methodDeclarations: mutable.HashMap[String, FunctionDeclNodePass.MethodInfo] = mutable.HashMap.empty,
-    methodDefinitions: mutable.HashSet[String] = mutable.HashSet.empty,
-    headerIncludes: mutable.HashMap[String, HeaderFileParserLanguage] = mutable.HashMap.empty
+    usedTypes: mutable.LinkedHashSet[String] = mutable.LinkedHashSet.empty,
+    methodDeclarations: mutable.LinkedHashMap[String, FunctionDeclNodePass.MethodInfo] = mutable.LinkedHashMap.empty,
+    methodDefinitions: mutable.LinkedHashSet[String] = mutable.LinkedHashSet.empty,
+    headerIncludes: mutable.LinkedHashMap[String, HeaderFileParserLanguage] = mutable.LinkedHashMap.empty
   ) {
     def registerType(typeName: String): Unit = usedTypes.add(typeName)
 
@@ -94,10 +98,12 @@ class AstCreationPass(
 
   def typesSeen(): Set[String] = _finalAccumulator.usedTypes.toSet
 
+  // ListMap preserves the accumulator's deterministic insertion order; `toMap` would
+  // re-hash into an unordered immutable.HashMap
   def unhandledMethodDeclarations(): Map[String, FunctionDeclNodePass.MethodInfo] =
-    _finalAccumulator.methodDeclarations.filterNot { case (k, _) =>
+    ListMap.from(_finalAccumulator.methodDeclarations.filterNot { case (k, _) =>
       _finalAccumulator.methodDefinitions.contains(k)
-    }.toMap
+    })
 
   def headerIncludes(): Map[String, HeaderFileParserLanguage] = _finalAccumulator.headerIncludes.toMap
 
