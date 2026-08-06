@@ -87,6 +87,10 @@ class Report {
   ): Unit = reports(fileName) = ReportEntry(loc, parsed, cpgGen, duration)
 
   def updateReport(fileName: FileName, cpg: Boolean, duration: Long): Unit =
-    reports.updateWith(fileName)(_.map(_.copy(cpgGen = cpg, duration = duration)))
+    reports.updateWith(fileName) {
+      case Some(existing) => Some(existing.copy(cpgGen = cpg, duration = duration))
+      // files whose parse result could not be read never got an addReportInfo call; still record them
+      case None => Some(ReportEntry(loc = -1, parsed = false, cpgGen = cpg, duration = duration))
+    }
 
 }
