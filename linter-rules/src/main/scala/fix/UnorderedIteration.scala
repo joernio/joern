@@ -343,8 +343,8 @@ class UnorderedIteration extends SemanticRule("UnorderedIteration") {
       .map(typeSym => typeSym.info.map(_.displayName).getOrElse(typeSym.displayName))
       .getOrElse(term.symbol.displayName)
 
-  // Note: the diagnostic is a zero-width position at the term's end, i.e. it is reported on the
-  // expression's last line — for multi-line calls, suppression comments must be placed there.
+  // scalafix's `scalafix:ok` escape range is end-exclusive ([owner line start, owner.end)) and
+  // matches on the diagnostic's start offset, so the diagnostic is anchored at the term's start.
   private def lintDiagnostic(term: Term, typeName: String, methodName: String): Patch =
     Patch.lint(
       Diagnostic(
@@ -352,7 +352,7 @@ class UnorderedIteration extends SemanticRule("UnorderedIteration") {
         message = s"Iteration over unordered collection $typeName via .$methodName — " +
           "iteration order is non-deterministic. Use a sorted or ordered collection, " +
           "or suppress with `// scalafix:ok UnorderedIteration` if order does not matter here.",
-        position = Position.Range(term.pos.input, term.pos.end, term.pos.end)
+        position = term.pos
       )
     )
 
