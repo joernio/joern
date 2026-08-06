@@ -55,10 +55,8 @@ class Report {
 
   def print(): Unit = {
     // reports is a concurrent TrieMap: rows are sorted by unique file name below and the LOC
-    // total sums Longs, so neither result depends on encounter order. (A trailing
-    // `scalafix:ok` cannot suppress here: the diagnostic sits exactly at the term's end.)
-    // scalafix:off UnorderedIteration
-    val rows = reports.toSeq
+    // total sums Longs, so neither result depends on encounter order.
+    val rows = reports.toSeq // scalafix:ok UnorderedIteration
       .sortBy(_._1)
       .zipWithIndex
       .view
@@ -72,13 +70,12 @@ class Report {
       Seq(
         "Total",
         "",
-        s"${reports.filter(_._2.loc >= 0).map(_._2.loc).sum}",
+        s"${reports.filter(_._2.loc >= 0).map(_._2.loc).sum}", // scalafix:ok UnorderedIteration
         s"${reports.count(_._2.parsed)}/$numOfReports",
         s"${reports.count(_._2.cpgGen)}/$numOfReports",
         ""
       )
     )
-    // scalafix:on UnorderedIteration
     val table = header ++ rows ++ footer
     logger.info(s"Report:${System.lineSeparator()}${formatTable(table)}")
   }
