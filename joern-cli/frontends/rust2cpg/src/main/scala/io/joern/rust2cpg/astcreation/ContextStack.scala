@@ -49,17 +49,6 @@ object ContextStack {
   }
 
   @tailrec
-  private def parentIsMethod(stack: List[Context]): Boolean = stack match {
-    case (_: GlobalMethodContext) :: _ => false
-    case (_: MethodContext) :: _       => true
-    case (_: NamespaceContext) :: _    => false
-    case (_: TypeDeclContext) :: _     => false
-    case (_: LocalContext) :: tail     => parentIsMethod(tail)
-    case (_: BlockContext) :: tail     => parentIsMethod(tail)
-    case Nil                           => false
-  }
-
-  @tailrec
   def lookup(name: String, stack: List[Context]): Option[NewLocal | NewMethodParameterIn] = {
     stack match {
       case Nil                         => None
@@ -147,10 +136,6 @@ class ContextStack {
 
   def rustParentFullName: String = {
     rustItemParentFullName(stack)
-  }
-
-  def parentIsMethod: Boolean = {
-    ContextStack.parentIsMethod(stack)
   }
 
   def resolvedVariableReferences: Seq[(NewIdentifier, NewLocal | NewMethodParameterIn)] = {

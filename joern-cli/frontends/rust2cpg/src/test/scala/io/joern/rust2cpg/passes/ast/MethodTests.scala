@@ -1,7 +1,7 @@
 package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
-import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
@@ -124,6 +124,7 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
     val cpg = code("""
         |fn outer() {
         |    fn inner() {}
+        |    inner();
         |}
         |""".stripMargin)
 
@@ -135,6 +136,45 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.method.name("inner").l) { case (inner: Method) :: Nil =>
         inner.astParentType shouldBe NodeTypes.METHOD
         inner.astParentFullName shouldBe "rust2cpgtest::outer"
+      }
+    }
+
+    "have correct methodFullName" in {
+      inside(cpg.call.nameExact("inner").l) { case call :: Nil =>
+        call.methodFullName shouldBe "rust2cpgtest::outer::inner"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        call.argument shouldBe empty
+      }
+    }
+  }
+
+  "same-named nested fns in both branches of an if" should {
+    val cpg = code("""
+        |fn outer(c: bool) {
+        |  if c {
+        |    fn inner() -> i32 { 1 }
+        |    inner();
+        |  } else {
+        |    fn inner() -> i64 { 2 }
+        |    inner();
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct fullNames" in {
+      inside(cpg.method.nameExact("inner").sortBy(_.lineNumber).l) { case thenInner :: elseInner :: Nil =>
+        thenInner.fullName shouldBe "rust2cpgtest::outer::inner#1"
+        thenInner.methodReturn.typeFullName shouldBe "i32"
+
+        elseInner.fullName shouldBe "rust2cpgtest::outer::inner#2"
+        elseInner.methodReturn.typeFullName shouldBe "i64"
+      }
+    }
+
+    "have correct methodFullName" in {
+      inside(cpg.call.nameExact("inner").sortBy(_.lineNumber).l) { case thenCall :: elseCall :: Nil =>
+        thenCall.methodFullName shouldBe "rust2cpgtest::outer::inner#1"
+        elseCall.methodFullName shouldBe "rust2cpgtest::outer::inner#2"
       }
     }
   }
