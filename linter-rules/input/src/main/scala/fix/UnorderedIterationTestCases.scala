@@ -286,6 +286,11 @@ object UnorderedIterationTestCases {
     hashMap.foreach { case (key, value) => println(s"$key=$value") } // scalafix:ok UnorderedIteration
   }
 
+  // Boundary case: trailing suppression where the flagged term is the statement's last token
+  def suppressedLastTokenOfStatement(): Unit = {
+    val xs = hashSet.toSeq // scalafix:ok UnorderedIteration
+  }
+
   // --- Immutable HashMap ---
 
   val immutableHashMap: immutable.HashMap[String, Int] = immutable.HashMap.empty

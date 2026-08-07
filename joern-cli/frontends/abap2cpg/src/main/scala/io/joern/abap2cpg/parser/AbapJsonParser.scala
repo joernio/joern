@@ -32,9 +32,9 @@ class AbapJsonParser {
     val allStmts   = json("statements").arr.toSeq
 
     // --- state machine variables ---
-    val classDefs = mutable.LinkedHashMap.empty[String, ClassDef] // name -> def (sigs only)
-    val classSigs = mutable.ArrayBuffer.empty[MethodDef]          // sigs in current CLASS DEF
-    val bodies    = mutable.HashMap.empty[String, StatementList]  // UPPER(name) -> body
+    val classDefs = mutable.LinkedHashMap.empty[String, ClassDef]      // name -> def (sigs only)
+    val classSigs = mutable.ArrayBuffer.empty[MethodDef]               // sigs in current CLASS DEF
+    val bodies    = mutable.LinkedHashMap.empty[String, StatementList] // UPPER(name) -> body
 
     var currentClass: Option[String] = None
     var inClassDef                   = false

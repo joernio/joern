@@ -32,8 +32,14 @@ class AstCreationPass(
     // We want the SAM types to have a deterministic iteration order. in onAccumulatorComplete
     // we sort by key by converting to a sorted map.
 
-    // TypeNodePass sorts the types so using a regular sets for the types are fine
-    AstCreationPass.Accumulator(mutable.HashSet.empty[String], mutable.HashMap.empty[String, AstCreator.SamImplInfo])
+    // TypeNodePass sorts the types, so iteration order of usedTypes does not matter.
+    // LinkedHash* collections regardless: accumulators are merged in part order (sorted
+    // files), so insertion order — and thus iteration order — is deterministic across runs.
+    // mergeAccumulator must stay associative for this to hold.
+    AstCreationPass.Accumulator(
+      mutable.LinkedHashSet.empty[String],
+      mutable.LinkedHashMap.empty[String, AstCreator.SamImplInfo]
+    )
   }
 
   override def mergeAccumulator(left: AstCreationPass.Accumulator, right: AstCreationPass.Accumulator): Unit = {
@@ -77,7 +83,7 @@ class AstCreationPass(
 
 object AstCreationPass {
   case class Accumulator(
-    usedTypes: mutable.HashSet[String],
-    samInfoEntriesByImplClass: mutable.HashMap[String, AstCreator.SamImplInfo]
+    usedTypes: mutable.LinkedHashSet[String],
+    samInfoEntriesByImplClass: mutable.LinkedHashMap[String, AstCreator.SamImplInfo]
   )
 }
