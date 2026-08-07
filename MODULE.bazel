@@ -73,7 +73,7 @@ maven.install(
         "org.jetbrains.kotlin:kotlin-stdlib:2.3.21",
         "org.jetbrains.kotlin:kotlin-compiler-embeddable:2.3.21",
         "org.jetbrains.kotlin:kotlin-allopen:2.3.21",
-        "org.jruby:jruby-complete:10.0.6.0",
+        "org.jruby:jruby-complete:9.4.15.0",
         "com.github.albfernandez:juniversalchardet:2.5.0",
         "io.joern:eclipse-cdt-core:9.2.100.202507101054+1",
         "org.eclipse.platform:org.eclipse.core.resources:3.23.0",
