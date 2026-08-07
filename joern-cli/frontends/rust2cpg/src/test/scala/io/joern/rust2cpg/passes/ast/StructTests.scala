@@ -297,6 +297,7 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
     val cpg = code("""
         |fn outer() {
         |  struct Inner { value: i32 }
+        |  Inner { value: 1 };
         |}
         |""".stripMargin)
 
@@ -309,6 +310,69 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
         inner.astParentType shouldBe NodeTypes.METHOD
         inner.astParentFullName shouldBe "rust2cpgtest::outer"
       }
+    }
+
+    "have correct methodFullName" in {
+      inside(cpg.call.nameExact("<init>").l) { case init :: Nil =>
+        init.methodFullName shouldBe "rust2cpgtest::outer::Inner::<init>"
+
+        inside(init.argument(0)) { case addressOf: Call =>
+          addressOf.code shouldBe "&<tmp>0"
+          addressOf.typeFullName shouldBe "&rust2cpgtest::outer::Inner"
+        }
+
+        inside(init.argument(1)) { case lit: Literal =>
+          lit.code shouldBe "1"
+          lit.typeFullName shouldBe "i32"
+          lit.argumentName shouldBe Some("value")
+        }
+      }
+    }
+  }
+
+  "same-named structs in both branches of an if" should {
+    val cpg = code("""
+        |fn outer(c: bool) {
+        |  if c {
+        |    struct Inner { x: i32 }
+        |    Inner { x: 1 };
+        |  } else {
+        |    struct Inner { y: i32 }
+        |    Inner { y: 2 };
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct fullNames" in {
+      inside(cpg.typeDecl.nameExact("Inner").sortBy(_.lineNumber).l) { case thenInner :: elseInner :: Nil =>
+        thenInner.fullName shouldBe "rust2cpgtest::outer::Inner#1"
+        thenInner.member.name.l shouldBe List("x")
+
+        elseInner.fullName shouldBe "rust2cpgtest::outer::Inner#2"
+        elseInner.member.name.l shouldBe List("y")
+      }
+    }
+
+    "have correct methodFullName" in {
+      inside(cpg.call.nameExact("<init>").sortBy(_.lineNumber).l) { case thenInit :: elseInit :: Nil =>
+        thenInit.methodFullName shouldBe "rust2cpgtest::outer::Inner#1::<init>"
+        inside(thenInit.argument(1)) { case lit: Literal =>
+          lit.code shouldBe "1"
+          lit.argumentName shouldBe Some("x")
+          lit.typeFullName shouldBe "i32"
+        }
+        elseInit.methodFullName shouldBe "rust2cpgtest::outer::Inner#2::<init>"
+        inside(elseInit.argument(1)) { case lit: Literal =>
+          lit.code shouldBe "2"
+          lit.argumentName shouldBe Some("y")
+          lit.typeFullName shouldBe "i32"
+        }
+      }
+    }
+
+    "have correct typeFullName for each record expression" in {
+      cpg.block.codeExact("Inner { x: 1 }").typeFullName.l shouldBe List("rust2cpgtest::outer::Inner#1")
+      cpg.block.codeExact("Inner { y: 2 }").typeFullName.l shouldBe List("rust2cpgtest::outer::Inner#2")
     }
   }
 
