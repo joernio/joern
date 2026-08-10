@@ -1,7 +1,7 @@
 package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
@@ -98,6 +98,113 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
         p3.index shouldBe 3
         p3.typeFullName shouldBe "f32"
       }
+    }
+  }
+
+  "tuple pattern parameter" should {
+    val cpg = code("""
+        |fn f((a, b): (i32, bool)) {
+        | let c = a;
+        |}
+        |""".stripMargin)
+
+    "have correct parameter" in {
+      inside(cpg.method.nameExact("f").parameter.l) { case (param: MethodParameterIn) :: Nil =>
+        param.name shouldBe "<tmp>0"
+        param.code shouldBe "(a, b): (i32, bool)"
+        param.index shouldBe 1
+        param.typeFullName shouldBe "(i32, bool)"
+      }
+    }
+
+    "have correct locals" in {
+      inside(cpg.method.nameExact("f").block.local.l) { case aLocal :: bLocal :: cLocal :: Nil =>
+        aLocal.name shouldBe "a"
+        aLocal.typeFullName shouldBe "i32"
+        bLocal.name shouldBe "b"
+        bLocal.typeFullName shouldBe "bool"
+        cLocal.name shouldBe "c"
+        cLocal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct assignments" in {
+      inside(cpg.method.nameExact("f").block.astChildren.isCall.l) { case aAssign :: bAssign :: cAssign :: Nil =>
+        aAssign.code shouldBe "a = <tmp>0.0"
+        bAssign.code shouldBe "b = <tmp>0.1"
+        cAssign.code shouldBe "let c = a;"
+      }
+    }
+  }
+
+  "record pattern parameter" should {
+    val cpg = code("""
+        |struct Point { x: i32, y: bool }
+        |fn f(Point { x, y }: Point) {}
+        |""".stripMargin)
+
+    "have correct parameter" in {
+      inside(cpg.method.nameExact("f").parameter.l) { case (param: MethodParameterIn) :: Nil =>
+        param.name shouldBe "<tmp>0"
+        param.code shouldBe "Point { x, y }: Point"
+        param.index shouldBe 1
+        param.typeFullName shouldBe "rust2cpgtest::Point"
+      }
+    }
+
+    "have correct locals" in {
+      inside(cpg.method.nameExact("f").block.local.l) { case xLocal :: yLocal :: Nil =>
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "i32"
+
+        yLocal.name shouldBe "y"
+        yLocal.typeFullName shouldBe "bool"
+      }
+    }
+
+    "have correct assignments" in {
+      inside(cpg.method.nameExact("f").block.astChildren.isCall.l) { case xAssign :: yAssign :: Nil =>
+        xAssign.code shouldBe "x = <tmp>0.x"
+        yAssign.code shouldBe "y = <tmp>0.y"
+      }
+    }
+  }
+
+  "@ pattern parameter" should {
+    val cpg = code("""
+        |fn f(p @ (a, b): (i32, bool)) {}
+        |""".stripMargin)
+
+    "have correct parameter" in {
+      inside(cpg.method.name("f").parameter.l) { case (param: MethodParameterIn) :: Nil =>
+        param.name shouldBe "p"
+        param.code shouldBe "p @ (a, b): (i32, bool)"
+        param.typeFullName shouldBe "(i32, bool)"
+      }
+    }
+
+    "have correct assignments" in {
+      inside(cpg.method.name("f").block.astChildren.isCall.l) { case aAssign :: bAssign :: Nil =>
+        aAssign.code shouldBe "a = p.0"
+        bAssign.code shouldBe "b = p.1"
+      }
+    }
+  }
+
+  "wildcard parameter" should {
+    val cpg = code("fn f(_: i32) {}")
+
+    "have correct parameter" in {
+      inside(cpg.method.nameExact("f").parameter.l) { case (param: MethodParameterIn) :: Nil =>
+        param.name shouldBe "<tmp>0"
+        param.code shouldBe "_: i32"
+        param.index shouldBe 1
+        param.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have no assignments" in {
+      cpg.method.nameExact("f").block.astChildren shouldBe empty
     }
   }
 

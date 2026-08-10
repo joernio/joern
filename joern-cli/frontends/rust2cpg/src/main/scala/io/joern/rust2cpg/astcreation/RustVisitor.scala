@@ -505,8 +505,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val methodMods      = Seq[NewModifier]()
 
     contextStack.pushMethod(method)
-    val paramAsts = visitParamList(fn.paramList)
-    val bodyAst   = fn.blockExpr.map(lowerFnBody).getOrElse(blockAst(blockNode(fn)))
+    val (paramAsts, paramAssignmentAsts) = lowerParamList(fn.paramList)
+    val bodyAst = fn.blockExpr
+      .map(lowerFnBody(_, paramAssignmentAsts))
+      .getOrElse(blockAst(blockNode(fn), paramAssignmentAsts.toList))
     contextStack.pop()
 
     methodAst(method = method, parameters = paramAsts, body = bodyAst, methodReturn = methodRet, modifiers = methodMods)
@@ -514,13 +516,14 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
   // Creates:
   // BLOCK {
+  //   <preStmts>
   //   <stmts>
   //   RETURN (expr) // if (expr) exists
   // }
-  private def lowerFnBody(blockExpr: BlockExpr): Ast = {
+  private def lowerFnBody(blockExpr: BlockExpr, preStmts: Seq[Ast]): Ast = {
     val stmtAsts   = blockExpr.stmtList.stmt.flatMap(visitStmt)
     val retExprAst = blockExpr.stmtList.expr.map(lowerReturnExpr).toList
-    Ast(blockNode(blockExpr)).withChildren(stmtAsts ++ retExprAst)
+    Ast(blockNode(blockExpr)).withChildren(preStmts ++ stmtAsts ++ retExprAst)
   }
 
   // Creates:
@@ -691,27 +694,33 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  | (SelfParam ',')? (Param (',' Param)* ','?)?
   //  )')'
   // | '|' (Param (',' Param)* ','?)? '|'
-  private def visitParamList(paramList: ParamList): Seq[Ast] = {
+  private def lowerParamList(paramList: ParamList): (paramAsts: Seq[Ast], paramAssignmentAsts: Seq[Ast]) = {
     val selfParamAst = paramList.selfParam.map(visitSelfParam).toList
-    val paramAsts = paramList.param.zipWithIndex.map { case (param, paramIdx) =>
-      param.pat match {
-        case Some(identPat: IdentPat) =>
-          val paramNode = parameterInNode(
-            node = param,
-            name = code(identPat),
-            code = code(param),
-            index = paramIdx + 1,
-            isVariadic = false,
-            evaluationStrategy = EvaluationStrategies.BY_SHARING,
-            typeFullName = param.typ.map(typeFullNameForType).getOrElse(typeFullNameForIdentPat(identPat))
-          )
-          contextStack.declareParameter(paramNode)
-          Ast(paramNode)
-        case _ => notHandledYet(param)
+    val (paramAsts, paramAssignmentAsts) = paramList.param.zipWithIndex.map { case (param, paramIdx) =>
+      val (paramName, paramPattern) = param.pat match {
+        case Some(identPat: IdentPat) => (code(identPat.name), identPat.pat)
+        case pat                      => (contextStack.nextTmpName(), pat)
       }
-    }
+      val typeFullName = typeFullNameForParam(param)
+      val paramNode = parameterInNode(
+        node = param,
+        name = paramName,
+        code = code(param),
+        index = paramIdx + 1,
+        isVariadic = false,
+        evaluationStrategy = EvaluationStrategies.BY_SHARING,
+        typeFullName = typeFullName
+      )
+      contextStack.declareParameter(paramNode)
 
-    selfParamAst ++ paramAsts
+      val patternAssignmentAsts = paramPattern.toList.flatMap { pat =>
+        val mkParamIdentAst = () => identifierAst(pat, paramName, paramName, typeFullName)
+        createLocalsForBindings(collectPatternBindings(pat)) ++ createAssignmentsForPattern(pat, mkParamIdentAst)
+      }
+      (Ast(paramNode), patternAssignmentAsts)
+    }.unzip
+
+    (selfParamAst ++ paramAsts, paramAssignmentAsts.flatten)
   }
 
   // SelfParam =
@@ -731,16 +740,6 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     )
     contextStack.declareParameter(paramNode)
     Ast(paramNode)
-  }
-
-  // Param =
-  //  Attr* (
-  //    Pat (':' Type)?
-  //  | Type
-  //  | '...'
-  //  )
-  private def visitParam(param: Param): Ast = {
-    notHandledYet(param)
   }
 
   // PathExpr =
@@ -1665,10 +1664,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   private def lowerClosureExprAsDetachedAst(closureExpr: ClosureExpr, method: NewMethod): Unit = {
-    val paramAsts = visitParamList(closureExpr.paramList)
+    val (paramAsts, paramAssignmentAsts) = lowerParamList(closureExpr.paramList)
     val bodyAst = closureExpr.expr match {
-      case blockExpr: BlockExpr => lowerFnBody(blockExpr)
-      case expr                 => Ast(blockNode(expr)).withChild(lowerReturnExpr(expr))
+      case blockExpr: BlockExpr => lowerFnBody(blockExpr, paramAssignmentAsts)
+      case expr                 => Ast(blockNode(expr)).withChildren(paramAssignmentAsts :+ lowerReturnExpr(expr))
     }
     val retTypeFullName = closureExpr.retType match {
       case None          => typeFullNameForExpr(closureExpr.expr)
