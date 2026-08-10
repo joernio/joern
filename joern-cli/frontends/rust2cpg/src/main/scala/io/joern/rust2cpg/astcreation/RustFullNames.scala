@@ -145,6 +145,10 @@ trait RustFullNames { this: AstCreator =>
     identPat.typeFullName.getOrElse(Defines.Any)
   }
 
+  protected def typeFullNameForParam(param: RustNodeSyntax.Param): String = {
+    param.typ.map(typeFullNameForType).orElse(param.pat.map(typeFullNameForPat)).getOrElse(Defines.Any)
+  }
+
   protected def typeFullNameForPat(pat: RustNodeSyntax.Pat): String = {
     // TODO(rust_ast_gen): add typeFullName to patterns.
     pat.typeFullName.getOrElse {
