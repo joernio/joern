@@ -15,7 +15,7 @@ trait AstForTypeDeclsCreator(implicit withSchemaValidation: ValidationMode) { th
   /** Creates the AST root for type declarations and acts as the entry point for method generation.
     */
   protected def astForTypeDecl(typ: RefType, namespaceBlockFullName: String): Ast = {
-    val fullName  = registerType(typ.toQuotedString)
+    val fullName  = registerType(sootTypeToString(typ))
     val shortName = typ.getSootClass.getShortJavaStyleName
     val clz       = typ.getSootClass
     val code      = new mutable.StringBuilder()
@@ -59,7 +59,7 @@ trait AstForTypeDeclsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   private def astForField(field: SootField): Ast = {
-    val typeFullName = registerType(field.getType.toQuotedString)
+    val typeFullName = registerType(sootTypeToString(field.getType))
     val name         = field.getName
     val annotations = field.getTags.asScala
       .collect { case x: VisibilityAnnotationTag => x }
@@ -69,7 +69,7 @@ trait AstForTypeDeclsCreator(implicit withSchemaValidation: ValidationMode) { th
       tag.getConstant.toString
     }
     val code =
-      if (field.getDeclaration.contains("enum")) name
+      if (field.getQuotedDeclaration.contains("enum")) name
       else {
         constantValue match {
           case Some(value) => s"$typeFullName $name = $value"
@@ -87,11 +87,11 @@ trait AstForTypeDeclsCreator(implicit withSchemaValidation: ValidationMode) { th
     */
   private def inheritedAndImplementedClasses(clazz: SootClass): (List[String], List[String]) = {
     val implementsTypeFullName = clazz.getInterfaces.asScala.map { (i: SootClass) =>
-      registerType(i.getType.toQuotedString)
+      registerType(sootTypeToString(i.getType))
     }.toList
     val inheritsFromTypeFullName =
-      if (clazz.hasSuperclass && clazz.getSuperclass.getType.toQuotedString != "java.lang.Object") {
-        List(registerType(clazz.getSuperclass.getType.toQuotedString))
+      if (clazz.hasSuperclass && sootTypeToString(clazz.getSuperclass.getType) != "java.lang.Object") {
+        List(registerType(sootTypeToString(clazz.getSuperclass.getType)))
       } else if (implementsTypeFullName.isEmpty) {
         List(registerType("java.lang.Object"))
       } else List()
