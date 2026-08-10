@@ -35,6 +35,10 @@ trait RustFullNames { this: AstCreator =>
     combineRustFullName(contextStack.rustParentFullName, name)
   }
 
+  protected def typeFullNameForStruct(struct: RustNodeSyntax.Struct): String = {
+    struct.typeFullName.getOrElse(composeRustFullName(code(struct.name)))
+  }
+
   protected def methodFullNameForCallExpr(
     callExpr: RustNodeSyntax.CallExpr,
     nameRefs: Seq[RustNodeSyntax.NameRef],

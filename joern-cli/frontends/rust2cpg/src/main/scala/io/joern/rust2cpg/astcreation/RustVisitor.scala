@@ -497,13 +497,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // 'fn' Name GenericParamList? ParamList RetType? WhereClause?
   // (body:BlockExpr | ';')
   private def visitFn(fn: Fn): Ast = {
-    val name = code(fn.name)
-    // TODO(rust_ast_gen): nested fns fullNames don't carry the outer method fn name, e.g.
-    //  crate::main::nested_fn is just crate::nested_fn. The same applies to its calls, their
-    //  methodFullName (from rust_ast_gen) is also without the outer method name.
-    val fullName =
-      if (contextStack.parentIsMethod) composeRustFullName(name)
-      else fn.methodFullName.getOrElse(composeRustFullName(name))
+    val name            = code(fn.name)
+    val fullName        = fn.methodFullName.getOrElse(composeRustFullName(name))
     val method          = methodNode(node = fn, name = name).fullName(fullName)
     val retTypeFullName = fn.retType.map(_.typ).map(typeFullNameForType).getOrElse("()")
     val methodRet       = methodReturnNode(fn, retTypeFullName)
@@ -1270,7 +1265,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //   CONSTRUCTOR <init>(&self: Foo) -> () {}
   private def lowerUnitStruct(struct: Struct): Ast = {
     val implementedTraits = struct.implementedTraits.getOrElse(Nil)
-    val structFullName    = composeRustFullName(code(struct.name))
+    val structFullName    = typeFullNameForStruct(struct)
     val inheritsFrom      = implementedTraits.map(traitFullName => s"<$structFullName as $traitFullName>")
     val typeDecl          = typeDeclForStruct(struct, inheritsFrom)
 
@@ -1291,7 +1286,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //   }
   private def lowerRecordStruct(struct: Struct, recordFieldList: RecordFieldList): Ast = {
     val implementedTraits = struct.implementedTraits.getOrElse(Nil)
-    val structFullName    = composeRustFullName(code(struct.name))
+    val structFullName    = typeFullNameForStruct(struct)
     val inheritsFrom      = implementedTraits.map(traitFullName => s"<$structFullName as $traitFullName>")
     val typeDecl          = typeDeclForStruct(struct, inheritsFrom)
 
@@ -1321,7 +1316,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // NB: tuple struct literals, e.g. `Foo(1, 2)`, are regular calls, hence the extra method.
   private def lowerTupleStruct(struct: Struct, tupleFieldList: TupleFieldList): Seq[Ast] = {
     val implementedTraits = struct.implementedTraits.getOrElse(Nil)
-    val structFullName    = composeRustFullName(code(struct.name))
+    val structFullName    = typeFullNameForStruct(struct)
     val inheritsFrom      = implementedTraits.map(traitFullName => s"<$structFullName as $traitFullName>")
     val typeDecl          = typeDeclForStruct(struct, inheritsFrom)
     val fields            = tupleStructFieldData(tupleFieldList)

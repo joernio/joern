@@ -148,7 +148,7 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     typeDeclNode(
       node = struct,
       name = name,
-      fullName = composeRustFullName(name),
+      fullName = typeFullNameForStruct(struct),
       filename = parseResult.filename,
       code = code(struct),
       astParentType = contextStack.astParentType,
