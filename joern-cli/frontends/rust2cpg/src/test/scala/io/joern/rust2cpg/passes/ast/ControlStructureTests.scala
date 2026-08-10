@@ -283,6 +283,83 @@ class ControlStructureTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "while let" should {
+    val cpg = code("""
+        |fn main() {
+        | while let Some(x) = foo() {
+        |  bar(x);
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct condition" in {
+      inside(cpg.whileBlock.condition.l) { case (condition: Unknown) :: Nil =>
+        condition.code shouldBe "Some(x)"
+      }
+    }
+
+    "have correct body" in {
+      inside(cpg.whileBlock.whenTrue.isBlock.astChildren.sortBy(_.order).l) {
+        case (tmpLocal: Local) :: (tmpAssign: Call) :: (xLocal: Local) :: (xAssign: Call) :: (body: Call) :: Nil =>
+          tmpLocal.name shouldBe "<tmp>0"
+          tmpAssign.code shouldBe "<tmp>0 = foo()"
+          xLocal.name shouldBe "x"
+          xAssign.code shouldBe "x = <tmp>0.0"
+          body.code shouldBe "bar(x)"
+      }
+    }
+
+    "have correct REF edges" in {
+      cpg.local.nameExact("x").referencingIdentifiers.lineNumber.l shouldBe List(3, 4)
+    }
+  }
+
+  "while let shadowing previous let" should {
+    val cpg = code("""
+        |fn main() {
+        | let x = 1;
+        | while let Some(x) = foo(x) {
+        |  bar(x);
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      cpg.local.nameExact("x").lineNumber.l shouldBe List(3, 4)
+    }
+
+    "have correct REF edges for each local" in {
+      cpg.local.nameExact("x").lineNumber(3).referencingIdentifiers.lineNumber.l shouldBe List(3, 4)
+      cpg.local.nameExact("x").lineNumber(4).referencingIdentifiers.lineNumber.l shouldBe List(4, 5)
+    }
+  }
+
+  "while let over record struct" should {
+    val cpg = code("""
+        |struct Foo { x: i32, y: i32 }
+        |fn main() {
+        | while let Foo { x, y } = bar() {
+        |  baz(x, y);
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct body" in {
+      inside(cpg.whileBlock.whenTrue.isBlock.astChildren.sortBy(_.order).l) {
+        case (tmpLocal: Local) :: (tmpAssign: Call) :: (xLocal: Local) :: (yLocal: Local) :: (xAssign: Call) :: (yAssign: Call) :: (body: Call) :: Nil =>
+          tmpLocal.name shouldBe "<tmp>0"
+          tmpAssign.code shouldBe "<tmp>0 = bar()"
+          xLocal.name shouldBe "x"
+          xLocal.typeFullName shouldBe "i32"
+          yLocal.name shouldBe "y"
+          yLocal.typeFullName shouldBe "i32"
+          xAssign.code shouldBe "x = <tmp>0.x"
+          yAssign.code shouldBe "y = <tmp>0.y"
+          body.code shouldBe "baz(x, y)"
+      }
+    }
+  }
+
   "a loop expression" should {
     val cpg = code("""
         |fn main() {

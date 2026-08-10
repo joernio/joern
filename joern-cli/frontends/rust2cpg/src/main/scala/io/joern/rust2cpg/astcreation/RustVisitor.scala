@@ -901,8 +901,44 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  Attr* Label? 'while' condition:Expr
   //  loop_body:BlockExpr
   private def visitWhileExpr(whileExpr: WhileExpr): Ast = {
-    val conditionAst = visitExpr(whileExpr.expr)
-    val bodyAst      = visitBlockExpr(whileExpr.blockExpr)
+    whileExpr.expr match {
+      case letExpr: LetExpr =>
+        lowerWhileLet(whileExpr, letExpr)
+      case condition =>
+        val conditionAst = visitExpr(condition)
+        val bodyAst      = visitBlockExpr(whileExpr.blockExpr)
+        whileAst(whileExpr, Some(conditionAst), Seq(bodyAst))
+    }
+  }
+
+  // `while let pat = expr { body }` becomes:
+  // WHILE (UNKNOWN) {
+  //   LOCAL tmp
+  //   tmp = expr
+  //   <createLocalsForBindings(pat)>
+  //   <createAssignmentsForPattern(pat, tmp)>
+  //   body
+  // }
+  private def lowerWhileLet(whileExpr: WhileExpr, letExpr: LetExpr): Ast = {
+    contextStack.pushBlock()
+    val tmpName       = contextStack.nextTmpName()
+    val exprAst       = visitExpr(letExpr.expr)
+    val typeFullName  = exprAst.rootType.getOrElse(Defines.Any)
+    val tmpLocalAst   = localAst(letExpr, tmpName, tmpName, typeFullName)
+    val mkTmpIdentAst = () => identifierAst(letExpr, tmpName, tmpName, typeFullName)
+    val tmpAssignAst =
+      callAst(assignmentNode(letExpr, s"$tmpName = ${code(letExpr.expr)}"), Seq(mkTmpIdentAst(), exprAst))
+
+    val localAsts   = createLocalsForBindings(collectPatternBindings(letExpr.pat))
+    val assignments = createAssignmentsForPattern(letExpr.pat, mkTmpIdentAst)
+    val bodyAsts    = visitStmtList(whileExpr.blockExpr.stmtList)
+    contextStack.pop()
+
+    val conditionAst = Ast(unknownNode(letExpr.pat, code(letExpr.pat)))
+    val bodyAst = blockAst(
+      blockNode(whileExpr.blockExpr),
+      (tmpLocalAst +: tmpAssignAst +: (localAsts ++ assignments ++ bodyAsts)).toList
+    )
     whileAst(whileExpr, Some(conditionAst), Seq(bodyAst))
   }
 
