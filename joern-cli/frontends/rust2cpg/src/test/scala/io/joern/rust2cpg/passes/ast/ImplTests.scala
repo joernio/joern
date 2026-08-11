@@ -606,6 +606,181 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "same-named structs and impls inside if branches" should {
+    val cpg = code("""
+        |trait Bar { fn do_stuff(&self) -> i32; }
+        |fn outer(something: bool) {
+        |  if something {
+        |     struct Foo;
+        |     impl Bar for Foo { fn do_stuff(&self) -> i32 { 1 } }
+        |     let x = Foo;
+        |     x.do_stuff();
+        |  } else {
+        |     struct Foo;
+        |     impl Bar for Foo { fn do_stuff(&self) -> i32 { 2 } }
+        |     let x = Foo;
+        |     x.do_stuff();
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct typeDecl fulNames" in {
+      cpg.typeDecl.name("Foo.*").fullName.sorted.l shouldBe List(
+        "<rust2cpgtest::outer::Foo#1 as rust2cpgtest::Bar>",
+        "<rust2cpgtest::outer::Foo#2 as rust2cpgtest::Bar>",
+        "rust2cpgtest::outer::Foo#1",
+        "rust2cpgtest::outer::Foo#2"
+      )
+    }
+
+    "have correct inheritsFrom" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::outer::Foo#1").inheritsFromTypeFullName.l shouldBe List(
+        "<rust2cpgtest::outer::Foo#1 as rust2cpgtest::Bar>"
+      )
+      cpg.typeDecl.fullNameExact("rust2cpgtest::outer::Foo#2").inheritsFromTypeFullName.l shouldBe List(
+        "<rust2cpgtest::outer::Foo#2 as rust2cpgtest::Bar>"
+      )
+    }
+
+    "have correct method fullNames" in {
+      cpg.method.nameExact("do_stuff").fullName.sorted.l shouldBe List(
+        "<rust2cpgtest::outer::Foo#1 as rust2cpgtest::Bar>::do_stuff",
+        "<rust2cpgtest::outer::Foo#2 as rust2cpgtest::Bar>::do_stuff",
+        "rust2cpgtest::Bar::do_stuff"
+      )
+    }
+
+    "have correct bindings" in {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::outer::Foo#1 as rust2cpgtest::Bar>").methodBinding.l) {
+        case binding :: Nil =>
+          binding.name shouldBe "do_stuff"
+          binding.signature shouldBe "rust2cpgtest::Bar"
+          binding.methodFullName shouldBe "<rust2cpgtest::outer::Foo#1 as rust2cpgtest::Bar>::do_stuff"
+      }
+
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::outer::Foo#2 as rust2cpgtest::Bar>").methodBinding.l) {
+        case binding :: Nil =>
+          binding.name shouldBe "do_stuff"
+          binding.signature shouldBe "rust2cpgtest::Bar"
+          binding.methodFullName shouldBe "<rust2cpgtest::outer::Foo#2 as rust2cpgtest::Bar>::do_stuff"
+      }
+    }
+
+    "have correct calls" in {
+      inside(cpg.call.nameExact("do_stuff").sortBy(_.lineNumber).l) { case thenCall :: elseCall :: Nil =>
+        thenCall.methodFullName shouldBe "<rust2cpgtest::outer::Foo#1 as rust2cpgtest::Bar>::do_stuff"
+        thenCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+        inside(thenCall.argument.l) { case (addressOf: Call) :: Nil =>
+          addressOf.methodFullName shouldBe Operators.addressOf
+          addressOf.code shouldBe "&x"
+          addressOf.typeFullName shouldBe "&rust2cpgtest::outer::Foo#1"
+        }
+
+        elseCall.methodFullName shouldBe "<rust2cpgtest::outer::Foo#2 as rust2cpgtest::Bar>::do_stuff"
+        elseCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+        inside(elseCall.argument.l) { case (addressOf: Call) :: Nil =>
+          addressOf.methodFullName shouldBe Operators.addressOf
+          addressOf.code shouldBe "&x"
+          addressOf.typeFullName shouldBe "&rust2cpgtest::outer::Foo#2"
+        }
+      }
+    }
+  }
+
+  "trait impls inside if branches" should {
+    val cpg = code("""
+        |trait Bar { fn do_bar(&self) -> i32; }
+        |trait Baz { fn do_baz(&self) -> i32; }
+        |fn outer(something: bool) {
+        | struct Foo;
+        | if something {
+        |   impl Bar for Foo { fn do_bar(&self) -> i32 { 1 } }
+        |   let x = Foo;
+        |   x.do_bar();
+        | } else {
+        |   impl Baz for Foo { fn do_baz(&self) -> i32 { 2 } }
+        |   let x = Foo;
+        |   x.do_baz();
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct typeDecl fulNames" in {
+      cpg.typeDecl.nameExact("Foo").fullName.sorted.l shouldBe List(
+        "<rust2cpgtest::outer::Foo as rust2cpgtest::Bar>",
+        "<rust2cpgtest::outer::Foo as rust2cpgtest::Baz>",
+        "rust2cpgtest::outer::Foo"
+      )
+    }
+
+    // TODO(rust_ast_gen): check why implementedTraits here is missing.
+    "have correct inheritsFrom" in {
+      pendingUntilFixed {
+        cpg.typeDecl.fullNameExact("rust2cpgtest::outer::Foo").inheritsFromTypeFullName.sorted.l shouldBe List(
+          "<rust2cpgtest::outer::Foo as rust2cpgtest::Bar>",
+          "<rust2cpgtest::outer::Foo as rust2cpgtest::Baz>"
+        )
+      }
+    }
+
+    // TODO(rust_ast_gen): check why these are unresolved.
+    "have correct method fullNames" in {
+      pendingUntilFixed {
+        cpg.method.name("do_ba.*").fullName.sorted.l shouldBe List(
+          "<rust2cpgtest::outer::Foo as rust2cpgtest::Bar>::do_bar",
+          "<rust2cpgtest::outer::Foo as rust2cpgtest::Baz>::do_baz",
+          "rust2cpgtest::Bar::do_bar",
+          "rust2cpgtest::Baz::do_baz"
+        )
+      }
+    }
+
+    "have correct bindings" in {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::outer::Foo as rust2cpgtest::Bar>").methodBinding.l) {
+        case binding :: Nil =>
+          binding.name shouldBe "do_bar"
+          binding.signature shouldBe "rust2cpgtest::Bar"
+          binding.methodFullName shouldBe "<rust2cpgtest::outer::Foo as rust2cpgtest::Bar>::do_bar"
+      }
+
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::outer::Foo as rust2cpgtest::Baz>").methodBinding.l) {
+        case binding :: Nil =>
+          binding.name shouldBe "do_baz"
+          binding.signature shouldBe "rust2cpgtest::Baz"
+          binding.methodFullName shouldBe "<rust2cpgtest::outer::Foo as rust2cpgtest::Baz>::do_baz"
+      }
+    }
+
+    // TODO(rust_ast_gen): check why these are unresolved.
+    "have correct calls" in {
+      inside(cpg.call.name("do_ba.*").sortBy(_.lineNumber).l) { case thenCall :: elseCall :: Nil =>
+        thenCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        elseCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+        pendingUntilFixed {
+          thenCall.methodFullName shouldBe "<rust2cpgtest::outer::Foo as rust2cpgtest::Bar>::do_bar"
+
+          inside(thenCall.argument.l) { case (addressOf: Call) :: Nil =>
+            addressOf.methodFullName shouldBe Operators.addressOf
+            addressOf.code shouldBe "&x"
+            addressOf.typeFullName shouldBe "&rust2cpgtest::outer::Foo"
+          }
+
+          elseCall.methodFullName shouldBe "<rust2cpgtest::outer::Foo as rust2cpgtest::Baz>::do_baz"
+
+          inside(elseCall.argument.l) { case (addressOf: Call) :: Nil =>
+            addressOf.methodFullName shouldBe Operators.addressOf
+            addressOf.code shouldBe "&x"
+            addressOf.typeFullName shouldBe "&rust2cpgtest::outer::Foo"
+          }
+        }
+      }
+    }
+
+  }
 }
 
 class ImplTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
