@@ -24,7 +24,7 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
   private def post(port: Int, body: String, method: String = "POST"): HttpResponse[String] = {
     val builder = HttpRequest
       .newBuilder()
-      .uri(URI.create(s"http://localhost:$port/run"))
+      .uri(URI.create(s"http://127.0.0.1:$port/run"))
       .header("Content-Type", "application/json")
 
     val req = method match {

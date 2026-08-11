@@ -40,7 +40,7 @@ case class FrontendHTTPClient(port: Int) {
     })
     HttpRequest
       .newBuilder()
-      .uri(URI.create(s"http://localhost:$port/run"))
+      .uri(URI.create(s"http://127.0.0.1:$port/run"))
       .header("Content-Type", "application/json")
       .POST(BodyPublishers.ofString(body.render()))
       .build()
