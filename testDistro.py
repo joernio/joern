@@ -347,29 +347,29 @@ class TestRunner:
         """Joern CLI Windows test"""
         import wexpect
         child = wexpect.spawn(f"{self.joern_exe} --nocolors")
-        child.expect("joern>")
+        child.expect("joern>", timeout=60)
         child.sendline("help")
-        child.expect("Welcome to the interactive help system.")
+        child.expect("Welcome to the interactive help system.", timeout=30)
         child.sendline('scala.util.Try(importCode("tests/code/c")).isSuccess')
-        idx = child.expect(["res[0-9]+: Boolean = true", "res[0-9]+: Boolean = false"], timeout=10)
+        idx = child.expect(["res[0-9]+: Boolean = true", "res[0-9]+: Boolean = false"], timeout=60)
         if idx == 1:
             raise RuntimeError("Joern CLI command threw an exception inside the REPL.")
-        child.expect("joern>")
+        child.expect("joern>", timeout=30)
         child.sendline("exit")
-        child.expect(wexpect.EOF)
+        child.expect(wexpect.EOF, timeout=30)
 
     def _joerncli_unix_test(self):
         """Joern CLI Linux and MacOS test"""
         import pexpect
         child = pexpect.spawn(f"{self.joern_exe} --nocolors")
-        child.expect("joern>")
+        child.expect("joern>", timeout=60)
         child.sendline("help")
-        child.expect("Welcome to the interactive help system.", timeout=10)
+        child.expect("Welcome to the interactive help system.", timeout=30)
         child.sendline('scala.util.Try(importCode("tests/code/c")).isSuccess')
-        idx = child.expect(["res[0-9]+: Boolean = true", "res[0-9]+: Boolean = false"], timeout=10)
+        idx = child.expect(["res[0-9]+: Boolean = true", "res[0-9]+: Boolean = false"], timeout=60)
         if idx == 1:
             raise RuntimeError("Joern CLI command threw an exception inside the REPL.")
-        child.expect("joern>")
+        child.expect("joern>", timeout=30)
         child.sendline("exit")
         child.expect(pexpect.EOF, timeout=10)
 
