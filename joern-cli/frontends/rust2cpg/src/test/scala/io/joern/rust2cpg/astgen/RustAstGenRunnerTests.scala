@@ -1,7 +1,7 @@
 package io.joern.rust2cpg.astgen
 
 import io.joern.rust2cpg.Config
-import io.shiftleft.semanticcpg.utils.FileUtil
+import io.shiftleft.semanticcpg.utils.{ExternalCommandResult, FileUtil}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -198,15 +198,16 @@ class RustAstGenRunnerTests extends AnyWordSpec with Matchers {
     "collect skipped files" in {
       FileUtil.usingTemporaryDirectory("rust2cpgTestInput") { inputDir =>
         val config = Config().withInputPath(inputDir.toString)
-        val astGenOut =
-          List(
+        val stdOut =
+          Seq(
             "garbage",
             s"Skipped: ${inputDir / "src" / "broken.rs"}",
             "  garbage ",
             s"Skipped: ${inputDir / "src" / "utils" / "mod.rs"}",
             "garbage "
           )
-        new RustAstGenRunner(config).skippedFiles(inputDir, astGenOut) shouldBe List(
+        val runResult = ExternalCommandResult(0, stdOut, Seq.empty, "", None)
+        new RustAstGenRunner(config).skippedFiles(inputDir, runResult).map(_.fileName) shouldBe List(
           (inputDir / "src" / "broken.rs").toString,
           (inputDir / "src" / "utils" / "mod.rs").toString
         )

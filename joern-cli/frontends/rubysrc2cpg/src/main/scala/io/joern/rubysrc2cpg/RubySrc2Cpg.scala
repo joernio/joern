@@ -17,7 +17,7 @@ import io.joern.x2cpg.frontendspecific.rubysrc2cpg.*
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
-import io.joern.x2cpg.utils.ConcurrentTaskUtil
+import io.joern.x2cpg.utils.{ConcurrentTaskUtil, Report}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import io.shiftleft.passes.CpgPassBase
@@ -57,6 +57,8 @@ class RubySrc2Cpg(sharedJRubyEnv: Option[JRubyEnvironment] = None) extends X2Cpg
           rubyAstGenRunner = Option(astGenRunner)
           astGenRunner.execute(tmpDir, config)
       }
+      val report = new Report()
+      astGenResult.skippedFiles.foreach(fileName => report.addSkippedFile(fileName, config.inputPath))
 
       val astCreators = ConcurrentTaskUtil
         .runUsingThreadPool(
@@ -89,6 +91,7 @@ class RubySrc2Cpg(sharedJRubyEnv: Option[JRubyEnvironment] = None) extends X2Cpg
         DependencySummarySolverPass(cpg, dependencySummary).createAndApply()
       }
       TypeNodePass.withTypesFromCpg(cpg).createAndApply()
+      report.print()
     }
 
   }

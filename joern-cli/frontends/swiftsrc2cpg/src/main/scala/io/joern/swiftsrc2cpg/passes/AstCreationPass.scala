@@ -12,7 +12,6 @@ import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
-import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.Paths
@@ -103,16 +102,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
   }
 
   override def finish(): Unit = {
-    astGenRunnerResult.skippedFiles.foreach { skippedFile =>
-      val filePath = Paths.get(skippedFile)
-      val fileLOC = Try(IOUtils.readLinesInFile(filePath)) match {
-        case Success(fileContent) => fileContent.size
-        case Failure(exception) =>
-          logger.warn(s"Failed to read file: '$filePath'", exception)
-          -1
-      }
-      report.addReportInfo(skippedFile, fileLOC)
-    }
+    astGenRunnerResult.skippedFiles.foreach(skippedFile => report.addSkippedFile(skippedFile, config.inputPath))
   }
 
   private def extractFileLocalTypesMap(

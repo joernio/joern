@@ -5,7 +5,7 @@ import io.joern.x2cpg.astgen.AstGenRunner.AstGenProgramMetaData
 import io.joern.x2cpg.utils.Environment.{ArchitectureType, OperatingSystemType}
 import io.joern.x2cpg.utils.{Environment, JoernRunfilesLocator}
 import io.joern.x2cpg.{SourceFiles, X2CpgConfig}
-import io.shiftleft.semanticcpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, ExternalCommandResult}
 import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
 
@@ -29,6 +29,14 @@ object AstGenRunner {
     */
   case class DefaultAstGenRunnerResult(parsedFiles: List[String] = List.empty, skippedFiles: List[String] = List.empty)
       extends AstGenRunnerResult
+
+  /** A source file that astgen skipped or failed to parse, as reported in the tool's output.
+    * @param fileName
+    *   the file path as reported by the tool (absolute, or relative to the input directory).
+    * @param reason
+    *   the skip/failure reason as reported by the tool.
+    */
+  case class SkippedFile(fileName: String, reason: String)
 
   /** @param name
     *   the name of the AST gen executable, e.g., goastgen, dotnetastgen, swiftastgen, etc.
@@ -63,6 +71,20 @@ object AstGenRunner {
     val resolvedVersionConfigKey: String = versionConfigKey.getOrElse(s"$configPrefix.${name}_version")
   }
 
+  /** Merges the results of multiple sequential astgen invocations (e.g. jssrc2cpg's js/vue/ejs passes) into one,
+    * concatenating both output streams and keeping the last exit code.
+    */
+  def combine(results: ExternalCommandResult*): ExternalCommandResult = {
+    require(results.nonEmpty, "cannot combine an empty sequence of results")
+    ExternalCommandResult(
+      exitCode = results.last.exitCode,
+      stdOut = results.flatMap(_.stdOut),
+      stdErr = results.flatMap(_.stdErr),
+      input = results.map(_.input).mkString("; "),
+      additionalContext = results.flatMap(_.additionalContext).reduceOption((first, second) => s"$first; $second")
+    )
+  }
+
   def isExecutableFile(filePath: String): Boolean = {
     Paths.get(filePath) match {
       case path if !Files.exists(path) =>
@@ -80,6 +102,11 @@ object AstGenRunner {
   }
 }
 
+/** Base class for running the external astgen binaries and harvesting their results.
+  *
+  * The binaries have no common output convention, so both output streams are captured separately and handed to the
+  * frontend-specific [[skippedFiles]] hook.
+  */
 abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig[?]) {
 
   import io.joern.x2cpg.astgen.AstGenRunner.*
@@ -178,9 +205,72 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
     }
   }
 
-  protected def skippedFiles(in: Path, astGenOut: List[String]): List[String]
+  /** Extracts the source files that astgen skipped or failed to parse from the captured run output.
+    *
+    * Implementations must be total functions: unrecognized lines (e.g. log noise on the parsed stream) are ignored,
+    * never thrown on. Use regex extractors rather than `substring`/`indexOf` surgery, which breaks on unexpected input.
+    */
+  protected def skippedFiles(in: Path, runResult: ExternalCommandResult): List[SkippedFile]
 
-  protected def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]]
+  /** Runs the astgen binary and returns its captured result with both output streams kept separate. Consult the stream
+    * conventions documented on [[AstGenRunner]] when implementing [[skippedFiles]].
+    */
+  protected def runAstGenNative(in: String, out: Path, exclude: String, include: String): ExternalCommandResult
+
+  /** Whether a finished run is considered successful. The default is a zero exit code; frontends whose binary has
+    * unreliable exit codes (e.g. SwiftAstGen on Windows) override this.
+    */
+  protected def isSuccess(runResult: ExternalCommandResult): Boolean = runResult.exitCode == 0
+
+  /** The astgen output files to consider for AST creation. Defaults to all `*.json` files under `out` minus the
+    * user-configured ignores. Frontends with their own filtering policy (e.g. jssrc2cpg) override this.
+    */
+  protected def astGenOutputFiles(out: Path): List[String] =
+    SourceFiles.determine(
+      out.toString,
+      Set(".json"),
+      ignoredFilesRegex = Option(config.ignoredFilesRegex),
+      ignoredFilesPath = Option(config.ignoredFiles)
+    )
+
+  /** Hook for frontend-specific post-processing of the parsed files list (e.g. jssrc2cpg's empty-result warning). */
+  protected def postProcessParsedFiles(parsedFiles: List[String], in: Path): List[String] = parsedFiles
+
+  /** Logs an unsuccessful run. Override to add frontend-specific hints (e.g. missing runtime installations). */
+  protected def logUnsuccessfulRun(runResult: ExternalCommandResult): Unit = {
+    logger.error(s"""\t- running ${metaData.name} failed with exit code ${runResult.exitCode}!
+         |\t- last stderr lines:
+         |${runResult.stdErr.takeRight(20).map(line => s"\t  $line").mkString("\n")}""".stripMargin)
+  }
+
+  /** Drives the frontend's [[skippedFiles]] hook defensively and logs each skipped file uniformly. */
+  protected final def collectSkippedFiles(in: Path, runResult: ExternalCommandResult): List[String] = {
+    val skipped = Try(skippedFiles(in, runResult)) match {
+      case Success(files) => files
+      case Failure(exception) =>
+        logger.warn(s"Unable to extract skipped files from ${metaData.name} output", exception)
+        List.empty
+    }
+    skipped.foreach(skippedFile =>
+      logger.warn(s"\t- failed to parse '${skippedFile.fileName}': '${skippedFile.reason}'")
+    )
+    skipped.map(_.fileName).distinct
+  }
+
+  /** Converts an absolute path reported by a tool into a path relative to the input directory. Handles symlinked input
+    * directories (e.g. macOS `/tmp` vs `/private/tmp`). Non-absolute or unrelated paths are returned unchanged.
+    */
+  protected def toRelativeInputPath(file: String, in: Path): String = {
+    Try {
+      val path = Paths.get(file)
+      if (!path.isAbsolute) {
+        file
+      } else {
+        val candidates = Seq(in.toAbsolutePath.normalize(), in.toFile.getCanonicalFile.toPath)
+        candidates.collectFirst { case base if path.startsWith(base) => base.relativize(path).toString }.getOrElse(file)
+      }
+    }.getOrElse(file)
+  }
 
   // Lazy so path resolution and the version probe run at most once per runner instance.
   protected lazy val astGenCommand: String = {
@@ -232,20 +322,17 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
   def execute(out: Path): AstGenRunnerResult = {
     val in = Paths.get(config.inputPath)
     logger.info(s"Running ${metaData.name} on '${config.inputPath}'")
-    runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString(), "") match {
+    val runResult = Try(runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString(), ""))
+    // The output directory is always scanned, even after a failed run: the binaries exit non-zero only on fatal
+    // errors and may still have written partial results up to that point.
+    val parsed = postProcessParsedFiles(filterFiles(astGenOutputFiles(out), out), in)
+    runResult match {
       case Success(result) =>
-        val srcFiles = SourceFiles.determine(
-          out.toString,
-          Set(".json"),
-          ignoredFilesRegex = Option(config.ignoredFilesRegex),
-          ignoredFilesPath = Option(config.ignoredFiles)
-        )
-        val parsed  = filterFiles(srcFiles, out)
-        val skipped = skippedFiles(in, result.toList)
-        DefaultAstGenRunnerResult(parsed, skipped)
-      case Failure(f) =>
-        logger.error(s"\t- running ${metaData.name} failed!", f)
-        DefaultAstGenRunnerResult()
+        if (!isSuccess(result)) logUnsuccessfulRun(result)
+        DefaultAstGenRunnerResult(parsed, collectSkippedFiles(in, result))
+      case Failure(exception) =>
+        logger.error(s"\t- running ${metaData.name} failed!", exception)
+        DefaultAstGenRunnerResult(parsed, List.empty)
     }
   }
 

@@ -49,6 +49,7 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Option(GoGlobal())) extends X
                 DownloadDependenciesPass(cpg, goMod.get, goGlobal, config).process()
                 goGlobal.processingDependencies = false
               }
+              astGenResult.skippedFiles.foreach(fileName => report.addSkippedFile(fileName, config.inputPath))
               AstCreationPass(cpg, astGenResult.parsedFiles, config, goMod.get, goGlobal, tmpDir, report)
                 .createAndApply()
               report.print()

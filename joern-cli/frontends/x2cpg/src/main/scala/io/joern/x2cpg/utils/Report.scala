@@ -1,8 +1,11 @@
 package io.joern.x2cpg.utils
 
+import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 
+import java.nio.file.Paths
 import scala.collection.concurrent.TrieMap
+import scala.util.{Failure, Success, Try}
 
 object Report {
 
@@ -87,6 +90,25 @@ class Report {
     cpgGen: Boolean = false,
     duration: Long = 0
   ): Unit = reports(fileName) = ReportEntry(loc, parsed, cpgGen, duration)
+
+  /** Records a file that the frontend did not parse (e.g. skipped or failed in astgen). The file's line count is read
+    * from disk; relative paths are resolved against `inputPath`. Unreadable files are recorded with LOC `-1`.
+    */
+  def addSkippedFile(fileName: FileName, inputPath: String): Unit = {
+    val loc = Try {
+      val path = Paths.get(fileName) match {
+        case absolute if absolute.isAbsolute => absolute
+        case relative                        => Paths.get(inputPath).resolve(relative)
+      }
+      IOUtils.readLinesInFile(path).size
+    } match {
+      case Success(loc) => loc
+      case Failure(exception) =>
+        logger.warn(s"Failed to read skipped file: '$fileName'", exception)
+        -1
+    }
+    addReportInfo(fileName, loc)
+  }
 
   def updateReport(fileName: FileName, cpg: Boolean, duration: Long): Unit =
     reports.updateWith(fileName) {

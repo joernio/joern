@@ -2,16 +2,12 @@ package io.joern.abap2cpg.parser
 
 import io.joern.abap2cpg.Config
 import io.joern.x2cpg.astgen.AstGenRunner
-import io.joern.x2cpg.astgen.AstGenRunner.AstGenProgramMetaData
-import io.shiftleft.semanticcpg.utils.ExternalCommand
-import org.slf4j.LoggerFactory
+import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, SkippedFile}
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, ExternalCommandResult}
 
 import java.nio.file.Path
-import scala.util.{Failure, Success, Try}
 
 object AbapAstGenRunner {
-  private val logger = LoggerFactory.getLogger(getClass)
-
   private object astGenMetaData extends AstGenProgramMetaData(name = "abapgen", configPrefix = "abap2cpg")
 }
 
@@ -24,19 +20,14 @@ class AbapAstGenRunner(config: Config) extends AstGenRunner(AbapAstGenRunner.ast
   // abapgen has no --version flag, so always use the bundled binary
   override def hasCompatibleAstGenVersion(compatibleVersion: String, path: Option[String]): Boolean = false
 
-  override def skippedFiles(in: Path, astGenOut: List[String]): List[String] = {
-    astGenOut.collect {
-      case line if line.startsWith("ERR ") =>
-        val filename = line.stripPrefix("ERR ").takeWhile(_ != ':')
-        logger.warn(s"\t- failed to parse '$filename'")
-        Some(filename)
-      case line =>
-        logger.debug(s"\t+ $line")
-        None
-    }.flatten
+  // abapgen writes `ERR <file>` to stdout for files it failed to parse (no reason text, no per-file success lines).
+  override def skippedFiles(in: Path, runResult: ExternalCommandResult): List[SkippedFile] = {
+    runResult.stdOut.collect { case s"ERR $rest" =>
+      SkippedFile(rest.takeWhile(_ != ':').trim, "failed to parse")
+    }.toList
   }
 
-  override def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {
-    ExternalCommand.run(Seq(astGenCommand, in, out.toString)).toTry
+  override def runAstGenNative(in: String, out: Path, exclude: String, include: String): ExternalCommandResult = {
+    ExternalCommand.run(Seq(astGenCommand, in, out.toString))
   }
 }

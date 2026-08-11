@@ -5,6 +5,7 @@ import io.joern.abap2cpg.passes.{AbapTypeInferencePass, AstCreationPass, RefEdge
 import io.joern.x2cpg.{X2Cpg, X2CpgFrontend}
 import io.joern.x2cpg.passes.base.{ContainsEdgePass, TypeEvalPass}
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
+import io.joern.x2cpg.utils.Report
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import io.shiftleft.semanticcpg.utils.FileUtil
 
@@ -19,6 +20,7 @@ class Abap2Cpg extends X2CpgFrontend {
       FileUtil.usingTemporaryDirectory("abap2cpgOut") { tmpDir =>
         MetaDataPass(cpg, Languages.ABAP, config.inputPath).createAndApply()
 
+        val report = new Report()
         val runner = new AbapAstGenRunner(config)
         val result = runner.execute(tmpDir)
 
@@ -28,9 +30,7 @@ class Abap2Cpg extends X2CpgFrontend {
         if (parsed.isEmpty) {
           logger.warn("No ABAP files were parsed. Check that the input path contains .abap files.")
         }
-        if (skipped.nonEmpty) {
-          logger.warn(s"Skipped ${skipped.size} file(s) due to parse errors.")
-        }
+        skipped.foreach(fileName => report.addSkippedFile(fileName, config.inputPath))
 
         new AstCreationPass(cpg, parsed, config).createAndApply()
         new ContainsEdgePass(cpg).createAndApply()
@@ -38,6 +38,7 @@ class Abap2Cpg extends X2CpgFrontend {
         new RefEdgePass(cpg).createAndApply()
         new AbapTypeInferencePass(cpg).createAndApply()
         new TypeEvalPass(cpg).createAndApply()
+        report.print()
       }
     }
   }

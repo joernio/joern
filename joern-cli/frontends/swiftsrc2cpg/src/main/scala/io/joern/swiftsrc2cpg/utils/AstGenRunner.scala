@@ -1,14 +1,14 @@
 package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.Config
-import io.joern.x2cpg.astgen.AstGenRunner.AstGenProgramMetaData
+import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, SkippedFile}
 import io.joern.x2cpg.utils.Environment
 import io.joern.x2cpg.utils.Environment.{ArchitectureType, OperatingSystemType}
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, ExternalCommandResult}
 import org.slf4j.LoggerFactory
 
-import java.nio.file.Path
+import java.nio.file.{Path, Paths}
 import java.util.regex.Pattern
-import scala.util.Try
 import scala.util.matching.Regex
 
 object AstGenRunner {
@@ -49,23 +49,48 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
     )
   )
 
-  override protected def skippedFiles(in: Path, astGenOut: List[String]): List[String] = {
-    val skipped = astGenOut.collect {
-      case out if !out.startsWith("Generated") =>
-        val filename = out.substring(out.indexOf(": `") + 3, out.indexOf("swift`") + 5)
-        val reason   = out.substring(out.indexOf("` ") + 2)
-        logger.warn(s"\t- failed to parse '$filename': '$reason'")
-        Option(filename)
-      case out =>
-        logger.debug(s"\t+ $out")
-        None
-    }
-    skipped.flatten
+  // SwiftAstGen writes everything to stdout: `Generated AST for file: `<path>`` on success, and (inferred from the
+  // previous substring-based parser, no reproducible failure fixture exists since SwiftSyntax tolerates most
+  // malformed input) some `<prefix>: `<path>.swift` <reason>` shape for failures.
+  private val FailureLine: Regex = """.*: `(.*?\.swift)`\s*(.*)""".r
+
+  override protected def skippedFiles(in: Path, runResult: ExternalCommandResult): List[SkippedFile] = {
+    runResult.stdOut
+      .collect {
+        case line if !line.startsWith("Generated") =>
+          line match {
+            case FailureLine(file, reason) => Some(SkippedFile(toRelativeInputPath(file, in), reason))
+            case _                         => None
+          }
+      }
+      .flatten
+      .toList
   }
 
-  override protected def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {
+  // SwiftAstGen exits non-zero on Windows even on success; only treat empty output on Windows as an actual failure.
+  override protected def isSuccess(runResult: ExternalCommandResult): Boolean = {
+    runResult.exitCode == 0 || (scala.util.Properties.isWin && runResult.stdOut.nonEmpty)
+  }
+
+  override protected def logUnsuccessfulRun(runResult: ExternalCommandResult): Unit = {
+    if (scala.util.Properties.isWin && runResult.stdOut.isEmpty && runResult.stdErr.isEmpty) {
+      logger.error("""Unable to execute SwiftAstGen!
+          |On Windows systems Swift needs to be installed.
+          |Please see: https://www.swift.org/install/windows/
+          |""".stripMargin)
+    } else {
+      super.logUnsuccessfulRun(runResult)
+    }
+  }
+
+  override protected def runAstGenNative(
+    in: String,
+    out: Path,
+    exclude: String,
+    include: String
+  ): ExternalCommandResult = {
     val excludeArgs = if (exclude.nonEmpty) Seq("--exclude-regex", exclude) else Seq.empty
-    ExternalCommand.run(Seq(astGenCommand, "-o", out.toString) ++ excludeArgs, in)
+    ExternalCommand.run(Seq(astGenCommand, "-o", out.toString) ++ excludeArgs, Option(Paths.get(in)))
   }
 
 }

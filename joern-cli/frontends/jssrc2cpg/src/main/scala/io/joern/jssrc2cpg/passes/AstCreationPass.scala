@@ -8,7 +8,6 @@ import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
 import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
-import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.Paths
@@ -36,16 +35,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
   override def generateParts(): Array[String] = astGenRunnerResult.parsedFiles.toArray
 
   override def finish(): Unit = {
-    astGenRunnerResult.skippedFiles.foreach { fileName =>
-      val filePath = Paths.get(config.inputPath, fileName)
-      val fileLOC = Try(IOUtils.readLinesInFile(filePath)) match {
-        case Success(fileContent) => fileContent.size
-        case Failure(exception) =>
-          logger.warn(s"Failed to read file: '$filePath'", exception)
-          -1
-      }
-      report.addReportInfo(fileName, fileLOC)
-    }
+    astGenRunnerResult.skippedFiles.foreach(fileName => report.addSkippedFile(fileName, config.inputPath))
   }
 
   override def runOnPart(

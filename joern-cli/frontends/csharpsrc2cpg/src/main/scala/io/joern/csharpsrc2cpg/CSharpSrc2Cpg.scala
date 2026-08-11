@@ -42,8 +42,9 @@ class CSharpSrc2Cpg extends X2CpgFrontend {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       FileUtil.usingTemporaryDirectory("csharpsrc2cpgOut") { tmpDir =>
         val astGenResult = new DotNetAstGenRunner(config).execute(tmpDir)
-        val astCreators  = CSharpSrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config)
-        val buildFiles   = findBuildFiles(config)
+        astGenResult.skippedFiles.foreach(fileName => report.addSkippedFile(fileName, config.inputPath))
+        val astCreators = CSharpSrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config)
+        val buildFiles  = findBuildFiles(config)
         val localSummary = ProgramSummaryCreator
           .from(astCreators, config)
           .addGlobalImports(ImplicitUsingsCollector.collect(buildFiles).toSet)

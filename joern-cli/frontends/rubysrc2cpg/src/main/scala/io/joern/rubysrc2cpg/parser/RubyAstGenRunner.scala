@@ -3,9 +3,15 @@ package io.joern.rubysrc2cpg.parser
 import io.joern.rubysrc2cpg.Config
 import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.{ExecutionEnvironment, JRubyEnvironment, astGenMetaData}
 import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult, DefaultAstGenRunnerResult}
+import io.joern.x2cpg.astgen.AstGenRunner.{
+  AstGenProgramMetaData,
+  AstGenRunnerResult,
+  DefaultAstGenRunnerResult,
+  SkippedFile
+}
 import io.joern.x2cpg.astgen.AstGenRunner
 import io.joern.x2cpg.utils.{Environment, JoernRunfilesLocator}
+import io.shiftleft.semanticcpg.utils.ExternalCommandResult
 import org.jruby.RubyInstanceConfig
 import org.jruby.embed.{LocalContextScope, LocalVariableBehavior, PathType, ScriptingContainer}
 import org.slf4j.LoggerFactory
@@ -52,43 +58,38 @@ class RubyAstGenRunner(config: Config, sharedJRubyEnv: Option[JRubyEnvironment] 
     config.defaultIgnoredFilesRegex.exists(_.matches(filePath))
   }
 
-  override def skippedFiles(in: Path, astGenOut: List[String]): List[String] = {
+  // ruby_ast_gen's JRuby driver logs `[INFO]/[WARN]/[ERR]` lines across both streams; diagnostics for a file may
+  // arrive without the filename repeated, so we associate them with the most recently seen file.
+  override def skippedFiles(in: Path, runResult: ExternalCommandResult): List[SkippedFile] = {
     val diagnosticMap = mutable.LinkedHashMap.empty[String, Seq[String]]
 
-    def addReason(reason: String, lastFile: Option[String] = None) = {
-      val key = lastFile.getOrElse(diagnosticMap.last._1)
-      diagnosticMap.updateWith(key) {
-        case Some(x) => Option(x :+ reason)
-        case None    => Option(reason :: Nil)
+    def addReason(reason: String, lastFile: Option[String] = None): Unit = {
+      val key = lastFile.orElse(diagnosticMap.lastOption.map(_._1))
+      key.foreach { resolvedKey =>
+        diagnosticMap.updateWith(resolvedKey) {
+          case Some(existing) => Some(existing :+ reason)
+          case None           => Some(List(reason))
+        }
       }
     }
 
-    astGenOut.map(_.strip()).foreach {
+    (runResult.stdOut ++ runResult.stdErr).map(_.strip()).foreach {
       case s"[WARN] $reason - $fileName"  => addReason(reason, Option(fileName))
       case s"[ERR] '$fileName' - $reason" => addReason(reason, Option(fileName))
       case s"[ERR] Failed to parse $fileName: $reason" =>
         addReason(s"Failed to parse: $reason", Option(fileName))
       case s"[INFO] Processed: $fileName -> $_" => diagnosticMap.put(fileName, Nil)
-      case s"[INFO] Excluding: $fileName"       => addReason("Skipped", Option(fileName))
+      case s"[INFO] Excluding: $fileName"       => addReason("excluded by file filter", Option(fileName))
       case _                                    => // ignore
     }
 
-    diagnosticMap.flatMap {
-      case (filename, Nil) =>
-        logger.debug(s"Successfully parsed '$filename'")
-        None
-      case (filename, "Skipped" :: Nil) =>
-        logger.debug(s"Skipped '$filename' due to file filter")
-        Option(filename)
-      case (filename, diagnostics) =>
-        logger.warn(
-          s"Parsed '$filename' with the following diagnostics:\n${diagnostics.map(x => s" - $x").mkString("\n")}"
-        )
-        Option(filename)
+    diagnosticMap.collect {
+      case (filename, diagnostics) if diagnostics.nonEmpty =>
+        SkippedFile(filename, diagnostics.mkString("; "))
     }.toList
   }
 
-  override def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {
+  override def runAstGenNative(in: String, out: Path, exclude: String, include: String): ExternalCommandResult = {
     val scriptTarget = Files.createTempFile("ruby_driver", ".rb")
     try {
       // We use the URI format as this is the best in terms of language agnostic importing
@@ -120,8 +121,6 @@ class RubyAstGenRunner(config: Config, sharedJRubyEnv: Option[JRubyEnvironment] 
       // as we expect that this may be called by multiple threads.
       Files.writeString(scriptTarget, mainScript, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)
       executeWithJRuby(scriptTarget)
-    } catch {
-      case tempPathException: Exception => Failure(tempPathException)
     } finally {
       scriptTarget.toFile.delete()
     }
@@ -159,31 +158,36 @@ class RubyAstGenRunner(config: Config, sharedJRubyEnv: Option[JRubyEnvironment] 
         ""
       }
 
-    runAstGenNative(specifiedConfig.inputPath, out, combineIgnoreRegex, "") match {
+    val runResult = Try(runAstGenNative(specifiedConfig.inputPath, out, combineIgnoreRegex, ""))
+    val srcFiles = SourceFiles.determine(
+      out.toString(),
+      Set(".json"),
+      ignoredDefaultRegex = Option(specifiedConfig.defaultIgnoredFilesRegex),
+      ignoredFilesRegex = Option(specifiedConfig.ignoredFilesRegex),
+      ignoredFilesPath = Option(specifiedConfig.ignoredFiles)
+    )
+    val parsed = filterFiles(srcFiles, out)
+    runResult match {
       case Success(result) =>
-        val srcFiles = SourceFiles.determine(
-          out.toString(),
-          Set(".json"),
-          ignoredDefaultRegex = Option(specifiedConfig.defaultIgnoredFilesRegex),
-          ignoredFilesRegex = Option(specifiedConfig.ignoredFilesRegex),
-          ignoredFilesPath = Option(specifiedConfig.ignoredFiles)
-        )
-        val parsed  = filterFiles(srcFiles, out)
-        val skipped = skippedFiles(in, result.toList)
-        DefaultAstGenRunnerResult(parsed, skipped)
-      case Failure(f) =>
-        logger.error(s"\t- running ${astGenMetaData.name} failed!", f)
-        DefaultAstGenRunnerResult()
+        if (!isSuccess(result)) logUnsuccessfulRun(result)
+        DefaultAstGenRunnerResult(parsed, collectSkippedFiles(in, result))
+      case Failure(exception) =>
+        logger.error(s"\t- running ${astGenMetaData.name} failed!", exception)
+        DefaultAstGenRunnerResult(parsed, List.empty)
     }
   }
 
-  private def executeWithJRuby(script: Path): Try[Seq[String]] = {
+  private def executeWithJRuby(script: Path): ExternalCommandResult = {
     Using.resources(new ByteArrayOutputStream(), new ByteArrayOutputStream()) { (outStream, errStream) =>
       container.setOutput(new PrintStream(outStream))
       container.setError(new PrintStream(errStream))
-      Try {
-        container.runScriptlet(PathType.ABSOLUTE, script.toString)
-        (outStream.toString.split("\n").toIndexedSeq ++ errStream.toString.split("\n")).filterNot(_.isBlank)
+      val runResult   = Try(container.runScriptlet(PathType.ABSOLUTE, script.toString))
+      val stdOutLines = outStream.toString.split("\n").toIndexedSeq.filterNot(_.isBlank)
+      val stdErrLines = errStream.toString.split("\n").toIndexedSeq.filterNot(_.isBlank)
+      runResult match {
+        case Success(_) => ExternalCommandResult(0, stdOutLines, stdErrLines, script.toString, None)
+        case Failure(exception) =>
+          ExternalCommandResult(1, stdOutLines, stdErrLines :+ exception.getMessage, script.toString, None)
       }
     }
   }

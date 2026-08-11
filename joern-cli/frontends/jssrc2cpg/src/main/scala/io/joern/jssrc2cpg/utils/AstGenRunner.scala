@@ -3,9 +3,9 @@ package io.joern.jssrc2cpg.utils
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.preprocessing.EjsPreprocessor
 import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, DefaultAstGenRunnerResult}
+import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, SkippedFile}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
-import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, ExternalCommandResult, FileUtil}
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 
@@ -106,23 +106,12 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
     tsArgs ++ ignoredFilesRegex ++ ignoreFileArgs
   }
 
-  override protected def skippedFiles(in: Path, astGenOut: List[String]): List[String] = {
-    val skipped = astGenOut.collect {
-      case out if out.startsWith("Parsing") =>
-        val filename = out.substring(out.indexOf(" ") + 1, out.indexOf(":") - 1)
-        val reason   = out.substring(out.indexOf(":") + 2)
-        logger.warn(s"\t- failed to parse '$filename': '$reason'")
-        Option(filename)
-      case out if !out.startsWith("Converted") && !out.startsWith("Retrieving") =>
-        val filename = out.substring(0, out.indexOf(" "))
-        val reason   = out.substring(out.indexOf(" ") + 1)
-        logger.warn(s"\t- failed to parse '$filename': '$reason'")
-        Option(filename)
-      case out =>
-        logger.debug(s"\t+ $out")
-        None
-    }
-    skipped.flatten
+  // astgen writes skip/failure diagnostics to stderr as `Parsing <abs file> : <reason>`; stdout only ever carries
+  // success/progress lines (`Converted ...`, `Retrieving ...`).
+  override protected def skippedFiles(in: Path, runResult: ExternalCommandResult): List[SkippedFile] = {
+    runResult.stdErr.collect { case s"Parsing $file : $reason" =>
+      SkippedFile(toRelativeInputPath(file, in), reason)
+    }.toList
   }
 
   override protected def fileFilter(file: String, out: Path): Boolean = {
@@ -222,7 +211,7 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
     else file
   }
 
-  private def processEjsFiles(in: Path, out: Path, ejsFiles: List[String]): Try[Seq[String]] = {
+  private def processEjsFiles(in: Path, out: Path, ejsFiles: List[String]): ExternalCommandResult = {
     val tmpJsFiles = ejsFiles.flatMap { ejsFilePath =>
       val ejsFile             = Paths.get(ejsFilePath)
       val maybeTranspiledFile = Paths.get(s"${ejsFilePath.stripSuffix(".ejs")}.js")
@@ -262,10 +251,12 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
     }
 
     tmpJsFiles.foreach(FileUtil.delete(_))
-    result.toTry
+    result
   }
 
-  private def ejsFiles(in: Path, out: Path): Try[Seq[String]] = {
+  // Note: this sub-run's workingDir is `out` (it scans the temp preprocessed files it just wrote there), so any
+  // skip/failure lines it produces reference paths under `out`, not `in`.
+  private def ejsFiles(in: Path, out: Path): ExternalCommandResult = {
     val files =
       SourceFiles.determine(
         in.toString,
@@ -274,11 +265,10 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
         ignoredFilesRegex = Some(config.ignoredFilesRegex),
         ignoredFilesPath = Some(config.ignoredFiles)
       )
-    if (files.nonEmpty) processEjsFiles(in, out, files)
-    else Success(Seq.empty)
+    if (files.nonEmpty) processEjsFiles(in, out, files) else ExternalCommandResult(0, Seq.empty, Seq.empty, "", None)
   }
 
-  private def vueFiles(in: Path, out: Path): Try[Seq[String]] = {
+  private def vueFiles(in: Path, out: Path): ExternalCommandResult = {
     val files = SourceFiles.determine(
       in.toString,
       Set(".vue"),
@@ -289,49 +279,46 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
     if (files.nonEmpty) {
       ExternalCommand
         .run((astGenCommand +: executableArgs) ++ Seq("-t", "vue", "-o", out.toString), workingDir = Option(in))
-        .toTry
     } else {
-      Success(Seq.empty)
+      ExternalCommandResult(0, Seq.empty, Seq.empty, "", None)
     }
   }
 
-  private def jsFiles(in: Path, out: Path): Try[Seq[String]] = {
+  private def jsFiles(in: Path, out: Path): ExternalCommandResult = {
     ExternalCommand
       .run((astGenCommand +: executableArgs) ++ Seq("-t", "ts", "-o", out.toString), workingDir = Option(in))
-      .toTry
   }
 
-  override protected def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {
-    val inPath = Paths.get(in)
-    for {
-      ejsResult <- ejsFiles(inPath, out)
-      vueResult <- vueFiles(inPath, out)
-      jsResult  <- jsFiles(inPath, out)
-    } yield jsResult ++ vueResult ++ ejsResult
+  override protected def runAstGenNative(
+    in: String,
+    out: Path,
+    exclude: String,
+    include: String
+  ): ExternalCommandResult = {
+    val inPath    = Paths.get(in)
+    val ejsResult = ejsFiles(inPath, out)
+    if (!isSuccess(ejsResult)) {
+      ejsResult
+    } else {
+      val vueResult = vueFiles(inPath, out)
+      if (!isSuccess(vueResult)) {
+        io.joern.x2cpg.astgen.AstGenRunner.combine(ejsResult, vueResult)
+      } else {
+        val jsResult = jsFiles(inPath, out)
+        io.joern.x2cpg.astgen.AstGenRunner.combine(ejsResult, vueResult, jsResult)
+      }
+    }
   }
 
-  private def checkParsedFiles(files: List[String], in: Path): List[String] = {
-    val numOfParsedFiles = files.size
-    logger.info(s"Parsed $numOfParsedFiles files.")
-    if (numOfParsedFiles == 0) {
+  override protected def astGenOutputFiles(out: Path): List[String] = SourceFiles.determine(out.toString, Set(".json"))
+
+  override protected def postProcessParsedFiles(parsedFiles: List[String], in: Path): List[String] = {
+    logger.info(s"Parsed ${parsedFiles.size} files.")
+    if (parsedFiles.isEmpty) {
       logger.warn("You may want to check the DEBUG logs for a list of files that are ignored by default.")
       SourceFiles.determine(in.toString, SourceFileExtensions, ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex))
     }
-    files
-  }
-
-  override def execute(out: Path): DefaultAstGenRunnerResult = {
-    val in = Paths.get(config.inputPath)
-    runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString(), "") match {
-      case Success(result) =>
-        val parsed  = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString, Set(".json")), out), in)
-        val skipped = skippedFiles(in, result.toList)
-        DefaultAstGenRunnerResult(parsed, skipped)
-      case Failure(f) =>
-        logger.error("\t- running astgen failed!", f)
-        val parsed = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString, Set(".json")), out), in)
-        DefaultAstGenRunnerResult(parsed, List.empty)
-    }
+    parsedFiles
   }
 
 }

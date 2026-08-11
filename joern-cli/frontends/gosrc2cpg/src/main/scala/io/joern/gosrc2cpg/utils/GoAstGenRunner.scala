@@ -2,14 +2,14 @@ package io.joern.gosrc2cpg.utils
 
 import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
 import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult}
+import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult, SkippedFile}
 import io.joern.x2cpg.astgen
 import io.joern.x2cpg.astgen.AstGenRunner
 import io.joern.x2cpg.utils.Environment.ArchitectureType
 import io.joern.x2cpg.utils.Environment.OperatingSystemType
 import io.joern.x2cpg.utils.Environment
 import io.shiftleft.semanticcpg.utils.FileUtil.*
-import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, ExternalCommandResult, FileUtil}
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Path, Paths}
@@ -45,18 +45,15 @@ class GoAstGenRunner(config: Config, includeFileRegex: String = "")
     Environment.OperatingSystemType.Mac     -> Environment.ArchitectureType.ARMv8
   )
 
-  override def skippedFiles(in: Path, astGenOut: List[String]): List[String] = {
-    val skipped = astGenOut.collect {
-      case out if !out.startsWith("Converted") =>
-        val filename = out.substring(0, out.indexOf(" "))
-        val reason   = out.substring(out.indexOf(" ") + 1)
-        logger.warn(s"\t- failed to parse '${in / filename}': '$reason'")
-        Option(filename)
-      case out =>
-        logger.debug(s"\t+ $out")
-        None
-    }
-    skipped.flatten
+  // goastgen writes both success and failure lines to stdout (`Converted AST for ...` / `Failed to generate AST for
+  // <file> `); per-file diagnostics (`[ERROR] ...`) go to stderr but aren't reliably correlatable to a single file.
+  override def skippedFiles(in: Path, runResult: ExternalCommandResult): List[SkippedFile] = {
+    runResult.stdOut
+      .map(_.trim)
+      .collect { case s"Failed to generate AST for $filename" =>
+        SkippedFile(toRelativeInputPath(filename.trim, in), "failed to generate AST (see stderr for details)")
+      }
+      .toList
   }
 
   override def fileFilter(file: String, out: Path): Boolean = {
@@ -76,32 +73,26 @@ class GoAstGenRunner(config: Config, includeFileRegex: String = "")
     }
   }
 
-  override def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {
+  override def runAstGenNative(in: String, out: Path, exclude: String, include: String): ExternalCommandResult = {
     val excludeCommand = if (exclude.isEmpty) Seq.empty else Seq("-exclude", exclude)
     val includeCommand = if (include.isEmpty) Seq.empty else Seq("-include-packages", include)
-    ExternalCommand
-      .run((astGenCommand +: excludeCommand) ++ includeCommand ++ Seq("-out", out.toString, in))
-      .toTry
+    ExternalCommand.run((astGenCommand +: excludeCommand) ++ includeCommand ++ Seq("-out", out.toString, in))
   }
 
   def executeForGo(out: Path): List[GoAstGenRunnerResult] = {
     val in = Paths.get(config.inputPath)
     logger.info(s"Running goastgen in '$config.inputPath' ...")
-    runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString(), includeFileRegex) match {
+    val runResult = Try(runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString(), includeFileRegex))
+    val srcFiles  = astGenOutputFiles(out)
+    val parsedModFile = filterModFile(srcFiles, out)
+    val parsed        = filterFiles(srcFiles, out)
+    runResult match {
       case Success(result) =>
-        val srcFiles = SourceFiles.determine(
-          out.toString,
-          Set(".json"),
-          ignoredFilesRegex = Option(config.ignoredFilesRegex),
-          ignoredFilesPath = Option(config.ignoredFiles)
-        )
-        val parsedModFile = filterModFile(srcFiles, out)
-        val parsed        = filterFiles(srcFiles, out)
-        val skipped       = skippedFiles(in, result.toList)
-        segregateByModule(config.inputPath, out.toString, parsedModFile, parsed, skipped)
-      case Failure(f) =>
-        logger.error("\t- running astgen failed!", f)
-        List()
+        if (!isSuccess(result)) logUnsuccessfulRun(result)
+        segregateByModule(config.inputPath, out.toString, parsedModFile, parsed, collectSkippedFiles(in, result))
+      case Failure(exception) =>
+        logger.error("\t- running goastgen failed!", exception)
+        segregateByModule(config.inputPath, out.toString, parsedModFile, parsed, List.empty)
     }
   }
 
