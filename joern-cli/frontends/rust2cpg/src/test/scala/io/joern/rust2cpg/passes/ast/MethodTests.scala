@@ -191,6 +191,111 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "reference pattern parameter" should {
+    val cpg = code("""
+        |fn f(&x: &i32) {}
+        |""".stripMargin)
+
+    "have correct parameter" in {
+      inside(cpg.method.nameExact("f").parameter.l) { case (param: MethodParameterIn) :: Nil =>
+        param.name shouldBe "<tmp>0"
+        param.code shouldBe "&x: &i32"
+        param.index shouldBe 1
+        param.typeFullName shouldBe "&i32"
+      }
+    }
+
+    "have correct locals" in {
+      inside(cpg.method.nameExact("f").block.local.l) { case xLocal :: Nil =>
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct assignments" in {
+      inside(cpg.method.nameExact("f").block.astChildren.isCall.l) { case xAssign :: Nil =>
+        xAssign.code shouldBe "x = *<tmp>0"
+        inside(xAssign.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "x"
+          lhs.typeFullName shouldBe "i32"
+          rhs.methodFullName shouldBe Operators.indirection
+          rhs.code shouldBe "*<tmp>0"
+          rhs.typeFullName shouldBe "i32"
+        }
+      }
+    }
+  }
+
+  "ref parameter" should {
+    val cpg = code("""
+        |fn f(ref x: i32) {}
+        |""".stripMargin)
+
+    "have correct parameter" in {
+      inside(cpg.method.nameExact("f").parameter.l) { case (param: MethodParameterIn) :: Nil =>
+        param.name shouldBe "<tmp>0"
+        param.code shouldBe "ref x: i32"
+        param.index shouldBe 1
+        param.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct locals" in {
+      inside(cpg.method.nameExact("f").block.local.l) { case xLocal :: Nil =>
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "&i32"
+      }
+    }
+
+    "have correct assignments" in {
+      inside(cpg.method.nameExact("f").block.astChildren.isCall.l) { case xAssign :: Nil =>
+        xAssign.code shouldBe "x = &<tmp>0"
+        inside(xAssign.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "x"
+          lhs.typeFullName shouldBe "&i32"
+          rhs.methodFullName shouldBe Operators.addressOf
+          rhs.code shouldBe "&<tmp>0"
+          rhs.typeFullName shouldBe "&i32"
+        }
+      }
+    }
+  }
+
+  "ref mut parameter" should {
+    val cpg = code("""
+        |fn f(ref mut x: i32) {}
+        |""".stripMargin)
+
+    "have correct parameter" in {
+      inside(cpg.method.nameExact("f").parameter.l) { case (param: MethodParameterIn) :: Nil =>
+        param.name shouldBe "<tmp>0"
+        param.code shouldBe "ref mut x: i32"
+        param.index shouldBe 1
+        param.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct locals" in {
+      inside(cpg.method.nameExact("f").block.local.l) { case xLocal :: Nil =>
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "&mut i32"
+      }
+    }
+
+    "have correct assignments" in {
+      inside(cpg.method.nameExact("f").block.astChildren.isCall.l) { case xAssign :: Nil =>
+        xAssign.code shouldBe "x = &<tmp>0"
+        inside(xAssign.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "x"
+          lhs.typeFullName shouldBe "&mut i32"
+          rhs.methodFullName shouldBe Operators.addressOf
+          rhs.code shouldBe "&<tmp>0"
+          rhs.typeFullName shouldBe "&mut i32"
+        }
+      }
+    }
+  }
+
   "wildcard parameter" should {
     val cpg = code("fn f(_: i32) {}")
 
