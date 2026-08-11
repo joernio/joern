@@ -348,6 +348,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       case tupleStructPat: TupleStructPat => createAssignmentsForTupleStructPattern(tupleStructPat, mkSourceAst)
       case wildcardPat: WildcardPat       => Nil
       case literalPat: LiteralPat         => Nil
+      case refPat: RefPat                 => createAssignmentsForRefPattern(refPat, mkSourceAst)
       case _                              => notHandledYet(pat) :: Nil
     }
   }
@@ -428,12 +429,29 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         val lhsName      = code(identToken)
         val typeFullName = typeFullNameForIdentPat(identPat)
         val identAst     = identifierAst(identToken, lhsName, lhsName, typeFullName)
-        val sourceAst    = mkSourceAst()
-        val assignCode   = codeOverride.getOrElse(s"$lhsName = ${sourceAst.rootCodeOrEmpty}")
-        val assignAst    = callAst(assignmentNode(identToken, assignCode), Seq(identAst, sourceAst))
+        val hasRef       = identPat.refKwToken.isDefined
+        val rhsAst = if (hasRef) {
+          val sourceAst = mkSourceAst()
+          val refCode   = s"&${sourceAst.rootCodeOrEmpty}"
+          callAst(operatorCallNode(identPat, refCode, Operators.addressOf, Some(typeFullName)), Seq(sourceAst))
+        } else {
+          mkSourceAst()
+        }
+        val assignCode = codeOverride.getOrElse(s"$lhsName = ${rhsAst.rootCodeOrEmpty}")
+        val assignAst  = callAst(assignmentNode(identToken, assignCode), Seq(identAst, rhsAst))
         assignAst +: identPat.pat.toList.flatMap(createAssignmentsForPattern(_, mkSourceAst))
       case None => notHandledYet(identPat) :: Nil
     }
+  }
+
+  private def createAssignmentsForRefPattern(refPat: RefPat, mkSourceAst: () => Ast): Seq[Ast] = {
+    def mkIndirection(): Ast = {
+      val sourceAst    = mkSourceAst()
+      val derefCode    = s"*${sourceAst.rootCodeOrEmpty}"
+      val typeFullName = typeFullNameForPat(refPat.pat)
+      callAst(operatorCallNode(refPat.pat, derefCode, Operators.indirection, Some(typeFullName)), Seq(sourceAst))
+    }
+    createAssignmentsForPattern(refPat.pat, mkIndirection)
   }
 
   private def collectPatternBindings(pat: Pat): Seq[(IdentToken, String)] = pat match {
@@ -698,8 +716,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val selfParamAst = paramList.selfParam.map(visitSelfParam).toList
     val (paramAsts, paramAssignmentAsts) = paramList.param.zipWithIndex.map { case (param, paramIdx) =>
       val (paramName, paramPattern) = param.pat match {
-        case Some(identPat: IdentPat) => (code(identPat.name), identPat.pat)
-        case pat                      => (contextStack.nextTmpName(), pat)
+        case Some(identPat: IdentPat) if identPat.refKwToken.isEmpty => (code(identPat.name), identPat.pat)
+        case pat                                                     => (contextStack.nextTmpName(), pat)
       }
       val typeFullName = typeFullNameForParam(param)
       val paramNode = parameterInNode(

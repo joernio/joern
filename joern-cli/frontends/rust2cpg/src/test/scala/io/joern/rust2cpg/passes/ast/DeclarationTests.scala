@@ -1152,6 +1152,137 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "let &x" should {
+    val cpg = code("""
+        |fn main() {
+        | let &x = &1;
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.method.nameExact("main").block.local.l) { case xLocal :: Nil =>
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct assignments" in {
+      inside(cpg.method.nameExact("main").block.assignment.l) { case xAssign :: Nil =>
+        xAssign.code shouldBe "x = *&1"
+        inside(xAssign.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "x"
+          lhs.typeFullName shouldBe "i32"
+          rhs.methodFullName shouldBe Operators.indirection
+          rhs.typeFullName shouldBe "i32"
+          inside(rhs.argument.l) { case (addressOf: Call) :: Nil =>
+            addressOf.methodFullName shouldBe Operators.addressOf
+            addressOf.code shouldBe "&1"
+          }
+        }
+      }
+    }
+  }
+
+  "let (a, &b)" should {
+    val cpg = code("""
+        |fn main() {
+        | let (a, &b) = (1, &2);
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.method.nameExact("main").block.local.l) { case tmpLocal :: aLocal :: bLocal :: Nil =>
+        tmpLocal.name shouldBe "<tmp>0"
+        tmpLocal.typeFullName shouldBe "(i32, &i32)"
+
+        aLocal.name shouldBe "a"
+        aLocal.typeFullName shouldBe "i32"
+
+        bLocal.name shouldBe "b"
+        bLocal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct assignments" in {
+      inside(cpg.method.nameExact("main").block.assignment.l) { case tmpAssign :: aAssign :: bAssign :: Nil =>
+        tmpAssign.code shouldBe "<tmp>0 = (1, &2)"
+        aAssign.code shouldBe "a = <tmp>0.0"
+        bAssign.code shouldBe "b = *<tmp>0.1"
+
+        inside(bAssign.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "b"
+          lhs.typeFullName shouldBe "i32"
+          rhs.methodFullName shouldBe Operators.indirection
+          rhs.typeFullName shouldBe "i32"
+          inside(rhs.argument.l) { case (fieldAccess: Call) :: Nil =>
+            fieldAccess.methodFullName shouldBe Operators.fieldAccess
+            fieldAccess.code shouldBe "<tmp>0.1"
+          }
+        }
+      }
+    }
+  }
+
+  "let ref" should {
+    val cpg = code("""
+        |fn main() {
+        | let ref x = 1;
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.method.nameExact("main").block.local.l) { case xLocal :: Nil =>
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "&i32"
+      }
+    }
+
+    "have correct assignments" in {
+      inside(cpg.method.nameExact("main").block.assignment.l) { case xAssign :: Nil =>
+        xAssign.code shouldBe "let ref x = 1;"
+        inside(xAssign.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "x"
+          lhs.typeFullName shouldBe "&i32"
+          rhs.methodFullName shouldBe Operators.addressOf
+          rhs.code shouldBe "&1"
+          rhs.typeFullName shouldBe "&i32"
+          inside(rhs.argument.l) { case (lit: Literal) :: Nil =>
+            lit.code shouldBe "1"
+            lit.typeFullName shouldBe "i32"
+          }
+        }
+      }
+    }
+  }
+
+  "let ref mut" should {
+    val cpg = code("""
+        |fn main() {
+        | let ref mut x = 1;
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.method.nameExact("main").block.local.l) { case xLocal :: Nil =>
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "&mut i32"
+      }
+    }
+
+    "have correct assignments" in {
+      inside(cpg.method.nameExact("main").block.assignment.l) { case xAssign :: Nil =>
+        xAssign.code shouldBe "let ref mut x = 1;"
+        inside(xAssign.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "x"
+          lhs.typeFullName shouldBe "&mut i32"
+          rhs.methodFullName shouldBe Operators.addressOf
+          rhs.code shouldBe "&1"
+          rhs.typeFullName shouldBe "&mut i32"
+        }
+      }
+    }
+  }
+
   "let to a function" should {
     val cpg = code("""
         |fn handler(x: i64) -> i64 { x }
