@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.passes
 
 import flatgraph.DiffGraphApplier
 import io.joern.rubysrc2cpg.astcreation.AstCreator
+import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
@@ -9,7 +10,8 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 
-class AstCreationPass(cpg: Cpg, astCreators: List[AstCreator]) extends ForkJoinParallelCpgPass[AstCreator](cpg) {
+class AstCreationPass(cpg: Cpg, astCreators: List[AstCreator], report: Report = new Report())
+    extends ForkJoinParallelCpgPass[AstCreator](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -36,12 +38,17 @@ class AstCreationPass(cpg: Cpg, astCreators: List[AstCreator]) extends ForkJoinP
   }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, astCreator: AstCreator): Unit = {
-    try {
-      val ast = astCreator.createAst()
-      diffGraph.absorb(ast)
-    } catch {
-      case ex: Exception =>
-        logger.error(s"Error while processing AST for file - ${astCreator.fileName} - ", ex)
+    val (gotCpg, duration) = TimeUtils.time {
+      try {
+        val ast = astCreator.createAst()
+        diffGraph.absorb(ast)
+        true
+      } catch {
+        case ex: Exception =>
+          logger.error(s"Error while processing AST for file - ${astCreator.fileName} - ", ex)
+          false
+      }
     }
+    report.updateReport(astCreator.fileName, cpg = gotCpg, duration)
   }
 }

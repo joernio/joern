@@ -21,10 +21,10 @@ class Rust2Cpg extends X2CpgFrontend {
       FileUtil.usingTemporaryDirectory("rust2cpgOut") { tmpDir =>
         val report       = new Report()
         val astGenResult = new RustAstGenRunner(config).execute(tmpDir)
-        astGenResult.skippedFiles.foreach(fileName => report.addSkippedFile(fileName, config.inputPath))
+        astGenResult.skippedFiles.foreach(report.addSkippedFile)
         val hash = HashUtil.sha256(astGenResult.parsedFiles.map(Paths.get(_)))
         new MetaDataPass(cpg, Languages.RUST, config.inputPath, Option(hash)).createAndApply()
-        new AstCreationPass(cpg, astGenResult.parsedFiles, config)(config.schemaValidation).createAndApply()
+        new AstCreationPass(cpg, astGenResult.parsedFiles, config, report)(config.schemaValidation).createAndApply()
         new RustTypeNodePass(cpg).createAndApply()
         new RustConfigFileCreationPass(cpg, config).createAndApply()
         report.print()

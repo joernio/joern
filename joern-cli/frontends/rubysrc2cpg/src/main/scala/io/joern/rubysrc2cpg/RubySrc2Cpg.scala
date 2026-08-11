@@ -58,11 +58,12 @@ class RubySrc2Cpg(sharedJRubyEnv: Option[JRubyEnvironment] = None) extends X2Cpg
           astGenRunner.execute(tmpDir, config)
       }
       val report = new Report()
-      astGenResult.skippedFiles.foreach(fileName => report.addSkippedFile(fileName, config.inputPath))
+      astGenResult.skippedFiles.foreach(report.addSkippedFile)
 
       val astCreators = ConcurrentTaskUtil
         .runUsingThreadPool(
-          RubySrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config, cpg.metaData.root.headOption)
+          RubySrc2Cpg
+            .processAstGenRunnerResults(astGenResult.parsedFiles, config, cpg.metaData.root.headOption, report)
         )
         .flatMap {
           case Failure(exception)  => logger.warn(s"Unable to parse Ruby file, skipping -", exception); None
@@ -86,7 +87,7 @@ class RubySrc2Cpg(sharedJRubyEnv: Option[JRubyEnvironment] = None) extends X2Cpg
 
       val programSummary = internalProgramSummary ++= dependencySummary
 
-      AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary))).createAndApply()
+      AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary)), report).createAndApply()
       if (config.downloadDependencies) {
         DependencySummarySolverPass(cpg, dependencySummary).createAndApply()
       }
@@ -119,13 +120,15 @@ object RubySrc2Cpg {
   def processAstGenRunnerResults(
     astFiles: List[String],
     config: Config,
-    projectRoot: Option[String]
+    projectRoot: Option[String],
+    report: Report = new Report()
   ): Iterator[() => AstCreator] = {
     astFiles.map { fileName => () =>
       val parserResult   = RubyJsonParser.readFile(Paths.get(fileName))
       val rubyProgram    = new RubyJsonToNodeCreator(fileName = fileName).visitProgram(parserResult.json)
       val sourceFileName = parserResult.fullPath
       val fileContent    = new String(Files.readAllBytes(Paths.get(sourceFileName)), Charset.defaultCharset())
+      report.addReportInfo(sourceFileName, fileContent.linesIterator.size, parsed = true)
       new AstCreator(
         sourceFileName,
         projectRoot,

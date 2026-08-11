@@ -102,7 +102,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
   }
 
   override def finish(): Unit = {
-    astGenRunnerResult.skippedFiles.foreach(skippedFile => report.addSkippedFile(skippedFile, config.inputPath))
+    astGenRunnerResult.skippedFiles.foreach(report.addSkippedFile)
   }
 
   private def extractFileLocalTypesMap(

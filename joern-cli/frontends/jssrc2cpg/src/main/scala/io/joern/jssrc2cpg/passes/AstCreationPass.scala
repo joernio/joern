@@ -35,7 +35,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
   override def generateParts(): Array[String] = astGenRunnerResult.parsedFiles.toArray
 
   override def finish(): Unit = {
-    astGenRunnerResult.skippedFiles.foreach(fileName => report.addSkippedFile(fileName, config.inputPath))
+    astGenRunnerResult.skippedFiles.foreach(report.addSkippedFile)
   }
 
   override def runOnPart(

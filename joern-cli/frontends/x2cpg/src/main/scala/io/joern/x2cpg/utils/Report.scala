@@ -91,23 +91,29 @@ class Report {
     duration: Long = 0
   ): Unit = reports(fileName) = ReportEntry(loc, parsed, cpgGen, duration)
 
-  /** Records a file that the frontend did not parse (e.g. skipped or failed in astgen). The file's line count is read
-    * from disk; relative paths are resolved against `inputPath`. Unreadable files are recorded with LOC `-1`.
+  /** Records a file that the frontend did not parse (e.g. skipped or failed in astgen). LOC is not meaningful for a
+    * file that was never read, so no attempt is made to read it from disk; it is recorded as `-1`.
     */
-  def addSkippedFile(fileName: FileName, inputPath: String): Unit = {
-    val loc = Try {
-      val path = Paths.get(fileName) match {
-        case absolute if absolute.isAbsolute => absolute
-        case relative                        => Paths.get(inputPath).resolve(relative)
-      }
-      IOUtils.readLinesInFile(path).size
-    } match {
-      case Success(loc) => loc
-      case Failure(exception) =>
-        logger.warn(s"Failed to read skipped file: '$fileName'", exception)
-        -1
+  def addSkippedFile(fileName: FileName): Unit = addReportInfo(fileName, loc = -1)
+
+  /** Records a file that was successfully parsed, for frontends whose parse result does not already carry a line count.
+    * The file's line count is read from disk; relative paths are resolved against `inputPath`. Unreadable files are
+    * recorded with LOC `-1`.
+    */
+  def addParsedFile(fileName: FileName, inputPath: String): Unit =
+    addReportInfo(fileName, locOnDisk(fileName, inputPath), parsed = true)
+
+  private def locOnDisk(fileName: FileName, inputPath: String): Int = Try {
+    val path = Paths.get(fileName) match {
+      case absolute if absolute.isAbsolute => absolute
+      case relative                        => Paths.get(inputPath).resolve(relative)
     }
-    addReportInfo(fileName, loc)
+    IOUtils.readLinesInFile(path).size
+  } match {
+    case Success(loc) => loc
+    case Failure(exception) =>
+      logger.warn(s"Failed to read file: '$fileName'", exception)
+      -1
   }
 
   def updateReport(fileName: FileName, cpg: Boolean, duration: Long): Unit =

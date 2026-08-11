@@ -30,9 +30,9 @@ class Abap2Cpg extends X2CpgFrontend {
         if (parsed.isEmpty) {
           logger.warn("No ABAP files were parsed. Check that the input path contains .abap files.")
         }
-        skipped.foreach(fileName => report.addSkippedFile(fileName, config.inputPath))
+        skipped.foreach(report.addSkippedFile)
 
-        new AstCreationPass(cpg, parsed, config).createAndApply()
+        new AstCreationPass(cpg, parsed, config, report).createAndApply()
         new ContainsEdgePass(cpg).createAndApply()
         TypeNodePass.withTypesFromCpg(cpg).createAndApply()
         new RefEdgePass(cpg).createAndApply()
