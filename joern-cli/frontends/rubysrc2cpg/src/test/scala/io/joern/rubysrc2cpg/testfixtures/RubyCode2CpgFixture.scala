@@ -34,7 +34,7 @@ trait RubyFrontend(disableFileContent: Boolean) extends LanguageFrontend {
       Using.resource(new RubySrc2Cpg(sharedJRubyEnv))(
         _.createCpg(config.withInputPath(sourceCodeFile.getAbsolutePath)).get
       )
-    new PostFrontendValidator(tmp, ValidationLevel.V0).run()
+    new PostFrontendValidator(tmp, ValidationLevel.V2).run()
     tmp
   }
 
