@@ -5,13 +5,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.StatementList
 import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
 import io.joern.rubysrc2cpg.parser.*
 import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.JRubyEnvironment
-import io.joern.rubysrc2cpg.passes.{
-  AstCreationPass,
-  ConfigFileCreationPass,
-  DependencyPass,
-  DependencySummarySolverPass
-}
-import io.joern.rubysrc2cpg.utils.DependencyDownloader
+import io.joern.rubysrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass, DependencyPass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.*
 import io.joern.x2cpg.passes.base.AstLinkerPass
@@ -79,15 +73,7 @@ class RubySrc2Cpg(sharedJRubyEnv: Option[JRubyEnvironment] = None) extends X2Cpg
         }
         .foldLeft(RubyProgramSummary(RubyProgramSummary.BuiltinTypes(config)))(_ ++= _)
 
-      val dependencySummary =
-        if (config.downloadDependencies) DependencyDownloader(cpg).download() else RubyProgramSummary()
-
-      val programSummary = internalProgramSummary ++= dependencySummary
-
-      AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary))).createAndApply()
-      if (config.downloadDependencies) {
-        DependencySummarySolverPass(cpg, dependencySummary).createAndApply()
-      }
+      AstCreationPass(cpg, astCreators.map(_.withSummary(internalProgramSummary))).createAndApply()
       TypeNodePass.withTypesFromCpg(cpg).createAndApply()
     }
 
