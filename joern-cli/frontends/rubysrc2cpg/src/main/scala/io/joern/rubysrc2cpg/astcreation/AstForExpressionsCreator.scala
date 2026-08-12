@@ -783,8 +783,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
       val block = blockNode(node, code(node), Defines.Any)
       scope.pushNewScope(BlockScope(block))
-      val tmpLocal = NewLocal().name(tmp).code(tmp)
-      scope.addToScope(tmp, tmpLocal)
+      handleVariableOccurrence(tmp, node)
 
       val arguments = if (node.text.startsWith("%")) {
         val argumentsType =
