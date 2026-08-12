@@ -1,3 +1,5 @@
+import sbt.BareBuildSyntax.dependsOn
+
 name := "macros"
 
 dependsOn(Projects.semanticcpg % Test, Projects.linterRules % ScalafixConfig)

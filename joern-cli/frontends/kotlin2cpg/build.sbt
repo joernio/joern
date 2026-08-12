@@ -1,3 +1,5 @@
+import sbt.BareBuildSyntax.dependsOn
+
 name := "kotlin2cpg"
 
 val kotlinVersion = "2.3.21"

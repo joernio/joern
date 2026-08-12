@@ -1,3 +1,5 @@
+import sbt.BareBuildSyntax.dependsOn
+
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.sbt.packager.Keys.stagingDirectory
 
@@ -53,7 +55,7 @@ abapgenBinaryNames := {
 }
 
 lazy val abapgenDlTask = taskKey[Unit]("Download abapgen binaries from joernio/astgen-monorepo release")
-abapgenDlTask := {
+abapgenDlTask := Def.uncached {
   val astGenDir = baseDirectory.value / "bin" / "astgen"
 
   abapgenBinaryNames.value.foreach { fileName =>
@@ -68,11 +70,11 @@ abapgenDlTask := {
   IO.copyDirectory(astGenDir, distDir, preserveExecutable = true)
 }
 
-Compile / compile := ((Compile / compile) dependsOn abapgenDlTask).value
+Compile / compile := Def.uncached { ((Compile / compile).dependsOn(abapgenDlTask)).value }
 
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None
 
 /** write the abapgen version to the manifest for downstream usage */
 Compile / packageBin / packageOptions +=
-  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Abap-AstGen-Version") -> abapgenVersion.value)
+  Package.ManifestAttributes("Abap-AstGen-Version" -> abapgenVersion.value)

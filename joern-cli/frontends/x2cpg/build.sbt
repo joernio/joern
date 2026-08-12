@@ -1,3 +1,5 @@
+import sbt.BareBuildSyntax.dependsOn
+
 name := "x2cpg"
 
 dependsOn(Projects.semanticcpg, Projects.linterRules % ScalafixConfig)

@@ -106,3 +106,9 @@ flake.lock
 ##############
 user.bazelrc
 bazel-*
+
+##############
+# Python     #
+##############
+__pycache__/
+*.pyc
