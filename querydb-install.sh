@@ -46,7 +46,13 @@ fi
 
 echo "building the plugin"
 sbt querydb/createDistribution
-readonly QUERYDB_ZIP=$PWD/querydb/target/querydb.zip
+# sbt 2.x writes module outputs to the centralised target/out/jvm/<scala>/<module>/ tree
+QUERYDB_ZIP=$(find "$PWD/target/out/jvm" -name querydb.zip 2>/dev/null | head -n1)
+readonly QUERYDB_ZIP
+if [ -z "$QUERYDB_ZIP" ] || [ ! -f "$QUERYDB_ZIP" ]; then
+  echo "querydb.zip not found under $PWD/target/out/jvm"
+  exit 1
+fi
 
 echo "Installing plugin"
 pushd $JOERN_INSTALL_DIR

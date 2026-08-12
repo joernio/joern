@@ -18,7 +18,9 @@ jobs:
           cache: sbt
       - uses: sbt/setup-sbt@82da71df4e122282484a99a8d70096bc2369dbd8 # v1.5.9
       - name: Check formatting
-        run: sbt scalafmtCheck Test/scalafmtCheck
+        # --server --batch: run one-shot commands in a foreground server; the default thin client
+        # can fail to connect on cold starts (https://github.com/sbt/sbt/issues/9417)
+        run: sbt --server --batch "scalafmtCheck ; Test/scalafmtCheck"
       - run: echo "Previous step failed because code is not formatted. Run 'sbt scalafmt Test/scalafmt'"
         if: ${{ failure() }}
       - name: Validate CITATION.cff
@@ -54,7 +56,7 @@ jobs:
           fi
       - name: Run scalafix linting
         if: steps.lintable-changes.outputs.changed == 'true'
-        run: sbt "scalafix --diff-base origin/${{ github.event.pull_request.base.ref }} RestrictedImports SingleLetterIdentifiers UnorderedIteration"
+        run: sbt --server --batch "scalafix --diff-base origin/${{ github.event.pull_request.base.ref }} RestrictedImports SingleLetterIdentifiers UnorderedIteration"
       - run: echo "Previous step failed because certain coding quality expectations were violated. Please check the logs."
         if: ${{ failure() }}
 
@@ -109,7 +111,13 @@ jobs:
           toolchain: stable
           components: rust-src
       - name: Run tests
-        run: sbt clean test
+        # stage the frontends used by console/joern-cli tests explicitly, before any test JVM
+        # starts. Staging inside the test graph makes the sbt 2.x task cache content-hash test
+        # fixtures, which fails on Windows when a forked test JVM still holds a lock on them
+        # (https://github.com/sbt/sbt/issues/9816)
+        # testFull: sbt 2.x `test` is incremental (skips tests with a cached success, which the
+        # restored disk cache provides) -- CI must always run the full suite
+        run: sbt --server --batch "clean ; c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage ; testFull"
 
   test-scripts:
     needs: [formatting, linting]
@@ -145,5 +153,5 @@ jobs:
           python -m pip install requests wexpect
       - name: Test distribution
         run: |
-          sbt joerncli/stage querydb/createDistribution
+          sbt --server --batch "joerncli/stage ; querydb/createDistribution"
           python -u ./testDistro.py

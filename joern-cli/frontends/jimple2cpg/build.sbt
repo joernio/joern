@@ -1,3 +1,5 @@
+import sbt.BareBuildSyntax.dependsOn
+
 name := "jimple2cpg"
 
 dependsOn(

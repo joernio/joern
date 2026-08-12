@@ -26,6 +26,7 @@ Test / resourceGenerators += Def.task {
     (LocalProject("linterRulesInput") / scalaVersion).value
   val scalacOpts =
     (LocalProject("linterRulesInput") / Compile / scalacOptions).value
+  val converter = fileConverter.value
 
   val props = new java.util.Properties()
   def putFiles(key: String, files: Seq[java.io.File]): Unit = {
@@ -35,7 +36,7 @@ Test / resourceGenerators += Def.task {
     )
   }
 
-  putFiles("inputClasspath", inputClasspath.map(_.data))
+  putFiles("inputClasspath", inputClasspath.map(attr => converter.toPath(attr.data).toFile))
   putFiles("inputSourceDirectories", inputSourceDirs)
   putFiles("outputSourceDirectories", Seq.empty[java.io.File])
   putFiles("sourceroot", Seq(sourceroot))

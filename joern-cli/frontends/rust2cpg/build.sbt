@@ -1,3 +1,5 @@
+import sbt.BareBuildSyntax.dependsOn
+
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.sbt.packager.Keys.stagingDirectory
 
@@ -76,7 +78,7 @@ astGenBinaryNames := {
 }
 
 lazy val astGenDlTask = taskKey[Unit](s"Download rust_ast_gen binaries")
-astGenDlTask := {
+astGenDlTask := Def.uncached {
   val astGenDir = baseDirectory.value / "bin" / "astgen"
 
   astGenBinaryNames.value.foreach { fileName =>
@@ -91,10 +93,10 @@ astGenDlTask := {
   IO.copyDirectory(astGenDir, distDir, preserveExecutable = true)
 }
 
-Compile / compile := ((Compile / compile) dependsOn astGenDlTask).value
+Compile / compile := Def.uncached { ((Compile / compile).dependsOn(astGenDlTask)).value }
 
 lazy val rustNodeSyntaxDlTask = taskKey[Seq[File]]("Download RustNodeSyntax.scala")
-rustNodeSyntaxDlTask := {
+rustNodeSyntaxDlTask := Def.uncached {
   val file = (Compile / sourceManaged).value / "io" / "joern" / "rust2cpg" / "parser" / "RustNodeSyntax.scala"
   DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}RustNodeSyntax.scala", file)
   Seq(file)
@@ -107,4 +109,4 @@ Universal / topLevelDirectory := None
 
 /** write the astgen version to the manifest for downstream usage */
 Compile / packageBin / packageOptions +=
-  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Rust-AstGen-Version") -> astGenVersion.value)
+  Package.ManifestAttributes("Rust-AstGen-Version" -> astGenVersion.value)

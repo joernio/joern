@@ -1,6 +1,6 @@
 import java.io.File
 import java.nio.file.Files
-import scala.collection.JavaConverters.*
+import scala.jdk.CollectionConverters.*
 
 object FileUtils {
 
