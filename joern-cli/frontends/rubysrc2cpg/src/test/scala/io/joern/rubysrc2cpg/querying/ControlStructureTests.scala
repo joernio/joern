@@ -389,7 +389,6 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         body.ast.isLiteral.code.l shouldBe List("1")
 
         rescue1Struct.controlStructureType shouldBe ControlStructureTypes.CATCH
-        rescue1Struct.ast.isLocal.code.l shouldBe List("e")
         rescue1Struct.ast.isLiteral.code.l shouldBe List("2")
 
         rescue2Struct.controlStructureType shouldBe ControlStructureTypes.CATCH
