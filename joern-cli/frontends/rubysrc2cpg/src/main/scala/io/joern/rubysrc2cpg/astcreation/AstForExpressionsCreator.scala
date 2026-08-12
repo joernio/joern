@@ -964,7 +964,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
           }
           .toList
         val rescueNode = controlStructureNode(x.thenClause.asStatementList, ControlStructureTypes.CATCH, "catch")
-        Ast(rescueNode).withChild(astForStatementList(x.thenClause.asStatementList).withChildren(variables))
+        Ast(rescueNode).withChild(astForStatementList(x.thenClause.asStatementList))
       }
     val elseAst = node.elseClause.map { x =>
       val astForClause = controlStructureNode(x.thenClause.asStatementList, ControlStructureTypes.ELSE, "else")
