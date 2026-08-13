@@ -39,7 +39,6 @@ phpParseInstallTask := {
 Compile / compile := ((Compile / compile) dependsOn phpParseInstallTask).value
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
-Global / onChangedBuildSource := ReloadOnSourceChanges
 
 /** write the php parser version to the manifest for downstream usage */
 Compile / packageBin / packageOptions +=

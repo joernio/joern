@@ -31,7 +31,6 @@ libraryDependencies ++= Seq(
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
 
 compile / javacOptions ++= Seq("-Xlint:all", "-Xlint:-cast", "-g")
-Test / fork := false
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 

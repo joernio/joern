@@ -16,5 +16,5 @@ libraryDependencies ++= Seq(
 dependencyOverrides += "com.google.guava" % "guava" % "33.5.0-jre" // required currently because of the dependencies of soot 4.7.1
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
-trapExit    := false
-Test / fork := true
+
+Test / testForkedParallel := false // soot is not thread-safe
