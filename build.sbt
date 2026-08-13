@@ -119,7 +119,10 @@ ThisBuild / resolvers ++= Seq(
   "Google Maven" at "https://maven.google.com/"
 )
 
-ThisBuild / Test / fork := true
+ThisBuild / Test / fork               := true
+ThisBuild / Test / testForkedParallel := true
+
+trapExit := false
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 

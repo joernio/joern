@@ -23,6 +23,5 @@ libraryDependencies ++= Seq(
 )
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
-trapExit    := false
-Test / fork := true
+
 Test / javaOptions ++= Seq("-ea")

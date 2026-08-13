@@ -13,8 +13,6 @@ libraryDependencies ++= Seq(
 )
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
-trapExit                      := false
-Global / onChangedBuildSource := ReloadOnSourceChanges
 
 val javaCCTask = taskKey[Seq[File]]("Generate compiler code with JavaCC")
 javaCCTask / fileInputs += baseDirectory.value.toGlob / "pythonGrammar.jj"
