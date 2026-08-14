@@ -30,7 +30,7 @@ object ShellExec extends QueryBundle {
         def source =
           cpg.call.name(Operators.assignment).argument.code(".*_(REQUEST|GET|POST).*")
 
-        def sink = cpg.call.name("shell_exec").argument
+        def sink = cpg.call.name("(?i)shell_exec").argument
 
         sink.reachableBy(source).l.iterator
       }),
