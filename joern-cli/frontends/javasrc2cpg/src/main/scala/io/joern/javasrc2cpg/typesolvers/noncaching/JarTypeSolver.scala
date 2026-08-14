@@ -140,7 +140,11 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
           )
 
         case Failure(e) =>
-          logger.warn(s"Could not load jar at path $archivePath", e.getMessage())
+          logger.warn(
+            s"Could not load archive at $archivePath for type resolution (${e.getMessage}). " +
+              s"Types from this archive may be unresolved."
+          )
+          logger.debug(s"Could not load archive at $archivePath", e)
       }
     }
   }
@@ -192,7 +196,11 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
       }
     } catch {
       case ioException: IOException =>
-        logger.warn(s"Could not register exported packages for archive at $archivePath", ioException.getMessage())
+        logger.warn(
+          s"Could not read module exports from archive at $archivePath (${ioException.getMessage}). " +
+            s"Module-scoped type lookups for this archive may fail."
+        )
+        logger.debug(s"Could not read module exports from archive at $archivePath", ioException)
     }
   }
 }
