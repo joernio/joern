@@ -85,6 +85,31 @@ class TraitTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "trait with an associated type" should {
+    val cpg = code("""
+        |trait Foo {
+        | type Item;
+        | fn get(&self) -> <Self as Foo>::Item;
+        |}
+        |fn run<Bar: Foo>(value: <Bar as Foo>::Item) {}
+        |""".stripMargin)
+
+    "have correct typeDecl fullName" in {
+      cpg.typeDecl.nameExact("Foo").fullName.l shouldBe List("rust2cpgtest::Foo")
+    }
+
+    "have correct methodReturn fullName" in {
+      cpg.method.nameExact("get").methodReturn.typeFullName.l shouldBe List("rust2cpgtest::Foo::Item")
+    }
+
+    "have correct parameter typeFullName" in {
+      inside(cpg.method.nameExact("run").parameter.l) { case param :: Nil =>
+        param.name shouldBe "value"
+        param.typeFullName shouldBe "rust2cpgtest::Foo::Item"
+      }
+    }
+  }
+
   "an empty trait" should {
     val cpg = code("trait Empty {}")
 
