@@ -13,8 +13,10 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
   "org.benf"       % "cfr"               % Versions.cfr
 )
-dependencyOverrides += "com.google.guava" % "guava" % "33.5.0-jre" // required currently because of the dependencies of soot 4.7.1
-
+//for heros 1.2.4 bug https://github.com/soot-oss/heros/commit/31f57b96a543de09092e7f351ed71115c80059ef
+ThisBuild / dependencyOverrides ++= Seq(
+  "com.google.guava" % "guava" % "33.5.0-jre"
+)
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
 Test / testForkedParallel := false // soot is not thread-safe
