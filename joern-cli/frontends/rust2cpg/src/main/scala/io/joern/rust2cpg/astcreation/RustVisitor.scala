@@ -778,10 +778,9 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
   // TODO
   private def lowerPathAsFieldAccess(path: Path): Ast = {
-    val lhs = path.path.map(lowerPathAsFieldAccess)
-    lhs match {
-      case None      => visitPathSegment(path.pathSegment)
-      case Some(lhs) => notHandledYet(path)
+    path.path match {
+      case None    => visitPathSegment(path.pathSegment)
+      case Some(_) => notHandledYet(path)
     }
   }
 

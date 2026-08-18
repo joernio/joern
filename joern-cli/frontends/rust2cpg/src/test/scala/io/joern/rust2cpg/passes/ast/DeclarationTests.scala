@@ -1299,4 +1299,23 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "let to a same-named module-qualified path" should {
+    val cpg = code("""
+        |mod entry {
+        |  pub const KIND: i32 = 1;
+        |}
+        |
+        |fn main() {
+        |  let entry = 1;
+        |  let kind = entry::KIND;
+        |}
+        |""".stripMargin)
+
+    "have correct REF edges for the locals" in {
+      cpg.local.nameExact("entry").referencingIdentifiers.inAssignment.code.l shouldBe List("let entry = 1;")
+    }
+
+    // TODO: qualified path lowering.
+  }
 }
