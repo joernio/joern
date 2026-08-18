@@ -474,7 +474,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
       val branchesAst = orPat.pat.foldRight(Option.empty[Ast]) { (pat, elseAst) =>
         val conditionAst = Ast(unknownNode(pat, code(pat)))
-        Option(ifThenElseAst(pat, Some(conditionAst), mkBranchAst(pat), elseAst))
+        Some(ifThenElseAst(pat, Some(conditionAst), mkBranchAst(pat), elseAst))
       }
 
       tmpLocalAst +: tmpAssignAst +: branchesAst.toList
