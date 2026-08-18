@@ -2,7 +2,7 @@ package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -1317,5 +1317,35 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     // TODO: qualified path lowering.
+  }
+
+  "let with an or-pattern" should {
+    val cpg = code("""
+        |fn foo(t: (i32, i32)) {
+        | let ((a, 0) | (0, a)) = t;
+        | bar(a);
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.method.nameExact("foo").block.local.l) { case aLocal :: tmpLocal :: Nil =>
+        aLocal.name shouldBe "a"
+        aLocal.typeFullName shouldBe "i32"
+        tmpLocal.name shouldBe "<tmp>0"
+        tmpLocal.typeFullName shouldBe "(i32, i32)"
+      }
+    }
+
+    "have correct if control structure" in {
+      inside(cpg.ifBlock.l) { case ifNode :: elseIfNode :: Nil =>
+        ifNode.condition.code.l shouldBe List("(a, 0)")
+        ifNode.whenTrue.isBlock.assignment.code.l shouldBe List("a = <tmp>0.0")
+        ifNode.whenFalse.l shouldBe List(elseIfNode)
+
+        elseIfNode.condition.code.l shouldBe List("(0, a)")
+        elseIfNode.whenTrue.isBlock.assignment.code.l shouldBe List("a = <tmp>0.1")
+        elseIfNode.whenFalse.l shouldBe empty
+      }
+    }
   }
 }

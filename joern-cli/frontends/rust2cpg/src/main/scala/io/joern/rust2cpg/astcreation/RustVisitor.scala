@@ -349,6 +349,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       case wildcardPat: WildcardPat       => Nil
       case literalPat: LiteralPat         => Nil
       case refPat: RefPat                 => createAssignmentsForRefPattern(refPat, mkSourceAst)
+      case orPat: OrPat                   => createAssignmentsForOrPattern(orPat, mkSourceAst)
       case _                              => notHandledYet(pat) :: Nil
     }
   }
@@ -452,6 +453,32 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       callAst(operatorCallNode(refPat.pat, derefCode, Operators.indirection, Some(typeFullName)), Seq(sourceAst))
     }
     createAssignmentsForPattern(refPat.pat, mkIndirection)
+  }
+
+  private def createAssignmentsForOrPattern(orPat: OrPat, mkSourceAst: () => Ast): Seq[Ast] = {
+    if (collectPatternBindings(orPat).isEmpty) {
+      Nil
+    } else {
+      val sourceAst     = mkSourceAst()
+      val tmpName       = contextStack.nextTmpName()
+      val typeFullName  = sourceAst.rootType.getOrElse(Defines.Any)
+      val tmpLocalAst   = localAst(orPat, tmpName, tmpName, typeFullName)
+      val mkTmpIdentAst = () => identifierAst(orPat, tmpName, tmpName, typeFullName)
+
+      val tmpAssignAst =
+        callAst(assignmentNode(orPat, s"$tmpName = ${sourceAst.rootCodeOrEmpty}"), Seq(mkTmpIdentAst(), sourceAst))
+
+      def mkBranchAst(pat: Pat): Ast = {
+        blockAst(blockNode(pat), createAssignmentsForPattern(pat, mkTmpIdentAst).toList)
+      }
+
+      val branchesAst = orPat.pat.foldRight(Option.empty[Ast]) { (pat, elseAst) =>
+        val conditionAst = Ast(unknownNode(pat, code(pat)))
+        Option(ifThenElseAst(pat, Some(conditionAst), mkBranchAst(pat), elseAst))
+      }
+
+      tmpLocalAst +: tmpAssignAst +: branchesAst.toList
+    }
   }
 
   private def collectPatternBindings(pat: Pat): Seq[(IdentToken, String)] = pat match {
