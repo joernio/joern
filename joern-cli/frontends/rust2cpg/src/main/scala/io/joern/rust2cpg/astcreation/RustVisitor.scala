@@ -1329,10 +1329,12 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  Attr* Visibility?
   //  'enum' Name GenericParamList? WhereClause?
   //  VariantList
-  // TODO(rust_ast_gen): implementedTraits, so we can populate inheritsFrom.
   private def visitEnum(enum_ : Enum): Ast = {
-    val typeDecl    = typeDeclForEnum(enum_)
-    val variantAsts = enum_.variantList.variant.map(lowerVariant(_, typeDecl.fullName))
+    val implementedTraits = enum_.implementedTraits.getOrElse(Nil)
+    val enumFullName      = typeFullNameForEnum(enum_)
+    val inheritsFrom      = implementedTraits.map(traitFullName => s"<$enumFullName as $traitFullName>")
+    val typeDecl          = typeDeclForEnum(enum_, inheritsFrom)
+    val variantAsts       = enum_.variantList.variant.map(lowerVariant(_, typeDecl.fullName))
     Ast(typeDecl).withChildren(variantAsts)
   }
 
