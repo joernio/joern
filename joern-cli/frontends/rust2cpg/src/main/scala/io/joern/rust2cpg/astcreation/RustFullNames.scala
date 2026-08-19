@@ -39,6 +39,10 @@ trait RustFullNames { this: AstCreator =>
     struct.typeFullName.getOrElse(composeRustFullName(code(struct.name)))
   }
 
+  protected def typeFullNameForEnum(enum_ : RustNodeSyntax.Enum): String = {
+    enum_.typeFullName.getOrElse(composeRustFullName(code(enum_.name)))
+  }
+
   protected def methodFullNameForCallExpr(
     callExpr: RustNodeSyntax.CallExpr,
     nameRefs: Seq[RustNodeSyntax.NameRef],

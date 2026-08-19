@@ -53,7 +53,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
   private def visitItem(item: Item): Seq[Ast] = item match {
     case const: Const           => visitConst(const)
-    case x: Enum                => notHandledYet(x) :: Nil
+    case enum_ : Enum           => visitEnum(enum_) :: Nil
     case x: ExternBlock         => notHandledYet(x) :: Nil
     case x: ExternCrate         => notHandledYet(x) :: Nil
     case fn: Fn                 => visitFn(fn) :: Nil
@@ -1323,6 +1323,30 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val callNode     = operatorCallNode(tryExpr, code(tryExpr), RustOperators.tryUnwrap, Some(typeFullName))
     val exprAst      = visitExpr(tryExpr.expr)
     callAst(callNode, Seq(exprAst))
+  }
+
+  // Enum =
+  //  Attr* Visibility?
+  //  'enum' Name GenericParamList? WhereClause?
+  //  VariantList
+  // TODO(rust_ast_gen): implementedTraits, so we can populate inheritsFrom.
+  private def visitEnum(enum_ : Enum): Ast = {
+    val typeDecl    = typeDeclForEnum(enum_)
+    val variantAsts = enum_.variantList.variant.map(lowerVariant(_, typeDecl.fullName))
+    Ast(typeDecl).withChildren(variantAsts)
+  }
+
+  // Variant =
+  //  Attr* Visibility?
+  //  Name FieldList? ('=' ConstArg)?
+  private def lowerVariant(variant: Variant, enumFullName: String): Ast = variant.fieldList match {
+    case None                     => lowerUnitVariant(variant, enumFullName)
+    case Some(_: RecordFieldList) => notHandledYet(variant)
+    case Some(_: TupleFieldList)  => notHandledYet(variant)
+  }
+
+  private def lowerUnitVariant(variant: Variant, enumFullName: String): Ast = {
+    Ast(memberNode(variant, code(variant.name), code(variant), enumFullName))
   }
 
   // Struct =
