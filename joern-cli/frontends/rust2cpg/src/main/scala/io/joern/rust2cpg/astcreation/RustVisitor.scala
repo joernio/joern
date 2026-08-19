@@ -1334,7 +1334,11 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val enumFullName      = typeFullNameForEnum(enum_)
     val inheritsFrom      = implementedTraits.map(traitFullName => s"<$enumFullName as $traitFullName>")
     val typeDecl          = typeDeclForEnum(enum_, inheritsFrom)
-    val variantAsts       = enum_.variantList.variant.map(lowerVariant(_, typeDecl.fullName))
+
+    contextStack.pushTypeDecl(typeDecl)
+    val variantAsts = enum_.variantList.variant.map(lowerVariant(_, typeDecl.fullName))
+    contextStack.pop()
+
     Ast(typeDecl).withChildren(variantAsts)
   }
 
@@ -1342,13 +1346,23 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  Attr* Visibility?
   //  Name FieldList? ('=' ConstArg)?
   private def lowerVariant(variant: Variant, enumFullName: String): Ast = variant.fieldList match {
-    case None                     => lowerUnitVariant(variant, enumFullName)
-    case Some(_: RecordFieldList) => notHandledYet(variant)
-    case Some(_: TupleFieldList)  => notHandledYet(variant)
+    case None                                   => lowerUnitVariant(variant, enumFullName)
+    case Some(recordFieldList: RecordFieldList) => lowerRecordVariant(variant, enumFullName, recordFieldList)
+    case Some(_: TupleFieldList)                => notHandledYet(variant)
   }
 
   private def lowerUnitVariant(variant: Variant, enumFullName: String): Ast = {
     Ast(memberNode(variant, code(variant.name), code(variant), enumFullName))
+  }
+
+  private def lowerRecordVariant(variant: Variant, enumFullName: String, recordFieldList: RecordFieldList): Ast = {
+    val typeDecl = typeDeclForVariant(variant, enumFullName)
+
+    contextStack.pushTypeDecl(typeDecl)
+    val ctorAst = structCtorMethodAst(variant, typeDecl, recordFieldData(recordFieldList))
+    contextStack.pop()
+
+    Ast(typeDecl).withChildren(visitRecordFieldList(recordFieldList) :+ ctorAst)
   }
 
   // Struct =
@@ -1396,7 +1410,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val typeDecl          = typeDeclForStruct(struct, inheritsFrom)
 
     contextStack.pushTypeDecl(typeDecl)
-    val ctorAst = structCtorMethodAst(struct, typeDecl, recordStructFieldData(struct))
+    val ctorAst = structCtorMethodAst(struct, typeDecl, recordFieldData(recordFieldList))
     contextStack.pop()
 
     Ast(typeDecl).withChildren(visitRecordFieldList(recordFieldList) :+ ctorAst)
@@ -1512,21 +1526,21 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     }
   }
 
-  private def recordStructFieldData(struct: Struct): Seq[(node: RustNode, name: String, typ: String)] = {
-    struct.recordFieldList.toSeq.flatMap(_.recordField.map { field =>
+  private def recordFieldData(recordFieldList: RecordFieldList): Seq[(node: RustNode, name: String, typ: String)] = {
+    recordFieldList.recordField.map { field =>
       (node = field, name = code(field.name), typ = typeFullNameForType(field.typ))
-    })
+    }
   }
 
   private def structCtorMethodAst(
-    struct: Struct,
+    node: VariantDef,
     typeDecl: NewTypeDecl,
     fields: Seq[(node: RustNode, name: String, typ: String)]
   ): Ast = {
     val selfName = "self"
-    val method   = methodNode(struct, Defines.ConstructorMethodName).code(Defines.ConstructorMethodName)
+    val method   = methodNode(node, Defines.ConstructorMethodName).code(Defines.ConstructorMethodName)
     val selfParam = parameterInNode(
-      node = struct,
+      node = node,
       name = selfName,
       code = selfName,
       index = 0,
@@ -1566,13 +1580,13 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     }
 
     val paramAsts = (selfParam +: fieldParams).map(Ast(_))
-    val bodyAst   = blockAst(blockNode(struct), fieldAssignAsts.toList)
+    val bodyAst   = blockAst(blockNode(node), fieldAssignAsts.toList)
     methodAst(
       method = method,
       parameters = paramAsts,
       body = bodyAst,
-      methodReturn = methodReturnNode(struct, "()"),
-      modifiers = Seq(modifierNode(struct, ModifierTypes.CONSTRUCTOR))
+      methodReturn = methodReturnNode(node, "()"),
+      modifiers = Seq(modifierNode(node, ModifierTypes.CONSTRUCTOR))
     )
   }
 
