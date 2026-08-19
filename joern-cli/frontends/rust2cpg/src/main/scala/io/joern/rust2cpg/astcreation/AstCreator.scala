@@ -157,6 +157,18 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     )
   }
 
+  protected def typeDeclForEnum(enum_ : RustNodeSyntax.Enum): NewTypeDecl = {
+    typeDeclNode(
+      node = enum_,
+      name = code(enum_.name),
+      fullName = typeFullNameForEnum(enum_),
+      filename = parseResult.filename,
+      code = code(enum_),
+      astParentType = contextStack.astParentType,
+      astParentFullName = contextStack.astParentFullName
+    )
+  }
+
   protected def typeDeclForImpl(impl: RustNodeSyntax.Impl): NewTypeDecl = {
     val implType = typeFullNameForType(impl.typ.last)
     val name     = implType.split(RustFullNames.PathSep).lastOption.getOrElse(implType)
