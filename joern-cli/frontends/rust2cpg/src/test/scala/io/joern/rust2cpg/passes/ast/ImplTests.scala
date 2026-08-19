@@ -473,6 +473,31 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "trait impl for unit-variant enum" should {
+    val cpg = code("""
+        |trait Bar {
+        |  fn do_stuff(&self) -> i32;
+        |}
+        |enum Color { Red, Green }
+        |impl Bar for Color {
+        |  fn do_stuff(&self) -> i32 { 1 }
+        |}
+        |""".stripMargin)
+
+    "have correct inheritsFrom on the impl" in {
+      cpg.typeDecl
+        .fullNameExact("<rust2cpgtest::Color as rust2cpgtest::Bar>")
+        .inheritsFromTypeFullName
+        .l shouldBe List("rust2cpgtest::Bar")
+    }
+
+    "have correct inheritsFrom on the enum" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Color").inheritsFromTypeFullName.l shouldBe List(
+        "<rust2cpgtest::Color as rust2cpgtest::Bar>"
+      )
+    }
+  }
+
   "two trait impls for the same type" should {
     val cpg = code("""
         |trait Bar { fn a(&self) -> i32; }

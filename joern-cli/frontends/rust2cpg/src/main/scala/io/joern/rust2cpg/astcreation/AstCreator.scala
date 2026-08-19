@@ -157,7 +157,7 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     )
   }
 
-  protected def typeDeclForEnum(enum_ : RustNodeSyntax.Enum): NewTypeDecl = {
+  protected def typeDeclForEnum(enum_ : RustNodeSyntax.Enum, inheritsFrom: Seq[String]): NewTypeDecl = {
     typeDeclNode(
       node = enum_,
       name = code(enum_.name),
@@ -165,7 +165,8 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
       filename = parseResult.filename,
       code = code(enum_),
       astParentType = contextStack.astParentType,
-      astParentFullName = contextStack.astParentFullName
+      astParentFullName = contextStack.astParentFullName,
+      inherits = inheritsFrom
     )
   }
 
