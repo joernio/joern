@@ -1336,7 +1336,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val typeDecl          = typeDeclForEnum(enum_, inheritsFrom)
 
     contextStack.pushTypeDecl(typeDecl)
-    val variantAsts = enum_.variantList.variant.map(lowerVariant(_, typeDecl.fullName))
+    val variantAsts = enum_.variantList.variant.flatMap(lowerVariant(_, typeDecl.fullName))
     contextStack.pop()
 
     Ast(typeDecl).withChildren(variantAsts)
@@ -1345,10 +1345,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // Variant =
   //  Attr* Visibility?
   //  Name FieldList? ('=' ConstArg)?
-  private def lowerVariant(variant: Variant, enumFullName: String): Ast = variant.fieldList match {
-    case None                                   => lowerUnitVariant(variant, enumFullName)
-    case Some(recordFieldList: RecordFieldList) => lowerRecordVariant(variant, enumFullName, recordFieldList)
-    case Some(_: TupleFieldList)                => notHandledYet(variant)
+  private def lowerVariant(variant: Variant, enumFullName: String): Seq[Ast] = variant.fieldList match {
+    case None                                   => lowerUnitVariant(variant, enumFullName) :: Nil
+    case Some(recordFieldList: RecordFieldList) => lowerRecordVariant(variant, enumFullName, recordFieldList) :: Nil
+    case Some(tupleFieldList: TupleFieldList)   => lowerTupleVariant(variant, enumFullName, tupleFieldList)
   }
 
   private def lowerUnitVariant(variant: Variant, enumFullName: String): Ast = {
@@ -1363,6 +1363,21 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     contextStack.pop()
 
     Ast(typeDecl).withChildren(visitRecordFieldList(recordFieldList) :+ ctorAst)
+  }
+
+  private def lowerTupleVariant(variant: Variant, enumFullName: String, tupleFieldList: TupleFieldList): Seq[Ast] = {
+    val typeDecl     = typeDeclForVariant(variant, enumFullName)
+    val fields       = tupleStructFieldData(tupleFieldList)
+    val ctorFullName = variant.methodFullName.getOrElse(typeDecl.fullName)
+
+    contextStack.pushTypeDecl(typeDecl)
+    val ctorAst = structCtorMethodAst(variant, typeDecl, fields)
+    contextStack.pop()
+
+    val typeDeclAst    = Ast(typeDecl).withChildren(visitTupleFieldList(tupleFieldList) :+ ctorAst)
+    val ctorWrapperAst = tupleStructCtorWrapperAst(variant, typeDecl, ctorFullName, enumFullName, fields)
+
+    Seq(typeDeclAst, ctorWrapperAst)
   }
 
   // Struct =
@@ -1444,20 +1459,27 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val ctorAst = structCtorMethodAst(struct, typeDecl, fields)
     contextStack.pop()
 
-    val typeDeclAst    = Ast(typeDecl).withChildren(visitTupleFieldList(tupleFieldList) :+ ctorAst)
-    val ctorWrapperAst = tupleStructCtorWrapperAst(struct, typeDecl, fields)
+    val typeDeclAst = Ast(typeDecl).withChildren(visitTupleFieldList(tupleFieldList) :+ ctorAst)
+    val ctorWrapperAst = tupleStructCtorWrapperAst(
+      struct,
+      typeDecl,
+      struct.methodFullName.getOrElse(composeRustFullName(typeDecl.name)),
+      typeDecl.fullName,
+      fields
+    )
 
     Seq(typeDeclAst, ctorWrapperAst)
   }
 
   private def tupleStructCtorWrapperAst(
-    struct: Struct,
+    node: VariantDef,
     typeDecl: NewTypeDecl,
+    fullName: String,
+    returnTypeFullName: String,
     fields: Seq[(node: RustNode, name: String, typ: String)]
   ): Ast = {
-    val fnName   = code(struct.name)
-    val fullName = struct.methodFullName.getOrElse(composeRustFullName(fnName))
-    val method   = methodNode(struct, fnName).code(fnName).fullName(fullName)
+    val fnName = typeDecl.name
+    val method = methodNode(node, fnName).code(fnName).fullName(fullName)
 
     contextStack.pushMethod(method)
     val tmpName = contextStack.nextTmpName()
@@ -1474,13 +1496,13 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       )
     }
 
-    val local = localNode(struct, tmpName, tmpName, typeDecl.fullName)
+    val local = localNode(node, tmpName, tmpName, typeDecl.fullName)
 
     // tmp = <operator>.alloc
     val allocAssignAst = {
-      val allocCall   = operatorCallNode(struct, Operators.alloc, Operators.alloc, Some(typeDecl.fullName))
-      val tmpIdentAst = Ast(identifierNode(struct, tmpName, tmpName, typeDecl.fullName))
-      callAst(assignmentNode(struct, s"$tmpName = ${Operators.alloc}"), Seq(tmpIdentAst, Ast(allocCall)))
+      val allocCall   = operatorCallNode(node, Operators.alloc, Operators.alloc, Some(typeDecl.fullName))
+      val tmpIdentAst = Ast(identifierNode(node, tmpName, tmpName, typeDecl.fullName))
+      callAst(assignmentNode(node, s"$tmpName = ${Operators.alloc}"), Seq(tmpIdentAst, Ast(allocCall)))
     }
 
     // Foo::<init>(&tmp, 0, 1, ...)
@@ -1488,7 +1510,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       val initName = Defines.ConstructorMethodName
       val initCode = s"$fnName::$initName(${(s"&$tmpName" +: fields.map(_.name)).mkString(", ")})"
       val initCall = callNode(
-        node = struct,
+        node = node,
         code = initCode,
         name = initName,
         methodFullName = combineRustFullName(typeDecl.fullName, initName),
@@ -1497,8 +1519,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         typeFullName = Some("()")
       )
       val addressOfTmp = {
-        val addressOf   = operatorCallNode(struct, s"&$tmpName", Operators.addressOf, Some(s"&${typeDecl.fullName}"))
-        val tmpIdentAst = Ast(identifierNode(struct, tmpName, tmpName, typeDecl.fullName))
+        val addressOf   = operatorCallNode(node, s"&$tmpName", Operators.addressOf, Some(s"&${typeDecl.fullName}"))
+        val tmpIdentAst = Ast(identifierNode(node, tmpName, tmpName, typeDecl.fullName))
         callAst(addressOf, Seq(tmpIdentAst))
       }
       val fieldArgs = fields.map { fieldData =>
@@ -1510,14 +1532,14 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
     // return tmp
     val retAst = returnAst(
-      returnNode(struct, s"return $tmpName"),
-      Seq(Ast(identifierNode(struct, tmpName, tmpName, typeDecl.fullName)))
+      returnNode(node, s"return $tmpName"),
+      Seq(Ast(identifierNode(node, tmpName, tmpName, typeDecl.fullName)))
     )
 
-    val bodyAst = blockAst(blockNode(struct), List(Ast(local), allocAssignAst, initCallAst, retAst))
+    val bodyAst = blockAst(blockNode(node), List(Ast(local), allocAssignAst, initCallAst, retAst))
     contextStack.pop()
 
-    methodAst(method, fieldParams.map(Ast(_)), bodyAst, methodReturnNode(struct, typeDecl.fullName))
+    methodAst(method, fieldParams.map(Ast(_)), bodyAst, methodReturnNode(node, returnTypeFullName))
   }
 
   private def tupleStructFieldData(tupleFieldList: TupleFieldList): Seq[(node: RustNode, name: String, typ: String)] = {
