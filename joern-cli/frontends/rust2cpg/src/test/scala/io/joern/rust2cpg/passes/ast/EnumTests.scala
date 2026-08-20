@@ -30,6 +30,91 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
         green.typeFullName shouldBe "rust2cpgtest::Color"
       }
     }
+
+    "have correct field access" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("c")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "Color::Red"
+        fieldAccess.typeFullName shouldBe "rust2cpgtest::Color"
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case (base: TypeRef) :: (field: FieldIdentifier) :: Nil =>
+            base.code shouldBe "Color"
+            base.typeFullName shouldBe "rust2cpgtest::Color"
+            field.canonicalName shouldBe "Red"
+        }
+      }
+    }
+  }
+
+  "module-qualified unit variant" should {
+    val cpg = code("""
+        |mod m {
+        |  pub enum Color { Red }
+        |}
+        |fn main() {
+        |  let c = m::Color::Red;
+        |}
+        |""".stripMargin)
+
+    "have correct fullName" in {
+      cpg.typeDecl.nameExact("Color").fullName.l shouldBe List("rust2cpgtest::m::Color")
+    }
+
+    "have correct members" in {
+      inside(cpg.typeDecl.nameExact("Color").member.l) { case red :: Nil =>
+        red.name shouldBe "Red"
+        red.code shouldBe "Red"
+        red.typeFullName shouldBe "rust2cpgtest::m::Color"
+      }
+    }
+
+    "have correct field access" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("c")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.name shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "m::Color::Red"
+        fieldAccess.typeFullName shouldBe "rust2cpgtest::m::Color"
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case (base: TypeRef) :: (field: FieldIdentifier) :: Nil =>
+            base.code shouldBe "m::Color"
+            base.typeFullName shouldBe "rust2cpgtest::m::Color"
+            field.canonicalName shouldBe "Red"
+        }
+      }
+    }
+  }
+
+  "self-qualified unit variant" should {
+    val cpg = code("""
+        |enum Color { Red }
+        |impl Color {
+        |  fn red() -> Color { Self::Red }
+        |}
+        |""".stripMargin)
+
+    "have correct fullName" in {
+      cpg.typeDecl.nameExact("Color").fullName.l shouldBe List("rust2cpgtest::Color")
+    }
+
+    "have correct members" in {
+      inside(cpg.typeDecl.nameExact("Color").member.l) { case red :: Nil =>
+        red.name shouldBe "Red"
+        red.code shouldBe "Red"
+        red.typeFullName shouldBe "rust2cpgtest::Color"
+      }
+    }
+
+    "have correct field access" in {
+      inside(cpg.method.nameExact("red").ast.isCall.nameExact(Operators.fieldAccess).l) { case fieldAccess :: Nil =>
+        fieldAccess.code shouldBe "Self::Red"
+        fieldAccess.typeFullName shouldBe "rust2cpgtest::Color"
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case (base: TypeRef) :: (field: FieldIdentifier) :: Nil =>
+            base.code shouldBe "Self"
+            base.typeFullName shouldBe "rust2cpgtest::Color"
+            field.canonicalName shouldBe "Red"
+        }
+      }
+    }
   }
 
   "record variant" should {

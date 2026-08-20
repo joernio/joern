@@ -348,6 +348,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       case tupleStructPat: TupleStructPat => createAssignmentsForTupleStructPattern(tupleStructPat, mkSourceAst)
       case wildcardPat: WildcardPat       => Nil
       case literalPat: LiteralPat         => Nil
+      case pathPat: PathPat               => Nil
       case refPat: RefPat                 => createAssignmentsForRefPattern(refPat, mkSourceAst)
       case orPat: OrPat                   => createAssignmentsForOrPattern(orPat, mkSourceAst)
       case _                              => notHandledYet(pat) :: Nil
@@ -800,14 +801,20 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // Path =
   //  (qualifier:Path '::')? segment:PathSegment
   private def visitPath(path: Path): Ast = {
-    lowerPathAsFieldAccess(path)
+    path.path match {
+      case None            => visitPathSegment(path.pathSegment)
+      case Some(qualifier) => lowerQualifiedPath(path, qualifier)
+    }
   }
 
-  // TODO
-  private def lowerPathAsFieldAccess(path: Path): Ast = {
-    path.path match {
-      case None    => visitPathSegment(path.pathSegment)
-      case Some(_) => notHandledYet(path)
+  // TODO: `<Foo as Bar>::baz`, etc.
+  private def lowerQualifiedPath(path: Path, qualifier: Path): Ast = {
+    qualifier.pathSegment.nameRef.flatMap(_.typeFullName) match {
+      case Some(qualifierTypeFullName) =>
+        val typeRefAst = Ast(typeRefNode(qualifier, code(qualifier), qualifierTypeFullName))
+        val fieldName  = code(path.pathSegment)
+        fieldAccessAst(path, path.pathSegment, typeRefAst, code(path), fieldName, typeFullNameForPath(path))
+      case None => notHandledYet(path)
     }
   }
 
