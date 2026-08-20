@@ -1005,44 +1005,30 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // ForExpr =
   //  Attr* Label? 'for' Pat 'in' iterable:Expr
   //  loop_body:BlockExpr
-  private def visitForExpr(forExpr: ForExpr): Ast = {
-    // TODO: only handling `for x in expr` with `x` an identifier.
-    forExpr.pat match {
-      case identPat: IdentPat =>
-        identPat.name.identToken match {
-          case Some(identToken) => lowerForExprWithIdentPattern(forExpr, identPat)
-          case None =>
-            notHandledYet(forExpr)
-            visitBlockExpr(forExpr.blockExpr)
-        }
-      case _ =>
-        notHandledYet(forExpr)
-        visitBlockExpr(forExpr.blockExpr)
-    }
-  }
-
-  // Lowering `for x in y` as follows:
+  //
+  // Lowering `for pat in y` as follows:
   // BLOCK {
   //   LOCAL tmp
   //   tmp = y.into_iter()
   //   WHILE (UNKNOWN) {
-  //     LOCAL x
-  //     x = tmp.next()
+  //     LOCAL tmp2
+  //     <createLocalsForBindings(pat)>
+  //     tmp2 = tmp.next()
+  //     <createAssignmentsForPattern(pat, tmp2)>
   //     body
   //   }
   // }
   // NB: the condition is currently UNKNOWN. A more faithful lowering would be:
   // WHILE (TRUE) {
   //  match tmp.next() {
-  //    Some(x) => body
-  //    None    => break
+  //    Some(pat) => body
+  //    None      => break
   //  }
-  // But we currently don't lower `match` expressions.
-  // TODO: revisit once match expressions are handled.
-  private def lowerForExprWithIdentPattern(forExpr: ForExpr, identPat: IdentPat): Ast = {
-    val iterable    = forExpr.expr
-    val tmpName     = contextStack.nextTmpName()
-    val tmpLocalAst = localAst(iterable, tmpName, tmpName, Defines.Any)
+  private def visitForExpr(forExpr: ForExpr): Ast = {
+    val iterable     = forExpr.expr
+    val tmpName      = contextStack.nextTmpName()
+    val tmpLocalAst  = localAst(iterable, tmpName, tmpName, Defines.Any)
+    val typeFullName = typeFullNameForPat(forExpr.pat)
 
     // tmp = y.into_iter()
     val intoIterAssignAst = {
@@ -1066,36 +1052,43 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       )
     }
 
-    // LOCAL x; x = tmp.next()
-    val lhsName      = code(identPat)
-    val typeFullName = typeFullNameForIdentPat(identPat)
-    val localAst_    = localAst(identPat, lhsName, lhsName, typeFullName)
-    val nextAssignAst = {
+    // tmp.next()
+    def mkNextAst(): Ast = {
       val nextName = "next"
-      val nextCode = s"$tmpName.$nextName()"
-      val lhsAst   = identifierAst(identPat, lhsName, lhsName, typeFullName)
       val nextTypeFullName = typeFullName match {
         case Defines.Any => Defines.Any
         case other       => s"core::option::Option<$other>"
       }
       val nextCall = callNode(
-        node = identPat,
-        code = nextCode,
+        node = forExpr.pat,
+        code = s"$tmpName.$nextName()",
         name = nextName,
         methodFullName = combineRustFullName(Defines.UnresolvedNamespace, nextName),
         dispatchType = DispatchTypes.STATIC_DISPATCH,
         signature = None,
         typeFullName = Some(nextTypeFullName)
       )
-      val tmpIdentAst = identifierAst(identPat, tmpName, tmpName, Defines.Any)
-      callAst(
-        assignmentNode(identPat, s"$lhsName = $nextCode"),
-        Seq(lhsAst, callAst(nextCall, Seq.empty, base = Some(tmpIdentAst)))
-      )
+      callAst(nextCall, Seq.empty, base = Some(identifierAst(forExpr.pat, tmpName, tmpName, Defines.Any)))
+    }
+
+    val bindings  = collectPatternBindings(forExpr.pat)
+    val localAsts = createLocalsForBindings(bindings)
+    val bindingAsts = if (bindings.length == 1) {
+      localAsts ++ createAssignmentsForPattern(forExpr.pat, mkNextAst)
+    } else {
+      val itemName       = contextStack.nextTmpName()
+      val itemLocalAst   = localAst(forExpr.pat, itemName, itemName, typeFullName)
+      val mkItemIdentAst = () => identifierAst(forExpr.pat, itemName, itemName, typeFullName)
+      val nextAst        = mkNextAst()
+      val itemAssignAst =
+        callAst(assignmentNode(forExpr.pat, s"$itemName = ${nextAst.rootCodeOrEmpty}"), Seq(mkItemIdentAst(), nextAst))
+      val assignments = createAssignmentsForPattern(forExpr.pat, mkItemIdentAst)
+
+      (itemLocalAst +: localAsts) ++ (itemAssignAst +: assignments)
     }
 
     val stmts        = visitStmtList(forExpr.blockExpr.stmtList)
-    val bodyAst      = Ast(blockNode(forExpr.blockExpr)).withChildren(Seq(localAst_, nextAssignAst) ++ stmts)
+    val bodyAst      = Ast(blockNode(forExpr.blockExpr)).withChildren(bindingAsts ++ stmts)
     val conditionAst = Ast(unknownNode(forExpr, code(forExpr)))
     val whileLoopAst = whileAst(forExpr, Some(conditionAst), Seq(bodyAst))
 
