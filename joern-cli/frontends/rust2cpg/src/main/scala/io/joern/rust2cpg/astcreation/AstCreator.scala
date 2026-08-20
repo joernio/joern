@@ -170,6 +170,20 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     )
   }
 
+  protected def typeDeclForVariant(variant: RustNodeSyntax.Variant, enumFullName: String): NewTypeDecl = {
+    val name = code(variant.name)
+    typeDeclNode(
+      node = variant,
+      name = name,
+      fullName = combineRustFullName(enumFullName, name),
+      filename = parseResult.filename,
+      code = code(variant),
+      astParentType = contextStack.astParentType,
+      astParentFullName = contextStack.astParentFullName,
+      inherits = Seq(enumFullName)
+    )
+  }
+
   protected def typeDeclForImpl(impl: RustNodeSyntax.Impl): NewTypeDecl = {
     val implType = typeFullNameForType(impl.typ.last)
     val name     = implType.split(RustFullNames.PathSep).lastOption.getOrElse(implType)
