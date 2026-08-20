@@ -195,4 +195,63 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "generic tuple enum" should {
+    val cpg = code("""
+        |enum Wrapper<T> { One(T) }
+        |fn main() {
+        |  let w = Wrapper::One(5u8);
+        |}
+        |""".stripMargin)
+
+    "have correct variant fullName" in {
+      cpg.typeDecl.nameExact("One").fullName.l shouldBe List("rust2cpgtest::Wrapper<T>::One")
+    }
+
+    "have correct inheritsFrom" in {
+      cpg.typeDecl
+        .fullNameExact("rust2cpgtest::Wrapper<T>::One")
+        .inheritsFromTypeFullName
+        .l shouldBe List("rust2cpgtest::Wrapper<T>")
+    }
+
+    "have correct ctor wrapper fullName" in {
+      cpg.method.nameExact("One").fullName.l shouldBe List("rust2cpgtest::Wrapper<T>::One")
+    }
+
+    "have the same fullName as the one at the call site" in {
+      cpg.call.nameExact("One").methodFullName.l shouldBe List("rust2cpgtest::Wrapper<T>::One")
+    }
+  }
+
+  "same-named enums in both branches of an if" should {
+    val cpg = code("""
+        |fn outer(c: bool) {
+        |  if c {
+        |    enum Inner { Red(i32) }
+        |    Inner::Red(1);
+        |  } else {
+        |    enum Inner { Green(bool) }
+        |    Inner::Green(true);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct fullNames" in {
+      inside(cpg.typeDecl.nameExact("Inner").sortBy(_.lineNumber).l) { case thenInner :: elseInner :: Nil =>
+        thenInner.fullName shouldBe "rust2cpgtest::outer::Inner#1"
+        elseInner.fullName shouldBe "rust2cpgtest::outer::Inner#2"
+      }
+    }
+
+    "have correct variant fullNames" in {
+      cpg.typeDecl.nameExact("Red").fullName.l shouldBe List("rust2cpgtest::outer::Inner#1::Red")
+      cpg.typeDecl.nameExact("Green").fullName.l shouldBe List("rust2cpgtest::outer::Inner#2::Green")
+    }
+
+    "have correct ctor wrapper fullNames" in {
+      cpg.method.nameExact("Red").fullName.l shouldBe List("rust2cpgtest::outer::Inner#1::Red")
+      cpg.method.nameExact("Green").fullName.l shouldBe List("rust2cpgtest::outer::Inner#2::Green")
+    }
+  }
 }
