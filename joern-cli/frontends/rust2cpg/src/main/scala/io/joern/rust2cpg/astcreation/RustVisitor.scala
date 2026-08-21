@@ -356,41 +356,34 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   private def createAssignmentsForTuplePattern(tuplePat: TuplePat, mkSourceAst: () => Ast): Seq[Ast] = {
-    if (tuplePat.pat.exists(_.isInstanceOf[RestPat])) {
-      // TODO: patterns (x, .., y). From rust_ast_gen, we should type patterns as well.
-      notHandledYet(tuplePat) :: Nil
-    } else {
-      tuplePat.pat.zipWithIndex.flatMap { case (pat, index) =>
-        val fieldName = index.toString
-        val fieldType = typeFullNameForPat(pat)
-        def fieldAccess(): Ast = {
-          val sourceAst  = mkSourceAst()
-          val accessCode = s"${sourceAst.rootCodeOrEmpty}.$fieldName"
-          fieldAccessAst(pat, pat, sourceAst, accessCode, fieldName, fieldType)
-        }
-        createAssignmentsForPattern(pat, fieldAccess)
-      }
-    }
+    createAssignmentsForTupleElements(tuplePat, tuplePat.pat, mkSourceAst)
   }
 
   private def createAssignmentsForTupleStructPattern(
     tupleStructPat: TupleStructPat,
     mkSourceAst: () => Ast
   ): Seq[Ast] = {
-    if (tupleStructPat.pat.exists(_.isInstanceOf[RestPat])) {
-      // TODO: patterns Foo(x, .., y). From rust_ast_gen, we should type patterns as well.
-      notHandledYet(tupleStructPat) :: Nil
-    } else {
-      tupleStructPat.pat.zipWithIndex.flatMap { case (pat, index) =>
-        val fieldName = index.toString
-        val fieldType = typeFullNameForPat(pat)
-        def fieldAccess(): Ast = {
-          val sourceAst  = mkSourceAst()
-          val accessCode = s"${sourceAst.rootCodeOrEmpty}.$fieldName"
-          fieldAccessAst(pat, pat, sourceAst, accessCode, fieldName, fieldType)
-        }
-        createAssignmentsForPattern(pat, fieldAccess)
+    createAssignmentsForTupleElements(tupleStructPat, tupleStructPat.pat, mkSourceAst)
+  }
+
+  // TODO(rust_ast_gen): how many elements the tuple has, so we know how many elements to skip after RestPat.
+  private def createAssignmentsForTupleElements(pat: Pat, elements: Seq[Pat], mkSourceAst: () => Ast): Seq[Ast] = {
+    val (prefix, fromRest) = elements.span(!_.isInstanceOf[RestPat])
+    val assignments = prefix.zipWithIndex.flatMap { case (element, index) =>
+      val fieldName = index.toString
+      val fieldType = typeFullNameForPat(element)
+      def mkFieldAccess(): Ast = {
+        val sourceAst       = mkSourceAst()
+        val fieldAccessCode = s"${sourceAst.rootCodeOrEmpty}.$fieldName"
+        fieldAccessAst(element, element, sourceAst, fieldAccessCode, fieldName, fieldType)
       }
+      createAssignmentsForPattern(element, mkFieldAccess)
+    }
+    val bindingsAfterRest = fromRest.drop(1).flatMap(collectPatternBindings)
+    if (bindingsAfterRest.isEmpty) {
+      assignments
+    } else {
+      assignments :+ notHandledYet(pat)
     }
   }
 
