@@ -1446,4 +1446,28 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "unnamed top-level const" should {
+    val cpg = code("""
+        |fn foo() {}
+        |const _: () = {
+        |  foo();
+        |};
+        |""".stripMargin)
+
+    "have correct assignment" in {
+      inside(cpg.assignment.l) { case assignment :: Nil =>
+        assignment.code shouldBe "const _: () = {\n  foo();\n};"
+        inside(assignment.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Block) :: Nil =>
+          lhs.name shouldBe "<tmp>0"
+          lhs.typeFullName shouldBe "()"
+          inside(rhs.astChildren.l) { case (foo: Call) :: Nil =>
+            foo.name shouldBe "foo"
+            foo.methodFullName shouldBe "rust2cpgtest::foo"
+            foo.code shouldBe "foo()"
+          }
+        }
+      }
+    }
+  }
 }
