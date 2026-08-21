@@ -235,10 +235,14 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  ('=' body:Expr)?
   //  WhereClause? ';'
   private def visitConst(const: Const): Seq[Ast] = {
-    (const.name.flatMap(_.identToken), const.expr) match {
-      case (Some(identToken), Some(rhsExpr)) =>
+    (const.name.flatMap(_.identToken), const.underscoreToken, const.expr) match {
+      case (Some(identToken), None, Some(rhsExpr)) =>
         val typeFullName = typeFullNameForType(const.typ)
-        lowerIdentifierDecl(identToken, visitExpr(rhsExpr), typeFullName, code(const))
+        lowerIdentifierDecl(identToken, code(identToken), visitExpr(rhsExpr), typeFullName, code(const))
+      case (None, Some(underscoreToken), Some(rhsExpr)) =>
+        val tmpName      = contextStack.nextTmpName()
+        val typeFullName = typeFullNameForType(const.typ)
+        lowerIdentifierDecl(underscoreToken, tmpName, visitExpr(rhsExpr), typeFullName, code(const))
       case _ => notHandledYet(const) :: Nil
     }
   }
@@ -251,7 +255,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     (static.name.identToken, static.expr) match {
       case (Some(identToken), Some(rhsExpr)) =>
         val typeFullName = typeFullNameForType(static.typ)
-        lowerIdentifierDecl(identToken, visitExpr(rhsExpr), typeFullName, code(static))
+        lowerIdentifierDecl(identToken, code(identToken), visitExpr(rhsExpr), typeFullName, code(static))
       case _ => notHandledYet(static) :: Nil
     }
   }
@@ -503,14 +507,14 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // - LOCAL (lhsToken) with given typeFullName
   // - CALL (assignment) for lhsToken = rhsAst
   private def lowerIdentifierDecl(
-    lhsToken: IdentToken,
+    lhsToken: RustToken,
+    lhsName: String,
     rhsAst: Ast,
     typeFullName: String,
     declCode: String
   ): Seq[Ast] = {
-    val lhsName       = code(lhsToken)
-    val local         = localAst(lhsToken, lhsName, code(lhsToken), typeFullName)
-    val lhsAst        = identifierAst(lhsToken, lhsName, code(lhsToken), typeFullName)
+    val local         = localAst(lhsToken, lhsName, lhsName, typeFullName)
+    val lhsAst        = identifierAst(lhsToken, lhsName, lhsName, typeFullName)
     val assignmentAst = callAst(assignmentNode(lhsToken, declCode), Seq(lhsAst, rhsAst))
 
     Seq(local, assignmentAst)
