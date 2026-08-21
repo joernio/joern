@@ -5,13 +5,12 @@ import io.joern.x2cpg.X2CpgConfig.GenericConfig
 import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery, XTypeRecoveryConfig}
 import io.joern.x2cpg.typestub.TypeStubConfig
 import io.joern.x2cpg.utils.server.FrontendHTTPServer
-import io.joern.x2cpg.{DependencyDownloadConfig, X2CpgConfig, X2CpgMain}
+import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
 import java.nio.file.Paths
 
 final case class Config(
-  downloadDependencies: Boolean = false,
   useTypeStubs: Boolean = true,
   override val genericConfig: GenericConfig = GenericConfig(defaultIgnoredFilesRegex =
     List("spec", "tests?", "vendor", "db(\\\\|/)([\\w_]*)migrate([_\\w]*)").flatMap { directory =>
@@ -20,7 +19,6 @@ final case class Config(
   ),
   override val typeRecoveryParserConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
 ) extends X2CpgConfig[Config]
-    with DependencyDownloadConfig
     with TypeRecoveryParserConfig
     with TypeStubConfig {
 
@@ -28,10 +26,6 @@ final case class Config(
 
   override def withTypeRecoveryParserConfig(value: TypeRecoveryParserConfig.Config): Config =
     copy(typeRecoveryParserConfig = value)
-
-  override def withDownloadDependencies(value: Boolean): Config = {
-    copy(downloadDependencies = value)
-  }
 
   override def withTypeStubs(value: Boolean): Config = {
     copy(useTypeStubs = value)
@@ -50,7 +44,6 @@ private object Frontend {
       opt[Unit]("enable-file-content")
         .action((_, c) => c.withDisableFileContent(false))
         .text("Enable file content"),
-      DependencyDownloadConfig.parserOptions,
       XTypeRecoveryConfig.parserOptionsForParserConfig,
       TypeStubConfig.parserOptions
     )
