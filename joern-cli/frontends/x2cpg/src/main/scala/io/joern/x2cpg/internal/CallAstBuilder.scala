@@ -61,6 +61,29 @@ private[x2cpg] trait CallAstBuilder[Node, NodeProcessor] {
       .withReceiverEdges(callNode, receiverRoot)
   }
 
+  /** Create an abstract syntax tree for a static call, i.e. a call without a base or receiver.
+    *
+    * This is a simplified variant of [[callAst]] for calls that are statically dispatched and do not require a `this`
+    * instance or receiver object (e.g. static method calls, top-level function calls, scope-resolution calls).
+    *
+    * @param callNode
+    *   the node that represents the entire call
+    * @param arguments
+    *   arguments to the call
+    * @param startArgumentIndex
+    *   optionally override the starting argument index (defaults to 1 when not provided)
+    */
+  def staticCallAst(callNode: NewCall, arguments: Seq[Ast] = List(), startArgumentIndex: Option[Int] = None): Ast = {
+    if (startArgumentIndex.nonEmpty)
+      setArgumentIndices(arguments, startArgumentIndex.get)
+    else
+      setArgumentIndices(arguments)
+
+    Ast(callNode)
+      .withChildren(arguments)
+      .withArgEdges(callNode, arguments.flatMap(_.root))
+  }
+
   /** Creates an AST for a field-access expression (`base.fieldName`).
     *
     * Emits a [[io.shiftleft.codepropertygraph.generated.Operators.fieldAccess]] call node with `base` as the first
