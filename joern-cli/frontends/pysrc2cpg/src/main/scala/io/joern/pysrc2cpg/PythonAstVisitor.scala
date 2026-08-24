@@ -437,6 +437,11 @@ class PythonAstVisitor(
     contextStack.pop()
     edgeBuilder.astEdge(typeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
     createBinding(methodNode, typeDeclNode)
+    if (name == Constants.callName) {
+      contextStack.findEnclosingTypeDecl().foreach { enclosingTypeDecl =>
+        createBinding(methodNode, enclosingTypeDecl)
+      }
+    }
 
     methodNode
   }

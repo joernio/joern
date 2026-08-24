@@ -154,4 +154,18 @@ class ClassCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
     memberAssignment.code shouldBe "cls.AAA = AAA"
   }
 
+  "__call__ method should be bound into class type decl" in {
+    val cpg = code("""class Foo:
+                     |   def __call__(self, x):
+                     |     pass
+                     |""".stripMargin)
+
+    inside(cpg.typeDecl.name("Foo").l) { case List(typeDecl) =>
+      inside(typeDecl.bindsOut.l) { case List(binding) =>
+        binding.name shouldBe ""
+        binding.signature shouldBe ""
+        binding.boundMethod shouldBe cpg.method.name("__call__").head
+      }
+    }
+  }
 }
