@@ -1,7 +1,7 @@
 package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, nodes}
 import io.shiftleft.semanticcpg.language.*
 
 class ClassCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
@@ -73,6 +73,39 @@ class ClassCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     }
 
+    "have correct metaClassHandler implementation" in {
+      val cpg = code("""class Foo:
+                       |  def __init__(self, x):
+                       |    pass
+                       |""".stripMargin)
+
+      val handlerMethod = cpg.method.name("<metaClassCallHandler>").head
+      handlerMethod.fullName shouldBe "Test0.py:<module>.Foo.<metaClassCallHandler>"
+      handlerMethod.lineNumber shouldBe Some(2)
+
+      handlerMethod.parameter.size shouldBe 1
+      val xParameter = handlerMethod.parameter.head
+      xParameter.name shouldBe "x"
+
+      val newInstanceAssign = handlerMethod.topLevelExpressions.isCall.l(0)
+      newInstanceAssign.code shouldBe "__newInstance = class Foo<meta>(...).<fakeNew>(x)"
+      val fakeNewCall = newInstanceAssign.argumentOption(2).isCall.head
+      fakeNewCall.receiver.code.head shouldBe "class Foo<meta>(...).<fakeNew>"
+      fakeNewCall.argument(0).code shouldBe "class Foo<meta>(...)"
+      fakeNewCall.argument(1).code shouldBe "x"
+
+      val initCall = handlerMethod.topLevelExpressions.isCall.l(1)
+      initCall.code shouldBe "__newInstance.__init__(x)"
+      initCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      initCall.receiver.code.head shouldBe "__newInstance.__init__"
+      initCall.argument(0).code shouldBe "__newInstance"
+      initCall.argument(1).code shouldBe "x"
+
+      val returnStmt = handlerMethod.topLevelExpressions.l(2).asInstanceOf[nodes.Return]
+      returnStmt.code shouldBe "return __newInstance"
+      returnStmt.astChildren.head.code shouldBe "__newInstance"
+    }
+
     "have correct full name for func1 method in class" in {
       val cpg = code("""class Foo:
                        |  def func1(self):
@@ -117,7 +150,7 @@ class ClassCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     val List(bodyMethod)          = cpg.method.name("<body>").l
     val List(block)               = bodyMethod.topLevelExpressions.l
-    val List(_, memberAssignment) = block.astChildren.collectAll[Call].l
+    val List(_, memberAssignment) = block.astChildren.collectAll[nodes.Call].l
     memberAssignment.code shouldBe "cls.AAA = AAA"
   }
 
