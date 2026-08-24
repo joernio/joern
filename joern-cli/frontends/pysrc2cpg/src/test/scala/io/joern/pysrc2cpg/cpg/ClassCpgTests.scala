@@ -1,7 +1,7 @@
 package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, nodes}
 import io.shiftleft.semanticcpg.language.*
 
 class ClassCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
@@ -96,6 +96,7 @@ class ClassCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
       val initCall = handlerMethod.topLevelExpressions.isCall.l(1)
       initCall.code shouldBe "__newInstance.__init__(x)"
+      initCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       initCall.receiver.code.head shouldBe "__newInstance.__init__"
       initCall.argument(0).code shouldBe "__newInstance"
       initCall.argument(1).code shouldBe "x"
