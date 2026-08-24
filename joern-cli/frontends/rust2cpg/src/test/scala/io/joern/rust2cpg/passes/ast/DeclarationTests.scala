@@ -1470,4 +1470,25 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "multiple unnamed top-level consts with same-named declarations" should {
+    val cpg = code("""
+        |const _: () = {
+        |  fn __ctor() {}
+        |  struct Inner;
+        |};
+        |const _: () = {
+        |  fn __ctor() {}
+        |  struct Inner;
+        |};
+        |""".stripMargin)
+
+    "have correct methodFullNames" in {
+      cpg.method.nameExact("__ctor").fullName.sorted.l shouldBe List("rust2cpgtest::__ctor#1", "rust2cpgtest::__ctor#2")
+    }
+
+    "have correct typeDecl fullNames" in {
+      cpg.typeDecl.nameExact("Inner").fullName.sorted.l shouldBe List("rust2cpgtest::Inner#1", "rust2cpgtest::Inner#2")
+    }
+  }
 }
