@@ -4,6 +4,8 @@ import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import java.nio.file.Paths
 
 class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
 
@@ -237,6 +239,33 @@ class MacroTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
           format.argument.isCall.nameExact(Operators.formattedValue).argument.isIdentifier.name.l shouldBe List("x")
         }
       }
+    }
+  }
+
+  "a file include!-ed twice" should {
+    val cpg = code(
+      """
+        |include!("foo.rs");
+        |
+        |mod bar {
+        | include!("foo.rs");
+        |}
+        |
+        |fn main() {
+        | foo();
+        | bar::foo();
+        |}
+        |""".stripMargin,
+      fileName = (Paths.get("src") / "lib.rs").toString
+    ).moreCode("pub fn foo() {}", fileName = (Paths.get("src") / "foo.rs").toString)
+
+    "have correct files" in {
+      cpg.file.name.sorted.l shouldBe List("<unknown>", (Paths.get("src") / "lib.rs").toString)
+    }
+
+    "have correct fullNames" in {
+      cpg.method.nameExact("foo").fullName.sorted.l shouldBe List("rust2cpgtest::bar::foo", "rust2cpgtest::foo")
+      cpg.call.nameExact("foo").methodFullName.sorted.l shouldBe List("rust2cpgtest::bar::foo", "rust2cpgtest::foo")
     }
   }
 }
