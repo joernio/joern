@@ -1644,8 +1644,9 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  MacroCall
   private def visitMacroExpr(macroExpr: MacroExpr): Ast = {
     visitMacroCall(macroExpr.macroCall) match {
+      case Nil            => macroNotExpanded(macroExpr.macroCall)
       case exprAst :: Nil => exprAst
-      case asts           => blockAst(blockNode(macroExpr), asts.toList)
+      case asts => blockAst(blockNode(macroExpr, code(macroExpr), typeFullNameForExpr(macroExpr)), asts.toList)
     }
   }
 

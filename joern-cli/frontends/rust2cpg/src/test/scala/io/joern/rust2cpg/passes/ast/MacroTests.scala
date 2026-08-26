@@ -126,6 +126,8 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct children" in {
       inside(cpg.method.nameExact("main").block.assignment.source.isBlock.astChildren.l) { case (three: Block) :: Nil =>
+        three.code shouldBe "three!()"
+        three.typeFullName shouldBe "i32"
         inside(three.astChildren.l) {
           case (local: Local) :: (assign: Call) :: (assignPlus: Call) :: (ident: Identifier) :: Nil =>
             local.name shouldBe "s"
@@ -193,6 +195,60 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.method.name("main").block.astChildren.l) { case (broken: Unknown) :: Nil =>
         broken.code shouldBe "broken!()"
         broken.lineNumber shouldBe Some(4)
+      }
+    }
+  }
+
+  "identity proc-macro call" should {
+    val cpg = code("""
+        |use proc_macro::TokenStream;
+        |
+        |#[proc_macro]
+        |pub fn foo(item: TokenStream) -> TokenStream { item }
+        |
+        |pub fn bar() {
+        |    let baz = foo![Qux];
+        |    foo![Qux]
+        |}
+        |""".stripMargin)
+      .moreCode(
+        """
+          |[package]
+          |name = "rust2cpgtest"
+          |version = "0.1.0"
+          |edition = "2021"
+          |
+          |[lib]
+          |proc-macro = true
+          |""".stripMargin,
+        fileName = "Cargo.toml"
+      )
+
+    "have correct assignment" in {
+      cpg.method.fullNameExact("rust2cpgtest::bar").block.assignment.code.l shouldBe List("let baz = foo![Qux];")
+
+      // TODO(rust_ast_gen): expand proc-macros.
+      inside(cpg.method.fullNameExact("rust2cpgtest::bar").block.assignment.source.l) { case (qux: Unknown) :: Nil =>
+        qux.code shouldBe "foo![Qux]"
+        qux.lineNumber shouldBe Some(8)
+      }
+      pendingUntilFixed {
+        inside(cpg.method.fullNameExact("rust2cpgtest::bar").block.assignment.source.l) {
+          case (qux: Identifier) :: Nil =>
+            qux.name shouldBe "Qux"
+            qux.code shouldBe "Qux"
+        }
+      }
+    }
+
+    // TODO: update once proc-macros are supported.
+    "have correct return" in {
+      inside(cpg.method.nameExact("bar").block.astChildren.isReturn.l) { case ret :: Nil =>
+        ret.code shouldBe "foo![Qux]"
+        inside(ret.astChildren.l) { case (qux: Unknown) :: Nil =>
+          qux.code shouldBe "foo![Qux]"
+          qux.lineNumber shouldBe Some(9)
+        }
       }
     }
   }
