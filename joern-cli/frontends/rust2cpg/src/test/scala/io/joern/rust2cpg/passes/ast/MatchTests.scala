@@ -112,4 +112,88 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "match with guards" should {
+    val cpg = code("""
+        |fn foo(x: (i32, i32)) {
+        |  match x {
+        |  (n, _) if n > 3 => bar(n),
+        |  _ if baz() => qux(),
+        |  _ => 0,
+        |  };
+        |}
+        |""".stripMargin)
+
+    "have correct jump target names" in {
+      cpg.jumpTarget.sortBy(_.order).name.l shouldBe List("case (n, _) if n > 3", "case _ if baz()", "case _")
+    }
+
+    "have correct locals" in {
+      inside(cpg.local.sortBy(_.order).l) { case tmp :: nLocal :: Nil =>
+        tmp.name shouldBe "<tmp>0"
+        tmp.typeFullName shouldBe "(i32, i32)"
+        nLocal.name shouldBe "n"
+        nLocal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct local assignments" in {
+      cpg.method.nameExact("foo").block.assignment.sortBy(_.order).code.l shouldBe List("<tmp>0 = x", "n = <tmp>0.0")
+    }
+
+    "have correct if control structures" in {
+      inside(cpg.ifBlock.sortBy(_.lineNumber).l) { case guard1 :: guard2 :: Nil =>
+        guard1.code shouldBe "if n > 3"
+        guard1.condition.code.l shouldBe List("n > 3")
+        guard1.whenTrue.code.l shouldBe List("bar(n)")
+        guard1.whenFalse shouldBe empty
+
+        guard2.code shouldBe "if baz()"
+        guard2.condition.code.l shouldBe List("baz()")
+        guard2.whenTrue.code.l shouldBe List("qux()")
+        guard2.whenFalse shouldBe empty
+      }
+    }
+  }
+
+  "match with an or-pattern case" should {
+    val cpg = code("""
+        |struct Point { x: i32, y: i32 }
+        |
+        |fn foo(p: Point) {
+        |  match p {
+        |  Point { x: 0, y: a } | Point { x: a, y: 0 } => bar(a),
+        |  _ => 0,
+        |  };
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.local.l) { case tmp0 :: aLocal :: tmp1 :: Nil =>
+        tmp0.name shouldBe "<tmp>0"
+        tmp0.typeFullName shouldBe "rust2cpgtest::Point"
+        aLocal.name shouldBe "a"
+        aLocal.typeFullName shouldBe "i32"
+        tmp1.name shouldBe "<tmp>1"
+        tmp1.typeFullName shouldBe "rust2cpgtest::Point"
+      }
+    }
+
+    "have correct assignments" in {
+      cpg.method.nameExact("foo").block.assignment.code.sorted.l shouldBe
+        List("<tmp>0 = p", "<tmp>1 = <tmp>0", "a = <tmp>1.x", "a = <tmp>1.y")
+    }
+
+    "have correct if control structure" in {
+      inside(cpg.ifBlock.l) { case ifNode :: elseIfNode :: Nil =>
+        ifNode.condition.code.l shouldBe List("Point { x: 0, y: a }")
+        ifNode.whenTrue.isBlock.assignment.code.l shouldBe List("a = <tmp>1.y")
+        ifNode.whenFalse.l shouldBe List(elseIfNode)
+
+        elseIfNode.condition.code.l shouldBe List("Point { x: a, y: 0 }")
+        elseIfNode.whenTrue.isBlock.assignment.code.l shouldBe List("a = <tmp>1.x")
+        elseIfNode.whenFalse.l shouldBe empty
+      }
+    }
+  }
+
 }

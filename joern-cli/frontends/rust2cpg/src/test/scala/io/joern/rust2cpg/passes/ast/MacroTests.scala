@@ -4,6 +4,8 @@ import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import java.nio.file.Paths
 
 class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
 
@@ -94,6 +96,47 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "inline the expanded expression" in {
       cpg.method.nameExact("main").block.astChildren.code.l shouldBe List("2")
+    }
+  }
+
+  "macro call expression expanding to multiple statements" should {
+    val cpg = code("""
+        |macro_rules! three { () => { let mut s = 1; s += 2; s }; }
+        |fn main() {
+        | let x = { three!() };
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.local.sortBy(_.order).l) { case xLocal :: sLocal :: Nil =>
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "i32"
+        sLocal.name shouldBe "s"
+        sLocal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct assignments" in {
+      cpg.method.nameExact("main").block.assignment.sortBy(_.order).code.l shouldBe List(
+        "let x = { three!() };",
+        "let mut s = 1;",
+        "s+=2"
+      )
+    }
+
+    "have correct children" in {
+      inside(cpg.method.nameExact("main").block.assignment.source.isBlock.astChildren.l) { case (three: Block) :: Nil =>
+        inside(three.astChildren.l) {
+          case (local: Local) :: (assign: Call) :: (assignPlus: Call) :: (ident: Identifier) :: Nil =>
+            local.name shouldBe "s"
+            assign.code shouldBe "let mut s = 1;"
+            assign.methodFullName shouldBe Operators.assignment
+            assignPlus.code shouldBe "s+=2"
+            assignPlus.methodFullName shouldBe Operators.assignmentPlus
+            ident.name shouldBe "s"
+            ident.typeFullName shouldBe "i32"
+        }
+      }
     }
   }
 
@@ -237,6 +280,33 @@ class MacroTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
           format.argument.isCall.nameExact(Operators.formattedValue).argument.isIdentifier.name.l shouldBe List("x")
         }
       }
+    }
+  }
+
+  "a file include!-ed twice" should {
+    val cpg = code(
+      """
+        |include!("foo.rs");
+        |
+        |mod bar {
+        | include!("foo.rs");
+        |}
+        |
+        |fn main() {
+        | foo();
+        | bar::foo();
+        |}
+        |""".stripMargin,
+      fileName = (Paths.get("src") / "lib.rs").toString
+    ).moreCode("pub fn foo() {}", fileName = (Paths.get("src") / "foo.rs").toString)
+
+    "have correct files" in {
+      cpg.file.name.sorted.l shouldBe List("<unknown>", (Paths.get("src") / "lib.rs").toString)
+    }
+
+    "have correct fullNames" in {
+      cpg.method.nameExact("foo").fullName.sorted.l shouldBe List("rust2cpgtest::bar::foo", "rust2cpgtest::foo")
+      cpg.call.nameExact("foo").methodFullName.sorted.l shouldBe List("rust2cpgtest::bar::foo", "rust2cpgtest::foo")
     }
   }
 }

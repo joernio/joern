@@ -17,7 +17,7 @@ import java.io.File
 import java.nio.charset.Charset
 import scala.util.Using
 
-trait RubyFrontend(withDownloadDependencies: Boolean, disableFileContent: Boolean) extends LanguageFrontend {
+trait RubyFrontend(disableFileContent: Boolean) extends LanguageFrontend {
   override type ConfigType = Config
 
   override val fileSuffix: String = ".rb"
@@ -27,7 +27,6 @@ trait RubyFrontend(withDownloadDependencies: Boolean, disableFileContent: Boolea
   implicit val config: Config =
     getConfig()
       .getOrElse(Config().withSchemaValidation(ValidationMode.Enabled))
-      .withDownloadDependencies(withDownloadDependencies)
       .withDisableFileContent(disableFileContent)
 
   override def execute(sourceCodeFile: File): Cpg = {
@@ -35,15 +34,15 @@ trait RubyFrontend(withDownloadDependencies: Boolean, disableFileContent: Boolea
       Using.resource(new RubySrc2Cpg(sharedJRubyEnv))(
         _.createCpg(config.withInputPath(sourceCodeFile.getAbsolutePath)).get
       )
-    new PostFrontendValidator(tmp, ValidationLevel.V0).run()
+    new PostFrontendValidator(tmp, ValidationLevel.V2).run()
     tmp
   }
 
 }
 
-class DefaultTestCpgWithRuby(downloadDependencies: Boolean = false, disableFileContent: Boolean = true)
+class DefaultTestCpgWithRuby(disableFileContent: Boolean = true)
     extends DefaultTestCpg
-    with RubyFrontend(downloadDependencies, disableFileContent)
+    with RubyFrontend(disableFileContent)
     with SemanticTestCpg {
 
   private var _sharedJRubyEnv: Option[JRubyEnvironment] = None
@@ -68,11 +67,10 @@ class DefaultTestCpgWithRuby(downloadDependencies: Boolean = false, disableFileC
 class RubyCode2CpgFixture(
   withPostProcessing: Boolean = false,
   withDataFlow: Boolean = false,
-  downloadDependencies: Boolean = false,
   disableFileContent: Boolean = true,
   semantics: Semantics = DefaultSemantics()
 ) extends Code2CpgFixture(() =>
-      new DefaultTestCpgWithRuby(downloadDependencies, disableFileContent)
+      new DefaultTestCpgWithRuby(disableFileContent)
         .withOssDataflow(withDataFlow)
         .withSemantics(semantics)
         .withPostProcessingPasses(withPostProcessing)
@@ -107,9 +105,7 @@ class RubyCode2CpgFixture(
     }
 }
 
-class RubyCfgTestCpg(downloadDependencies: Boolean = false, disableFileContent: Boolean = true)
-    extends CfgTestCpg
-    with RubyFrontend(downloadDependencies, disableFileContent) {
+class RubyCfgTestCpg(disableFileContent: Boolean = true) extends CfgTestCpg with RubyFrontend(disableFileContent) {
   override val fileSuffix: String = ".rb"
 
 }

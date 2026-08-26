@@ -2,7 +2,7 @@ package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -1119,6 +1119,31 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
           endAssign.code shouldBe "end = <tmp>0.end"
       }
     }
+
+    "have correct field accesses" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.name shouldBe Operators.fieldAccess
+        fieldAccess.typeFullName shouldBe "i32"
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case (startFieldAccess: Call) :: (field: FieldIdentifier) :: Nil =>
+            field.canonicalName shouldBe "x"
+            startFieldAccess.name shouldBe Operators.fieldAccess
+            startFieldAccess.code shouldBe "<tmp>0.start"
+            startFieldAccess.typeFullName shouldBe "rust2cpgtest::Point"
+        }
+      }
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("y")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.name shouldBe Operators.fieldAccess
+        fieldAccess.typeFullName shouldBe "i64"
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case (startFieldAccess: Call) :: (field: FieldIdentifier) :: Nil =>
+            field.canonicalName shouldBe "y"
+            startFieldAccess.name shouldBe Operators.fieldAccess
+            startFieldAccess.code shouldBe "<tmp>0.start"
+            startFieldAccess.typeFullName shouldBe "rust2cpgtest::Point"
+        }
+      }
+    }
   }
 
   "let with a record pattern in a tuple pattern" should {
@@ -1297,6 +1322,198 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
         rhs.methodFullName shouldBe "rust2cpgtest::handler"
         rhs.typeFullName shouldBe "rust2cpgtest::handler"
       }
+    }
+  }
+
+  "let to a same-named module-qualified path" should {
+    val cpg = code("""
+        |mod entry {
+        |  pub const KIND: i32 = 1;
+        |}
+        |
+        |fn main() {
+        |  let entry = 1;
+        |  let kind = entry::KIND;
+        |}
+        |""".stripMargin)
+
+    "have correct REF edges for the locals" in {
+      cpg.local.nameExact("entry").referencingIdentifiers.inAssignment.code.l shouldBe List("let entry = 1;")
+    }
+
+    // TODO: qualified path lowering.
+  }
+
+  "let with an or-pattern" should {
+    val cpg = code("""
+        |fn foo(t: (i32, i32)) {
+        | let ((a, 0) | (0, a)) = t;
+        | bar(a);
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.method.nameExact("foo").block.local.l) { case aLocal :: tmpLocal :: Nil =>
+        aLocal.name shouldBe "a"
+        aLocal.typeFullName shouldBe "i32"
+        tmpLocal.name shouldBe "<tmp>0"
+        tmpLocal.typeFullName shouldBe "(i32, i32)"
+      }
+    }
+
+    "have correct if control structure" in {
+      inside(cpg.ifBlock.l) { case ifNode :: elseIfNode :: Nil =>
+        ifNode.condition.code.l shouldBe List("(a, 0)")
+        ifNode.whenTrue.isBlock.assignment.code.l shouldBe List("a = <tmp>0.0")
+        ifNode.whenFalse.l shouldBe List(elseIfNode)
+
+        elseIfNode.condition.code.l shouldBe List("(0, a)")
+        elseIfNode.whenTrue.isBlock.assignment.code.l shouldBe List("a = <tmp>0.1")
+        elseIfNode.whenFalse.l shouldBe empty
+      }
+    }
+  }
+
+  "let with tuple pattern and trailing rest, one binding" should {
+    val cpg = code("""
+        |fn foo(t: (i32, bool)) {
+        | let (a, ..) = t;
+        |}
+        |""".stripMargin)
+
+    "have correct children" in {
+      inside(cpg.method.nameExact("foo").block.astChildren.l) { case (aLocal: Local) :: (aAssign: Call) :: Nil =>
+        aLocal.name shouldBe "a"
+        aLocal.typeFullName shouldBe "i32"
+        aAssign.code shouldBe "a = t.0"
+      }
+    }
+
+    "have correct assignment" in {
+      inside(cpg.assignment.codeExact("a = t.0").argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "a"
+          lhs.typeFullName shouldBe "i32"
+          rhs.name shouldBe Operators.fieldAccess
+          rhs.typeFullName shouldBe "i32"
+          inside(rhs.argument.sortBy(_.argumentIndex).l) { case (base: Identifier) :: (field: FieldIdentifier) :: Nil =>
+            base.name shouldBe "t"
+            field.canonicalName shouldBe "0"
+          }
+      }
+    }
+  }
+
+  "let with tuple pattern and trailing rest, two bindings" should {
+    val cpg = code("""
+        |fn foo(t: (i32, bool, &str)) {
+        | let (a, b, ..) = t;
+        |}
+        |""".stripMargin)
+
+    "have correct children" in {
+      inside(cpg.method.nameExact("foo").block.astChildren.l) {
+        case (tmp: Local) :: (aLocal: Local) :: (bLocal: Local) :: (tmpAssign: Call) ::
+            (aAssign: Call) :: (bAssign: Call) :: Nil =>
+          tmp.name shouldBe "<tmp>0"
+          tmp.typeFullName shouldBe "(i32, bool, &str)"
+          tmpAssign.code shouldBe "<tmp>0 = t"
+
+          aLocal.name shouldBe "a"
+          aLocal.typeFullName shouldBe "i32"
+          aAssign.code shouldBe "a = <tmp>0.0"
+
+          bLocal.name shouldBe "b"
+          bLocal.typeFullName shouldBe "bool"
+          bAssign.code shouldBe "b = <tmp>0.1"
+      }
+    }
+  }
+
+  "let with tuple struct pattern, no bindings" should {
+    val cpg = code("""
+        |struct Foo(i32, bool);
+        |fn foo(f: Foo) {
+        | let Foo(..) = f;
+        |}
+        |""".stripMargin)
+
+    "have correct children" in {
+      inside(cpg.method.nameExact("foo").block.astChildren.l) { case (tmp: Local) :: (tmpAssign: Call) :: Nil =>
+        tmp.name shouldBe "<tmp>0"
+        tmpAssign.code shouldBe "<tmp>0 = f"
+      }
+    }
+  }
+
+  "let with tuple pattern and bindings after rest, two bindings" should {
+    val cpg = code("""
+        |fn foo(t: (i32, bool, &str)) {
+        | let (a, .., b) = t;
+        |}
+        |""".stripMargin)
+
+    "have correct children" in {
+      inside(cpg.method.nameExact("foo").block.astChildren.l) {
+        case (tmp: Local) :: (aLocal: Local) :: (bLocal: Local) :: (tmpAssign: Call) ::
+            (aAssign: Call) :: (bAssign: Unknown) :: Nil =>
+          tmp.name shouldBe "<tmp>0"
+          tmpAssign.code shouldBe "<tmp>0 = t"
+
+          aLocal.name shouldBe "a"
+          aLocal.typeFullName shouldBe "i32"
+          aAssign.code shouldBe "a = <tmp>0.0"
+
+          // TODO: update once we lower elements after `..`.
+          bLocal.name shouldBe "b"
+          bLocal.typeFullName shouldBe "&str"
+          bAssign.code shouldBe "(a, .., b)"
+      }
+    }
+  }
+
+  "unnamed top-level const" should {
+    val cpg = code("""
+        |fn foo() {}
+        |const _: () = {
+        |  foo();
+        |};
+        |""".stripMargin)
+
+    "have correct assignment" in {
+      inside(cpg.assignment.l) { case assignment :: Nil =>
+        assignment.code shouldBe "const _: () = {\n  foo();\n};"
+        inside(assignment.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Block) :: Nil =>
+          lhs.name shouldBe "<tmp>0"
+          lhs.typeFullName shouldBe "()"
+          inside(rhs.astChildren.l) { case (foo: Call) :: Nil =>
+            foo.name shouldBe "foo"
+            foo.methodFullName shouldBe "rust2cpgtest::foo"
+            foo.code shouldBe "foo()"
+          }
+        }
+      }
+    }
+  }
+
+  "multiple unnamed top-level consts with same-named declarations" should {
+    val cpg = code("""
+        |const _: () = {
+        |  fn __ctor() {}
+        |  struct Inner;
+        |};
+        |const _: () = {
+        |  fn __ctor() {}
+        |  struct Inner;
+        |};
+        |""".stripMargin)
+
+    "have correct methodFullNames" in {
+      cpg.method.nameExact("__ctor").fullName.sorted.l shouldBe List("rust2cpgtest::__ctor#1", "rust2cpgtest::__ctor#2")
+    }
+
+    "have correct typeDecl fullNames" in {
+      cpg.typeDecl.nameExact("Inner").fullName.sorted.l shouldBe List("rust2cpgtest::Inner#1", "rust2cpgtest::Inner#2")
     }
   }
 }

@@ -153,7 +153,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     }
 
     combinedTypeSolver.addNonCachingTypeSolver(
-      JarTypeSolver.fromPath(jdkPath, config.cacheJdkTypeSolver, enableVerboseTypeLogging)
+      JarTypeSolver.fromPath(jdkPath, config.cacheJdkTypeSolver, enableVerboseTypeLogging, isJdkPath = true)
     )
 
     val sourceTypeSolver =
@@ -179,7 +179,11 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
               logger.debug(s"Added JarTypeSolver for jar at $path")
             }
           case Failure(exception) =>
-            logger.warn(s"Could not create JarTypeSolver for jar at $path", exception)
+            logger.warn(
+              s"Could not create type solver for archive at $path (${exception.getMessage}). " +
+                s"Types from this archive may be unresolved."
+            )
+            logger.debug(s"Could not create type solver for archive at $path", exception)
         }
       }
 

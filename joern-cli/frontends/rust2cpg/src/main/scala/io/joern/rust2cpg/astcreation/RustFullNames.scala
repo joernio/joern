@@ -39,6 +39,10 @@ trait RustFullNames { this: AstCreator =>
     struct.typeFullName.getOrElse(composeRustFullName(code(struct.name)))
   }
 
+  protected def typeFullNameForEnum(enum_ : RustNodeSyntax.Enum): String = {
+    enum_.typeFullName.getOrElse(composeRustFullName(code(enum_.name)))
+  }
+
   protected def methodFullNameForCallExpr(
     callExpr: RustNodeSyntax.CallExpr,
     nameRefs: Seq[RustNodeSyntax.NameRef],
@@ -156,7 +160,9 @@ trait RustFullNames { this: AstCreator =>
         case tuplePat: RustNodeSyntax.TuplePat =>
           val childTypes = tuplePat.pat.map(typeFullNameForPat)
           s"(${childTypes.mkString(", ")})"
-        case _ => Defines.Any
+        case recordPat: RustNodeSyntax.RecordPat           => typeFullNameForPath(recordPat.path)
+        case tupleStructPat: RustNodeSyntax.TupleStructPat => typeFullNameForPath(tupleStructPat.path)
+        case _                                             => Defines.Any
       }
     }
   }

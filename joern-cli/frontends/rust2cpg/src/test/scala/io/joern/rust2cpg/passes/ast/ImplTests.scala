@@ -473,6 +473,31 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "trait impl for unit-variant enum" should {
+    val cpg = code("""
+        |trait Bar {
+        |  fn do_stuff(&self) -> i32;
+        |}
+        |enum Color { Red, Green }
+        |impl Bar for Color {
+        |  fn do_stuff(&self) -> i32 { 1 }
+        |}
+        |""".stripMargin)
+
+    "have correct inheritsFrom on the impl" in {
+      cpg.typeDecl
+        .fullNameExact("<rust2cpgtest::Color as rust2cpgtest::Bar>")
+        .inheritsFromTypeFullName
+        .l shouldBe List("rust2cpgtest::Bar")
+    }
+
+    "have correct inheritsFrom on the enum" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Color").inheritsFromTypeFullName.l shouldBe List(
+        "<rust2cpgtest::Color as rust2cpgtest::Bar>"
+      )
+    }
+  }
+
   "two trait impls for the same type" should {
     val cpg = code("""
         |trait Bar { fn a(&self) -> i32; }
@@ -540,6 +565,92 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
         .methodReturn
         .typeFullName
         .l shouldBe List("rust2cpgtest::Foo")
+    }
+  }
+
+  "impl block for a trait on an associated type" should {
+    val cpg = code("""
+        |struct Foo;
+        |struct Bar;
+        |trait Baz {
+        |  type Item;
+        |}
+        |impl Baz for Foo {
+        |  type Item = Bar;
+        |}
+        |trait Qux {
+        |  fn do_stuff(&self) -> Self;
+        |}
+        |impl Qux for <Foo as Baz>::Item {
+        |  fn do_stuff(&self) -> Self { Bar }
+        |}
+        |fn run(bar: Bar) { bar.do_stuff(); }
+        |""".stripMargin)
+
+    "have correct typeDecl fullName" in {
+      inside(cpg.typeDecl.nameExact("Bar").fullName.sorted.l) { case traitImplFullName :: typeFullName :: Nil =>
+        typeFullName shouldBe "rust2cpgtest::Bar"
+        traitImplFullName shouldBe "<rust2cpgtest::Bar as rust2cpgtest::Qux>"
+      }
+    }
+
+    "have correct inheritsFrom on the trait" in {
+      cpg.typeDecl
+        .fullNameExact("<rust2cpgtest::Bar as rust2cpgtest::Qux>")
+        .inheritsFromTypeFullName
+        .l shouldBe List("rust2cpgtest::Qux")
+    }
+
+    // TODO(rust_ast_gen): check why implementedTraits is missing.
+    "have correct inheritsFrom on the struct" in {
+      pendingUntilFixed {
+        cpg.typeDecl.fullNameExact("rust2cpgtest::Bar").inheritsFromTypeFullName.l shouldBe List(
+          "<rust2cpgtest::Bar as rust2cpgtest::Qux>"
+        )
+      }
+    }
+
+    "have correct method properties" in {
+      inside(cpg.method.fullNameExact("<rust2cpgtest::Bar as rust2cpgtest::Qux>::do_stuff").l) { case method :: Nil =>
+        method.methodReturn.typeFullName shouldBe "rust2cpgtest::Bar"
+        method.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL)
+        inside(method.parameter.l) { case self :: Nil =>
+          self.name shouldBe "self"
+          self.index shouldBe 0
+          self.order shouldBe 0
+          self.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
+          self.typeFullName shouldBe "&rust2cpgtest::Bar"
+        }
+      }
+    }
+
+    "have correct binding" in {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Bar as rust2cpgtest::Qux>").methodBinding.l) {
+        case binding :: Nil =>
+          binding.name shouldBe "do_stuff"
+          binding.signature shouldBe "rust2cpgtest::Qux"
+          binding.methodFullName shouldBe "<rust2cpgtest::Bar as rust2cpgtest::Qux>::do_stuff"
+      }
+    }
+
+    "have the same fullName as the one at the call site" in {
+      inside(cpg.call.nameExact("do_stuff").l) { case call :: Nil =>
+        call.methodFullName shouldBe "<rust2cpgtest::Bar as rust2cpgtest::Qux>::do_stuff"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      }
+    }
+
+    "have correct call arguments" in {
+      inside(cpg.call.nameExact("do_stuff").argument.l) { case (addressOf: Call) :: Nil =>
+        addressOf.name shouldBe Operators.addressOf
+        addressOf.code shouldBe "&bar"
+        addressOf.argumentIndex shouldBe 0
+        addressOf.typeFullName shouldBe "&rust2cpgtest::Bar"
+        inside(addressOf.argument.l) { case (bar: Identifier) :: Nil =>
+          bar.name shouldBe "bar"
+          bar.typeFullName shouldBe "rust2cpgtest::Bar"
+        }
+      }
     }
   }
 

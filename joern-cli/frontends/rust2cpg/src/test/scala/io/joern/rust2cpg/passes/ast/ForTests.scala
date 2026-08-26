@@ -2,7 +2,7 @@ package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -134,6 +134,162 @@ class ForTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
       inside(cpg.call.nameExact("foo").argument.l) { case (ident: Identifier) :: Nil =>
         ident.name shouldBe "x"
         ident.typeFullName shouldBe "i32"
+      }
+    }
+  }
+
+  "for loop over tuple pattern" should {
+    val cpg = code("""
+        |fn main(pairs: Vec<(i32, bool)>) {
+        | for (x, y) in pairs {
+        |  foo(x, y);
+        | };
+        |}
+        |""".stripMargin)
+
+    "have correct block children" in {
+      inside(cpg.method.nameExact("main").block.astChildren.isBlock.astChildren.l) {
+        case (tmp: Local) :: (intoIter: Call) :: (loop: ControlStructure) :: Nil =>
+          tmp.name shouldBe "<tmp>0"
+          intoIter.code shouldBe "<tmp>0 = pairs.into_iter()"
+          loop.controlStructureType shouldBe ControlStructureTypes.WHILE
+      }
+    }
+
+    "have correct into_iter assignment" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("<tmp>0")).argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "<tmp>0"
+          rhs.name shouldBe "into_iter"
+          rhs.code shouldBe "pairs.into_iter()"
+          rhs.methodFullName shouldBe s"${Defines.UnresolvedNamespace}::into_iter"
+          rhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+          // TODO(rust_ast_gen): typeFullName for into_iter()/tmp0.
+          pendingUntilFixed(
+            rhs.typeFullName shouldBe "alloc::vec::into_iter::IntoIter<(i32, bool), alloc::alloc::Global>"
+          )
+
+          inside(rhs.argument.l) { case (pairs: Identifier) :: Nil =>
+            pairs.name shouldBe "pairs"
+            pairs.typeFullName shouldBe "alloc::vec::Vec<(i32, bool), alloc::alloc::Global>"
+          }
+      }
+    }
+
+    "have correct locals" in {
+      inside(cpg.whileBlock.astChildren.isBlock.astChildren.isLocal.l) { case tmp :: xLocal :: yLocal :: Nil =>
+        tmp.name shouldBe "<tmp>1"
+        tmp.typeFullName shouldBe "(i32, bool)"
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "i32"
+        yLocal.name shouldBe "y"
+        yLocal.typeFullName shouldBe "bool"
+      }
+    }
+
+    "have correct next assignment" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("<tmp>1")).argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "<tmp>1"
+          lhs.typeFullName shouldBe "(i32, bool)"
+
+          rhs.name shouldBe "next"
+          rhs.code shouldBe "<tmp>0.next()"
+          // TODO(rust_ast_gen): methodFullName for next().
+          rhs.methodFullName shouldBe s"${Defines.UnresolvedNamespace}::next"
+          rhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+          rhs.typeFullName shouldBe "core::option::Option<(i32, bool)>"
+      }
+    }
+
+    "have correct binding assignments" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "<tmp>1.0"
+        fieldAccess.typeFullName shouldBe "i32"
+      }
+
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("y")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "<tmp>1.1"
+        fieldAccess.typeFullName shouldBe "bool"
+      }
+    }
+  }
+
+  "for loop over record pattern" should {
+    val cpg = code("""
+        |struct Point { x: i32, y: bool }
+        |fn main(points: Vec<Point>) {
+        | for Point { x, y } in points {
+        |  foo(x, y);
+        | };
+        |}
+        |""".stripMargin)
+
+    "have correct block children" in {
+      inside(cpg.method.nameExact("main").block.astChildren.isBlock.astChildren.l) {
+        case (tmp: Local) :: (intoIter: Call) :: (loop: ControlStructure) :: Nil =>
+          tmp.name shouldBe "<tmp>0"
+          intoIter.code shouldBe "<tmp>0 = points.into_iter()"
+          loop.controlStructureType shouldBe ControlStructureTypes.WHILE
+      }
+    }
+
+    "have correct into_iter assignment" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("<tmp>0")).argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "<tmp>0"
+          rhs.name shouldBe "into_iter"
+          rhs.code shouldBe "points.into_iter()"
+          rhs.methodFullName shouldBe s"${Defines.UnresolvedNamespace}::into_iter"
+          rhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+          // TODO(rust_ast_gen): typeFullName for into_iter()/tmp0.
+          pendingUntilFixed(
+            rhs.typeFullName shouldBe "alloc::vec::into_iter::IntoIter<rust2cpgtest::Point, alloc::alloc::Global>"
+          )
+
+          inside(rhs.argument.l) { case (points: Identifier) :: Nil =>
+            points.name shouldBe "points"
+            points.typeFullName shouldBe "alloc::vec::Vec<rust2cpgtest::Point, alloc::alloc::Global>"
+          }
+      }
+    }
+
+    "have correct locals" in {
+      inside(cpg.whileBlock.astChildren.isBlock.astChildren.isLocal.l) { case tmp :: xLocal :: yLocal :: Nil =>
+        tmp.name shouldBe "<tmp>1"
+        tmp.typeFullName shouldBe "rust2cpgtest::Point"
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "i32"
+        yLocal.name shouldBe "y"
+        yLocal.typeFullName shouldBe "bool"
+      }
+    }
+
+    "have correct next assignment" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("<tmp>1")).argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "<tmp>1"
+          rhs.name shouldBe "next"
+          rhs.code shouldBe "<tmp>0.next()"
+          // TODO(rust_ast_gen): methodFullName for next().
+          rhs.methodFullName shouldBe s"${Defines.UnresolvedNamespace}::next"
+          rhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      }
+    }
+
+    "have correct binding assignments" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "<tmp>1.x"
+        fieldAccess.typeFullName shouldBe "i32"
+      }
+
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("y")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "<tmp>1.y"
+        fieldAccess.typeFullName shouldBe "bool"
       }
     }
   }

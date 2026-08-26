@@ -140,7 +140,11 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
           )
 
         case Failure(e) =>
-          logger.warn(s"Could not load jar at path $archivePath", e.getMessage())
+          logger.warn(
+            s"Could not load archive at $archivePath for type resolution (${e.getMessage}). " +
+              s"Types from this archive may be unresolved."
+          )
+          logger.debug(s"Could not load archive at $archivePath", e)
       }
     }
   }
@@ -192,7 +196,11 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
       }
     } catch {
       case ioException: IOException =>
-        logger.warn(s"Could not register exported packages for archive at $archivePath", ioException.getMessage())
+        logger.warn(
+          s"Could not read module exports from archive at $archivePath (${ioException.getMessage}). " +
+            s"Module-scoped type lookups for this archive may fail."
+        )
+        logger.debug(s"Could not read module exports from archive at $archivePath", ioException)
     }
   }
 }
@@ -220,33 +228,26 @@ object JarTypeSolver {
   def fromPath(
     inputPath: String,
     useCache: Boolean = false,
-    enableVerboseTypeLogging: Boolean = false
+    enableVerboseTypeLogging: Boolean = false,
+    isJdkPath: Boolean = false
   ): JarTypeSolver = {
     def createBuilder: JarTypeSolverBuilder = {
       val jarPaths = determineJarPathsAllowEmpty(inputPath)
       val builder  = new JarTypeSolverBuilder(enableVerboseTypeLogging)
-      if (jarPaths.nonEmpty) {
-        logger.info(s"JDK type solver: using ${jarPaths.size} jar/jmod archive(s) under $inputPath")
-        builder.withJars(jarPaths)
-      } else {
-        JrtRuntimeImageClassPath.findRuntimeImage(Paths.get(inputPath)) match {
-          case Some(imageRootPath) =>
-            logger.info(s"JDK type solver: using runtime image at $imageRootPath; search root: $inputPath)")
-            builder
-              .addRuntimeImage(imageRootPath)
-              .recover(exception =>
-                throw new IllegalArgumentException(
-                  s"Could not load JDK runtime image (jrt:) for the image root path=$imageRootPath",
-                  exception
-                )
-              )
-              .get
-          case None =>
-            throw new IllegalArgumentException(
-              s"No .jar or .jmod files found under $inputPath, and no runtime image file at .../lib/modules beneath that path"
+      logger.info(s"JAR/JDK type solver: using ${jarPaths.size} jar/jmod archive(s) under $inputPath")
+      builder.withJars(jarPaths)
+
+      if (isJdkPath && !jarPaths.exists(_.endsWith(".jmod"))) {
+        JrtRuntimeImageClassPath.findRuntimeImage(Paths.get(inputPath)).foreach { imageRootPath =>
+          logger.info(s"JDK type solver: using runtime image at $imageRootPath; search root: $inputPath)")
+          builder
+            .addRuntimeImage(imageRootPath)
+            .recover(exception =>
+              logger.warn(s"Could not load JDK runtime image (jrt:) for the image root path=$imageRootPath", exception)
             )
         }
       }
+      builder
     }
     if (useCache) {
       cache.getOrElseUpdate(inputPath, createBuilder).buildShared

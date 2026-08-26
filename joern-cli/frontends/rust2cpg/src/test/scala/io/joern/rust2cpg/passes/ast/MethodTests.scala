@@ -390,4 +390,70 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "two build.rs files in the same workspace" should {
+    val buildRs =
+      """
+        |fn main() {
+        |  setup();
+        |}
+        |
+        |fn setup() {}
+        |""".stripMargin
+
+    val cpg = code("fn main() {}")
+      .moreCode(
+        """
+          |[package]
+          |name = "rust2cpgtest"
+          |version = "0.1.0"
+          |edition = "2021"
+          |
+          |[workspace]
+          |members = ["crates/foo", "crates/bar"]
+          |""".stripMargin,
+        fileName = "Cargo.toml"
+      )
+      .moreCode(
+        """
+          |[package]
+          |name = "foo"
+          |version = "0.1.0"
+          |edition = "2021"
+          |""".stripMargin,
+        fileName = (Paths.get("crates") / "foo" / "Cargo.toml").toString
+      )
+      .moreCode("pub fn foo_fn() {}", fileName = (Paths.get("crates") / "foo" / "src" / "lib.rs").toString)
+      .moreCode(buildRs, fileName = (Paths.get("crates") / "foo" / "build.rs").toString)
+      .moreCode(
+        """
+          |[package]
+          |name = "bar"
+          |version = "0.1.0"
+          |edition = "2021"
+          |""".stripMargin,
+        fileName = (Paths.get("crates") / "bar" / "Cargo.toml").toString
+      )
+      .moreCode("pub fn bar_fn() {}", fileName = (Paths.get("crates") / "bar" / "src" / "lib.rs").toString)
+      .moreCode(buildRs, fileName = (Paths.get("crates") / "bar" / "build.rs").toString)
+
+    "have correct fullNames" in {
+      cpg.method.nameExact("main").fullName.sorted.l shouldBe List(
+        "bar_build_script::main",
+        "foo_build_script::main",
+        "rust2cpgtest::main"
+      )
+      cpg.method.nameExact("setup").fullName.sorted.l shouldBe List(
+        "bar_build_script::setup",
+        "foo_build_script::setup"
+      )
+    }
+
+    "have correct call methodFullNames inside build.rs" in {
+      cpg.call.nameExact("setup").methodFullName.sorted.l shouldBe List(
+        "bar_build_script::setup",
+        "foo_build_script::setup"
+      )
+    }
+  }
 }

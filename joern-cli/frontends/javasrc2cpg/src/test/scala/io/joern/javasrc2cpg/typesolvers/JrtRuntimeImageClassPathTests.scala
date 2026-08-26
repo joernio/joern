@@ -64,17 +64,4 @@ class JrtRuntimeImageClassPathTests extends AnyWordSpec with Matchers with Befor
       r.getCorrespondingDeclaration.getQualifiedName shouldBe "java.lang.String"
     }
   }
-
-  "JarTypeSolver.fromPath" should {
-
-    "throw IllegalArgumentException when no jars and no runtime image are found" in {
-      FileUtil.usingTemporaryDirectory("jrt-no-jars-no-modules") { tmp =>
-        val exception = the[IllegalArgumentException] thrownBy {
-          JarTypeSolver.fromPath(tmp.toString)
-        }
-        exception.getMessage should include("No .jar or .jmod files found")
-        exception.getMessage should include("no runtime image file")
-      }
-    }
-  }
 }

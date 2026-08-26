@@ -437,6 +437,11 @@ class PythonAstVisitor(
     contextStack.pop()
     edgeBuilder.astEdge(typeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
     createBinding(methodNode, typeDeclNode)
+    if (name == Constants.callName) {
+      contextStack.findEnclosingTypeDecl().foreach { enclosingTypeDecl =>
+        createBinding(methodNode, enclosingTypeDecl)
+      }
+    }
 
     methodNode
   }
@@ -547,7 +552,7 @@ class PythonAstVisitor(
     // We do this to model the __init__ call in a visible way for the data flow tracker.
     // This is done because very often the __init__ call is hidden in a super().__new__ call
     // and we cant yet handle super().
-    val fakeNewMethod = createFakeNewMethod(initParameters)
+    val fakeNewMethod = createFakeNewMethod(initParameters, instanceTypeDeclFullName)
 
     val fakeNewMember = nodeBuilder.memberNode("<fakeNew>", fakeNewMethod.fullName)
     edgeBuilder.astEdge(fakeNewMember, metaTypeDeclNode, contextStack.order.getAndInc)
@@ -732,11 +737,10 @@ class PythonAstVisitor(
   }
 
   /** Creates the method which handles a call to the meta class object. This process is also known as creating a new
-    * instance object, e.g. obj = MyClass(p1). The purpose of the generated function is to adapt between the special
-    * cased instance creation call and a normal call to __new__ (for now <fakeNew>). The adaption is required to in
-    * order to provide TYPE_REF(meta class) as instance argument to __new__/<fakeNew>. So the <metaClassCallHandler>
-    * looks like: def <metaClassCallHandler>(p1): return DYNAMIC_CALL(receiver=TYPE_REF(meta class).<fakeNew>, instance
-    * \= TYPE_REF(meta class), p1)
+    * instance object, e.g. obj = MyClass(p1). This method mimics the semantically relevant parts of the CPython default
+    * implementation of __call__ which is a call to __new__(for now <fakeNew>) and a call to __init__. So the
+    * <metaClassCallHandler> looks like: def <metaClassCallHandler>(arguments): __newInstance =
+    * metaClassTypeRef.<fakeNew>(arguments) __newInstance.<init>(arguments) return __newInstance
     */
   // TODO handle kwArg
   private def createMetaClassCallHandlerMethod(
@@ -777,9 +781,32 @@ class PythonAstVisitor(
           None
         )
 
-        val returnNode = createReturn(Some(fakeNewCall), None, lineAndColumn)
+        val assignmentToNewInstance =
+          createAssignment(createIdentifierNode("__newInstance", Store, lineAndColumn), fakeNewCall, lineAndColumn)
 
-        returnNode :: Nil
+        val (initArguments, initKeywordArguments) = createArguments(parametersWithoutSelf, lineAndColumn)
+        val argumentWithInstance                  = mutable.ArrayBuffer.empty[nodes.NewNode]
+        argumentWithInstance.append(createIdentifierNode("__newInstance", Load, lineAndColumn))
+        argumentWithInstance.appendAll(initArguments)
+
+        val initCall = createInstanceCall(
+          createFieldAccess(
+            createIdentifierNode("__newInstance", Load, lineAndColumn),
+            Constants.initName,
+            lineAndColumn
+          ),
+          createIdentifierNode("__newInstance", Load, lineAndColumn),
+          "",
+          lineAndColumn,
+          initArguments,
+          initKeywordArguments,
+          None
+        )
+
+        val returnNode =
+          createReturn(Some(createIdentifierNode("__newInstance", Load, lineAndColumn)), None, lineAndColumn)
+
+        assignmentToNewInstance :: initCall :: returnNode :: Nil
       },
       returns = None,
       isAsync = false,
@@ -793,11 +820,11 @@ class PythonAstVisitor(
   /** Creates a <fakeNew> method which mimics the behaviour of a default __new__ method (the one you would get if no
     * implementation is present). The reason we use a fake version of the __new__ method it that we wont be able to
     * correctly track through most custom __new__ implementations as they usually call "super.__init__()" and we cannot
-    * yet handle "super". The fake __new__ looks like: {{{def <fakeNew>(cls, p1): __newInstance =
-    * STATIC_CALL(<operator>.alloc) cls.__init__(__newIstance, p1) return __newInstance}}}
+    * yet handle "super". The fake __new__ looks like: def <fakeNew>(cls, arguments): return
+    * STATIC_CALL(<operator>.alloc)
     */
   // TODO handle kwArg
-  private def createFakeNewMethod(initParameters: ast.Arguments): nodes.NewMethod = {
+  private def createFakeNewMethod(initParameters: ast.Arguments, instanceTypeDeclFullName: String): nodes.NewMethod = {
     val newMethodName         = "<fakeNew>"
     val newMethodStubFullName = calculateFullNameFromContext(newMethodName)
 
@@ -820,33 +847,15 @@ class PythonAstVisitor(
       bodyProvider = () => {
         val allocatorCall =
           createNAryOperatorCall(() => ("<operator>.alloc", "<operator>.alloc"), Nil, lineAndColumn)
-        val assignmentToNewInstance =
-          createAssignment(createIdentifierNode("__newInstance", Store, lineAndColumn), allocatorCall, lineAndColumn)
 
-        val (arguments, keywordArguments) = createArguments(parametersWithoutSelf, lineAndColumn)
-        val argumentWithInstance          = mutable.ArrayBuffer.empty[nodes.NewNode]
-        argumentWithInstance.append(createIdentifierNode("__newInstance", Load, lineAndColumn))
-        argumentWithInstance.appendAll(arguments)
+        val returnNode = createReturn(Some(allocatorCall), None, lineAndColumn)
 
-        val initCall = createXDotYCall(
-          () => createIdentifierNode("cls", Load, lineAndColumn),
-          Constants.initName,
-          xMayHaveSideEffects = false,
-          lineAndColumn,
-          argumentWithInstance,
-          keywordArguments,
-          None
-        )
-
-        val returnNode =
-          createReturn(Some(createIdentifierNode("__newInstance", Load, lineAndColumn)), None, lineAndColumn)
-
-        assignmentToNewInstance :: initCall :: returnNode :: Nil
+        returnNode :: Nil
       },
       returns = None,
       isAsync = false,
       methodRefNode = None,
-      returnTypeHint = None,
+      returnTypeHint = Some(instanceTypeDeclFullName),
       lineAndColumn,
       reservedNames = Nil
     )
