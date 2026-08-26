@@ -1119,6 +1119,31 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
           endAssign.code shouldBe "end = <tmp>0.end"
       }
     }
+
+    "have correct field accesses" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.name shouldBe Operators.fieldAccess
+        fieldAccess.typeFullName shouldBe "i32"
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case (startFieldAccess: Call) :: (field: FieldIdentifier) :: Nil =>
+            field.canonicalName shouldBe "x"
+            startFieldAccess.name shouldBe Operators.fieldAccess
+            startFieldAccess.code shouldBe "<tmp>0.start"
+            startFieldAccess.typeFullName shouldBe "rust2cpgtest::Point"
+        }
+      }
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("y")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.name shouldBe Operators.fieldAccess
+        fieldAccess.typeFullName shouldBe "i64"
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case (startFieldAccess: Call) :: (field: FieldIdentifier) :: Nil =>
+            field.canonicalName shouldBe "y"
+            startFieldAccess.name shouldBe Operators.fieldAccess
+            startFieldAccess.code shouldBe "<tmp>0.start"
+            startFieldAccess.typeFullName shouldBe "rust2cpgtest::Point"
+        }
+      }
+    }
   }
 
   "let with a record pattern in a tuple pattern" should {
