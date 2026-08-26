@@ -99,6 +99,47 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "macro call expression expanding to multiple statements" should {
+    val cpg = code("""
+        |macro_rules! three { () => { let mut s = 1; s += 2; s }; }
+        |fn main() {
+        | let x = { three!() };
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.local.sortBy(_.order).l) { case xLocal :: sLocal :: Nil =>
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "i32"
+        sLocal.name shouldBe "s"
+        sLocal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct assignments" in {
+      cpg.method.nameExact("main").block.assignment.sortBy(_.order).code.l shouldBe List(
+        "let x = { three!() };",
+        "let mut s = 1;",
+        "s+=2"
+      )
+    }
+
+    "have correct children" in {
+      inside(cpg.method.nameExact("main").block.assignment.source.isBlock.astChildren.l) { case (three: Block) :: Nil =>
+        inside(three.astChildren.l) {
+          case (local: Local) :: (assign: Call) :: (assignPlus: Call) :: (ident: Identifier) :: Nil =>
+            local.name shouldBe "s"
+            assign.code shouldBe "let mut s = 1;"
+            assign.methodFullName shouldBe Operators.assignment
+            assignPlus.code shouldBe "s+=2"
+            assignPlus.methodFullName shouldBe Operators.assignmentPlus
+            ident.name shouldBe "s"
+            ident.typeFullName shouldBe "i32"
+        }
+      }
+    }
+  }
+
   "a type macro" should {
     val cpg = code("""
         |macro_rules! int_type { () => { i128 }; }

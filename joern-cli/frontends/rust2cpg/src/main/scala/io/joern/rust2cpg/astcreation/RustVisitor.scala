@@ -1643,11 +1643,9 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // MacroExpr =
   //  MacroCall
   private def visitMacroExpr(macroExpr: MacroExpr): Ast = {
-    // Even though it wraps a MacroCall, in this context it should always be a single expression, i.e.
-    // no MacroStmts/MacroItems. Logging just in case.
     visitMacroCall(macroExpr.macroCall) match {
       case exprAst :: Nil => exprAst
-      case _              => notHandledYet(macroExpr.macroCall)
+      case asts           => blockAst(blockNode(macroExpr), asts.toList)
     }
   }
 
