@@ -285,7 +285,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   private def astForAttribute(attribute: PhpAttribute): Ast = {
     val fullName = attribute.name.name
-    val name     = fullName.split("\\\\").last
+    val name     = fullName.split('\\').last
     val _annotationNode =
       annotationNode(attribute, code = fullName, name, fullName)
     val argsAst = attribute.args.map(astForCallArg)
