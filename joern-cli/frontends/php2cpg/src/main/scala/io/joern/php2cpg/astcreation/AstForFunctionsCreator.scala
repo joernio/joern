@@ -284,10 +284,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   private def astForAttribute(attribute: PhpAttribute): Ast = {
-    val name     = attribute.name
-    val fullName = composeMethodFullName(name.name)
+    val fullName = attribute.name.name
+    val name     = fullName.split("\\\\").last
     val _annotationNode =
-      annotationNode(attribute, code = name.name, attribute.name.name, fullName)
+      annotationNode(attribute, code = fullName, name, fullName)
     val argsAst = attribute.args.map(astForCallArg)
     annotationAst(_annotationNode, argsAst)
   }
