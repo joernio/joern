@@ -160,7 +160,9 @@ trait RustFullNames { this: AstCreator =>
         case tuplePat: RustNodeSyntax.TuplePat =>
           val childTypes = tuplePat.pat.map(typeFullNameForPat)
           s"(${childTypes.mkString(", ")})"
-        case _ => Defines.Any
+        case recordPat: RustNodeSyntax.RecordPat           => typeFullNameForPath(recordPat.path)
+        case tupleStructPat: RustNodeSyntax.TupleStructPat => typeFullNameForPath(tupleStructPat.path)
+        case _                                             => Defines.Any
       }
     }
   }

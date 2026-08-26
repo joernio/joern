@@ -259,8 +259,7 @@ class ForTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
     "have correct locals" in {
       inside(cpg.whileBlock.astChildren.isBlock.astChildren.isLocal.l) { case tmp :: xLocal :: yLocal :: Nil =>
         tmp.name shouldBe "<tmp>1"
-        // TODO(rust_ast_gen): typeFullName for patterns.
-        pendingUntilFixed(tmp.typeFullName shouldBe "rust2cpgtest::Point")
+        tmp.typeFullName shouldBe "rust2cpgtest::Point"
         xLocal.name shouldBe "x"
         xLocal.typeFullName shouldBe "i32"
         yLocal.name shouldBe "y"
