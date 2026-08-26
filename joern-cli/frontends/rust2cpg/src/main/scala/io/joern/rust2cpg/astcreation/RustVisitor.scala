@@ -1775,15 +1775,24 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     Ast(blockNode(matchExpr)).withChildren(Seq(tmpLocalAst, tmpAssignAst, matchExprAst))
   }
 
-  // TODO: handle guards.
   private def lowerMatchArm(matchArm: MatchArm, tmpIdentAst: () => Ast): Seq[Ast] = {
     val bindingAsts = createLocalsForBindings(collectPatternBindings(matchArm.pat)) ++ createAssignmentsForPattern(
       matchArm.pat,
       tmpIdentAst
     )
-    val bodyAst       = visitExpr(matchArm.expr)
+    val bodyAst = matchArm.matchGuard match {
+      case Some(matchGuard) =>
+        val conditionAst = visitExpr(matchGuard.expr)
+        ifThenElseAst(matchGuard, Some(conditionAst), visitExpr(matchArm.expr), None)
+      case None =>
+        visitExpr(matchArm.expr)
+    }
+    val caseCode = matchArm.matchGuard match {
+      case Some(matchGuard) => s"${code(matchArm.pat)} ${code(matchGuard)}"
+      case None             => code(matchArm.pat)
+    }
     val matchArmBlock = blockAst(blockNode(matchArm), (bindingAsts :+ bodyAst).toList)
-    val jumpTargetAst = Ast(jumpTargetNode(matchArm.pat, s"case ${code(matchArm.pat)}", code(matchArm.pat)))
+    val jumpTargetAst = Ast(jumpTargetNode(matchArm.pat, s"case $caseCode", caseCode))
     Seq(jumpTargetAst, matchArmBlock)
   }
 
