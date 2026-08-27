@@ -548,6 +548,28 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "impl block for a type alias" should {
+    val cpg = code("""
+        |struct Foo;
+        |type Alias = Foo;
+        |impl Alias {
+        |  fn bar(&self) {}
+        |}
+        |fn run(f: Foo) { f.bar(); }
+        |""".stripMargin)
+
+    "have correct typeDecl" in {
+      inside(cpg.typeDecl.nameExact("Foo").l) { case typeDecl :: Nil =>
+        typeDecl.fullName shouldBe "rust2cpgtest::Foo"
+        typeDecl.method.fullName.sorted.l shouldBe List("rust2cpgtest::Foo::<init>", "rust2cpgtest::Foo::bar")
+      }
+    }
+
+    "have correct call methodFullName" in {
+      cpg.call.nameExact("bar").methodFullName.l shouldBe List("rust2cpgtest::Foo::bar")
+    }
+  }
+
   "a trait-impl function returning `Self`" should {
     val cpg = code("""
         |trait Bar {
