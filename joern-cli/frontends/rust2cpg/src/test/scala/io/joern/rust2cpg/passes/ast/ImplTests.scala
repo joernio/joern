@@ -515,6 +515,56 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "impl for an unknown trait" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Unknown for Foo { fn bar(&self) {} }
+        |""".stripMargin)
+
+    "have correct typeDecl" in {
+      inside(cpg.typeDecl.nameExact("Foo").l) { case typeDecl :: Nil =>
+        typeDecl.fullName shouldBe "rust2cpgtest::Foo"
+        typeDecl.inheritsFromTypeFullName shouldBe empty
+      }
+    }
+
+    "have correct methodFullName" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Foo").method.fullName.sorted.l shouldBe List(
+        "rust2cpgtest::Foo::<init>",
+        "rust2cpgtest::Foo::bar"
+      )
+    }
+  }
+
+  "two impls for unkwnown traits on the same type" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl UnknownA for Foo { fn a(&self) {} }
+        |impl UnknownB for Foo { fn b(&self) {} }
+        |fn run(f: Foo) { f.a(); f.b(); }
+        |""".stripMargin)
+
+    "have correct typeDecl" in {
+      inside(cpg.typeDecl.nameExact("Foo").l) { case typeDecl :: Nil =>
+        typeDecl.fullName shouldBe "rust2cpgtest::Foo"
+        typeDecl.inheritsFromTypeFullName shouldBe empty
+      }
+    }
+
+    "have correct methodFullName" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Foo").method.fullName.sorted.l shouldBe List(
+        "rust2cpgtest::Foo::<init>",
+        "rust2cpgtest::Foo::a",
+        "rust2cpgtest::Foo::b"
+      )
+    }
+
+    "have correct call methodFullName" in {
+      cpg.call.nameExact("a").methodFullName.l shouldBe List("<unresolvedNamespace>::a")
+      cpg.call.nameExact("b").methodFullName.l shouldBe List("<unresolvedNamespace>::b")
+    }
+  }
+
   "impls for structs with lifetimes" should {
     val cpg = code("""
         |trait Bar { fn a(&self); }

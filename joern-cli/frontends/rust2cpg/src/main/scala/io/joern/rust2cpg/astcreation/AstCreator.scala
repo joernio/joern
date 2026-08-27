@@ -209,7 +209,7 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     typeDeclNode(
       node = impl,
       name = name,
-      fullName = typeFullNameForTraitImpl(impl, implTypeFullName, traitTypeFullName),
+      fullName = impl.typeFullName.getOrElse(traitImplFullName(implTypeFullName, traitTypeFullName)),
       filename = parseResult.filename,
       code = code(impl),
       inherits = Seq(traitTypeFullName)
