@@ -1399,12 +1399,13 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val structFullName    = typeFullNameForStruct(struct)
     val inheritsFrom      = implementedTraits.map(traitFullName => s"<$structFullName as $traitFullName>")
     val typeDecl          = typeDeclForStruct(struct, inheritsFrom)
+    val attributes        = struct.attr.map(visitAttr)
 
     contextStack.pushTypeDecl(typeDecl)
     val ctorAst = structCtorMethodAst(struct, typeDecl, Nil)
     contextStack.pop()
 
-    Ast(typeDecl).withChild(ctorAst)
+    Ast(typeDecl).withChild(ctorAst).withChildren(attributes)
   }
 
   // `struct Foo { x: T, ... }` becomes:
@@ -1420,12 +1421,15 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val structFullName    = typeFullNameForStruct(struct)
     val inheritsFrom      = implementedTraits.map(traitFullName => s"<$structFullName as $traitFullName>")
     val typeDecl          = typeDeclForStruct(struct, inheritsFrom)
+    val attributes        = struct.attr.map(visitAttr)
 
     contextStack.pushTypeDecl(typeDecl)
     val ctorAst = structCtorMethodAst(struct, typeDecl, recordFieldData(recordFieldList))
     contextStack.pop()
 
-    Ast(typeDecl).withChildren(visitRecordFieldList(recordFieldList) :+ ctorAst)
+    Ast(typeDecl)
+      .withChildren(visitRecordFieldList(recordFieldList) :+ ctorAst)
+      .withChildren(attributes)
   }
 
   // `struct Foo(T1, T2, ...);` becomes:
@@ -1451,12 +1455,16 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val inheritsFrom      = implementedTraits.map(traitFullName => s"<$structFullName as $traitFullName>")
     val typeDecl          = typeDeclForStruct(struct, inheritsFrom)
     val fields            = tupleStructFieldData(tupleFieldList)
+    val attributes        = struct.attr.map(visitAttr)
 
     contextStack.pushTypeDecl(typeDecl)
     val ctorAst = structCtorMethodAst(struct, typeDecl, fields)
     contextStack.pop()
 
-    val typeDeclAst = Ast(typeDecl).withChildren(visitTupleFieldList(tupleFieldList) :+ ctorAst)
+    val typeDeclAst =
+      Ast(typeDecl)
+        .withChildren(visitTupleFieldList(tupleFieldList) :+ ctorAst)
+        .withChildren(attributes)
     val ctorWrapperAst = tupleStructCtorWrapperAst(
       struct,
       typeDecl,
@@ -1870,5 +1878,21 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
   private def mkImport(use: Use, path: Seq[Path], importedAs: String): NewImport = {
     newImportNode(code(use), path.map(code).mkString(PathSep), importedAs, use)
+  }
+
+  // Attr =
+  //  '#' '!'? '[' Meta ']'
+  private def visitAttr(attr: Attr): Ast = {
+    val path = attr.meta match {
+      case pathMeta: PathMeta           => code(pathMeta.path)
+      case keyValueMeta: KeyValueMeta   => code(keyValueMeta.path)
+      case tokenTreeMeta: TokenTreeMeta => code(tokenTreeMeta.path)
+      case cfgMeta: CfgMeta             => code(cfgMeta.cfgKwToken)
+      case cfgAttrMeta: CfgAttrMeta     => code(cfgAttrMeta.cfgAttrKwToken)
+      case unsafeMeta: UnsafeMeta       => code(unsafeMeta.unsafeKwToken)
+    }
+    val name     = path.split(PathSep).lastOption.getOrElse(path)
+    val fullName = path
+    Ast(annotationNode(attr, code(attr), name, fullName))
   }
 }
