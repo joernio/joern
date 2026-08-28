@@ -583,12 +583,16 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  'impl' GenericParamList? ('const'? '!'? Type 'for')? Type WhereClause?
   //  AssocItemList
   private def visitImpl(impl: Impl): Seq[Ast] = {
-    if (impl.forKwToken.isDefined) {
+    if (impl.forKwToken.isDefined && hasResolvedTrait(impl)) {
       lowerImplFor(impl) :: Nil
     } else {
       lowerInherentImplAsDetachedAst(impl)
       Nil
     }
+  }
+
+  private def hasResolvedTrait(impl: Impl): Boolean = {
+    impl.typ.headOption.exists(typeFullNameForType(_) != Defines.Any)
   }
 
   // There can be at most one `impl X for Y` (for some X, Y) in the same file/project.
