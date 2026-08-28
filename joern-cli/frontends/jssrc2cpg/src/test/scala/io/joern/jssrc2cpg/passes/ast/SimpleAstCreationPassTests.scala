@@ -1604,6 +1604,29 @@ class SimpleAstCreationPassTests extends JsSrc2CpgSuite {
       identifierX.name shouldBe "x"
     }
 
+    "be correct for binary expressions '>>' and '>>>'" in {
+      val cpg = code("""
+         |function method(x) {
+         |  x >> 1;
+         |  x >>> 1;
+         |}
+        """.stripMargin)
+      inside(cpg.call.nameExact(Operators.arithmeticShiftRight).l) { case call :: Nil =>
+        call.code shouldBe "x >> 1"
+        inside(call.argument.sortBy(_.order).l) { case (ident: Identifier) :: (lit: Literal) :: Nil =>
+          ident.name shouldBe "x"
+          lit.code shouldBe "1"
+        }
+      }
+      inside(cpg.call.nameExact(Operators.logicalShiftRight).l) { case call :: Nil =>
+        call.code shouldBe "x >>> 1"
+        inside(call.argument.sortBy(_.order).l) { case (ident: Identifier) :: (lit: Literal) :: Nil =>
+          ident.name shouldBe "x"
+          lit.code shouldBe "1"
+        }
+      }
+    }
+
     "be correct for member access used in an assignment (direct)" in {
       val cpg = code("""
           |function method(x) {

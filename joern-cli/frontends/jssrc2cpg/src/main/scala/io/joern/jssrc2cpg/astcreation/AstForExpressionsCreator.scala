@@ -245,7 +245,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case "**"         => Operators.exponentiation
       case "&"          => Operators.and
       case ">>"         => Operators.arithmeticShiftRight
-      case ">>>"        => Operators.arithmeticShiftRight
+      case ">>>"        => Operators.logicalShiftRight
       case "<<"         => Operators.shiftLeft
       case "^"          => Operators.xor
       case "=="         => Operators.equals
