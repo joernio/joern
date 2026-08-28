@@ -275,4 +275,17 @@ class AssignCpgTests extends PySrc2CpgFixture with Matchers {
         .code shouldBe "y"
     }
   }
+
+  "augmented assign with shift right" should {
+    val cpg = code("""x >>= y""".stripMargin)
+
+    "test assignment node properties" in {
+      inside(cpg.call.methodFullName(Operators.assignmentArithmeticShiftRight).l) { case assignCall :: Nil =>
+        assignCall.code shouldBe "x >>= y"
+        assignCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        assignCall.lineNumber shouldBe Some(1)
+        assignCall.columnNumber shouldBe Some(1)
+      }
+    }
+  }
 }
