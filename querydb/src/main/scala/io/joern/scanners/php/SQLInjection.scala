@@ -30,7 +30,7 @@ object SQLInjection extends QueryBundle {
         def source =
           cpg.call.name(Operators.assignment).argument.code(".*_(REQUEST|GET|POST).*")
 
-        def sink = cpg.call.name("query").filter(_.receiver.nonEmpty).argument
+        def sink = cpg.call.name("(?i)query").filter(_.receiver.nonEmpty).argument
 
         sink.reachableBy(source).l.iterator
       }),
