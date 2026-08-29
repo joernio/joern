@@ -208,14 +208,16 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
       case x: Identifier =>
         val fieldAndIndexAccesses = withFieldAndIndexAccesses(x :: Nil)
         val capturedReferences = x.refsTo.capturedByMethodRef.referencedMethod.flatMap(firstUsagesForName(x.name, _)).l
+        val capturingClosures = x.refsTo.capturedByMethodRef.l
 
         (
-          (x :: fieldAndIndexAccesses ++ capturedReferences) flatMap {
+          (x :: fieldAndIndexAccesses ++ capturedReferences ++ capturingClosures) flatMap {
             case x: Call => handleCallNode(x) // Handle the case if this is an arg to another call
             case x       => x :: Nil
           },
           Nil
         )
+      case x: MethodParameterIn => (x :: Nil, Nil)
       case x: Call    => (handleCallNode(x), Nil)
       case x: CfgNode => (x :: Nil, Nil)
       case _          => (Nil, Nil)
