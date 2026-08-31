@@ -18,15 +18,18 @@ class ArithmeticOperationsTests extends JavaSrcCode2CpgFixture {
       |     int d = c - a;
       |     int e = a * b;
       |     int f = b / a;
+      |     int g = a >> b;
+      |     int h = a >>> b;
       |   }
       | }
       |""".stripMargin)
 
-  val vars = Seq(("a", "int"), ("b", "int"), ("c", "int"), ("d", "int"), ("e", "int"), ("f", "int"))
+  val vars =
+    Seq(("a", "int"), ("b", "int"), ("c", "int"), ("d", "int"), ("e", "int"), ("f", "int"), ("g", "int"), ("h", "int"))
 
   "should contain call nodes with <operation>.assignment for all variables" in {
     val assignments = cpg.assignment.map(x => (x.target.code, x.typeFullName)).l
-    assignments.size shouldBe 6
+    assignments.size shouldBe 8
     vars.foreach { x =>
       withClue(s"Assignments should contain $x") {
         assignments contains x shouldBe true
@@ -69,6 +72,22 @@ class ArithmeticOperationsTests extends JavaSrcCode2CpgFixture {
   "should contain a call node for the division operator" in {
     val List(op)                           = cpg.call(Operators.division).l
     val List(b: Identifier, a: Identifier) = op.astOut.l: @unchecked
+    a.name shouldBe "a"
+    b.name shouldBe "b"
+  }
+
+  "should contain a call node for the arithmetic shift right operator" in {
+    val List(op)                           = cpg.call(Operators.arithmeticShiftRight).l
+    val List(a: Identifier, b: Identifier) = op.astOut.l: @unchecked
+    op.code shouldBe "a >> b"
+    a.name shouldBe "a"
+    b.name shouldBe "b"
+  }
+
+  "should contain a call node for the logical shift right operator" in {
+    val List(op)                           = cpg.call(Operators.logicalShiftRight).l
+    val List(a: Identifier, b: Identifier) = op.astOut.l: @unchecked
+    op.code shouldBe "a >>> b"
     a.name shouldBe "a"
     b.name shouldBe "b"
   }
