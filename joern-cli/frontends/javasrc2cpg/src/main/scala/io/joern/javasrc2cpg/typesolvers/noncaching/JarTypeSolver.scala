@@ -227,7 +227,7 @@ object JarTypeSolver {
 
   def fromPath(
     inputPath: String,
-    useCache: Boolean = false,
+    cacheJdkTypeSolver: Boolean = false,
     enableVerboseTypeLogging: Boolean = false,
     isJdkPath: Boolean = false
   ): JarTypeSolver = {
@@ -249,7 +249,7 @@ object JarTypeSolver {
       }
       builder
     }
-    if (useCache) {
+    if (cacheJdkTypeSolver && isJdkPath) {
       cache.getOrElseUpdate(inputPath, createBuilder).buildShared
     } else {
       createBuilder.build
