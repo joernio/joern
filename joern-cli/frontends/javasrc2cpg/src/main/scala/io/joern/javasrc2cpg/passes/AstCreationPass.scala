@@ -67,8 +67,9 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
           )(config.schemaValidation, config.disableTypeFallback)
             .createAst()
         )
+        logger.debug(s"Processed '$filename'")
 
-      case None => logger.warn(s"Skipping AST creation for $filename")
+      case None => logger.warn(s"Failed to process '$filename'")
     }
   }
 

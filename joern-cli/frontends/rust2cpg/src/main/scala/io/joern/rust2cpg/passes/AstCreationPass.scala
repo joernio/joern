@@ -26,9 +26,9 @@ class AstCreationPass(cpg: Cpg, parsedFiles: Seq[String], config: Config)(implic
           diffGraph.absorb(localDiff)
         } match {
           case Success(_) =>
-            logger.debug(s"Generated a CPG for '${parseResult.filename}'")
+            logger.debug(s"Processed '${parseResult.filename}'")
           case Failure(exception) =>
-            logger.warn(s"Failed to generate a CPG for '${parseResult.fullPath}'", exception)
+            logger.warn(s"Failed to process '${parseResult.fullPath}'", exception)
         }
       case Failure(exception) =>
         logger.warn(s"Failed to parse rust_ast_gen output '$jsonPath'", exception)

@@ -490,7 +490,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   private def astsForDestructuringDeclarationWithVarRHS(expr: KtDestructuringDeclaration): Seq[Ast] = {
     val typedInit = Option(expr.getInitializer).collect { case e: KtNameReferenceExpression => e }
     if (typedInit.isEmpty) {
-      logger.warn(s"Unhandled case for destructuring declaration: `${expr.getText}` in this file `$relativizedPath`.")
+      logger.warn(s"Unhandled case for destructuring declaration: `${expr.getText}` in this file '$relativizedPath'.")
       return Seq()
     }
 

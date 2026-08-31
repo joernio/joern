@@ -39,9 +39,10 @@ class AstCreationPass(cpg: Cpg, astCreators: List[AstCreator]) extends ForkJoinP
     try {
       val ast = astCreator.createAst()
       diffGraph.absorb(ast)
+      logger.debug(s"Processed '${astCreator.fileName}'")
     } catch {
       case ex: Exception =>
-        logger.error(s"Error while processing AST for file - ${astCreator.fileName} - ", ex)
+        logger.warn(s"Failed to process '${astCreator.fileName}'", ex)
     }
   }
 }

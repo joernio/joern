@@ -22,12 +22,12 @@ class AstCreationPass(cpg: Cpg, jsonFiles: List[String], config: Config) extends
 
     parser.parseFile(Paths.get(jsonFile)) match {
       case Success(program) =>
-        logger.debug(s"Generating CPG for: ${program.fileName}")
         val astCreator = new AstCreator(program, program.fileName)
         val generated  = astCreator.createAst()
         diffGraph.absorb(generated)
+        logger.debug(s"Processed '${program.fileName}'")
       case Failure(exception) =>
-        logger.warn(s"Failed to parse '$jsonFile': ${exception.getMessage}")
+        logger.warn(s"Failed to process '$jsonFile'", exception)
     }
   }
 }

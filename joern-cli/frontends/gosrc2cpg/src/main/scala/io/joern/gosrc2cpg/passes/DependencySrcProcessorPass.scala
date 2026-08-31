@@ -25,9 +25,9 @@ class DependencySrcProcessorPass(
       astCreator.buildCacheFromDepSrc()
     } match {
       case Failure(exception) =>
-        logger.warn(s"Failed to build the pre processing cache: '${astCreator.parserResult.fullPath}'", exception)
+        logger.warn(s"Failed to build the pre processing cache for '${astCreator.parserResult.fullPath}'", exception)
       case Success(_) =>
-        logger.info(s"Generated pre processing cache for: '${astCreator.parserResult.fullPath}'")
+        logger.debug(s"Generated pre processing cache for '${astCreator.parserResult.fullPath}'")
     }
   }
 }

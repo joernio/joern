@@ -335,7 +335,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
             astForSubjectExpression
         }
       case _ =>
-        logger.warn(s"Subject Expression empty in this file `$relativizedPath`.")
+        logger.warn(s"Subject Expression empty in this file '$relativizedPath'.")
         Ast()
     }
 
@@ -367,7 +367,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val subjectExpressionAsts = Option(expr.getSubjectExpression) match {
       case Some(subjectExpression) => astsForExpression(subjectExpression, None)
       case _ =>
-        logger.warn(s"Subject Expression empty in this file `$relativizedPath`.")
+        logger.warn(s"Subject Expression empty in this file '$relativizedPath'.")
         Seq.empty
     }
     val subjectBlock    = blockNode(expr.getSubjectExpression, "", "")

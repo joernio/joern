@@ -31,6 +31,7 @@ class CodeToCpg(
       astVisitor.convert(astRoot)
 
       diffGraph.absorb(astVisitor.createAst())
+      logger.debug(s"Processed '${inputPair.relFileName}'")
     } catch {
       case exception: Throwable =>
         val lineBreakWasCorrected = lineBreakCorrectedCode != inputPair.content
@@ -55,10 +56,7 @@ class CodeToCpg(
     val nodeBuilder = new NodeBuilder(diffGraph)
     nodeBuilder.fileNode(relFileName, contentOption)
 
-    logger.warn(
-      s"Failed to convert${if (lineBreakWasCorrected) " line break corrected " else " "}file ${relFileName}",
-      exception
-    )
+    logger.warn(s"Failed to process '$relFileName'", exception)
   }
 }
 

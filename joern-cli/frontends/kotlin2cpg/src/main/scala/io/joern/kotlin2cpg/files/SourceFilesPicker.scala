@@ -65,7 +65,7 @@ object SourceFilesPicker {
         val relativized = SourceFiles.toRelativePath(fileName, forDir)
         val willFilter  = SourceFilesPicker.shouldFilter(relativized)
         if (willFilter) {
-          logger.debug(s"Filtered file at `$fileName`.")
+          logger.debug(s"Filtered file at '$fileName'.")
         }
         willFilter
       }

@@ -154,10 +154,10 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
             diffGraph.absorb(localDiff)
           } match {
             case Failure(exception) =>
-              logger.warn(s"Failed to generate a CPG for: '${parseResult.filename}'", exception)
+              logger.warn(s"Failed to process '${parseResult.filename}'", exception)
               (false, parseResult.filename)
             case Success(_) =>
-              logger.debug(s"Generated a CPG for: '${parseResult.filename}'")
+              logger.debug(s"Processed '${parseResult.filename}'")
               (true, parseResult.filename)
           }
         case Failure(exception) =>

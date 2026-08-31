@@ -35,10 +35,10 @@ class AstCreationPass(
         diffGraph.absorb(localDiff)
       } match {
         case Failure(exception) =>
-          logger.warn(s"Failed to generate a CPG for: '${astCreator.parserResult.fullPath}'", exception)
+          logger.warn(s"Failed to process '${astCreator.parserResult.fullPath}'", exception)
           (false, astCreator.relPathFileName)
         case Success(_) =>
-          logger.info(s"Generated a CPG for: '${astCreator.parserResult.fullPath}'")
+          logger.debug(s"Processed '${astCreator.parserResult.fullPath}'")
           (true, astCreator.relPathFileName)
       }
     }
