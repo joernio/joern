@@ -229,7 +229,7 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       val sourceDir = config.inputPath
-      logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
+      logger.info(s"Starting CPG generation for input directory '$sourceDir'.")
 
       checkSourceDir(sourceDir)
       logMaxHeapSize()
@@ -410,7 +410,7 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
       // TODO: support Windows paths
       val willFilter = SourceFilesPicker.shouldFilter(fwp.relativizedPath)
       if (willFilter) {
-        logger.debug(s"Filtered file at `${fwp.f.getVirtualFilePath}`.")
+        logger.debug(s"Filtered file at '${fwp.f.getVirtualFilePath}'.")
       }
       willFilter
     }

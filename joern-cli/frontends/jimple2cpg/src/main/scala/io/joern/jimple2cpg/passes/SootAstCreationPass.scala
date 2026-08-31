@@ -36,9 +36,10 @@ class SootAstCreationPass(cpg: Cpg, config: Config)
       // sootClass.setApplicationClass()
       val localDiff = new AstCreator(jimpleFile, part, accumulator)(config.schemaValidation).createAst()
       builder.absorb(localDiff)
+      logger.debug(s"Processed '$jimpleFile'")
     } catch {
       case e: Exception =>
-        logger.warn(s"Cannot parse: $part", e)
+        logger.warn(s"Failed to process '$jimpleFile'", e)
     }
   }
 

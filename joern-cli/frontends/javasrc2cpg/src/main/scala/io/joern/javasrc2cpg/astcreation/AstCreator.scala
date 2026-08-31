@@ -224,10 +224,10 @@ class AstCreator(
       Ast(namespaceBlock).withChildren(typeDeclAsts).withChildren(importNodes)
     } catch {
       case exception: UnsolvedSymbolException =>
-        logger.warn(s"Unsolved symbol exception caught in $filename", exception)
+        logger.warn(s"Unsolved symbol exception caught in '$filename'", exception)
         Ast()
       case t: Throwable =>
-        logger.warn(s"Parsing file $filename failed", t)
+        logger.warn(s"Failed to process '$filename'", t)
         Ast()
     }
   }
@@ -276,7 +276,7 @@ class AstCreator(
       // This is really, really ugly, but there's a bug in the JavaParser symbol solver that can lead to
       // unterminated recursion in some cases where types cannot be resolved.
       case e: StackOverflowError =>
-        logger.debug(s"Caught StackOverflowError in $filename")
+        logger.debug(s"Caught StackOverflowError in '$filename'")
         Failure(e)
     }
   }

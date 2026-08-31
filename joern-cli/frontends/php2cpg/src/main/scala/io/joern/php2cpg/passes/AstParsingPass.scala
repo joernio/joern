@@ -44,7 +44,7 @@ trait AstParsingPass(config: Config, parser: PhpParser) { this: ForkJoinParallel
     parser.parseFiles(part).foreach {
       case PhpParseResult(fileName, Some(result), _) => processPart(builder, fileName, result)
       case PhpParseResult(fileName, None, _) =>
-        logger.warn(s"Could not parse file $fileName. Results will be missing!")
+        logger.warn(s"Failed to process '$fileName'")
         None
     }
   }

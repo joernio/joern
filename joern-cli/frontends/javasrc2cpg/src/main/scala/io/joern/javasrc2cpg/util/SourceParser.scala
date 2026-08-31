@@ -78,16 +78,15 @@ class SourceParser(
     parseResult.getProblems.asScala.toList match {
       case Nil => // Just carry on as usual
       case problems =>
-        logger.warn(s"Encountered problems while parsing file ${file.fileName}:")
-        problems.foreach { problem =>
-          logger.warn(s"- ${problem.getMessage}")
-        }
+        logger.warn(
+          s"Encountered problems while parsing '${file.fileName}': ${problems.map(_.getMessage).mkString("; ")}"
+        )
     }
 
     parseResult.getResult.toScala match {
       case Some(result) if result.getParsed == Parsedness.PARSED => Some(result)
       case _ =>
-        logger.warn(s"Failed to parse file ${file.fileName}")
+        logger.warn(s"Failed to process '${file.fileName}'")
         None
     }
   }

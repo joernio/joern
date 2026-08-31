@@ -75,8 +75,13 @@ class AstCreationPass(
         accumulator.samInfoEntriesByImplClass,
         disableFileContent
       )
-    diffGraph.absorb(astCreator.createAst())
-    logger.debug(s"AST created for file at `${fileWithMeta.f.getVirtualFilePath}`.")
+    try {
+      diffGraph.absorb(astCreator.createAst())
+      logger.debug(s"Processed '${fileWithMeta.f.getVirtualFilePath}'")
+    } catch {
+      case e: Exception =>
+        logger.warn(s"Failed to process '${fileWithMeta.f.getVirtualFilePath}'", e)
+    }
   }
 
 }

@@ -68,9 +68,10 @@ class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg, config: Config)
         )
           .createAst()
       builder.absorb(localDiff)
+      logger.debug(s"Processed '${classFile.file.absolutePathAsString}'")
     } catch {
       case e: Exception =>
-        logger.warn(s"Exception on AST creation for ${classFile.file.absolutePathAsString}", e)
+        logger.warn(s"Failed to process '${classFile.file.absolutePathAsString}'", e)
         Iterator()
     }
   }

@@ -59,9 +59,10 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
     val phpFile = jsonObject.flatMap { jsonObject =>
       Try(Domain.fromJson(jsonObject)) match {
         case Success(phpFile) =>
+          logger.debug(s"Processed '$filename'")
           Some(phpFile)
         case Failure(e) =>
-          logger.error(s"Failed to generate intermediate AST for $filename", e)
+          logger.warn(s"Failed to process '$filename'", e)
           None
       }
     }
@@ -85,11 +86,11 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
       case Success(option) =>
         result.append((filename, option, infoLines.mkString))
         if (option.isEmpty) {
-          logger.error(s"Parsing json string for $filename resulted in null return value")
+          logger.warn(s"Failed to process '$filename': null result from parser")
         }
       case Failure(exception) =>
         result.append((filename, None, infoLines.mkString))
-        logger.error(s"Parsing json string for $filename failed with exception", exception)
+        logger.warn(s"Failed to process '$filename'", exception)
     }
 
     result

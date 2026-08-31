@@ -31,7 +31,7 @@ abstract class BasePassForAstProcessing(
       )
     } catch
       case exception: Exception =>
-        logger.error(s"error while processing file $ast", exception)
+        logger.warn(s"Failed to process '$ast'", exception)
   }
 
   def processAst(diffGraph: DiffGraphBuilder, astCreator: AstCreator): Unit

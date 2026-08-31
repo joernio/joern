@@ -195,7 +195,7 @@ class AstCreationPass(
                 config.schemaValidation
               ).createAst()
             diffGraph.absorb(localDiff)
-            logger.debug(s"Generated a CPG for: '$relPath'")
+            logger.debug(s"Processed ‘$relPath’")
             true
           } catch {
             case s: StackOverflowError =>
@@ -204,10 +204,10 @@ class AstCreationPass(
                 *   - `StackOverflowError` is a `VirtualMachineError`. Without an explicit catch, failing type analysis
                 *     in a single problematic file would crash the whole process.
                 */
-              logger.warn(s"Failed to generate a CPG for: '$relPath' (error during type analysis)", s)
+              logger.warn(s"Failed to process ‘$relPath’", s)
               false
             case other: Throwable =>
-              logger.warn(s"Failed to generate a CPG for: '$relPath'", other)
+              logger.warn(s"Failed to process ‘$relPath’", other)
               false
           }
         case None =>
