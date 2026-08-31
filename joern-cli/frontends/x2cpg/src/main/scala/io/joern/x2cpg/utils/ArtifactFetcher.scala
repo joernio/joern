@@ -9,6 +9,7 @@ import java.net.http.{HttpClient, HttpRequest, HttpResponse}
 import java.nio.file.{Files, Path, StandardCopyOption}
 import java.util.Base64
 import java.util.concurrent.{CompletableFuture, ConcurrentHashMap, TimeUnit}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try, Using}
 
 case class HttpArtifact(url: String, sha256: String)
@@ -97,7 +98,7 @@ class ArtifactFetcher(val cacheDir: Path) {
         None
       }
     } catch {
-      case e: Exception =>
+      case NonFatal(e) =>
         logger.warn(s"Error checking cache for ${artifact.url}: ${e.getMessage}")
         None
     }

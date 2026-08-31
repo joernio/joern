@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.immutable.SortedMap
 import scala.collection.mutable
+import scala.util.control.NonFatal
 
 class AstCreationPass(
   filesWithMeta: Iterable[KtFileWithMeta],
@@ -79,7 +80,7 @@ class AstCreationPass(
       diffGraph.absorb(astCreator.createAst())
       logger.debug(s"Processed '${fileWithMeta.f.getVirtualFilePath}'")
     } catch {
-      case e: Exception =>
+      case NonFatal(e) =>
         logger.warn(s"Failed to process '${fileWithMeta.f.getVirtualFilePath}'", e)
     }
   }

@@ -10,6 +10,7 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.Path
+import scala.util.control.NonFatal
 
 abstract class BasePassForAstProcessing(
   cpg: Cpg,
@@ -30,7 +31,7 @@ abstract class BasePassForAstProcessing(
         )
       )
     } catch
-      case exception: Exception =>
+      case NonFatal(exception) =>
         logger.warn(s"Failed to process '$ast'", exception)
   }
 

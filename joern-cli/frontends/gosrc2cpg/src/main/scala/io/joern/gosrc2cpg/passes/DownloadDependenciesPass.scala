@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory
 import java.io.File as JFile
 import java.nio.file.Paths
 import java.util.concurrent.LinkedBlockingQueue
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoGlobal, config: Config) {
@@ -66,7 +67,7 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
         }
       } catch {
         case exception: InterruptedException => logger.warn("Interrupted WriterThread", exception)
-        case exc: Exception =>
+        case NonFatal(exc) =>
           logger.error("error in writer thread, ", exc)
       }
     }

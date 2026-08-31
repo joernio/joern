@@ -9,6 +9,8 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 
+import scala.util.control.NonFatal
+
 class AstCreationPass(cpg: Cpg, astCreators: List[AstCreator]) extends ForkJoinParallelCpgPass[AstCreator](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -41,7 +43,7 @@ class AstCreationPass(cpg: Cpg, astCreators: List[AstCreator]) extends ForkJoinP
       diffGraph.absorb(ast)
       logger.debug(s"Processed '${astCreator.fileName}'")
     } catch {
-      case ex: Exception =>
+      case NonFatal(ex) =>
         logger.warn(s"Failed to process '${astCreator.fileName}'", ex)
     }
   }

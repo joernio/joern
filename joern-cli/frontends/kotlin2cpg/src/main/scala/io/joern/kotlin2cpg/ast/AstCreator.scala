@@ -26,6 +26,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
+import scala.util.control.NonFatal
 import org.jetbrains.kotlin.types.KotlinType
 
 object AstCreator {
@@ -483,7 +484,7 @@ class AstCreator(
             Seq()
         }
       } catch {
-        case exception: Exception =>
+        case NonFatal(exception) =>
           logger.warn(
             s"Caught exception while processing decl in this file `$relativizedPath`:\n${decl.getText}",
             exception

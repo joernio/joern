@@ -27,6 +27,7 @@ import java.io.File
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
+import scala.util.control.NonFatal
 
 class Ghidra2Cpg extends X2CpgFrontend {
   override type ConfigType = Config
@@ -67,7 +68,7 @@ class Ghidra2Cpg extends X2CpgFrontend {
             program.release(this)
           }
         } catch {
-          case e: Exception =>
+          case NonFatal(e) =>
             e.printStackTrace()
         } finally {
           // Closing deletes the project (since we created a temporary project)
@@ -96,7 +97,7 @@ class Ghidra2Cpg extends X2CpgFrontend {
       GhidraProgramUtilities.markProgramAnalyzed(program)
       handleProgram(program, fileAbsolutePath, cpg)
     } catch {
-      case e: Exception =>
+      case NonFatal(e) =>
         e.printStackTrace()
     } finally {
       program.endTransaction(transactionId, true)
@@ -154,7 +155,7 @@ object Types {
     try {
       types += typeName
     } catch {
-      case _: Exception => println(s" Error adding type: $typeName")
+      case NonFatal(_) => println(s" Error adding type: $typeName")
     }
     typeName
   }

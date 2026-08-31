@@ -8,6 +8,7 @@ import java.util.zip.{ZipEntry, ZipFile}
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters.*
 import scala.util.Using
+import scala.util.control.NonFatal
 
 object FileUtil {
   def currentWorkingDirectory: Path = Paths.get("").toAbsolutePath.normalize()
@@ -37,7 +38,7 @@ object FileUtil {
       try {
         delete(file, swallowIoExceptions = true)
       } catch {
-        case _: Exception => // Ensure we don't throw from finally
+        case NonFatal(_) => // Ensure we don't throw from finally
       }
     }
   }
