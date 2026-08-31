@@ -7,6 +7,8 @@ import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
 import org.slf4j.LoggerFactory
 import soot.{Scene, SootClass, SourceLocator}
 
+import scala.util.control.NonFatal
+
 /** Creates the AST layer from the given class file and stores all types in the given global parameter.
   */
 class SootAstCreationPass(cpg: Cpg, config: Config)
@@ -38,7 +40,7 @@ class SootAstCreationPass(cpg: Cpg, config: Config)
       builder.absorb(localDiff)
       logger.debug(s"Processed '$jimpleFile'")
     } catch {
-      case e: Exception =>
+      case NonFatal(e) =>
         logger.warn(s"Failed to process '$jimpleFile'", e)
     }
   }

@@ -17,6 +17,7 @@ import java.util
 import java.util.jar.JarFile
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try, Using}
 
 /** Creates a JRuby scripting environment using `ruby_ast_gen` within a temporary directory allowing for re-usable
@@ -121,7 +122,7 @@ class RubyAstGenRunner(config: Config, sharedJRubyEnv: Option[JRubyEnvironment] 
       Files.writeString(scriptTarget, mainScript, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)
       executeWithJRuby(scriptTarget)
     } catch {
-      case tempPathException: Exception => Failure(tempPathException)
+      case NonFatal(tempPathException) => Failure(tempPathException)
     } finally {
       scriptTarget.toFile.delete()
     }

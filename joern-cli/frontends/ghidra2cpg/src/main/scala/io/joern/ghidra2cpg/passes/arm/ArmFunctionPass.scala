@@ -8,6 +8,8 @@ import io.joern.ghidra2cpg.utils.Utils.{createMethodNode, createReturnNode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, nodes}
 
+import scala.util.control.NonFatal
+
 class ArmFunctionPass(
   currentProgram: Program,
   filename: String,
@@ -33,7 +35,7 @@ class ArmFunctionPass(
       handleLocals(localDiffGraph, function, blockNode)
       handleBody(localDiffGraph, function, methodNode, blockNode)
     } catch {
-      case exception: Exception =>
+      case NonFatal(exception) =>
         exception.printStackTrace()
     }
     diffGraphBuilder.absorb(localDiffGraph)

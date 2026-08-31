@@ -5,6 +5,7 @@ import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.Files
+import scala.util.control.NonFatal
 
 /** language must be one of io.shiftleft.codepropertygraph.generated.Languages TODO: generate enums instead of Strings
   * for the languages
@@ -31,7 +32,7 @@ object SourceHighlighter {
         .mkString("\n")
       Some(highlightedCode)
     } catch {
-      case exception: Exception =>
+      case NonFatal(exception) =>
         logger.info("syntax highlighting not working. Is `source-highlight` installed?", exception)
         Some(source.code)
     } finally {

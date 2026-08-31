@@ -15,6 +15,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
+import scala.util.control.NonFatal
 
 /** We compute the set of possible call-targets for each dynamic call, and add them as CALL edges to the graph, based on
   * call.methodFullName, method.name and method.signature, the inheritance hierarchy and the AST of typedecls and
@@ -75,7 +76,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       try {
         linkDynamicCall(call, dstGraph)
       } catch {
-        case exception: Exception =>
+        case NonFatal(exception) =>
           throw new RuntimeException(exception)
       }
     }

@@ -16,6 +16,7 @@ import java.nio.file.attribute.BasicFileAttributes
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.matching.Regex
+import scala.util.control.NonFatal
 import scala.util.{Failure, Try, Using}
 
 /** Provides Swift type information by extracting type data from Swift compiler output. This provider uses the Swift
@@ -469,7 +470,7 @@ object SwiftTypesProvider {
       )
       resultSet.toSet
     } catch {
-      case e: Exception =>
+      case NonFatal(e) =>
         logger.warn(s"Error listing module directories under ${path.toFile.toString}: ${e.getMessage}")
         Set.empty
     }
@@ -625,7 +626,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
         process.destroyForcibly()
       }
     } catch {
-      case e: Exception =>
+      case NonFatal(e) =>
         logger.debug("Batch demangling failed, falling back to per-name demangling", e)
     }
   }

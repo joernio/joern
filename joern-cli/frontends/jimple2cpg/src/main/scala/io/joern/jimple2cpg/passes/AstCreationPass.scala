@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 import scala.collection.mutable
 import scala.util.Try
+import scala.util.control.NonFatal
 
 /** Creates the AST layer from the given class file and stores all types in the given global parameter.
   * @param classFiles
@@ -70,7 +71,7 @@ class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg, config: Config)
       builder.absorb(localDiff)
       logger.debug(s"Processed '${classFile.file.absolutePathAsString}'")
     } catch {
-      case e: Exception =>
+      case NonFatal(e) =>
         logger.warn(s"Failed to process '${classFile.file.absolutePathAsString}'", e)
         Iterator()
     }

@@ -9,6 +9,7 @@ import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import ujson.{Arr, Obj, Value}
 
 import java.io.File
+import scala.util.control.NonFatal
 
 trait InitialMainSrcProcessor(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -25,7 +26,7 @@ trait InitialMainSrcProcessor(implicit withSchemaValidation: ValidationMode) { t
       // NOTE: For dependencies we are just caching the global variables Types.
       processPackageLevelGlobalVariablesAndConstants(parserResult.json)
     } catch {
-      case ex: Exception =>
+      case NonFatal(ex) =>
         logger.warn(s"Error: While processing - ${parserResult.fullPath}", ex)
     }
     diffGraph
