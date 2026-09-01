@@ -167,12 +167,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       if (isClosure || isSingletonObjectMethod || isSurroundedByProgramScope) {
         Ast() // program scope members are set elsewhere
       } else {
-        // Singleton constructors that initialize @@ fields should have their members linked under the singleton class
-        val methodMember = scope.surroundingTypeFullName match {
-          case Some(astParentTfn) => memberForMethod(method, Option(NodeTypes.TYPE_DECL), Option(astParentTfn))
-          case None               => memberForMethod(method, scope.surroundingAstLabel, scope.surroundingScopeFullName)
-        }
-        Ast(memberForMethod(method, Option(NodeTypes.TYPE_DECL), astParentFullName))
+        Ast(
+          memberForMethod(method, Option(NodeTypes.TYPE_DECL), astParentFullName.orElse(scope.surroundingScopeFullName))
+        )
       }
     // For closures, we also want the method/type refs for upstream use
     val methodAst_ = {
@@ -469,7 +466,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         }
 
         // The member for these types refers to the singleton class
-        val member = memberForMethod(method, Option(NodeTypes.TYPE_DECL), astParentFullName.map(x => s"$x<class>"))
+        val memberParentType     = astParentType.orElse(scope.surroundingAstLabel)
+        val memberParentFullName = astParentFullName.map(x => s"$x<class>").orElse(scope.surroundingScopeFullName)
+        val member               = memberForMethod(method, memberParentType, memberParentFullName)
         diffGraph.addNode(member)
 
         val _methodAst =

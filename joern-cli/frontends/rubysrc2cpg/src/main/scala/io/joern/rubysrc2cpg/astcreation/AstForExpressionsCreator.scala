@@ -825,8 +825,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val block = blockNode(node)
     scope.pushNewScope(BlockScope(block))
-    val tmpLocal = NewLocal().name(tmp).code(tmp)
-    scope.addToScope(tmp, tmpLocal)
+    handleVariableOccurrence(tmp, node)
 
     val argumentAsts = node.elements.flatMap(elem =>
       elem match {
