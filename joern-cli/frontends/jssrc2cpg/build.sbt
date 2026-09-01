@@ -35,6 +35,7 @@ compile / javacOptions ++= Seq("-Xlint:all", "-Xlint:-cast", "-g")
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
 lazy val AstgenWinAmd64   = "astgen-win.exe"
+lazy val AstgenWinArmV8   = "astgen-win-arm.exe"
 lazy val AstgenLinuxAmd64 = "astgen-linux"
 lazy val AstgenLinuxArmV8 = "astgen-linux-arm"
 lazy val AstgenMacAmd64   = "astgen-macos"
@@ -57,12 +58,13 @@ astGenBinaryNames := {
     Seq.empty
   } else {
     (Environment.operatingSystem, Environment.architecture) match {
-      case (Environment.OperatingSystemType.Windows, _)                                => Seq(AstgenWinAmd64)
-      case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.X86)   => Seq(AstgenLinuxAmd64)
-      case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.ARMv8) => Seq(AstgenLinuxArmV8)
-      case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.X86)     => Seq(AstgenMacAmd64)
-      case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.ARMv8)   => Seq(AstgenMacArmV8)
-      case _ => Seq(AstgenWinAmd64, AstgenLinuxAmd64, AstgenLinuxArmV8, AstgenMacAmd64, AstgenMacArmV8)
+      case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.X86)   => Seq(AstgenWinAmd64)
+      case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.ARMv8) => Seq(AstgenWinArmV8)
+      case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.X86)     => Seq(AstgenLinuxAmd64)
+      case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.ARMv8)   => Seq(AstgenLinuxArmV8)
+      case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.X86)       => Seq(AstgenMacAmd64)
+      case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.ARMv8)     => Seq(AstgenMacArmV8)
+      case _ => Seq(AstgenWinAmd64, AstgenWinArmV8, AstgenLinuxAmd64, AstgenLinuxArmV8, AstgenMacAmd64, AstgenMacArmV8)
     }
   }
 }
