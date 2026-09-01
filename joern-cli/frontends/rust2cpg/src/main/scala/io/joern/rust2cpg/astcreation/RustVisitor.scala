@@ -367,7 +367,26 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     tupleStructPat: TupleStructPat,
     mkSourceAst: () => Ast
   ): Seq[Ast] = {
-    createAssignmentsForTupleElements(tupleStructPat, tupleStructPat.pat, mkSourceAst)
+    createAssignmentsForTupleElements(
+      tupleStructPat,
+      tupleStructPat.pat,
+      () => castIfNecessary(tupleStructPat.path, mkSourceAst())
+    )
+  }
+
+  // Enum variants in rust have the enum type, e.g. in `enum A { B }` the expression `A::B` has type `A`.
+  // We however lower variants as their own TypeDecl, so in order for member accesses to be meaningful, we should
+  // cast to the variant's TypeDecl before.
+  private def castIfNecessary(path: Path, sourceAst: Ast): Ast = {
+    val patternType = typeFullNameForPath(path)
+    if (patternType == Defines.Any || sourceAst.rootType.contains(patternType)) {
+      sourceAst
+    } else {
+      val castCode   = s"(${sourceAst.rootCodeOrEmpty} as $patternType)"
+      val castNode   = operatorCallNode(path, castCode, Operators.cast, Some(patternType))
+      val typeRefAst = Ast(typeRefNode(path, code(path), patternType))
+      callAst(castNode, Seq(typeRefAst, sourceAst))
+    }
   }
 
   // TODO(rust_ast_gen): how many elements the tuple has, so we know how many elements to skip after RestPat.
@@ -397,7 +416,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         case Some(fieldName) =>
           val fieldType = typeFullNameForPat(field.pat)
           def fieldAccess(): Ast = {
-            val sourceAst  = mkSourceAst()
+            val sourceAst  = castIfNecessary(recordPat.path, mkSourceAst())
             val accessCode = s"${sourceAst.rootCodeOrEmpty}.$fieldName"
             fieldAccessAst(field, field, sourceAst, accessCode, fieldName, fieldType)
           }

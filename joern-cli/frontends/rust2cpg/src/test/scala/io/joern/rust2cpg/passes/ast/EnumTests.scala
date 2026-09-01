@@ -309,6 +309,154 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "record variant pattern in an if-let" should {
+    val cpg = code("""
+        |enum E { A { x: i32 }, B }
+        |fn foo(e: E) {
+        |  if let E::A { x } = e {
+        |    bar(x);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct field access" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "(<tmp>0 as rust2cpgtest::E::A).x"
+        fieldAccess.typeFullName shouldBe "i32"
+
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) { case (cast: Call) :: (field: FieldIdentifier) :: Nil =>
+          field.canonicalName shouldBe "x"
+
+          cast.methodFullName shouldBe Operators.cast
+          cast.code shouldBe "(<tmp>0 as rust2cpgtest::E::A)"
+          cast.typeFullName shouldBe "rust2cpgtest::E::A"
+
+          inside(cast.argument.sortBy(_.argumentIndex).l) { case (typeRef: TypeRef) :: (tmp: Identifier) :: Nil =>
+            typeRef.code shouldBe "E::A"
+            typeRef.typeFullName shouldBe "rust2cpgtest::E::A"
+
+            tmp.name shouldBe "<tmp>0"
+            tmp.typeFullName shouldBe "rust2cpgtest::E"
+          }
+        }
+      }
+    }
+  }
+
+  "generic tuple variant pattern in a match arm" should {
+    val cpg = code("""
+        |enum E<T> { A(T, bool) }
+        |fn foo(e: E<i32>) {
+        |  match e {
+        |  E::A(x, y) => bar(x),
+        |  _ => 0,
+        |  };
+        |}
+        |""".stripMargin)
+
+    "have correct field accesses" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "(<tmp>0 as rust2cpgtest::E<T>::A).0"
+        fieldAccess.typeFullName shouldBe "i32"
+
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) { case (cast: Call) :: (field: FieldIdentifier) :: Nil =>
+          field.canonicalName shouldBe "0"
+
+          cast.methodFullName shouldBe Operators.cast
+          cast.code shouldBe "(<tmp>0 as rust2cpgtest::E<T>::A)"
+          cast.typeFullName shouldBe "rust2cpgtest::E<T>::A"
+
+          inside(cast.argument.sortBy(_.argumentIndex).l) { case (typeRef: TypeRef) :: (tmp: Identifier) :: Nil =>
+            typeRef.code shouldBe "E::A"
+            typeRef.typeFullName shouldBe "rust2cpgtest::E<T>::A"
+
+            tmp.name shouldBe "<tmp>0"
+            tmp.typeFullName shouldBe "rust2cpgtest::E<i32>"
+          }
+        }
+      }
+
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("y")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "(<tmp>0 as rust2cpgtest::E<T>::A).1"
+        fieldAccess.typeFullName shouldBe "bool"
+
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) { case (cast: Call) :: (field: FieldIdentifier) :: Nil =>
+          field.canonicalName shouldBe "1"
+
+          cast.methodFullName shouldBe Operators.cast
+          cast.code shouldBe "(<tmp>0 as rust2cpgtest::E<T>::A)"
+          cast.typeFullName shouldBe "rust2cpgtest::E<T>::A"
+
+          inside(cast.argument.sortBy(_.argumentIndex).l) { case (typeRef: TypeRef) :: (tmp: Identifier) :: Nil =>
+            typeRef.code shouldBe "E::A"
+            typeRef.typeFullName shouldBe "rust2cpgtest::E<T>::A"
+
+            tmp.name shouldBe "<tmp>0"
+            tmp.typeFullName shouldBe "rust2cpgtest::E<i32>"
+          }
+        }
+      }
+    }
+  }
+
+  "nested tuple variant patterns in a let" should {
+    val cpg = code("""
+        |enum E { A(i32) }
+        |enum F { B(E) }
+        |fn foo(value: F) {
+        |  let F::B(E::A(x)) = value;
+        |}
+        |""".stripMargin)
+
+    "have correct field accesses" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) { case (fieldAccessA: Call) :: Nil =>
+        fieldAccessA.methodFullName shouldBe Operators.fieldAccess
+        fieldAccessA.code shouldBe "((value as rust2cpgtest::F::B).0 as rust2cpgtest::E::A).0"
+        fieldAccessA.typeFullName shouldBe "i32"
+
+        inside(fieldAccessA.argument.sortBy(_.argumentIndex).l) {
+          case (castA: Call) :: (fieldA: FieldIdentifier) :: Nil =>
+            fieldA.canonicalName shouldBe "0"
+
+            castA.methodFullName shouldBe Operators.cast
+            castA.code shouldBe "((value as rust2cpgtest::F::B).0 as rust2cpgtest::E::A)"
+            castA.typeFullName shouldBe "rust2cpgtest::E::A"
+
+            inside(castA.argument.sortBy(_.argumentIndex).l) {
+              case (typeRefA: TypeRef) :: (fieldAccessB: Call) :: Nil =>
+                typeRefA.code shouldBe "E::A"
+                typeRefA.typeFullName shouldBe "rust2cpgtest::E::A"
+
+                fieldAccessB.methodFullName shouldBe Operators.fieldAccess
+                fieldAccessB.code shouldBe "(value as rust2cpgtest::F::B).0"
+                fieldAccessB.typeFullName shouldBe "rust2cpgtest::E"
+
+                inside(fieldAccessB.argument.sortBy(_.argumentIndex).l) {
+                  case (castB: Call) :: (fieldB: FieldIdentifier) :: Nil =>
+                    fieldB.canonicalName shouldBe "0"
+
+                    castB.methodFullName shouldBe Operators.cast
+                    castB.code shouldBe "(value as rust2cpgtest::F::B)"
+                    castB.typeFullName shouldBe "rust2cpgtest::F::B"
+
+                    inside(castB.argument.sortBy(_.argumentIndex).l) {
+                      case (typeRefB: TypeRef) :: (value: Identifier) :: Nil =>
+                        typeRefB.code shouldBe "F::B"
+                        typeRefB.typeFullName shouldBe "rust2cpgtest::F::B"
+
+                        value.name shouldBe "value"
+                        value.typeFullName shouldBe "rust2cpgtest::F"
+                    }
+                }
+            }
+        }
+      }
+    }
+  }
+
   "same-named enums in both branches of an if" should {
     val cpg = code("""
         |fn outer(c: bool) {

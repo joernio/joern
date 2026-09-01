@@ -164,9 +164,18 @@ trait RustFullNames { this: AstCreator =>
         case tuplePat: RustNodeSyntax.TuplePat =>
           val childTypes = tuplePat.pat.map(typeFullNameForPat)
           s"(${childTypes.mkString(", ")})"
-        case recordPat: RustNodeSyntax.RecordPat           => typeFullNameForPath(recordPat.path)
-        case tupleStructPat: RustNodeSyntax.TupleStructPat => typeFullNameForPath(tupleStructPat.path)
-        case _                                             => Defines.Any
+        // TODO: only works on qualified paths, until astgen provides types for patterns too.
+        case recordPat: RustNodeSyntax.RecordPat =>
+          recordPat.path.path
+            .map(typeFullNameForPath)
+            .filterNot(_ == Defines.Any)
+            .getOrElse(typeFullNameForPath(recordPat.path))
+        case tupleStructPat: RustNodeSyntax.TupleStructPat =>
+          tupleStructPat.path.path
+            .map(typeFullNameForPath)
+            .filterNot(_ == Defines.Any)
+            .getOrElse(typeFullNameForPath(tupleStructPat.path))
+        case _ => Defines.Any
       }
     }
   }
