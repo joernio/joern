@@ -113,15 +113,13 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
           case None            => Seq()
         })
 
-        val importCallNode =
-          createCall(
-            createIdentifierNode("import", Load, lineAndCol),
-            "import",
-            lineAndCol,
-            arguments,
-            Nil,
-            Some(importAstNode)
-          )
+        val importCallNode = nodeBuilder.callNode(
+          new AstPrinter("").print(importAstNode),
+          "import",
+          DispatchTypes.STATIC_DISPATCH,
+          lineAndCol
+        )
+        addAstChildrenAsArguments(importCallNode, 1, arguments)
 
         val assignNode = createAssignment(importAssignLhsIdentifierNode, importCallNode, lineAndCol)
         assignNode
