@@ -159,4 +159,59 @@ class AnnotationTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "fn with two attributes" should {
+    val cpg = code("""
+        |#[inline]
+        |#[doc = "foobar"]
+        |fn foo() {}
+        |""".stripMargin)
+
+    "have correct annotations" in {
+      inside(cpg.method.nameExact("foo").annotation.sortBy(_.lineNumber).l) { case attr1 :: attr2 :: Nil =>
+        attr1.name shouldBe "inline"
+        attr1.fullName shouldBe "inline"
+        attr1.code shouldBe "#[inline]"
+
+        attr2.name shouldBe "doc"
+        attr2.fullName shouldBe "doc"
+        attr2.code shouldBe """#[doc = "foobar"]"""
+      }
+    }
+  }
+
+  "inherent method with attribute" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo {
+        |  #[inline]
+        |  fn bar(&self) {}
+        |}
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(cpg.method.nameExact("bar").annotation.l) { case attr :: Nil =>
+        attr.name shouldBe "inline"
+        attr.fullName shouldBe "inline"
+        attr.code shouldBe "#[inline]"
+      }
+    }
+  }
+
+  "trait method with attribute" should {
+    val cpg = code("""
+        |trait Foo {
+        |  #[must_use]
+        |  fn bar(&self);
+        |}
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(cpg.method.nameExact("bar").annotation.l) { case attr :: Nil =>
+        attr.name shouldBe "must_use"
+        attr.fullName shouldBe "must_use"
+        attr.code shouldBe "#[must_use]"
+      }
+    }
+  }
 }
