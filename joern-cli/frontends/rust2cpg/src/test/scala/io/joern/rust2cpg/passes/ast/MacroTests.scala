@@ -318,6 +318,107 @@ class MacroTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
     }
   }
 
+  "a `format!` macro with implicitly captured arguments" should {
+    val cpg = code("""
+        |fn main() {
+        | let x = 7;
+        | let w = 3;
+        | let s = format!("{x:w$} {}", 1);
+        |}
+        |""".stripMargin)
+
+    "have the template and the formattedValues as arguments" in {
+      inside(cpg.call.nameExact(Operators.formatString).argument.sortBy(_.argumentIndex).l) {
+        case (lit: Literal) :: (fmt1: Call) :: (fmtX: Call) :: (fmtW: Call) :: Nil =>
+          // TODO(rust_ast_gen): implicit parameters are only appended.
+          lit.code shouldBe "\"{x:w$} {}\""
+          lit.typeFullName shouldBe "&str"
+
+          fmt1.methodFullName shouldBe Operators.formattedValue
+          fmt1.typeFullName shouldBe "i32"
+          inside(fmt1.argument.l) { case (one: Literal) :: Nil =>
+            one.code shouldBe "1"
+            one.typeFullName shouldBe "i32"
+          }
+
+          fmtX.methodFullName shouldBe Operators.formattedValue
+          fmtX.typeFullName shouldBe "i32"
+          inside(fmtX.argument.l) { case (ident: Identifier) :: Nil =>
+            ident.code shouldBe "x"
+            ident.name shouldBe "x"
+            ident.typeFullName shouldBe "i32"
+          }
+
+          fmtW.methodFullName shouldBe Operators.formattedValue
+          fmtW.typeFullName shouldBe "usize"
+          inside(fmtW.argument.l) { case (ident: Identifier) :: Nil =>
+            ident.code shouldBe "w"
+            ident.name shouldBe "w"
+            ident.typeFullName shouldBe "usize"
+          }
+      }
+    }
+  }
+
+  "a `format!` macro with named and implicitly captured arguments" should {
+    val cpg = code("""
+        |fn main() {
+        | let x = 7;
+        | let s = format!("{x} {y}", y = 1);
+        |}
+        |""".stripMargin)
+
+    "have the template and the formattedValues as arguments" in {
+      inside(cpg.call.nameExact(Operators.formatString).argument.sortBy(_.argumentIndex).l) {
+        // TODO(rust_ast_gen): implicit parameters are only appended.
+        case (lit: Literal) :: (fmtY: Call) :: (fmtX: Call) :: Nil =>
+          lit.code shouldBe "\"{x} {y}\""
+          lit.typeFullName shouldBe "&str"
+
+          fmtY.methodFullName shouldBe Operators.formattedValue
+          fmtY.typeFullName shouldBe "i32"
+          fmtY.code shouldBe "y = 1"
+          inside(fmtY.argument.l) { case (one: Literal) :: Nil =>
+            one.code shouldBe "1"
+            one.typeFullName shouldBe "i32"
+          }
+
+          fmtX.methodFullName shouldBe Operators.formattedValue
+          fmtX.typeFullName shouldBe "i32"
+          inside(fmtX.argument.l) { case (ident: Identifier) :: Nil =>
+            ident.typeFullName shouldBe "i32"
+            ident.name shouldBe "x"
+            ident.code shouldBe "x"
+          }
+      }
+    }
+  }
+
+  "a `format!` macro capturing the same identifier twice" should {
+    val cpg = code("""
+        |fn main() {
+        | let x = 7;
+        | let s = format!("{x} {x}");
+        |}
+        |""".stripMargin)
+
+    "have a single formattedValue" in {
+      inside(cpg.call.nameExact(Operators.formatString).argument.sortBy(_.argumentIndex).l) {
+        case (lit: Literal) :: (fmtX: Call) :: Nil =>
+          lit.code shouldBe "\"{x} {x}\""
+          lit.typeFullName shouldBe "&str"
+
+          fmtX.methodFullName shouldBe Operators.formattedValue
+          fmtX.typeFullName shouldBe "i32"
+          inside(fmtX.argument.l) { case (ident: Identifier) :: Nil =>
+            ident.name shouldBe "x"
+            ident.code shouldBe "x"
+            ident.typeFullName shouldBe "i32"
+          }
+      }
+    }
+  }
+
   "a `println!` macro resolved against the sysroot" should {
     val cpg = code("""
         |fn main() {
