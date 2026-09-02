@@ -407,6 +407,23 @@ class MethodTests extends RubyCode2CpgFixture {
 
     foo.definingTypeDecl.map(_.name) shouldBe Option("C")
     foo.astParent shouldBe cpg.typeDecl("C").head
+
+    val fooMember = cpg.member("foo").head
+    fooMember.typeDecl.name shouldBe "C"
+  }
+
+  "Singleton method with unresolvable target nested inside a method should have its member under the enclosing type decl" in {
+    val cpg = code("""
+        |class C
+        | def outer
+        |  def something.foo
+        |  end
+        | end
+        |end
+        |""".stripMargin)
+
+    val fooMember = cpg.member("foo").head
+    fooMember.typeDecl.name shouldBe "C"
   }
 
   "A Boolean method" should {

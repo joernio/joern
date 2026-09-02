@@ -168,7 +168,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         Ast() // program scope members are set elsewhere
       } else {
         Ast(
-          memberForMethod(method, Option(NodeTypes.TYPE_DECL), astParentFullName.orElse(scope.surroundingScopeFullName))
+          memberForMethod(method, Option(NodeTypes.TYPE_DECL), astParentFullName.orElse(scope.surroundingTypeFullName))
         )
       }
     // For closures, we also want the method/type refs for upstream use
@@ -466,9 +466,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         }
 
         // The member for these types refers to the singleton class
-        val memberParentType     = astParentType.orElse(scope.surroundingAstLabel)
-        val memberParentFullName = astParentFullName.map(name => s"$name<class>").orElse(scope.surroundingScopeFullName)
-        val member               = memberForMethod(method, memberParentType, memberParentFullName)
+        val memberParentFullName = astParentFullName.map(name => s"$name<class>").orElse(scope.surroundingTypeFullName)
+        val member               = memberForMethod(method, Option(NodeTypes.TYPE_DECL), memberParentFullName)
         diffGraph.addNode(member)
 
         val _methodAst =
