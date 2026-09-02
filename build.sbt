@@ -65,6 +65,11 @@ ThisBuild / libraryDependencies ++= Seq(
   // `Optional` means "not transitive", but still included in "stage/lib"
 )
 
+// for heros 1.2.4 bug https://github.com/soot-oss/heros/commit/31f57b96a543de09092e7f351ed71115c80059ef
+ThisBuild / dependencyOverrides ++= Seq(
+  "com.google.guava" % "guava" % "33.5.0-jre"
+)
+
 ThisBuild / compile / javacOptions ++= Seq(
   "-g", // debug symbols
   "-Xlint",
