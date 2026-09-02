@@ -438,9 +438,12 @@ trait PluginHandling { this: BridgeBase =>
   private def argsStringFromConfig(config: Config): String = {
     config.frontendArgs match {
       case Array() => ""
-      case args =>
+      case args    =>
+        // Escaped as a Scala string literal, exactly as `src` is in loadOrCreateCpg above:
+        // these values are interpolated into a generated source file, so an unescaped backslash
+        // or quote yields an invalid literal and the script fails to compile rather than run.
         val quotedArgs = args.map { arg =>
-          "\"" ++ arg ++ "\""
+          "\"" ++ StringEscapeUtils.escapeJava(arg) ++ "\""
         }
         val argsString = quotedArgs.mkString(", ")
         s", args=List($argsString)"
