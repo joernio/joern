@@ -188,7 +188,14 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
     val astGenVersion = conf.getString(metaData.resolvedVersionConfigKey)
     val resolvedPath  = resolveAstGenPath(astGenVersion)
     logger.info(s"Using ${metaData.name} from '$resolvedPath'")
-    Paths.get(resolvedPath).toAbsolutePath.toString
+    // Do NOT absolutise a bare name. resolveAstGenPath returns `metaData.name` -- a name with no
+    // separator -- to mean "found on the system PATH". Paths.get(name).toAbsolutePath resolves that
+    // against the process working directory, turning "on PATH" into "in the current directory", so
+    // the binary is looked for at <cwd>/astgen and the run fails with
+    //   Cannot run program "<cwd>/astgen" ... error: 2 (No such file or directory)
+    // even though it is on PATH. Leave a bare name bare and let the process launcher do the lookup.
+    if (Paths.get(resolvedPath).getNameCount == 1 && !Paths.get(resolvedPath).isAbsolute) resolvedPath
+    else Paths.get(resolvedPath).toAbsolutePath.toString
   }
 
   /** Resolution order:
