@@ -235,6 +235,18 @@ class TestRunner:
             if result_count == 0:
                 raise RuntimeError("Result from joern-scan not found")
 
+            # Same scan, but with a --frontend-args value carrying a backslash. Those values are
+            # interpolated into a generated Scala source, so an unescaped one is not a legal string
+            # literal and the script fails to compile instead of running. The exclusion matches
+            # nothing under the input, so the expected result is unchanged.
+            proc = self.run_command([self.joern_scan_exe, "--overwrite", "--tags", "all", str(uaf_c_path),
+                                     "--frontend-args", "--exclude-regex", r".*/\.git/.*"],
+                           f"Joern-scan on {uaf_c_path} with a backslash in --frontend-args")
+
+            result_count = sum(1 for line in proc.stdout.splitlines() if expected_result in line)
+            if result_count == 0:
+                raise RuntimeError("Result from joern-scan not found with an escaped --frontend-args value")
+
     @stage
     def slice_test(self):
         """Test slicing functionality"""
