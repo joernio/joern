@@ -198,6 +198,40 @@ class AnnotationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "trait impl with attribute" should {
+    val cpg = code("""
+        |trait Bar {}
+        |struct Foo;
+        |#[doc(hidden)]
+        |impl Bar for Foo {}
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>").annotation.l) { case attr :: Nil =>
+        attr.name shouldBe "doc"
+        attr.fullName shouldBe "doc"
+        attr.code shouldBe "#[doc(hidden)]"
+      }
+    }
+  }
+
+  "trait with attribute" should {
+    val cpg = code("""
+        |#[must_use]
+        |trait Foo {
+        |  fn bar(&self);
+        |}
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(cpg.typeDecl.nameExact("Foo").annotation.l) { case attr :: Nil =>
+        attr.name shouldBe "must_use"
+        attr.fullName shouldBe "must_use"
+        attr.code shouldBe "#[must_use]"
+      }
+    }
+  }
+
   "trait method with attribute" should {
     val cpg = code("""
         |trait Foo {

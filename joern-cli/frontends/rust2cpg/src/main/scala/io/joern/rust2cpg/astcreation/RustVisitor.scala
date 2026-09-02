@@ -613,8 +613,9 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
           visitFn(fn).withChild(Ast(NewModifier().modifierType(ModifierTypes.VIRTUAL)))
         }
         contextStack.pop()
+        val attributes = impl.attr.map(visitAttr)
         addDetachedBindingAsts(typeDecl, methodAsts, signature = typeFullNameForType(implTrait))
-        Ast(typeDecl).withChildren(methodAsts)
+        Ast(typeDecl).withChildren(methodAsts).withChildren(attributes)
       case _ => notHandledYet(impl)
     }
   }
@@ -651,8 +652,9 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       visitFn(fn).withChild(Ast(NewModifier().modifierType(ModifierTypes.VIRTUAL)))
     }
     contextStack.pop()
+    val attributes = trait_.attr.map(visitAttr)
     addDetachedBindingAsts(typeDecl, methodAsts, signature = fullName)
-    Ast(typeDecl).withChildren(methodAsts)
+    Ast(typeDecl).withChildren(methodAsts).withChildren(attributes)
   }
 
   // BlockExpr =
