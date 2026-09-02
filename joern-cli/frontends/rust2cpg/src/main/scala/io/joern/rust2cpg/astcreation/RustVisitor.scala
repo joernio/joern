@@ -546,6 +546,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val retTypeFullName = fn.retType.map(_.typ).map(typeFullNameForType).getOrElse("()")
     val methodRet       = methodReturnNode(fn, retTypeFullName)
     val methodMods      = Seq[NewModifier]()
+    val attributes      = fn.attr.map(visitAttr)
 
     contextStack.pushMethod(method)
     val (paramAsts, paramAssignmentAsts) = lowerParamList(fn.paramList)
@@ -554,7 +555,14 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       .getOrElse(blockAst(blockNode(fn), paramAssignmentAsts.toList))
     contextStack.pop()
 
-    methodAst(method = method, parameters = paramAsts, body = bodyAst, methodReturn = methodRet, modifiers = methodMods)
+    methodAstWithAnnotations(
+      method = method,
+      parameters = paramAsts,
+      body = bodyAst,
+      methodReturn = methodRet,
+      modifiers = methodMods,
+      annotations = attributes
+    )
   }
 
   // Creates:

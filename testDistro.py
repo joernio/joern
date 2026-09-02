@@ -247,6 +247,16 @@ class TestRunner:
             if result_count == 0:
                 raise RuntimeError("Result from joern-scan not found with an escaped --frontend-args value")
 
+            # A scan that failed must not reach the caller as a success. The launcher used to exit
+            # with the status of its retry test rather than the JVM's, so every non-zero exit
+            # except 2 arrived as 0 and "scanned, found nothing" was indistinguishable from
+            # "never scanned".
+            missing_path = Path(tmp_dir) / "no-such-directory"
+            proc = self.run_command([self.joern_scan_exe, str(missing_path)],
+                           f"Joern-scan on nonexistent path {missing_path}", check=False)
+            if proc.returncode == 0:
+                raise RuntimeError("Joern-scan exited 0 for a scan that failed")
+
     @stage
     def slice_test(self):
         """Test slicing functionality"""
