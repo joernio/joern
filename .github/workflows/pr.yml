@@ -39,7 +39,21 @@ jobs:
           java-version: 21
           cache: sbt
       - uses: sbt/setup-sbt@c7d2d6258b4bd0d3ec5129e6b3453199d3c79729 # v1.5.8
+      - name: Check for lintable changes
+        id: lintable-changes
+        run: |
+          # scalafix bug (https://github.com/scalacenter/scalafix/issues/2505):
+          # with --diff-base, an empty diff (e.g. a PR that only deletes files)
+          # is treated like no diff filter at all, so ALL files get linted instead
+          # of none. Only run scalafix if the PR adds/modifies lintable files.
+          # TODO: remove once fixed upstream
+          if git diff --name-only --diff-filter=ACMR "origin/${{ github.event.pull_request.base.ref }}" | grep -qE '\.(scala|sbt|sc)$'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Run scalafix linting
+        if: steps.lintable-changes.outputs.changed == 'true'
         run: sbt "scalafix --diff-base origin/${{ github.event.pull_request.base.ref }} RestrictedImports SingleLetterIdentifiers UnorderedIteration"
       - run: echo "Previous step failed because certain coding quality expectations were violated. Please check the logs."
         if: ${{ failure() }}
