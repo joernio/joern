@@ -216,6 +216,21 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     )
   }
 
+  protected def typeDeclForTypeAlias(typeAlias: RustNodeSyntax.TypeAlias): NewTypeDecl = {
+    val name = code(typeAlias.name)
+    typeDeclNode(
+      node = typeAlias,
+      name = name,
+      // TODO(rust_ast_gen): add typeFullName to TypeAlias to keep generics.
+      fullName = composeRustFullName(name),
+      filename = parseResult.filename,
+      code = code(typeAlias),
+      astParentType = contextStack.astParentType,
+      astParentFullName = contextStack.astParentFullName,
+      alias = typeAlias.typ.map(typeFullNameForType)
+    )
+  }
+
   protected def enclosingTypeDeclFullName: Option[String] = {
     contextStack.enclosingTypeDeclFullName
   }

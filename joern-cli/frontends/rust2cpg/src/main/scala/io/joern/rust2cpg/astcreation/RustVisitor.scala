@@ -65,7 +65,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     case static: Static         => visitStatic(static)
     case struct: Struct         => visitStruct(struct)
     case trait_ : Trait         => visitTrait(trait_) :: Nil
-    case x: TypeAlias           => notHandledYet(x) :: Nil
+    case typeAlias: TypeAlias   => visitTypeAlias(typeAlias) :: Nil
     case x: Union               => notHandledYet(x) :: Nil
     case use: Use               => visitUse(use)
     case x: AsmExpr             => notHandledYet(x) :: Nil
@@ -1927,5 +1927,16 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val name     = path.split(PathSep).lastOption.getOrElse(path)
     val fullName = path
     Ast(annotationNode(attr, code(attr), name, fullName))
+  }
+
+  // TypeAlias =
+  //  Attr* Visibility?
+  //  'default'?
+  //  'type' Name GenericParamList? (':' TypeBoundList?)? WhereClause?
+  //  ('=' Type)? ';'
+  private def visitTypeAlias(typeAlias: TypeAlias): Ast = {
+    val typeDecl   = typeDeclForTypeAlias(typeAlias)
+    val attributes = typeAlias.attr.map(visitAttr)
+    Ast(typeDecl).withChildren(attributes)
   }
 }

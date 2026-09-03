@@ -248,4 +248,20 @@ class AnnotationTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "type alias with attribute" should {
+    val cpg = code("""
+        |struct Foo;
+        |#[doc(hidden)]
+        |type Bar = Foo;
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(cpg.typeDecl.nameExact("Bar").annotation.l) { case attr :: Nil =>
+        attr.name shouldBe "doc"
+        attr.fullName shouldBe "doc"
+        attr.code shouldBe "#[doc(hidden)]"
+      }
+    }
+  }
 }
