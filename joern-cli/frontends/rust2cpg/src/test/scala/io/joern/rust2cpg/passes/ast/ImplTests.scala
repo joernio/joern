@@ -1011,4 +1011,41 @@ class ImplTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
       cpg.call.nameExact("default").argument shouldBe empty
     }
   }
+
+  "trait impls for dyn types with auto trait bounds" should {
+    val cpg = code("""
+        |trait Tr {}
+        |trait Foo { fn m(&self); }
+        |impl Foo for Box<dyn Tr> { fn m(&self) {} }
+        |impl Foo for Box<dyn Tr + Send> { fn m(&self) {} }
+        |impl Foo for Box<dyn Tr + Sync> { fn m(&self) {} }
+        |impl Foo for Box<dyn Tr + Send + Sync> { fn m(&self) {} }
+        |fn run(g: Box<dyn Tr + Sync + Send>) {}
+        |""".stripMargin)
+
+    "have correct fullName" in {
+      cpg.typeDecl.fullName(".* as rust2cpgtest::Foo>").fullName.sorted.l shouldBe List(
+        "<alloc::boxed::Box<dyn rust2cpgtest::Tr + core::marker::Send + core::marker::Sync, alloc::alloc::Global> as rust2cpgtest::Foo>",
+        "<alloc::boxed::Box<dyn rust2cpgtest::Tr + core::marker::Send, alloc::alloc::Global> as rust2cpgtest::Foo>",
+        "<alloc::boxed::Box<dyn rust2cpgtest::Tr + core::marker::Sync, alloc::alloc::Global> as rust2cpgtest::Foo>",
+        "<alloc::boxed::Box<dyn rust2cpgtest::Tr, alloc::alloc::Global> as rust2cpgtest::Foo>"
+      )
+    }
+
+    "have correct method fullName" in {
+      cpg.method.nameExact("m").fullName.sorted.l shouldBe List(
+        "<alloc::boxed::Box<dyn rust2cpgtest::Tr + core::marker::Send + core::marker::Sync, alloc::alloc::Global> as rust2cpgtest::Foo>::m",
+        "<alloc::boxed::Box<dyn rust2cpgtest::Tr + core::marker::Send, alloc::alloc::Global> as rust2cpgtest::Foo>::m",
+        "<alloc::boxed::Box<dyn rust2cpgtest::Tr + core::marker::Sync, alloc::alloc::Global> as rust2cpgtest::Foo>::m",
+        "<alloc::boxed::Box<dyn rust2cpgtest::Tr, alloc::alloc::Global> as rust2cpgtest::Foo>::m",
+        "rust2cpgtest::Foo::m"
+      )
+    }
+
+    "have correct parameter typeFullName" in {
+      cpg.method.nameExact("run").parameter.nameExact("g").typeFullName.l shouldBe List(
+        "alloc::boxed::Box<dyn rust2cpgtest::Tr + core::marker::Send + core::marker::Sync>"
+      )
+    }
+  }
 }
