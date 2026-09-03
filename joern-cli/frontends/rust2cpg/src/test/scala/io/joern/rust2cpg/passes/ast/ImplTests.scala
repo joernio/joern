@@ -565,6 +565,29 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "two impls of the same trait for unknown types" should {
+    val cpg = code("""
+        |trait Foo { fn foo(); }
+        |impl Foo for unknown::Bar { fn foo() {} }
+        |impl Foo for unknown::Baz { fn foo() {} }
+        |""".stripMargin)
+
+    "have correct typeDecl fullNames" in {
+      cpg.typeDecl.fullName(".* as rust2cpgtest::Foo>").fullName.sorted.l shouldBe List(
+        "<unknown::Bar as rust2cpgtest::Foo>",
+        "<unknown::Baz as rust2cpgtest::Foo>"
+      )
+    }
+
+    "have correct method fullNames" in {
+      cpg.method.nameExact("foo").fullName.sorted.l shouldBe List(
+        "<unknown::Bar as rust2cpgtest::Foo>::foo",
+        "<unknown::Baz as rust2cpgtest::Foo>::foo",
+        "rust2cpgtest::Foo::foo"
+      )
+    }
+  }
+
   "impls for structs with lifetimes" should {
     val cpg = code("""
         |trait Bar { fn a(&self); }

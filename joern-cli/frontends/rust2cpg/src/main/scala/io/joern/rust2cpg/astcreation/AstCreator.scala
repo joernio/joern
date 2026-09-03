@@ -8,7 +8,7 @@ import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
 import io.joern.rust2cpg.parser.RustNodeSyntaxExtensions.op
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.AstNodeBuilder.bindingNode
-import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
+import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, PropertyDefaults, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -203,7 +203,10 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     implTrait: RustNodeSyntax.Type,
     implType: RustNodeSyntax.Type
   ): NewTypeDecl = {
-    val implTypeFullName  = typeFullNameForType(implType)
+    val implTypeFullName = typeFullNameForType(implType) match {
+      case Defines.Any => text(implType).getOrElse(Defines.Any)
+      case fullName    => fullName
+    }
     val traitTypeFullName = typeFullNameForType(implTrait)
     val name              = implTypeFullName.split(RustFullNames.PathSep).lastOption.getOrElse(implTypeFullName)
     typeDeclNode(
