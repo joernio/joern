@@ -5,7 +5,7 @@ import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.x2cpg.AstNodeBuilder.{bindingNode, closureBindingNode}
-import io.joern.x2cpg.{Ast, AstEdge, ValidationMode}
+import io.joern.x2cpg.{Ast, AstEdge, Defines as XDefines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.*
 
@@ -466,8 +466,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         }
 
         // The member for these types refers to the singleton class
-        val memberParentFullName = astParentFullName.map(name => s"$name<class>").orElse(scope.surroundingTypeFullName)
-        val member               = memberForMethod(method, Option(NodeTypes.TYPE_DECL), memberParentFullName)
+        val memberParentFullName =
+          astParentFullName.map(name => s"$name<class>").orElse(Option(XDefines.UnresolvedNamespace))
+        val member = memberForMethod(method, Option(NodeTypes.TYPE_DECL), memberParentFullName)
         diffGraph.addNode(member)
 
         val _methodAst =
