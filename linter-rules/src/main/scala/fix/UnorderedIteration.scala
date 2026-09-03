@@ -1,6 +1,8 @@
 package fix
 
 import scalafix.v1._
+import scala.collection.concurrent.TrieMap
+import scala.collection.mutable
 import scala.meta._
 
 object UnorderedIteration {
@@ -167,7 +169,15 @@ class UnorderedIteration extends SemanticRule("UnorderedIteration") {
 
   override def isLinter: Boolean = true
 
+  // Memoized declared-type resolutions: receiver symbols repeat across call sites and files,
+  // and each lookup goes through scalafix's global symbol table. Global symbols are unique
+  // within a run's classpath, so they are cached run-wide; local symbols (`local0`, ...) are
+  // only unique within their defining file, so they are cached per document.
+  private val globalDeclaredTypeCache                                     = TrieMap.empty[Symbol, Option[Symbol]]
+  private var localDeclaredTypeCache: mutable.Map[Symbol, Option[Symbol]] = mutable.Map.empty
+
   override def fix(implicit doc: SemanticDocument): Patch = {
+    localDeclaredTypeCache = mutable.Map.empty
     val unorderedSyms: Set[Symbol] = unorderedValSymbols
 
     // Lints an order-sensitive operation `op` (e.g. "foreach", "<-") applied to `receiver`,
@@ -218,10 +228,12 @@ class UnorderedIteration extends SemanticRule("UnorderedIteration") {
         None
     }
 
-  // Whether a term refers to an unordered collection: either a val tainted by fixpoint
+  // Whether a term refers to an unordered collection: either a val tainted by order-taint
   // tracking, or a term whose static type (declared val type or method return type) is unordered.
-  private def isUnordered(term: Term, tracked: Set[Symbol])(implicit doc: SemanticDocument): Boolean =
-    tracked.contains(term.symbol) || unorderedTypeOf(term.symbol).nonEmpty
+  private def isUnordered(term: Term, tracked: Set[Symbol])(implicit doc: SemanticDocument): Boolean = {
+    val sym = term.symbol
+    tracked.contains(sym) || unorderedTypeOf(sym).nonEmpty
+  }
 
   // The unordered collection type behind a symbol, if any: the symbol itself (for type symbols)
   // or its static type via declaredTypeOf.
@@ -231,10 +243,14 @@ class UnorderedIteration extends SemanticRule("UnorderedIteration") {
 
   // The static collection type behind a symbol: the declared type of a val (ValueSignature) or
   // the return type of a parameterless method (MethodSignature), so both `val m: HashMap` and
-  // `def makeMap: HashMap` receivers resolve to their collection type. Scala 3 SemanticDB
-  // models the return type of a parameterless def as a by-name type (def f: T is => T),
-  // so it is unwrapped here.
-  private def declaredTypeOf(sym: Symbol)(implicit doc: SemanticDocument): Option[Symbol] = {
+  // `def makeMap: HashMap` receivers resolve to their collection type. Memoized per symbol.
+  private def declaredTypeOf(sym: Symbol)(implicit doc: SemanticDocument): Option[Symbol] =
+    if (sym.isLocal) localDeclaredTypeCache.getOrElseUpdate(sym, resolveDeclaredType(sym))
+    else globalDeclaredTypeCache.getOrElseUpdate(sym, resolveDeclaredType(sym))
+
+  private def resolveDeclaredType(sym: Symbol)(implicit doc: SemanticDocument): Option[Symbol] = {
+    // Scala 3 SemanticDB models the return type of a parameterless def as a by-name type
+    // (def f: T is => T), so it is unwrapped here.
     def typeSymbol(tpe: SemanticType): Option[Symbol] = tpe match {
       case TypeRef(_, typeSym, _) => Some(typeSym)
       case ByNameType(inner)      => typeSymbol(inner)
@@ -255,52 +271,66 @@ class UnorderedIteration extends SemanticRule("UnorderedIteration") {
   // Only Defn.Val is collected — `var` is excluded: reassignment can change the runtime type.
   //
   // Direct sources (RHS constructs an unordered collection or has an unordered static type)
-  // seed the set; a fixpoint pass then propagates order-taint through derived vals — aliases
-  // (val it2 = it), projections (val it = map.iterator) and order-preserving operations
-  // (val sub = it.take(3)) — until no new tainted vals are found.
+  // seed the set; order-taint then propagates in a single reachability pass through derived
+  // vals — aliases (val it2 = it), projections (val it = map.iterator) and order-preserving
+  // operations (val sub = it.take(3)).
   //
   // NOTE: the testkit suite runs on the same Scala 3 SemanticDB as production, so both seed
   // paths are exercised there: construction-based RHS tracking (abstractVal, typeInferred,
   // javaHashMap fixtures) and the static-type path (the methodReceiver fixture's
   // `def makeMap: mutable.HashMap`).
   private def unorderedValSymbols(implicit doc: SemanticDocument): Set[Symbol] = {
-    // Every val definition in the file as (symbol, RHS), collected once and reused by all
-    // fixpoint rounds.
+    // Every val definition in the file as (symbol, RHS), collected once.
     val valDefs: List[(Symbol, Term)] = doc.tree.collect { case Defn.Val(_, List(Pat.Var(name)), _, rhs) =>
       (name.symbol, rhs)
     }
+    if (valDefs.isEmpty) return Set.empty
 
-    def isDirectSource(rhs: Term): Boolean =
-      unorderedTypeOf(rhs.symbol).nonEmpty || isUnorderedConstruction(rhs)
+    val seeds = mutable.Set.empty[Symbol]
+    // Reverse dependency edges: base symbol -> vals whose RHS derives its iteration order
+    // from that base (alias, projection or order-preserving operation on it).
+    val dependents = mutable.Map.empty[Symbol, List[Symbol]]
 
-    var tracked: Set[Symbol] = valDefs.collect { case (sym, rhs) if isDirectSource(rhs) => sym }.toSet
-    var changed              = true
-    while (changed) {
-      val newSyms = valDefs.collect {
-        case (sym, rhs) if !tracked.contains(sym) && derivesFromTracked(rhs, tracked) => sym
+    valDefs.foreach { case (sym, rhs) =>
+      if (unorderedTypeOf(rhs.symbol).nonEmpty || isUnorderedConstruction(rhs)) {
+        seeds += sym
       }
-      changed = newSyms.nonEmpty
-      tracked ++= newSyms
+      derivationBase(rhs).foreach { baseSym =>
+        // A base with an unordered static type taints directly; a base that is itself a
+        // (possibly tainted) val taints through reachability.
+        if (unorderedTypeOf(baseSym).nonEmpty) seeds += sym
+        else dependents.update(baseSym, sym :: dependents.getOrElse(baseSym, Nil))
+      }
     }
-    tracked
+
+    // Breadth-first propagation of order-taint from the seeds along dependency edges.
+    val tracked = mutable.Set.empty[Symbol] ++ seeds
+    val queue   = mutable.Queue.empty[Symbol] ++ seeds
+    while (queue.nonEmpty) {
+      val base = queue.dequeue()
+      dependents.getOrElse(base, Nil).foreach { dependent =>
+        if (tracked.add(dependent)) queue.enqueue(dependent)
+      }
+    }
+    tracked.toSet
   }
 
-  // Whether an RHS derives its iteration order from an already-tracked unordered val:
-  // a plain alias (val it2 = it), a projection (val it = map.iterator), or an
-  // order-preserving operation (val sub = it.take(3), also in infix form). Parameterless
-  // order-preserving operations (val sub = it.distinct) parse as a plain Select, so the
-  // Select case covers projections and parameterless operations alike.
-  private def derivesFromTracked(rhs: Term, tracked: Set[Symbol])(implicit doc: SemanticDocument): Boolean =
+  // The symbol a val's RHS derives its iteration order from, if any: a plain alias
+  // (val it2 = it), a projection (val it = map.iterator), or an order-preserving operation
+  // (val sub = it.take(3), also in infix form). Parameterless order-preserving operations
+  // (val sub = it.distinct) parse as a plain Select, so the Select case covers projections
+  // and parameterless operations alike.
+  private def derivationBase(rhs: Term)(implicit doc: SemanticDocument): Option[Symbol] =
     rhs match {
-      case alias: Term.Name => isUnordered(alias, tracked)
-      case Term.Select(base, method) =>
-        (projectionMethods.contains(method.value) || orderPreservingOps.contains(method.value)) &&
-        isUnordered(base, tracked)
-      case Term.Apply.After_4_6_0(Term.Select(base, op), _) =>
-        orderPreservingOps.contains(op.value) && isUnordered(base, tracked)
-      case Term.ApplyInfix.After_4_6_0(base, op, _, _) =>
-        orderPreservingOps.contains(op.value) && isUnordered(base, tracked)
-      case _ => false
+      case alias: Term.Name => Some(alias.symbol)
+      case Term.Select(base, method)
+          if projectionMethods.contains(method.value) || orderPreservingOps.contains(method.value) =>
+        Some(base.symbol)
+      case Term.Apply.After_4_6_0(Term.Select(base, op), _) if orderPreservingOps.contains(op.value) =>
+        Some(base.symbol)
+      case Term.ApplyInfix.After_4_6_0(base, op, _, _) if orderPreservingOps.contains(op.value) =>
+        Some(base.symbol)
+      case _ => None
     }
 
   // Matches RHS expressions that construct an unordered collection, used when the declared
