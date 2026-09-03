@@ -25,6 +25,7 @@ null
 **/.carabiner
 $HOME
 **/astgen-win.exe
+**/astgen-win-arm.exe
 **/astgen-macos
 **/astgen-macos-arm
 **/astgen-linux
