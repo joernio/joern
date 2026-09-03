@@ -57,6 +57,7 @@ slices.json
 **/.gradle
 **/build/gatheredDependencies
 **/abapgen-win.exe
+**/abapgen-win-arm.exe
 **/abapgen-linux
 **/abapgen-linux-arm
 **/abapgen-macos
