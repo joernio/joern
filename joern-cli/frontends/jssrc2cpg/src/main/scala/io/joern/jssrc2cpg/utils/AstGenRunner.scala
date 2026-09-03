@@ -108,18 +108,14 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
 
   override protected def skippedFiles(in: Path, astGenOut: List[String]): List[String] = {
     val skipped = astGenOut.collect {
+      // javascript-astgen prefixes every relevant log statement with 'Parsing'
       case out if out.startsWith("Parsing") =>
         val filename = out.substring(out.indexOf(" ") + 1, out.indexOf(":") - 1)
         val reason   = out.substring(out.indexOf(":") + 2)
-        logger.warn(s"\t- failed to parse '$filename': '$reason'")
-        Option(filename)
-      case out if !out.startsWith("Converted") && !out.startsWith("Retrieving") =>
-        val filename = out.substring(0, out.indexOf(" "))
-        val reason   = out.substring(out.indexOf(" ") + 1)
-        logger.warn(s"\t- failed to parse '$filename': '$reason'")
+        logger.warn(s"- failed to parse '$filename': '$reason'")
         Option(filename)
       case out =>
-        logger.debug(s"\t+ $out")
+        logger.debug(s"- $out")
         None
     }
     skipped.flatten
@@ -241,11 +237,10 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
       } else None
     }
 
-    val result =
-      ExternalCommand.run(
-        (astGenCommand +: executableArgs) ++ Seq("-t", "ts", "-o", out.toString),
-        workingDir = Option(out)
-      )
+    val result = ExternalCommand.run(
+      (astGenCommand +: executableArgs) ++ Seq("-t", "ts", "-o", out.toString),
+      workingDir = Option(out)
+    )
 
     val jsons = SourceFiles.determine(out.toString, Set(".json"))
     jsons.foreach { jsonPath =>
@@ -266,14 +261,13 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
   }
 
   private def ejsFiles(in: Path, out: Path): Try[Seq[String]] = {
-    val files =
-      SourceFiles.determine(
-        in.toString,
-        Set(".ejs"),
-        ignoredDefaultRegex = Some(AstGenDefaultIgnoreRegex),
-        ignoredFilesRegex = Some(config.ignoredFilesRegex),
-        ignoredFilesPath = Some(config.ignoredFiles)
-      )
+    val files = SourceFiles.determine(
+      in.toString,
+      Set(".ejs"),
+      ignoredDefaultRegex = Some(AstGenDefaultIgnoreRegex),
+      ignoredFilesRegex = Some(config.ignoredFilesRegex),
+      ignoredFilesPath = Some(config.ignoredFiles)
+    )
     if (files.nonEmpty) processEjsFiles(in, out, files)
     else Success(Seq.empty)
   }

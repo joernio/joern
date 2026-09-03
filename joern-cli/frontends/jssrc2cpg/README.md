@@ -25,11 +25,12 @@ To build your own native binaries run the following commands:
 ```shell script
 git clone https://github.com/joernio/astgen-monorepo.git
 cd astgen-monorepo/javascript-astgen
-yarn install
+bun install
+bun run binary
 ```
-(requires `yarn`).
+(requires `bun`).
 
-Copy the resulting `astgen-linux`, `astgen-macos`, `astgen-macos-arm`, and `astgen-win.exe` to `joern/joern-cli/frontends/jssrc2cpg/bin/astgen`.
+Copy the resulting `astgen-linux`, `astgen-linux-arm`, `astgen-macos`, `astgen-macos-arm`, `astgen-win.exe`, and `astgen-win-arm.exe` to `joern/joern-cli/frontends/jssrc2cpg/bin/astgen`.
 
 ### Binary Resolution Order
 

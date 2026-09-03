@@ -30,6 +30,7 @@ abapgenVersion := appProperties.value.getString("abap2cpg.abapgen_version")
 // Released binary names (produced by the abap-astgen-release.yml workflow in
 // joernio/astgen-monorepo after pkg output is renamed).
 lazy val AbapgenWinX86   = "abapgen-win.exe"
+lazy val AbapgenWinArm   = "abapgen-win-arm.exe"
 lazy val AbapgenLinuxX86 = "abapgen-linux"
 lazy val AbapgenLinuxArm = "abapgen-linux-arm"
 lazy val AbapgenMacX86   = "abapgen-macos"
@@ -41,12 +42,13 @@ abapgenDlUrl := s"https://github.com/joernio/astgen-monorepo/releases/download/a
 lazy val abapgenBinaryNames = taskKey[Seq[String]]("abapgen binary names for current platform")
 abapgenBinaryNames := {
   (Environment.operatingSystem, Environment.architecture) match {
-    case (Environment.OperatingSystemType.Windows, _)                                => Seq(AbapgenWinX86)
-    case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.X86)   => Seq(AbapgenLinuxX86)
-    case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.ARMv8) => Seq(AbapgenLinuxArm)
-    case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.X86)     => Seq(AbapgenMacX86)
-    case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.ARMv8)   => Seq(AbapgenMacArm)
-    case _ => Seq(AbapgenWinX86, AbapgenLinuxX86, AbapgenLinuxArm, AbapgenMacX86, AbapgenMacArm)
+    case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.X86)   => Seq(AbapgenWinX86)
+    case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.ARMv8) => Seq(AbapgenWinArm)
+    case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.X86)     => Seq(AbapgenLinuxX86)
+    case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.ARMv8)   => Seq(AbapgenLinuxArm)
+    case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.X86)       => Seq(AbapgenMacX86)
+    case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.ARMv8)     => Seq(AbapgenMacArm)
+    case _ => Seq(AbapgenWinX86, AbapgenWinArm, AbapgenLinuxX86, AbapgenLinuxArm, AbapgenMacX86, AbapgenMacArm)
   }
 }
 

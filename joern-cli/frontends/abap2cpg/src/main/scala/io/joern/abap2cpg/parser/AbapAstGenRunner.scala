@@ -19,7 +19,7 @@ class AbapAstGenRunner(config: Config) extends AstGenRunner(AbapAstGenRunner.ast
   import AbapAstGenRunner.*
 
   // abapgen binaries use the standard naming from AstGenRunner base class:
-  // abapgen-linux, abapgen-linux-arm, abapgen-macos, abapgen-macos-arm, abapgen-win.exe
+  // abapgen-linux, abapgen-linux-arm, abapgen-macos, abapgen-macos-arm, abapgen-win.exe, abapgen-win-arm.exe
 
   // abapgen has no --version flag, so always use the bundled binary
   override def hasCompatibleAstGenVersion(compatibleVersion: String, path: Option[String]): Boolean = false
