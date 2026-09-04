@@ -429,7 +429,12 @@ trait PluginHandling { this: BridgeBase =>
           case Languages.C | Languages.NEWC => "c"
           case Languages.JAVA               => "jvm"
           case Languages.JAVASRC            => "java"
-          case lang                         => lang.toLowerCase
+          // ImportCode exposes this frontend as `python` (ImportCode.scala carries Languages
+          // .PYTHONSRC on `def python`), so the default toLowerCase below generates
+          // `importCode.pythonsrc`, which does not compile. Same class as the JAVASRC line
+          // above, which is already special-cased for exactly this reason.
+          case Languages.PYTHONSRC => "python"
+          case lang                => lang.toLowerCase
         }
         .getOrElse("c")
     )
