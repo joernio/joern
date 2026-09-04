@@ -49,8 +49,9 @@ object JoernScan extends BridgeBase {
 
   def main(args: Array[String]): Unit = {
     val (scanArgs, frontendArgs) = CpgBasedTool.splitArgs(args)
-    optionParser.parse(scanArgs, JoernScanConfig()).foreach { config =>
-      run(config, frontendArgs)
+    optionParser.parse(scanArgs, JoernScanConfig()) match {
+      case Some(config) => run(config, frontendArgs)
+      case None         => System.exit(1)
     }
   }
 
@@ -154,7 +155,7 @@ object JoernScan extends BridgeBase {
   private def runScanPlugin(config: JoernScanConfig, frontendArgs: List[String]): Unit = {
     if (config.src == "") {
       println(optionParser.usage)
-      return
+      System.exit(1)
     }
 
     if (queryNames().isEmpty) {

@@ -257,6 +257,16 @@ class TestRunner:
             if proc.returncode == 0:
                 raise RuntimeError("Joern-scan exited 0 for a scan that failed")
 
+            proc = self.run_command([self.joern_scan_exe, "--this-option-does-not-exist", str(foo_path)],
+                           "Joern-scan with an unrecognised option", check=False)
+            if proc.returncode == 0:
+                raise RuntimeError("Joern-scan exited 0 for an argument list it rejected")
+
+            proc = self.run_command([self.joern_scan_exe, "--tags", "all"],
+                           "Joern-scan with no source path", check=False)
+            if proc.returncode == 0:
+                raise RuntimeError("Joern-scan exited 0 when given no source path")
+
     @stage
     def slice_test(self):
         """Test slicing functionality"""
