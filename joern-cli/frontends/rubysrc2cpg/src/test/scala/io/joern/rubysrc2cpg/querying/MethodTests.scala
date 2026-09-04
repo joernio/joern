@@ -422,12 +422,37 @@ class MethodTests extends RubyCode2CpgFixture {
     val cpg = code("""
         |class C
         | def outer
+        |  def something.foo
+        |  end
+        | end
+        |end
+        |""".stripMargin)
+
+    val foo = cpg.method.nameExact("foo").head
+
+    foo.definingTypeDecl.map(_.name) shouldBe Option("C")
+    foo.astParent shouldBe cpg.method("outer").head
+
+    val fooMember = cpg.member("foo").head
+    fooMember.astParentFullName shouldBe "<unresolvedNamespace>"
+    fooMember.astParentType shouldBe NodeTypes.TYPE_DECL
+  }
+
+  "Singleton method with resolvable target nested inside a method should have a dangling member" in {
+    val cpg = code("""
+        |class C
+        | def outer
         |  something = ""
         |  def something.foo
         |  end
         | end
         |end
         |""".stripMargin)
+
+    val foo = cpg.method.nameExact("foo").head
+
+    foo.definingTypeDecl.map(_.name) shouldBe Option("C")
+    foo.astParent shouldBe cpg.method("outer").head
 
     val fooMember = cpg.member("foo").head
     fooMember.astParentFullName shouldBe "<unresolvedNamespace>"
