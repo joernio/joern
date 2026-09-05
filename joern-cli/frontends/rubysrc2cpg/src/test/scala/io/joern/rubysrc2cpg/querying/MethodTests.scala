@@ -195,6 +195,10 @@ class MethodTests extends RubyCode2CpgFixture {
         }
       }
     }
+
+    val fMember = cpg.member("f").head
+    fMember.astParentFullName shouldBe s"Test0.rb:$Main.C<class>"
+    fMember.astParentType shouldBe NodeTypes.TYPE_DECL
   }
 
   "`def class << self << f(x) ... end` is represented by a METHOD inside the TYPE_DECL node" in {
@@ -398,6 +402,7 @@ class MethodTests extends RubyCode2CpgFixture {
   "Singleton methods binding to an unresolvable variable/type should bind to the next AST parent" in {
     val cpg = code("""
         |class C
+        | something = ""
         | def something.foo
         | end
         |end
@@ -407,6 +412,51 @@ class MethodTests extends RubyCode2CpgFixture {
 
     foo.definingTypeDecl.map(_.name) shouldBe Option("C")
     foo.astParent shouldBe cpg.typeDecl("C").head
+
+    val fooMember = cpg.member("foo").head
+    fooMember.astParentFullName shouldBe "<unresolvedNamespace>"
+    fooMember.astParentType shouldBe NodeTypes.TYPE_DECL
+  }
+
+  "Singleton method with unresolvable target nested inside a method should have a dangling member" in {
+    val cpg = code("""
+        |class C
+        | def outer
+        |  def something.foo
+        |  end
+        | end
+        |end
+        |""".stripMargin)
+
+    val foo = cpg.method.nameExact("foo").head
+
+    foo.definingTypeDecl.map(_.name) shouldBe Option("C")
+    foo.astParent shouldBe cpg.method("outer").head
+
+    val fooMember = cpg.member("foo").head
+    fooMember.astParentFullName shouldBe "<unresolvedNamespace>"
+    fooMember.astParentType shouldBe NodeTypes.TYPE_DECL
+  }
+
+  "Singleton method with resolvable target nested inside a method should have a dangling member" in {
+    val cpg = code("""
+        |class C
+        | def outer
+        |  something = ""
+        |  def something.foo
+        |  end
+        | end
+        |end
+        |""".stripMargin)
+
+    val foo = cpg.method.nameExact("foo").head
+
+    foo.definingTypeDecl.map(_.name) shouldBe Option("C")
+    foo.astParent shouldBe cpg.method("outer").head
+
+    val fooMember = cpg.member("foo").head
+    fooMember.astParentFullName shouldBe "<unresolvedNamespace>"
+    fooMember.astParentType shouldBe NodeTypes.TYPE_DECL
   }
 
   "A Boolean method" should {
