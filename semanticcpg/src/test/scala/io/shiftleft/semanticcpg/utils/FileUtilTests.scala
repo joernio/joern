@@ -24,9 +24,7 @@ class FileUtilTests extends AnyWordSpec with Matchers {
 
   "FileUtil.unzipTo" should {
 
-    // Guards against per-entry resource accumulation silently truncating the output: every
-    // entry must be extracted. (Reliably reproducing the truncation itself requires exceeding
-    // an environment-specific resource limit, so this is a functional invariant check.)
+    // Every entry of a many-entry archive must be extracted.
     "extract every entry of an archive with many entries" in {
       FileUtil.usingTemporaryDirectory("unzip-many") { workDir =>
         val n   = 5000
@@ -42,12 +40,9 @@ class FileUtilTests extends AnyWordSpec with Matchers {
       }
     }
 
-    // Guards against the failure being swallowed: with the previous implementation the
-    // Using.Manager result Try was discarded and `destination` was returned unconditionally,
-    // so a mid-extraction failure was reported as a successful (partial) extraction. It must
-    // now propagate. Here "a" is extracted as a regular file, then "a/b" needs "a" to be a
-    // directory, which fails part-way through.
-    "surface a mid-extraction failure instead of returning a partial extraction as success" in {
+    // A mid-extraction failure must propagate. Extracting "a" as a regular file and then "a/b",
+    // which needs "a" to be a directory, fails part-way through and must throw.
+    "propagate a mid-extraction failure" in {
       FileUtil.usingTemporaryDirectory("unzip-fail") { workDir =>
         val zip = workDir.resolve("collide.zip")
         writeZip(zip, Seq("a" -> "x", "a/b" -> "y"))
