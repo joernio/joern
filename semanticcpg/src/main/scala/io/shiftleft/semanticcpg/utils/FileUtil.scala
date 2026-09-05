@@ -179,8 +179,7 @@ object FileUtil {
       zipFilter: ZipEntry => Boolean = _ => true,
       bufferSize: Int = 8192
     ): destination.type = {
-      Using.Manager { use =>
-        val zipFile = use(new ZipFile(p.absolutePathAsString, Charset.defaultCharset()))
+      Using.resource(new ZipFile(p.absolutePathAsString, Charset.defaultCharset())) { zipFile =>
         val entries = zipFile.entries().asScala.filter(zipFilter)
 
         entries.foreach { entry =>
@@ -191,9 +190,11 @@ object FileUtil {
           )
 
           if (!entry.isDirectory) {
-            val zipStream    = use(zipFile.getInputStream(entry))
-            val outputStream = use(Files.newOutputStream(child))
-            pipeTo(zipStream, outputStream, Array.ofDim[Byte](bufferSize))
+            Using.resource(zipFile.getInputStream(entry)) { zipStream =>
+              Using.resource(Files.newOutputStream(child)) { outputStream =>
+                pipeTo(zipStream, outputStream, Array.ofDim[Byte](bufferSize))
+              }
+            }
           }
         }
       }
