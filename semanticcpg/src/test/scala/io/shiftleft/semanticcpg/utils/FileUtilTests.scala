@@ -24,7 +24,6 @@ class FileUtilTests extends AnyWordSpec with Matchers {
 
   "FileUtil.unzipTo" should {
 
-    // Every entry of a many-entry archive must be extracted.
     "extract every entry of an archive with many entries" in {
       FileUtil.usingTemporaryDirectory("unzip-many") { workDir =>
         val n   = 5000
@@ -40,8 +39,6 @@ class FileUtilTests extends AnyWordSpec with Matchers {
       }
     }
 
-    // A mid-extraction failure must propagate. Extracting "a" as a regular file and then "a/b",
-    // which needs "a" to be a directory, fails part-way through and must throw.
     "propagate a mid-extraction failure" in {
       FileUtil.usingTemporaryDirectory("unzip-fail") { workDir =>
         val zip = workDir.resolve("collide.zip")
