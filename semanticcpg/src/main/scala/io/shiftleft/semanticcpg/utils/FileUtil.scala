@@ -179,12 +179,6 @@ object FileUtil {
       zipFilter: ZipEntry => Boolean = _ => true,
       bufferSize: Int = 8192
     ): destination.type = {
-      // Each entry's input/output streams are closed immediately (nested Using.resource) rather
-      // than being registered with a single Using.Manager for the whole archive. Registering them
-      // with the Manager keeps every per-entry stream open until the entire archive is extracted,
-      // leaking one file descriptor (and one zlib Inflater) per entry. On large archives this
-      // exhausts a per-process resource limit part-way through, and because the failure is not
-      // surfaced the extraction is silently truncated to the first N entries.
       Using.resource(new ZipFile(p.absolutePathAsString, Charset.defaultCharset())) { zipFile =>
         val entries = zipFile.entries().asScala.filter(zipFilter)
 
