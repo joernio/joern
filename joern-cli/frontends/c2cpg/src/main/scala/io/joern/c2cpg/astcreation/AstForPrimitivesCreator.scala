@@ -13,7 +13,6 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.{CPPVisitor, EvalM
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.tailrec
-import scala.util.Try
 
 trait AstForPrimitivesCreator { this: AstCreator =>
 
@@ -47,7 +46,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
       case id: IASTIdExpression =>
         safeGetBinding(id.getName) match {
           case Some(binding: (CPPVariable | CVariable)) =>
-            Try(binding.getScope).toOption
+            safeCdtCall(binding.getScope)
               .collect {
                 case n: IASTInternalScope if isGlobal(n.getPhysicalNode) => s"${Defines.GlobalTag} "
               }
@@ -144,15 +143,17 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     val variableOption = scope.lookupVariable(identifierName)
     variableOption match {
       case Some((_, variableTypeName)) => variableTypeName
-      case None if ident.isInstanceOf[IASTName] && ident.asInstanceOf[IASTName].getBinding != null =>
-        val id = ident.asInstanceOf[IASTName]
-        id.getBinding match {
-          case v: IVariable =>
-            v.getType match {
-              case f: IFunctionType => cleanType(f.getReturnType.toString)
-              case other            => cleanType(other.toString)
+      case None if ident.isInstanceOf[IASTName] && safeCdtCall(ident.asInstanceOf[IASTName].getBinding).isDefined =>
+        val idBinding = safeCdtCall(ident.asInstanceOf[IASTName].getBinding)
+        idBinding match {
+          case Some(v: IVariable) =>
+            safeCdtCall(v.getType) match {
+              case Some(f: IFunctionType) => cleanType(f.getReturnType.toString)
+              case Some(other)            => cleanType(other.toString)
+              case None                   => Defines.Any
             }
-          case other => cleanType(other.getName)
+          case Some(other) => cleanType(other.getName)
+          case None        => Defines.Any
         }
       case None if ident.isInstanceOf[IASTName] =>
         typeFor(ident.getParent)
@@ -163,11 +164,11 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   }
 
   private def syntheticThisAccess(ident: CPPASTIdExpression, identifierName: String): String | Ast = {
-    val tpe = ident.getName.getBinding match {
-      case f: CPPField => safeGetType(f.getType)
-      case _           => typeFor(ident)
+    val tpe = safeGetBinding(ident.getName) match {
+      case Some(f: CPPField) => safeCdtCall(safeGetType(f.getType)).getOrElse(Defines.Any)
+      case _                 => typeFor(ident)
     }
-    Try(ident.getEvaluation).toOption match {
+    safeCdtCall(ident.getEvaluation) match {
       case Some(e: EvalMemberAccess) =>
         val ownerTypeRaw = safeGetType(e.getOwnerType)
         val deref        = if (e.isPointerDeref) "*" else ""
@@ -196,8 +197,8 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   private def isInCurrentScope(ident: CPPASTIdExpression, owner: String): Boolean = {
     val ownerWithOutTemplateTags = owner.takeWhile(_ != '<')
     val isInMethodScope =
-      Try(CPPVisitor.getContainingScope(ident).getScopeName.toString).toOption.exists(s =>
-        s.startsWith(s"$ownerWithOutTemplateTags::") || s.contains(s"::$ownerWithOutTemplateTags::")
+      safeCdtCall(CPPVisitor.getContainingScope(ident).getScopeName.toString).exists(scopeName =>
+        scopeName.startsWith(s"$ownerWithOutTemplateTags::") || scopeName.contains(s"::$ownerWithOutTemplateTags::")
       )
     isInMethodScope || methodAstParentStack.collectFirst {
       case typeDecl: NewTypeDecl if typeDecl.fullName == ownerWithOutTemplateTags    => typeDecl
@@ -207,7 +208,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
 
   protected def astForFieldReference(fieldRef: IASTFieldReference): Ast = {
     val isInConstructor =
-      Try(CPPVisitor.findEnclosingFunctionOrClass(fieldRef)).toOption.exists(_.isInstanceOf[ICPPConstructor])
+      safeCdtCall(CPPVisitor.findEnclosingFunctionOrClass(fieldRef)).exists(_.isInstanceOf[ICPPConstructor])
     val dispatchType = DispatchTypes.STATIC_DISPATCH
     val isDeref      = fieldRef.isPointerDereference && !isInConstructor
     val op           = if (isDeref) Operators.indirectFieldAccess else Operators.fieldAccess

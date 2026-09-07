@@ -39,7 +39,7 @@ trait AstForTypesCreator { this: AstCreator =>
       case arrayDecl: IASTArrayDeclarator => registerType(typeFor(arrayDecl))
       case _ =>
         safeGetBinding(declarator.getName) match {
-          case Some(variable: ICPPVariable) if variable.getType.isInstanceOf[CPPClosureType] =>
+          case Some(variable: ICPPVariable) if safeCdtCall(variable.getType).exists(_.isInstanceOf[CPPClosureType]) =>
             registerType(Defines.Function)
           case _ =>
             registerType(typeForDeclSpecifier(declaration.getDeclSpecifier, index = index))
@@ -218,9 +218,9 @@ trait AstForTypesCreator { this: AstCreator =>
   private def initializerSignature(init: IASTInitializer): String = {
     val argTypes = init match {
       case c: ICPPASTConstructorInitializer =>
-        c.getArguments.collect { case e: IASTExpression => e }.map(t => cleanType(safeGetType(t.getExpressionType)))
+        c.getArguments.collect { case e: IASTExpression => e }.map(expr => cleanType(safeGetExpressionType(expr)))
       case list: IASTInitializerList =>
-        list.getClauses.collect { case e: IASTExpression => e }.map(t => cleanType(safeGetType(t.getExpressionType)))
+        list.getClauses.collect { case e: IASTExpression => e }.map(expr => cleanType(safeGetExpressionType(expr)))
       case _ => Array.empty[String]
     }
     StringUtils.normalizeSpace(argTypes.mkString(","))

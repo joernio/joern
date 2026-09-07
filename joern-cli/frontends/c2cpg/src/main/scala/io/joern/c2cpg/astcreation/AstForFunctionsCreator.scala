@@ -80,7 +80,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         Ast()
       case Some(variable: (CVariable | CPPVariable)) =>
         val name       = shortName(funcDecl)
-        val tpe        = safeGetType(variable.getType)
+        val tpe        = safeCdtCall(safeGetType(variable.getType)).getOrElse(Defines.Any)
         val codeString = code(funcDecl.getParent)
         val node       = localNode(funcDecl, name, codeString, registerType(tpe))
         scope.addVariable(name, node, tpe, VariableScopeManager.ScopeType.BlockScope)
@@ -262,9 +262,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
         val ma     = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(thisTpe))
         callAst(ma, Seq(Ast(thisIdentifier), Ast(member)))
       case None =>
-        val tpe = ident.getBinding match {
-          case f: CPPField => safeGetType(f.getType)
-          case _           => typeFor(ident)
+        val tpe = safeCdtCall(ident.getBinding) match {
+          case Some(f: CPPField) => safeCdtCall(safeGetType(f.getType)).getOrElse(Defines.Any)
+          case _                 => typeFor(ident)
         }
         val idNode = identifierNode(ident, identifierName, identifierName, tpe)
         scope.addVariableReference(identifierName, idNode, tpe, EvaluationStrategies.BY_REFERENCE)

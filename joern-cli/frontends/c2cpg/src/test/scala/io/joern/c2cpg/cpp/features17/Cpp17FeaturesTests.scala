@@ -149,6 +149,27 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       retExpr.argument(3).code shouldBe "args"
     }
 
+    "handle folding expressions over non-constant evaluations" in {
+      // Regression test for https://github.com/joernio/joern/issues/6260:
+      // EvalBinary.toString contains no ": " separator when the fold is over
+      // non-constant evaluations (e.g. lambda calls) which previously crashed
+      // type resolution with a StringIndexOutOfBoundsException.
+      val cpg = code("""
+          |namespace ns {
+          |std::wstring GetHelperExe() { return L"helper.exe"; }
+          |template<class... Args>
+          |int LOStart(Args... args) {
+          |    auto quote = [](const std::wstring& s) { return L"\"" + s + L"\""; };
+          |    std::wstring sCmdLine((quote(GetHelperExe()) + ... + (L" " + quote(args))));
+          |    return (int)sCmdLine.size();
+          |}
+          |}
+          |""".stripMargin)
+      val List(foldCall) = cpg.call.nameExact("<operator>.fold").l
+      foldCall.code shouldBe "(quote(GetHelperExe()) + ... + (L\" \" + quote(args)))"
+      foldCall.typeFullName shouldBe "ANY"
+    }
+
     "handle folding expressions (unary)" in {
       val cpg = code("""
           |template <typename... Args>
@@ -527,6 +548,26 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           "value"  -> "int"
         )
       }
+    }
+
+    "not crash on nested range-based for loops over structured bindings with unresolved types" in {
+      // Regression test for https://github.com/joernio/joern/issues/6261:
+      // CDT's auto type deduction runs into unbounded mutual recursion (StackOverflowError)
+      // when a structured binding introduced by a range-based for loop is itself used as the
+      // range of a nested range-based for loop and the container type cannot be resolved.
+      val cpg = code("""
+          |void f() {
+          |  Map m;
+          |  for (const auto& [k, v] : m)
+          |    for (auto& e : v)
+          |      ;
+          |}
+          |""".stripMargin)
+      cpg.method.nameExact("f").nonEmpty shouldBe true
+      val locals = cpg.local.map(l => (l.name, l.typeFullName)).toMap
+      locals("k") shouldBe "ANY"
+      locals("v") shouldBe "ANY"
+      locals("e") shouldBe "ANY&"
     }
 
     "handle selection statements with initializer" in {
