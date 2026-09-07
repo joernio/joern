@@ -429,6 +429,7 @@ trait PluginHandling { this: BridgeBase =>
           case Languages.C | Languages.NEWC => "c"
           case Languages.JAVA               => "jvm"
           case Languages.JAVASRC            => "java"
+          case Languages.PYTHONSRC          => "python"
           case lang                         => lang.toLowerCase
         }
         .getOrElse("c")
