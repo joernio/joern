@@ -236,7 +236,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
             astForCppCallExpressionUntyped(call)
         }
       case Some(classType: ICPPClassType) if safeGetEvaluation(call).exists(_.isInstanceOf[EvalFunctionCall]) =>
-        val evaluation        = safeGetEvaluation(call).get.asInstanceOf[EvalFunctionCall]
+        val evaluation        = call.getEvaluation.asInstanceOf[EvalFunctionCall]
         val functionType      = safeCdtCall(evaluation.getOverload.getType)
         val functionSignature = functionType.map(functionTypeToSignature).getOrElse(X2CpgDefines.UnresolvedSignature)
         val name              = Defines.OperatorCall

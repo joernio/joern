@@ -284,13 +284,12 @@ trait TypeNameProvider { this: AstCreator =>
     val x = safeGetNodeType(name)
     safeGetBinding(name) match {
       case Some(v: IVariable) =>
-        safeCdtCall(v.getType) match {
-          case Some(f: IFunctionType) =>
+        v.getType match {
+          case f: IFunctionType =>
             f.getReturnType.toString
-          case Some(c: ICPPBinding) =>
+          case c: ICPPBinding =>
             c.getQualifiedName.mkString(".")
-          case Some(other) => other.toString
-          case None        => Defines.Any
+          case other => other.toString
         }
       case _ => safeGetNodeType(name)
     }
