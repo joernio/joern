@@ -358,44 +358,44 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
     "have correct field accesses" in {
       inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) { case (fieldAccess: Call) :: Nil =>
         fieldAccess.methodFullName shouldBe Operators.fieldAccess
-        fieldAccess.code shouldBe "(<tmp>0 as rust2cpgtest::E<T>::A).0"
+        fieldAccess.code shouldBe "(e as rust2cpgtest::E<T>::A).0"
         fieldAccess.typeFullName shouldBe "i32"
 
         inside(fieldAccess.argument.sortBy(_.argumentIndex).l) { case (cast: Call) :: (field: FieldIdentifier) :: Nil =>
           field.canonicalName shouldBe "0"
 
           cast.methodFullName shouldBe Operators.cast
-          cast.code shouldBe "(<tmp>0 as rust2cpgtest::E<T>::A)"
+          cast.code shouldBe "(e as rust2cpgtest::E<T>::A)"
           cast.typeFullName shouldBe "rust2cpgtest::E<T>::A"
 
-          inside(cast.argument.sortBy(_.argumentIndex).l) { case (typeRef: TypeRef) :: (tmp: Identifier) :: Nil =>
+          inside(cast.argument.sortBy(_.argumentIndex).l) { case (typeRef: TypeRef) :: (ident: Identifier) :: Nil =>
             typeRef.code shouldBe "E::A"
             typeRef.typeFullName shouldBe "rust2cpgtest::E<T>::A"
 
-            tmp.name shouldBe "<tmp>0"
-            tmp.typeFullName shouldBe "rust2cpgtest::E<i32>"
+            ident.name shouldBe "e"
+            ident.typeFullName shouldBe "rust2cpgtest::E<i32>"
           }
         }
       }
 
       inside(cpg.assignment.where(_.target.isIdentifier.nameExact("y")).source.l) { case (fieldAccess: Call) :: Nil =>
         fieldAccess.methodFullName shouldBe Operators.fieldAccess
-        fieldAccess.code shouldBe "(<tmp>0 as rust2cpgtest::E<T>::A).1"
+        fieldAccess.code shouldBe "(e as rust2cpgtest::E<T>::A).1"
         fieldAccess.typeFullName shouldBe "bool"
 
         inside(fieldAccess.argument.sortBy(_.argumentIndex).l) { case (cast: Call) :: (field: FieldIdentifier) :: Nil =>
           field.canonicalName shouldBe "1"
 
           cast.methodFullName shouldBe Operators.cast
-          cast.code shouldBe "(<tmp>0 as rust2cpgtest::E<T>::A)"
+          cast.code shouldBe "(e as rust2cpgtest::E<T>::A)"
           cast.typeFullName shouldBe "rust2cpgtest::E<T>::A"
 
-          inside(cast.argument.sortBy(_.argumentIndex).l) { case (typeRef: TypeRef) :: (tmp: Identifier) :: Nil =>
+          inside(cast.argument.sortBy(_.argumentIndex).l) { case (typeRef: TypeRef) :: (ident: Identifier) :: Nil =>
             typeRef.code shouldBe "E::A"
             typeRef.typeFullName shouldBe "rust2cpgtest::E<T>::A"
 
-            tmp.name shouldBe "<tmp>0"
-            tmp.typeFullName shouldBe "rust2cpgtest::E<i32>"
+            ident.name shouldBe "e"
+            ident.typeFullName shouldBe "rust2cpgtest::E<i32>"
           }
         }
       }
