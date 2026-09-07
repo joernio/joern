@@ -20,6 +20,7 @@
     "com.michaelpollmeier:versionsort": 605653562,
     "com.squareup.tools.build:maven-archeologist": 943047605,
     "com.typesafe:config": 324143406,
+    "commons-io:commons-io": 1305681826,
     "io.joern:eclipse-cdt-core": -500108536,
     "io.joern:flatgraph-core_3": -1427372425,
     "io.joern:flatgraph-domain-classes-generator_3": -86659973,
@@ -44,7 +45,7 @@
     "org.jetbrains.kotlin:kotlin-stdlib": 181930543,
     "org.jetbrains.kotlin:kotlin-stdlib-jdk8": 1654605853,
     "org.jline:jline": 214767589,
-    "org.jruby:jruby-complete": -1254552563,
+    "org.jruby:jruby-complete": -26341225,
     "org.json4s:json4s-native_3": -1513317579,
     "org.ow2.asm:asm": 1206815935,
     "org.projectlombok:lombok": -1238622139,
@@ -128,8 +129,8 @@
     "com.typesafe:config:jar:sources": 1794326800,
     "commons-codec:commons-codec": -1161719307,
     "commons-codec:commons-codec:jar:sources": 963281664,
-    "commons-io:commons-io": -807333807,
-    "commons-io:commons-io:jar:sources": -1339271077,
+    "commons-io:commons-io": 1072619124,
+    "commons-io:commons-io:jar:sources": -238571367,
     "io.get-coursier:interface": 1635041630,
     "io.get-coursier:interface:jar:sources": -37171318,
     "io.joern:eclipse-cdt-core": 956507630,
@@ -170,7 +171,7 @@
     "org.antlr:antlr4-runtime": -63006028,
     "org.antlr:antlr4-runtime:jar:sources": 766615199,
     "org.antlr:antlr4:jar:sources": -1956498415,
-    "org.apache.commons:commons-compress": 1482438574,
+    "org.apache.commons:commons-compress": 191412927,
     "org.apache.commons:commons-compress:jar:sources": 577133147,
     "org.apache.commons:commons-exec": 601232227,
     "org.apache.commons:commons-exec:jar:sources": -716664838,
@@ -276,7 +277,7 @@
     "org.jline:jline-terminal-jni:jar:sources": -1668611295,
     "org.jline:jline-terminal:jar:sources": -214275357,
     "org.jline:jline:jar:sources": 2039073485,
-    "org.jruby:jruby-complete": -390576161,
+    "org.jruby:jruby-complete": 1785345668,
     "org.json4s:json4s-ast_3": -507419474,
     "org.json4s:json4s-ast_3:jar:sources": 2122540071,
     "org.json4s:json4s-core_3": 1015651488,
@@ -589,10 +590,10 @@
     },
     "commons-io:commons-io": {
       "shasums": {
-        "jar": "f41f7baacd716896447ace9758621f62c1c6b0a91d89acee488da26fc477c84f",
-        "sources": "fcfe84e39fb44e38a0ea0ab0815b53adea6fff89c7b72535bc42495f400cb9a1"
+        "jar": "2b9a7b1f726fb86216dbd2c8321eabe0221dbd5b1be81c18e1cb53811b104758",
+        "sources": "de5acfae5fa2735276df7facf46cdb0347374208ea47db246b554fae59277fb5"
       },
-      "version": "2.16.1"
+      "version": "2.22.0"
     },
     "io.get-coursier:interface": {
       "shasums": {
@@ -1107,9 +1108,9 @@
     },
     "org.jruby:jruby-complete": {
       "shasums": {
-        "jar": "b1a83ca46053894fcfd47df4094a21eac6db7fcba6fa6d99d77e391f620e85b7"
+        "jar": "e8a461c48da851d839b8deb8b67b1987542ba5e23b8febfa0e60f0065e2639d2"
       },
-      "version": "10.0.6.0"
+      "version": "9.4.15.0"
     },
     "org.json4s:json4s-ast_3": {
       "shasums": {
@@ -4254,6 +4255,8 @@
       "org.jruby.ext.ripper",
       "org.jruby.ext.set",
       "org.jruby.ext.socket",
+      "org.jruby.ext.syslog",
+      "org.jruby.ext.tempfile",
       "org.jruby.ext.thread",
       "org.jruby.ext.timeout",
       "org.jruby.ext.tracepoint",
@@ -4331,7 +4334,8 @@
       "org.jruby.util.func",
       "org.jruby.util.io",
       "org.jruby.util.log",
-      "org.jruby.util.time"
+      "org.jruby.util.time",
+      "org.jruby.util.unsafe"
     ],
     "org.json4s:json4s-ast_3": [
       "org.json4s",
