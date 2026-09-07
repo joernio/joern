@@ -1801,24 +1801,38 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  }
   // }
   private def visitMatchExpr(matchExpr: MatchExpr): Ast = {
-    val tmpName       = contextStack.nextTmpName()
-    val typeFullName  = typeFullNameForExpr(matchExpr.expr)
-    val tmpLocalAst   = Ast(localNode(matchExpr.expr, tmpName, tmpName, typeFullName))
-    val mkTmpIdentAst = () => Ast(identifierNode(matchExpr.expr, tmpName, tmpName, typeFullName))
-    val tmpAssignAst = callAst(
-      assignmentNode(matchExpr.expr, s"$tmpName = ${code(matchExpr.expr)}"),
-      Seq(mkTmpIdentAst(), visitExpr(matchExpr.expr))
-    )
-    val armAsts      = matchExpr.matchArmList.matchArm.flatMap(lowerMatchArm(_, mkTmpIdentAst))
-    val matchBodyAst = blockAst(blockNode(matchExpr.matchArmList), armAsts.toList)
-    val matchExprAst = matchAst(matchExpr, Some(mkTmpIdentAst()), Seq(matchBodyAst))
-    Ast(blockNode(matchExpr)).withChildren(Seq(tmpLocalAst, tmpAssignAst, matchExprAst))
+    val mkSourceAst = () => visitExpr(matchExpr.expr)
+    // When it's already an identifier, we don't need to assign it a fresh tmp.
+    if (isIdentifierWithoutAdjustments(matchExpr.expr)) {
+      val armAsts      = matchExpr.matchArmList.matchArm.flatMap(lowerMatchArm(_, mkSourceAst))
+      val matchBodyAst = blockAst(blockNode(matchExpr.matchArmList), armAsts.toList)
+      val matchExprAst = matchAst(matchExpr, Some(mkSourceAst()), Seq(matchBodyAst))
+      Ast(blockNode(matchExpr)).withChild(matchExprAst)
+    } else {
+      val tmpName       = contextStack.nextTmpName()
+      val typeFullName  = typeFullNameForExpr(matchExpr.expr)
+      val tmpLocalAst   = Ast(localNode(matchExpr.expr, tmpName, tmpName, typeFullName))
+      val mkTmpIdentAst = () => Ast(identifierNode(matchExpr.expr, tmpName, tmpName, typeFullName))
+      val tmpAssignAst = callAst(
+        assignmentNode(matchExpr.expr, s"$tmpName = ${code(matchExpr.expr)}"),
+        Seq(mkTmpIdentAst(), mkSourceAst())
+      )
+      val armAsts      = matchExpr.matchArmList.matchArm.flatMap(lowerMatchArm(_, mkTmpIdentAst))
+      val matchBodyAst = blockAst(blockNode(matchExpr.matchArmList), armAsts.toList)
+      val matchExprAst = matchAst(matchExpr, Some(mkTmpIdentAst()), Seq(matchBodyAst))
+      Ast(blockNode(matchExpr)).withChildren(Seq(tmpLocalAst, tmpAssignAst, matchExprAst))
+    }
   }
 
-  private def lowerMatchArm(matchArm: MatchArm, tmpIdentAst: () => Ast): Seq[Ast] = {
+  private def isIdentifierWithoutAdjustments(expr: Expr): Boolean = expr match {
+    case pathExpr: PathExpr => pathExpr.path.path.isEmpty && pathExpr.adjustments.forall(_.isEmpty)
+    case _                  => false
+  }
+
+  private def lowerMatchArm(matchArm: MatchArm, mkSourceAst: () => Ast): Seq[Ast] = {
     val bindingAsts = createLocalsForBindings(collectPatternBindings(matchArm.pat)) ++ createAssignmentsForPattern(
       matchArm.pat,
-      tmpIdentAst
+      mkSourceAst
     )
     val bodyAst = matchArm.matchGuard match {
       case Some(matchGuard) =>
