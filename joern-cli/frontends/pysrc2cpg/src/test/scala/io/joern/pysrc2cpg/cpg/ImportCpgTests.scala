@@ -1,6 +1,6 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -16,8 +16,8 @@ class ImportCpgTests extends PySrc2CpgFixture with Matchers {
     lhsIdentifier.code shouldBe "a"
 
     val importCall = assignment.argument(2).isCall.head
-    importCall.name shouldBe "import"
-    importCall.methodFullName shouldBe "import"
+    importCall.name shouldBe Operators.importCall
+    importCall.methodFullName shouldBe Operators.importCall
     importCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     importCall.receiver.l shouldBe empty
 

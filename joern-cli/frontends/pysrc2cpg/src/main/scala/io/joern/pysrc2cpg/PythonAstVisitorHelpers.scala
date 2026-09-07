@@ -115,7 +115,7 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
 
         val importCallNode = nodeBuilder.callNode(
           new AstPrinter("").print(importAstNode),
-          "import",
+          Operators.importCall,
           DispatchTypes.STATIC_DISPATCH,
           lineAndCol
         )
@@ -527,7 +527,7 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
     addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
     // Do not include imports or function pointers
     val isImportCall = rhsNode match {
-      case c: NewCall => c.name == "import"
+      case c: NewCall => c.name == Operators.importCall
       case _          => false
     }
     if (!isImportCall && codeOf(rhsNode) != s"def ${codeOf(lhsNode)}(...)") {
