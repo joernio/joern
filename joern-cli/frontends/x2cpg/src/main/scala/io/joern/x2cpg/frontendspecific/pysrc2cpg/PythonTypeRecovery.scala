@@ -115,8 +115,8 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   }
 
   override def visitIdentifierAssignedToCall(i: Identifier, c: Call): Set[String] = {
-    // Ignore legacy import representation
-    if (c.name.equals("import")) Set.empty
+    // Ignore the import call representation
+    if (c.name.equals(Operators.importCall)) Set.empty
     // Stop custom annotation representation from hitting superclass
     else if (c.name.isBlank) Set.empty
     else super.visitIdentifierAssignedToCall(i, c)

@@ -113,15 +113,13 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
           case None            => Seq()
         })
 
-        val importCallNode =
-          createCall(
-            createIdentifierNode("import", Load, lineAndCol),
-            "import",
-            lineAndCol,
-            arguments,
-            Nil,
-            Some(importAstNode)
-          )
+        val importCallNode = nodeBuilder.callNode(
+          new AstPrinter("").print(importAstNode),
+          Operators.importCall,
+          DispatchTypes.STATIC_DISPATCH,
+          lineAndCol
+        )
+        addAstChildrenAsArguments(importCallNode, 1, arguments)
 
         val assignNode = createAssignment(importAssignLhsIdentifierNode, importCallNode, lineAndCol)
         assignNode
@@ -529,7 +527,7 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
     addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
     // Do not include imports or function pointers
     val isImportCall = rhsNode match {
-      case c: NewCall => c.name == "import"
+      case c: NewCall => c.name == Operators.importCall
       case _          => false
     }
     if (!isImportCall && codeOf(rhsNode) != s"def ${codeOf(lhsNode)}(...)") {
