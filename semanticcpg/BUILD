@@ -7,6 +7,7 @@ scala_library(
     deps = [
         "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
         "@maven//:com_michaelpollmeier_scala_repl_pp_3_3_6",
+        "@maven//:commons_io_commons_io",
         "@maven//:org_apache_commons_commons_lang3",
         "@maven//:org_apache_commons_commons_text",
         "@maven//:org_json4s_json4s_ast_3",
