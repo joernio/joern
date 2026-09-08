@@ -135,11 +135,11 @@ package object language
   implicit def iterToImportTrav[A <: Import](a: IterableOnce[A]): ImportTraversal =
     new ImportTraversal(a.iterator)
 
-  implicit def singleToConfigFileTrav[A <: ConfigFile](a: A): ConfigFileTraversal =
-    new ConfigFileTraversal(Iterator.single(a))
+  implicit def singleToConfigFileTrav[A <: ConfigFile](node: A): ConfigFileTraversal =
+    new ConfigFileTraversal(Iterator.single(node))
 
-  implicit def iterToConfigFileTrav[A <: ConfigFile](a: IterableOnce[A]): ConfigFileTraversal =
-    new ConfigFileTraversal(a.iterator)
+  implicit def iterToConfigFileTrav[A <: ConfigFile](node: IterableOnce[A]): ConfigFileTraversal =
+    new ConfigFileTraversal(node.iterator)
 
   // Call graph extension
   implicit def singleToMethodTravCallGraphExt[A <: Method](a: A): MethodTraversal =

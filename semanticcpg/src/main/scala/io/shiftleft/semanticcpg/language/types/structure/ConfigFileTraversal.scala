@@ -39,7 +39,7 @@ class ConfigFileTraversal(val traversal: Iterator[nodes.ConfigFile]) extends Any
   /** Map to (filename, content) pairs
     */
   def nameContentPairs: Iterator[(String, String)] = {
-    traversal.map(x => (x.name, x.content))
+    traversal.map(configFile => (configFile.name, configFile.content))
   }
 
 }
