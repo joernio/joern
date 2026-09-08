@@ -325,7 +325,7 @@ trait FullNameProvider { this: AstCreator =>
         safeGetBinding(declarator.getName) match {
           case Some(function: ICPPFunction) if declarator.getName.isInstanceOf[ICPPASTConversionName] =>
             val tpe        = cleanType(typeFor(declarator.getName.asInstanceOf[ICPPASTConversionName].getTypeId))
-            val returnType = cleanType(safeGetType(function.getType.getReturnType))
+            val returnType = cleanType(safeCdtCall(safeGetType(function.getType.getReturnType)).getOrElse(Defines.Any))
             val fullNameNoSig = replaceQualifiedNameSeparator(
               function.getQualifiedName.takeWhile(!_.startsWith("operator ")).mkString(".")
             )
@@ -354,7 +354,7 @@ trait FullNameProvider { this: AstCreator =>
             } else {
               val returnTpe = declarator.getParent match {
                 case definition: ICPPASTFunctionDefinition if !bindsToConstructor(definition) => returnType(definition)
-                case _ => safeGetType(function.getType.getReturnType)
+                case _ => safeCdtCall(safeGetType(function.getType.getReturnType)).getOrElse(Defines.Any)
               }
               val sig = signature(cleanType(returnTpe), declarator)
               s"${stripTemplateTags(fullNameNoSig)}:$sig"
@@ -363,7 +363,9 @@ trait FullNameProvider { this: AstCreator =>
           case Some(x @ (_: ICPPField | _: CPPVariable)) =>
             val fullNameNoSig = replaceQualifiedNameSeparator(x.getQualifiedName.mkString("."))
             val fn = if (x.isExternC) { x.getName }
-            else { s"${stripTemplateTags(fullNameNoSig)}:${cleanType(safeGetType(x.getType))}" }
+            else {
+              s"${stripTemplateTags(fullNameNoSig)}:${cleanType(safeCdtCall(safeGetType(x.getType)).getOrElse(Defines.Any))}"
+            }
             Option(fn)
           case Some(_: IProblemBinding) if bindsToConstructor(declarator.getName) =>
             val fullNameNoSig = replaceQualifiedNameSeparator(

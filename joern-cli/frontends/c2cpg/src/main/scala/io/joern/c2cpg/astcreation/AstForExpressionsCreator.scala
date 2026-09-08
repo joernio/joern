@@ -170,8 +170,8 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
   private def astForCppCallExpression(call: ICPPASTFunctionCallExpression): Ast = {
     val functionNameExpr = call.getFunctionNameExpression
-    Try(functionNameExpr.getExpressionType).toOption match {
-      case Some(_: IPointerType) => createPointerCallAst(call, safeGetType(call.getExpressionType))
+    safeCdtCall(functionNameExpr.getExpressionType) match {
+      case Some(_: IPointerType) => createPointerCallAst(call, safeGetExpressionType(call))
       case Some(functionType: ICPPFunctionType) =>
         functionNameExpr match {
           case idExpr: CPPASTIdExpression if safeGetBinding(idExpr).exists(_.isInstanceOf[ICPPFunction]) =>
@@ -198,7 +198,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
               fullName,
               DispatchTypes.STATIC_DISPATCH,
               Some(signature),
-              Some(registerType(safeGetType(call.getExpressionType)))
+              Some(registerType(safeGetExpressionType(call)))
             )
             val args = call.getArguments.toList.map(a => astForNode(a))
             createCallAst(callCpgNode, args)
@@ -208,7 +208,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
             val args        = call.getArguments.toList.map(a => astForNode(a))
 
             val method = fieldRefExpr.getFieldName.getBinding.asInstanceOf[ICPPMethod]
-            val constFlag = if (isConstType(method.getType)) { Defines.ConstSuffix }
+            val constFlag = if (safeCdtCall(method.getType).exists(isConstType)) { Defines.ConstSuffix }
             else { "" }
             // TODO This wont do if the name is a reference.
             val name          = stripTemplateTags(fieldRefExpr.getFieldName.toString)
@@ -229,7 +229,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
               fullName,
               dispatchType,
               Some(signature),
-              Some(registerType(safeGetType(call.getExpressionType)))
+              Some(registerType(safeGetExpressionType(call)))
             )
             createCallAst(callCpgNode, args, base = Some(instanceAst), receiver)
           case _ =>
@@ -237,7 +237,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         }
       case Some(classType: ICPPClassType) if safeGetEvaluation(call).exists(_.isInstanceOf[EvalFunctionCall]) =>
         val evaluation        = call.getEvaluation.asInstanceOf[EvalFunctionCall]
-        val functionType      = Try(evaluation.getOverload.getType).toOption
+        val functionType      = safeCdtCall(evaluation.getOverload.getType)
         val functionSignature = functionType.map(functionTypeToSignature).getOrElse(X2CpgDefines.UnresolvedSignature)
         val name              = Defines.OperatorCall
         classType match {
@@ -254,7 +254,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
               fullName,
               DispatchTypes.DYNAMIC_DISPATCH,
               Some(lambdaSignature),
-              Some(registerType(safeGetType(call.getExpressionType)))
+              Some(registerType(safeGetExpressionType(call)))
             )
             val receiverAst = astForExpression(functionNameExpr)
             val args        = call.getArguments.toList.map(a => astForNode(a))
@@ -262,8 +262,8 @@ trait AstForExpressionsCreator { this: AstCreator =>
           case _ =>
             val classFullName = safeGetType(classType)
             val fullName      = s"$classFullName.$name:$functionSignature"
-            val dispatchType = evaluation.getOverload match {
-              case method: ICPPMethod =>
+            val dispatchType = safeCdtCall(evaluation.getOverload) match {
+              case Some(method: ICPPMethod) =>
                 if (method.isVirtual || method.isPureVirtual) {
                   DispatchTypes.DYNAMIC_DISPATCH
                 } else {
@@ -279,7 +279,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
               fullName,
               dispatchType,
               Some(functionSignature),
-              Some(registerType(safeGetType(call.getExpressionType)))
+              Some(registerType(safeGetExpressionType(call)))
             )
             val instanceAst = astForExpression(functionNameExpr)
             val args        = call.getArguments.toList.map(a => astForNode(a))
@@ -324,15 +324,15 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
   private def astForCCallExpression(call: CASTFunctionCallExpression): Ast = {
     val functionNameExpr = call.getFunctionNameExpression
-    Try(functionNameExpr.getExpressionType).toOption match {
+    safeCdtCall(functionNameExpr.getExpressionType) match {
       case Some(_: CPointerType) =>
-        createPointerCallAst(call, safeGetType(call.getExpressionType))
+        createPointerCallAst(call, safeGetExpressionType(call))
       case Some(_: CFunctionType) =>
         functionNameExpr match {
           case idExpr: CASTIdExpression =>
-            createCFunctionCallAst(call, idExpr, safeGetType(call.getExpressionType))
+            createCFunctionCallAst(call, idExpr, safeGetExpressionType(call))
           case _ =>
-            createPointerCallAst(call, safeGetType(call.getExpressionType))
+            createPointerCallAst(call, safeGetExpressionType(call))
         }
       case _ =>
         astForCCallExpressionUntyped(call)
@@ -488,14 +488,14 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
   protected def initializerSignature(init: ICPPASTConstructorInitializer): String = {
     val initParamTypes =
-      init.getArguments.collect { case e: IASTExpression => e }.map(t => cleanType(safeGetType(t.getExpressionType)))
+      init.getArguments.collect { case e: IASTExpression => e }.map(expr => cleanType(safeGetExpressionType(expr)))
     StringUtils.normalizeSpace(initParamTypes.mkString(","))
   }
 
   protected def initializerSignature(init: ICPPASTSimpleTypeConstructorExpression): String = {
     val initParamTypes = init.getInitializer match {
       case init: ICPPASTInitializerList =>
-        init.getClauses.collect { case e: IASTExpression => e }.map(t => cleanType(safeGetType(t.getExpressionType)))
+        init.getClauses.collect { case e: IASTExpression => e }.map(expr => cleanType(safeGetExpressionType(expr)))
       case _ => Array.empty[String]
     }
     StringUtils.normalizeSpace(initParamTypes.mkString(","))
@@ -504,7 +504,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
   protected def initializerSignature(newExpression: ICPPASTNewExpression): String = {
     val initParamTypes = newExpression.getInitializer match {
       case init: ICPPASTConstructorInitializer =>
-        init.getArguments.collect { case e: IASTExpression => e }.map(t => cleanType(safeGetType(t.getExpressionType)))
+        init.getArguments.collect { case e: IASTExpression => e }.map(expr => cleanType(safeGetExpressionType(expr)))
       case _ => Array.empty[String]
     }
     StringUtils.normalizeSpace(initParamTypes.mkString(","))

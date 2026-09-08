@@ -124,6 +124,16 @@ trait TypeNameProvider { this: AstCreator =>
   }
 
   protected def safeGetType(tpe: IType): String = {
+    // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
+    safeCdtCall(safeGetTypeInternal(tpe)).getOrElse(Defines.Any)
+  }
+
+  protected def safeGetExpressionType(expr: IASTExpression): String = {
+    // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
+    safeCdtCall(safeGetType(expr.getExpressionType)).getOrElse(Defines.Any)
+  }
+
+  private def safeGetTypeInternal(tpe: IType): String = {
     val tpeString = tpe match {
       case _: CPPClosureType                                      => Defines.Function
       case cppBasicType: ICPPBasicType if cppBasicType.isLong     => Defines.Long
@@ -160,7 +170,7 @@ trait TypeNameProvider { this: AstCreator =>
   }
 
   protected def functionInstanceToSignature(function: ICPPFunctionInstance, tpe: IFunctionType): String = {
-    Try(function.getSpecializedBinding).toOption match {
+    safeCdtCall(function.getSpecializedBinding) match {
       case Some(binding: ICPPFunctionTemplate) =>
         val returnType     = cleanType(safeGetType(tpe.getReturnType))
         val parameterTypes = binding.getParameters.map(t => cleanType(safeGetType(t.getType)))
@@ -237,6 +247,14 @@ trait TypeNameProvider { this: AstCreator =>
 
   @nowarn
   protected def typeFor(node: IASTNode): String = {
+    // CDT's type resolution may run into unbounded mutual recursion for certain inputs (see
+    // https://github.com/joernio/joern/issues/6261); degrade to ANY instead of losing the whole file.
+    try { typeForInternal(node) }
+    catch { case _: StackOverflowError => Defines.Any }
+  }
+
+  @nowarn
+  private def typeForInternal(node: IASTNode): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
     val tpeString = node match {
       case f: CPPASTFoldExpression          => typeForCPPASTFoldExpression(f)
@@ -383,7 +401,7 @@ trait TypeNameProvider { this: AstCreator =>
 
   private def safeGetNodeType(node: IASTNode): String = {
     // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
-    Try(ASTTypeUtil.getNodeType(node)).getOrElse(Defines.Any)
+    safeCdtCall(ASTTypeUtil.getNodeType(node)).getOrElse(Defines.Any)
   }
 
   private def typeForCPPASTFieldReference(f: CPPASTFieldReference): String = {
@@ -398,8 +416,11 @@ trait TypeNameProvider { this: AstCreator =>
       case Some(evaluation: EvalFoldExpression) =>
         Try(evaluation.getValue.getEvaluation).toOption match {
           case Some(value: EvalBinary) =>
-            val s = value.toString
-            s.substring(0, s.indexOf(": "))
+            // EvalBinary.toString only contains ": " if a nested evaluation (e.g. EvalFixed) contributes
+            // one; for folds over non-constant expressions (e.g. function calls) the separator is absent.
+            val evalString = value.toString
+            val sepIdx     = evalString.indexOf(": ")
+            if (sepIdx > 0) evalString.substring(0, sepIdx) else Defines.Any
           case Some(value: EvalBinding) if value.getType.isInstanceOf[ICPPParameterPackType] =>
             value.getType.asInstanceOf[ICPPParameterPackType].getType.toString
           case _ => Defines.Any

@@ -13,6 +13,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTArrayRangeDesignator,
 
 import java.nio.file.{Path, Paths}
 import scala.collection.mutable
+import scala.util.control.NonFatal
 import scala.util.{Success, Try}
 
 trait AstCreatorHelper { this: AstCreator =>
@@ -122,9 +123,24 @@ trait AstCreatorHelper { this: AstCreator =>
     accumulator.registerMethodDefinition(fullName)
   }
 
+  /** Wraps a call into Eclipse CDT's type/binding/evaluation resolution.
+    *
+    * In case of unresolved includes etc. this may fail throwing an unrecoverable exception. Additionally, CDT's heavily
+    * recursive analysis can run into unbounded mutual recursion for certain inputs (see
+    * https://github.com/joernio/joern/issues/6261), throwing a `StackOverflowError`. That is a `VirtualMachineError`
+    * which `scala.util.Try`/`NonFatal` do not catch, so we catch it explicitly here and degrade to `None` instead of
+    * losing the whole file.
+    */
+  protected def safeCdtCall[T](call: => T): Option[T] = {
+    try { Option(call) }
+    catch {
+      case _: StackOverflowError => None
+      case NonFatal(_)           => None
+    }
+  }
+
   protected def safeGetEvaluation(expr: ICPPASTExpression): Option[ICPPEvaluation] = {
-    // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
-    Try(expr.getEvaluation).toOption.filter(_ != null)
+    safeCdtCall(expr.getEvaluation)
   }
 
   protected def safeGetBinding(idExpression: IASTIdExpression): Option[IBinding] = {
@@ -142,8 +158,7 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def safeGetBinding(name: IASTName): Option[IBinding] = {
-    // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
-    Try(name.resolveBinding()).toOption.filter(_ != null)
+    safeCdtCall(name.resolveBinding())
   }
 
   protected def notHandledYet(node: IASTNode): Ast = {
