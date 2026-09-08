@@ -13,7 +13,7 @@ import io.joern.ghidra2cpg.utils.Decompiler
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
-import org.slf4j.LoggerFactory
+import org.apache.logging.log4j.LogManager
 
 import scala.jdk.CollectionConverters.*
 import scala.language.implicitConversions
@@ -26,7 +26,7 @@ class MipsFunctionPass(
   cpg: Cpg,
   decompiler: Decompiler
 ) extends FunctionPass(MipsProcessor, currentProgram, functions, cpg, decompiler) {
-  private val logger = LoggerFactory.getLogger(classOf[MipsFunctionPass])
+  private val logger = LogManager.getLogger(classOf[MipsFunctionPass])
 
   def resolveVarNode(instruction: Instruction, input: Varnode, index: Int): CfgNodeNew = {
     if (input.isRegister) {

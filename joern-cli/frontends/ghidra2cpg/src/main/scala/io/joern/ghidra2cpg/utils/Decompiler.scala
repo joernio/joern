@@ -3,12 +3,12 @@ package io.joern.ghidra2cpg.utils
 import ghidra.app.decompiler.{DecompInterface, DecompileOptions, DecompileResults, DecompiledFunction}
 import ghidra.program.model.listing.{Function, Program}
 import ghidra.program.model.pcode.HighFunction
-import org.slf4j.LoggerFactory
+import org.apache.logging.log4j.LogManager
 
 import scala.collection.immutable
 
 object Decompiler {
-  private val logger = LoggerFactory.getLogger(getClass)
+  private val logger = LogManager.getLogger(getClass)
 
   /** Create a new decompiler. Returns Some(decompiler) on success on None on failure.
     */

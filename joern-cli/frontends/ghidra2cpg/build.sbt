@@ -8,10 +8,7 @@ libraryDependencies ++= Seq(
   "commons-io"        % "commons-io"               % Versions.commonsIo,
   "io.shiftleft"     %% "codepropertygraph"        % Versions.cpg,
   "io.shiftleft"     %% "codepropertygraph-protos" % Versions.cpg,
-  "org.scalatest"    %% "scalatest"                % Versions.scalatest % Test,
-  // silence the 'No SLF4J providers' warnings in tests: the ghidra fat jar only ships an slf4j 1.7 binding,
-  // which slf4j 2.x ignores, and we cannot use log4j-slf4j2-impl here (see excludeDependencies below)
-  "org.slf4j"         % "slf4j-nop"                % Versions.slf4j     % Test
+  "org.scalatest"    %% "scalatest"                % Versions.scalatest % Test
 )
 
 // ghidra2cpg is a fat jar that already ships an old version of log4j, so we need
@@ -21,6 +18,12 @@ excludeDependencies ++= Seq(
   ExclusionRule("org.apache.logging.log4j", "log4j-slf4j2-impl"),
   ExclusionRule("org.apache.logging.log4j", "log4j-core")
 )
+
+// Because of the exclusions above, slf4j has no binding in this module (the fat jar only ships an slf4j 1.7
+// binding, which slf4j 2.x ignores) and anything logged via slf4j is silently discarded. This module therefore
+// logs via log4j directly (org.apache.logging.log4j), using the log4j version bundled in the ghidra fat jar;
+// it is configured by log4j2-test.xml in tests and by conf/log4j2.xml in the CLI distribution. Side effect of
+// the missing binding: slf4j prints a few 'No SLF4J providers were found' warnings when a test JVM starts.
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 

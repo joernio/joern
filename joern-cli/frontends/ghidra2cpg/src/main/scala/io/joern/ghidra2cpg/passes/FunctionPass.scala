@@ -14,6 +14,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, NewMethod}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
+import org.apache.logging.log4j.LogManager
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
@@ -27,11 +28,14 @@ abstract class FunctionPass(
   decompiler: Decompiler
 ) extends ForkJoinParallelCpgPass[Function](cpg) {
 
+  // not using the inherited slf4j-based baseLogger: slf4j has no binding in this module (see build.sbt)
+  private val logger = LogManager.getLogger(getClass)
+
   protected val functionByName: mutable.Map[String, Function] = mutable.HashMap[String, Function]()
   for (fn <- functions) {
     val other = functionByName.getOrElseUpdate(fn.getName, fn)
     if (!(other eq fn)) {
-      baseLogger.warn(s"Multiple functions with same name ${fn.getName}, can't disambiguate: $fn, $other")
+      logger.warn(s"Multiple functions with same name ${fn.getName}, can't disambiguate: $fn, $other")
     }
   }
 
@@ -255,7 +259,7 @@ abstract class FunctionPass(
                   .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
                 connectCallToArgument(diffGraphBuilder, callNode, node)
               case _ =>
-                baseLogger.warn(s"Unsupported argument: $opObject $className")
+                logger.warn(s"Unsupported argument: $opObject $className")
             }
           }
       }

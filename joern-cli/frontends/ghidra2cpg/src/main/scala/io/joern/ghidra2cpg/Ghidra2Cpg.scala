@@ -22,7 +22,7 @@ import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.utils.FileUtil
-import org.slf4j.LoggerFactory
+import org.apache.logging.log4j.LogManager
 
 import java.io.File
 import scala.collection.mutable
@@ -152,7 +152,7 @@ class Ghidra2Cpg extends X2CpgFrontend {
 }
 
 object Types {
-  private val logger = LoggerFactory.getLogger(getClass)
+  private val logger = LogManager.getLogger(getClass)
 
   // Types will be added to the CPG as soon as everything
   // else is done
