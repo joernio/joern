@@ -88,8 +88,8 @@ abstract class FunctionPass(
           .filter(_.isParameter)
           .foreach { parameter =>
             val checkedParameter = Option(parameter.getStorage)
-              .flatMap(x => Option(x.getRegister))
-              .flatMap(x => Option(x.getName))
+              .flatMap(storage => Option(storage.getRegister))
+              .flatMap(register => Option(register.getName))
               .getOrElse(parameter.getName)
             val node =
               createParameterNode(
@@ -255,7 +255,7 @@ abstract class FunctionPass(
                   .lineNumber(Some(instruction.getMinAddress.getOffsetAsBigInteger.intValue))
                 connectCallToArgument(diffGraphBuilder, callNode, node)
               case _ =>
-                println(s"""Unsupported argument: $opObject $className""")
+                baseLogger.warn(s"Unsupported argument: $opObject $className")
             }
           }
       }

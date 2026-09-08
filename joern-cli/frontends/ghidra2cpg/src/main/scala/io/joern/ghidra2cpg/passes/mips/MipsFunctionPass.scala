@@ -128,7 +128,7 @@ class MipsFunctionPass(
     connectCallToArgument(diffGraphBuilder, callNode, arg)
   }
   def handleDefault(varNode: PcodeOp): Unit = {
-    println("Unsupported " + varNode.toString + " " + varNode.getOpcode)
+    logger.warn(s"Unsupported $varNode ${varNode.getOpcode}")
   }
   def resolveArgument(
     diffGraphBuilder: DiffGraphBuilder,
@@ -227,7 +227,7 @@ class MipsFunctionPass(
             )
             connectCallToArgument(diffGraphBuilder, instructionNode, node)
           case _ =>
-            println(s"""Unsupported argument: $opObject ${opObject.getClass.getSimpleName}""")
+            logger.warn(s"Unsupported argument: $opObject ${opObject.getClass.getSimpleName}")
         }
       }
     }

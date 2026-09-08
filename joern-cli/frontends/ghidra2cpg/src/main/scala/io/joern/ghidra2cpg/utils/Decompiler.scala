@@ -3,10 +3,12 @@ package io.joern.ghidra2cpg.utils
 import ghidra.app.decompiler.{DecompInterface, DecompileOptions, DecompileResults, DecompiledFunction}
 import ghidra.program.model.listing.{Function, Program}
 import ghidra.program.model.pcode.HighFunction
+import org.slf4j.LoggerFactory
 
 import scala.collection.immutable
 
 object Decompiler {
+  private val logger = LoggerFactory.getLogger(getClass)
 
   /** Create a new decompiler. Returns Some(decompiler) on success on None on failure.
     */
@@ -17,7 +19,7 @@ object Decompiler {
     opts.grabFromProgram(program)
     decompilerInterface.setOptions(opts)
     if (!decompilerInterface.openProgram(program)) {
-      println(s"Decompiler error: ${decompilerInterface.getLastMessage}")
+      logger.error(s"Decompiler error: ${decompilerInterface.getLastMessage}")
       None
     } else {
       Some(new Decompiler(decompilerInterface))
