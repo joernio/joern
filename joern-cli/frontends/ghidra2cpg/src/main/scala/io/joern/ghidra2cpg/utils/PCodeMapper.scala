@@ -9,7 +9,7 @@ import io.joern.ghidra2cpg.Types
 import io.joern.ghidra2cpg.utils.Utils.*
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNodeNew
-import org.slf4j.LoggerFactory
+import org.apache.logging.log4j.LogManager
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
 import scala.jdk.CollectionConverters.*
@@ -25,7 +25,7 @@ class PCodeMapper(
   highFunction: HighFunction,
   address2Literal: Map[Long, String]
 ) {
-  private val logger = LoggerFactory.getLogger(getClass)
+  private val logger = LogManager.getLogger(getClass)
   private val pcodeOps: List[PcodeOp] =
     nativeInstruction.getPcode().toList
 

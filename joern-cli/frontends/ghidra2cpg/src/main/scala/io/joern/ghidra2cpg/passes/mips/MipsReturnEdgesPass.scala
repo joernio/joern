@@ -4,10 +4,10 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
-import org.slf4j.{Logger, LoggerFactory}
+import org.apache.logging.log4j.{LogManager, Logger}
 
 class MipsReturnEdgesPass(cpg: Cpg) extends CpgPass(cpg) {
-  private val logger: Logger = LoggerFactory.getLogger(this.getClass)
+  private val logger: Logger = LogManager.getLogger(this.getClass)
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     logger.info("Running ReturnEdgesPass")

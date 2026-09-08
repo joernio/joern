@@ -15,13 +15,14 @@ import io.joern.ghidra2cpg.passes.*
 import io.joern.ghidra2cpg.passes.arm.ArmFunctionPass
 import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
 import io.joern.ghidra2cpg.passes.x86.{ReturnEdgesPass, X86FunctionPass}
-import io.joern.ghidra2cpg.utils.{CommandLineConfig, Decompiler}
+import io.joern.ghidra2cpg.utils.{CommandLineConfig, Decompiler, WarnAndUpErrorLogger}
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.{X2Cpg, X2CpgFrontend}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.utils.FileUtil
+import org.apache.logging.log4j.LogManager
 
 import java.io.File
 import scala.collection.mutable
@@ -79,6 +80,9 @@ class Ghidra2Cpg extends X2CpgFrontend {
   }
 
   private def initGhidra(): Unit = {
+    // Ghidra's default console logging is very chatty; reduce it to warnings and errors
+    WarnAndUpErrorLogger.install()
+
     // We need this for the URL handler
     Handler.registerHandler()
 
@@ -148,6 +152,8 @@ class Ghidra2Cpg extends X2CpgFrontend {
 }
 
 object Types {
+  private val logger = LogManager.getLogger(getClass)
+
   // Types will be added to the CPG as soon as everything
   // else is done
   val types: mutable.SortedSet[String] = mutable.SortedSet[String]()
@@ -155,7 +161,7 @@ object Types {
     try {
       types += typeName
     } catch {
-      case NonFatal(_) => println(s" Error adding type: $typeName")
+      case NonFatal(_) => logger.warn(s"Error adding type: $typeName")
     }
     typeName
   }
