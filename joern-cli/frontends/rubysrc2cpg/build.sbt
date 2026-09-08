@@ -1,6 +1,5 @@
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.sbt.packager.Keys.stagingDirectory
-import java.net.URI
 
 name := "rubysrc2cpg"
 
@@ -74,10 +73,7 @@ astGenResourceTask := {
   val unpackedGemFullPath = targetDir / "ruby_ast_gen"
   if (!hasCompatibleAstGenVersion(unpackedGemFullPath, astGenVersion.value)) {
     if (unpackedGemFullPath.exists()) IO.delete(unpackedGemFullPath)
-    val url = s"${astGenDlUrl.value}$gemName"
-    sbt.io.Using.urlInputStream(new URI(url).toURL) { inputStream =>
-      sbt.IO.transfer(inputStream, compressGemPath)
-    }
+    DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}$gemName", compressGemPath)
     IO.unzip(compressGemPath, unpackedGemFullPath)
     IO.delete(compressGemPath)
   }
