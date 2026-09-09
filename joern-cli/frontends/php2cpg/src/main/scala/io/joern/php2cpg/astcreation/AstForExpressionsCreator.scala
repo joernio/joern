@@ -82,53 +82,52 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
      * scope.
      */
     call.target match {
-      case None if isCallOnVariable(call) => astForDynamicCall(call, name, arguments, None)
-      case None                           => astForStaticCall(call, name, arguments)
-      case _ if call.isStatic             => astForStaticCall(call, name, arguments)
-      case maybeTarget                    => astForDynamicCall(call, name, arguments, maybeTarget)
+      case None =>
+        nameAst match {
+          // The callee is an expression producing a callable value, e.g. `$f()` or `[$obj, 'm']()`
+          case Some(calleeAst) => astForCallableValueCall(call, name, arguments, calleeAst)
+          case None            => astForStaticCall(call, name, arguments)
+        }
+      case _ if call.isStatic => astForStaticCall(call, name, arguments)
+      case Some(target)       => astForDynamicCall(call, name, arguments, target)
     }
   }
 
-  private def astForDynamicCall(
-    call: PhpCallExpr,
-    name: String,
-    arguments: Seq[Ast],
-    maybeTarget: Option[PhpExpr]
-  ): Ast = {
-    val argsCode   = getArgsCode(call, arguments)
-    val targetAst  = maybeTarget.map(astForExpr)
-    val codePrefix = targetAst.map(codeForMethodCall(call, _, name)).getOrElse(name)
+  /** Lowers a call on an expression that evaluates to a callable, e.g. `$f()` or `[$obj, 'm']()`, to a synthetic
+    * `__invoke` call with the callee expression as the receiver.
+    */
+  private def astForCallableValueCall(call: PhpCallExpr, name: String, arguments: Seq[Ast], calleeAst: Ast): Ast = {
+    val argsCode = getArgsCode(call, arguments)
+    // Expression callees may be rooted at nodes without code (e.g. the block lowering a callable
+    // array), in which case we fall back to the original source text.
+    val codePrefix = Option.when(name.nonEmpty)(name).getOrElse(codeForExpr(call.methodName))
     val code       = s"$codePrefix($argsCode)"
 
-    val dispatchType = DispatchTypes.DYNAMIC_DISPATCH
-
-    val (receiverAst, callRoot) = targetAst match {
-      case None =>
-        val receiverAst = astForExpr(call.methodName)
-
-        val fullName = s"${getMfn(call, name)}.${NameConstants.Invoke}"
-        val callRoot = callNode(call, code, NameConstants.Invoke, fullName, dispatchType, None, Some(Defines.Any))
-
-        (receiverAst, callRoot)
-      case Some(target) =>
-        val receiverAst = target
-        val nameAst     = astForExpr(call.methodName)
-        val fullName    = getMfn(call, name)
-        val callRoot    = callNode(call, code, name, fullName, dispatchType, None, Some(Defines.Any))
-
-        (receiverAst, callRoot)
+    val fullName = call.methodName match {
+      case _: PhpVariable => s"${getMfn(call, name)}.${NameConstants.Invoke}"
+      case _              => s"${Defines.UnresolvedNamespace}$MethodDelimiter${NameConstants.Invoke}"
     }
+    val callRoot =
+      callNode(call, code, NameConstants.Invoke, fullName, DispatchTypes.DYNAMIC_DISPATCH, None, Some(Defines.Any))
 
-    if (isCallOnVariable(call))
-      callAst(callRoot, arguments, receiver = Option(receiverAst))
-    else
-      callAst(callRoot, arguments, base = Option(receiverAst))
+    callAst(callRoot, arguments, receiver = Option(calleeAst))
+  }
 
+  private def astForDynamicCall(call: PhpCallExpr, name: String, arguments: Seq[Ast], target: PhpExpr): Ast = {
+    val argsCode  = getArgsCode(call, arguments)
+    val targetAst = astForExpr(target)
+    val code      = s"${codeForMethodCall(call, targetAst, name)}($argsCode)"
+
+    val fullName = getMfn(call, name)
+    val callRoot = callNode(call, code, name, fullName, DispatchTypes.DYNAMIC_DISPATCH, None, Some(Defines.Any))
+
+    callAst(callRoot, arguments, base = Option(targetAst))
   }
 
   private def astForStaticCall(call: PhpCallExpr, name: String, arguments: Seq[Ast]): Ast = {
     val argsCode   = getArgsCode(call, arguments)
-    val codePrefix = codeForStaticMethodCall(call, name)
+    val targetAst  = call.target.map(astForExpr)
+    val codePrefix = codeForStaticMethodCall(call, targetAst, name)
     val code       = s"$codePrefix($argsCode)"
 
     val dispatchType = DispatchTypes.STATIC_DISPATCH
@@ -148,7 +147,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val callRoot = callNode(call, code, name, fullName, dispatchType, None, Some(Defines.Any), staticReceiver)
 
-    callAst(callRoot, arguments)
+    // Expression targets (e.g. the `self::$client` in `self::$client::$method(...)`) are attached as
+    // the base so that they are not lost. Plain name targets (e.g. `Foo::`) are represented by the
+    // static receiver property instead.
+    val baseAst = targetAst.filter(_ => !call.target.exists(_.isInstanceOf[PhpNameExpr]))
+
+    callAst(callRoot, arguments, base = baseAst)
   }
 
   protected def simpleAssignAst(origin: PhpNode, target: Ast, source: Ast): Ast = {

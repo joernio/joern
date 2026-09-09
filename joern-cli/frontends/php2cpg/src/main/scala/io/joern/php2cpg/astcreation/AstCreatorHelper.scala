@@ -95,9 +95,8 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     s"${targetAst.rootCodeOrEmpty}$callOperator$name"
   }
 
-  protected def codeForStaticMethodCall(call: PhpCallExpr, name: String): String = {
-    call.target
-      .map(astForExpr)
+  protected def codeForStaticMethodCall(call: PhpCallExpr, targetAst: Option[Ast], name: String): String = {
+    targetAst
       .flatMap(_.rootCode)
       .map(className => s"$className$StaticMethodDelimiter$name")
       .getOrElse(name)
@@ -304,9 +303,6 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def isBuiltinFunc(name: String): Boolean = PhpBuiltins.FuncNames.contains(name)
-
-  protected def isCallOnVariable(call: PhpCallExpr): Boolean =
-    call.target.isEmpty && call.methodName.isInstanceOf[PhpVariable]
 
   protected def createListExprCodeField(listExpr: PhpListExpr): String = {
     val name = PhpOperators.listFunc
