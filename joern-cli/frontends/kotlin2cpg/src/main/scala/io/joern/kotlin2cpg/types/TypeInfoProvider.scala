@@ -37,11 +37,6 @@ class TypeInfoProvider(val bindingContext: BindingContext) {
 
   import io.joern.kotlin2cpg.types.TypeInfoProvider.bindingsForEntity
 
-  def usedAsExpression(expr: KtExpression): Option[Boolean] = {
-    val mapForEntity = bindingsForEntity(bindingContext, expr)
-    Option(mapForEntity.get(BindingContext.USED_AS_EXPRESSION.getKey)).map(_.booleanValue())
-  }
-
   def usedAsImplicitThis(expr: KtNameReferenceExpression): Boolean = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     val isCallExprWithTarget = Option(mapForEntity)
