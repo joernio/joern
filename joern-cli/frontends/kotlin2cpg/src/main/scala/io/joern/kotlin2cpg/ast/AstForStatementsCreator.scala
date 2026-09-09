@@ -433,9 +433,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   ): Ast = {
     val outAst =
       if (expr.getSubjectExpression != null) {
-        typeInfoProvider.usedAsExpression(expr) match {
-          case Some(true) => astForWhenAsExpression(expr, argIdx, argNameMaybe)
-          case _          => astForWhenAsStatement(expr, argIdx)
+        if (!KtPsiUtil.isStatement(expr)) {
+          astForWhenAsExpression(expr, argIdx, argNameMaybe)
+        } else {
+          astForWhenAsStatement(expr, argIdx)
         }
       } else {
         astForNoArgWhen(expr)
