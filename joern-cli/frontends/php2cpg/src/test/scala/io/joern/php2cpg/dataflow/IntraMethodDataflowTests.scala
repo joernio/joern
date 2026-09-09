@@ -103,4 +103,18 @@ class IntraMethodDataflowTests extends PhpCode2CpgFixture(runOssDataflow = true)
     val flows  = sink.reachableByFlows(source)
     flows.size shouldBe 3
   }
+
+  "closure with a global statement should not break the reaching-def pass" in {
+    // Regression test for https://github.com/joernio/joern/issues/6269: the closure's METHOD_REF
+    // used to be attached to two AST parents, which crashed ReachingDefPass.
+    val cpg = code("""<?php
+        |$nums = [1, 2, 3];
+        |$out = array_map(function ($n) {
+        |  global $wpdb;
+        |  return $n;
+        |}, $nums);
+        |""".stripMargin)
+
+    cpg.methodRef.methodFullName(".*<lambda>.*").head._astIn.size shouldBe 1
+  }
 }
