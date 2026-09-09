@@ -87,4 +87,8 @@ class ControlStructureTraversal(val traversal: Iterator[ControlStructure]) exten
   def isThrow: Iterator[ControlStructure] =
     traversal.controlStructureTypeExact(ControlStructureTypes.THROW)
 
+  @Doc(info = "Only `Match` control structures")
+  def isMatch: Iterator[ControlStructure] =
+    traversal.controlStructureTypeExact(ControlStructureTypes.MATCH)
+
 }

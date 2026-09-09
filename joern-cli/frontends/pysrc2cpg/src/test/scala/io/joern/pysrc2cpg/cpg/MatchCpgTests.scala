@@ -1,7 +1,7 @@
 package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
-import io.shiftleft.codepropertygraph.generated.{NodeTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.semanticcpg.language.*
 
 class MatchCpgTests extends PySrc2CpgFixture() {
@@ -18,8 +18,8 @@ class MatchCpgTests extends PySrc2CpgFixture() {
         |""".stripMargin)
 
     "have correct AST" in {
-      val matchStmt = cpg.controlStructure.head
-      val condition = matchStmt.astChildren.order(1).head
+      val matchStmt = cpg.controlStructure.isMatch.head
+      val condition = matchStmt.condition.head
       condition.label shouldBe NodeTypes.CALL
       condition.code shouldBe "[1, 2]"
       condition.lineNumber shouldBe Some(3)
@@ -69,8 +69,8 @@ class MatchCpgTests extends PySrc2CpgFixture() {
         |""".stripMargin)
 
     "have correct AST" in {
-      val matchStmt = cpg.controlStructure.head
-      val condition = matchStmt.astChildren.order(1).head
+      val matchStmt = cpg.controlStructure.isMatch.head
+      val condition = matchStmt.condition.head
       condition.label shouldBe NodeTypes.CALL
       condition.code shouldBe "[1, 2]"
       condition.lineNumber shouldBe Some(3)
