@@ -35,9 +35,9 @@ class ComposerAutoloadPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg
   /** Collects methods within a module.
     */
   private def findMethods(module: Method): Iterator[Method] = {
-    Iterator(module) ++ module.containsOut.flatMap {
+    Iterator(module) ++ module._containsOut.flatMap {
       case x: TypeDecl => x.method.flatMap(findMethods)
-      case x: Method   => Iterator(x) ++ x.containsOut.collectAll[Method].flatMap(findMethods)
+      case x: Method   => Iterator(x) ++ x._containsOut.collectAll[Method].flatMap(findMethods)
       case _           => Iterator.empty
     }
   }
