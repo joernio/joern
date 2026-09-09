@@ -417,4 +417,62 @@ class CallTests extends PhpCode2CpgFixture {
     construct.typeFullName shouldBe Defines.Any
     construct.dynamicTypeHintFullName shouldBe Seq.empty
   }
+
+  "calls on callable arrays" should {
+    val cpg = code("""<?php
+        |class Foo {
+        |  function __construct($b) {}
+        |  function baz() {}
+        |}
+        |$b = $_GET["p1"];
+        |array(new Foo($b), "baz")();
+        |[$obj, 'myMethod']();
+        |""".stripMargin)
+
+    "be represented as __invoke calls on the callee expression" in {
+      inside(cpg.call.nameExact(NameConstants.Invoke).l) { case List(longForm, shortForm) =>
+        longForm.code shouldBe """array(new Foo($b), "baz")()"""
+        longForm.methodFullName shouldBe s"${Defines.UnresolvedNamespace}.${NameConstants.Invoke}"
+        longForm.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        longForm.receiver.isEmpty shouldBe false
+
+        shortForm.code shouldBe "[$obj, 'myMethod']()"
+        shortForm.methodFullName shouldBe s"${Defines.UnresolvedNamespace}.${NameConstants.Invoke}"
+        shortForm.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        shortForm.receiver.isEmpty shouldBe false
+      }
+    }
+
+    "keep the callee expression in the AST" in {
+      // `new Foo($b)` inside the callable array must not be dropped from the graph
+      val construct = cpg.call.nameExact(Domain.ConstructorMethodName).head
+      construct.code shouldBe "new Foo($b)"
+    }
+  }
+
+  "static calls with expression targets" should {
+    val cpg = code("""<?php
+        |class Bar {
+        |  static function go($client, $method, $url, $options) {
+        |    self::$client::$method($url, $options);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "retain the callee expression and arguments" in {
+      inside(cpg.call.nameExact("$method").l) { case List(staticCall) =>
+        staticCall.code shouldBe "self::$client::$method($url, $options)"
+        staticCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+        inside(staticCall.argument.l) { case List(base: Call, urlArg: Identifier, optionsArg: Identifier) =>
+          base.code shouldBe "self::$client"
+          base.argumentIndex shouldBe 0
+          urlArg.name shouldBe "url"
+          urlArg.argumentIndex shouldBe 1
+          optionsArg.name shouldBe "options"
+          optionsArg.argumentIndex shouldBe 2
+        }
+      }
+    }
+  }
 }
