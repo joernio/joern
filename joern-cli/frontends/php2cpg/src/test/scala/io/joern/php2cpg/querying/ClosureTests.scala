@@ -536,6 +536,53 @@ class ClosureTests extends PhpCode2CpgFixture {
     }
   }
 
+  "closure containing a global statement" should {
+    val cpg = code(
+      """<?php
+        |$wpdb = new Db();
+        |$nums = [1, 2, 3];
+        |$out = array_map(function ($n) {
+        |  global $wpdb;
+        |  return $n;
+        |}, $nums);
+        |""".stripMargin,
+      fileName = "foo.php"
+    )
+
+    "attach the closure methodRef to exactly one AST parent" in {
+      inside(cpg.methodRef.methodFullName(".*<lambda>.*").l) { case List(methodRef) =>
+        methodRef._astIn.size shouldBe 1
+      }
+    }
+
+    "not give any node multiple AST parents" in {
+      cpg.all.collectAll[AstNode].filter(_._astIn.size >= 2).l shouldBe empty
+    }
+
+    "still create the closure binding for the captured global" in {
+      inside(cpg.all.collectAll[ClosureBinding].filter(_.closureBindingId.exists(_.endsWith("wpdb"))).l) {
+        case List(closureBinding) =>
+          val capturedNode = cpg.method.nameExact("<global>").local.name("wpdb").head
+          closureBinding.refOut.toList shouldBe List(capturedNode)
+      }
+    }
+  }
+
+  "named function containing a global statement" should {
+    val cpg = code("""<?php
+        |$a = 10;
+        |function foo() {
+        |  global $a;
+        |}
+        |""".stripMargin)
+
+    "attach the function methodRef to exactly one AST parent" in {
+      inside(cpg.methodRef.methodFullNameExact("foo").l) { case List(methodRef) =>
+        methodRef._astIn.size shouldBe 1
+      }
+    }
+  }
+
   "global in nested functions" should {
     val cpg = code("""<?php
         |$a = 10;

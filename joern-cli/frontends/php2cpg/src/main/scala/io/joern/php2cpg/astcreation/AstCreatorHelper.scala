@@ -194,7 +194,10 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       val innerMethodRef   = innerMethodScope.methodRefNode
       innerMethodRef match {
         case Some(methodRef) =>
-          if (!isInClosure) {
+          // A closure's methodRef is already attached to the AST at the closure expression site, so
+          // appending it to the enclosing method's body as well would give it two AST parents.
+          val isAnonymousClosure = innerMethodNode.fullName.contains(Defines.ClosurePrefix)
+          if (!isInClosure && !isAnonymousClosure) {
             scope.getMethodRef(innerMethodNode.fullName) match {
               case None =>
                 currentMethod.additionalBodyChildren.append(methodRef)
