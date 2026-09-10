@@ -774,7 +774,11 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val selfParamAst = paramList.selfParam.map(visitSelfParam).toList
     val (paramAsts, paramAssignmentAsts) = paramList.param.zipWithIndex.map { case (param, paramIdx) =>
       val (paramName, paramPattern) = param.pat match {
+        // The parameter name for non-identifier patterns could just as well always be nextTempName.
+        // We only tweak it for query purposes, i.e. to not find it odd to see a "<tmp>0" when the parameter
+        // was e.g. "Json(value)".
         case Some(identPat: IdentPat) if identPat.refKwToken.isEmpty => (code(identPat.name), identPat.pat)
+        case Some(pat) if collectPatternBindings(pat).nonEmpty       => (code(pat), Some(pat))
         case pat                                                     => (contextStack.nextTmpName(), pat)
       }
       val typeFullName = typeFullNameForParam(param)
