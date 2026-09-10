@@ -110,7 +110,7 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct parameter" in {
       inside(cpg.method.nameExact("f").parameter.l) { case (param: MethodParameterIn) :: Nil =>
-        param.name shouldBe "<tmp>0"
+        param.name shouldBe "(a, b)"
         param.code shouldBe "(a, b): (i32, bool)"
         param.index shouldBe 1
         param.typeFullName shouldBe "(i32, bool)"
@@ -130,8 +130,8 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct assignments" in {
       inside(cpg.method.nameExact("f").block.astChildren.isCall.l) { case aAssign :: bAssign :: cAssign :: Nil =>
-        aAssign.code shouldBe "a = <tmp>0.0"
-        bAssign.code shouldBe "b = <tmp>0.1"
+        aAssign.code shouldBe "a = (a, b).0"
+        bAssign.code shouldBe "b = (a, b).1"
         cAssign.code shouldBe "let c = a;"
       }
     }
@@ -145,7 +145,7 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct parameter" in {
       inside(cpg.method.nameExact("f").parameter.l) { case (param: MethodParameterIn) :: Nil =>
-        param.name shouldBe "<tmp>0"
+        param.name shouldBe "Point { x, y }"
         param.code shouldBe "Point { x, y }: Point"
         param.index shouldBe 1
         param.typeFullName shouldBe "rust2cpgtest::Point"
@@ -164,8 +164,8 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct assignments" in {
       inside(cpg.method.nameExact("f").block.astChildren.isCall.l) { case xAssign :: yAssign :: Nil =>
-        xAssign.code shouldBe "x = <tmp>0.x"
-        yAssign.code shouldBe "y = <tmp>0.y"
+        xAssign.code shouldBe "x = Point { x, y }.x"
+        yAssign.code shouldBe "y = Point { x, y }.y"
       }
     }
   }
@@ -198,7 +198,7 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct parameter" in {
       inside(cpg.method.nameExact("f").parameter.l) { case (param: MethodParameterIn) :: Nil =>
-        param.name shouldBe "<tmp>0"
+        param.name shouldBe "&x"
         param.code shouldBe "&x: &i32"
         param.index shouldBe 1
         param.typeFullName shouldBe "&i32"
@@ -214,12 +214,12 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct assignments" in {
       inside(cpg.method.nameExact("f").block.astChildren.isCall.l) { case xAssign :: Nil =>
-        xAssign.code shouldBe "x = *<tmp>0"
+        xAssign.code shouldBe "x = *&x"
         inside(xAssign.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
           lhs.name shouldBe "x"
           lhs.typeFullName shouldBe "i32"
           rhs.methodFullName shouldBe Operators.indirection
-          rhs.code shouldBe "*<tmp>0"
+          rhs.code shouldBe "*&x"
           rhs.typeFullName shouldBe "i32"
         }
       }
@@ -233,7 +233,7 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct parameter" in {
       inside(cpg.method.nameExact("f").parameter.l) { case (param: MethodParameterIn) :: Nil =>
-        param.name shouldBe "<tmp>0"
+        param.name shouldBe "ref x"
         param.code shouldBe "ref x: i32"
         param.index shouldBe 1
         param.typeFullName shouldBe "i32"
@@ -249,12 +249,12 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct assignments" in {
       inside(cpg.method.nameExact("f").block.astChildren.isCall.l) { case xAssign :: Nil =>
-        xAssign.code shouldBe "x = &<tmp>0"
+        xAssign.code shouldBe "x = &ref x"
         inside(xAssign.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
           lhs.name shouldBe "x"
           lhs.typeFullName shouldBe "&i32"
           rhs.methodFullName shouldBe Operators.addressOf
-          rhs.code shouldBe "&<tmp>0"
+          rhs.code shouldBe "&ref x"
           rhs.typeFullName shouldBe "&i32"
         }
       }
@@ -268,7 +268,7 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct parameter" in {
       inside(cpg.method.nameExact("f").parameter.l) { case (param: MethodParameterIn) :: Nil =>
-        param.name shouldBe "<tmp>0"
+        param.name shouldBe "ref mut x"
         param.code shouldBe "ref mut x: i32"
         param.index shouldBe 1
         param.typeFullName shouldBe "i32"
@@ -284,12 +284,12 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct assignments" in {
       inside(cpg.method.nameExact("f").block.astChildren.isCall.l) { case xAssign :: Nil =>
-        xAssign.code shouldBe "x = &<tmp>0"
+        xAssign.code shouldBe "x = &ref mut x"
         inside(xAssign.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
           lhs.name shouldBe "x"
           lhs.typeFullName shouldBe "&mut i32"
           rhs.methodFullName shouldBe Operators.addressOf
-          rhs.code shouldBe "&<tmp>0"
+          rhs.code shouldBe "&ref mut x"
           rhs.typeFullName shouldBe "&mut i32"
         }
       }
@@ -310,6 +310,28 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have no assignments" in {
       cpg.method.nameExact("f").block.astChildren shouldBe empty
+    }
+  }
+
+  "tuples of wildcards" should {
+    val cpg = code("fn f((_, _): (i32, i32), (_, _): (i32, i32)) {}")
+
+    "have correct parameters" in {
+      inside(cpg.method.nameExact("f").parameter.sortBy(_.order).l) { case param1 :: param2 :: Nil =>
+        param1.name shouldBe "<tmp>0"
+        param1.code shouldBe "(_, _): (i32, i32)"
+        param1.index shouldBe 1
+        param1.typeFullName shouldBe "(i32, i32)"
+
+        param2.name shouldBe "<tmp>1"
+        param2.code shouldBe "(_, _): (i32, i32)"
+        param2.index shouldBe 2
+        param2.typeFullName shouldBe "(i32, i32)"
+      }
+    }
+
+    "have no assignments" in {
+      cpg.assignment shouldBe empty
     }
   }
 
