@@ -1,14 +1,17 @@
 package io.joern.joerncli
 
+import flatgraph.misc.TestUtils.{addNode, applyDiff}
 import io.joern.dataflowengineoss.layers.dataflows.OssDataFlow
 import io.joern.joerncli.JoernParse.ParserConfig
 import io.joern.x2cpg.layers.Base
 import io.joern.x2cpg.passes.frontend.MetaDataPass
-import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewFile, NewMethod, NewMethodReturn, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, Languages}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.FileUtil
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.Inside.inside
 
 import scala.util.{Failure, Success}
 
@@ -47,7 +50,21 @@ class JoernParseTests extends AnyWordSpec with Matchers {
     "fail with an error if the CPG has no metadata node" in {
       FileUtil.usingTemporaryDirectory("joern-parse-test") { tmpDir =>
         val cpgPath = tmpDir.resolve("cpg.bin")
-        Cpg.withStorage(cpgPath).close()
+        // A well-formed CPG apart from the missing MetaData node
+        val cpg   = Cpg.withStorage(cpgPath)
+        val graph = cpg.graph
+        val file  = graph.addNode(NewFile().name("foo.php"))
+        val td    = graph.addNode(NewTypeDecl().name("foo").fullName("foo"))
+        val m     = graph.addNode(NewMethod().name("m").fullName("m"))
+        val block = graph.addNode(NewBlock())
+        val ret   = graph.addNode(NewMethodReturn())
+        graph.applyDiff { d =>
+          d.addEdge(file, td, EdgeTypes.AST)
+          d.addEdge(td, m, EdgeTypes.AST)
+          d.addEdge(m, block, EdgeTypes.AST)
+          d.addEdge(m, ret, EdgeTypes.AST)
+        }
+        cpg.close()
 
         val config = ParserConfig(
           inputPath = cpgPath.toString,
@@ -56,7 +73,9 @@ class JoernParseTests extends AnyWordSpec with Matchers {
           enhanceOnly = true
         )
 
-        JoernParse.run(config) shouldBe a[Failure[?]]
+        inside(JoernParse.run(config)) { case Failure(exception) =>
+          exception.getMessage should include("no metadata node")
+        }
       }
     }
   }
