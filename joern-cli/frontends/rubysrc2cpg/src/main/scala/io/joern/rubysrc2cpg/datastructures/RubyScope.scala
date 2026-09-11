@@ -316,13 +316,9 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     */
   def procParamName: Option[NewMethodParameterIn] = {
     stack
-      .collectFirst {
-        case ScopeElement(x: MethodLikeScope, _) if x.hasYield =>
-          x.procParam match {
-            case Left(param)  => param
-            case Right(param) => param
-          }
-      }
+      .collectFirst { case ScopeElement(x: MethodLikeScope, _) => x }
+      .filter(_.hasYield)
+      .map(_.procParam.fold(identity, identity))
       .flatMap(lookupVariable(_).collect { case p: NewMethodParameterIn => p })
   }
 

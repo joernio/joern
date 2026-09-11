@@ -1101,4 +1101,72 @@ class MethodTests extends RubyCode2CpgFixture {
 
     }
   }
+
+  "yield with ensure clause containing a block" should {
+    val cpg = code("""def foo(*nums)
+        |  do_something(nums)
+        |  yield
+        |ensure
+        |  nums.each do |num|
+        |    cleanup(num)
+        |  end
+        |end
+        |""".stripMargin)
+
+    "not duplicate the proc param into the ensure block's lambda" in {
+      inside(cpg.method.name("foo").l) { case foo :: Nil =>
+        val params = foo.parameter.l
+        params.map(_.name) shouldBe List("self", "nums", "<proc-param-0>")
+
+        val lambdas = cpg.method.name("<lambda>.*").l
+        lambdas.foreach { lam =>
+          lam.parameter.name.l should not contain "<proc-param-0>"
+        }
+      }
+    }
+
+    "lower yield to <proc-param-0>.call()" in {
+      inside(cpg.method.name("foo").l) { case foo :: Nil =>
+        foo.call.nameExact("call").argument.isIdentifier.name.l shouldBe List("<proc-param-0>")
+      }
+    }
+  }
+
+  "yield with rescue and ensure clauses containing blocks" should {
+    val cpg = code("""def bar
+        |  yield
+        |rescue StandardError => e
+        |  log(e)
+        |ensure
+        |  items.each { |x| finalize(x) }
+        |end
+        |""".stripMargin)
+
+    "assign proc param only to the method, not to any lambda" in {
+      inside(cpg.method.name("bar").l) { case bar :: Nil =>
+        bar.parameter.name.l shouldBe List("self", "<proc-param-0>")
+
+        cpg.method.name("<lambda>.*").parameter.name.l should not contain "<proc-param-0>"
+      }
+    }
+  }
+
+  "yield inside a method with nested blocks but no ensure" should {
+    val cpg = code("""def baz(items)
+        |  items.each do |item|
+        |    process(item)
+        |  end
+        |  yield
+        |end
+        |""".stripMargin)
+
+    "assign proc param only to the method" in {
+      inside(cpg.method.name("baz").l) { case baz :: Nil =>
+        baz.parameter.name.l shouldBe List("self", "items", "<proc-param-0>")
+
+        cpg.method.name("<lambda>.*").parameter.name.l should not contain "<proc-param-0>"
+      }
+    }
+  }
+
 }
