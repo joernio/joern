@@ -161,13 +161,16 @@ object JoernParse {
         // CPG's language instead, so language-specific post-processing passes are still applied.
         val postProcessingGenerator = Option(generator).orElse {
           cpg.metaData.language.headOption
-            .orElse(Option(config.language).filter(_.nonEmpty).map(_.toUpperCase))
             .flatMap(cpgGeneratorForLanguage(_, FrontendConfig(), installConfig.rootPath, args = Nil))
         }
         postProcessingGenerator match {
           case Some(resolvedGenerator) => resolvedGenerator.applyPostProcessingPasses(cpg)
           case None =>
-            System.err.println("Could not resolve a language frontend; skipping post-processing passes")
+            cpg.close()
+            throw new RuntimeException(
+              s"Could not resolve a language frontend for post-processing passes: the CPG at ${config.outputCpgFile} " +
+                "has no metadata node with a known language and appears to be broken."
+            )
         }
         cpg.close()
       }

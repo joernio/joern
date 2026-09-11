@@ -43,5 +43,21 @@ class JoernParseTests extends AnyWordSpec with Matchers {
         }
       }
     }
+
+    "fail with an error if the CPG has no metadata node" in {
+      FileUtil.usingTemporaryDirectory("joern-parse-test") { tmpDir =>
+        val cpgPath = tmpDir.resolve("cpg.bin")
+        Cpg.withStorage(cpgPath).close()
+
+        val config = ParserConfig(
+          inputPath = cpgPath.toString,
+          outputCpgFile = cpgPath.toString,
+          language = "php",
+          enhanceOnly = true
+        )
+
+        JoernParse.run(config) shouldBe a[Failure[?]]
+      }
+    }
   }
 }
