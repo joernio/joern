@@ -31,8 +31,11 @@ class HeaderFileFinder(config: Config) {
     path,
     unresolvedPath =>
       Paths.get(unresolvedPath).nameOption.flatMap { name =>
-        val matches = nameToPathMap.getOrElse(name, List())
-        matches.sortBy(candidate => Levenshtein.distance(candidate, unresolvedPath)).headOption
+        nameToPathMap.getOrElse(name, List()) match {
+          case Nil           => None
+          case single :: Nil => Some(single)
+          case matches       => matches.minByOption(candidate => Levenshtein.distance(candidate, unresolvedPath))
+        }
       }
   )
 
