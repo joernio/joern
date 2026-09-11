@@ -1,0 +1,82 @@
+package io.joern.joerncli
+
+import flatgraph.misc.TestUtils.{addNode, applyDiff}
+import io.joern.dataflowengineoss.layers.dataflows.OssDataFlow
+import io.joern.joerncli.JoernParse.ParserConfig
+import io.joern.x2cpg.layers.Base
+import io.joern.x2cpg.passes.frontend.MetaDataPass
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewFile, NewMethod, NewMethodReturn, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, Languages}
+import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.Inside.inside
+
+import scala.util.{Failure, Success}
+
+class JoernParseTests extends AnyWordSpec with Matchers {
+
+  "joern-parse --overlaysonly" should {
+    // Regression test for https://github.com/joernio/joern/issues/6283: no frontend runs in
+    // --overlaysonly mode, so the post-processing generator must be resolved from the CPG itself.
+    "apply default overlays to an existing CPG without running a frontend" in {
+      FileUtil.usingTemporaryDirectory("joern-parse-test") { tmpDir =>
+        val cpgPath = tmpDir.resolve("cpg.bin")
+        val cpg     = Cpg.withStorage(cpgPath)
+        new MetaDataPass(cpg, Languages.PHP, tmpDir.toString).createAndApply()
+        cpg.close()
+
+        val config = ParserConfig(
+          inputPath = cpgPath.toString,
+          outputCpgFile = cpgPath.toString,
+          language = "php",
+          enhanceOnly = true
+        )
+
+        JoernParse.run(config) match {
+          case Failure(exception) => fail("joern-parse --overlaysonly failed", exception)
+          case Success(_) =>
+            val enhancedCpg = CpgBasedTool.loadFromFile(cpgPath.toString)
+            try {
+              enhancedCpg.metaData.overlays.l should contain.allOf(Base.overlayName, OssDataFlow.overlayName)
+            } finally {
+              enhancedCpg.close()
+            }
+        }
+      }
+    }
+
+    "fail with an error if the CPG has no metadata node" in {
+      FileUtil.usingTemporaryDirectory("joern-parse-test") { tmpDir =>
+        val cpgPath = tmpDir.resolve("cpg.bin")
+        // A well-formed CPG apart from the missing MetaData node
+        val cpg   = Cpg.withStorage(cpgPath)
+        val graph = cpg.graph
+        val file  = graph.addNode(NewFile().name("foo.php"))
+        val td    = graph.addNode(NewTypeDecl().name("foo").fullName("foo"))
+        val m     = graph.addNode(NewMethod().name("m").fullName("m"))
+        val block = graph.addNode(NewBlock())
+        val ret   = graph.addNode(NewMethodReturn())
+        graph.applyDiff { d =>
+          d.addEdge(file, td, EdgeTypes.AST)
+          d.addEdge(td, m, EdgeTypes.AST)
+          d.addEdge(m, block, EdgeTypes.AST)
+          d.addEdge(m, ret, EdgeTypes.AST)
+        }
+        cpg.close()
+
+        val config = ParserConfig(
+          inputPath = cpgPath.toString,
+          outputCpgFile = cpgPath.toString,
+          language = "php",
+          enhanceOnly = true
+        )
+
+        inside(JoernParse.run(config)) { case Failure(exception) =>
+          exception.getMessage should include("no metadata node")
+        }
+      }
+    }
+  }
+}

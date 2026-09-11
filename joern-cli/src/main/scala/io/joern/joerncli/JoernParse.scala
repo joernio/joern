@@ -5,6 +5,7 @@ import io.joern.console.{FrontendConfig, InstallConfig}
 import io.joern.joerncli.CpgBasedTool.newCpgCreatedString
 import io.joern.x2cpg.frontendspecific.FrontendArgsDelimitor
 import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.semanticcpg.language.*
 
 import java.nio.file.{Files, Paths}
 import scala.collection.mutable
@@ -87,7 +88,7 @@ object JoernParse {
       _        <- checkInputPath(config)
       language <- getLanguage(config)
       _        <- generateCpg(installConfig, frontendArgs, config, language)
-      _        <- applyDefaultOverlays(config)
+      _        <- applyDefaultOverlays(config, installConfig)
     } yield newCpgCreatedString(config.outputCpgFile)
   }
 
@@ -151,12 +152,26 @@ object JoernParse {
     }
   }
 
-  private def applyDefaultOverlays(config: ParserConfig): Try[String] = {
+  private def applyDefaultOverlays(config: ParserConfig, installConfig: InstallConfig): Try[String] = {
     Try {
       println("[+] Applying default overlays")
       if (config.enhance) {
         val cpg = DefaultOverlays.create(config.outputCpgFile, config.maxNumDef)
-        generator.applyPostProcessingPasses(cpg)
+        // With --overlaysonly no frontend ran, so `generator` is unset. Resolve a generator from the
+        // CPG's language instead, so language-specific post-processing passes are still applied.
+        val postProcessingGenerator = Option(generator).orElse {
+          cpg.metaData.language.headOption
+            .flatMap(cpgGeneratorForLanguage(_, FrontendConfig(), installConfig.rootPath, args = Nil))
+        }
+        postProcessingGenerator match {
+          case Some(resolvedGenerator) => resolvedGenerator.applyPostProcessingPasses(cpg)
+          case None =>
+            cpg.close()
+            throw new RuntimeException(
+              s"Could not resolve a language frontend for post-processing passes: the CPG at ${config.outputCpgFile} " +
+                "has no metadata node with a known language and appears to be broken."
+            )
+        }
         cpg.close()
       }
       "Code property graph generation successful"
