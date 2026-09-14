@@ -964,6 +964,89 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
   }
+
+  "trait impls with const arguments" should {
+    val cpg = code("""
+        |trait Tr<const N: usize> { fn m(&self); }
+        |struct S;
+        |impl Tr<3> for S { fn m(&self) {} }
+        |impl Tr<4> for S { fn m(&self) {} }
+        |fn f(s: S) {
+        |  <S as Tr<3>>::m(&s);
+        |  Tr::<4>::m(&s);
+        |}
+        |""".stripMargin)
+
+    "have correct impl typeDecl fullNames" in {
+      cpg.typeDecl.nameExact("S").where(_.method.nameExact("m")).fullName.sorted.l shouldBe List(
+        "<rust2cpgtest::S as rust2cpgtest::Tr<3>>",
+        "<rust2cpgtest::S as rust2cpgtest::Tr<4>>"
+      )
+    }
+
+    // TODO(rust_ast_gen): missing const N.
+    "have correct trait typeDecl fullName" in {
+      pendingUntilFixed {
+        cpg.typeDecl.nameExact("Tr").fullName.l shouldBe List("rust2cpgtest::Tr<N>")
+      }
+    }
+
+    "have correct methodFullName" in {
+      cpg.method.nameExact("m").fullName.sorted.l shouldBe List(
+        "<rust2cpgtest::S as rust2cpgtest::Tr<3>>::m",
+        "<rust2cpgtest::S as rust2cpgtest::Tr<4>>::m",
+        "rust2cpgtest::Tr<N>::m"
+      )
+    }
+
+    "have correct call methodFullName" in {
+      cpg.call.nameExact("m").methodFullName.l shouldBe List(
+        "<rust2cpgtest::S as rust2cpgtest::Tr<3>>::m",
+        "<rust2cpgtest::S as rust2cpgtest::Tr<4>>::m"
+      )
+    }
+  }
+
+  "trait impl with lifetime arguments" should {
+    val cpg = code("""
+        |trait Tr<'a> { fn m(&self); }
+        |struct S;
+        |impl<'a> Tr<'a> for S { fn m(&self) {} }
+        |fn f(s: S) {
+        |  <S as Tr>::m(&s);
+        |}
+        |""".stripMargin)
+
+    "have correct impl typeDecl fullName" in {
+      cpg.typeDecl.nameExact("S").where(_.method.nameExact("m")).fullName.l shouldBe List(
+        "<rust2cpgtest::S as rust2cpgtest::Tr<'a>>"
+      )
+    }
+
+    "have correct impl methodFullName" in {
+      cpg.typeDecl.nameExact("S").method.nameExact("m").fullName.l shouldBe List(
+        "<rust2cpgtest::S as rust2cpgtest::Tr<'a>>::m"
+      )
+    }
+
+    "have correct call methodFullName" in {
+      cpg.call.nameExact("m").methodFullName.l shouldBe List("<rust2cpgtest::S as rust2cpgtest::Tr<'a>>::m")
+    }
+
+    // TODO(rust_ast_gen): missing lifetime..
+    "have correct trait typeDecl fullName" in {
+      pendingUntilFixed {
+        cpg.typeDecl.nameExact("Tr").fullName.l shouldBe List("rust2cpgtest::Tr<'a>")
+      }
+    }
+
+    // TODO(rust_ast_gen): missing lifetime.
+    "have correct trait methodFullName" in {
+      pendingUntilFixed {
+        cpg.typeDecl.nameExact("Tr").method.nameExact("m").fullName.l shouldBe List("rust2cpgtest::Tr<'a>::m")
+      }
+    }
+  }
 }
 
 class ImplTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
