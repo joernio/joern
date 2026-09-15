@@ -1,0 +1,7 @@
+local M = {}
+
+function M.run(cmd)
+  return io.popen(cmd)
+end
+
+return M
