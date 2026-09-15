@@ -11,12 +11,12 @@ jobs:
         with:
           fetch-depth: 1
       - name: Set up JDK
-        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@c7d2d6258b4bd0d3ec5129e6b3453199d3c79729 # v1.5.8
+      - uses: sbt/setup-sbt@82da71df4e122282484a99a8d70096bc2369dbd8 # v1.5.9
       - name: Check formatting
         run: sbt scalafmtCheck Test/scalafmtCheck
       - run: echo "Previous step failed because code is not formatted. Run 'sbt scalafmt Test/scalafmt'"
@@ -33,12 +33,12 @@ jobs:
       - name: Fetch base branch with depth 1
         run: git fetch --depth=1 origin ${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}
       - name: Set up JDK
-        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@c7d2d6258b4bd0d3ec5129e6b3453199d3c79729 # v1.5.8
+      - uses: sbt/setup-sbt@82da71df4e122282484a99a8d70096bc2369dbd8 # v1.5.9
       - name: Check for lintable changes
         id: lintable-changes
         run: |
@@ -69,12 +69,12 @@ jobs:
         with:
           fetch-depth: 1
       - name: Set up JDK
-        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@c7d2d6258b4bd0d3ec5129e6b3453199d3c79729 # v1.5.8
+      - uses: sbt/setup-sbt@82da71df4e122282484a99a8d70096bc2369dbd8 # v1.5.9
       - name: Install php
         if: matrix.os == 'macos-latest'
         run: brew install php
@@ -122,12 +122,12 @@ jobs:
         with:
           fetch-depth: 1
       - name: Set up JDK
-        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@c7d2d6258b4bd0d3ec5129e6b3453199d3c79729 # v1.5.8
+      - uses: sbt/setup-sbt@82da71df4e122282484a99a8d70096bc2369dbd8 # v1.5.9
       - name: Install coreutils
         if: matrix.os == 'macos-latest'
         run: brew install coreutils
