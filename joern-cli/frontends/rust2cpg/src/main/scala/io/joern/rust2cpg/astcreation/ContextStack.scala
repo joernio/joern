@@ -1,6 +1,7 @@
 package io.joern.rust2cpg.astcreation
 
 import io.joern.x2cpg.Defines
+import io.joern.rust2cpg.parser.RustNodeSyntax.MacroCall
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewIdentifier,
   NewLocal,
@@ -22,6 +23,7 @@ object ContextStack {
   final class TypeDeclContext(val typeDecl: NewTypeDecl)              extends Context
   final class BlockContext(val items: mutable.Map[String, NewLocal])  extends Context
   final class LocalContext(val local: NewLocal)                       extends Context
+  final class MacroExpansionContext(val macroCall: MacroCall)         extends Context
 
   class MethodContext(
     val method: NewMethod,
@@ -58,9 +60,10 @@ object ContextStack {
           case Some(decl) => Some(decl)
           case None       => lookup(name, tail)
         }
-      case (ctx: MethodContext) :: tail    => ctx.parameters.get(name)
-      case (ctx: NamespaceContext) :: tail => None
-      case (ctx: TypeDeclContext) :: tail  => None
+      case (ctx: MethodContext) :: tail         => ctx.parameters.get(name)
+      case (ctx: NamespaceContext) :: tail      => None
+      case (ctx: TypeDeclContext) :: tail       => None
+      case (ctx: MacroExpansionContext) :: tail => lookup(name, tail)
     }
   }
 }
@@ -95,10 +98,18 @@ class ContextStack {
     push(new GlobalMethodContext(method))
   }
 
+  def pushMacroExpansion(macroCall: MacroCall): Unit = {
+    push(new MacroExpansionContext(macroCall))
+  }
+
   def pop(): Unit = {
     // LocalContext stays open until its enclosing scope ends.
     // No pushLocal exists on purpose.
-    stack = stack.dropWhile(_.isInstanceOf[LocalContext]).tail
+    stack = stack.span(_.isInstanceOf[LocalContext]) match {
+      // Locals inside a MacroExpansionContext are still alive afterward, i.e. it's not a lexical scope.
+      case (locals, (_: MacroExpansionContext) :: outer) => locals ++ outer
+      case (_, outer)                                    => outer.tail
+    }
   }
 
   def declareLocal(local: NewLocal): Unit = {
@@ -132,6 +143,10 @@ class ContextStack {
 
   def enclosingTypeDeclFullName: Option[String] = {
     stack.collectFirst { case ctx: TypeDeclContext => ctx.typeDecl.fullName }
+  }
+
+  def outermostMacroCall: Option[MacroCall] = {
+    stack.collect { case ctx: MacroExpansionContext => ctx.macroCall }.lastOption
   }
 
   def rustParentFullName: String = {

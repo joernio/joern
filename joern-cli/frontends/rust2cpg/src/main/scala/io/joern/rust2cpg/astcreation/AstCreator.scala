@@ -56,10 +56,21 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
   }
 
   // NB: rust_ast_gen uses 0-based line/column
-  override protected def line(node: RustNode): Option[Int] =
-    if (node.isMacroExpanded) None else node.startLine.map(_ + 1)
-  override protected def column(node: RustNode): Option[Int] =
-    if (node.isMacroExpanded) None else node.startColumn.map(_ + 1)
+  override protected def line(node: RustNode): Option[Int] = {
+    if (node.isMacroExpanded) {
+      contextStack.outermostMacroCall.flatMap(line)
+    } else {
+      node.startLine.map(_ + 1)
+    }
+  }
+
+  override protected def column(node: RustNode): Option[Int] = {
+    if (node.isMacroExpanded) {
+      contextStack.outermostMacroCall.flatMap(column)
+    } else {
+      node.startColumn.map(_ + 1)
+    }
+  }
 
   override protected def lineEnd(node: RustNode): Option[Int]   = None
   override protected def columnEnd(node: RustNode): Option[Int] = None

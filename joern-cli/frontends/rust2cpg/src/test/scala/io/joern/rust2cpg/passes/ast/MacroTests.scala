@@ -35,9 +35,9 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
 
-    "have a line number for the let statement but none for the expansion" in {
+    "have correct line numbers" in {
       cpg.assignment.codeExact("let single = double!(5);").lineNumber.l shouldBe List(5)
-      cpg.call.nameExact(Operators.multiplication).lineNumber.l shouldBe empty
+      cpg.call.nameExact(Operators.multiplication).lineNumber.sorted.l shouldBe List(5, 6, 6)
     }
   }
 
@@ -67,6 +67,33 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
           add.name shouldBe Operators.addition
           add.argument.sortBy(_.argumentIndex).code.l shouldBe List("p", "1")
       }
+    }
+  }
+
+  "statement macro declaring a local named by the caller" should {
+    val cpg = code("""
+        |macro_rules! def { ($n:ident) => { let $n = 1; }; }
+        |fn main() {
+        | def!(z);
+        | let w = z;
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      cpg.method.nameExact("main").block.local.name.l shouldBe List("z", "w")
+    }
+
+    "have correct assignments" in {
+      inside(cpg.method.nameExact("main").block.assignment.sortBy(_.order).l) { case zAssign :: wAssign :: Nil =>
+        zAssign.code shouldBe "let z = 1;"
+        zAssign.lineNumber shouldBe Some(4)
+        wAssign.code shouldBe "let w = z;"
+        wAssign.lineNumber shouldBe Some(5)
+      }
+    }
+
+    "have correct references" in {
+      cpg.local.nameExact("z").referencingIdentifiers.lineNumber.l shouldBe List(4, 5)
     }
   }
 
