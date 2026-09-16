@@ -10,9 +10,10 @@ class ClosureTests extends Rust2CpgSuite(noSysRoot = true) {
 
   "capture-free closure" should {
     val cpg = code("""
+        |fn double(x: i32) -> i32 { x * 2 }
         |fn main() {
         | let f = |x| {
-        |  let y = x * 2;
+        |  let y = double(x);
         |  y
         | };
         | let z = f(3);
@@ -46,28 +47,26 @@ class ClosureTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
 
-    // TODO(rust_ast_gen): check why typeFullNames are missing.
     "have correct body" in {
       inside(cpg.method.nameExact("<lambda>0").block.astChildren.l) {
         case (local: Local) :: (assign: Call) :: (ret: Return) :: Nil =>
           local.name shouldBe "y"
-          pendingUntilFixed(local.typeFullName shouldBe "i32")
+          local.typeFullName shouldBe "i32"
 
           inside(assign.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
             lhs.name shouldBe "y"
-            rhs.code shouldBe "x * 2"
+            rhs.code shouldBe "double(x)"
           }
 
           inside(ret.astChildren.l) { case (yIdent: Identifier) :: Nil =>
             yIdent.name shouldBe "y"
-            pendingUntilFixed(yIdent.typeFullName shouldBe "i32")
+            yIdent.typeFullName shouldBe "i32"
           }
       }
     }
 
-    // TODO(rust_ast_gen): check why typeFullName is missing.
     "have correct typeFullName" in {
-      pendingUntilFixed(cpg.method.nameExact("<lambda>0").methodReturn.typeFullName.l shouldBe List("i32"))
+      cpg.method.nameExact("<lambda>0").methodReturn.typeFullName.l shouldBe List("i32")
     }
 
   }
