@@ -582,6 +582,11 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
       )
     }
 
+    "have correct names" in {
+      cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo<'a> as rust2cpgtest::Bar>").name.l shouldBe List("Foo")
+      cpg.typeDecl.fullNameExact("<rust2cpgtest::Baz<'a> as rust2cpgtest::Bar>").name.l shouldBe List("Baz")
+    }
+
     "have correct methodFullName" in {
       cpg.method.nameExact("a").fullName.sorted.l shouldBe List(
         "<rust2cpgtest::Baz<'a> as rust2cpgtest::Bar>::a",

@@ -637,4 +637,34 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "generic record struct" should {
+    val cpg = code("struct Foo<T> { x: T }")
+
+    "have correct name and fullName" in {
+      cpg.typeDecl.nameExact("Foo").fullName.l shouldBe List("rust2cpgtest::Foo<T>")
+    }
+
+    "have a constructor method" in {
+      inside(cpg.typeDecl.nameExact("Foo").method.l) { case init :: Nil =>
+        init.name shouldBe "<init>"
+        init.fullName shouldBe "rust2cpgtest::Foo<T>::<init>"
+        init.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR)
+        init.methodReturn.typeFullName shouldBe "()"
+      }
+    }
+
+    "have correct constructor parameters" in {
+      inside(cpg.method.fullNameExact("rust2cpgtest::Foo<T>::<init>").parameter.sortBy(_.index).l) {
+        case paramSelf :: paramX :: Nil =>
+          paramSelf.name shouldBe "self"
+          paramSelf.index shouldBe 0
+          paramSelf.typeFullName shouldBe "rust2cpgtest::Foo<T>"
+
+          paramX.name shouldBe "x"
+          paramX.index shouldBe 1
+          paramX.typeFullName shouldBe "T"
+      }
+    }
+  }
 }

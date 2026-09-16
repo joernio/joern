@@ -197,4 +197,15 @@ trait RustFullNames { this: AstCreator =>
 
 object RustFullNames {
   val PathSep = "::"
+
+  def shortName(fullName: String): String = {
+    // A path e.g. `x::...::z<...>` or `z<...>` has shortname `z`, without generics.
+    // Any other type shape has matching name/fullName.
+    val isPathLike = fullName.headOption.exists(_.isLetter)
+    if (isPathLike) {
+      fullName.takeWhile(_ != '<').split(PathSep).lastOption.getOrElse(fullName)
+    } else {
+      fullName
+    }
+  }
 }
