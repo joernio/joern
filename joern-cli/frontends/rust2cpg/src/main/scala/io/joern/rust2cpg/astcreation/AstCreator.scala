@@ -12,6 +12,7 @@ import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewCall,
   NewFile,
+  NewMember,
   NewMethod,
   NewNamespaceBlock,
   NewNode,
@@ -199,7 +200,7 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
 
   protected def typeDeclForImpl(impl: RustNodeSyntax.Impl): NewTypeDecl = {
     val implType = typeFullNameForImpl(impl)
-    val name     = implType.split(RustFullNames.PathSep).lastOption.getOrElse(implType)
+    val name     = RustFullNames.shortName(implType)
     typeDeclNode(
       node = impl,
       name = name,
@@ -227,6 +228,16 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
       code = code(impl),
       inherits = Seq(traitTypeFullName)
     )
+  }
+
+  protected def memberForAssocConst(const: RustNodeSyntax.Const): NewMember = {
+    val member = memberNode(
+      node = const,
+      name = code(const.name.get),
+      code = code(const),
+      typeFullName = typeFullNameForType(const.typ)
+    )
+    member.astParentType(contextStack.astParentType).astParentFullName(contextStack.astParentFullName)
   }
 
   protected def typeDeclForTypeAlias(typeAlias: RustNodeSyntax.TypeAlias): NewTypeDecl = {

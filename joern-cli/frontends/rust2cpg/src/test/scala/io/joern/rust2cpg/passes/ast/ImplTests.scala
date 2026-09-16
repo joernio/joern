@@ -254,6 +254,66 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "const in an inherent impl" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo {
+        |  const MAX: usize = 3;
+        |}
+        |""".stripMargin)
+
+    "have correct members" in {
+      inside(cpg.typeDecl.nameExact("Foo").member.l) { case max :: Nil =>
+        max.name shouldBe "MAX"
+        max.code shouldBe "const MAX: usize = 3;"
+        max.typeFullName shouldBe "usize"
+      }
+    }
+  }
+
+  "const in an inherent impl in a different file" should {
+    val cpg = code(
+      """
+        |struct Foo;
+        |mod a;
+        |""".stripMargin,
+      fileName = (Paths.get("src") / "lib.rs").toString
+    ).moreCode(
+      """
+        |impl crate::Foo {
+        |  const MAX: usize = 3;
+        |}
+        |""".stripMargin,
+      fileName = (Paths.get("src") / "a.rs").toString
+    )
+
+    "have correct members" in {
+      inside(cpg.typeDecl.nameExact("Foo").member.l) { case max :: Nil =>
+        max.name shouldBe "MAX"
+        max.code shouldBe "const MAX: usize = 3;"
+        max.typeFullName shouldBe "usize"
+      }
+    }
+  }
+
+  "const in a trait impl" should {
+    val cpg = code("""
+        |trait Bar { const MAX: usize; }
+        |struct Foo;
+        |impl Bar for Foo {
+        |  const MAX: usize = 3;
+        |}
+        |""".stripMargin)
+
+    "have correct members" in {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>").member.l) { case max :: Nil =>
+        max.name shouldBe "MAX"
+        max.code shouldBe "const MAX: usize = 3;"
+        max.typeFullName shouldBe "usize"
+      }
+    }
+  }
+
   "a call to an inherent method" should {
     val cpg = code("""
         |struct Foo;
