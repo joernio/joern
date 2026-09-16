@@ -623,6 +623,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // There can be at most one `impl X for Y` (for some X, Y) in the same file/project.
+  // TODO: lower the RHS of assoc const.
   private def lowerImplFor(impl: Impl): Ast = {
     impl.typ match {
       case implTrait :: implType :: Nil =>
@@ -631,21 +632,28 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn =>
           visitFn(fn).withChild(Ast(NewModifier().modifierType(ModifierTypes.VIRTUAL)))
         }
+        val constMemberAsts = impl.assocItemList.assocItem.collect {
+          case const: Const if const.name.isDefined => Ast(memberForAssocConst(const))
+        }
         contextStack.pop()
         val attributes = impl.attr.map(visitAttr)
         addDetachedBindingAsts(typeDecl, methodAsts, signature = typeFullNameForType(implTrait))
-        Ast(typeDecl).withChildren(methodAsts).withChildren(attributes)
+        Ast(typeDecl).withChildren(methodAsts ++ attributes ++ constMemberAsts)
       case _ => notHandledYet(impl)
     }
   }
 
   // There can be multiple `impl X` in the same file/project, so we lower their
-  // methods as detached Asts. The AstLinker pass shall later create the appropriate Ast edges.
+  // items as detached Asts. The AstLinker pass shall later create the appropriate Ast edges.
+  // TODO: lower the RHS of assoc const.
   private def lowerInherentImplAsDetachedAst(impl: Impl): Unit = {
     contextStack.pushTypeDecl(typeDeclForImpl(impl))
-    val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn => visitFn(fn) }
+    val itemAsts = impl.assocItemList.assocItem.collect {
+      case fn: Fn                               => visitFn(fn)
+      case const: Const if const.name.isDefined => Ast(memberForAssocConst(const))
+    }
     contextStack.pop()
-    methodAsts.foreach(addDetachedAst)
+    itemAsts.foreach(addDetachedAst)
   }
 
   // Trait =
