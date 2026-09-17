@@ -1698,16 +1698,15 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // MacroCall =
   //  Attr* Path '!' TokenTree ';'?
   private def visitMacroCall(macroCall: MacroCall): Seq[Ast] = {
-    contextStack.pushMacroExpansion(macroCall)
-    val expandedAst = macroCall.macroExpansion match {
-      case None                         => macroNotExpanded(macroCall) :: Nil
-      case Some(macroItems: MacroItems) => visitMacroItems(macroItems)
-      case Some(macroStmts: MacroStmts) => visitMacroStmts(macroStmts)
-      case Some(expr: Expr)             => visitExpr(expr) :: Nil
-      case Some(other)                  => notHandledYet(other) :: Nil
+    withMacroCall(macroCall) {
+      macroCall.macroExpansion match {
+        case None                         => macroNotExpanded(macroCall) :: Nil
+        case Some(macroItems: MacroItems) => visitMacroItems(macroItems)
+        case Some(macroStmts: MacroStmts) => visitMacroStmts(macroStmts)
+        case Some(expr: Expr)             => visitExpr(expr) :: Nil
+        case Some(other)                  => notHandledYet(other) :: Nil
+      }
     }
-    contextStack.pop()
-    expandedAst
   }
 
   // MacroStmts =

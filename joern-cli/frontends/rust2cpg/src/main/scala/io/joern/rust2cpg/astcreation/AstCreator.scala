@@ -33,6 +33,10 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
   protected val contextStack = new ContextStack
   private var detachedAsts   = List.empty[Ast]
 
+  // When visiting macro-expanded nodes, we store the outermost macro call expression
+  // in order to give macro-expanded nodes line/column information.
+  private var outermostMacroCall: Option[RustNodeSyntax.MacroCall] = None
+
   override def createAst(): DiffGraphBuilder = {
     val sourceFile = parseResult.ast.asInstanceOf[RustNodeSyntax.SourceFile]
     val ast        = visitSourceFile(sourceFile)
@@ -55,10 +59,21 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     }
   }
 
+  protected def withMacroCall[T](macroCall: RustNodeSyntax.MacroCall)(body: => T): T = {
+    if (outermostMacroCall.isDefined) {
+      body
+    } else {
+      outermostMacroCall = Some(macroCall)
+      val result = body
+      outermostMacroCall = None
+      result
+    }
+  }
+
   // NB: rust_ast_gen uses 0-based line/column
   override protected def line(node: RustNode): Option[Int] = {
     if (node.isMacroExpanded) {
-      contextStack.outermostMacroCall.flatMap(line)
+      outermostMacroCall.flatMap(line)
     } else {
       node.startLine.map(_ + 1)
     }
@@ -66,7 +81,7 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
 
   override protected def column(node: RustNode): Option[Int] = {
     if (node.isMacroExpanded) {
-      contextStack.outermostMacroCall.flatMap(column)
+      outermostMacroCall.flatMap(column)
     } else {
       node.startColumn.map(_ + 1)
     }
