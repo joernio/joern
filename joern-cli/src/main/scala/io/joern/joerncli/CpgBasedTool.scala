@@ -2,6 +2,8 @@ package io.joern.joerncli
 
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg.layers.Base
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.semanticcpg.language.*
@@ -23,9 +25,20 @@ object CpgBasedTool {
   def loadFromOdb(filename: String): Cpg =
     loadFromFile(filename)
 
-  /** Add the data flow layer to the CPG if it does not exist yet.
+  /** Add the default overlays and the data flow layer to the CPG if they do not exist yet.
+    *
+    * The data flow layer depends on the default overlays: `MethodRefLinker`, which is part of the call graph overlay,
+    * creates the mandatory `METHOD_REF -REF-> METHOD` edges that `ReachingDefPass` dereferences. A CPG written by a
+    * language frontend CLI has no overlays applied at all, so they are applied here first - otherwise every
+    * `METHOD_REF` is left without its `REF` edge and the data flow pass fails.
+    *
+    * This mirrors `JoernSlice.checkAndApplyOverlays`.
     */
   def addDataFlowOverlayIfNonExistent(cpg: Cpg)(implicit s: Semantics): Unit = {
+    if (!cpg.metaData.overlays.contains(Base.overlayName)) {
+      System.err.println("CPG does not have default overlays. Applying.")
+      X2Cpg.applyDefaultOverlays(cpg)
+    }
     if (!cpg.metaData.overlays.exists(_ == OssDataFlow.overlayName)) {
       System.err.println("CPG does not have dataflow overlay. Calculating.")
       val opts    = new OssDataFlowOptions()
