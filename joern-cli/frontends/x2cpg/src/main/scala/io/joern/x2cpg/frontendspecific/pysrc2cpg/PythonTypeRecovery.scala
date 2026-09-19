@@ -196,8 +196,11 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   }
 
   override def prepopulateSymbolTable(): Unit = {
-    cu.ast.isMethodRef.where(_.astSiblings.isIdentifier.nameExact("classmethod")).referencedMethod.foreach {
-      classMethod =>
+    // Resolve REF optionally: the strict `referencedMethod` throws when a METHOD_REF has no REF edge.
+    cu.ast.isMethodRef
+      .where(_.astSiblings.isIdentifier.nameExact("classmethod"))
+      .flatMap(_._refOut.collectAll[Method])
+      .foreach { classMethod =>
         classMethod.parameter
           .nameExact("cls")
           .foreach { cls =>
@@ -206,7 +209,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
             if (cls.typeFullName == Defines.Any)
               builder.setNodeProperty(cls, PropertyNames.DynamicTypeHintFullName, clsPath.toSeq)
           }
-    }
+      }
     super.prepopulateSymbolTable()
   }
 

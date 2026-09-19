@@ -178,7 +178,9 @@ class DdgGenerator(semantics: Semantics) {
           addEdge(src, dst, nodeToEdgeLabel(src))
         }
       method.parameter.foreach { param =>
-        param.capturedByMethodRef.referencedMethod.ast.isIdentifier.foreach { identifier =>
+        // `referencedMethod` is the strict accessor and throws when a METHOD_REF has no REF edge,
+        // which aborts the whole pass. Resolve the edge optionally instead and skip refs that lack it.
+        param.capturedByMethodRef.flatMap(_._refOut.collectAll[Method]).ast.isIdentifier.foreach { identifier =>
           addEdge(param, identifier, nodeToEdgeLabel(param))
         }
       }
