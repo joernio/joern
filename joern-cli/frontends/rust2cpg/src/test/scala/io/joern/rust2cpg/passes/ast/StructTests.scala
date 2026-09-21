@@ -601,6 +601,66 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "generic struct record expression" should {
+    val cpg = code("""
+        |struct Foo<T> { x: T }
+        |fn main() {
+        | Foo { x: 1u8 };
+        |}
+        |""".stripMargin)
+
+    "have correct constructor call" in {
+      inside(cpg.call.nameExact("<init>").l) { case init :: Nil =>
+        init.methodFullName shouldBe "rust2cpgtest::Foo<T>::<init>"
+        init.code shouldBe "Foo { x: 1u8 }"
+
+        // TODO: pending change to remove `&` to <init> calls.
+        inside(init.argument(0)) { case addressOf: Call =>
+          addressOf.code shouldBe "&<tmp>0"
+          addressOf.typeFullName shouldBe "&rust2cpgtest::Foo<u8>"
+
+          inside(addressOf.argument(1)) { case tmp: Identifier =>
+            tmp.name shouldBe "<tmp>0"
+            tmp.typeFullName shouldBe "rust2cpgtest::Foo<u8>"
+          }
+        }
+
+        inside(init.argument(1)) { case lit: Literal =>
+          lit.code shouldBe "1u8"
+          lit.argumentName shouldBe Some("x")
+        }
+      }
+    }
+  }
+
+  "struct alias record expression" should {
+    val cpg = code("""
+        |struct Foo { x: i32 }
+        |type Alias = Foo;
+        |fn main() {
+        |  Alias { x: 1 };
+        |}
+        |""".stripMargin)
+
+    "have correct constructor call" in {
+      inside(cpg.call.nameExact("<init>").l) { case init :: Nil =>
+        init.methodFullName shouldBe "rust2cpgtest::Foo::<init>"
+        init.code shouldBe "Alias { x: 1 }"
+
+        // TODO: pending change to remove `&` to <init> calls.
+        inside(init.argument(0)) { case addressOf: Call =>
+          addressOf.code shouldBe "&<tmp>0"
+          addressOf.typeFullName shouldBe "&rust2cpgtest::Foo"
+        }
+
+        inside(init.argument(1)) { case lit: Literal =>
+          lit.code shouldBe "1"
+          lit.argumentName shouldBe Some("x")
+        }
+      }
+    }
+  }
+
   "a tuple-struct positional field access" should {
     val cpg = code("""
         |struct Pair(i32, bool);

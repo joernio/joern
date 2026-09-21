@@ -1189,8 +1189,9 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //   Foo::<init>(&tmp, x:1, y:2)
   //   tmp
   private def recordCtorCallAst(recordExpr: RecordExpr): Ast = {
-    val structType = typeFullNameForExpr(recordExpr)
-    val tmpName    = contextStack.nextTmpName()
+    val structType       = typeFullNameForExpr(recordExpr)
+    val ctorTypeFullName = recordExpr.methodFullName.getOrElse(structType)
+    val tmpName          = contextStack.nextTmpName()
 
     allocBlockAst(recordExpr, tmpName, structType) { mkTmp =>
 
@@ -1198,7 +1199,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         recordExpr,
         code(recordExpr),
         Defines.ConstructorMethodName,
-        combineRustFullName(structType, Defines.ConstructorMethodName),
+        combineRustFullName(ctorTypeFullName, Defines.ConstructorMethodName),
         DispatchTypes.STATIC_DISPATCH,
         None,
         Some("()")
