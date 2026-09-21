@@ -17,7 +17,7 @@ package object operatorextension {
     Operators.preIncrement,
     Operators.preDecrement,
     Operators.postIncrement,
-    Operators.postIncrement
+    Operators.postDecrement
   )
 
   /** All operators that carry out assignments.
