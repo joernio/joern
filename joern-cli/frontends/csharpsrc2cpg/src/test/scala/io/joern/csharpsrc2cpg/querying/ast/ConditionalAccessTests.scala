@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class ConditionalAccessTests extends CSharpCode2CpgFixture {
 
   "`this?.Bar` assigned to a variable" should {

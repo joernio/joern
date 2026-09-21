@@ -39,7 +39,7 @@ class ObjectPropertyCallLinker(cpg: Cpg) extends CpgPass(cpg) {
               builder.setNodeProperty(c, PropertyNames.MethodFullName, calleeFn)
             }
           }
-      }
+      }: @scala.annotation.nowarn("cat=deprecation")
   }
 
 }

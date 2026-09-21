@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Modifier
 import io.shiftleft.codepropertygraph.generated.nodes.{ControlStructure, Identifier, MethodRef}
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class JsClassesAstCreationPassTests extends JsSrc2CpgSuite {
 
   "AST generation for JS classes" should {

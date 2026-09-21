@@ -7,6 +7,7 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import java.nio.file.Paths
 
+@scala.annotation.nowarn("cat=deprecation")
 class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
 
   "an expression macro" should {

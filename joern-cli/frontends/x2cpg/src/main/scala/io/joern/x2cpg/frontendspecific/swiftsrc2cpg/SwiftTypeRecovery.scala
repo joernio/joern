@@ -104,7 +104,10 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
 
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = if (c.methodFullName.endsWith(".alloc")) {
-      def newChildren = c.inAssignment.astSiblings.isCall.nameExact("<operator>.new").astChildren
+      def newChildren =
+        c.inAssignment.astSiblings.isCall.nameExact("<operator>.new").astChildren: @scala.annotation.nowarn(
+          "cat=deprecation"
+        )
       val possibleImportIdentifier = newChildren.isIdentifier.headOption match {
         case Some(id) => symbolTable.get(id)
         case None     => Set.empty[String]

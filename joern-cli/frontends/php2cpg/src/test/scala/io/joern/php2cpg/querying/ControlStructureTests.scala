@@ -19,6 +19,7 @@ import io.joern.x2cpg.Defines
 
 import scala.util.Try
 
+@scala.annotation.nowarn("cat=deprecation")
 class ControlStructureTests extends PhpCode2CpgFixture {
   "switch statements" should {
     "work without a default case" in {

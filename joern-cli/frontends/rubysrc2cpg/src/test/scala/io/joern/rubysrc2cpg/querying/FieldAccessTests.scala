@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Id
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class FieldAccessTests extends RubyCode2CpgFixture {
 
   "`x.y` is represented by a `x.y` field access" in {

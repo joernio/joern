@@ -12,6 +12,7 @@ import io.shiftleft.semanticcpg.language.*
 import java.io.File
 import scala.collection.immutable.List
 
+@scala.annotation.nowarn("cat=deprecation")
 class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
 
   "intra-procedural" in {

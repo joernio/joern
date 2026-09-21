@@ -19,6 +19,7 @@ object HeapBasedOverflow extends QueryBundle {
     * (CVE-2014-9626).
     */
   @q
+  @scala.annotation.nowarn("cat=deprecation")
   def mallocMemcpyIntOverflow(): Query =
     Query.make(
       name = "malloc-memcpy-int-overflow",

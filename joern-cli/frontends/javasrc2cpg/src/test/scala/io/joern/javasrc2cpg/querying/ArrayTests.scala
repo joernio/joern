@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class ArrayTests extends JavaSrcCode2CpgFixture {
 
   "constant array initializer expressions" should {

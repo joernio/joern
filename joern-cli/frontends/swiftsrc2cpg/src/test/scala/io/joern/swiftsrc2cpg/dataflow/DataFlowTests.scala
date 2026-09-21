@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class DataFlowTests extends DataFlowCodeToCpgSuite {
 
   "DataFlowTest1" should {

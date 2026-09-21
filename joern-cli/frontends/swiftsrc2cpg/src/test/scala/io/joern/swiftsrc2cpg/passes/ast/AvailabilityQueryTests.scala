@@ -6,6 +6,7 @@ import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class AvailabilityQueryTests extends SwiftSrc2CpgSuite {
 
   "AvailabilityQueryTests" should {

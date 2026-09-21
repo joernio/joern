@@ -8,6 +8,7 @@ import io.shiftleft.semanticcpg.testing.MockCpg
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+@scala.annotation.nowarn("cat=deprecation")
 class OperatorExtensionTests extends AnyWordSpec with Matchers {
 
   private val methodName = "method"

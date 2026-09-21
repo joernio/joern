@@ -4,6 +4,7 @@ import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class FieldAccessTests extends CSharpCode2CpgFixture {
 
   "Console.WriteLine call while importing System" should {

@@ -4,6 +4,7 @@ import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class ImportsPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   "For a simple import statement, there" should {

@@ -16,6 +16,7 @@ package object dataflowengineoss {
     * @return
     *   the LHS of the assignment
     */
+  @scala.annotation.nowarn("cat=deprecation")
   def globalFromLiteral(lit: Literal, recursive: Boolean = true): Iterator[Expression] = {
 
     /** Frontends often create three-address code representations of compound literals, e.g. in pysrc2cpg the dictionary

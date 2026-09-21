@@ -8,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class ControlStructureTests extends RubyCode2CpgFixture {
 
   "`while-end` statement is represented by a `WHILE` CONTROL_STRUCTURE node" in {

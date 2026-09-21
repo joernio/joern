@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, TypeRef}
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class HashTests extends RubyCode2CpgFixture {
   "`{}` is represented by a `hashInitializer` operator call" in {
     val cpg = code("""

@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.Assertion
 
+@scala.annotation.nowarn("cat=deprecation")
 class EnumerationExtensionTests extends SwiftSrc2CpgSuite {
 
   private val enumACode =

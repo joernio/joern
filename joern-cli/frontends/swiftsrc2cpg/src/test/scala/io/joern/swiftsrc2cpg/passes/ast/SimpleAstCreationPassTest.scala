@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
 
   "AST generation for simple fragments" should {

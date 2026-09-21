@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class OperatorTests extends Rust2CpgSuite(noSysRoot = true) {
 
   "an `as` expression" should {
@@ -292,6 +293,7 @@ class OperatorTests extends Rust2CpgSuite(noSysRoot = true) {
   }
 }
 
+@scala.annotation.nowarn("cat=deprecation")
 class OperatorTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
 
   "adjustment to a trait object" should {

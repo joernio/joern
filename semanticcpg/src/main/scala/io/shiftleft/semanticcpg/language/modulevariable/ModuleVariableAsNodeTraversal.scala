@@ -35,8 +35,13 @@ class ModuleVariableAsFieldIdentifierTraversal(traversal: Iterator[FieldIdentifi
   def moduleVariables: Iterator[OpNodes.ModuleVariable] = {
     traversal.flatMap { fieldIdentifier =>
       {
+        val types =
+          fieldIdentifier.inFieldAccess.argument(1).isIdentifier.typeFullName.toSeq: @scala.annotation.nowarn(
+            "cat=deprecation"
+          )
+
         Cpg(fieldIdentifier.graph).method
-          .fullNameExact(fieldIdentifier.inFieldAccess.argument(1).isIdentifier.typeFullName.toSeq*)
+          .fullNameExact(types*)
           .isModule
           .local
           .nameExact(fieldIdentifier.canonicalName)

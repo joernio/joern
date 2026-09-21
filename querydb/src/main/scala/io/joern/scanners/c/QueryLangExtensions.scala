@@ -8,6 +8,7 @@ import scala.util.Try
 object QueryLangExtensions {
 
   implicit class CallExtension(callTrav: Iterator[nodes.Call]) {
+    @scala.annotation.nowarn("cat=deprecation")
     def returnValueNotChecked: Iterator[nodes.Call] = {
       val notDirectlyChecked = callTrav.filterNot { y =>
         val code = y.code

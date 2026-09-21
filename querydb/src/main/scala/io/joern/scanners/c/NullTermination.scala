@@ -14,6 +14,7 @@ object NullTermination extends QueryBundle {
   implicit val resolver: ICallResolver      = NoResolve
 
   @q
+  @scala.annotation.nowarn("cat=deprecation")
   def strncpyNoNullTerm(): Query =
     Query.make(
       name = "strncpy-no-null-term",

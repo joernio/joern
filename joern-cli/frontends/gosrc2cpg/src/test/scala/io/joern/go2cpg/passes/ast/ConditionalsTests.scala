@@ -9,6 +9,7 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import scala.collection.immutable.List
 
+@scala.annotation.nowarn("cat=deprecation")
 class ConditionalsTests extends GoCodeToCpgSuite {
   "AST Creation for conditionals" should {
     "be correct for if" in {

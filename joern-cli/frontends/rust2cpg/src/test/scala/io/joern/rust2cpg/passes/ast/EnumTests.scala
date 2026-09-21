@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
 
   "unit variant" should {

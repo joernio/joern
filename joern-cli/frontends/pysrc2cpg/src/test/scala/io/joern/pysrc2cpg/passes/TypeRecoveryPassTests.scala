@@ -10,6 +10,7 @@ import io.shiftleft.semanticcpg.language.importresolver.*
 import java.io.File
 import scala.collection.immutable.Seq
 
+@scala.annotation.nowarn("cat=deprecation")
 class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   "literals declared from built-in types" should {

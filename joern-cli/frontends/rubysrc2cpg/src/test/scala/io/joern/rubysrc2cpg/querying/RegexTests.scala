@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class RegexTests extends RubyCode2CpgFixture(withPostProcessing = false) {
 
   "Global regex related variables" should {

@@ -174,6 +174,7 @@ object UseAfterFree extends QueryBundle {
   }
 
   @q
+  @scala.annotation.nowarn("cat=deprecation")
   def freePostDominatesUsage(): Query =
     Query.make(
       name = "free-follows-value-reuse",

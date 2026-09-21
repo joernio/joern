@@ -144,6 +144,7 @@ class SourceToStartingPointsInMethod(
     resultQueue.put(ResultSummary(result, List()))
   }
 
+  @scala.annotation.nowarn("cat=deprecation")
   private def usageInOtherClasses(m: Method, usageInputs: List[UsageInput]): List[StartingPointWithSource] = {
     usageInputs.flatMap { case UsageInput(src, typeDecl, astNode) =>
       m.fieldAccess
@@ -267,6 +268,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
 
   /** For given method, determine the first usage of the given expression.
     */
+  @scala.annotation.nowarn("cat=deprecation")
   private def firstUsagesOf(astNode: AstNode, m: Method, typeDecl: TypeDecl): List[Expression] = {
     astNode match {
       case member: Member =>
@@ -286,6 +288,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
     }
   }
 
+  @scala.annotation.nowarn("cat=deprecation")
   private def firstUsagesForName(name: String, m: Method): List[Expression] = {
     val identifiers      = m._identifierViaContainsOut.l
     val identifierUsages = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
@@ -303,6 +306,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
   /** For a literal, determine if it is used in the initialization of any member variables. Return list of initialized
     * members. An initialized member is either an identifier or a field-identifier.
     */
+  @scala.annotation.nowarn("cat=deprecation")
   private def literalToInitializedMembers(lit: Literal): List[CfgNode] =
     lit.inAssignment
       .or(
@@ -333,6 +337,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
     typeDecl.method.flatMap(methods).l
   }
 
+  @scala.annotation.nowarn("cat=deprecation")
   private def isTargetInAssignment(identifier: Identifier): List[Identifier] = {
     identifier.start.argumentIndex(1).where(_.inAssignment).l
   }

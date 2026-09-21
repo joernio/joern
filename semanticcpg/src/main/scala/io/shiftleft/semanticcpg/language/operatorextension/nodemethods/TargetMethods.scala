@@ -7,6 +7,9 @@ import io.shiftleft.semanticcpg.language.operatorextension.{OpNodes, allArrayAcc
 
 class TargetMethods(val expr: Expression) extends AnyVal {
 
+  @deprecated(
+    "this step is very imprecise, recursively checking for matching AST children. It may return more than you intended."
+  )
   def arrayAccess: Option[OpNodes.ArrayAccess] =
     expr.ast.isCall
       .cast[OpNodes.ArrayAccess]

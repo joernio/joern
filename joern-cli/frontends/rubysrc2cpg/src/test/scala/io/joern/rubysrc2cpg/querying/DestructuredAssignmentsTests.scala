@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
 
   "destructuring of a paired multi-assignment" should {

@@ -13,6 +13,7 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
 
+@scala.annotation.nowarn("cat=deprecation")
 class ArrayTests extends RubyCode2CpgFixture {
 
   "`[]` is represented by an alloc constructor call" in {
