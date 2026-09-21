@@ -1376,12 +1376,13 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val enumFullName      = typeFullNameForEnum(enum_)
     val inheritsFrom      = implementedTraits.map(traitFullName => s"<$enumFullName as $traitFullName>")
     val typeDecl          = typeDeclForEnum(enum_, inheritsFrom)
+    val attributes        = enum_.attr.map(visitAttr)
 
     contextStack.pushTypeDecl(typeDecl)
     val variantAsts = enum_.variantList.variant.flatMap(lowerVariant(_, typeDecl.fullName))
     contextStack.pop()
 
-    Ast(typeDecl).withChildren(variantAsts)
+    Ast(typeDecl).withChildren(variantAsts).withChildren(attributes)
   }
 
   // Variant =
@@ -1394,29 +1395,37 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   private def lowerUnitVariant(variant: Variant, enumFullName: String): Ast = {
-    Ast(memberNode(variant, code(variant.name), code(variant), enumFullName))
+    val attributes = variant.attr.map(visitAttr)
+    Ast(memberNode(variant, code(variant.name), code(variant), enumFullName)).withChildren(attributes)
   }
 
   private def lowerRecordVariant(variant: Variant, enumFullName: String, recordFieldList: RecordFieldList): Ast = {
-    val typeDecl = typeDeclForVariant(variant, enumFullName)
+    val typeDecl   = typeDeclForVariant(variant, enumFullName)
+    val attributes = variant.attr.map(visitAttr)
 
     contextStack.pushTypeDecl(typeDecl)
     val ctorAst = structCtorMethodAst(variant, typeDecl, recordFieldData(recordFieldList))
     contextStack.pop()
 
-    Ast(typeDecl).withChildren(visitRecordFieldList(recordFieldList) :+ ctorAst)
+    Ast(typeDecl)
+      .withChildren(visitRecordFieldList(recordFieldList) :+ ctorAst)
+      .withChildren(attributes)
   }
 
   private def lowerTupleVariant(variant: Variant, enumFullName: String, tupleFieldList: TupleFieldList): Seq[Ast] = {
     val typeDecl     = typeDeclForVariant(variant, enumFullName)
     val fields       = tupleStructFieldData(tupleFieldList)
     val ctorFullName = variant.methodFullName.getOrElse(typeDecl.fullName)
+    val attributes   = variant.attr.map(visitAttr)
 
     contextStack.pushTypeDecl(typeDecl)
     val ctorAst = structCtorMethodAst(variant, typeDecl, fields)
     contextStack.pop()
 
-    val typeDeclAst    = Ast(typeDecl).withChildren(visitTupleFieldList(tupleFieldList) :+ ctorAst)
+    val typeDeclAst =
+      Ast(typeDecl)
+        .withChildren(visitTupleFieldList(tupleFieldList) :+ ctorAst)
+        .withChildren(attributes)
     val ctorWrapperAst = tupleStructCtorWrapperAst(variant, typeDecl, ctorFullName, enumFullName, fields)
 
     Seq(typeDeclAst, ctorWrapperAst)

@@ -264,4 +264,70 @@ class AnnotationTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "enum with attribute" should {
+    val cpg = code("""
+        |#[repr(u8)]
+        |enum Foo { A }
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(cpg.typeDecl.nameExact("Foo").annotation.l) { case attr :: Nil =>
+        attr.name shouldBe "repr"
+        attr.fullName shouldBe "repr"
+        attr.code shouldBe "#[repr(u8)]"
+      }
+    }
+  }
+
+  "unit variant with attribute" should {
+    val cpg = code("""
+        |enum Foo {
+        |  #[default]
+        |  A
+        |}
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(cpg.typeDecl.nameExact("Foo").member.nameExact("A").annotation.l) { case attr :: Nil =>
+        attr.name shouldBe "default"
+        attr.fullName shouldBe "default"
+        attr.code shouldBe "#[default]"
+      }
+    }
+  }
+
+  "record variant with attribute" should {
+    val cpg = code("""
+        |enum Foo {
+        |  #[doc(hidden)]
+        |  A { x: i32 }
+        |}
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::Foo::A").annotation.l) { case attr :: Nil =>
+        attr.name shouldBe "doc"
+        attr.fullName shouldBe "doc"
+        attr.code shouldBe "#[doc(hidden)]"
+      }
+    }
+  }
+
+  "tuple variant with attribute" should {
+    val cpg = code("""
+        |enum Foo {
+        |  #[doc(hidden)]
+        |  A(i32)
+        |}
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::Foo::A").annotation.l) { case attr :: Nil =>
+        attr.name shouldBe "doc"
+        attr.fullName shouldBe "doc"
+        attr.code shouldBe "#[doc(hidden)]"
+      }
+    }
+  }
 }
