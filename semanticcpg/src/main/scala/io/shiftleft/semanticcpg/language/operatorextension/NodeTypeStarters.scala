@@ -20,6 +20,6 @@ class NodeTypeStarters(cpg: Cpg) {
   @Doc(info = "Field accesses, both direct and indirect")
   def fieldAccess: Iterator[OpNodes.FieldAccess] = callsWithNameIn(allFieldAccessTypes).cast[OpNodes.FieldAccess]
 
-  private def callsWithNameIn(set: Set[String]) = cpg.call.nameExact(set*)
+  private def callsWithNameIn(names: Seq[String]) = cpg.call.nameExact(names*)
 
 }
