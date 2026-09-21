@@ -370,10 +370,14 @@ class MacroTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
 
           fmtX.methodFullName shouldBe Operators.formattedValue
           fmtX.typeFullName shouldBe "i32"
-          inside(fmtX.argument.l) { case (ident: Identifier) :: Nil =>
+          inside(fmtX.argument.sortBy(_.argumentIndex).l) { case (ident: Identifier) :: (spec: Literal) :: Nil =>
             ident.code shouldBe "x"
             ident.name shouldBe "x"
             ident.typeFullName shouldBe "i32"
+            ident.argumentIndex shouldBe 1
+            spec.code shouldBe "w$"
+            spec.typeFullName shouldBe "&str"
+            spec.argumentIndex shouldBe 2
           }
 
           fmtW.methodFullName shouldBe Operators.formattedValue

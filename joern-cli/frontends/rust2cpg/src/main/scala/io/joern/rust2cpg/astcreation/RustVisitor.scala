@@ -1760,8 +1760,9 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val typeFullName = typeFullNameForExpr(formatArgsArg.expr)
     val callNode = operatorCallNode(formatArgsArg, code(formatArgsArg), Operators.formattedValue, Some(typeFullName))
     val argAst   = visitExpr(formatArgsArg.expr)
+    val specAst  = formatArgsArg.formatSpec.map(literalNode(formatArgsArg, _, "&str")).map(Ast(_))
 
-    callAst(callNode, Seq(argAst))
+    callAst(callNode, argAst +: specAst.toSeq)
   }
 
   // RangeExpr =
