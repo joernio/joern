@@ -276,7 +276,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
       case identifier: Identifier =>
         firstUsagesForName(identifier.name, method)
       case fieldIdentifier: FieldIdentifier =>
-        val fieldIdentifiers = method.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
+        val fieldIdentifiers = method.ast.isFieldIdentifier.sortBy(field => (field.lineNumber, field.columnNumber)).l
         fieldIdentifiers
           .canonicalNameExact(fieldIdentifier.canonicalName)
           .inFieldAccess
@@ -292,7 +292,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
   private def firstUsagesForName(name: String, method: Method): List[Expression] = {
     val identifiers      = method._identifierViaContainsOut.l
     val identifierUsages = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
-    val fieldIdentifiers = method.fieldAccess.fieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
+    val fieldIdentifiers = method.fieldAccess.fieldIdentifier.sortBy(field => (field.lineNumber, field.columnNumber)).l
     val thisRefs         = Seq("this", "self") ++ method.typeDecl.name.headOption.toList
     val fieldAccessUsages = fieldIdentifiers.isFieldIdentifier
       .canonicalNameExact(name)
