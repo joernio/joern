@@ -5,7 +5,6 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operator
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-@scala.annotation.nowarn("cat=deprecation")
 class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
 
   "a match statement" should {
@@ -181,7 +180,7 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "have correct local assignments" in {
-      cpg.method.nameExact("foo").block.assignment.sortBy(_.order).code.l shouldBe List("n = x.0")
+      cpg.method.nameExact("foo").block.ast.isCall.isAssignment.sortBy(_.order).code.l shouldBe List("n = x.0")
     }
 
     "have correct if control structures" in {
@@ -221,18 +220,18 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "have correct assignments" in {
-      cpg.method.nameExact("foo").block.assignment.code.sorted.l shouldBe
+      cpg.method.nameExact("foo").block.ast.isCall.isAssignment.code.sorted.l shouldBe
         List("<tmp>0 = p", "a = <tmp>0.x", "a = <tmp>0.y")
     }
 
     "have correct if control structure" in {
       inside(cpg.ifBlock.l) { case ifNode :: elseIfNode :: Nil =>
         ifNode.condition.code.l shouldBe List("Point { x: 0, y: a }")
-        ifNode.whenTrue.isBlock.assignment.code.l shouldBe List("a = <tmp>0.y")
+        ifNode.whenTrue.isBlock.astChildren.isCall.isAssignment.code.l shouldBe List("a = <tmp>0.y")
         ifNode.whenFalse.l shouldBe List(elseIfNode)
 
         elseIfNode.condition.code.l shouldBe List("Point { x: a, y: 0 }")
-        elseIfNode.whenTrue.isBlock.assignment.code.l shouldBe List("a = <tmp>0.x")
+        elseIfNode.whenTrue.isBlock.astChildren.isCall.isAssignment.code.l shouldBe List("a = <tmp>0.x")
         elseIfNode.whenFalse.l shouldBe empty
       }
     }
