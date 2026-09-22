@@ -155,7 +155,7 @@ case class MockCpg(cpg: Cpg = Cpg.emptyCpg) {
     withCustom { (graph, cpg) =>
       val methodNode = cpg.method(methodName).head
       val blockNode  = methodNode.block
-      val callNode   = NewCall().name(callName).code(code.getOrElse(callName))
+      val callNode   = NewCall().name(callName).code(code.getOrElse(callName)).methodFullName(callName)
       graph.addNode(callNode)
       graph.addEdge(blockNode, callNode, EdgeTypes.AST)
       graph.addEdge(methodNode, callNode, EdgeTypes.CONTAINS)
