@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, O
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class MemberTests extends CSharpCode2CpgFixture {
 
   "class with static and non-static members" should {

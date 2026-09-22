@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
 
   "ClosureWithCompilerTests" should {

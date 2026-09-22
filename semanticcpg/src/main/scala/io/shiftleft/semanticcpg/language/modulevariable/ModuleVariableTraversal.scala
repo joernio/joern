@@ -10,12 +10,14 @@ import io.shiftleft.codepropertygraph.generated.help.Doc
 @Traversal(elementType = classOf[Local])
 class ModuleVariableTraversal(traversal: Iterator[OpNodes.ModuleVariable]) extends AnyVal {
 
+  @scala.annotation.nowarn("cat=deprecation")
   @Doc(info = "All assignments where the module variables in this traversal are the target across the program")
   def definitions: Iterator[Assignment] = traversal.references.flatMap {
     case x: Identifier      => x.start.inAssignment.filter(_.target == x)
     case x: FieldIdentifier => x.inAssignment.filter(_.target.contains(x.inFieldAccess))
   }
 
+  @scala.annotation.nowarn("cat=deprecation")
   @Doc(info = "Calls this module variable invokes across the program")
   def invokingCalls: Iterator[Call] =
     traversal.references
@@ -52,7 +54,8 @@ class ModuleVariableTraversal(traversal: Iterator[OpNodes.ModuleVariable]) exten
               }
               .flatMap { case (alias, _) =>
                 module.local.nameExact(alias).referencingIdentifiers ++
-                  module.fieldAccess.fieldIdentifier.canonicalNameExact(alias)
+                  module.fieldAccess.fieldIdentifier
+                    .canonicalNameExact(alias): @scala.annotation.nowarn("cat=deprecation")
               }
           }
         (immediateRef ++ externalRefs).collectAll[Identifier | FieldIdentifier]

@@ -122,7 +122,10 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
 
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = if (c.methodFullName.endsWith(".alloc")) {
-      val newOp       = c.inAssignment.astSiblings.isCall.nameExact(Defines.OperatorsNew).headOption
+      val newOp =
+        c.inAssignment.astSiblings.isCall.nameExact(Defines.OperatorsNew).headOption: @scala.annotation.nowarn(
+          "cat=deprecation"
+        )
       val newChildren = newOp.astChildren.l
 
       val possibleImportIdentifier = newChildren.isIdentifier.headOption match {

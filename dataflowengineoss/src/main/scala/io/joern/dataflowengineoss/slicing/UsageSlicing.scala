@@ -87,6 +87,7 @@ object UsageSlicing {
   private class TrackUsageTask(cpg: Cpg, tgt: Declaration, typeMap: TrieMap[String, String])
       extends Callable[Option[(Method, ObjectUsageSlice)]] {
 
+    @scala.annotation.nowarn("cat=deprecation")
     override def call(): Option[(Method, ObjectUsageSlice)] = {
       val defNode = tgt match {
         case local: Local =>

@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, O
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal, Member}
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class NewMemberTests extends JavaSrcCode2CpgFixture {
   "locals shadowing members" should {
     val cpg = code("""

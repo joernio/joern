@@ -8,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class ClassTests extends RubyCode2CpgFixture {
 
   "`class C ; end` is represented by an empty TYPE_DECL node" in {

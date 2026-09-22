@@ -236,6 +236,7 @@ class ExtensionsPass(
     *     - fixes argument indices/orders and ensures `RECEIVER`, `AST`, and `ARGUMENT` edges are consistent
     *     - removes intermediate `fieldAccess` and member identifier nodes/edges that are no longer needed
     */
+  @scala.annotation.nowarn("cat=deprecation")
   private def handleMemberPropertySetterCalls(diffGraph: DiffGraphBuilder): Unit = {
     if (memberPropertyMapping.isEmpty) return
     for {

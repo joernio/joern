@@ -13,6 +13,7 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
+@scala.annotation.nowarn("cat=deprecation")
 class AstCreationPassTests extends AstC2CpgSuite {
 
   "Method AST layout" should {

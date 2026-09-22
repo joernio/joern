@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Dispatch
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
 
   "a top-level const" should {

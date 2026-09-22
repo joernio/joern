@@ -7,6 +7,7 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class TypeDeclTests extends CSharpCode2CpgFixture {
 
   "a basic class declaration" should {

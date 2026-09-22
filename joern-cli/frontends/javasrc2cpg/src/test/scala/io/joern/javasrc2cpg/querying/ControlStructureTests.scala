@@ -20,6 +20,7 @@ import io.shiftleft.semanticcpg.language.*
 
 import scala.jdk.CollectionConverters.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class NewControlStructureTests extends JavaSrcCode2CpgFixture {
 
   "try with multiple catches and finally" should {

@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
 
+@scala.annotation.nowarn("cat=deprecation")
 class CaseTests extends RubyCode2CpgFixture {
 
   "`case x ... end` should be represented with if-else chain and multiple match expressions should be or-ed together" in {

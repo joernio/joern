@@ -8,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 
+@scala.annotation.nowarn("cat=deprecation")
 class DoBlockTests extends RubyCode2CpgFixture {
 
   "a basic unparameterized do block off a simple call" should {

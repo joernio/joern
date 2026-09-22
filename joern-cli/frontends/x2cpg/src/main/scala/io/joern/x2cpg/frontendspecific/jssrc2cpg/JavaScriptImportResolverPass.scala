@@ -66,7 +66,7 @@ class JavaScriptImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
     def targetAssignments = targetModule
       .nameExact(Defines.Program)
       .flatMap(_._callViaContainsOut)
-      .assignment
+      .assignment: @scala.annotation.nowarn("cat=deprecation")
 
     val matchingExports = if (isImportingModule) {
       // If we are importing the whole module, we need to load all entities

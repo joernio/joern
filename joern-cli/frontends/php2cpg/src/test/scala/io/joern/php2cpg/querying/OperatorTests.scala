@@ -10,6 +10,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, ClosureBindi
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
+@scala.annotation.nowarn("cat=deprecation")
 class OperatorTests extends PhpCode2CpgFixture {
 
   val filenameKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)

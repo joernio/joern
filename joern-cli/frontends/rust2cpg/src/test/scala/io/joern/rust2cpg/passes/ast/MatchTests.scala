@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operator
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
 
   "a match statement" should {

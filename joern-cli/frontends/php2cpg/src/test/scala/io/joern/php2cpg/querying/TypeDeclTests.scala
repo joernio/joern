@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class TypeDeclTests extends PhpCode2CpgFixture {
 
   "typedecl nodes for empty classes" should {

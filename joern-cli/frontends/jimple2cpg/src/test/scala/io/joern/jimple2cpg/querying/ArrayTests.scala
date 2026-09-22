@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.Failed
 
+@scala.annotation.nowarn("cat=deprecation")
 class ArrayTests extends JimpleCode2CpgFixture {
 
   lazy val cpg: Cpg = code("""

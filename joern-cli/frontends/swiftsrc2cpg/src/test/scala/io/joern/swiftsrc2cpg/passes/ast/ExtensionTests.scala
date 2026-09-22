@@ -5,6 +5,7 @@ import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, MethodParameterIn}
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class ExtensionTests extends SwiftSrc2CpgSuite {
 
   "ExtensionTests" should {

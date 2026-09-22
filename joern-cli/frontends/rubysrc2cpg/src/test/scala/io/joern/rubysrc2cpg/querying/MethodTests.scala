@@ -8,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, NodeType
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 
+@scala.annotation.nowarn("cat=deprecation")
 class MethodTests extends RubyCode2CpgFixture {
 
   "`def f(x) = 1`" should {

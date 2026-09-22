@@ -457,7 +457,7 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |x |= 1
         |""".stripMargin)
 
-    inside(cpg.assignment.l) { case _ :: and :: or :: Nil =>
+    inside(cpg.assignment.sortBy(_.id)) { case Seq(_, and, or) =>
       and.name shouldBe Operators.assignmentAnd
       and.code shouldBe "x &= 0"
 

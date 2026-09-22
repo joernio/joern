@@ -6,6 +6,7 @@ import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class TsClassesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
 
   "AST generation for TS classes" should {

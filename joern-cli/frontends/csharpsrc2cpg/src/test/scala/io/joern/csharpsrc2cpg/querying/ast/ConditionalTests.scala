@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operator
 import io.shiftleft.codepropertygraph.generated.nodes.{ControlStructure, Identifier, Literal, Call}
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class ConditionalTests extends CSharpCode2CpgFixture {
 
   "AST Creation for conditionals" should {

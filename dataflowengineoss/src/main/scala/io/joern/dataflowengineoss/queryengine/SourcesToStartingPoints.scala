@@ -144,9 +144,10 @@ class SourceToStartingPointsInMethod(
     resultQueue.put(ResultSummary(result, List()))
   }
 
-  private def usageInOtherClasses(m: Method, usageInputs: List[UsageInput]): List[StartingPointWithSource] = {
+  @scala.annotation.nowarn("cat=deprecation")
+  private def usageInOtherClasses(method: Method, usageInputs: List[UsageInput]): List[StartingPointWithSource] = {
     usageInputs.flatMap { case UsageInput(src, typeDecl, astNode) =>
-      m.fieldAccess
+      method.fieldAccess
         .or(
           _.argument(1).isIdentifier.typeFullNameExact(typeDecl.fullName),
           _.argument(1).isTypeRef.typeFullNameExact(typeDecl.fullName)
@@ -267,14 +268,15 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
 
   /** For given method, determine the first usage of the given expression.
     */
-  private def firstUsagesOf(astNode: AstNode, m: Method, typeDecl: TypeDecl): List[Expression] = {
+  @scala.annotation.nowarn("cat=deprecation")
+  private def firstUsagesOf(astNode: AstNode, method: Method, typeDecl: TypeDecl): List[Expression] = {
     astNode match {
       case member: Member =>
-        firstUsagesForName(member.name, m)
+        firstUsagesForName(member.name, method)
       case identifier: Identifier =>
-        firstUsagesForName(identifier.name, m)
+        firstUsagesForName(identifier.name, method)
       case fieldIdentifier: FieldIdentifier =>
-        val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
+        val fieldIdentifiers = method.ast.isFieldIdentifier.sortBy(field => (field.lineNumber, field.columnNumber)).l
         fieldIdentifiers
           .canonicalNameExact(fieldIdentifier.canonicalName)
           .inFieldAccess
@@ -286,11 +288,12 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
     }
   }
 
-  private def firstUsagesForName(name: String, m: Method): List[Expression] = {
-    val identifiers      = m._identifierViaContainsOut.l
+  @scala.annotation.nowarn("cat=deprecation")
+  private def firstUsagesForName(name: String, method: Method): List[Expression] = {
+    val identifiers      = method._identifierViaContainsOut.l
     val identifierUsages = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
-    val fieldIdentifiers = m.fieldAccess.fieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
-    val thisRefs         = Seq("this", "self") ++ m.typeDecl.name.headOption.toList
+    val fieldIdentifiers = method.fieldAccess.fieldIdentifier.sortBy(field => (field.lineNumber, field.columnNumber)).l
+    val thisRefs         = Seq("this", "self") ++ method.typeDecl.name.headOption.toList
     val fieldAccessUsages = fieldIdentifiers.isFieldIdentifier
       .canonicalNameExact(name)
       .inFieldAccess
@@ -303,6 +306,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
   /** For a literal, determine if it is used in the initialization of any member variables. Return list of initialized
     * members. An initialized member is either an identifier or a field-identifier.
     */
+  @scala.annotation.nowarn("cat=deprecation")
   private def literalToInitializedMembers(lit: Literal): List[CfgNode] =
     lit.inAssignment
       .or(
@@ -333,6 +337,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
     typeDecl.method.flatMap(methods).l
   }
 
+  @scala.annotation.nowarn("cat=deprecation")
   private def isTargetInAssignment(identifier: Identifier): List[Identifier] = {
     identifier.start.argumentIndex(1).where(_.inAssignment).l
   }
