@@ -5,7 +5,6 @@ import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-@scala.annotation.nowarn("cat=deprecation")
 class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
 
   "unit variant" should {
@@ -247,7 +246,7 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "have correct field assignments" in {
-      inside(cpg.typeDecl.nameExact("Rgb").method.body.astChildren.assignment.l) {
+      inside(cpg.typeDecl.nameExact("Rgb").method.body.astChildren.isCall.isAssignment.l) {
         case assignZero :: assignOne :: Nil =>
           // TODO: pending change to self.0 = 0, once we remove `&` to <init> calls.
           assignZero.code shouldBe "(*self).0 = 0"
