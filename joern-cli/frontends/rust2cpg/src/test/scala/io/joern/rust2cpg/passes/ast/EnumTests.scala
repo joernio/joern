@@ -170,6 +170,23 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
         assign.code shouldBe "(*self).name = name"
       }
     }
+
+    "have correct constructor call" in {
+      inside(cpg.call.nameExact("<init>").l) { case init :: Nil =>
+        init.methodFullName shouldBe "rust2cpgtest::Color::Named::<init>"
+
+        // TODO: pending change to remove `&` to <init> calls.
+        inside(init.argument(0)) { case addressOf: Call =>
+          addressOf.code shouldBe "&<tmp>0"
+          addressOf.typeFullName shouldBe "&rust2cpgtest::Color"
+        }
+
+        inside(init.argument(1)) { case lit: Literal =>
+          lit.code shouldBe "1"
+          lit.argumentName shouldBe Some("name")
+        }
+      }
+    }
   }
 
   "tuple variant" should {
@@ -306,6 +323,33 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have the same fullName as the one at the call site" in {
       cpg.call.nameExact("One").methodFullName.l shouldBe List("rust2cpgtest::Wrapper<T>::One")
+    }
+  }
+
+  "generic record enum" should {
+    val cpg = code("""
+        |enum Foo<T> { Bar { x: T } }
+        |fn main() {
+        |  Foo::Bar { x: 1u8 };
+        |}
+        |""".stripMargin)
+
+    "have correct constructor call" in {
+      inside(cpg.call.nameExact("<init>").l) { case init :: Nil =>
+        init.methodFullName shouldBe "rust2cpgtest::Foo<T>::Bar::<init>"
+        init.code shouldBe "Foo::Bar { x: 1u8 }"
+
+        // TODO: pending change to remove `&` to <init> calls.
+        inside(init.argument(0)) { case addressOf: Call =>
+          addressOf.code shouldBe "&<tmp>0"
+          addressOf.typeFullName shouldBe "&rust2cpgtest::Foo<u8>"
+        }
+
+        inside(init.argument(1)) { case lit: Literal =>
+          lit.code shouldBe "1u8"
+          lit.argumentName shouldBe Some("x")
+        }
+      }
     }
   }
 
