@@ -214,7 +214,7 @@ class DdgGenerator(semantics: Semantics) {
     addAddressDerefEdges(method)
   }
 
-  /** ponytail: intraprocedural only; one address-of operand per Local/param; no heap or interprocedural tracking. */
+  /** Intraprocedural only: one address-of operand per Local/param; no heap or interprocedural tracking. */
   private def addAddressDerefEdges(method: Method)(implicit dstGraph: DiffGraphBuilder): Unit = {
     val addressOfMap: Map[Long, CfgNode] = method.ast.isCall
       .nameExact(Operators.assignment)
