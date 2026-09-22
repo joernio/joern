@@ -6,7 +6,6 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Dispatch
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-@scala.annotation.nowarn("cat=deprecation")
 class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
 
   "a top-level const" should {
@@ -56,7 +55,7 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "lower the initializer into an assignment" in {
-      inside(cpg.method.name("main").block.assignment.l) { case assignment :: Nil =>
+      inside(cpg.method.name("main").block.astChildren.isCall.isAssignment.l) { case assignment :: Nil =>
         assignment.code shouldBe "const FOO: i32 = 0;"
         assignment.lineNumber shouldBe Some(3)
       }
@@ -125,7 +124,7 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "lower the initializer into an assignment" in {
-      inside(cpg.method.name("main").block.assignment.l) { case assignment :: Nil =>
+      inside(cpg.method.name("main").block.astChildren.isCall.isAssignment.l) { case assignment :: Nil =>
         assignment.code shouldBe "static FOO: i32 = 0;"
         assignment.lineNumber shouldBe Some(3)
       }
@@ -164,7 +163,7 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "lower the initializer into an assignment" in {
-      inside(cpg.method.name("main").block.assignment.l) { case assignment :: Nil =>
+      inside(cpg.method.name("main").block.astChildren.isCall.isAssignment.l) { case assignment :: Nil =>
         assignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         assignment.code shouldBe "let x = 1;"
         assignment.typeFullName shouldBe Defines.Any
@@ -1193,7 +1192,7 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "have correct assignments" in {
-      inside(cpg.method.nameExact("main").block.assignment.l) { case xAssign :: Nil =>
+      inside(cpg.method.nameExact("main").block.astChildren.isCall.isAssignment.l) { case xAssign :: Nil =>
         xAssign.code shouldBe "x = *&1"
         inside(xAssign.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
           lhs.name shouldBe "x"
@@ -1230,21 +1229,22 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "have correct assignments" in {
-      inside(cpg.method.nameExact("main").block.assignment.l) { case tmpAssign :: aAssign :: bAssign :: Nil =>
-        tmpAssign.code shouldBe "<tmp>0 = (1, &2)"
-        aAssign.code shouldBe "a = <tmp>0.0"
-        bAssign.code shouldBe "b = *<tmp>0.1"
+      inside(cpg.method.nameExact("main").block.astChildren.isCall.isAssignment.l) {
+        case tmpAssign :: aAssign :: bAssign :: Nil =>
+          tmpAssign.code shouldBe "<tmp>0 = (1, &2)"
+          aAssign.code shouldBe "a = <tmp>0.0"
+          bAssign.code shouldBe "b = *<tmp>0.1"
 
-        inside(bAssign.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-          lhs.name shouldBe "b"
-          lhs.typeFullName shouldBe "i32"
-          rhs.methodFullName shouldBe Operators.indirection
-          rhs.typeFullName shouldBe "i32"
-          inside(rhs.argument.l) { case (fieldAccess: Call) :: Nil =>
-            fieldAccess.methodFullName shouldBe Operators.fieldAccess
-            fieldAccess.code shouldBe "<tmp>0.1"
+          inside(bAssign.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+            lhs.name shouldBe "b"
+            lhs.typeFullName shouldBe "i32"
+            rhs.methodFullName shouldBe Operators.indirection
+            rhs.typeFullName shouldBe "i32"
+            inside(rhs.argument.l) { case (fieldAccess: Call) :: Nil =>
+              fieldAccess.methodFullName shouldBe Operators.fieldAccess
+              fieldAccess.code shouldBe "<tmp>0.1"
+            }
           }
-        }
       }
     }
   }
@@ -1264,7 +1264,7 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "have correct assignments" in {
-      inside(cpg.method.nameExact("main").block.assignment.l) { case xAssign :: Nil =>
+      inside(cpg.method.nameExact("main").block.astChildren.isCall.isAssignment.l) { case xAssign :: Nil =>
         xAssign.code shouldBe "let ref x = 1;"
         inside(xAssign.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
           lhs.name shouldBe "x"
@@ -1296,7 +1296,7 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "have correct assignments" in {
-      inside(cpg.method.nameExact("main").block.assignment.l) { case xAssign :: Nil =>
+      inside(cpg.method.nameExact("main").block.astChildren.isCall.isAssignment.l) { case xAssign :: Nil =>
         xAssign.code shouldBe "let ref mut x = 1;"
         inside(xAssign.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
           lhs.name shouldBe "x"
@@ -1339,7 +1339,7 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
         |""".stripMargin)
 
     "have correct REF edges for the locals" in {
-      cpg.local.nameExact("entry").referencingIdentifiers.inAssignment.code.l shouldBe List("let entry = 1;")
+      cpg.local.nameExact("entry").referencingIdentifiers.inCall.isAssignment.code.l shouldBe List("let entry = 1;")
     }
 
     // TODO: qualified path lowering.
@@ -1365,11 +1365,11 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     "have correct if control structure" in {
       inside(cpg.ifBlock.l) { case ifNode :: elseIfNode :: Nil =>
         ifNode.condition.code.l shouldBe List("(a, 0)")
-        ifNode.whenTrue.isBlock.assignment.code.l shouldBe List("a = <tmp>0.0")
+        ifNode.whenTrue.isBlock.astChildren.isCall.isAssignment.code.l shouldBe List("a = <tmp>0.0")
         ifNode.whenFalse.l shouldBe List(elseIfNode)
 
         elseIfNode.condition.code.l shouldBe List("(0, a)")
-        elseIfNode.whenTrue.isBlock.assignment.code.l shouldBe List("a = <tmp>0.1")
+        elseIfNode.whenTrue.isBlock.astChildren.isCall.isAssignment.code.l shouldBe List("a = <tmp>0.1")
         elseIfNode.whenFalse.l shouldBe empty
       }
     }
