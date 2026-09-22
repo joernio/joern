@@ -28,16 +28,16 @@ class CallTraversal(val traversal: Iterator[Call]) extends AnyVal {
   /** Only assignment calls
     */
   def isAssignment: Iterator[Assignment] =
-    traversal.methodFullNameExact(allAssignmentTypes*).collectAll[Assignment]
+    traversal.methodFullNameExact(allAssignmentTypes*).cast[Assignment]
 
   def isArithmetic: Iterator[Arithmetic] =
-    traversal.methodFullNameExact(allArithmeticTypes*).collectAll[Arithmetic]
+    traversal.methodFullNameExact(allArithmeticTypes*).cast[Arithmetic]
 
   def isArrayAccess: Iterator[ArrayAccess] =
-    traversal.methodFullNameExact(allArrayAccessTypes*).collectAll[ArrayAccess]
+    traversal.methodFullNameExact(allArrayAccessTypes*).cast[ArrayAccess]
 
   def isFieldAccess: Iterator[FieldAccess] =
-    traversal.methodFullNameExact(allFieldAccessTypes*).collectAll[FieldAccess]
+    traversal.methodFullNameExact(allFieldAccessTypes*).cast[FieldAccess]
 
   /** The receiver of a call if the call has a receiver associated.
     */
