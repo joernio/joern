@@ -7,7 +7,6 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import java.nio.file.Paths
 
-@scala.annotation.nowarn("cat=deprecation")
 class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
 
   "an expression macro" should {
@@ -55,18 +54,36 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "have the macro argument as the assignment source of `p`" in {
-      inside(cpg.method.name("main").block.assignment.where(_.target.isIdentifier.nameExact("p")).source.l) {
-        case (lit: Literal) :: Nil =>
-          lit.code shouldBe "4"
-          lit.typeFullName shouldBe "i32"
+      inside(
+        cpg.method
+          .name("main")
+          .block
+          .astChildren
+          .isCall
+          .isAssignment
+          .where(_.target.isIdentifier.nameExact("p"))
+          .source
+          .l
+      ) { case (lit: Literal) :: Nil =>
+        lit.code shouldBe "4"
+        lit.typeFullName shouldBe "i32"
       }
     }
 
     "have the addition as the assignment source of `q`" in {
-      inside(cpg.method.name("main").block.assignment.where(_.target.isIdentifier.nameExact("q")).source.l) {
-        case (add: Call) :: Nil =>
-          add.name shouldBe Operators.addition
-          add.argument.sortBy(_.argumentIndex).code.l shouldBe List("p", "1")
+      inside(
+        cpg.method
+          .name("main")
+          .block
+          .astChildren
+          .isCall
+          .isAssignment
+          .where(_.target.isIdentifier.nameExact("q"))
+          .source
+          .l
+      ) { case (add: Call) :: Nil =>
+        add.name shouldBe Operators.addition
+        add.argument.sortBy(_.argumentIndex).code.l shouldBe List("p", "1")
       }
     }
   }
@@ -85,11 +102,12 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "have correct assignments" in {
-      inside(cpg.method.nameExact("main").block.assignment.sortBy(_.order).l) { case zAssign :: wAssign :: Nil =>
-        zAssign.code shouldBe "let z = 1;"
-        zAssign.lineNumber shouldBe Some(4)
-        wAssign.code shouldBe "let w = z;"
-        wAssign.lineNumber shouldBe Some(5)
+      inside(cpg.method.nameExact("main").block.astChildren.isCall.isAssignment.sortBy(_.order).l) {
+        case zAssign :: wAssign :: Nil =>
+          zAssign.code shouldBe "let z = 1;"
+          zAssign.lineNumber shouldBe Some(4)
+          wAssign.code shouldBe "let w = z;"
+          wAssign.lineNumber shouldBe Some(5)
       }
     }
 
@@ -145,7 +163,7 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "have correct assignments" in {
-      cpg.method.nameExact("main").block.assignment.sortBy(_.order).code.l shouldBe List(
+      cpg.method.nameExact("main").block.ast.isCall.isAssignment.sortBy(_.order).code.l shouldBe List(
         "let x = { three!() };",
         "let mut s = 1;",
         "s+=2"
@@ -153,19 +171,20 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "have correct children" in {
-      inside(cpg.method.nameExact("main").block.assignment.source.isBlock.astChildren.l) { case (three: Block) :: Nil =>
-        three.code shouldBe "three!()"
-        three.typeFullName shouldBe "i32"
-        inside(three.astChildren.l) {
-          case (local: Local) :: (assign: Call) :: (assignPlus: Call) :: (ident: Identifier) :: Nil =>
-            local.name shouldBe "s"
-            assign.code shouldBe "let mut s = 1;"
-            assign.methodFullName shouldBe Operators.assignment
-            assignPlus.code shouldBe "s+=2"
-            assignPlus.methodFullName shouldBe Operators.assignmentPlus
-            ident.name shouldBe "s"
-            ident.typeFullName shouldBe "i32"
-        }
+      inside(cpg.method.nameExact("main").block.astChildren.isCall.isAssignment.source.isBlock.astChildren.l) {
+        case (three: Block) :: Nil =>
+          three.code shouldBe "three!()"
+          three.typeFullName shouldBe "i32"
+          inside(three.astChildren.l) {
+            case (local: Local) :: (assign: Call) :: (assignPlus: Call) :: (ident: Identifier) :: Nil =>
+              local.name shouldBe "s"
+              assign.code shouldBe "let mut s = 1;"
+              assign.methodFullName shouldBe Operators.assignment
+              assignPlus.code shouldBe "s+=2"
+              assignPlus.methodFullName shouldBe Operators.assignmentPlus
+              ident.name shouldBe "s"
+              ident.typeFullName shouldBe "i32"
+          }
       }
     }
   }
@@ -253,15 +272,18 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
       )
 
     "have correct assignment" in {
-      cpg.method.fullNameExact("rust2cpgtest::bar").block.assignment.code.l shouldBe List("let baz = foo![Qux];")
+      cpg.method.fullNameExact("rust2cpgtest::bar").block.astChildren.isCall.isAssignment.code.l shouldBe List(
+        "let baz = foo![Qux];"
+      )
 
       // TODO(rust_ast_gen): expand proc-macros.
-      inside(cpg.method.fullNameExact("rust2cpgtest::bar").block.assignment.source.l) { case (qux: Unknown) :: Nil =>
-        qux.code shouldBe "foo![Qux]"
-        qux.lineNumber shouldBe Some(8)
+      inside(cpg.method.fullNameExact("rust2cpgtest::bar").block.astChildren.isCall.isAssignment.source.l) {
+        case (qux: Unknown) :: Nil =>
+          qux.code shouldBe "foo![Qux]"
+          qux.lineNumber shouldBe Some(8)
       }
       pendingUntilFixed {
-        inside(cpg.method.fullNameExact("rust2cpgtest::bar").block.assignment.source.l) {
+        inside(cpg.method.fullNameExact("rust2cpgtest::bar").block.astChildren.isCall.isAssignment.source.l) {
           case (qux: Identifier) :: Nil =>
             qux.name shouldBe "Qux"
             qux.code shouldBe "Qux"
