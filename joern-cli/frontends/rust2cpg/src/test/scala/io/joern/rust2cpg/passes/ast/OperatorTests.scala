@@ -6,7 +6,6 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-@scala.annotation.nowarn("cat=deprecation")
 class OperatorTests extends Rust2CpgSuite(noSysRoot = true) {
 
   "an `as` expression" should {
@@ -293,7 +292,6 @@ class OperatorTests extends Rust2CpgSuite(noSysRoot = true) {
   }
 }
 
-@scala.annotation.nowarn("cat=deprecation")
 class OperatorTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
 
   "adjustment to a trait object" should {
@@ -311,7 +309,7 @@ class OperatorTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
         |""".stripMargin)
 
     "have the concrete type as dynamic type hint" in {
-      inside(cpg.method.name("baz_bar").block.assignment.source.l) { case (cast: Call) :: Nil =>
+      inside(cpg.method.name("baz_bar").block.astChildren.isCall.isAssignment.source.l) { case (cast: Call) :: Nil =>
         cast.name shouldBe Operators.cast
         cast.code shouldBe "&*&Baz as &dyn rust2cpgtest::Bar"
         cast.typeFullName shouldBe "&dyn rust2cpgtest::Bar"
@@ -320,16 +318,17 @@ class OperatorTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
     }
 
     "have the concrete type as dynamic type hint via mut" in {
-      inside(cpg.method.name("baz_bar_mut").block.assignment.source.l) { case (cast: Call) :: Nil =>
-        cast.name shouldBe Operators.cast
-        cast.code shouldBe "&*&mut baz as &mut dyn rust2cpgtest::Bar"
-        cast.typeFullName shouldBe "&mut dyn rust2cpgtest::Bar"
-        cast.dynamicTypeHintFullName shouldBe Seq("rust2cpgtest::Baz")
+      inside(cpg.method.name("baz_bar_mut").block.astChildren.isCall.isAssignment.source.l) {
+        case (cast: Call) :: Nil =>
+          cast.name shouldBe Operators.cast
+          cast.code shouldBe "&*&mut baz as &mut dyn rust2cpgtest::Bar"
+          cast.typeFullName shouldBe "&mut dyn rust2cpgtest::Bar"
+          cast.dynamicTypeHintFullName shouldBe Seq("rust2cpgtest::Baz")
       }
     }
 
     "have no dynamic type hint when casting from another trait object" in {
-      inside(cpg.method.name("bar_foo").block.assignment.source.l) { case (cast: Call) :: Nil =>
+      inside(cpg.method.name("bar_foo").block.astChildren.isCall.isAssignment.source.l) { case (cast: Call) :: Nil =>
         cast.name shouldBe Operators.cast
         cast.code shouldBe "&*x as &dyn rust2cpgtest::Foo"
         cast.dynamicTypeHintFullName shouldBe Seq()
