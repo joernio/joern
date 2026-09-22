@@ -211,6 +211,39 @@ class DdgGenerator(semantics: Semantics) {
     addEdgesToCapturedIdentifiersAndParameters()
     addEdgesToExitNode(method.methodReturn)
     addEdgesFromLoneIdentifiersToExit(method)
+    addAddressDerefEdges(method)
+  }
+
+  /** ponytail: intraprocedural only; one address-of operand per Local/param; no heap or interprocedural tracking. */
+  private def addAddressDerefEdges(method: Method)(implicit dstGraph: DiffGraphBuilder): Unit = {
+    val addressOfMap: Map[Long, CfgNode] = method.ast.isCall
+      .nameExact(Operators.assignment)
+      .flatMap { assign =>
+        val lhs = assign.argumentOption(1).collect { case id: Identifier => id }
+        val rhs = assign.argumentOption(2).collect { case c: Call if c.name == Operators.addressOf => c }
+        for {
+          id   <- lhs
+          addr <- rhs
+          decl <- id.refsTo.collect { case local: Local => local; case param: MethodParameterIn => param }.headOption
+          operand <- addr.argumentOption(1).collect {
+            case operand: Identifier => operand
+            case c: Call if c.name == Operators.indirectIndexAccess || c.name == Operators.indexAccess => c
+          }
+        } yield decl.id -> operand
+      }
+      .groupBy(_._1)
+      .collect { case (declId, pairs) if pairs.size == 1 => declId -> pairs.head._2 }
+      .toMap
+
+    method.ast.isCall.nameExact(Operators.indirection).foreach { derefCall =>
+      derefCall.argumentOption(1).collect { case id: Identifier => id }.foreach { id =>
+        id.refsTo
+          .collect { case local: Local => local; case param: MethodParameterIn => param }
+          .headOption
+          .flatMap(decl => addressOfMap.get(decl.id))
+          .foreach(sourceNode => addEdge(sourceNode, derefCall, nodeToEdgeLabel(sourceNode)))
+      }
+    }
   }
 
   private def addEdge(fromNode: CfgNode, toNode: CfgNode, variable: String = "")(implicit
