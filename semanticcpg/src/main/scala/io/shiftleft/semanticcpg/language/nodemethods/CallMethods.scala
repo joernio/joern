@@ -59,7 +59,7 @@ class CallMethods(val node: Call) extends AnyVal with NodeExtension {
     Option.when(allArithmeticTypes.contains(node.methodFullName))(node.asInstanceOf[Arithmetic])
 
   def isArrayAccess: Option[ArrayAccess] =
-    Option.when(allArrayAccessTypes.contains(node.methodFullName))(node.asInstanceOf[Arithmetic])
+    Option.when(allArrayAccessTypes.contains(node.methodFullName))(node.asInstanceOf[ArrayAccess])
 
   def isFieldAccess: Option[FieldAccess] =
     Option.when(allFieldAccessTypes.contains(node.methodFullName))(node.asInstanceOf[FieldAccess])

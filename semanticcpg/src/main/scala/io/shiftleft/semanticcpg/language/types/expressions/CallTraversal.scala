@@ -34,7 +34,7 @@ class CallTraversal(val traversal: Iterator[Call]) extends AnyVal {
     traversal.methodFullNameExact(allArithmeticTypes*).collectAll[Arithmetic]
 
   def isArrayAccess: Iterator[ArrayAccess] =
-    traversal.methodFullNameExact(allArrayAccessTypes*).collectAll[Arithmetic]
+    traversal.methodFullNameExact(allArrayAccessTypes*).collectAll[ArrayAccess]
 
   def isFieldAccess: Iterator[FieldAccess] =
     traversal.methodFullNameExact(allFieldAccessTypes*).collectAll[FieldAccess]
