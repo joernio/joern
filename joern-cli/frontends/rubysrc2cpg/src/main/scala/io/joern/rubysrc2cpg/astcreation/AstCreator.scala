@@ -4,6 +4,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, NamespaceScope, RubyProgramSummary, RubyScope}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
+import io.joern.x2cpg.utils.OffsetUtils
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, EvaluationStrategies, ModifierTypes}
@@ -39,7 +40,18 @@ class AstCreator(
 
   protected var parseLevel: AstParseLevel = AstParseLevel.FULL_AST
 
-  override protected def offset(node: RubyExpression): Option[(Int, Int)] = node.offset
+  private val isErbFile = fileName.endsWith(".erb")
+
+  private lazy val codepointToUtf16Offset = OffsetUtils.buildCodepointToUtf16OffsetTable(fileContent)
+
+  override protected def offset(node: RubyExpression): Option[(Int, Int)] = {
+    // ERB parser offsets reference synthetic (expanded) Ruby, not the original .erb in file.content.
+    // Return raw offsets as-is since no meaningful conversion is possible.
+    if (isErbFile) return node.offset
+    node.offset.flatMap { case (start, end) =>
+      Some((codepointToUtf16Offset(start), codepointToUtf16Offset(end)))
+    }
+  }
 
   protected val relativeFileName: String =
     projectRoot
