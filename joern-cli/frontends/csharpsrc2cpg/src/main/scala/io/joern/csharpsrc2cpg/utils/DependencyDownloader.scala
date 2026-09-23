@@ -213,11 +213,11 @@ class DependencyDownloader(
     val astGenRunnerResult = astGenRunner.execute(targetDir)
     val summaries          = astGenRunnerResult.parsedFiles
       .map(path => Paths.get(path))
-      .flatMap { f =>
-        Using.resource(Files.newInputStream(f)) { fis =>
+      .flatMap { file =>
+        Using.resource(Files.newInputStream(file)) { fis =>
           CSharpProgramSummary.jsonToInitialMapping(fis) match {
             case Failure(exception) =>
-              logger.error(s"Unable to parse JSON program summary at $f", exception)
+              logger.error(s"Unable to parse JSON program summary at $file", exception)
               None
             case Success(parsedJson) =>
               Option(parsedJson)

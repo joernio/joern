@@ -126,7 +126,9 @@ class DdgGenerator {
       val (visible, invisible) = parents.partition(x => shouldBeDisplayed(x.src) && x.srcVisible)
       val result               = visible.toList ++ invisible.toList.flatMap { node =>
         val parentInEdgesToDisplay = inEdgesToDisplay(node.src, visited ++ List(dstNode))
-        parentInEdgesToDisplay.map(y => Edge(y.src, dstNode, y.srcVisible, edgeType = edgeType, label = y.label))
+        parentInEdgesToDisplay.map(parentEdge =>
+          Edge(parentEdge.src, dstNode, parentEdge.srcVisible, edgeType = edgeType, label = parentEdge.label)
+        )
       }.distinct
       edgeCache.put(dstNode, result)
       result
