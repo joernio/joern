@@ -235,7 +235,8 @@ class DdgGenerator(semantics: Semantics) {
       .collect { case (declId, pairs) if pairs.size == 1 => declId -> pairs.head._2 }
       .toMap
 
-    if (addressOfMap.isEmpty) return
+    if (addressOfMap.isEmpty)
+      return
 
     // Only matches `*identifier` where identifier refs a Local or MethodParameterIn.
     // Skips complex nesting like `(*p)`, `*&x`, or `*f()`.
