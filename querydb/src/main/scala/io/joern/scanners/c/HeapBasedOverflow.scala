@@ -29,7 +29,7 @@ object HeapBasedOverflow extends QueryBundle {
       score = 4,
       withStrRep({ cpg =>
         val src =
-          cpg.method(".*malloc$").callIn.where(_.argument(1).arithmetic)
+          cpg.method(".*malloc$").callIn.where(_.argument(1).arithmetic).l
 
         cpg.method("(?i)memcpy").callIn.filter { memcpyCall =>
           memcpyCall
