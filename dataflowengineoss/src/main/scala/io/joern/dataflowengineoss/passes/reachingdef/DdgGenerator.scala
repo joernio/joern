@@ -235,6 +235,10 @@ class DdgGenerator(semantics: Semantics) {
       .collect { case (declId, pairs) if pairs.size == 1 => declId -> pairs.head._2 }
       .toMap
 
+    if (addressOfMap.isEmpty) return
+
+    // Only matches `*identifier` where identifier refs a Local or MethodParameterIn.
+    // Skips complex nesting like `(*p)`, `*&x`, or `*f()`.
     method.ast.isCall.nameExact(Operators.indirection).foreach { derefCall =>
       derefCall.argumentOption(1).collect { case id: Identifier => id }.foreach { id =>
         id.refsTo

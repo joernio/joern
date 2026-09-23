@@ -76,10 +76,30 @@ class DoublePointerDataflowTests extends DataFlowCodeToCpgSuite {
         |  sink(x);
         |}""".stripMargin)
 
+    // Because pairs.size == 1 drops both address-of assignments, the positive flow for `b -> x`
+    // is intentionally unasserted here. Do not 'fix' this guard expecting positive flow.
     "not flow from a to x after reassignment" in {
       val source = cpg.identifier("a")
       val sink   = cpg.identifier("x")
       sink.reachableByFlows(source).size shouldBe 0
+    }
+  }
+
+  "address-of into MethodParameterIn then dereference" should {
+    val cpg = code("""
+        |void use(char *b);
+        |
+        |void foo(char **p) {
+        |  char *src;
+        |  p = &src;
+        |  char *b = *p;
+        |  use(b);
+        |}""".stripMargin)
+
+    "find flow from src to b" in {
+      val source = cpg.identifier("src").where(_.method.name("foo"))
+      val sink   = cpg.identifier("b").where(_.method.name("foo"))
+      sink.reachableByFlows(source).nonEmpty shouldBe true
     }
   }
 
