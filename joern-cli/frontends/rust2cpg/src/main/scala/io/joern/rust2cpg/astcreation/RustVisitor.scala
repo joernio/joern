@@ -833,10 +833,12 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // PathExpr =
   //  Attr* Path
   private def visitPathExpr(pathExpr: PathExpr): Ast = {
-    // A path has `methodFullName` if it denotes a method reference. Otherwise, it's some other identifier.
-    pathExpr.methodFullName match {
-      case Some(methodFullName) => Ast(methodRefNode(pathExpr, code(pathExpr), methodFullName, methodFullName))
-      case None                 => visitPath(pathExpr.path)
+    // A path has `methodFullName` if it denotes a method reference, or `ctorTypeFullName` if it denotes a unit
+    // constructor. Otherwise, it's some other identifier.
+    (pathExpr.methodFullName, pathExpr.ctorTypeFullName) match {
+      case (Some(methodFullName), _)   => Ast(methodRefNode(pathExpr, code(pathExpr), methodFullName, methodFullName))
+      case (_, Some(ctorTypeFullName)) => unitCtorCallAst(pathExpr, ctorTypeFullName)
+      case _                           => visitPath(pathExpr.path)
     }
   }
 
@@ -1979,5 +1981,33 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val typeDecl   = typeDeclForTypeAlias(typeAlias)
     val attributes = typeAlias.attr.map(visitAttr)
     Ast(typeDecl).withChildren(attributes)
+  }
+
+  // Lowers a unit struct constructor e.g. `Foo` as follows:
+  // BLOCK
+  //   LOCAL tmp
+  //   tmp = <operator>.alloc
+  //   Foo::<init>(&tmp)
+  //   tmp
+  private def unitCtorCallAst(pathExpr: PathExpr, ctorTypeFullName: String): Ast = {
+    val typeFullName = typeFullNameForExpr(pathExpr)
+    val tmpName      = contextStack.nextTmpName()
+
+    allocBlockAst(pathExpr, tmpName, typeFullName) { mkTmp =>
+      val initCall = callNode(
+        pathExpr,
+        code(pathExpr),
+        Defines.ConstructorMethodName,
+        combineRustFullName(ctorTypeFullName, Defines.ConstructorMethodName),
+        DispatchTypes.STATIC_DISPATCH,
+        None,
+        Some("()")
+      )
+      val addressOfTmp = {
+        val addressOf = operatorCallNode(pathExpr, s"&$tmpName", Operators.addressOf, Some(s"&$typeFullName"))
+        callAst(addressOf, Seq(mkTmp(pathExpr)))
+      }
+      callAst(initCall, Nil, base = Some(addressOfTmp)) :: Nil
+    }
   }
 }
