@@ -12,6 +12,8 @@ _rules = make_scala_rules(
         "-language:implicitConversions",
         "-Wconf:msg=Implicit parameters should be provided with a `using` clause:s",
     ],
+    # Keep in sync with java_common_opts in bazel/java.bzl.
+    common_javacopts = ["-g", "-Xlint", "--release=17"],
     common_scala_binary_runtime_deps = [
         # We bring in the linked version of codepropertygraph domain classes as default/common
         # dependency so that people do not forget to add it. Missing it results in all kinds
