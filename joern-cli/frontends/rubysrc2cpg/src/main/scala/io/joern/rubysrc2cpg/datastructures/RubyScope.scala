@@ -145,7 +145,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   }
 
   def lookupCapturedVariable(identifier: String): Option[DeclarationNew] = {
-    val outerStack = stack.drop(1)
+    val outerStack     = stack.drop(1)
     val methodBoundary = outerStack.indexWhere {
       case ScopeElement(m: MethodLikeScope, _) if !m.fullName.contains("<lambda>") => true
       case _                                                                       => false
