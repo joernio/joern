@@ -537,7 +537,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         case "const"     => modifierNode(node, CSharpModifiers.CONST)
         case "abstract"  => modifierNode(node, ModifierTypes.ABSTRACT)
         case "protected" => modifierNode(node, ModifierTypes.PROTECTED)
-        case other           =>
+        case other       =>
           logger.warn(s"Unhandled modifier name '$other'")
           null
       }

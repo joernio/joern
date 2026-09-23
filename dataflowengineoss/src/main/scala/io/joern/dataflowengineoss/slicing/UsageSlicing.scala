@@ -187,7 +187,8 @@ object UsageSlicing {
         .map {
           case _: MethodRef => "LAMBDA"
           case other        =>
-            other.propertyOption(Properties.TypeFullName)
+            other
+              .propertyOption(Properties.TypeFullName)
               .orElse(other.property(Properties.DynamicTypeHintFullName).headOption)
               .getOrElse("ANY")
         }

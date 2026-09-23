@@ -889,7 +889,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       case List(c: Call, idx: Literal)          => CollectionVar(callName(c), idx.code)
       case List(c: Call, idx: Identifier)       => CollectionVar(callName(c), idx.code)
       case xs                                   =>
-        logger.debug(s"Unhandled index access ${xs.map(elem => (elem.label, elem.code)).mkString(",")} @ ${debugLocation(c)}")
+        logger.debug(
+          s"Unhandled index access ${xs.map(elem => (elem.label, elem.code)).mkString(",")} @ ${debugLocation(c)}"
+        )
         null
     })
   }

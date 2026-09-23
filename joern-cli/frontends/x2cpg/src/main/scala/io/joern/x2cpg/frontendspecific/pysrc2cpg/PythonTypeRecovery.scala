@@ -128,7 +128,10 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
       case List(base: Identifier, fi: FieldIdentifier) if base.name.equals("self") && fieldParents.nonEmpty =>
         val referencedFields = cpg.typeDecl.fullNameExact(fieldParents.toSeq*).member.nameExact(fi.canonicalName)
         val globalTypes      =
-          referencedFields.flatMap(field => field.typeFullName +: field.dynamicTypeHintFullName).filterNot(_ == Constants.ANY).toSet
+          referencedFields
+            .flatMap(field => field.typeFullName +: field.dynamicTypeHintFullName)
+            .filterNot(_ == Constants.ANY)
+            .toSet
         associateTypes(i, globalTypes)
       case _ => super.visitIdentifierAssignedToFieldLoad(i, fa)
     }

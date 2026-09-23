@@ -221,7 +221,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           val cCode          = code(c.pattern)
           val tpeFromTypeMap = fullnameProvider.typeFullname(c)
           val typeFullName   = tpeFromTypeMap.getOrElse(
-            c.typeAnnotation.map(typeAnnotation => AstCreatorHelper.cleanType(code(typeAnnotation.`type`))).getOrElse(Defines.Any)
+            c.typeAnnotation
+              .map(typeAnnotation => AstCreatorHelper.cleanType(code(typeAnnotation.`type`)))
+              .getOrElse(Defines.Any)
           )
           registerType(typeFullName)
           val memberNode_ = memberNode(c, cCode, cCode, typeFullName)
@@ -456,7 +458,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         val cCode          = code(binding)
         val tpeFromTypeMap = fullnameProvider.typeFullname(binding)
         val typeFullName   = tpeFromTypeMap.getOrElse(
-          binding.typeAnnotation.map(typeAnnotation => AstCreatorHelper.cleanType(code(typeAnnotation.`type`))).getOrElse(Defines.Any)
+          binding.typeAnnotation
+            .map(typeAnnotation => AstCreatorHelper.cleanType(code(typeAnnotation.`type`)))
+            .getOrElse(Defines.Any)
         )
         registerType(typeFullName)
         accumulator.addExtensionMember(extendedTypeFullName, name, cCode, typeFullName)

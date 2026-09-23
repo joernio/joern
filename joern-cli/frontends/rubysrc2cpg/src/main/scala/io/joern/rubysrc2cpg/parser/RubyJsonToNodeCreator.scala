@@ -35,7 +35,7 @@ class RubyJsonToNodeCreator(
       case obj: ujson.Obj => visit(obj)
       case ujson.Null     => StatementList(Nil)(defaultTextSpan())
       case ujson.Str(x)   => StaticLiteral(Defines.prefixAsCoreType(Defines.String))(defaultTextSpan(x))
-      case other              =>
+      case other          =>
         logger.warn(s"Unhandled ujson type ${other.getClass}")
         defaultResult()
     }
@@ -918,7 +918,7 @@ class RubyJsonToNodeCreator(
     obj(ParserKeys.Value) match {
       case ujson.Null      => ArrayParameter("*")(obj.toTextSpan)
       case ujson.Str(name) => ArrayParameter(name)(obj.toTextSpan)
-      case other               =>
+      case other           =>
         logger.warn(s"Unhandled `restarg` JSON type '$other'")
         defaultResult(Option(obj.toTextSpan))
     }
