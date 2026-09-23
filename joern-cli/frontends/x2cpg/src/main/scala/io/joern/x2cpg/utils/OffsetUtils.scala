@@ -34,10 +34,10 @@ object OffsetUtils {
     var byteIdx  = 0
     while (byteIdx < utf8Bytes.length) {
       table(byteIdx) = utf16Idx
-      val b      = utf8Bytes(byteIdx) & 0xff
+      val leadingByte = utf8Bytes(byteIdx) & 0xff
       // UTF-8 leading byte encodes sequence length: 0xxxxxxx = 1 byte (ASCII),
       // 110xxxxx = 2 bytes, 1110xxxx = 3 bytes, 11110xxx = 4 bytes.
-      val seqLen = if (b < 0x80) 1 else if (b < 0xe0) 2 else if (b < 0xf0) 3 else 4
+      val seqLen = if (leadingByte < 0x80) 1 else if (leadingByte < 0xe0) 2 else if (leadingByte < 0xf0) 3 else 4
       // Fill intermediate bytes in multi-byte sequences with the same UTF-16 offset,
       // so lookups at any byte within a character return a usable value.
       var i = 1
@@ -70,7 +70,7 @@ object OffsetUtils {
 
   def buildIso8859ToUtf16OffsetTable(bytes: Array[Byte]): Array[Int] = {
     val table = new Array[Int](bytes.length + 1)
-    var i = 0
+    var i     = 0
     while (i <= bytes.length) {
       table(i) = i
       i += 1
@@ -92,15 +92,15 @@ object OffsetUtils {
     var utf16Idx = 0
     while (utf16Idx < content.length && byteIdx < bytes.length) {
       table(byteIdx) = utf16Idx
-      val ch       = content.charAt(utf16Idx)
-      val charStr  = if (Character.isHighSurrogate(ch) && utf16Idx + 1 < content.length) {
+      val ch      = content.charAt(utf16Idx)
+      val charStr = if (Character.isHighSurrogate(ch) && utf16Idx + 1 < content.length) {
         utf16Idx += 1
         new String(Array(ch, content.charAt(utf16Idx)), 0, 2)
       } else {
         String.valueOf(ch)
       }
       val charBytes = charStr.getBytes(charset).length
-      var i = 1
+      var i         = 1
       while (i < charBytes && (byteIdx + i) < bytes.length) {
         table(byteIdx + i) = table(byteIdx)
         i += 1
