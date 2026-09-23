@@ -237,4 +237,26 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "match shadowing previous let" should {
+    val cpg = code("""
+        |fn foo(opt: Option<i32>) {
+        |  let y = 1;
+        |  match opt {
+        |  Some(y) => bar(y),
+        |  _ => bar(y),
+        |  };
+        |  bar(y);
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      cpg.local.nameExact("y").lineNumber.l shouldBe List(3, 5)
+    }
+
+    "have correct REF edges for each local" in {
+      cpg.local.nameExact("y").lineNumber(3).referencingIdentifiers.lineNumber.l shouldBe List(3, 6, 8)
+      cpg.local.nameExact("y").lineNumber(5).referencingIdentifiers.lineNumber.l shouldBe List(5, 5)
+    }
+  }
+
 }
