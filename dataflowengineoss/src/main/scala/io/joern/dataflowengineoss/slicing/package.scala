@@ -278,7 +278,7 @@ package object slicing {
     columnNumber: Option[Int] = None,
     label: String = "CALL"
   ) extends DefComponent derives ReadWriter {
-    override def toString: String = super.toString + resolvedMethod.map(s => s" @ $s").getOrElse("")
+    override def toString: String = super.toString + resolvedMethod.map(resolved => s" @ $resolved").getOrElse("")
   }
 
   /** Represents data introduced by an unhandled data structure.

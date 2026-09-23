@@ -55,8 +55,8 @@ object UsageSlicing {
     val language = cpg.metaData.language.headOption
     val root     = cpg.metaData.root.headOption
     val tasks    = declarations
-      .filter(a => atLeastNCalls(a, config.minNumCalls) && !a.name.startsWith("_tmp_"))
-      .map(a => () => new TrackUsageTask(cpg, a, typeMap).call())
+      .filter(decl => atLeastNCalls(decl, config.minNumCalls) && !decl.name.startsWith("_tmp_"))
+      .map(decl => () => new TrackUsageTask(cpg, decl, typeMap).call())
       .iterator
     ConcurrentTaskUtil
       .runUsingThreadPool(tasks, config.parallelism.getOrElse(Runtime.getRuntime.availableProcessors()))
@@ -165,9 +165,9 @@ object UsageSlicing {
             .headOption
             .getOrElse((None, None))
         else if (isConstructor) {
-          val m        = constructorTypeMatcher.matcher(baseCall.code)
+          val matcher  = constructorTypeMatcher.matcher(baseCall.code)
           val typeName =
-            if (m.find()) m.group(1)
+            if (matcher.find()) matcher.group(1)
             else baseCall.code.stripPrefix("new ").takeWhile(!_.equals('('))
           Option(typeName) -> typeMap.get(typeName)
         } else
@@ -186,9 +186,9 @@ object UsageSlicing {
         .collect { case n: Expression if n.argumentIndex > 0 => n }
         .map {
           case _: MethodRef => "LAMBDA"
-          case x            =>
-            x.propertyOption(Properties.TypeFullName)
-              .orElse(x.property(Properties.DynamicTypeHintFullName).headOption)
+          case other        =>
+            other.propertyOption(Properties.TypeFullName)
+              .orElse(other.property(Properties.DynamicTypeHintFullName).headOption)
               .getOrElse("ANY")
         }
         .collect { case x: String => x }

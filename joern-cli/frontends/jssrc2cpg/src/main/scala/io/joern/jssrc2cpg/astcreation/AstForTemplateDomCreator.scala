@@ -12,7 +12,7 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
     val openingAst   = astForNodeWithFunctionReference(jsxElem.json("openingElement"))
     val childrenAsts = astForNodes(jsxElem.json("children").arr)
     val closingAst   = safeObj(jsxElem.json, "closingElement")
-      .map(e => astForNodeWithFunctionReference(Obj(e)))
+      .map(elem => astForNodeWithFunctionReference(Obj(elem)))
       .getOrElse(Ast())
     val allChildrenAsts = openingAst +: childrenAsts :+ closingAst
     Ast(domNode).withChildren(allChildrenAsts)
@@ -43,7 +43,7 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
         jsxAttr.columnNumber.map(_ - colon.length)
       )
     val valueAst = safeObj(jsxAttr.json, "value")
-      .map(e => astForNodeWithFunctionReference(Obj(e)))
+      .map(elem => astForNodeWithFunctionReference(Obj(elem)))
       .getOrElse(Ast())
     Ast(domNode).withChild(valueAst)
   }

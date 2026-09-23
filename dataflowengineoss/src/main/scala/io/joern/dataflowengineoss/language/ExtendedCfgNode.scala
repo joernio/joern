@@ -82,8 +82,8 @@ class ExtendedCfgNode(val traversal: Iterator[CfgNode]) extends AnyVal {
 
     engine.shutdown()
     val sources               = startingPointsWithSources.map(_.source)
-    val startingPointToSource = startingPointsWithSources.map { x =>
-      x.startingPoint.asInstanceOf[AstNode] -> x.source
+    val startingPointToSource = startingPointsWithSources.map { entry =>
+      entry.startingPoint.asInstanceOf[AstNode] -> entry.source
     }.toMap
     val res = result.par.map { r =>
       val startingPoint = r.path.head.node

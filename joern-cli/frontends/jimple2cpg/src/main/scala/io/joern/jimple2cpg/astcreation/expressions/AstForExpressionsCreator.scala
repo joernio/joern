@@ -25,8 +25,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case x: LengthExpr =>
         Seq(astForUnaryExpr(Operators.lengthOf, x, x.getOp, parentUnit))
       case x: NegExpr => Seq(astForUnaryExpr(Operators.minus, x, x.getOp, parentUnit))
-      case x          =>
-        logger.warn(s"Unhandled soot.Expr type ${x.getClass}")
+      case other      =>
+        logger.warn(s"Unhandled soot.Expr type ${other.getClass}")
         Seq()
     }
   }

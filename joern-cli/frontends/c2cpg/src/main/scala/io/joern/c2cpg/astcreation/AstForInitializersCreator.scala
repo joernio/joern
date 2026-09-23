@@ -39,10 +39,10 @@ trait AstForInitializersCreator { this: AstCreator =>
     val node = blockNode(d)
     scope.pushNewBlockScope(node)
     val op    = Operators.assignment
-    val calls = withIndex(d.getDesignators) { (des, o) =>
+    val calls = withIndex(d.getDesignators) { (des, offset) =>
       val callNode_ =
         callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Void)))
-          .argumentIndex(o)
+          .argumentIndex(offset)
       val left  = astForNode(des)
       val right = astForNode(d.getOperand)
       callAst(callNode_, List(left, right))
@@ -55,10 +55,10 @@ trait AstForInitializersCreator { this: AstCreator =>
     val node = blockNode(d)
     scope.pushNewBlockScope(node)
     val op    = Operators.assignment
-    val calls = withIndex(d.getDesignators) { (des, o) =>
+    val calls = withIndex(d.getDesignators) { (des, offset) =>
       val callNode_ =
         callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Void)))
-          .argumentIndex(o)
+          .argumentIndex(offset)
       val left  = astForNode(des)
       val right = astForNode(d.getOperand)
       callAst(callNode_, List(left, right))

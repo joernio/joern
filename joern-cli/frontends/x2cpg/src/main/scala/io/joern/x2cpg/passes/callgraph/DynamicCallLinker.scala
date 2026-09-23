@@ -125,7 +125,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       .to(mutable.LinkedHashSet) match {
       case classesToEval if classesToEval.isEmpty => visitedNodes
       case classesToEval                          =>
-        classesToEval.flatMap(t => inheritTraversal(t, inSuperDirection, visitedNodes))
+        classesToEval.flatMap(typDecl => inheritTraversal(typDecl, inSuperDirection, visitedNodes))
         visitedNodes
     }
   }

@@ -416,8 +416,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val callWithLambdaArg = node.withoutBlock match {
       case x: SimpleCall => astForSimpleCall(x.copy(arguments = x.arguments ++ typeRefDummyNode)(x.span))
       case x: MemberCall => astForMemberCall(x.copy(arguments = x.arguments ++ typeRefDummyNode)(x.span))
-      case x             =>
-        logger.warn(s"Unhandled call-with-block type ${code(x)}, creating anonymous method structures only")
+      case other             =>
+        logger.warn(s"Unhandled call-with-block type ${code(other)}, creating anonymous method structures only")
         Ast()
     }
 
@@ -1103,8 +1103,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       case keyIdentifier: SimpleIdentifier        => setArgumentName(value, keyIdentifier.text)
       case symbol @ StaticLiteral(Defines.Symbol) => setArgumentName(value, symbol.text.stripPrefix(":"))
       case _: (LiteralExpr | RubyCall | ProcOrLambdaExpr | MemberAccess | IndexAccess) => astForExpression(assoc)
-      case x                                                                           =>
-        logger.warn(s"Not explicitly handled argument association key of type ${x.getClass.getSimpleName}")
+      case other                                                                           =>
+        logger.warn(s"Not explicitly handled argument association key of type ${other.getClass.getSimpleName}")
         astForExpression(assoc)
     }
   }

@@ -45,7 +45,7 @@ object DotSerializer {
 
     sb.append(s"""node [shape="rect"];  \n""")
     val nodeStrings     = graph.vertices.map(nodeToDot)
-    val edgeStrings     = graph.edges.map(e => edgeToDot(e, withEdgeTypes))
+    val edgeStrings     = graph.edges.map(edge => edgeToDot(edge, withEdgeTypes))
     val subgraphStrings = graph.subgraph.zipWithIndex.map { case ((subgraph, nodes), idx) =>
       nodesToSubGraphs(subgraph, nodes, idx)
     }

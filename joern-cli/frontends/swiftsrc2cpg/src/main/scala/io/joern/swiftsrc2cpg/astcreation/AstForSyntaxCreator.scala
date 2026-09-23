@@ -53,8 +53,8 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     val callName = code(node.availabilityKeyword)
 
     val callNode = createStaticCallNode(node, code(node), callName, callName, Defines.Bool)
-    val argAsts  = node.availabilityArguments.children.map { c =>
-      Ast(literalNode(c, code(c).stripSuffix(","), Option(Defines.String)))
+    val argAsts  = node.availabilityArguments.children.map { child =>
+      Ast(literalNode(child, code(child).stripSuffix(","), Option(Defines.String)))
     }
     callAst(callNode, argAsts)
   }

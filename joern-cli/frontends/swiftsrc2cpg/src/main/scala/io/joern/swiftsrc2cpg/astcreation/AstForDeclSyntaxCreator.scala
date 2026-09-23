@@ -221,7 +221,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           val cCode          = code(c.pattern)
           val tpeFromTypeMap = fullnameProvider.typeFullname(c)
           val typeFullName   = tpeFromTypeMap.getOrElse(
-            c.typeAnnotation.map(t => AstCreatorHelper.cleanType(code(t.`type`))).getOrElse(Defines.Any)
+            c.typeAnnotation.map(typeAnnotation => AstCreatorHelper.cleanType(code(typeAnnotation.`type`))).getOrElse(Defines.Any)
           )
           registerType(typeFullName)
           val memberNode_ = memberNode(c, cCode, cCode, typeFullName)
@@ -456,7 +456,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         val cCode          = code(binding)
         val tpeFromTypeMap = fullnameProvider.typeFullname(binding)
         val typeFullName   = tpeFromTypeMap.getOrElse(
-          binding.typeAnnotation.map(t => AstCreatorHelper.cleanType(code(t.`type`))).getOrElse(Defines.Any)
+          binding.typeAnnotation.map(typeAnnotation => AstCreatorHelper.cleanType(code(typeAnnotation.`type`))).getOrElse(Defines.Any)
         )
         registerType(typeFullName)
         accumulator.addExtensionMember(extendedTypeFullName, name, cCode, typeFullName)
@@ -498,7 +498,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case typeDeclSyntax: AssociatedTypeDeclSyntax => typeDeclSyntax.modifiers.children
       case variableDeclSyntax: VariableDeclSyntax   => variableDeclSyntax.modifiers.children
     }
-    val modifiers   = modifierList.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
+    val modifiers   = modifierList.flatMap(modifier => astForNode(modifier).root.map(_.asInstanceOf[NewModifier]))
     val allModifier = if (modifiers.isEmpty) {
       Seq(NewModifier().modifierType(ModifierTypes.PRIVATE))
     } else {
@@ -566,8 +566,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case d: DeinitializerDeclSyntax => d.attributes.children.map(astForNode)
       case s: SubscriptDeclSyntax     => s.attributes.children.map(astForNode)
       case c: ClosureExprSyntax       =>
-        val x = c.signature.map(s => s.attributes.children.map(astForNode))
-        x.getOrElse(Seq.empty)
+        val attrAsts = c.signature.map(sig => sig.attributes.children.map(astForNode))
+        attrAsts.getOrElse(Seq.empty)
     }
     val modifiers = modifiersForFunctionLike(node)
     (attributes, modifiers)
@@ -843,7 +843,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForImportDeclSyntax(node: ImportDeclSyntax): Ast = {
-    val importPath        = node.path.children.map(c => code(c.name))
+    val importPath        = node.path.children.map(component => code(component.name))
     val (name, groupName) = importPath match {
       case Nil         => (None, None)
       case elem :: Nil => (Option(elem), Option(elem))

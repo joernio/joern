@@ -196,8 +196,8 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
           }
         case PhpArrayItem(_, value: PhpVariable, _, _, _) => createNotNullCall(value)
         case PhpArrayItem(_, value: PhpListExpr, _, _, _) => createNotNullChecks(value)
-        case x                                            =>
-          createNotNullCall(x)
+        case other                                            =>
+          createNotNullCall(other)
       }
     }
 

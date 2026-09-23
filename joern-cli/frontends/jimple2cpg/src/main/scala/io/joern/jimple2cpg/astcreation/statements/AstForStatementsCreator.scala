@@ -31,9 +31,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case x: MonitorStmt      => astsForMonitorStmt(x)
       case x: IdentityStmt     => astsForIdentityStmt(x)
       case _: NopStmt          => Seq() // Ignore NOP statements
-      case x                   =>
-        logger.warn(s"Unhandled soot.Unit type ${x.getClass}")
-        Seq(astForUnknownStmt(x, None))
+      case other               =>
+        logger.warn(s"Unhandled soot.Unit type ${other.getClass}")
+        Seq(astForUnknownStmt(other, None))
     }
     // Populate standard control-flow information
     info.unitToAsts.put(statement, stmt)
@@ -106,7 +106,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astsForTableSwitchStmt(tableSwitchStmt: SwitchStmt): Seq[Ast] = {
     val switchAst = astForSwitchWithDefaultAndCondition(tableSwitchStmt)
     val tgtAsts   = tableSwitchStmt.getTargets.asScala
-      .filter(x => tableSwitchStmt.getDefaultTarget != x)
+      .filter(target => tableSwitchStmt.getDefaultTarget != target)
       .zipWithIndex
       .map { case (tgt, i) =>
         Ast(

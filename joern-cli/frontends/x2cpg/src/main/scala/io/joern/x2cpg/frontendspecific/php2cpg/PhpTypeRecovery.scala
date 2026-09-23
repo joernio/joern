@@ -113,13 +113,13 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
      * return types as they get collected across the multiple return statements
      * for a single function.
      */
-    val m             = ret.method
+    val method        = ret.method
     val existingTypes = mutable.HashSet.from(
-      (m.methodReturn.typeFullName +: m.methodReturn.dynamicTypeHintFullName)
+      (method.methodReturn.typeFullName +: method.methodReturn.dynamicTypeHintFullName)
         .filterNot(_ == "ANY")
         .filterNot(_.startsWith(Defines.UnresolvedNamespace))
     )
-    existingTypes.addAll(methodTypesTable.getOrElse(m, mutable.HashSet()))
+    existingTypes.addAll(methodTypesTable.getOrElse(method, mutable.HashSet()))
 
     def appendDummyReturn(name: String, xs: Set[String]) = xs.map {
       case fn if fn.endsWith(XTypeRecovery.DummyReturnType) => fn
@@ -195,7 +195,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
         false
       }
     }
-    methodTypesTable.update(m, saveTypes)
+    methodTypesTable.update(method, saveTypes)
     builder.setNodeProperty(ret.method.methodReturn, PropertyNames.DynamicTypeHintFullName, saveTypes)
   }
 
@@ -252,7 +252,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
       case List(c: Call, idx: Literal)          => CollectionVar(callName(c), idx.code)
       case List(c: Call, idx: Identifier)       => CollectionVar(callName(c), idx.code)
       case xs                                   =>
-        logger.debug(s"Unhandled index access ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${c.name}")
+        logger.debug(s"Unhandled index access ${xs.map(elem => (elem.label, elem.code)).mkString(",")} @ ${c.name}")
         null
     })
 

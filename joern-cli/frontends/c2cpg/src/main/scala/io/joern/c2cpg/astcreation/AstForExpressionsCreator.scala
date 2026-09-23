@@ -301,7 +301,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
           callNode(call, code(call), name, fullName, DispatchTypes.STATIC_DISPATCH, Some(signature), Some(Defines.Any))
         createCallAst(callCpgNode, args, base = Some(instanceAst), receiver = Some(instanceAst))
       case idExpr: CPPASTIdExpression =>
-        val args        = call.getArguments.toList.map(a => astForNode(a))
+        val args        = call.getArguments.toList.map(arg => astForNode(arg))
         val name        = stripTemplateTags(StringUtils.normalizeSpace(idExpr.getName.getLastName.toString))
         val signature   = X2CpgDefines.UnresolvedSignature
         val fullName    = s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature(${args.size})"
@@ -311,7 +311,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
       case otherExpr =>
         // This could either be a pointer or an operator() call we do not know at this point
         // but since it is CPP we opt for the latter.
-        val args        = call.getArguments.toList.map(a => astForNode(a))
+        val args        = call.getArguments.toList.map(arg => astForNode(arg))
         val name        = Defines.OperatorCall
         val signature   = X2CpgDefines.UnresolvedSignature
         val fullName    = s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature(${args.size})"

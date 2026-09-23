@@ -48,7 +48,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case MemberExpression   => Seq(code(obj.json("property")))
       case ObjectProperty     => Seq(code(obj.json("key")))
       case ObjectExpression   =>
-        obj.json("properties").arr.toSeq.flatMap(d => codeForBabelNodeInfo(createBabelNodeInfo(d)))
+        obj.json("properties").arr.toSeq.flatMap(prop => codeForBabelNodeInfo(createBabelNodeInfo(prop)))
       case VariableDeclaration =>
         obj.json("declarations").arr.toSeq.flatMap(d => codeForBabelNodeInfo(createBabelNodeInfo(d)))
       case _ => Seq.empty

@@ -71,9 +71,9 @@ trait AstForStatementsCreator extends AstForSimpleStatementsCreator with AstForF
       case x: WhileStmt                  => astsForWhile(x)
       case x: LocalClassDeclarationStmt  => Seq(astForLocalClassDeclaration(x))
       case x: LocalRecordDeclarationStmt => Seq(astForLocalRecordDeclaration(x))
-      case x                             =>
-        logger.warn(s"Attempting to generate AST for unknown statement of type ${x.getClass}")
-        Seq(unknownAst(x))
+      case other                             =>
+        logger.warn(s"Attempting to generate AST for unknown statement of type ${other.getClass}")
+        Seq(unknownAst(other))
     }
 
     val patternVariableAsts =

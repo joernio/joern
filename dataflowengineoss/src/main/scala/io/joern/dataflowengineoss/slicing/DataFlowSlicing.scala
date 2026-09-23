@@ -79,10 +79,10 @@ object DataFlowSlicing {
       case n: Return    => sliceNode.copy(name = "RET", typeFullName = n.method.methodReturn.typeFullName)
       case n: MethodRef => sliceNode.copy(name = n.methodFullName, code = n.code)
       case n: TypeRef   => sliceNode.copy(name = n.typeFullName, code = n.code)
-      case n            =>
+      case node         =>
         sliceNode.copy(
-          name = n.propertyOption(Properties.Name).getOrElse(""),
-          typeFullName = n.propertyOption(Properties.TypeFullName).getOrElse("")
+          name = node.propertyOption(Properties.Name).getOrElse(""),
+          typeFullName = node.propertyOption(Properties.TypeFullName).getOrElse("")
         )
     }
   }

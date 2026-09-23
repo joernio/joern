@@ -208,8 +208,8 @@ trait TypeNameProvider { this: AstCreator =>
       case s: IASTCompositeTypeSpecifier =>
         val fullName_ = registerType(cleanType(fullName(s)))
         val name_     = shortName(s) match {
-          case n if n.isEmpty && fullName_.contains(".") => fullName_.substring(fullName_.lastIndexOf("."))
-          case n if n.isEmpty                            => fullName_
+          case name if name.isEmpty && fullName_.contains(".") => fullName_.substring(fullName_.lastIndexOf("."))
+          case name if name.isEmpty                          => fullName_
           case other                                     => other
         }
         TypeFullNameInfo(name_, fullName_)

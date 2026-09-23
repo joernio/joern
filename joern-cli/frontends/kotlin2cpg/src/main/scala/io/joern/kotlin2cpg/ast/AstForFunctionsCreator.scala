@@ -440,7 +440,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) exte
 
     val lambdaMethodNode = methodNode(fn, name, fullName, signature, relativizedPath)
 
-    val paramNames         = fn.getValueParameters.asScala.flatMap(p => Option(p.getName)).toSet
+    val paramNames         = fn.getValueParameters.asScala.flatMap(param => Option(param.getName)).toSet
     val implicitParamNames =
       if (funcDesc.getExtensionReceiverParameter != null) Set(Constants.ThisName) else Set.empty[String]
     val declaredParamNames = paramNames ++ implicitParamNames

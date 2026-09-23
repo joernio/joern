@@ -492,8 +492,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         case x: Block                                                      => visitStatementsInBlock(x)
         case x: Local                                                      => symbolTable.get(x)
         case _: ControlStructure                                           => Set.empty[String]
-        case x                                                             =>
-          logger.debug(s"Unhandled block element ${x.label}:${x.code} @ ${debugLocation(x)}")
+        case other                                                         =>
+          logger.debug(s"Unhandled block element ${other.label}:${other.code} @ ${debugLocation(other)}")
           Set.empty[String]
       }
       .lastOption
@@ -740,8 +740,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     case Operators.fieldAccess        => symbolTable.get(LocalVar(getFieldName(c.asInstanceOf[FieldAccess])))
     case _ if symbolTable.contains(c) => methodReturnValues(symbolTable.get(c).toSeq)
     case Operators.indexAccess        => getIndexAccessTypes(c)
-    case n                            =>
-      logger.debug(s"Unknown RHS call type '$n' @ ${debugLocation(c)}")
+    case callName                     =>
+      logger.debug(s"Unknown RHS call type '$callName' @ ${debugLocation(c)}")
       Set.empty[String]
   }
 
@@ -792,8 +792,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       val fieldPaths = getFieldParents(fa).map(fp => FieldPath(fp, fieldName))
       (LocalVar(fieldName), fieldPaths)
     case Operators.indexAccess => (indexAccessToCollectionVar(c).getOrElse(LocalVar(c.name)), Set.empty)
-    case x                     =>
-      logger.debug(s"Using default LHS call name '$x' @ ${debugLocation(c)}")
+    case other                 =>
+      logger.debug(s"Using default LHS call name '$other' @ ${debugLocation(c)}")
       (LocalVar(c.name), Set.empty)
   }
 
@@ -851,7 +851,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         case List(c: Call, l: Literal) => assignTypesToCall(c, getLiteralType(l))
         case xs                        =>
           logger.debug(
-            s"Unhandled index access point assigned to literal ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${debugLocation(c)}"
+            s"Unhandled index access point assigned to literal ${xs.map(elem => (elem.label, elem.code)).mkString(",")} @ ${debugLocation(c)}"
           )
           Set.empty
       }
@@ -889,7 +889,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       case List(c: Call, idx: Literal)          => CollectionVar(callName(c), idx.code)
       case List(c: Call, idx: Identifier)       => CollectionVar(callName(c), idx.code)
       case xs                                   =>
-        logger.debug(s"Unhandled index access ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${debugLocation(c)}")
+        logger.debug(s"Unhandled index access ${xs.map(elem => (elem.label, elem.code)).mkString(",")} @ ${debugLocation(c)}")
         null
     })
   }
@@ -964,9 +964,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       .filterNot(_ == "ANY")
 
   protected def visitReturns(ret: Return): Unit = {
-    val m             = ret.method
+    val method        = ret.method
     val existingTypes = mutable.HashSet.from(
-      (m.methodReturn.typeFullName +: (m.methodReturn.dynamicTypeHintFullName ++ m.methodReturn.possibleTypes))
+      (method.methodReturn.typeFullName +: (method.methodReturn.dynamicTypeHintFullName ++ method.methodReturn.possibleTypes))
         .filterNot(_ == "ANY")
     )
     @tailrec
@@ -1279,8 +1279,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         case l: Local                                    => storeLocalTypeInfo(l, types)
         case c: Call if !c.name.startsWith("<operator>") => storeCallTypeInfo(c, types)
         case _: Call                                     =>
-        case n                                           =>
-          setTypes(n, types)
+        case node                                        =>
+          setTypes(node, types)
       }
     }
   }

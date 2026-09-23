@@ -92,7 +92,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     node: DotNetNodeInfo,
     typeDeclFullName: String
   ): Seq[Ast] = {
-    val dynamicFields   = scope.getFieldsInScope.filter(f => !f.isStatic && f.isInitialized)
+    val dynamicFields   = scope.getFieldsInScope.filter(field => !field.isStatic && field.isInitialized)
     val hasExplicitCtor =
       scope.tryResolveTypeReference(typeDeclFullName).exists(_.methods.exists(_.name == Defines.ConstructorMethodName))
     // We should only create the constructor when we are the FULL_AST parseLevel. Otherwise, hasExplicitCtor will
@@ -139,7 +139,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     node: DotNetNodeInfo,
     typeDeclFullname: String
   ): Seq[Ast] = {
-    val staticFields    = scope.getFieldsInScope.filter(f => f.isStatic && f.isInitialized)
+    val staticFields    = scope.getFieldsInScope.filter(field => field.isStatic && field.isInitialized)
     val hasExplicitCtor =
       scope.tryResolveTypeReference(typeDeclFullname).exists(_.methods.exists(_.name == Defines.StaticInitMethodName))
     val shouldBuildCtor = staticFields.nonEmpty && !hasExplicitCtor && parseLevel == FULL_AST
@@ -537,8 +537,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         case "const"     => modifierNode(node, CSharpModifiers.CONST)
         case "abstract"  => modifierNode(node, ModifierTypes.ABSTRACT)
         case "protected" => modifierNode(node, ModifierTypes.PROTECTED)
-        case x           =>
-          logger.warn(s"Unhandled modifier name '$x'")
+        case other           =>
+          logger.warn(s"Unhandled modifier name '$other'")
           null
       }
     }

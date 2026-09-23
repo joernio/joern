@@ -109,8 +109,8 @@ class AstCreator(
       case x: ParameterRef       => Seq(astForParameterRef(x, parentUnit))
       case x: IdentityRef        => Seq(astForIdentityRef(x, parentUnit))
       case x: ArrayRef           => Seq(astForArrayRef(x, parentUnit))
-      case x                     =>
-        logger.warn(s"Unhandled soot.Value type ${x.getClass}")
+      case other                 =>
+        logger.warn(s"Unhandled soot.Value type ${other.getClass}")
         Seq()
     }
   }

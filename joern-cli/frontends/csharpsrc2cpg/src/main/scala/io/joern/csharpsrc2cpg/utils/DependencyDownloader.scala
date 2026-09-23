@@ -212,7 +212,7 @@ class DependencyDownloader(
     val astGenRunner       = new DotNetAstGenRunner(config.withInputPath(targetDir.toString))
     val astGenRunnerResult = astGenRunner.execute(targetDir)
     val summaries          = astGenRunnerResult.parsedFiles
-      .map(x => Paths.get(x))
+      .map(path => Paths.get(path))
       .flatMap { f =>
         Using.resource(Files.newInputStream(f)) { fis =>
           CSharpProgramSummary.jsonToInitialMapping(fis) match {
