@@ -12,7 +12,7 @@ class ConfigTests extends AnyWordSpec with Matchers with Inside {
 
   "c2cpg command line args should be parsed correctly" in {
     val parser = Main.cmdLineParser
-    val args = Array(
+    val args   = Array(
       // Common args
       "INPUT",
       "--output",

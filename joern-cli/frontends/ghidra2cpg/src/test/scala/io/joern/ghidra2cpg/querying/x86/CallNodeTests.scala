@@ -68,7 +68,7 @@ class CallNodeTests extends GhidraBinToCpgSuite {
 
   "The method 'level2' should have a node with the name 'level1' " in {
     implicit val resolver: ICallResolver = NoResolve
-    val result = cpg.method
+    val result                           = cpg.method
       .name("level2")
       .caller
       .l

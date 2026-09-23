@@ -169,10 +169,7 @@ class ExpressionTests extends SwiftSrc2CpgSuite {
       |""".stripMargin)
       // KeyPath expressions are not modelled; they surface as Unknown nodes via notHandledYet.
       val keypathUnknowns = cpg.unknown.code(".*\\\\.*").l
-      keypathUnknowns.code.l should contain allOf (
-        "\\a.b.c",
-        "\\ABCProtocol[100]"
-      )
+      keypathUnknowns.code.l should contain allOf ("\\a.b.c", "\\ABCProtocol[100]")
       // The surrounding `children.filter(...)` call still resolves.
       cpg.call.nameExact("filter").code.l shouldBe List("children.filter(\\.type.defaultInitialization.isEmpty)")
     }
@@ -614,7 +611,7 @@ class ExpressionTests extends SwiftSrc2CpgSuite {
 
     "inner text in literal strings" in {
       val tripQuote = "\"\"\""
-      val cpg = code(s"""
+      val cpg       = code(s"""
            |class Foo {
            | var a = "abc";
            | var b = "\\\"abc";

@@ -24,7 +24,7 @@ class Php2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAft
       val file = dir / "main.php"
       file.createWithParentsIfNotExists(createParents = true)
       val indexStr = index.map(_.toString).getOrElse(""""Hello, World!"""")
-      val content = s"""<?php
+      val content  = s"""<?php
                        |print($indexStr);
                        |""".stripMargin
       Files.writeString(file, content)
@@ -52,7 +52,7 @@ class Php2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAft
           val req    = client.buildRequest("input" -> Some(input), "output" -> Some(output))
           client.sendRequest(req) match {
             case Failure(exception) => fail(exception.getMessage)
-            case Success(out) =>
+            case Success(out)       =>
               out shouldBe output
               val cpg = CpgLoader.load(output)
               cpg.call.code.l shouldBe List("""print("Hello, World!")""")
@@ -71,7 +71,7 @@ class Php2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAft
             val req    = client.buildRequest("input" -> Some(input), "output" -> Some(output))
             client.sendRequest(req) match {
               case Failure(exception) => fail(exception.getMessage)
-              case Success(out) =>
+              case Success(out)       =>
                 out shouldBe output
                 val cpg = CpgLoader.load(output)
                 cpg.call.code.l shouldBe List(s"print($index)")

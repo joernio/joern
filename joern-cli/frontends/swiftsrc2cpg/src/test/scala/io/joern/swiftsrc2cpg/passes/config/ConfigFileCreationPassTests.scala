@@ -15,7 +15,7 @@ import java.nio.file.Files
 class ConfigFileCreationPassTests extends AnyFunSpec with Matchers {
 
   private class TestDiffGraphBuilder extends io.shiftleft.codepropertygraph.generated.DiffGraphBuilder(GraphSchema) {
-    val nodes = scala.collection.mutable.Buffer[DNode]()
+    val nodes                                       = scala.collection.mutable.Buffer[DNode]()
     override def addNode(newNode: DNode): this.type = {
       this.nodes.append(newNode)
       this

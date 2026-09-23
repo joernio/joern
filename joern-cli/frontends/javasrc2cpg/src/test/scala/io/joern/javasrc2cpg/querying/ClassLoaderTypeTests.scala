@@ -95,7 +95,7 @@ class ClassLoaderTypeTests extends JavaSrcCode2CpgFixture {
 
   "types with java 8 features should be resolved with a jdk path override" in {
     val config = Config().withJdkPath(System.getProperty("java.home"))
-    val cpg = code("""
+    val cpg    = code("""
      |public class Test {
      |    public static void foo(String s) {
      |        s.trim().isEmpty();

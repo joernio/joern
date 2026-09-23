@@ -124,7 +124,7 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
   "Using a simple compile_commands.json" should {
     "respect the files listed" in {
       newProjectUnderTest { projectUnderTest =>
-        val input = projectUnderTest.toAbsolutePath.toString
+        val input  = projectUnderTest.toAbsolutePath.toString
         val config = Config()
           .withInputPath(input)
           .withCompilationDatabase((Paths.get(input) / "compile_commands.json").toString)
@@ -141,7 +141,7 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
 
     "handle broken file paths" in {
       newBrokenProjectUnderTest { projectUnderTest =>
-        val input = projectUnderTest.toAbsolutePath.toString
+        val input  = projectUnderTest.toAbsolutePath.toString
         val config = Config()
           .withInputPath(input)
           .withCompilationDatabase((Paths.get(input) / "compile_commands.json").toString)

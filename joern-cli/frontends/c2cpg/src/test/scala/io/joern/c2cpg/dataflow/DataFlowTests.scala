@@ -1469,8 +1469,8 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       |}""".stripMargin)
 
     "find flow from `free` to `free`" in {
-      val sink   = cpg.call("free").argument(1)
-      val source = cpg.call("free").argument(1)
+      val sink             = cpg.call("free").argument(1)
+      val source           = cpg.call("free").argument(1)
       val List(flow: Path) = sink
         .reachableByFlows(source)
         .filter(path => path.elements.sizeIs > 1)

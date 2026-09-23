@@ -24,7 +24,7 @@ class Kotlin2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAnd
       val file = dir / "main.kt"
       file.createWithParentsIfNotExists(createParents = true)
       val indexStr = index.map(_.toString).getOrElse("")
-      val content = s"""
+      val content  = s"""
                        |package mypkg
                        |fun main(args : Array<String>) {
                        |  println($indexStr)
@@ -53,7 +53,7 @@ class Kotlin2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAnd
           val req    = client.buildRequest("input" -> Some(input), "output" -> Some(output))
           client.sendRequest(req) match {
             case Failure(exception) => fail(exception.getMessage)
-            case Success(out) =>
+            case Success(out)       =>
               out shouldBe output
               val cpg = CpgLoader.load(output)
               cpg.method.name.l should contain("main")
@@ -70,11 +70,11 @@ class Kotlin2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAnd
             val input  = projectUnderTest.absolutePathAsString
             val output = cpgOutFile.toString
             val client = FrontendHTTPClient(port)
-            val req =
+            val req    =
               client.buildRequest("input" -> Some(input), "output" -> Some(output), "no-default-exclude" -> None)
             client.sendRequest(req) match {
               case Failure(exception) => fail(exception.getMessage)
-              case Success(out) =>
+              case Success(out)       =>
                 out shouldBe output
                 val cpg = CpgLoader.load(output)
                 cpg.method.name.l should contain("main")

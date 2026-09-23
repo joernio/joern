@@ -20,7 +20,7 @@ class GoModTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   }
   "invalid compilation file unit with main pkg" in {
     val inputPath = FileUtil.currentWorkingDirectory.toString
-    val goMod = new GoModHelper(
+    val goMod     = new GoModHelper(
       Some(inputPath),
       Some(
         GoMod(
@@ -39,7 +39,7 @@ class GoModTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   }
   "with .mod file and main pkg 1 use case" in {
     val inputPath = FileUtil.currentWorkingDirectory.toString
-    val goMod = new GoModHelper(
+    val goMod     = new GoModHelper(
       Some(inputPath),
       Some(
         GoMod(
@@ -56,7 +56,7 @@ class GoModTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   "with .mod file and main pkg 2 use case" in {
     val inputPath = FileUtil.currentWorkingDirectory.toString + JFile.separator
-    val goMod = new GoModHelper(
+    val goMod     = new GoModHelper(
       Some(inputPath),
       Some(
         GoMod(
@@ -73,7 +73,7 @@ class GoModTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   "with .mod file and main pkg 3 use case" in {
     val inputPath = FileUtil.currentWorkingDirectory.toString + JFile.separator
-    val goMod = new GoModHelper(
+    val goMod     = new GoModHelper(
       Some(inputPath),
       Some(
         GoMod(
@@ -90,7 +90,7 @@ class GoModTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   "with .mod file and pkg other than main matching with folder" in {
     val inputPath = FileUtil.currentWorkingDirectory.toString + JFile.separator
-    val goMod = new GoModHelper(
+    val goMod     = new GoModHelper(
       Some(inputPath),
       Some(
         GoMod(
@@ -107,7 +107,7 @@ class GoModTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   "with .mod file, pkg other than main, one level child folder, and package matching with last folder" in {
     val inputPath = FileUtil.currentWorkingDirectory.toString + JFile.separator
-    val goMod = new GoModHelper(
+    val goMod     = new GoModHelper(
       Some(inputPath),
       Some(
         GoMod(
@@ -124,7 +124,7 @@ class GoModTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   "with .mod file and pkg other than main and not matching with folder" in {
     val inputPath = FileUtil.currentWorkingDirectory.toString + JFile.separator
-    val goMod = new GoModHelper(
+    val goMod     = new GoModHelper(
       Some(inputPath),
       Some(
         GoMod(
@@ -141,7 +141,7 @@ class GoModTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   "with .mod file, pkg other than main, one level child folder, and package not matching with last folder" in {
     val inputPath = FileUtil.currentWorkingDirectory.toString + JFile.separator
-    val goMod = new GoModHelper(
+    val goMod     = new GoModHelper(
       Some(inputPath),
       Some(
         GoMod(

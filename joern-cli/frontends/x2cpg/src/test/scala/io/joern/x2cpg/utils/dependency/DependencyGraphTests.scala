@@ -140,7 +140,7 @@ private object DependencyGraphTests {
   def buildGraph(projects: ProjectNode*): DependencyGraph = {
     val nodes        = projects.map(p => p.projectName -> p).toMap
     val dependencies = projects.map(p => p.projectName -> p.sourceDependencies).toMap
-    val dependents = projects
+    val dependents   = projects
       .flatMap(p => p.sourceDependencies.map(dep => dep -> p.projectName))
       .groupMap(_._1)(_._2)
       .view

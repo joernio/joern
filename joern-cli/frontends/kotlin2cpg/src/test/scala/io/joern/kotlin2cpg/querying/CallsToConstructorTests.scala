@@ -253,7 +253,7 @@ class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
       val List(c: Call) = cpg.call.code("listOf.*").l
       c.methodFullName shouldBe "kotlin.collections.listOf:java.util.List(java.lang.Object)"
 
-      val List(b: Block) = c.argument.l: @unchecked
+      val List(b: Block)                                                                     = c.argument.l: @unchecked
       val List(l: Local, allocAssignment: Call, init: Call, returningIdentifier: Identifier) =
         b.astChildren.l: @unchecked
       l.name shouldBe "tmp"

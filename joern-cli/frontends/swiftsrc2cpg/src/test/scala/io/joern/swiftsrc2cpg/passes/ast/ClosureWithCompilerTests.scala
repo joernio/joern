@@ -212,7 +212,7 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
           |Foo().main()
           |""".stripMargin
 
-      val cpg = codeWithSwiftSetup(testCode)
+      val cpg                    = codeWithSwiftSetup(testCode)
       val compareClosureFullName =
         "Sources/main.swift:<global>.Foo.init.<lambda>0:(Swift.String,Swift.String)->Swift.Bool"
 

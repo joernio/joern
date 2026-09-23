@@ -273,11 +273,7 @@ class SimpleDelombokProjectTests extends JavaSrcCode2CpgFixture {
 
     "generate the @ToString-produced toString on FileB, FileB2, and FileC" in {
       val toStringOwners = cpg.method.name("toString").typeDecl.fullName.toSet
-      toStringOwners should contain allOf (
-        "com.example.b.FileB",
-        "com.example.b.FileB2",
-        "com.example.c.FileC"
-      )
+      toStringOwners should contain allOf ("com.example.b.FileB", "com.example.b.FileB2", "com.example.c.FileC")
     }
 
     "resolve the cross-source-root FileA#getName call from FileB#describeA" in {

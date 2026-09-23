@@ -47,7 +47,7 @@ class ImportsPassTests extends Code2CpgFixture(() => new TestCpgWithoutDataFlow(
 }
 
 class TestCpgWithoutDataFlow extends TestCpg with JsSrc2CpgFrontend {
-  override val fileSuffix: String = ".js"
+  override val fileSuffix: String  = ".js"
   override def applyPasses(): Unit = {
     X2Cpg.applyDefaultOverlays(this)
     jssrc2cpg.postProcessingPasses(this, XTypeRecoveryConfig()).foreach(_.createAndApply())

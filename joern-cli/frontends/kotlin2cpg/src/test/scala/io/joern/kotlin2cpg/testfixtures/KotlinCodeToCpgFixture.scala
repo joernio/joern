@@ -23,7 +23,7 @@ trait KotlinFrontend extends LanguageFrontend {
 
   protected val withTestResourcePaths: Boolean
 
-  override val fileSuffix: String = ".kt"
+  override val fileSuffix: String     = ".kt"
   private lazy val defaultContentRoot =
     Paths.get(ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/test/resources/jars/"))
   private lazy val defaultConfig: Config =
@@ -35,7 +35,7 @@ trait KotlinFrontend extends LanguageFrontend {
   override def execute(sourceCodeFile: File): Cpg = {
     val config = getConfig() match {
       case Some(config: Config) => config
-      case _ =>
+      case _                    =>
         setConfig(defaultConfig)
         defaultConfig
     }

@@ -150,7 +150,7 @@ class AstCreatorTests extends AbapCpgFixture {
     }
 
     "set lineNumber when span has position" in {
-      val span = TextSpan(start = Some(Position(row = 6, col = 5)))
+      val span    = TextSpan(start = Some(Position(row = 6, col = 5)))
       val program = programWithMethod("MY_METHOD").copy(methods =
         Seq(MethodDef("MY_METHOD", None, false, MethodParameters(), span = span))
       )
@@ -159,7 +159,7 @@ class AstCreatorTests extends AbapCpgFixture {
     }
 
     "set columnNumber when span has position" in {
-      val span = TextSpan(start = Some(Position(row = 6, col = 5)))
+      val span    = TextSpan(start = Some(Position(row = 6, col = 5)))
       val program = programWithMethod("MY_METHOD").copy(methods =
         Seq(MethodDef("MY_METHOD", None, false, MethodParameters(), span = span))
       )

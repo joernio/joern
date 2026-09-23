@@ -305,7 +305,7 @@ class SwitchTests extends SwiftSrc2CpgSuite {
       val List(switchCond) = switchStmt.astChildren.isIdentifier.l
       switchCond.name should startWith("<subject>")
       val List(switchBlock) = switchStmt.astChildren.isBlock.l
-      val List(assignA) = switchBlock.astChildren.isCall
+      val List(assignA)     = switchBlock.astChildren.isCall
         .nameExact(Operators.assignment)
         .codeExact(s"a = ${switchCond.name}.0")
         .l

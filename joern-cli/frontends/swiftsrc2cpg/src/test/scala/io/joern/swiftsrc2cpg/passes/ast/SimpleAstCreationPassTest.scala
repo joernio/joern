@@ -283,7 +283,7 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
           |  }
           |}
           |""".stripMargin)
-      val barInit = cpg.typeDecl.nameExact("Bar").method.isConstructor.loneElement
+      val barInit       = cpg.typeDecl.nameExact("Bar").method.isConstructor.loneElement
       val fooStaticInit =
         cpg.typeDecl
           .nameExact("Foo")

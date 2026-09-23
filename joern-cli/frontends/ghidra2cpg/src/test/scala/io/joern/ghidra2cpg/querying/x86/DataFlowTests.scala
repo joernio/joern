@@ -34,7 +34,7 @@ class DataFlowTests extends GhidraBinToCpgSuite {
     implicit val context: EngineContext = EngineContext(semantics)
 
     def source = cpg.method.name("dataflow").call.code("MOV EDX,EAX").argument.code("EAX")
-    def sink =
+    def sink   =
       cpg.method
         .name("dataflow")
         .call

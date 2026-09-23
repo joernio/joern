@@ -15,8 +15,8 @@ import org.scalatest.Inside
 class DefaultTestCpgWithGo(val fileSuffix: String) extends DefaultTestCpg with SemanticTestCpg {
   override type ConfigType = Config
 
-  private var goGlobal: Option[GoGlobal]   = None
-  private var goSrc2Cpg: Option[GoSrc2Cpg] = None
+  private var goGlobal: Option[GoGlobal]     = None
+  private var goSrc2Cpg: Option[GoSrc2Cpg]   = None
   override protected def applyPasses(): Unit = {
     super.applyPasses()
     applyOssDataFlow()

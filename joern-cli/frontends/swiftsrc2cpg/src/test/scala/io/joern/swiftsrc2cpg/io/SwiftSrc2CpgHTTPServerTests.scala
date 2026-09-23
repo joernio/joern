@@ -24,7 +24,7 @@ class SwiftSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeA
       val file = dir / "main.swift"
       file.createWithParentsIfNotExists(createParents = true)
       val indexStr = index.map(_.toString).getOrElse("")
-      val content = s"""
+      val content  = s"""
                        |func main() {
                        |  println($indexStr)
                        |}""".stripMargin
@@ -51,7 +51,7 @@ class SwiftSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeA
           val req    = client.buildRequest("input" -> Some(input), "output" -> Some(output))
           client.sendRequest(req) match {
             case Failure(exception) => fail(exception.getMessage)
-            case Success(out) =>
+            case Success(out)       =>
               out shouldBe output
               val cpg = CpgLoader.load(output)
               cpg.method.name.l should contain("main")
@@ -71,7 +71,7 @@ class SwiftSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeA
             val req    = client.buildRequest("input" -> Some(input), "output" -> Some(output))
             client.sendRequest(req) match {
               case Failure(exception) => fail(exception.getMessage)
-              case Success(out) =>
+              case Success(out)       =>
                 out shouldBe output
                 val cpg = CpgLoader.load(output)
                 cpg.method.name.l should contain("main")

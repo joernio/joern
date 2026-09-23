@@ -29,7 +29,7 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
 
       "handle a nested subproject correctly" in {
         val subprojectPath = projectDir.resolve("core/lib").toString
-        val config =
+        val config         =
           Config().withDownloadDependencies(true).withEnableDependencyResolverV2(true).withInputPath(subprojectPath)
 
         Kotlin2Cpg().createCpg(config) match {
@@ -46,7 +46,7 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
 
       "handle the core project correctly" in {
         val subprojectPath = projectDir.resolve("core").toString
-        val config =
+        val config         =
           Config().withDownloadDependencies(true).withEnableDependencyResolverV2(true).withInputPath(subprojectPath)
 
         Kotlin2Cpg().createCpg(config) match {
@@ -71,7 +71,7 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
 
       "handle a subproject correctly" in {
         val subprojectPath = projectDir.resolve("client").toString
-        val config =
+        val config         =
           Config().withDownloadDependencies(true).withEnableDependencyResolverV2(true).withInputPath(subprojectPath)
 
         Kotlin2Cpg().createCpg(config) match {

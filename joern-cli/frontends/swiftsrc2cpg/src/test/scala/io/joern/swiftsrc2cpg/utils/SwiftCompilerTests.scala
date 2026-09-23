@@ -533,7 +533,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
     "generate mapping from Json with split correctly" in {
       val mapping  = new MutableSwiftTypeMapping
       val provider = new SwiftTypesProvider(Config().withInputPath("."), Nil)
-      val input =
+      val input    =
         s"${SwiftCompilerTestsFixture.JsonStringHelloWorldSwift}${SwiftCompilerTestsFixture.JsonStringMain}Error: some error foo"
       provider.mappingFromJson(input, mapping)
       toResultList(mapping) shouldBe SwiftCompilerTestsFixture.ExpectedMapping

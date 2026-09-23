@@ -24,7 +24,7 @@ class Jimple2CpgHTTPServerTests extends JimpleCode2CpgFixture with BeforeAndAfte
       val file = dir / "main.java"
       file.createWithParentsIfNotExists(createParents = true)
       val indexStr = index.map(_.toString).getOrElse("")
-      val content = s"""
+      val content  = s"""
                        |class Foo {
                        |  static void main$indexStr(int argc, char argv) {
                        |    System.out.println("Hello World!");
@@ -55,7 +55,7 @@ class Jimple2CpgHTTPServerTests extends JimpleCode2CpgFixture with BeforeAndAfte
           val req    = client.buildRequest("input" -> Some(input), "output" -> Some(output))
           client.sendRequest(req) match {
             case Failure(exception) => fail(exception.getMessage)
-            case Success(out) =>
+            case Success(out)       =>
               out shouldBe output
               val cpg = CpgLoader.load(output)
               cpg.method.name.l should contain("main")
@@ -75,7 +75,7 @@ class Jimple2CpgHTTPServerTests extends JimpleCode2CpgFixture with BeforeAndAfte
             val req    = client.buildRequest("input" -> Some(input), "output" -> Some(output))
             client.sendRequest(req) match {
               case Failure(exception) => fail(exception.getMessage)
-              case Success(out) =>
+              case Success(out)       =>
                 out shouldBe output
                 val cpg = CpgLoader.load(output)
                 cpg.method.name.l should contain(s"main$index")

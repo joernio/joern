@@ -144,7 +144,7 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
       // Every kotlin-jvm subproject pulls kotlin-stdlib directly (added by the plugin).
       // Transitives like org.jetbrains:annotations don't appear because
       // `getExternalDependencyNames` walks only the rootVariant's immediate children.
-      val kotlinStdlib = (Some("org.jetbrains.kotlin"), "kotlin-stdlib")
+      val kotlinStdlib         = (Some("org.jetbrains.kotlin"), "kotlin-stdlib")
       val kotlinJvmSubprojects = List(
         ":client",
         ":clientCore",

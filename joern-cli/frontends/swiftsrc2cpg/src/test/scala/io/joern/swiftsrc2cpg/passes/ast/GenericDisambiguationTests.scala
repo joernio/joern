@@ -42,10 +42,7 @@ class GenericDisambiguationTests extends SwiftSrc2CpgSuite {
         |protocol Runcible {}
         |protocol Fungible {}
         |""".stripMargin)
-      cpg.typeDecl.fullName.l should contain allOf (
-        "Test0.swift:<global>.Runcible",
-        "Test0.swift:<global>.Fungible"
-      )
+      cpg.typeDecl.fullName.l should contain allOf ("Test0.swift:<global>.Runcible", "Test0.swift:<global>.Fungible")
     }
 
     "testGenericDisambiguation3" in {

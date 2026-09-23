@@ -81,7 +81,7 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
         Files.isReadable(symlink) shouldBe false
 
         val ignored = (tmpDir / "ignored.c").createWithParentsIfNotExists()
-        val result = Try(
+        val result  = Try(
           SourceFiles
             .determine(
               tmpDir.absolutePathAsString,
