@@ -6,6 +6,7 @@ import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.utils.{BlockScope, MethodScope}
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
+import io.joern.x2cpg.utils.OffsetUtils
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes}
@@ -25,13 +26,12 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
 
   protected def code(phpNode: PhpNode): String = "" // Sadly, the Php AST does not carry any code fields
 
+  protected lazy val byteToUtf16Offset: Array[Int] =
+    OffsetUtils.buildByteToUtf16OffsetTable(fileContentBytes, fileCharset)
+
   override protected def offset(phpNode: PhpNode): Option[(Int, Int)] = {
     Option.when(!disableFileContent) {
-      val startPos =
-        new String(fileContentBytes.slice(0, phpNode.attributes.startFilePos), fileCharset).length
-      val endPos =
-        new String(fileContentBytes.slice(0, phpNode.attributes.endFilePos), fileCharset).length
-      (startPos, endPos)
+      (byteToUtf16Offset(phpNode.attributes.startFilePos), byteToUtf16Offset(phpNode.attributes.endFilePos))
     }
   }
 
