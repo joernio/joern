@@ -22,11 +22,9 @@ class OffsetTests extends RubyCode2CpgFixture(disableFileContent = false) {
 
   "2-byte UTF-8 char (é) shifts subsequent offsets" should {
     // "é" is 2 UTF-8 bytes but 1 UTF-16 code unit
-    val cpg = code(
-      """café = 1
+    val cpg = code("""café = 1
         |x = 2
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "have correct offset for literal after multi-byte char" in {
       inside(cpg.literal.code("2").l) { case lit :: Nil =>
@@ -38,11 +36,9 @@ class OffsetTests extends RubyCode2CpgFixture(disableFileContent = false) {
 
   "3-byte UTF-8 chars (中文) shift subsequent offsets" should {
     // "中" is 3 UTF-8 bytes but 1 UTF-16 code unit.
-    val cpg = code(
-      """s = "中文"
+    val cpg = code("""s = "中文"
         |x = 42
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "have correct offset for literal after CJK chars" in {
       inside(cpg.literal.code("42").l) { case lit :: Nil =>
@@ -54,11 +50,9 @@ class OffsetTests extends RubyCode2CpgFixture(disableFileContent = false) {
 
   "4-byte UTF-8 char (🎉) shifts subsequent offsets" should {
     // "🎉" is 4 UTF-8 bytes but 2 UTF-16 code units (drift = +2).
-    val cpg = code(
-      """# 🎉
+    val cpg = code("""# 🎉
         |x = 42
-        |""".stripMargin
-    )
+        |""".stripMargin)
 
     "have correct offset for literal after emoji" in {
       inside(cpg.literal.code("42").l) { case lit :: Nil =>

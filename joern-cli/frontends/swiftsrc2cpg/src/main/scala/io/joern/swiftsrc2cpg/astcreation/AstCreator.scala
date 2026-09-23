@@ -123,11 +123,13 @@ class AstCreator(
   }
 
   override protected def offset(node: SwiftNode): Option[(Int, Int)] = {
-    Option.when(!config.disableFileContent) {
-      nodeOffsets(node).map { case (start, end) =>
-        (Utf8ToUtf16Offset(start), Utf8ToUtf16Offset(end))
+    Option
+      .when(!config.disableFileContent) {
+        nodeOffsets(node).map { case (start, end) =>
+          (Utf8ToUtf16Offset(start), Utf8ToUtf16Offset(end))
+        }
       }
-    }.flatten
+      .flatten
   }
 
   override protected def code(node: SwiftNode): String = {

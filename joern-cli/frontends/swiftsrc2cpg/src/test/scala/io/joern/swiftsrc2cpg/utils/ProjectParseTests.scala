@@ -59,7 +59,7 @@ class ProjectParseTests extends SwiftSrc2CpgSuite with BeforeAndAfterAll {
   "Parsing a project" should {
 
     "handle utf8 correctly" in ProjectParseTestsFixture(projectWithUtf8) { cpg =>
-      val List(op) = cpg.call.nameExact(Operators.elvis).l
+      val List(op)    = cpg.call.nameExact(Operators.elvis).l
       val fileContent = cpg.file.content.head
       fileContent.substring(op.offset.get, op.offsetEnd.get) should include("??")
       cpg.method.nameExact("main").content.head.linesIterator.map(_.trim).toSeq shouldBe Seq(
