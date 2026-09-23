@@ -106,7 +106,7 @@ use_repo(maven, "maven")
 maven.install(
     name = "format_maven",
     artifacts = [
-        "org.scalameta:scalafmt-cli_2.13:3.9.6",
+        "org.scalameta:scalafmt-cli_2.13:3.11.5",
     ],
     lock_file = "//:format_maven_install.json",
     repositories = [
