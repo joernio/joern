@@ -1859,6 +1859,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   private def lowerMatchArm(matchArm: MatchArm, mkSourceAst: () => Ast): Seq[Ast] = {
+    contextStack.pushBlock()
     val bindingAsts = createLocalsForBindings(collectPatternBindings(matchArm.pat)) ++ createAssignmentsForPattern(
       matchArm.pat,
       mkSourceAst
@@ -1870,6 +1871,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       case None =>
         visitExpr(matchArm.expr)
     }
+    contextStack.pop()
     val caseCode = matchArm.matchGuard match {
       case Some(matchGuard) => s"${code(matchArm.pat)} ${code(matchGuard)}"
       case None             => code(matchArm.pat)
