@@ -222,9 +222,9 @@ class DdgGenerator(semantics: Semantics) {
         val lhs = assign.argumentOption(1).collect { case id: Identifier => id }
         val rhs = assign.argumentOption(2).collect { case c: Call if c.name == Operators.addressOf => c }
         for {
-          id   <- lhs
-          addr <- rhs
-          decl <- id.refsTo.collect { case local: Local => local; case param: MethodParameterIn => param }.headOption
+          id      <- lhs
+          addr    <- rhs
+          decl    <- id.refsTo.collect { case local: Local => local; case param: MethodParameterIn => param }.headOption
           operand <- addr.argumentOption(1).collect {
             case operand: Identifier                                                                   => operand
             case c: Call if c.name == Operators.indirectIndexAccess || c.name == Operators.indexAccess => c
