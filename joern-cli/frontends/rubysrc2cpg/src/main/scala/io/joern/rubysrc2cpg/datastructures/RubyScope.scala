@@ -20,7 +20,6 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     extends Scope[String, DeclarationNew, TypedScopeElement]
     with TypedScope[RubyMethod, RubyField, RubyType](summary) {
 
-  private var tmpVarCounter       = 0
   private var tmpClassCounter     = 0
   private var tmpProcParamCounter = 0
   private var tmpClosureCounter   = 0
@@ -145,14 +144,18 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     }
   }
 
-  def lookupVariableInOuterScope(identifier: String): List[DeclarationNew] = {
-    stack.drop(1).collect {
+  def lookupCapturedVariable(identifier: String): Option[DeclarationNew] = {
+    val outerStack = stack.drop(1)
+    val methodBoundary = outerStack.indexWhere {
+      case ScopeElement(m: MethodLikeScope, _) if !m.fullName.contains("<lambda>") => true
+      case _                                                                       => false
+    }
+    val reachableScopes = if (methodBoundary >= 0) outerStack.take(methodBoundary + 1) else outerStack
+    reachableScopes.collectFirst {
       case scopeElement if scopeElement.variables.contains(identifier) =>
         scopeElement.variables(identifier)
     }
   }
-
-  def lookupSelfInOuterScope: Option[DeclarationNew] = lookupVariableInOuterScope(RubyDefines.Self).headOption
 
   def lookupSelfInCurrentScope: Option[DeclarationNew] = {
     stack.headOption.collectFirst {
