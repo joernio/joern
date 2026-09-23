@@ -66,7 +66,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
       expressionReturnTypeFullName(call).orElse(getTypeFullName(expectedReturnType)).map(typeInfoCalc.registerType)
 
     val argumentTypes = argumentTypesForMethodLike(maybeResolvedCall.toOption)
-    val returnType = maybeResolvedCall
+    val returnType    = maybeResolvedCall
       .map { resolvedCall =>
         typeInfoCalc.fullName(resolvedCall.getReturnType, ResolvedTypeParametersMap.empty())
       }
@@ -77,7 +77,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     val dispatchType = dispatchTypeForCall(maybeResolvedCall, call.getScope.toScala)
 
     val receiverTypeOption = targetTypeForCall(call)
-    val scopeAsts = call.getScope.toScala match {
+    val scopeAsts          = call.getScope.toScala match {
       case Some(scope) => astsForExpression(scope, ExpectedType(receiverTypeOption))
 
       case None =>
@@ -91,13 +91,13 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     val receiverType = scopeAsts.rootType.filter(_ != TypeConstants.Any).orElse(receiverTypeOption)
 
     val argumentsCode = getArgumentCodeString(call.getArguments)
-    val codePrefix = scopeAsts.headOption
+    val codePrefix    = scopeAsts.headOption
       .flatMap(_.root)
       .collect { case call: NewCall => s"${call.code}." }
       .getOrElse(codePrefixForMethodCall(call))
     val callCode = s"$codePrefix${call.getNameAsString}($argumentsCode)"
 
-    val callName = call.getNameAsString
+    val callName  = call.getNameAsString
     val namespace = maybeResolvedCall.toOption
       .collect {
         case resolvedCall if resolvedCall.isStatic =>
@@ -114,7 +114,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
 
     val signature      = composeSignature(returnType, argumentTypes, argumentAsts.size)
     val methodFullName = composeMethodFullName(namespace, callName, signature)
-    val callRoot = NewCall()
+    val callRoot       = NewCall()
       .name(callName)
       .methodFullName(methodFullName)
       .signature(signature)
@@ -128,7 +128,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
   }
 
   private def astForImplicitCallReceiver(declaringType: Option[String], call: MethodCallExpr): Ast = {
-    val typeFullName = scope.lookupVariable(NameConstants.This).typeFullName.getOrElse(defaultTypeFallback())
+    val typeFullName   = scope.lookupVariable(NameConstants.This).typeFullName.getOrElse(defaultTypeFallback())
     val thisIdentifier =
       identifierNode(call, NameConstants.This, NameConstants.This, typeFullName)
     scope.lookupVariable(NameConstants.This) match {
@@ -162,13 +162,13 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
 
     // Use an untyped identifier for receiver here, create the alloc and init ASTs,
     // then use the types of those to fix the local type.
-    val assignTarget = identifierNode(expr, tmpName, tmpName, defaultTypeFallback())
+    val assignTarget    = identifierNode(expr, tmpName, tmpName, defaultTypeFallback())
     val allocAndInitAst =
       inlinedAstsForObjectCreationExpr(expr, Ast(assignTarget.copy), expectedType, resetAssignmentTargetType = true)
 
     assignTarget.typeFullName(allocAndInitAst.allocAst.rootType.getOrElse(defaultTypeFallback()))
     val genericSignature = binarySignatureCalculator.variableBinarySignature(expr.getType)
-    val tmpLocal =
+    val tmpLocal         =
       localNode(expr, tmpName, tmpName, assignTarget.typeFullName, genericSignature = Option(genericSignature))
 
     val allocAssignCode = s"$tmpName = ${allocAndInitAst.allocAst.rootCodeOrEmpty}"
@@ -208,7 +208,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
 
     val anonymousClassBody = expr.getAnonymousClassBody.toScala.map(_.asScala.toList)
     val nameSuffix         = if (anonymousClassBody.isEmpty) "" else s"$$${scope.getNextAnonymousClassIndex()}"
-    val rawType =
+    val rawType            =
       tryWithSafeStackOverflow(expr.getTypeAsString)
         .map(Util.stripGenericTypes)
         .toOption
@@ -310,7 +310,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
       case Success(_) if hasVariadicParameter =>
         val expectedVariadicTypeFullName = getTypeFullName(getExpectedParamType(tryResolvedDecl, paramCount - 1))
         val (regularArgs, varargs)       = argsAsts.splitAt(paramCount - 1)
-        val arrayInitializer =
+        val arrayInitializer             =
           operatorCallNode(call, Operators.arrayInitializer, Operators.arrayInitializer, expectedVariadicTypeFullName)
 
         val arrayInitializerAst = callAst(arrayInitializer, varargs)
@@ -462,7 +462,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
 
       case scopeMethodCall: MethodCallExpr =>
         codePrefixForMethodCall(scopeMethodCall) match {
-          case "" => Some("")
+          case ""     => Some("")
           case prefix =>
             val argumentsCode = getArgumentCodeString(scopeMethodCall.getArguments)
             someWithDotSuffix(s"$prefix${scopeMethodCall.getNameAsString}($argumentsCode)")

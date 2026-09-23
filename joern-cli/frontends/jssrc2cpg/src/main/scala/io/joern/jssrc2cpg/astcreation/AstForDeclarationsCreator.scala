@@ -35,7 +35,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case FunctionDeclaration if hasName(obj.json) => Seq(obj.json("id")("name").str)
       case FunctionExpression if hasName(obj.json)  => Seq(obj.json("id")("name").str)
       case ClassExpression if hasName(obj.json)     => Seq(obj.json("id")("name").str)
-      case VariableDeclarator if hasName(obj.json) =>
+      case VariableDeclarator if hasName(obj.json)  =>
         createBabelNodeInfo(obj.json("id")).node match {
           case ArrayPattern =>
             obj.json("id")("elements").arr.toSeq.map(createBabelNodeInfo).map(_.code)
@@ -47,8 +47,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case VariableDeclarator => Seq(code(obj.json("id")))
       case MemberExpression   => Seq(code(obj.json("property")))
       case ObjectProperty     => Seq(code(obj.json("key")))
-      case ObjectExpression =>
-        obj.json("properties").arr.toSeq.flatMap(d => codeForBabelNodeInfo(createBabelNodeInfo(d)))
+      case ObjectExpression   =>
+        obj.json("properties").arr.toSeq.flatMap(prop => codeForBabelNodeInfo(createBabelNodeInfo(prop)))
       case VariableDeclaration =>
         obj.json("declarations").arr.toSeq.flatMap(d => codeForBabelNodeInfo(createBabelNodeInfo(d)))
       case _ => Seq.empty
@@ -108,7 +108,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
           (None, Option(exported))
         } else {
           val exported = createBabelNodeInfo(spec("exported"))
-          val local = if (hasKey(spec, "local")) {
+          val local    = if (hasKey(spec, "local")) {
             createBabelNodeInfo(spec("local"))
           } else {
             exported
@@ -120,7 +120,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val exportName      = extractExportFromNameFromExportDecl(declaration)
     val fromAst         = createAstForFrom(exportName, declaration)
     val declAstAndNames = extractDeclarationsFromExportDecl(declaration, "declaration")
-    val declAsts = declAstAndNames.toList.flatMap { case (ast, names) =>
+    val declAsts        = declAstAndNames.toList.flatMap { case (ast, names) =>
       ast +: names.map { name =>
         if (exportName != ExportKeyword)
           diffGraph.addNode(dependencyNode(name, exportName.stripPrefix("_"), RequireKeyword))
@@ -152,7 +152,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
   protected def astForExportAssignment(assignment: BabelNodeInfo): Ast = {
     val expressionAstWithNames = extractDeclarationsFromExportDecl(assignment, "expression")
-    val declAsts = expressionAstWithNames.toList.flatMap { case (ast, names) =>
+    val declAsts               = expressionAstWithNames.toList.flatMap { case (ast, names) =>
       ast +: names.map { name =>
         val exportCallAst = createExportCallAst(name, ExportKeyword, assignment)
         createExportAssignmentCallAst(name, exportCallAst, assignment, None)
@@ -164,7 +164,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   protected def astForExportDefaultDeclaration(declaration: BabelNodeInfo): Ast = {
     val exportName      = extractExportFromNameFromExportDecl(declaration)
     val declAstAndNames = extractDeclarationsFromExportDecl(declaration, "declaration")
-    val declAsts = declAstAndNames.toList.flatMap { case (ast, names) =>
+    val declAsts        = declAstAndNames.toList.flatMap { case (ast, names) =>
       ast +: names.map { name =>
         val exportCallAst = createExportCallAst(DefaultsKey, exportName, declaration)
         createExportAssignmentCallAst(name, exportCallAst, declaration, None)
@@ -232,7 +232,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         val identNode = identifierNode(declaration, value)
         scope.addVariableReference(name, identNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
         val fieldName = stripQuotes(name)
-        val call = createFieldAccessCallAst(
+        val call      = createFieldAccessCallAst(
           identNode,
           fieldIdentifierNode(declaration, fieldName, fieldName),
           declaration.lineNumber,
@@ -281,7 +281,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
 
       val sourceCallArgNode = literalNode(declaration, s"\"${fromName.stripPrefix("_")}\"", None)
-      val sourceCall =
+      val sourceCall        =
         callNode(
           declaration,
           s"$RequireKeyword(${sourceCallArgNode.code})",
@@ -302,7 +302,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForVariableDeclaration(declaration: BabelNodeInfo): Ast = {
-    val kind = declaration.json("kind").str
+    val kind      = declaration.json("kind").str
     val scopeType = if (kind == "let") { VariableScopeManager.ScopeType.BlockScope }
     else { VariableScopeManager.ScopeType.MethodScope }
     val declAsts = declaration.json("declarations").arr.map(astForVariableDeclarator(_, scopeType, kind)).toList
@@ -385,7 +385,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val destAst           = Ast(destNode)
     val sourceCallArgNode = literalNode(nodeInfo, s"\"$from\"", None)
-    val sourceCall =
+    val sourceCall        =
       callNode(nodeInfo, s"$RequireKeyword(${sourceCallArgNode.code})", RequireKeyword, DispatchTypes.DYNAMIC_DISPATCH)
 
     val receiverNode = identifierNode(nodeInfo, RequireKeyword)
@@ -398,7 +398,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       base = Option(Ast(thisNode))
     )
     val sourceAst = if (isImportN) {
-      val fieldName = stripQuotes(name)
+      val fieldName       = stripQuotes(name)
       val fieldAccessCall = createFieldAccessCallAst(
         cAst,
         fieldIdentifierNode(nodeInfo, fieldName, fieldName),
@@ -474,7 +474,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     scope.addVariable(localTmpName, nLocalNode, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
     scope.addVariableReference(localTmpName, tmpNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
-    val rhsAssignmentAst = paramName.map(createParamAst(pattern, _, sourceAst)).getOrElse(sourceAst)
+    val rhsAssignmentAst     = paramName.map(createParamAst(pattern, _, sourceAst)).getOrElse(sourceAst)
     val assignmentTmpCallAst =
       createAssignmentCallAst(
         Ast(tmpNode),
@@ -515,7 +515,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
               case RestElement =>
                 val fieldAccessTmpNode = identifierNode(nodeInfo, localTmpName)
                 val keyNode            = literalNode(nodeInfo, index.toString, Option(Defines.Number))
-                val accessAst =
+                val accessAst          =
                   indexAccessCallAst(fieldAccessTmpNode, keyNode, nodeInfo.lineNumber, nodeInfo.columnNumber)
                 astForSpreadOrRestElement(nodeInfo, Option(accessAst))
               case Identifier =>
@@ -560,7 +560,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val rhsCode  = code(rhs)
     val groupId  = rhsCode.substring(rhsCode.indexOf(s"$RequireKeyword(") + 9, rhsCode.indexOf(")") - 1)
     val nodeInfo = createBabelNodeInfo(lhs)
-    val names = nodeInfo.node match {
+    val names    = nodeInfo.node match {
       case ArrayPattern  => nodeInfo.json("elements").arr.map(code).toList
       case ObjectPattern => nodeInfo.json("properties").arr.map(code).toList
       case _             => List(code(lhs))
@@ -681,7 +681,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val lhsElement = element.json("left")
     val nodeInfo   = createBabelNodeInfo(lhsElement)
-    val lhsAst = nodeInfo.node match {
+    val lhsAst     = nodeInfo.node match {
       case ObjectPattern | ArrayPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
         astForDeconstruction(nodeInfo, sourceAst, element.code)
@@ -691,7 +691,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val testAst = {
       val fieldAccessTmpNode = identifierNode(element, localTmpName)
       val keyNode            = literalNode(element, index.toString, Option(Defines.Number))
-      val accessAst =
+      val accessAst          =
         indexAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
       val voidCallNode_ = voidCallNode(element.lineNumber, element.columnNumber)
       createEqualsCallAst(accessAst, Ast(voidCallNode_), element.lineNumber, element.columnNumber)
@@ -722,7 +722,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val lhsElement = element.json("left")
     val nodeInfo   = createBabelNodeInfo(lhsElement)
-    val lhsAst = nodeInfo.node match {
+    val lhsAst     = nodeInfo.node match {
       case ObjectPattern | ArrayPattern =>
         val sourceAst = astForNodeWithFunctionReference(createBabelNodeInfo(rhsElement).json)
         astForDeconstruction(nodeInfo, sourceAst, element.code)

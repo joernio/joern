@@ -34,7 +34,7 @@ class CaseTests extends RubyCode2CpgFixture {
 
     val headIf @ List(_)           = block.astChildren.isControlStructure.l
     val ifStmts @ List(_, _, _, _) = headIf.repeat(_.astChildren.order(3).astChildren.isControlStructure)(_.emit).l
-    val conds: List[List[String]] = ifStmts.condition.map { cond =>
+    val conds: List[List[String]]  = ifStmts.condition.map { cond =>
       val orConds = List(cond)
         .repeat(_.isCall.where(_.name(Operators.logicalOr)).argument)(
           _.emit(_.whereNot(_.isCall.name(Operators.logicalOr)))
@@ -75,7 +75,7 @@ class CaseTests extends RubyCode2CpgFixture {
 
     val headIf @ List(_)           = block.astChildren.isControlStructure.l
     val ifStmts @ List(_, _, _, _) = headIf.repeat(_.astChildren.order(3).astChildren.isControlStructure)(_.emit).l;
-    val conds: List[List[String]] = ifStmts.condition.map { cond =>
+    val conds: List[List[String]]  = ifStmts.condition.map { cond =>
       val orConds = List(cond)
         .repeat(_.isCall.where(_.name(Operators.logicalOr)).argument)(
           _.emit(_.whereNot(_.isCall.name(Operators.logicalOr)))

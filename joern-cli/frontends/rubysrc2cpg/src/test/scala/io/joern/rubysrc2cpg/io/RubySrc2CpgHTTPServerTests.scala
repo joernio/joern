@@ -24,7 +24,7 @@ class RubySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
       val file = dir / "main.rb"
       file.createWithParentsIfNotExists(createParents = true)
       val indexStr = index.map(_.toString).getOrElse(""""Hello, World!"""")
-      val content = s"""
+      val content  = s"""
                        |def main
                        | puts $indexStr
                        |end
@@ -52,7 +52,7 @@ class RubySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
           val req    = client.buildRequest("input" -> Some(input), "output" -> Some(output))
           client.sendRequest(req) match {
             case Failure(exception) => fail(exception.getMessage)
-            case Success(out) =>
+            case Success(out)       =>
               out shouldBe output
               val cpg = CpgLoader.load(output)
               cpg.method.name.l should contain("main")
@@ -72,7 +72,7 @@ class RubySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
             val req    = client.buildRequest("input" -> Some(input), "output" -> Some(output))
             client.sendRequest(req) match {
               case Failure(exception) => fail(exception.getMessage)
-              case Success(out) =>
+              case Success(out)       =>
                 out shouldBe output
                 val cpg = CpgLoader.load(output)
                 cpg.method.name.l should contain("main")

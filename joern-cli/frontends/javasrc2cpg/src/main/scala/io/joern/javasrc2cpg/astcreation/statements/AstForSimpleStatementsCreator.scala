@@ -176,7 +176,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     scope.pushBlockScope()
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedToElse)
     val elseNode = stmt.getElseStmt.toScala
-    val elseAst = elseNode.map { elseStmt =>
+    val elseAst  = elseNode.map { elseStmt =>
       val elseBodyStatements = elseStmt match {
         case blockStmt: BlockStmt => blockStmt.getStatements.asScala
         case elseStmt: Statement  => elseStmt :: Nil
@@ -364,7 +364,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     scope.pushBlockScope()
     val resources = stmt.getResources.asScala.flatMap(astsForExpression(_, expectedType = ExpectedType.empty)).toList
 
-    val tryAst = astForBlockStatement(stmt.getTryBlock, codeStr = "try")
+    val tryAst    = astForBlockStatement(stmt.getTryBlock, codeStr = "try")
     val catchAsts = stmt.getCatchClauses.asScala.toList.map { catchClause =>
       val catchNode = controlStructureNode(catchClause, ControlStructureTypes.CATCH, "catch")
       Ast(catchNode).withChild(astForCatchClause(catchClause))

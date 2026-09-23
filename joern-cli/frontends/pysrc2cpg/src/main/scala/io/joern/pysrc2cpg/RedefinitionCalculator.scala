@@ -98,12 +98,12 @@ class RedefinitionCalculator {
       visitStmts(ifStmt.orelse)
     case forStmt: ast.For      => visitLoop(forStmt.body, forStmt.orelse)
     case forStmt: ast.AsyncFor => visitLoop(forStmt.body, forStmt.orelse)
-    case whileStmt: ast.While =>
+    case whileStmt: ast.While  =>
       visitStmts(whileStmt.body)
       visitStmts(whileStmt.orelse)
     case withStmt: ast.With      => visitStmts(withStmt.body)
     case withStmt: ast.AsyncWith => visitStmts(withStmt.body)
-    case tryStmt: ast.Try =>
+    case tryStmt: ast.Try        =>
       visitStmts(tryStmt.body)
       tryStmt.handlers.foreach(handler => visitStmts(handler.body))
       visitStmts(tryStmt.orelse)

@@ -55,7 +55,7 @@ class EagerSourceTypeSolver(
           .map { typeDeclaration =>
             val name = typeDeclaration.getFullyQualifiedName.toScala match {
               case Some(fullyQualifiedName) => fullyQualifiedName
-              case None =>
+              case None                     =>
                 val name = typeDeclaration.getNameAsString
                 // Local classes aren't expected to have a fully qualified name
                 if (typeDeclaration.isTopLevelType() || typeDeclaration.isNestedType()) {

@@ -96,7 +96,7 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
       val handlerEntered = new CountDownLatch(1)
       val releaseHandler = new CountDownLatch(1)
       val executor       = FrontendHTTPServer.cachedThreadPoolExecutor()
-      val server = new FrontendHTTPServer(
+      val server         = new FrontendHTTPServer(
         executor,
         _ => {
           handlerEntered.countDown()
@@ -145,7 +145,7 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
       val timer = Executors.newSingleThreadExecutor()
       try {
         val started = System.nanoTime()
-        val f = timer.submit(new Runnable {
+        val f       = timer.submit(new Runnable {
           override def run(): Unit = server.stopServerAfterTimeout(1)
         })
         f.get(10, TimeUnit.SECONDS)
@@ -177,7 +177,7 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
       val inFlight       = new AtomicInteger(0)
       val handlerEntered = new CountDownLatch(2)
       val releaseHandler = new CountDownLatch(1)
-      val server = new FrontendHTTPServer(
+      val server         = new FrontendHTTPServer(
         FrontendHTTPServer.cachedThreadPoolExecutor(),
         _ => {
           inFlight.incrementAndGet()

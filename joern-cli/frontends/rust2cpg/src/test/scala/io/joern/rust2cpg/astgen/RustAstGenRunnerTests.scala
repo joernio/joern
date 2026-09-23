@@ -130,7 +130,7 @@ class RustAstGenRunnerTests extends AnyWordSpec with Matchers {
 
         FileUtil.usingTemporaryDirectory("rust2cpgTestOut") { outputDir =>
           val ignoredFile = (inputDir / "src" / "lib.rs").toString
-          val config = Config()
+          val config      = Config()
             .withInputPath(inputDir.toString)
             .withOutputPath(outputDir.toString)
             .withIgnoredFiles(Seq(ignoredFile))
@@ -197,7 +197,7 @@ class RustAstGenRunnerTests extends AnyWordSpec with Matchers {
 
     "collect skipped files" in {
       FileUtil.usingTemporaryDirectory("rust2cpgTestInput") { inputDir =>
-        val config = Config().withInputPath(inputDir.toString)
+        val config    = Config().withInputPath(inputDir.toString)
         val astGenOut =
           List(
             "garbage",

@@ -61,10 +61,10 @@ trait AstForTypeDeclsCreator(implicit withSchemaValidation: ValidationMode) { th
   private def astForField(field: SootField): Ast = {
     val typeFullName = registerType(sootTypeToString(field.getType))
     val name         = field.getName
-    val annotations = field.getTags.asScala
+    val annotations  = field.getTags.asScala
       .collect { case x: VisibilityAnnotationTag => x }
       .flatMap(_.getAnnotations.asScala)
-    val modifiers = astsForModifiers(field)
+    val modifiers     = astsForModifiers(field)
     val constantValue = field.getTags.asScala.collectFirst { case tag: ConstantValueTag =>
       tag.getConstant.toString
     }

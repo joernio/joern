@@ -409,7 +409,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     val throwNode = controlStructureFromNode(node, ControlStructureTypes.THROW, code)
     thrownExprAsts match {
       case Nil => Ast(throwNode)
-      case _ =>
+      case _   =>
         val argAst = wrapMultipleInBlock(thrownExprAsts, line(node))
         argAst.root match {
           case Some(argRoot) => Ast(throwNode).withChild(argAst).withArgEdge(throwNode, argRoot)

@@ -66,7 +66,7 @@ class Report {
       .toSeq
     val numOfReports = reports.size
     val header       = Seq(Seq("#", "File", "LOC", "Parsed", "Got a CPG", "Duration"))
-    val footer = Seq(
+    val footer       = Seq(
       Seq(
         "Total",
         "",

@@ -17,8 +17,8 @@ class RubyTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
   override def createMethodStub(methodName: String, call: Call, builder: DiffGraphBuilder): NewMethod = {
     // In the case of Python/JS we can use name info to check if, despite the method name might be incorrect, that we
     // label the method correctly as internal by finding that the method should belong to an internal file
-    val matcher  = fileNamePattern.matcher(methodName)
-    val basePath = cpg.metaData.root.head
+    val matcher    = fileNamePattern.matcher(methodName)
+    val basePath   = cpg.metaData.root.head
     val isExternal = if (matcher.matches()) {
       val fileName = matcher.group(1)
       cpg.file.nameExact(s"$basePath$fileName").isEmpty

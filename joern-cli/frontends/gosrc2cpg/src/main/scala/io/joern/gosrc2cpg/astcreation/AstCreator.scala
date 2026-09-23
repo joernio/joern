@@ -44,7 +44,7 @@ class AstCreator(
   protected val scope: Scope[String, (NewNode, String), NewNode] = new Scope()
   protected val aliasToNameSpaceMapping: mutable.Map[String, String] = mutable.Map.empty
   protected val lineNumberMapping: Map[Int, String]                  = positionLookupTables
-  protected val declaredPackageName = parserResult.json(ParserKeys.Name)(ParserKeys.Name).str
+  protected val declaredPackageName   = parserResult.json(ParserKeys.Name)(ParserKeys.Name).str
   protected val fullyQualifiedPackage =
     goMod.getNameSpace(parserResult.fullPath, declaredPackageName)
 
@@ -57,8 +57,8 @@ class AstCreator(
   }
 
   private def astForTranslationUnit(rootNode: ParserNodeInfo): Ast = {
-    val name     = s"$fullyQualifiedPackage.${parserResult.filename}"
-    val fullName = s"$relPathFileName:$name"
+    val name                    = s"$fullyQualifiedPackage.${parserResult.filename}"
+    val fullName                = s"$relPathFileName:$name"
     val fakeGlobalMethodForFile =
       methodNode(
         rootNode,
@@ -74,7 +74,7 @@ class AstCreator(
     scope.pushNewScope(fakeGlobalMethodForFile)
     val blockNode_   = blockNode(rootNode, Defines.empty, Defines.anyTypeName)
     val methodReturn = methodReturnNode(rootNode, Defines.anyTypeName)
-    val declsAsts = rootNode
+    val declsAsts    = rootNode
       .json(ParserKeys.Decls)
       .arr
       .flatMap { item =>

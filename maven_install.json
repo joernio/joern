@@ -22,10 +22,10 @@
     "com.typesafe:config": 324143406,
     "commons-io:commons-io": 1305681826,
     "io.joern:eclipse-cdt-core": -500108536,
-    "io.joern:flatgraph-core_3": -1427372425,
-    "io.joern:flatgraph-domain-classes-generator_3": -86659973,
-    "io.joern:flatgraph-help_3": 1669225497,
-    "io.joern:flatgraph-odb-convert_3": -527729915,
+    "io.joern:flatgraph-core_3": 1060140408,
+    "io.joern:flatgraph-domain-classes-generator_3": -1894114436,
+    "io.joern:flatgraph-help_3": -138228966,
+    "io.joern:flatgraph-odb-convert_3": 1959782918,
     "net.java.dev.javacc:javacc": -1966826500,
     "net.lingala.zip4j:zip4j": 967189992,
     "net.sf.trove4j:core": 1808260229,
@@ -97,15 +97,15 @@
     "com.lihaoyi:os-lib_3:jar:sources": 1732147675,
     "com.lihaoyi:requests_3": -1758082529,
     "com.lihaoyi:requests_3:jar:sources": -476359424,
-    "com.lihaoyi:ujson_3": 1749570655,
-    "com.lihaoyi:ujson_3:jar:sources": 195752142,
-    "com.lihaoyi:upack_3": -1320201794,
+    "com.lihaoyi:ujson_3": 126745168,
+    "com.lihaoyi:ujson_3:jar:sources": 1676340764,
+    "com.lihaoyi:upack_3": -1457524199,
     "com.lihaoyi:upack_3:jar:sources": -440068608,
-    "com.lihaoyi:upickle-core_3": 918154501,
-    "com.lihaoyi:upickle-core_3:jar:sources": 174541473,
-    "com.lihaoyi:upickle-implicits_3": -1821519721,
+    "com.lihaoyi:upickle-core_3": 911572118,
+    "com.lihaoyi:upickle-core_3:jar:sources": 1793823939,
+    "com.lihaoyi:upickle-implicits_3": -1958842126,
     "com.lihaoyi:upickle-implicits_3:jar:sources": -1242861604,
-    "com.lihaoyi:upickle_3": -1227213762,
+    "com.lihaoyi:upickle_3": -504168708,
     "com.lihaoyi:upickle_3:jar:sources": -590395021,
     "com.michaelpollmeier:scala-repl-pp-shaded-libs_3": 568625696,
     "com.michaelpollmeier:scala-repl-pp-shaded-libs_3:jar:sources": 822914801,
@@ -135,14 +135,14 @@
     "io.get-coursier:interface:jar:sources": -37171318,
     "io.joern:eclipse-cdt-core": 956507630,
     "io.joern:eclipse-cdt-core:jar:sources": -1789927640,
-    "io.joern:flatgraph-core_3": -2129334140,
-    "io.joern:flatgraph-core_3:jar:sources": 1584220606,
-    "io.joern:flatgraph-domain-classes-generator_3": -902397633,
-    "io.joern:flatgraph-domain-classes-generator_3:jar:sources": -1946518416,
-    "io.joern:flatgraph-help_3": -1335185182,
-    "io.joern:flatgraph-help_3:jar:sources": -444523173,
-    "io.joern:flatgraph-odb-convert_3": 1755290238,
-    "io.joern:flatgraph-odb-convert_3:jar:sources": -1249652390,
+    "io.joern:flatgraph-core_3": 839026010,
+    "io.joern:flatgraph-core_3:jar:sources": 575284637,
+    "io.joern:flatgraph-domain-classes-generator_3": 170340065,
+    "io.joern:flatgraph-domain-classes-generator_3:jar:sources": -123490520,
+    "io.joern:flatgraph-help_3": 1134562627,
+    "io.joern:flatgraph-help_3:jar:sources": -1476209185,
+    "io.joern:flatgraph-odb-convert_3": -1972259056,
+    "io.joern:flatgraph-odb-convert_3:jar:sources": 1706697962,
     "io.shiftleft:overflowdb-core_3": -1655377345,
     "io.shiftleft:overflowdb-core_3:jar:sources": 422126785,
     "javax.inject:javax.inject": 698155243,
@@ -331,7 +331,7 @@
     "com.google.errorprone:error_prone_annotations:2.5.1": "com.google.errorprone:error_prone_annotations:2.41.0",
     "com.google.guava:guava:32.0.1-jre": "com.google.guava:guava:33.5.0-jre",
     "com.google.j2objc:j2objc-annotations:2.8": "com.google.j2objc:j2objc-annotations:3.1",
-    "com.lihaoyi:ujson_3:4.0.2": "com.lihaoyi:ujson_3:4.1.0",
+    "com.lihaoyi:ujson_3:4.0.2": "com.lihaoyi:ujson_3:4.4.1",
     "org.apache.commons:commons-lang3:3.14.0": "org.apache.commons:commons-lang3:3.17.0",
     "org.apache.commons:commons-text:1.12.0": "org.apache.commons:commons-text:1.13.0",
     "org.slf4j:slf4j-api:2.0.7": "org.slf4j:slf4j-api:2.0.17"
@@ -478,10 +478,10 @@
     },
     "com.lihaoyi:ujson_3": {
       "shasums": {
-        "jar": "6a6fc2c9c8643cedb0ebd02e957b4c50dc09d1aef6573ca1e15a8a424c4fa535",
-        "sources": "cd5678e036a158768090491edefa2f8d532d7aaa01bb691667ed4b35ccd6a410"
+        "jar": "dd4109dc66963a3552154f59f20858e2907c13bc1a9410ae46573cdfa94e7517",
+        "sources": "082f8d8759a6f6db5bbed0bd13e274c404000eabb4777ff5e14a7232964d78d8"
       },
-      "version": "4.1.0"
+      "version": "4.4.1"
     },
     "com.lihaoyi:upack_3": {
       "shasums": {
@@ -492,10 +492,10 @@
     },
     "com.lihaoyi:upickle-core_3": {
       "shasums": {
-        "jar": "3d4dbd23edca088a83d722998472c1c5c27678bd01f13572c36627d7061cf596",
-        "sources": "4b34cc2c27bc1abfa4161d157f8be1185ebb6bfe501a544e9650b555f4d2bdda"
+        "jar": "4b7566695c789c9a031167a296c67f08b06107124edfbb58e6e187caaa2dc592",
+        "sources": "ae95168d863b4df5d6f6e2c64caf02fb1da99a50b08d6d2f51b3c4ed10080a76"
       },
-      "version": "4.1.0"
+      "version": "4.4.1"
     },
     "com.lihaoyi:upickle-implicits_3": {
       "shasums": {
@@ -611,31 +611,31 @@
     },
     "io.joern:flatgraph-core_3": {
       "shasums": {
-        "jar": "c14dd8e8510f6762078005d747ae8b5e87047db74f94d51bfd18c158a9623699",
-        "sources": "283034a39afd10d88985cdc8c7c11ebda0bcd7604e61c3dde3ced502cf0ce786"
+        "jar": "00437da45d6636049b316b5308c3e578b776680077e6d3bdad3c3df776c036b6",
+        "sources": "72f6932954e33412d790a7b3737c428163110a2e99cf3f398f0c8865fe73a845"
       },
-      "version": "0.1.34"
+      "version": "0.1.35"
     },
     "io.joern:flatgraph-domain-classes-generator_3": {
       "shasums": {
-        "jar": "32a10cb32e154c6b6a6c1e77590d0200199474bb24d7edd7e204bd9c5a1ba53d",
-        "sources": "e86feedf36b139e74d0e7b9ee4d29c4e6a0ac2d8837fa9f5a0b552ace993854d"
+        "jar": "a64f8ea84a0ced62e3a4d5702ff87959bf0fb3cfe55d8856d82779d550d59d33",
+        "sources": "81632035a3c029f0de74c7a477c24b576056c5573371ed95206ac6f6f8a30217"
       },
-      "version": "0.1.34"
+      "version": "0.1.35"
     },
     "io.joern:flatgraph-help_3": {
       "shasums": {
-        "jar": "9b50d84a9959bbc739ae3d7a2d423c97f6b862705831ce04c9bcc6096450b596",
-        "sources": "074a0ba8ba70d1acd8d69e165fff2990862dc53909241f6ac7cf7cffb2fadcc3"
+        "jar": "10bc62d8815dcfa333b3a48088c8f3301a4380c7d6691a9eed791f44a8df6dca",
+        "sources": "8c7698fc70274487e265f61472154be0fee88a18cf24f05dc3cf11e998b4986b"
       },
-      "version": "0.1.34"
+      "version": "0.1.35"
     },
     "io.joern:flatgraph-odb-convert_3": {
       "shasums": {
-        "jar": "6cc159d5a4714b353ebb7325c3af1807cacaeaca18393ccbd1b1b5fd511ad966",
-        "sources": "da5131ec07dfa4687695fdeb1c246abc1e09e14a06e45cfcb73879a7eaa8100f"
+        "jar": "9ba916f4cf9eecd93b56198479fc94d59638d08d84fb05f6c5eb8e968540077a",
+        "sources": "79afe55a3ac89f48698d429d565c37ad35865a788a7839e747d5bba73880e354"
       },
-      "version": "0.1.34"
+      "version": "0.1.35"
     },
     "io.shiftleft:overflowdb-core_3": {
       "shasums": {

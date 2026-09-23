@@ -24,7 +24,7 @@ class DataFlowThroughLoHiRegistersTests extends GhidraBinToCpgSuite {
   }
 
   implicit val resolver: ICallResolver = NoResolve
-  val customSemantics: String =
+  val customSemantics: String          =
     s""""<operator>.assignment" 2->1
        |"<operator>.assignmentArithmeticShiftRight" 3->1 2->1
        |"<operator>.assignmentAnd" 3->1 2->1

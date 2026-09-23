@@ -56,7 +56,7 @@ trait CommonCacheBuilder(implicit withSchemaValidation: ValidationMode) { this: 
       // these Types are not going to get referred from main source code.
       val fullName = fullyQualifiedPackage + Defines.dot + name
       val typeNode = createParserNodeInfo(typeSepc.json(ParserKeys.Type))
-      val ast = typeNode.node match {
+      val ast      = typeNode.node match {
         // As of don't see any use case where InterfaceType needs to be handled.
         case InterfaceType => Seq.empty
         // astForStructType() function will record the member types
@@ -76,7 +76,7 @@ trait CommonCacheBuilder(implicit withSchemaValidation: ValidationMode) { this: 
       // Ignoring recording the method details when we are processing dependencies code with functions name starting with lower case letter
       // As the functions starting with lower case letters will only be accessible within that package. Which means
       // these methods / functions are not going to get referred from main source code.
-      val receiverInfo = getReceiverInfo(Try(funcDeclVal(ParserKeys.Recv)))
+      val receiverInfo                      = getReceiverInfo(Try(funcDeclVal(ParserKeys.Recv)))
       val (methodFullname, recordNamespace) = receiverInfo match {
         case Some(_, typeFullName, _, _) =>
           (s"$typeFullName.$name", typeFullName)
@@ -85,10 +85,10 @@ trait CommonCacheBuilder(implicit withSchemaValidation: ValidationMode) { this: 
       }
       // TODO: handle multiple return type or tuple (int, int)
       val genericTypeMethodMap = processTypeParams(funcDeclVal(ParserKeys.Type))
-      val (returnTypeStr, _) =
+      val (returnTypeStr, _)   =
         getReturnType(funcDeclVal(ParserKeys.Type), genericTypeMethodMap).headOption
           .getOrElse((Defines.voidTypeName, null))
-      val params = funcDeclVal(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
+      val params    = funcDeclVal(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
       val signature =
         s"$methodFullname(${parameterSignature(params, genericTypeMethodMap)})${
             if (returnTypeStr == Defines.voidTypeName) "" else returnTypeStr
@@ -100,7 +100,7 @@ trait CommonCacheBuilder(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   protected def processImports(importDecl: Value): (String, String) = {
-    val importedEntity = importDecl(ParserKeys.Path).obj(ParserKeys.Value).str.replaceAll("\"", "")
+    val importedEntity   = importDecl(ParserKeys.Path).obj(ParserKeys.Value).str.replaceAll("\"", "")
     val importedAsOption =
       Try(importDecl(ParserKeys.Name).obj(ParserKeys.Name).str).toOption
     importedAsOption match {

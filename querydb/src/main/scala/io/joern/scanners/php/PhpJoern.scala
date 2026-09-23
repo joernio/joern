@@ -28,7 +28,7 @@ object PhpJoern extends QueryBundle {
         // $_REQUEST["foo"], $_GET["foo"], $_POST["foo"]
         // are identifier (at the moment)
         def source = cpg.assignment.source.code(".*_(REQUEST|GET|POST).*")
-        def sink =
+        def sink   =
           cpg.call.name("(query|mysql_query|mysqli_query|mysqli_prepare|mysqli_execute|pg_query|pg_prepare)").argument
         sink.reachableBy(source)
       }),
@@ -74,7 +74,7 @@ object PhpJoern extends QueryBundle {
         // $_REQUEST["foo"], $_GET["foo"], $_POST["foo"]
         // are identifier (at the moment)
         def source = cpg.assignment.source.code(".*_(REQUEST|GET|POST).*")
-        def sink = cpg.call
+        def sink   = cpg.call
           .name(
             "(eval|assert|create_function|include|include_once|require|require_once|call_user_func|call_user_func_array)"
           )
@@ -100,7 +100,7 @@ object PhpJoern extends QueryBundle {
         // $_REQUEST["foo"], $_GET["foo"], $_POST["foo"]
         // are identifier (at the moment)
         def source = cpg.assignment.source.code(".*_(REQUEST|GET|POST).*")
-        def sink = cpg.call
+        def sink   = cpg.call
           .name(
             "(file_get_contents|readfile|fgets|file|fopen|file_put_contents|fwrite|move_uploaded_file|unlink|rename|chmod|chown)"
           )

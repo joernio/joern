@@ -49,7 +49,7 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
 
   private def testWithArguments(exclude: Seq[String], excludeRegex: String, expectedFiles: Set[String]): Unit = {
     FileUtil.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
-      val cpg = newEmptyCpg()
+      val cpg    = newEmptyCpg()
       val config = Config(tsTypes = false)
         .withInputPath(projectUnderTest.toString)
         .withOutputPath(tmpDir.toString)

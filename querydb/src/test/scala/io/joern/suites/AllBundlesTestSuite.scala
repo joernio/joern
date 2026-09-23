@@ -9,7 +9,7 @@ class AllBundlesTestSuite extends AnyWordSpec {
 
   "Complete QueryDatabase" should {
     "should contain queries with unique names" in {
-      val qdb = new QueryDatabase(argumentProvider)
+      val qdb            = new QueryDatabase(argumentProvider)
       val nonUniqueNames =
         qdb.allQueries
           .groupBy(_.name)

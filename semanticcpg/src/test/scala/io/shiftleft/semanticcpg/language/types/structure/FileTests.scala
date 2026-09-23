@@ -9,7 +9,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class FileTests extends AnyWordSpec with Matchers with LoneElement {
   val fileName = "io/shiftleft/testcode/file/FileTest.java"
-  val cpg = MockCpg()
+  val cpg      = MockCpg()
     .withFile(fileName)
     .withNamespace("io.shiftleft.testcode.file", inFile = Some(fileName))
     .withTypeDecl("FileTest", inFile = Some(fileName), inNamespace = Some("io.shiftleft.testcode.file"))

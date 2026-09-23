@@ -139,7 +139,7 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
     enableX2cpgDependencies: Boolean
   ): Seq[DefaultContentRootJarPath] = {
     val jar4ImportServiceOpt = config.jar4importServiceUrl.flatMap(reachableServiceMaybe)
-    val dependencies = {
+    val dependencies         = {
       if (jar4ImportServiceOpt.isDefined) {
         val filesWithKtExtension = gatherFilesWithKtExtension(sourceDir, config)
         val importNames          = importNamesForFilesAtPaths(filesWithKtExtension ++ filesWithJavaExtension)
@@ -194,7 +194,7 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
     allowParentTraversal: Boolean
   ): Iterable[KtFileWithMeta] = {
     val sourceEntries = entriesForSources(environment.getSourceFiles.asScala, sourceDir, allowParentTraversal)
-    val sourceFiles = sourceEntries.filter(entry =>
+    val sourceFiles   = sourceEntries.filter(entry =>
       SourceFiles.filterFile(
         entry.filename,
         config.inputPath,
@@ -340,7 +340,7 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
         if (v2Requested) {
           logger.warn(s"Falling back to dependency resolver v1 as v2 could not resolve correctly")
         }
-        val javaFiles = gatherFilesWithJavaExtension(List(sourceDir), config)
+        val javaFiles      = gatherFilesWithJavaExtension(List(sourceDir), config)
         val dependencyJars =
           gatherJarsOfDependencies(sourceDir, config, javaFiles, v2Requested || config.downloadDependencies)
         (dependencyJars, List(sourceDir), javaFiles, false)
@@ -387,10 +387,10 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
 
   private def findJarsIn(dirs: Set[String]) = {
     dirs.foldLeft(Seq[String]())((acc, classpathEntry) => {
-      val f = Paths.get(classpathEntry)
+      val path  = Paths.get(classpathEntry)
       val files =
-        if (Files.isDirectory(f))
-          f.walk().filterNot(_ == f).filter(_.extension().getOrElse("") == JarExtension).map(_.toString)
+        if (Files.isDirectory(path))
+          path.walk().filterNot(_ == path).filter(_.extension().getOrElse("") == JarExtension).map(_.toString)
         else Seq()
       acc ++ files
     })

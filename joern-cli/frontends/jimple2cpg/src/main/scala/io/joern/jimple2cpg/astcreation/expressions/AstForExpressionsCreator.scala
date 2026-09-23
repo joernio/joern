@@ -16,17 +16,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astsForExpression(expr: Expr, parentUnit: soot.Unit): Seq[Ast] = {
     expr match {
-      case x: BinopExpr  => Seq(astForBinOpExpr(x, parentUnit))
-      case x: InvokeExpr => Seq(astForInvokeExpr(x, parentUnit))
-      case x: AnyNewExpr => Seq(astForNewExpr(x, parentUnit))
-      case x: CastExpr   => Seq(astForUnaryExpr(Operators.cast, x, x.getOp, parentUnit))
+      case x: BinopExpr      => Seq(astForBinOpExpr(x, parentUnit))
+      case x: InvokeExpr     => Seq(astForInvokeExpr(x, parentUnit))
+      case x: AnyNewExpr     => Seq(astForNewExpr(x, parentUnit))
+      case x: CastExpr       => Seq(astForUnaryExpr(Operators.cast, x, x.getOp, parentUnit))
       case x: InstanceOfExpr =>
         Seq(astForUnaryExpr(Operators.instanceOf, x, x.getOp, parentUnit))
       case x: LengthExpr =>
         Seq(astForUnaryExpr(Operators.lengthOf, x, x.getOp, parentUnit))
       case x: NegExpr => Seq(astForUnaryExpr(Operators.minus, x, x.getOp, parentUnit))
-      case x =>
-        logger.warn(s"Unhandled soot.Expr type ${x.getClass}")
+      case other      =>
+        logger.warn(s"Unhandled soot.Expr type ${other.getClass}")
         Seq()
     }
   }
@@ -54,7 +54,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case _: XorExpr  => Operators.xor
       case _: EqExpr   => Operators.equals
       case _: NeExpr   => Operators.notEquals
-      case _ =>
+      case _           =>
         logger.warn(s"Unhandled binary operator ${binOp.getSymbol} (${binOp.getClass}). This is unexpected behaviour.")
         "<operator>.unknown"
     }
@@ -67,7 +67,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForInvokeExpr(invokeExpr: InvokeExpr, parentUnit: soot.Unit): Ast = {
-    val callee = invokeExpr.getMethodRef
+    val callee       = invokeExpr.getMethodRef
     val dispatchType = invokeExpr match {
       case _ if callee.isConstructor => DispatchTypes.STATIC_DISPATCH
       case _: DynamicInvokeExpr      => DispatchTypes.DYNAMIC_DISPATCH
@@ -90,7 +90,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         callee.getName
 
     val calleeType = registerType(sootTypeToString(callee.getDeclaringClass.getType))
-    val callType =
+    val callType   =
       if (callee.isConstructor) "void"
       else calleeType
 

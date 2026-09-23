@@ -30,7 +30,7 @@ enum TypeArgument {
   case UnboundWildcard
 }
 
-sealed trait JavaTypeSignature extends Named
+sealed trait JavaTypeSignature             extends Named
 case class PrimitiveType(fullName: String) extends JavaTypeSignature {
   override val name: String          = fullName
   override val qualifiedName: String = fullName

@@ -202,7 +202,7 @@ class ExtensionsPass(
       Seq(s"subscript.getter", "subscript").foreach { memberName =>
         val subscriptFullNameAndSignature = s"$baseFullName.$memberName:($indexTypeFullName)->$indexTypeFullName"
         val fullNamesFromExtensions       = extensionFullNameMapping.get(subscriptFullNameAndSignature).toList
-        val fullNamesFromMembers =
+        val fullNamesFromMembers          =
           if (memberPropertyValues.contains(subscriptFullNameAndSignature)) subscriptFullNameAndSignature :: Nil
           else Nil
         (fullNamesFromExtensions ++ fullNamesFromMembers).foreach { subscriptFullName =>
@@ -299,7 +299,7 @@ class ExtensionsPass(
       val memberName                    = "subscript.setter"
       val subscriptFullNameAndSignature = s"$baseFullName.$memberName:($indexTypeFullName)->$indexTypeFullName"
       val fullNamesFromExtensions       = extensionFullNameMapping.get(subscriptFullNameAndSignature).toList
-      val fullNamesFromMembers =
+      val fullNamesFromMembers          =
         if (memberPropertyValues.contains(subscriptFullNameAndSignature)) subscriptFullNameAndSignature :: Nil else Nil
       (fullNamesFromExtensions ++ fullNamesFromMembers).foreach { subscriptFullName =>
         diffGraph.setNodeProperty(assignmentCall, PropertyNames.Name, memberName)

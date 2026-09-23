@@ -31,7 +31,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case x: PatternExpr =>
         astsForIsPatternExpression(condNode) match {
           case head :: tail => ConditionAstResult(head, tail)
-          case Nil =>
+          case Nil          =>
             logger.warn(
               s"Unable to handle pattern expression $x in condition expression, resorting to default behaviour"
             )
@@ -47,7 +47,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val ConditionAstResult(conditionAst, prependIfBody) = astForConditionNode(conditionNode)
     val thenNode                                        = createDotNetNodeInfo(ifStmt.json(ParserKeys.Statement))
     val thenAst                                         = astForBlock(thenNode, prefixAsts = prependIfBody)
-    val elseNode = ifStmt.json(ParserKeys.Else) match {
+    val elseNode                                        = ifStmt.json(ParserKeys.Else) match {
       case elseStmt: ujson.Obj => Some(createDotNetNodeInfo(elseStmt))
       case _                   => None
     }
@@ -161,9 +161,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val collectionNode   = createDotNetNodeInfo(forEachStmt.json(ParserKeys.Expression))
     val collectionCode   = code(collectionNode)
     // Create the iterator variable
-    val iterName    = forEachStmt.json(ParserKeys.Identifier)(ParserKeys.Value).str
-    val iterNode    = forEachStmt.json(ParserKeys.Type)
-    val iterNodeTfn = nodeTypeFullName(createDotNetNodeInfo(iterNode))
+    val iterName       = forEachStmt.json(ParserKeys.Identifier)(ParserKeys.Value).str
+    val iterNode       = forEachStmt.json(ParserKeys.Type)
+    val iterNodeTfn    = nodeTypeFullName(createDotNetNodeInfo(iterNode))
     val iterIdentifier =
       identifierNode(
         node = createDotNetNodeInfo(iterNode),
@@ -177,13 +177,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val idxName         = "_idx_"
     val idxLocal        = NewLocal().name(idxName).code(idxName).typeFullName(int32Tfn)
     val idxIdenAtAssign = identifierNode(node = collectionNode, name = idxName, code = idxName, typeFullName = int32Tfn)
-    val idxAssignment =
+    val idxAssignment   =
       callNode(forEachStmt, s"$idxName = 0", Operators.assignment, Operators.assignment, DispatchTypes.STATIC_DISPATCH)
     val idxAssigmentArgs =
       List(Ast(idxIdenAtAssign), Ast(NewLiteral().code("0").typeFullName(BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int))))
     val idxAssignmentAst = callAst(idxAssignment, idxAssigmentArgs)
     // Create condition based on `idx` variable, i.e., _idx_ < $collection.Count
-    val idxIdAtCond = idxIdenAtAssign.copy
+    val idxIdAtCond        = idxIdenAtAssign.copy
     val collectCountAccess = callNode(
       forEachStmt,
       s"$collectionCode.Count",
@@ -206,7 +206,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val ltCallCond = callAst(idxLt, idxLtArgs)
     // Create the assignment from $element = $collection[_idx_++]
     val idxIdAtCollAccess = idxIdenAtAssign.copy
-    val collectIdxAccess = callNode(
+    val collectIdxAccess  = callNode(
       forEachStmt,
       s"$collectionCode[$idxName++]",
       Operators.indexAccess,
@@ -223,7 +223,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       ),
       Ast(idxIdAtCollAccess) :: Nil
     )
-    val indexAccessAst = callAst(collectIdxAccess, newCollectionAst :+ postIncrAst)
+    val indexAccessAst         = callAst(collectIdxAccess, newCollectionAst :+ postIncrAst)
     val iteratorAssignmentNode =
       callNode(
         forEachStmt,
@@ -367,7 +367,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForCatchClause(catchClause: DotNetNodeInfo): Seq[Ast] = {
-    val declAst = astForNode(catchClause.json(ParserKeys.Declaration)).toList
+    val declAst  = astForNode(catchClause.json(ParserKeys.Declaration)).toList
     val blockAst = astForBlock(
       createDotNetNodeInfo(catchClause.json(ParserKeys.Block)),
       code = Option(code(catchClause)),

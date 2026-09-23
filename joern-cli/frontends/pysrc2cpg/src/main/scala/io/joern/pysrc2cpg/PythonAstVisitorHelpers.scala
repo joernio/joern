@@ -421,9 +421,9 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
     if (xMayHaveSideEffects) {
       val tmpVarName    = getUnusedName()
       val tmpAssignCall = createAssignmentToIdentifier(tmpVarName, x(), lineAndColumn)
-      val receiverNode =
+      val receiverNode  =
         createFieldAccess(createIdentifierNode(tmpVarName, Load, lineAndColumn), y, lineAndColumn)
-      val instanceNode = createIdentifierNode(tmpVarName, Load, lineAndColumn)
+      val instanceNode     = createIdentifierNode(tmpVarName, Load, lineAndColumn)
       val instanceCallNode =
         createInstanceCall(receiverNode, instanceNode, y, lineAndColumn, argumentNodes, keywordArguments, callAstNode)
       createBlock(tmpAssignCall :: instanceCallNode :: Nil, lineAndColumn)
@@ -575,7 +575,7 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def createIndexAccess(baseNode: NewNode, indexNode: NewNode, lineAndColumn: LineAndColumn): NewNode = {
-    val code = codeOf(baseNode) + "[" + codeOf(indexNode) + "]"
+    val code            = codeOf(baseNode) + "[" + codeOf(indexNode) + "]"
     val indexAccessNode =
       nodeBuilder.callNode(code, Operators.indexAccess, DispatchTypes.STATIC_DISPATCH, lineAndColumn)
 
@@ -597,8 +597,8 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
     }
     val stepNode = nodeBuilder.intLiteralNode("1", lineAndColumn)
 
-    val upperStr = upperIndex.map(_.toString).getOrElse("")
-    val code     = s"${codeOf(baseNode)}[${lowerIndex}:${upperStr}:1]"
+    val upperStr      = upperIndex.map(_.toString).getOrElse("")
+    val code          = s"${codeOf(baseNode)}[${lowerIndex}:${upperStr}:1]"
     val sliceCallNode =
       nodeBuilder.callNode(code, PythonOperators.slice, DispatchTypes.STATIC_DISPATCH, lineAndColumn)
 

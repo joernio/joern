@@ -140,7 +140,7 @@ class BinarySignatureCalculator(scope: Scope) {
       case decl: RecordDeclaration           => recordDeclBinarySignature(decl)
       case decl: ClassOrInterfaceDeclaration => classDeclBinarySignature(decl)
       case decl: EnumDeclaration             => enumDeclBinarySignature(decl)
-      case decl =>
+      case decl                              =>
         throw new IllegalArgumentException(
           s"Attempting to get binary signature for unhandled type declaration $typeDeclaration"
         )
@@ -232,7 +232,7 @@ class BinarySignatureCalculator(scope: Scope) {
 
     writer.visitReturnType()
     callableDecl match {
-      case methodDeclaration: MethodDeclaration => addType(writer, methodDeclaration.getType)
+      case methodDeclaration: MethodDeclaration           => addType(writer, methodDeclaration.getType)
       case constructorDeclaration: ConstructorDeclaration =>
         BaseTypeMap.get(TypeConstants.Void).foreach(writer.visitBaseType(_))
     }

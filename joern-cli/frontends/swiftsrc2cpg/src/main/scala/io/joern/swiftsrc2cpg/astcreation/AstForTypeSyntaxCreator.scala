@@ -47,10 +47,10 @@ trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForIdentifierTypeSyntax(node: IdentifierTypeSyntax): Ast = {
-    val nodeCode = code(node)
+    val nodeCode                      = code(node)
     val (typeFullName, possibleTypes) = fullnameProvider.typeFullname(node) match {
       case Some(tpe) => (tpe, Seq.empty)
-      case None =>
+      case None      =>
         val tpe = AstCreatorHelper.cleanType(nodeCode) match {
           case value if Defines.SwiftTypes.contains(value) => value
           case _                                           => Defines.Any

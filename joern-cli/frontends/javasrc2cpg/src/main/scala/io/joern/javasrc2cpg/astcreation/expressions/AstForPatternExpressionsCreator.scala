@@ -19,7 +19,7 @@ import scala.jdk.OptionConverters.RichOptional
 
 class PatternInitAndRefAsts(private val initAst: Ast, private val refAst: Ast) {
   private var getCount: Int = -1
-  def get: Ast = {
+  def get: Ast              = {
     getCount += 1
     getCount match {
       case 0 => initAst
@@ -71,8 +71,8 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
         )
 
       case _ =>
-        val tmpName = tempNameProvider.next
-        val tmpType = patternInitAst.rootType.getOrElse(TypeConstants.Object)
+        val tmpName  = tempNameProvider.next
+        val tmpType  = patternInitAst.rootType.getOrElse(TypeConstants.Object)
         val tmpLocal = localNode(
           rootNode,
           tmpName,
@@ -143,14 +143,14 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
         }
         val variableTypeCode = tryWithSafeStackOverflow(code(typePatternExpr.getType)).getOrElse(variableType)
         val genericSignature = binarySignatureCalculator.variableBinarySignature(typePatternExpr.getType)
-        val patternLocal = scope.getHoistedPatternLocals.find(local =>
+        val patternLocal     = scope.getHoistedPatternLocals.find(local =>
           local.name == variableName && local.typeFullName == variableType
         ) match {
           case Some(local) =>
             scope.enclosingMethod.get.registerPatternLocal(typePatternExpr, local)
             local
           case None =>
-            val mangledName = scope.getMangledName(variableName)
+            val mangledName  = scope.getMangledName(variableName)
             val patternLocal = localNode(
               typePatternExpr,
               mangledName,
@@ -274,7 +274,7 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
     val resolvedRecordType = tryWithSafeStackOverflow(recordPatternExpr.getType().resolve().asReferenceType()).toOption
 
     val patternList = recordPatternExpr.getPatternList.asScala.toList
-    val fieldNames = resolvedRecordType
+    val fieldNames  = resolvedRecordType
       .flatMap(_.getTypeDeclaration.toScala)
       .map(_.getDeclaredFields.asScala.map(_.getName).toList)
       .getOrElse(patternList.map(_ => Defines.UnknownField))
@@ -303,7 +303,7 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
 
         val childIsBranchingNode =
           childPatternExpr.isRecordPatternExpr && childPatternExpr.asRecordPatternExpr().getPatternList.size() > 1
-        val childTypeIsResolved = childTypeFullName.exists(isResolvedTypeFullName)
+        val childTypeIsResolved       = childTypeFullName.exists(isResolvedTypeFullName)
         val requiresTemporaryVariable =
           childIsBranchingNode || !childTypeIsResolved || childTypeFullName != fieldTypeFullName
 
@@ -371,7 +371,7 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
 
     override def getAst: Ast = {
       cachedResult.map(_.get).getOrElse {
-        val parentAst = parentNode.getAst
+        val parentAst           = parentNode.getAst
         val patternTypeFullName = tryWithSafeStackOverflow(patternExpr.getType).toOption
           .map { typ =>
             scope
@@ -385,13 +385,13 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
         val parentPatternType = getPatternTypeFullName(parentNode.patternExpr)
         val lhsAst            = castAstIfNecessary(parentNode.patternExpr, parentPatternType, parentAst)
 
-        val signature = composeSignature(fieldTypeFullName, Option(Nil), 0)
+        val signature        = composeSignature(fieldTypeFullName, Option(Nil), 0)
         val typeDeclFullName =
           if (isResolvedTypeFullName(parentPatternType))
             parentPatternType
           else
             s"${Defines.UnresolvedNamespace}.${code(parentNode.patternExpr.getType)}"
-        val methodFullName = Util.composeMethodFullName(typeDeclFullName, fieldName, signature)
+        val methodFullName   = Util.composeMethodFullName(typeDeclFullName, fieldName, signature)
         val methodCodePrefix = lhsAst.root match {
           case Some(call: NewCall) if call.name.startsWith("<operator") => s"(${call.code})"
           case Some(root: AstNodeNew)                                   => root.code

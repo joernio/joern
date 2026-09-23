@@ -100,7 +100,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     assignOp match {
       case Operators.assignment => originalRhs
-      case _ =>
+      case _                    =>
         scope.tryResolveGetterInvocation(propertyName, Some(setterBaseType)) match {
           // Shouldn't happen, provided it is valid code. At any rate, log and emit the RHS verbatim.
           case None =>
@@ -217,7 +217,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case SimpleMemberAccessExpression =>
         astForMemberAccessSetterAssignment(assignExpr, lhs, assignOp, rhs, setterInfo)
       case IdentifierName => astForIdentifierSetterAssignment(assignExpr, lhs, assignOp, rhs, setterInfo)
-      case _ =>
+      case _              =>
         logger.warn(s"Unsupported setter assignment: ${code(assignExpr)}")
         Nil
     }
@@ -302,9 +302,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForUnaryExpression(unaryExpr: DotNetNodeInfo): Seq[Ast] = {
     val operatorToken = unaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).str
-    val operatorName = operatorToken match {
-      case "+" => Operators.plus
-      case "-" => Operators.minus
+    val operatorName  = operatorToken match {
+      case "+"  => Operators.plus
+      case "-"  => Operators.minus
       case "++" =>
         if (unaryExpr.node.getClass == PostIncrementExpression.getClass) Operators.postIncrement
         else Operators.preIncrement
@@ -327,7 +327,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val lhsNode       = createDotNetNodeInfo(binaryExpr.json(ParserKeys.Left))
     val rhsNode       = createDotNetNodeInfo(binaryExpr.json(ParserKeys.Right))
     val operatorToken = binaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).str
-    val operatorName = binaryOperatorsMap.getOrElse(
+    val operatorName  = binaryOperatorsMap.getOrElse(
       operatorToken, {
         logger.warn(s"Unhandled operator '$operatorToken' for ${code(binaryExpr)}")
         CSharpOperators.unknown
@@ -492,7 +492,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callName: String
   ): Seq[Ast] = {
     // This is when a call is made directly, which could also be made from a static import
-    val argTypes = astForArgumentList(argumentList).map(getTypeFullNameFromAstNode).toList
+    val argTypes                           = astForArgumentList(argumentList).map(getTypeFullNameFromAstNode).toList
     val (receiver, baseType, method, args) = scope
       .tryResolveMethodInvocation(callName, argTypes)
       .orElse(scope.tryResolveMethodInvocation(callName, argTypes, scope.surroundingTypeDeclFullName)) match {
@@ -612,7 +612,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .map { x =>
         val argDotNetInfo = createDotNetNodeInfo(x)
         val argAst        = astForExpression(createDotNetNodeInfo(argDotNetInfo.json(ParserKeys.Expression)))
-        val callNode = operatorCallNode(
+        val callNode      = operatorCallNode(
           elementAccessExpression,
           elementAccessExpression.code,
           Operators.indexAccess,
@@ -636,7 +636,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val signature      = None
     val name           = Defines.ConstructorMethodName
     val methodFullName = s"$typeFullName.$name"
-    val _callNode = callNode(
+    val _callNode      = callNode(
       objectCreation,
       code(objectCreation),
       name,
@@ -839,7 +839,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForAttribute(attribute: DotNetNodeInfo): Ast = {
     val attributeName = nameFromNode(attribute)
     val fullName      = nodeTypeFullName(attribute)
-    val argumentAsts =
+    val argumentAsts  =
       Try(astForArgumentList(createDotNetNodeInfo(attribute.json(ParserKeys.ArgumentList)))).getOrElse(Seq.empty[Ast])
 
     val _annotationNode = annotationNode(attribute, attribute.code, attributeName, fullName)

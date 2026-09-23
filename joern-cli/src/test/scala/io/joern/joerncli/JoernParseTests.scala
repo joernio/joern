@@ -36,7 +36,7 @@ class JoernParseTests extends AnyWordSpec with Matchers {
 
         JoernParse.run(config) match {
           case Failure(exception) => fail("joern-parse --overlaysonly failed", exception)
-          case Success(_) =>
+          case Success(_)         =>
             val enhancedCpg = CpgBasedTool.loadFromFile(cpgPath.toString)
             try {
               enhancedCpg.metaData.overlays.l should contain.allOf(Base.overlayName, OssDataFlow.overlayName)

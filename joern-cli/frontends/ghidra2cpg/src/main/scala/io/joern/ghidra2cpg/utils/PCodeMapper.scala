@@ -25,7 +25,7 @@ class PCodeMapper(
   highFunction: HighFunction,
   address2Literal: Map[Long, String]
 ) {
-  private val logger = LogManager.getLogger(getClass)
+  private val logger                  = LogManager.getLogger(getClass)
   private val pcodeOps: List[PcodeOp] =
     nativeInstruction.getPcode().toList
 
@@ -221,7 +221,7 @@ class PCodeMapper(
       case INT_MULT | FLOAT_MULT =>
         handleTwoArguments(instruction, callNode, pcodeAst, "*", "<operator>.multiplication")
       case MULTIEQUAL | INDIRECT | PIECE => // not handled
-      case INT_XOR =>
+      case INT_XOR                       =>
         handleTwoArguments(instruction, callNode, pcodeAst, "^", "<operator>.xor")
       case INT_OR =>
         handleTwoArguments(instruction, callNode, pcodeAst, "^", "<operator>.xor")
@@ -244,7 +244,7 @@ class PCodeMapper(
       // TODO add more pcode ops like CALL.*
       case BRANCH | BRANCHIND | CBRANCH =>
         val destination = resolveVarNode(pcodeOp.getInputs.head, 1)
-        val callNode = createCallNode(
+        val callNode    = createCallNode(
           nativeInstruction.toString,
           "<operator>.goto",
           nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue

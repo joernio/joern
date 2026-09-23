@@ -106,7 +106,7 @@ private[joern] object AarExtractor {
     */
   private def cacheKey(aar: Path): String = {
     val absolute = aar.toAbsolutePath.toString
-    val hash = MessageDigest
+    val hash     = MessageDigest
       .getInstance("SHA-1")
       .digest(absolute.getBytes(StandardCharsets.UTF_8))
     val hex  = hash.take(16).map(byteVal => f"${byteVal & 0xff}%02x").mkString

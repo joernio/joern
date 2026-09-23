@@ -22,7 +22,7 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Option(GoGlobal())) extends X
 
   private val report: Report = new Report()
 
-  private var goMod: Option[GoModHelper] = None
+  private var goMod: Option[GoModHelper]  = None
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       FileUtil.usingTemporaryDirectory("gosrc2cpgOut") { tmpDir =>

@@ -66,8 +66,8 @@ object PsrStringOrArray {
         {
           case json @ (j: ujson.Str) => PsrString(json.str)
           case json @ (j: ujson.Arr) => PsrArray(json.arr.map(_.str).toArray)
-          case x =>
-            logger.warn(s"Unexpected value type for `autoload.psr-4`: ${x.getClass}")
+          case other                 =>
+            logger.warn(s"Unexpected value type for `autoload.psr-4`: ${other.getClass}")
             PsrString("<unknown>")
         }
       )

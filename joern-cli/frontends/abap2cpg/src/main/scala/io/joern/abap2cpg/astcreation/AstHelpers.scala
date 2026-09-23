@@ -11,7 +11,7 @@ trait AstHelpers { this: AstCreator =>
   protected def codeFromExpr(expr: AbapNode): String = expr match {
     case ident: IdentifierExpr => ident.name
     case lit: LiteralExpr      => lit.value
-    case call: CallExpr =>
+    case call: CallExpr        =>
       call.methodName match {
         case Some(method) =>
           val arrow = if (call.isStatic) "=>" else "->"

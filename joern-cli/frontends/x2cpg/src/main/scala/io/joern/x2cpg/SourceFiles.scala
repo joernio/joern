@@ -84,7 +84,7 @@ object SourceFiles {
       return true
     }
     val isInIgnoredFiles = ignoredFiles.exists { ignorePath =>
-      val ignorePathFile = Paths.get(ignorePath)
+      val ignorePathFile         = Paths.get(ignorePath)
       val containsIgnoreFilePath =
         Files.isDirectory(ignorePathFile) && filePathFile.startsWith(ignorePathFile) && ignorePathFile != filePathFile
 

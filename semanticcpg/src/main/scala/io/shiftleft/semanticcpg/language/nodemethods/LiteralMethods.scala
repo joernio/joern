@@ -30,7 +30,7 @@ class LiteralMethods(val literal: Literal) extends AnyVal with NodeExtension {
 }
 
 object LiteralMethods {
-  val logger: Logger = LoggerFactory.getLogger(getClass)
+  val logger: Logger                        = LoggerFactory.getLogger(getClass)
   val delimiters: Map[String, List[String]] = HashMap[String, List[String]](
     Languages.JAVASRC    -> List("\"\"\"", "\""),
     Languages.JAVA       -> List("\"\"\"", "\""),

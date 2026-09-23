@@ -51,7 +51,7 @@ class RustConfigFileCreationPassTests extends Rust2CpgSuite {
 
   "Cargo.toml in a subdirectory" should {
     val cargoTomlPath = (Paths.get("nested") / "Cargo.toml").toString
-    val cargoToml =
+    val cargoToml     =
       """[package]
         |name = "nested"
         |version = "0.1.0"

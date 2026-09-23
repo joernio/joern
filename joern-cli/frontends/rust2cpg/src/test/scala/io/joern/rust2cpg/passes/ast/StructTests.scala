@@ -261,7 +261,7 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
 
   "a struct inside an inline module" should {
     val libPath = (Paths.get("src") / "lib.rs").toString
-    val cpg = code("""
+    val cpg     = code("""
         |mod m {
         |  struct Foo { x: i32 }
         |}

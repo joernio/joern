@@ -19,7 +19,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForAccessorEffectSpecifiersSyntax(node: AccessorEffectSpecifiersSyntax): Ast = notHandledYet(node)
 
   private def astForAccessorParametersSyntax(node: AccessorParametersSyntax): Ast = {
-    val name = code(node.name).stripSuffix(",")
+    val name          = code(node.name).stripSuffix(",")
     val parameterNode =
       parameterInNode(
         node,
@@ -53,8 +53,8 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     val callName = code(node.availabilityKeyword)
 
     val callNode = createStaticCallNode(node, code(node), callName, callName, Defines.Bool)
-    val argAsts = node.availabilityArguments.children.map { c =>
-      Ast(literalNode(c, code(c).stripSuffix(","), Option(Defines.String)))
+    val argAsts  = node.availabilityArguments.children.map { child =>
+      Ast(literalNode(child, code(child).stripSuffix(","), Option(Defines.String)))
     }
     callAst(callNode, argAsts)
   }
@@ -199,7 +199,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     val tpe = fullnameProvider.typeFullname(node).getOrElse(AstCreatorHelper.cleanType(code(node.`type`)))
     registerType(tpe)
 
-    val isVariadic = node.ellipsis.isDefined
+    val isVariadic    = node.ellipsis.isDefined
     val parameterNode =
       parameterInNode(
         node,
@@ -260,7 +260,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
 
     // Detect tuple pattern variants
     val maybeTuplePattern: Option[TuplePatternSyntax] = node.pattern match {
-      case tp: TuplePatternSyntax => Some(tp)
+      case tp: TuplePatternSyntax        => Some(tp)
       case vb: ValueBindingPatternSyntax =>
         vb.pattern match {
           case tp: TuplePatternSyntax => Some(tp)
@@ -398,7 +398,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     name: String,
     typeFullName: String
   ): Unit = {
-    val kind = code(node.bindingSpecifier)
+    val kind      = code(node.bindingSpecifier)
     val scopeType = if (kind == "let") { VariableScopeManager.ScopeType.BlockScope }
     else { VariableScopeManager.ScopeType.MethodScope }
     val nLocalNode = localNode(node, name, name, typeFullName).order(0)
@@ -459,7 +459,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
 
   private def astForOriginallyDefinedInAttributeArgumentsSyntax(
     node: OriginallyDefinedInAttributeArgumentsSyntax
-  ): Ast = notHandledYet(node)
+  ): Ast                                                                            = notHandledYet(node)
   private def astForPatternBindingSyntax(node: PatternBindingSyntax): Ast           = notHandledYet(node)
   private def astForPlatformVersionItemSyntax(node: PlatformVersionItemSyntax): Ast = notHandledYet(node)
   private def astForPlatformVersionSyntax(node: PlatformVersionSyntax): Ast         = notHandledYet(node)

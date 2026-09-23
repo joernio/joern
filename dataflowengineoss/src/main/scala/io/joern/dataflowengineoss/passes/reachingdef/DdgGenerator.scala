@@ -56,7 +56,7 @@ class DdgGenerator(semantics: Semantics) {
     // This handles `foo(new Bar()) or return new Bar()`
     def addEdgeForBlock(block: Block, towards: CfgNode): Unit = {
       block.astChildren.lastOption match {
-        case None => // Do nothing
+        case None                   => // Do nothing
         case Some(node: Identifier) =>
           val edgesToAdd = in(node).toList
             .flatMap(numberToNode.get)
@@ -258,7 +258,7 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
 
   val numberToNode: Map[Definition, CfgNode] = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
 
-  private val allNodes = in.keys.toList
+  private val allNodes     = in.keys.toList
   private val containerSet =
     Set(Operators.fieldAccess, Operators.indexAccess, Operators.indirectIndexAccess, Operators.indirectFieldAccess)
   private val indirectionAccessSet                                  = Set(Operators.addressOf, Operators.indirection)

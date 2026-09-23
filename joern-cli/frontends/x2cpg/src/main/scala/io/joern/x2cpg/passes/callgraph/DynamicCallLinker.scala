@@ -99,7 +99,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   ): mutable.LinkedHashSet[String] = {
     cache.get(typDeclFullName) match {
       case Some(superClasses) => superClasses
-      case None =>
+      case None               =>
         val totalSuperclasses = (cpg.typeDecl
           .fullNameExact(typDeclFullName)
           .headOption match {
@@ -124,8 +124,8 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       .collectAll[TypeDecl]
       .to(mutable.LinkedHashSet) match {
       case classesToEval if classesToEval.isEmpty => visitedNodes
-      case classesToEval =>
-        classesToEval.flatMap(t => inheritTraversal(t, inSuperDirection, visitedNodes))
+      case classesToEval                          =>
+        classesToEval.flatMap(typDecl => inheritTraversal(typDecl, inSuperDirection, visitedNodes))
         visitedNodes
     }
   }
@@ -149,7 +149,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     def split(str: String, n: Int) = (str.take(n), str.drop(n + 1))
     val (fullName, signature)      = split(call.methodFullName, call.methodFullName.lastIndexOf(":"))
     val typeDeclFullName           = fullName.replace(s".${call.name}", "")
-    val candidateInheritedMethods =
+    val candidateInheritedMethods  =
       cpg.typeDecl
         .fullNameExact(allSuperClasses(typeDeclFullName).toIndexedSeq*)
         .astChildren

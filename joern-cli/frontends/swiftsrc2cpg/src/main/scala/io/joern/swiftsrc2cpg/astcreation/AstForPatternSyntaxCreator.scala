@@ -45,7 +45,7 @@ trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) 
     name: String,
     typeFullName: String
   ): Ast = {
-    val kind = code(node.bindingSpecifier)
+    val kind      = code(node.bindingSpecifier)
     val scopeType = if (kind == "let") { VariableScopeManager.ScopeType.BlockScope }
     else { VariableScopeManager.ScopeType.MethodScope }
     val nLocalNode = localNode(node, name, name, typeFullName).order(0)
@@ -73,7 +73,7 @@ trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) 
         localForValueBindingPatternSyntax(node, code(ident.identifier), tpeFromTypeMap.getOrElse(Defines.Any))
       case isType: IsTypePatternSyntax =>
         astForNode(isType)
-      case _: MissingPatternSyntax => Ast()
+      case _: MissingPatternSyntax   => Ast()
       case tuple: TuplePatternSyntax =>
         astForNode(tuple)
       case valueBinding: ValueBindingPatternSyntax =>

@@ -23,7 +23,7 @@ object Intents extends QueryBundle {
       withStrRep({ cpg =>
         import io.shiftleft.semanticcpg.language.android._
         val exportedActivityNames = cpg.configFile.exportedAndroidActivityNames.l
-        def exportedActivities =
+        def exportedActivities    =
           cpg.typeDecl.filter { node => exportedActivityNames.contains(node.name) }
         def getIntentCalls =
           exportedActivities.method.call.name("getIntent").typeFullName("android.content.Intent")

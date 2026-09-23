@@ -34,7 +34,7 @@ class MacroArgumentExtractor(tu: IASTTranslationUnit, loc: IASTFileLocation) {
       val refLoc         = exp.getFileLocation
       val input          = source.slice(0, refLoc.getNodeLength)
       val enclosing      = tu.getNodeSelector(null).findEnclosingNode(-1, 2)
-      val isPPCondition = enclosing.isInstanceOf[IASTPreprocessorIfStatement] || enclosing
+      val isPPCondition  = enclosing.isInstanceOf[IASTPreprocessorIfStatement] || enclosing
         .isInstanceOf[IASTPreprocessorElifStatement]
       expander.expand(input, tracker, tu.getFilePath, refLoc.getStartingLineNumber, isPPCondition)
       tracker.arguments.toList

@@ -65,7 +65,7 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
 
     val params         = funcType.json(ParserKeys.Params)(ParserKeys.List)
     val paramSignature = parameterSignature(params, genericTypeMethodMap)
-    val signature =
+    val signature      =
       s"${XDefines.ClosurePrefix}($paramSignature)$returnTypeStr"
     LambdaFunctionMetaData(signature, returnTypeStr, methodReturn, params, genericTypeMethodMap)
   }

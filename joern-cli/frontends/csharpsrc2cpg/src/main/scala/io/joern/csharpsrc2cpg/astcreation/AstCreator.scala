@@ -94,7 +94,7 @@ class AstCreator(
       .filename(relativeFileName)
 
     val classModifiers = modifierNode(cu, ModifierTypes.INTERNAL) :: Nil
-    val methodNode = NewMethod()
+    val methodNode     = NewMethod()
       .name(mainName)
       .fullName(mainFullName)
       .filename(relativeFileName)

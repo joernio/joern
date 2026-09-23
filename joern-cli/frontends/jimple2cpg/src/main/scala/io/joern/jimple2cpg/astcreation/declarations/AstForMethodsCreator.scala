@@ -50,12 +50,12 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
         )
       } else {
         // Map params to their annotations
-        val mTags = methodDeclaration.getTags.asScala
+        val mTags      = methodDeclaration.getTags.asScala
         val paramAnnos =
           mTags.collect { case x: VisibilityParameterAnnotationTag => x }.flatMap(_.getVisibilityAnnotations.asScala)
         val paramNames           = mTags.collect { case x: ParamNamesTag => x }.flatMap(_.getNames.asScala)
         val parameterAnnotations = paramNames.zip(paramAnnos).filter(_._2 != null).toMap
-        val methodBody = Try(methodDeclaration.getActiveBody) match {
+        val methodBody           = Try(methodDeclaration.getActiveBody) match {
           case Failure(_)    => methodDeclaration.retrieveActiveBody()
           case Success(body) => body
         }
@@ -154,7 +154,7 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
     val name           = methodDeclaration.getName
     val fullName       = methodFullName(typeDecl, methodDeclaration)
     val methodDeclType = registerType(sootTypeToString(methodDeclaration.getReturnType))
-    val code = if (!methodDeclaration.isConstructor) {
+    val code           = if (!methodDeclaration.isConstructor) {
       s"$methodDeclType $name${paramListSignature(methodDeclaration, withParams = true)}"
     } else {
       s"${typeDecl.getClassName}${paramListSignature(methodDeclaration, withParams = true)}"
@@ -235,7 +235,7 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
     val jimpleParams = body.getParameterLocals.asScala.toList
     // Don't let parameters also become locals (avoiding duplication)
     val jimpleLocals = body.getLocals.asScala.filterNot(l => jimpleParams.contains(l) || l.getName == "this").toList
-    val locals = jimpleLocals.map { local =>
+    val locals       = jimpleLocals.map { local =>
       val name         = local.getName
       val typeFullName = registerType(sootTypeToString(local.getType))
       val code         = s"$typeFullName $name"

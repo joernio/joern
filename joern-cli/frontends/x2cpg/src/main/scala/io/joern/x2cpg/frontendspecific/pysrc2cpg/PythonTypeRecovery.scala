@@ -44,7 +44,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
       i.call.tag.flatMap(EvaluatedImport.tagToEvaluatedImport).foreach {
         case ResolvedMethod(fullName, alias, receiver, _) => symbolTable.put(CallAlias(alias, receiver), fullName)
         case ResolvedTypeDecl(fullName, _)                => symbolTable.put(LocalVar(entityName), fullName)
-        case ResolvedMember(basePath, memberName, _) =>
+        case ResolvedMember(basePath, memberName, _)      =>
           val memberTypes = cpg.typeDecl
             .fullNameExact(basePath)
             .member
@@ -102,7 +102,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
       case "<operator>.dictLiteral"  => associateTypes(i, Set(s"${Constants.builtinPrefix}dict"))
       case "<operator>.setLiteral"   => associateTypes(i, Set(s"${Constants.builtinPrefix}set"))
       case Operators.conditional     => associateTypes(i, Set(s"${Constants.builtinPrefix}bool"))
-      case Operators.indexAccess =>
+      case Operators.indexAccess     =>
         c.argument.argumentIndex(1).isCall.foreach(setCallMethodFullNameFromBase)
         visitIdentifierAssignedToIndexAccess(i, c)
       case _ => super.visitIdentifierAssignedToOperator(i, c, operation)
@@ -127,8 +127,11 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     fa.astChildren.l match {
       case List(base: Identifier, fi: FieldIdentifier) if base.name.equals("self") && fieldParents.nonEmpty =>
         val referencedFields = cpg.typeDecl.fullNameExact(fieldParents.toSeq*).member.nameExact(fi.canonicalName)
-        val globalTypes =
-          referencedFields.flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName).filterNot(_ == Constants.ANY).toSet
+        val globalTypes      =
+          referencedFields
+            .flatMap(field => field.typeFullName +: field.dynamicTypeHintFullName)
+            .filterNot(_ == Constants.ANY)
+            .toSet
         associateTypes(i, globalTypes)
       case _ => super.visitIdentifierAssignedToFieldLoad(i, fa)
     }

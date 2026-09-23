@@ -10,7 +10,7 @@ import scala.util.control.Breaks.*
 
 class GoModHelper(modulePath: Option[String] = None, meta: Option[GoMod] = None) {
 
-  def getModMetaData(): Option[GoMod] = meta
+  def getModMetaData(): Option[GoMod]                                    = meta
   def getNameSpace(compilationUnitFilePath: String, pkg: String): String = {
     if (meta.isEmpty || compilationUnitFilePath == null || compilationUnitFilePath.isEmpty) {
       // When there no go.mod file, we don't have the information about the module prefix

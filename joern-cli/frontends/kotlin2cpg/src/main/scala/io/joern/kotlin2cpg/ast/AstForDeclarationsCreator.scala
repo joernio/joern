@@ -64,7 +64,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val baseTypeFullNames =
       ktClass.getSuperTypeListEntries.asScala
         .flatMap { superTypeEntry =>
-          val typeRef = superTypeEntry.getTypeReference
+          val typeRef   = superTypeEntry.getTypeReference
           val superType = bindingUtils
             .getTypeRefType(typeRef)
             .flatMap(nameRenderer.typeFullName)
@@ -90,7 +90,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val (fullName, signature) =
       if (primaryCtor != null) {
         val constructorDesc = bindingUtils.getConstructorDesc(primaryCtor)
-        val descFullName = nameRenderer
+        val descFullName    = nameRenderer
           .descFullName(constructorDesc)
           .getOrElse(s"$classFullName.${Defines.ConstructorMethodName}")
         val signature = nameRenderer
@@ -135,7 +135,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val memberInitializerSetCalls =
       classDeclarations.collectAll[KtProperty].filter(_.getInitializer != null).map { decl =>
         val initializerAsts = astsForExpression(decl.getInitializer, None)
-        val rhsAst =
+        val rhsAst          =
           if (initializerAsts.size == 1) initializerAsts.head
           else Ast(unknownNode(decl, "<empty>"))
 
@@ -161,7 +161,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val anonymousInitAsts        = anonymousInitExpressions.flatMap(astsForExpression(_, None))
 
     val constructorMethodReturn = methodReturnNode(ktClass.getPrimaryConstructor, TypeConstants.Void)
-    val constructorAst = methodAst(
+    val constructorAst          = methodAst(
       primaryCtorMethodNode,
       constructorParamsAsts,
       blockAst(
@@ -213,7 +213,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, methodNode, EdgeTypes.REF)))
     }
 
-    val memberAsts = classDeclarations.toSeq.map(astForMember)
+    val memberAsts        = classDeclarations.toSeq.map(astForMember)
     val innerTypeDeclAsts =
       classDeclarations.toSeq
         .collectAll[KtClassOrObject]
@@ -362,7 +362,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val paramName          = param.getName
     val paramIdentifier    = identifierNode(param, paramName, paramName, typeFullName)
     val paramIdentifierAst = astWithRefEdgeMaybe(paramName, paramIdentifier)
-    val thisIdentifier =
+    val thisIdentifier     =
       identifierNode(param, Constants.ThisName, Constants.ThisName, classFullName, Seq(classFullName))
     val thisAst = astWithRefEdgeMaybe(Constants.ThisName, thisIdentifier)
 
@@ -407,7 +407,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val assignmentLhsNode = identifierNode(expr, tmpName, shortenCode(tmpName), localForTmpNode.typeFullName)
     val assignmentLhsAst  = Ast(assignmentLhsNode).withRefEdge(assignmentLhsNode, localForTmpNode)
-    val tmpAssignmentAst =
+    val tmpAssignmentAst  =
       if (isCtor) {
         val assignmentRhsNode =
           operatorCallNode(expr, Constants.Alloc, Operators.alloc, Option(localForTmpNode.typeFullName))
@@ -441,8 +441,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case call: KtCallExpression if isCtor =>
         val initReceiverNode =
           identifierNode(expr, tmpName, tmpName, localForTmpNode.typeFullName).argumentIndex(0)
-        val initReceiverAst = Ast(initReceiverNode).withRefEdge(initReceiverNode, localForTmpNode)
-        val argAsts         = astsForKtCallExpressionArguments(call)
+        val initReceiverAst       = Ast(initReceiverNode).withRefEdge(initReceiverNode, localForTmpNode)
+        val argAsts               = astsForKtCallExpressionArguments(call)
         val (fullName, signature) =
           calleeFullnameAndSignature(
             getCalleeExpr(rhsCall),
@@ -567,7 +567,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         Option(typeFullName)
       )
       val fieldAccessCallAst = callAst(fieldAccessCall, List(thisAst, Ast(fieldIdentifier)))
-      val methodBlockAst = blockAst(
+      val methodBlockAst     = blockAst(
         blockNode(valueParam, fieldAccessCall.code, typeFullName),
         List(returnAst(returnNode(valueParam, Constants.RetCode), List(fieldAccessCallAst)))
       )
@@ -595,13 +595,13 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val constructorParams  = ctor.getValueParameters.asScala.toList
 
       val constructorDesc = bindingUtils.getConstructorDesc(ctor)
-      val descFullName = nameRenderer
+      val descFullName    = nameRenderer
         .descFullName(constructorDesc)
         .getOrElse(s"$classFullName.${Defines.ConstructorMethodName}")
       val signature = nameRenderer
         .funcDescSignature(constructorDesc)
         .getOrElse(s"${Defines.UnresolvedSignature}(${ctor.getValueParameters.size()})")
-      val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
+      val fullName                = nameRenderer.combineFunctionFullName(descFullName, signature)
       val secondaryCtorMethodNode =
         methodNode(ctor, Defines.ConstructorMethodName, fullName, signature, relativizedPath)
       scope.pushNewScope(secondaryCtorMethodNode)
@@ -652,7 +652,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     annotations: Seq[KtAnnotationEntry] = Seq()
   ): Ast = {
     val parentFn = KtPsiUtil.getTopmostParentOfTypes(expr, classOf[KtNamedFunction])
-    val ctx =
+    val ctx      =
       Option(parentFn)
         .collect { case namedFn: KtNamedFunction => namedFn }
         .map(AnonymousObjectContext(_))
@@ -679,7 +679,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val assignmentCallAst = callAst(assignmentNode, List(identifierAst) ++ List(rhsAst))
     val initSignature     = s"${TypeConstants.Void}()"
     val initFullName      = s"$typeDeclFullName.${Defines.ConstructorMethodName}:$initSignature"
-    val initCallNode =
+    val initCallNode      =
       callNode(
         expr,
         Defines.ConstructorMethodName,
@@ -691,7 +691,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       )
 
     val initReceiverNode = identifierNode(expr, identifier.name, shortenCode(identifier.name), identifier.typeFullName)
-    val initReceiverAst =
+    val initReceiverAst  =
       Ast(initReceiverNode).withRefEdge(initReceiverNode, localForTmp)
     val initAst = callAst(initCallNode, Seq(), Option(initReceiverAst))
 
@@ -714,7 +714,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val ctorCallExprMaybe =
       if (hasRHSCtorCall) {
         expr.getDelegateExpressionOrInitializer match {
-          case c: KtCallExpression => Some(c)
+          case c: KtCallExpression      => Some(c)
           case q: KtQualifiedExpression =>
             q.getSelectorExpression match {
               case qc: KtCallExpression => Some(qc)
@@ -728,7 +728,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case _                            => false
     }
     if (ctorCallExprMaybe.nonEmpty) {
-      val callExpr = ctorCallExprMaybe.get
+      val callExpr          = ctorCallExprMaybe.get
       val localTypeFullName =
         bindingUtils
           .getVariableDesc(expr)
@@ -779,7 +779,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     } else if (hasRHSObjectLiteral) {
       val typedExpr = expr.getDelegateExpressionOrInitializer.asInstanceOf[KtObjectLiteralExpression]
       val parentFn  = KtPsiUtil.getTopmostParentOfTypes(expr, classOf[KtNamedFunction])
-      val ctx =
+      val ctx       =
         Option(parentFn)
           .collect { case namedFn: KtNamedFunction => namedFn }
           .map(AnonymousObjectContext(_))
@@ -804,7 +804,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val assignmentCallAst = callAst(assignmentNode, List(identifierAst) ++ List(rhsAst))
       val initSignature     = s"${TypeConstants.Void}()"
       val initFullName      = s"$typeFullName${Defines.ConstructorMethodName}:$initSignature"
-      val initCallNode = callNode(
+      val initCallNode      = callNode(
         expr,
         Defines.ConstructorMethodName,
         Defines.ConstructorMethodName,
@@ -836,7 +836,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         val identifier     = identifierNode(elem, code(elem), code(elem), typeFullName)
         val identifierAst  = astWithRefEdgeMaybe(identifier.name, identifier)
         val assignmentNode = operatorCallNode(expr, code(expr), Operators.assignment, None)
-        val call =
+        val call           =
           callAst(assignmentNode, List(identifierAst) ++ rhsAsts)
             .withChildren(annotations.map(astForAnnotationEntry))
         Seq(localAst, call)
@@ -847,7 +847,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForMember(decl: KtDeclaration): Ast = {
-    val name = Option(decl.getName).getOrElse(TypeConstants.Any)
+    val name             = Option(decl.getName).getOrElse(TypeConstants.Any)
     val explicitTypeName = decl.getOriginalElement match {
       case p: KtProperty if p.getTypeReference != null => p.getTypeReference.getText
       case _                                           => TypeConstants.Any

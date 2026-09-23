@@ -39,7 +39,7 @@ class FullNameUniquenessPass(cpg: Cpg) extends CpgPass(cpg) {
     val methodFullNameMap = generateStableFullNameMapping(cpg.method.nameNot(NamespaceTraversal.globalNamespaceName))
     methodFullNameMap.foreach { case (fullName, methods) =>
       logDuplicates(methods, fullName)
-      val sortedMethods = sortNodesByLocation(methods)
+      val sortedMethods      = sortNodesByLocation(methods)
       lazy val callsAffected =
         cpg.call.methodFullNameExact(fullName).filterNot(_.file.exists(_.name == sortedMethods.head.filename)).l
       sortedMethods.tail.zipWithIndex.foreach { case (method, index) =>

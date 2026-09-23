@@ -49,7 +49,7 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
       val typeFullName         = x.propertyOption(Properties.TypeFullName).getOrElse(Defines.Any)
       val typeHints            = symbolTable.get(LocalVar(typeFullName)) - typeFullName
       lazy val cpgTypeFullName = cpg.typeDecl.nameExact(typeFullName).fullName.toSet
-      val resolvedTypeHints =
+      val resolvedTypeHints    =
         if (typeHints.nonEmpty) symbolTable.put(x, typeHints)
         else if (cpgTypeFullName.nonEmpty) symbolTable.put(x, cpgTypeFullName)
         else symbolTable.put(x, x.getKnownTypes)
@@ -78,7 +78,7 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
           case (_, ts)                 => ts.map(_.replaceAll("\\.(?!swift:<global>)", pathSep))
         }
       p match {
-        case _: MethodParameterIn => symbolTable.put(p, resolvedHints)
+        case _: MethodParameterIn                         => symbolTable.put(p, resolvedHints)
         case _: MethodReturn if resolvedHints.sizeIs == 1 =>
           builder.setNodeProperty(p, PropertyNames.TypeFullName, resolvedHints.head)
         case _: MethodReturn =>

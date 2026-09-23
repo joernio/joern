@@ -10,7 +10,7 @@ object TypeStubUtil {
     */
   def typeStubDir(codeSourceLocation: String): Path = {
     val indexOfLib = codeSourceLocation.lastIndexOf("lib")
-    val fixedDir = if (indexOfLib != -1) {
+    val fixedDir   = if (indexOfLib != -1) {
       new java.io.File(codeSourceLocation.substring("file:".length, indexOfLib)).toString
     } else {
       val indexOfTarget = codeSourceLocation.lastIndexOf("target")

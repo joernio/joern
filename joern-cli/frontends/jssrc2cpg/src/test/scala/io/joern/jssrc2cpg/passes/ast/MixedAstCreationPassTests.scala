@@ -1285,7 +1285,7 @@ class MixedAstCreationPassTests extends JsSrc2CpgSuite {
       assignmentA.astChildren.isIdentifier.nameExact("a").size shouldBe 1
 
       val List(ternaryCallA) = assignmentA.astChildren.isCall.nameExact(Operators.conditional).l
-      val List(testCallA) =
+      val List(testCallA)    =
         ternaryCallA.astChildren.isCall.nameExact(Operators.equals).l
       testCallA.astChildren.isIdentifier.nameExact("a").size shouldBe 1
       testCallA.astChildren.isCall.nameExact("<operator>.void").size shouldBe 1

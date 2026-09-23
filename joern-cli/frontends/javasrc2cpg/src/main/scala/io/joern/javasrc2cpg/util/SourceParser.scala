@@ -44,7 +44,7 @@ class SourceParser(
     // Need to store tokens for position information.
     fileIfExists(analysisFilename).flatMap { file =>
       val compilationUnit = parse(file, storeTokens = true)
-      val fileContent = Option
+      val fileContent     = Option
         .when(saveFileContent) {
           Try(IOUtils.readEntireFile(file))
             .orElse(Try(file.fileContent(Charset.defaultCharset())))
@@ -76,7 +76,7 @@ class SourceParser(
     val parseResult = new JavaParser(javaParserConfig).parse(file)
 
     parseResult.getProblems.asScala.toList match {
-      case Nil => // Just carry on as usual
+      case Nil      => // Just carry on as usual
       case problems =>
         logger.warn(
           s"Encountered problems while parsing '${file.fileName}': ${problems.map(_.getMessage).mkString("; ")}"
@@ -85,7 +85,7 @@ class SourceParser(
 
     parseResult.getResult.toScala match {
       case Some(result) if result.getParsed == Parsedness.PARSED => Some(result)
-      case _ =>
+      case _                                                     =>
         logger.warn(s"Failed to process '${file.fileName}'")
         None
     }
@@ -156,7 +156,7 @@ object SourceParser {
 
     var dirToDelete: Option[Path] = None
     lazy val delombokResult       = Delombok.run(inputPath, fileInfo, config.delombokJavaHome, dependencies)
-    lazy val delombokDir = {
+    lazy val delombokDir          = {
       dirToDelete = Option.when(delombokResult.isDelombokedPath)(delombokResult.path)
       delombokResult.path
     }

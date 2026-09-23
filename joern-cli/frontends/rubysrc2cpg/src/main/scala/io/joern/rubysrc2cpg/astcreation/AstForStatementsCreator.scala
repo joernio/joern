@@ -88,7 +88,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     astForIf: IfExpression => Ast
   ): Option[Ast] = {
     elsIfClauses match {
-      case Nil => elseClause.map(astForElseClause)
+      case Nil               => elseClause.map(astForElseClause)
       case elsIfNode :: rest =>
         elsIfNode match {
           case elsIfNode: ElsIfClause =>
@@ -116,7 +116,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       val cached = closureToRefs(block).map(ref => Ast(ref.copy))
       (typeRef = cached(0), methodRef = cached(1))
     } else {
-      val methodName = scope.getNewClosureName
+      val methodName    = scope.getNewClosureName
       val methodRefAsts = block.body match {
         case x: Block =>
           astForMethodDeclaration(x.toMethodDeclaration(methodName, Option(block.parameters)), isClosure = true)
@@ -177,7 +177,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           case x =>
             astsForStatement(transform(expr))
         }
-      case ret: ReturnExpression => astForReturnExpression(ret) :: Nil
+      case ret: ReturnExpression                                  => astForReturnExpression(ret) :: Nil
       case node: (MethodDeclaration | SingletonMethodDeclaration) =>
         (astsForStatement(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
       case node: FieldsDeclaration =>
@@ -220,8 +220,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         } else {
           val tmpName = scope.getNewVarTmp
 
-          val tmpLhsAst = handleVariableOccurrence(tmpName, assignment)
-          val rhsAst    = astForExpression(assignment.rhs)
+          val tmpLhsAst     = handleVariableOccurrence(tmpName, assignment)
+          val rhsAst        = astForExpression(assignment.rhs)
           val tmpAssignCall = callNode(
             assignment,
             s"$tmpName = ${code(assignment.rhs)}",
@@ -231,8 +231,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           )
           assignmentAsts += callAst(tmpAssignCall, Seq(tmpLhsAst, rhsAst))
 
-          val lhsAst    = astForExpression(assignment.lhs)
-          val tmpRhsAst = handleVariableOccurrence(tmpName, assignment)
+          val lhsAst        = astForExpression(assignment.lhs)
+          val tmpRhsAst     = handleVariableOccurrence(tmpName, assignment)
           val lhsAssignCall = callNode(
             assignment,
             s"${code(assignment.lhs)} = $tmpName",
@@ -258,7 +258,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       assignmentAsts += callAst(arrayAssignCall, Seq(handleVariableOccurrence(arrayTmpName, node), callAst(allocCall)))
 
       returnExprNames.toList.zipWithIndex.foreach { case (exprName, idx) =>
-        val idxLiteral = literalNode(node, idx.toString, Defines.prefixAsCoreType(Defines.Integer))
+        val idxLiteral      = literalNode(node, idx.toString, Defines.prefixAsCoreType(Defines.Integer))
         val indexAccessCall =
           callNode(
             node,
@@ -379,7 +379,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case WhileExpression(condition, body)   => WhileExpression(condition, transform(body))(node.span)
       case DoWhileExpression(condition, body) => DoWhileExpression(condition, transform(body))(node.span)
       case UntilExpression(condition, body)   => UntilExpression(condition, transform(body))(node.span)
-      case OperatorAssignment(lhs, op, rhs) =>
+      case OperatorAssignment(lhs, op, rhs)   =>
         val loweredNode = lowerAssignmentOperator(lhs, rhs, op, node.span)
         transformLastRubyNodeInControlFlowExpressionBody(loweredNode, transform, defaultElseBranch)
       case IfExpression(condition, thenClause, elsifClauses, elseClause) =>
@@ -419,11 +419,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val forwardingCallTarget = SimpleIdentifier(None)(span.spanStart(alias.oldName))
     val forwardedArgs        = SplattingRubyNode(SimpleIdentifier()(span.spanStart("args")))(span.spanStart("*args"))
     val forwardedBlock       = SimpleIdentifier()(span.spanStart("&block"))
-    val forwardingCall = SimpleCall(forwardingCallTarget, forwardedArgs :: forwardedBlock :: Nil)(
+    val forwardingCall       = SimpleCall(forwardingCallTarget, forwardedArgs :: forwardedBlock :: Nil)(
       span.spanStart(s"${alias.oldName}(*args, &block)")
     )
 
-    val aliasMethodBody = StatementList(forwardingCall :: Nil)(forwardingCall.span)
+    val aliasMethodBody      = StatementList(forwardingCall :: Nil)(forwardingCall.span)
     val aliasingMethodParams =
       ArrayParameter("*args")(span.spanStart("*args")) :: ProcParameter("&block")(span.spanStart("&block")) :: Nil
 

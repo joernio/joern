@@ -39,7 +39,7 @@ class DynamicTypeHintFullNamePass(cpg: Cpg) extends ForkJoinParallelCpgPass[CfgN
   private def runOnMethodReturn(diffGraph: DiffGraphBuilder, methodReturn: MethodReturn): Unit =
     methodReturn.file.foreach { file =>
       val typeHint = methodReturn.typeFullName
-      val imports = fileToImports.getOrElse(file.name, List.empty) ++ methodReturn.method.typeDecl
+      val imports  = fileToImports.getOrElse(file.name, List.empty) ++ methodReturn.method.typeDecl
         .map(td => ImportScope(Option(pythonicTypeNameToImport(td.fullName)), Option(td.name)))
         .toList
       imports
@@ -56,7 +56,7 @@ class DynamicTypeHintFullNamePass(cpg: Cpg) extends ForkJoinParallelCpgPass[CfgN
   private def runOnMethodParameter(diffGraph: DiffGraphBuilder, param: MethodParameterIn): Unit =
     param.file.foreach { file =>
       val typeHint = param.typeFullName
-      val imports = fileToImports.getOrElse(file.name, List.empty) ++ param.method.typeDecl
+      val imports  = fileToImports.getOrElse(file.name, List.empty) ++ param.method.typeDecl
         .map(td => ImportScope(Option(pythonicTypeNameToImport(td.fullName)), Option(td.name)))
         .toList
       imports
@@ -79,9 +79,9 @@ class DynamicTypeHintFullNamePass(cpg: Cpg) extends ForkJoinParallelCpgPass[CfgN
     alias: String,
     importedEntity: String
   ) = {
-    val importFullPath   = ImportStringHandling.combinedPath(importedEntity, typeHint)
-    val typeHintFullName = typeHint.replaceFirst(Pattern.quote(alias), importedEntity)
-    val typeFilePath     = typeHintFullName.replaceAll("\\.", Matcher.quoteReplacement(File.separator))
+    val importFullPath       = ImportStringHandling.combinedPath(importedEntity, typeHint)
+    val typeHintFullName     = typeHint.replaceFirst(Pattern.quote(alias), importedEntity)
+    val typeFilePath         = typeHintFullName.replaceAll("\\.", Matcher.quoteReplacement(File.separator))
     val pythonicTypeFullName = importFullPath.split("\\.").lastOption match {
       case Some(typeName) =>
         typeFilePath.stripSuffix(s"${File.separator}$typeName").concat(s".py:${Constants.moduleName}.$typeName")

@@ -40,7 +40,7 @@ class NamespaceBlockTests extends Rust2CpgSuite(noSysRoot = true) {
 
   "the fake global method" should {
     val libPath = (Paths.get("src") / "lib.rs").toString
-    val cpg = code("""
+    val cpg     = code("""
         |fn one() {}
         |fn two(x: i32) -> i32 { x }
         |""".stripMargin)
@@ -78,7 +78,7 @@ class NamespaceBlockTests extends Rust2CpgSuite(noSysRoot = true) {
 
   "an inline module" should {
     val libPath = (Paths.get("src") / "lib.rs").toString
-    val cpg = code("""
+    val cpg     = code("""
         |mod foo {
         | fn bar() {}
         |}
@@ -110,7 +110,7 @@ class NamespaceBlockTests extends Rust2CpgSuite(noSysRoot = true) {
 
   "a nested inline module" should {
     val libPath = (Paths.get("src") / "lib.rs").toString
-    val cpg = code("""
+    val cpg     = code("""
         |mod a {
         | mod b {
         |   fn c() {}

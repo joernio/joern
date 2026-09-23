@@ -165,7 +165,7 @@ object JoernParse {
         }
         postProcessingGenerator match {
           case Some(resolvedGenerator) => resolvedGenerator.applyPostProcessingPasses(cpg)
-          case None =>
+          case None                    =>
             cpg.close()
             throw new RuntimeException(
               s"Could not resolve a language frontend for post-processing passes: the CPG at ${config.outputCpgFile} " +

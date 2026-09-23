@@ -31,7 +31,7 @@ class ExtendedCfgNode(val traversal: Iterator[CfgNode]) extends AnyVal {
   def reachableBy[NodeType](sourceTrav: IterableOnce[NodeType], sourceTravs: IterableOnce[NodeType]*)(implicit
     context: EngineContext
   ): Iterator[NodeType] = {
-    val sources = sourceTravsToStartingPoints(sourceTrav +: sourceTravs*)
+    val sources        = sourceTravsToStartingPoints(sourceTrav +: sourceTravs*)
     val reachedSources =
       reachableByInternal(sources).map(_.path.head.node)
     reachedSources.cast[NodeType]
@@ -42,7 +42,7 @@ class ExtendedCfgNode(val traversal: Iterator[CfgNode]) extends AnyVal {
   ): Iterator[Path] = {
     val sources        = sourceTravsToStartingPoints(sourceTrav +: sourceTravs*)
     val startingPoints = sources.map(_.startingPoint)
-    val paths = reachableByInternal(sources).par
+    val paths          = reachableByInternal(sources).par
       .map { result =>
         // We can get back results that start in nodes that are invisible
         // according to the semantic, e.g., arguments that are only used
@@ -81,9 +81,9 @@ class ExtendedCfgNode(val traversal: Iterator[CfgNode]) extends AnyVal {
     val result = engine.backwards(sinks, startingPointsWithSources.map(_.startingPoint))
 
     engine.shutdown()
-    val sources = startingPointsWithSources.map(_.source)
-    val startingPointToSource = startingPointsWithSources.map { x =>
-      x.startingPoint.asInstanceOf[AstNode] -> x.source
+    val sources               = startingPointsWithSources.map(_.source)
+    val startingPointToSource = startingPointsWithSources.map { entry =>
+      entry.startingPoint.asInstanceOf[AstNode] -> entry.source
     }.toMap
     val res = result.par.map { r =>
       val startingPoint = r.path.head.node

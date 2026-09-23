@@ -14,7 +14,7 @@ class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
     }
 
     "should contain a RETURN node around as the last child of the lambda's BLOCK" in {
-      val List(b: Block) = cpg.method.fullName(".*lambda.*").block.l
+      val List(b: Block)       = cpg.method.fullName(".*lambda.*").block.l
       val hasReturnAsLastChild = b.astChildren.last match {
         case _: Return => true
         case _         => false
@@ -32,7 +32,7 @@ class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
     }
 
     "should contain a RETURN node around as the last child of the lambda's BLOCK" in {
-      val List(b: Block) = cpg.method.fullName(".*lambda.*").block.l
+      val List(b: Block)       = cpg.method.fullName(".*lambda.*").block.l
       val hasReturnAsLastChild = b.astChildren.last match {
         case _: Return => true
         case _         => false
@@ -50,7 +50,7 @@ class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
     }
 
     "should contain a RETURN node around as the last child of the lambda's BLOCK" in {
-      val List(b: Block) = cpg.method.fullName(".*lambda.*").block.l
+      val List(b: Block)       = cpg.method.fullName(".*lambda.*").block.l
       val hasReturnAsLastChild = b.astChildren.last match {
         case _: Return => true
         case _         => false
@@ -68,7 +68,7 @@ class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
     }
 
     "should contain a RETURN node around as the last child of the lambda's BLOCK" in {
-      val List(b: Block) = cpg.method.fullName(".*lambda.*").block.l
+      val List(b: Block)       = cpg.method.fullName(".*lambda.*").block.l
       val hasReturnAsLastChild = b.astChildren.last match {
         case _: Return => true
         case _         => false

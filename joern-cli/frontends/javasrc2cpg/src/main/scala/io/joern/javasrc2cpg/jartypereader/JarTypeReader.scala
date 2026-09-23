@@ -76,8 +76,8 @@ object JarTypeReader {
     * otherwise.
     */
   private def getCtClassSignature(ctClass: CtClass): ClassSignature = {
-    val classFile      = ctClass.getClassFile2
-    val typeParameters = Nil
+    val classFile           = ctClass.getClassFile2
+    val typeParameters      = Nil
     val superclassSignature =
       Option.unless(classFile.isInterface)(classTypeSignatureFromString(classFile.getSuperclass))
     val interfacesSignatures = classFile.getInterfaces.map(classTypeSignatureFromString).toList
@@ -98,7 +98,7 @@ object JarTypeReader {
       case Success(ctClass) =>
         val name             = ctClass.getSimpleName
         val packageSpecifier = ctClass.getPackageName
-        val signature = Option(ctClass.getGenericSignature)
+        val signature        = Option(ctClass.getGenericSignature)
           .map(DescriptorParser.parseClassSignature)
           .getOrElse(getCtClassSignature(ctClass))
         val isInterface = ctClass.isInterface

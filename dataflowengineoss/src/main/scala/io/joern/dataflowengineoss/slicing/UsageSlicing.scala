@@ -54,15 +54,15 @@ object UsageSlicing {
   ): List[MethodUsageSlice] = {
     val language = cpg.metaData.language.headOption
     val root     = cpg.metaData.root.headOption
-    val tasks = declarations
-      .filter(a => atLeastNCalls(a, config.minNumCalls) && !a.name.startsWith("_tmp_"))
-      .map(a => () => new TrackUsageTask(cpg, a, typeMap).call())
+    val tasks    = declarations
+      .filter(decl => atLeastNCalls(decl, config.minNumCalls) && !decl.name.startsWith("_tmp_"))
+      .map(decl => () => new TrackUsageTask(cpg, decl, typeMap).call())
       .iterator
     ConcurrentTaskUtil
       .runUsingThreadPool(tasks, config.parallelism.getOrElse(Runtime.getRuntime.availableProcessors()))
       .flatMap {
         case Success(slice) => slice
-        case Failure(e) =>
+        case Failure(e)     =>
           logger.warn("Exception encountered during slicing task", e)
           None
       }
@@ -144,7 +144,7 @@ object UsageSlicing {
       */
     private def exprToObservedCall(baseCall: Call): Option[ObservedCall] = {
       val isMemberInvocation = baseCall.name.equals(Operators.fieldAccess)
-      val isConstructor =
+      val isConstructor      =
         baseCall.name.equals(Operators.alloc) || baseCall.ast.isCall.nameExact(Operators.alloc).nonEmpty
 
       def getResolvedMethod(x: Call): Option[String] = if (
@@ -165,9 +165,9 @@ object UsageSlicing {
             .headOption
             .getOrElse((None, None))
         else if (isConstructor) {
-          val m = constructorTypeMatcher.matcher(baseCall.code)
+          val matcher  = constructorTypeMatcher.matcher(baseCall.code)
           val typeName =
-            if (m.find()) m.group(1)
+            if (matcher.find()) matcher.group(1)
             else baseCall.code.stripPrefix("new ").takeWhile(!_.equals('('))
           Option(typeName) -> typeMap.get(typeName)
         } else
@@ -186,9 +186,10 @@ object UsageSlicing {
         .collect { case n: Expression if n.argumentIndex > 0 => n }
         .map {
           case _: MethodRef => "LAMBDA"
-          case x =>
-            x.propertyOption(Properties.TypeFullName)
-              .orElse(x.property(Properties.DynamicTypeHintFullName).headOption)
+          case other        =>
+            other
+              .propertyOption(Properties.TypeFullName)
+              .orElse(other.property(Properties.DynamicTypeHintFullName).headOption)
               .getOrElse("ANY")
         }
         .collect { case x: String => x }

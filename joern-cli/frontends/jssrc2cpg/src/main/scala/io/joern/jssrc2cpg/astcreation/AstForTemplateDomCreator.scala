@@ -11,8 +11,8 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
     val domNode      = templateDomNode(jsxElem.node.toString, jsxElem.code, jsxElem.lineNumber, jsxElem.columnNumber)
     val openingAst   = astForNodeWithFunctionReference(jsxElem.json("openingElement"))
     val childrenAsts = astForNodes(jsxElem.json("children").arr)
-    val closingAst = safeObj(jsxElem.json, "closingElement")
-      .map(e => astForNodeWithFunctionReference(Obj(e)))
+    val closingAst   = safeObj(jsxElem.json, "closingElement")
+      .map(elem => astForNodeWithFunctionReference(Obj(elem)))
       .getOrElse(Ast())
     val allChildrenAsts = openingAst +: childrenAsts :+ closingAst
     Ast(domNode).withChildren(allChildrenAsts)
@@ -43,7 +43,7 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
         jsxAttr.columnNumber.map(_ - colon.length)
       )
     val valueAst = safeObj(jsxAttr.json, "value")
-      .map(e => astForNodeWithFunctionReference(Obj(e)))
+      .map(elem => astForNodeWithFunctionReference(Obj(elem)))
       .getOrElse(Ast())
     Ast(domNode).withChild(valueAst)
   }
@@ -80,7 +80,7 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
       jsxExprContainer.columnNumber
     )
     val nodeInfo = createBabelNodeInfo(jsxExprContainer.json("expression"))
-    val exprAst = nodeInfo.node match {
+    val exprAst  = nodeInfo.node match {
       case JSXEmptyExpression => Ast()
       case _                  => astForNodeWithFunctionReference(nodeInfo.json)
     }

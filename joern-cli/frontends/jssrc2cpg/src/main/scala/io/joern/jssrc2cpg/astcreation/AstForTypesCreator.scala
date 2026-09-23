@@ -31,7 +31,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       createBabelNodeInfo(alias.json)
     }
     val nameTpe = typeFor(nameNodeInfo)
-    val name = if (nameTpe.contains("{") || nameTpe.contains("(")) {
+    val name    = if (nameTpe.contains("{") || nameTpe.contains("(")) {
       calcTypeNameAndFullName(nameNodeInfo)._1
     } else nameTpe
 
@@ -192,8 +192,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     addModifier(memberNode_, tsEnumMember.json)
 
     if (hasKey(tsEnumMember.json, "initializer")) {
-      val lhsAst = astForNode(tsEnumMember.json("id"))
-      val rhsAst = astForNodeWithFunctionReference(tsEnumMember.json("initializer"))
+      val lhsAst    = astForNode(tsEnumMember.json("id"))
+      val rhsAst    = astForNodeWithFunctionReference(tsEnumMember.json("initializer"))
       val callNode_ =
         callNode(tsEnumMember, tsEnumMember.code, Operators.assignment, DispatchTypes.STATIC_DISPATCH)
       val argAsts = List(lhsAst, rhsAst)
@@ -212,7 +212,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val tpe           = typeFor(nodeInfo)
     val possibleTypes = Seq(tpe)
     val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
-    val memberNode_ = nodeInfo.node match {
+    val memberNode_   = nodeInfo.node match {
       case TSDeclareMethod | TSDeclareFunction =>
         val function = createMethodDefinitionNode(nodeInfo, ConstructorContent.empty)
         addModifier(function, nodeInfo.json)
@@ -240,7 +240,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         val name = nodeInfo.node match {
           case ClassProperty        => code(nodeInfo.json("key"))
           case ClassPrivateProperty => code(nodeInfo.json("key")("id"))
-          case TSParameterProperty =>
+          case TSParameterProperty  =>
             val unpackedParam = createBabelNodeInfo(nodeInfo.json("parameter"))
             unpackedParam.node match {
               case AssignmentPattern => createBabelNodeInfo(unpackedParam.json("left")).code
@@ -261,8 +261,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
 
     if (!ignoreInitCalls && hasKey(nodeInfo.json, "value") && !nodeInfo.json("value").isNull) {
-      val lhsAst = astForNode(nodeInfo.json("key"))
-      val rhsAst = astForNodeWithFunctionReference(nodeInfo.json("value"))
+      val lhsAst    = astForNode(nodeInfo.json("key"))
+      val rhsAst    = astForNodeWithFunctionReference(nodeInfo.json("value"))
       val callNode_ =
         callNode(nodeInfo, nodeInfo.code, Operators.assignment, DispatchTypes.STATIC_DISPATCH)
       val argAsts = List(lhsAst, rhsAst)
@@ -311,7 +311,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     typeRefIdStack.push(typeRefNode_)
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
-    val enumMembers = tsEnum.json("members").arr.toList
+    val enumMembers                                    = tsEnum.json("members").arr.toList
     val (enumMembersWithInitializer, enumMembersPlain) =
       enumMembers.partition(m => hasKey(m, "initializer") && !m("initializer").isNull)
 
@@ -347,7 +347,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   private def isInitializedMember(json: Value): Boolean = {
     val hasInitializedValue = hasKey(json, "value") && !json("value").isNull
-    val isAssignment = nodeTypeOf(json) match {
+    val isAssignment        = nodeTypeOf(json) match {
       case ExpressionStatement =>
         val exprJson = json("expression")
         nodeTypeOf(exprJson) == AssignmentExpression &&
@@ -532,7 +532,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     if (shouldCreateAssignmentCall) {
       // return a synthetic assignment to enable tracing of the implicitly created identifier for
       // the class definition assigned to its constructor
-      val classIdNode = identifierNode(clazz, typeName, typeName, Defines.Any, Seq(constructorNode.fullName))
+      val classIdNode        = identifierNode(clazz, typeName, typeName, Defines.Any, Seq(constructorNode.fullName))
       val constructorRefNode =
         methodRefNode(clazz, constructorNode.code, constructorNode.fullName, constructorNode.fullName)
 
@@ -555,7 +555,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         createPropertyDecorationAsts(membersWithConstructor, classNodeInfo = clazz, classIdNode)
       val methodDecorationAsts = createMethodDecorationAsts(membersWithConstructor, classNodeInfo = clazz, classIdNode)
       if (classDecorationAst.root.isDefined || propertyDecorationAsts.nonEmpty || methodDecorationAsts.nonEmpty) {
-        val blockNode_ = blockNode(clazz)
+        val blockNode_   = blockNode(clazz)
         val childrenAsts =
           List(Ast(typeRefNode_), assignmentAst, classDecorationAst) ++ propertyDecorationAsts ++ methodDecorationAsts
         Ast(blockNode_).withChildren(childrenAsts)
@@ -606,7 +606,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       )
       val annotationExprAst = astForDecorateArray(classNodeInfo, decoratorAsts)
       val args              = Seq(annotationExprAst, classRefNode)
-      val decorateCallAst =
+      val decorateCallAst   =
         callAst(decorateCallNode, args, receiver = Option(Ast(receiverNode)), base = Option(Ast(thisNode)))
 
       createAssignmentCallAst(
@@ -638,7 +638,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val designTypeLiteralNode = literalNode(tsMethodNodeInfo, "'design:type'", Defines.String)
     val functionLiteralNode   = literalNode(tsMethodNodeInfo, "Function", Defines.Any)
-    val metadataCallType =
+    val metadataCallType      =
       callNode(
         tsMethodNodeInfo,
         s"""__metadata("design:type", Function)""",
@@ -693,9 +693,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         DispatchTypes.STATIC_DISPATCH
       )
 
-    val lineNumber     = tsMethodNodeInfo.lineNumber
-    val columnNumber   = tsMethodNodeInfo.columnNumber
-    val assignmentCode = s"${localTmpNode.code} = ${arrayCallNode.code}"
+    val lineNumber                 = tsMethodNodeInfo.lineNumber
+    val columnNumber               = tsMethodNodeInfo.columnNumber
+    val assignmentCode             = s"${localTmpNode.code} = ${arrayCallNode.code}"
     val assignmentTmpArrayCallNode =
       createAssignmentCallAst(tmpArrayNode, arrayCallNode, assignmentCode, lineNumber, columnNumber)
 
@@ -703,8 +703,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val objectLiteralNode = literalNode(tsMethodNodeInfo, "Object", Defines.Object)
       val pushCallNode      = callNode(tsMethodNodeInfo, s"$tmpName.push(Object)", "", DispatchTypes.DYNAMIC_DISPATCH)
 
-      val baseNode   = identifierNode(tsMethodNodeInfo, tmpName)
-      val memberNode = fieldIdentifierNode(tsMethodNodeInfo, "push", "push")
+      val baseNode     = identifierNode(tsMethodNodeInfo, tmpName)
+      val memberNode   = fieldIdentifierNode(tsMethodNodeInfo, "push", "push")
       val receiverNode =
         createFieldAccessCallAst(baseNode, memberNode, tsMethodNodeInfo.lineNumber, tsMethodNodeInfo.columnNumber)
       val thisPushNode = identifierNode(tsMethodNodeInfo, tmpName)
@@ -759,7 +759,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val designTypeLiteralNode = literalNode(tsMethodNodeInfo, "'design:returntype'", Defines.String)
     val tpeLiteralNode        = literalNode(tsMethodNodeInfo, tpe, Defines.Any)
-    val metadataCallType =
+    val metadataCallType      =
       callNode(tsMethodNodeInfo, s"""__metadata("design:type", $tpe)""", "__metadata", DispatchTypes.DYNAMIC_DISPATCH)
     val metadataTypeArgAsts = Seq(Ast(designTypeLiteralNode), Ast(tpeLiteralNode))
     callAst(
@@ -812,7 +812,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         val propertyNameNode = literalNode(tsPropertyNodeInfo, s"'$name'", Defines.String)
         val voidCallNode_    = voidCallNode(line(tsPropertyNodeInfo), column(tsPropertyNodeInfo))
 
-        val arg1Code = decoratorAsts.flatMap(_.root.map(codeOf)).mkString(",")
+        val arg1Code         = decoratorAsts.flatMap(_.root.map(codeOf)).mkString(",")
         val decorateCallCode =
           s"__decorate([$arg1Code], ${codeOf(classPrototypeAccessAst.nodes.head)}, ${propertyNameNode.code}, ${voidCallNode_.code})"
 
@@ -849,7 +849,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         decoratorExpressionElements(tsMethodNodeInfo).map(e => astForNodeWithFunctionReference(e.json))
       val (name, fullName) = calcMethodNameAndFullName(tsMethodNodeInfo)
       val methodTpe        = typeFor(tsMethodNodeInfo).stripPrefix("__ecma.")
-      val paramNodeInfos = if (hasKey(tsMethodNodeInfo.json, "parameters")) {
+      val paramNodeInfos   = if (hasKey(tsMethodNodeInfo.json, "parameters")) {
         tsMethodNodeInfo.json("parameters").arr.toSeq
       } else {
         tsMethodNodeInfo.json("params").arr.toSeq
@@ -875,8 +875,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
               "__param",
               DispatchTypes.DYNAMIC_DISPATCH
             )
-            val idxNode = literalNode(paramNodeInfo, s"$idx", Defines.Number)
-            val argAsts = Seq(Ast(idxNode), p)
+            val idxNode              = literalNode(paramNodeInfo, s"$idx", Defines.Number)
+            val argAsts              = Seq(Ast(idxNode), p)
             val paramDecorateCallAst =
               callAst(callNode_, argAsts, receiver = Option(Ast(receiverNode)), base = Option(Ast(thisNode)))
             paramDecorateCallAst
@@ -902,16 +902,16 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         val metadataCallParamTypesAst = createMetadataCallParamTypesAst(tsMethodNodeInfo, paramNodeInfos.size)
         val metadataCallReturnTypeAst = createMetadataCallReturnTypeAst(tsMethodNodeInfo, methodTpe)
 
-        val arg1Code = decoratorAsts.flatMap(_.root.map(codeOf)).mkString(",")
-        val arg2Code = paramDecoratorAsts.flatMap(_.root.map(codeOf)).mkString(",")
-        val arg3Code = codeOf(metadataCallTypeAst.root.get)
-        val arg4Code = codeOf(metadataCallParamTypesAst.root.get)
-        val arg5Code = codeOf(metadataCallReturnTypeAst.root.get)
+        val arg1Code         = decoratorAsts.flatMap(_.root.map(codeOf)).mkString(",")
+        val arg2Code         = paramDecoratorAsts.flatMap(_.root.map(codeOf)).mkString(",")
+        val arg3Code         = codeOf(metadataCallTypeAst.root.get)
+        val arg4Code         = codeOf(metadataCallParamTypesAst.root.get)
+        val arg5Code         = codeOf(metadataCallReturnTypeAst.root.get)
         val decorateCallCode =
           s"__decorate([$arg1Code, $arg2Code, $arg3Code, $arg4Code, $arg5Code], ${codeOf(classPrototypeAccessAst.nodes.head)}, ${functionNameNode.code}, null)"
 
         val decorateCallNode = callNode(classNodeInfo, decorateCallCode, "__decorate", DispatchTypes.DYNAMIC_DISPATCH)
-        val subAst = astForDecorateArray(
+        val subAst           = astForDecorateArray(
           classNodeInfo,
           decoratorAsts ++ paramDecoratorAsts ++ Seq(
             metadataCallTypeAst,
@@ -950,9 +950,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         DispatchTypes.STATIC_DISPATCH
       )
 
-    val lineNumber     = classNodeInfo.lineNumber
-    val columnNumber   = classNodeInfo.columnNumber
-    val assignmentCode = s"${localTmpNode.code} = ${arrayCallNode.code}"
+    val lineNumber                 = classNodeInfo.lineNumber
+    val columnNumber               = classNodeInfo.columnNumber
+    val assignmentCode             = s"${localTmpNode.code} = ${arrayCallNode.code}"
     val assignmentTmpArrayCallNode =
       createAssignmentCallAst(tmpArrayNode, arrayCallNode, assignmentCode, lineNumber, columnNumber)
 
@@ -960,8 +960,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val elementCode  = ast.root.map(codeOf).getOrElse(PropertyDefaults.Code)
       val pushCallNode = callNode(classNodeInfo, s"$tmpName.push($elementCode)", "", DispatchTypes.DYNAMIC_DISPATCH)
 
-      val baseNode   = identifierNode(classNodeInfo, tmpName)
-      val memberNode = fieldIdentifierNode(classNodeInfo, "push", "push")
+      val baseNode     = identifierNode(classNodeInfo, tmpName)
+      val memberNode   = fieldIdentifierNode(classNodeInfo, "push", "push")
       val receiverNode =
         createFieldAccessCallAst(baseNode, memberNode, classNodeInfo.lineNumber, classNodeInfo.columnNumber)
       val thisPushNode = identifierNode(classNodeInfo, tmpName)
@@ -1072,7 +1072,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val tpe           = typeFor(nodeInfo)
       val possibleTypes = Seq(tpe)
       val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
-      val memberNodes = nodeInfo.node match {
+      val memberNodes   = nodeInfo.node match {
         case TSCallSignatureDeclaration | TSMethodSignature =>
           val functionNode = createMethodDefinitionNode(nodeInfo, ConstructorContent.empty)
           addModifier(functionNode, nodeInfo.json)

@@ -32,8 +32,8 @@ object SourcesToStartingPoints {
         .map { src =>
           // We need to get Cpg wrapper from graph. Hence we are taking head element from source iterator.
           // This will also ensure if the source list is empty then these tasks are invoked.
-          val cpg                           = Cpg(src.graph)
-          val (startingPoints, methodTasks) = calculateStartingPoints(sources, executorService)
+          val cpg                                  = Cpg(src.graph)
+          val (startingPoints, methodTasks)        = calculateStartingPoints(sources, executorService)
           val startingPointFromUsageInOtherClasses =
             calculateStatingPointsWithUsageInOtherClasses(methodTasks, cpg, executorService)
           (startingPoints ++ startingPointFromUsageInOtherClasses)
@@ -109,10 +109,10 @@ object SourcesToStartingPoints {
   *   \- number of tasks for the exit condition.
   */
 class SourceStartingPointResultAggregator(private var totalNoTasks: Int) extends Runnable {
-  val logger      = LoggerFactory.getLogger(this.getClass)
-  val finalResult = ListBuffer[StartingPointWithSource]()
-  val methodTasks = ListBuffer[UsageInput]()
-  val resultQueue = LinkedBlockingQueue[ResultSummary]()
+  val logger               = LoggerFactory.getLogger(this.getClass)
+  val finalResult          = ListBuffer[StartingPointWithSource]()
+  val methodTasks          = ListBuffer[UsageInput]()
+  val resultQueue          = LinkedBlockingQueue[ResultSummary]()
   override def run(): Unit = {
     var terminate = false
     while (!terminate) {
@@ -198,7 +198,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
       case lit: Literal =>
         val usageInput = targetsToClassIdentifierPair(literalToInitializedMembers(lit), src)
         val uses       = usages(usageInput)
-        val globals = globalFromLiteral(lit, recursive = false).flatMap {
+        val globals    = globalFromLiteral(lit, recursive = false).flatMap {
           case x: Identifier if x.isModuleVariable => moduleVariableToFirstUsagesAcrossProgram(x)
           case x                                   => x :: Nil
         }
@@ -228,7 +228,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
   private def withFieldAndIndexAccesses(nodes: List[CfgNode]): List[CfgNode] =
     nodes.flatMap {
       case identifier: Identifier if identifier.isArgument.nonEmpty => identifier :: Nil
-      case moduleVar: Identifier if moduleVar.isModuleVariable =>
+      case moduleVar: Identifier if moduleVar.isModuleVariable      =>
         moduleVar :: moduleVariableToFirstUsagesAcrossProgram(moduleVar)
       case identifier: Identifier => identifier :: fieldAndIndexAccesses(identifier)
       case x                      => x :: Nil
@@ -290,10 +290,10 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
 
   @scala.annotation.nowarn("cat=deprecation")
   private def firstUsagesForName(name: String, method: Method): List[Expression] = {
-    val identifiers      = method._identifierViaContainsOut.l
-    val identifierUsages = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
-    val fieldIdentifiers = method.fieldAccess.fieldIdentifier.sortBy(field => (field.lineNumber, field.columnNumber)).l
-    val thisRefs         = Seq("this", "self") ++ method.typeDecl.name.headOption.toList
+    val identifiers       = method._identifierViaContainsOut.l
+    val identifierUsages  = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
+    val fieldIdentifiers  = method.fieldAccess.fieldIdentifier.sortBy(field => (field.lineNumber, field.columnNumber)).l
+    val thisRefs          = Seq("this", "self") ++ method.typeDecl.name.headOption.toList
     val fieldAccessUsages = fieldIdentifiers.isFieldIdentifier
       .canonicalNameExact(name)
       .inFieldAccess

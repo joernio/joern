@@ -25,7 +25,7 @@ trait AstForCallsCreator { this: AstCreator & AstHelpers =>
     }
 
     val code = (callExpr.targetName.isEmpty, callExpr.methodName) match {
-      case (true, Some(method)) => s"${method}()"
+      case (true, Some(method))  => s"${method}()"
       case (false, Some(method)) =>
         val arrow = if (callExpr.isStatic) "=>" else "->"
         s"${callExpr.targetName}${arrow}${method}()"

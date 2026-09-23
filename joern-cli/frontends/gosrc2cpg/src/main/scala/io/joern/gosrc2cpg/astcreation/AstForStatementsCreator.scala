@@ -53,7 +53,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astForReturnStatement(returnStmt: ParserNodeInfo): Ast = {
     // TODO: Need to handle the tuple return node handling
     val cpgReturn = returnNode(returnStmt, returnStmt.code)
-    val expast = returnStmt
+    val expast    = returnStmt
       .json(ParserKeys.Results)
       .arrOpt
       .getOrElse(Seq.empty)
@@ -99,7 +99,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       .map(createParserNodeInfo)
       .flatMap(astForBooleanLiteral)
     val typeFullName = Some(getTypeFullNameFromAstNode(rhsAst.toSeq))
-    val lhsAst = assignStmt
+    val lhsAst       = assignStmt
       .json(ParserKeys.Lhs)
       .arr
       .flatMap(astForNode)
@@ -148,7 +148,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val thenAst = astForBlockStatement(createParserNodeInfo(ifStmt.json(ParserKeys.Body)))
 
     val elseNode = Try(ifStmt.json(ParserKeys.Else)).toOption.map(createParserNodeInfo)
-    val elseAst = elseNode match {
+    val elseAst  = elseNode match {
       case Some(elseStmt) if elseStmt.node == BlockStmt =>
         Some(astForBlockStatement(elseStmt))
       case Some(elseStmt) =>
@@ -164,7 +164,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForSwitchStatement(switchStmt: ParserNodeInfo): Ast = {
-    val conditionParserNode = Try(createParserNodeInfo(switchStmt.json(ParserKeys.Tag)))
+    val conditionParserNode  = Try(createParserNodeInfo(switchStmt.json(ParserKeys.Tag)))
     val (code, conditionAst) = conditionParserNode.toOption match {
       case Some(node) => (node.code, Some(astForConditionExpression(node)))
       case _          => ("", None)
@@ -174,13 +174,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForTypeSwitchStatement(typeSwitchStmt: ParserNodeInfo): Ast = {
-    val conditionParserNode = Try(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Assign)))
+    val conditionParserNode  = Try(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Assign)))
     val (code, conditionAst) = conditionParserNode.toOption match {
       case Some(node) => (node.code, astForNode(node))
       case _          => ("", Seq.empty)
     }
     val stmtAsts = astsForStatement(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Body)))
-    val id = conditionAst
+    val id       = conditionAst
       .flatMap(_.root)
       .collectFirst {
         case x: NewIdentifier => identifierNode(conditionParserNode.get, x.name, x.code, x.typeFullName)
@@ -188,7 +188,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       }
       .get
     val identifier = Ast(id)
-    val isOp =
+    val isOp       =
       callNode(conditionParserNode.get, s"${id.name}.(type)", Operators.is, Operators.is, DispatchTypes.STATIC_DISPATCH)
     val condition = Option(callAst(isOp, Seq(identifier)))
 

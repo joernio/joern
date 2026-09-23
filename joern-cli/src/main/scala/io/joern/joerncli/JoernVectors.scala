@@ -14,11 +14,11 @@ import scala.util.Using
 import scala.util.hashing.MurmurHash3
 
 class BagOfPropertiesForNodes extends EmbeddingGenerator[AstNode, (String, String)] {
-  override def structureToString(pair: (String, String)): String = pair._1 + ":" + pair._2
-  override def extractObjects(cpg: Cpg): Iterator[AstNode]       = cpg.astNode
+  override def structureToString(pair: (String, String)): String            = pair._1 + ":" + pair._2
+  override def extractObjects(cpg: Cpg): Iterator[AstNode]                  = cpg.astNode
   override def enumerateSubStructures(obj: AstNode): List[(String, String)] = {
     val relevantFieldTypes = Set(PropertyNames.Name, PropertyNames.FullName, PropertyNames.Code)
-    val relevantFields = obj.propertiesMap
+    val relevantFields     = obj.propertiesMap
       .entrySet()
       .asScala
       .toList

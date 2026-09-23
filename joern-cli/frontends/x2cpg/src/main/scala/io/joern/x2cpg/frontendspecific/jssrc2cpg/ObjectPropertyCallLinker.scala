@@ -17,8 +17,8 @@ class ObjectPropertyCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     def propertyCallRegexPattern(withMatchingGroup: Boolean): String =
       "^(?:\\{.*\\}|.*<returnValue>):<member>\\(" + (if (withMatchingGroup) "(.*)" else ".*") + "\\):.*$"
 
-    val propertyCallRegex = propertyCallRegexPattern(true).r
-    val objectCalls       = cpg.call.methodFullName(propertyCallRegexPattern(false)).l
+    val propertyCallRegex     = propertyCallRegexPattern(true).r
+    val objectCalls           = cpg.call.methodFullName(propertyCallRegexPattern(false)).l
     val propertyAccessToCalls = objectCalls
       .flatMap { call =>
         call.methodFullName match {

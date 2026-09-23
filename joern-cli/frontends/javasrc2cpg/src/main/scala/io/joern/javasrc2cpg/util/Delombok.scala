@@ -74,7 +74,7 @@ object Delombok {
     // Prepend the bundled lombok so the classloader resolves it before any project-supplied lombok in
     // `dependencies`. Order: bundled lombok, project dependencies, everything else from ownClasspath.
     val fullClasspath = (lombokEntries ++ dependencies ++ otherEntries).mkString(File.pathSeparator)
-    val classPathArg = Try(FileUtil.newTemporaryFile("classpath")) match {
+    val classPathArg  = Try(FileUtil.newTemporaryFile("classpath")) match {
       case Success(file) =>
         FileUtil.deleteOnExit(file)
         // Write classpath to a file to work around Windows length limits.
@@ -209,7 +209,7 @@ object Delombok {
       case Some("default")      => Default
       case Some("types-only")   => TypesOnly
       case Some("run-delombok") => RunDelombok
-      case Some(value) =>
+      case Some(value)          =>
         logger.warn(s"Found unrecognised delombok mode `$value`. Using default instead.")
         Default
     }

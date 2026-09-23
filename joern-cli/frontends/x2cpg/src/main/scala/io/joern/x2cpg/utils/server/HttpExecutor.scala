@@ -54,7 +54,7 @@ class HttpExecutor(locator: ExecutableLocator, defaultArgs: Seq[String] = Nil, p
 
   private def parseArguments(args: Seq[String]): Seq[(String, Option[String])] = {
     args match {
-      case Seq() => Seq.empty
+      case Seq()                                                                            => Seq.empty
       case argument +: value +: rest if argument.startsWith("--") && !value.startsWith("-") =>
         (argument.stripPrefix("--") -> Some(value)) +: parseArguments(rest)
       case argument +: rest =>

@@ -156,7 +156,7 @@ object Types {
 
   // Types will be added to the CPG as soon as everything
   // else is done
-  val types: mutable.SortedSet[String] = mutable.SortedSet[String]()
+  val types: mutable.SortedSet[String]       = mutable.SortedSet[String]()
   def registerType(typeName: String): String = {
     try {
       types += typeName

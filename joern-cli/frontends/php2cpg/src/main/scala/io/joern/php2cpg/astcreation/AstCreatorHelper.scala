@@ -49,7 +49,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     scope.resolveFunctionIdentifier(methodName) match {
       case Some(importedMethod)                                         => importedMethod.name
       case None if methodName == NamespaceTraversal.globalNamespaceName => globalNamespace.fullName
-      case None =>
+      case None                                                         =>
         val nameWithClass = scope.createMethodNameWithSurroundingInformation(methodName)
         scope.getDeduplicatedMethodName(nameWithClass)
     }
@@ -59,7 +59,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     scope.resolveFunctionIdentifier(methodName) match {
       case Some(importedMethod)                                         => importedMethod.name
       case None if methodName == NamespaceTraversal.globalNamespaceName => globalNamespace.fullName
-      case None =>
+      case None                                                         =>
         val className = getTypeDeclPrefix
 
         val nameWithClass = List(className, Some(methodName)).flatten.mkString(MethodDelimiter)
@@ -160,7 +160,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       case _ =>
         scope.lookupVariableInCurrentMethod(name) match {
           case Some(existing) => existing
-          case None =>
+          case None           =>
             val localCode = if (name == NameConstants.Self) NameConstants.Self else s"$$$name"
             val local     = localNode(expr, name, code.getOrElse(localCode), tfn.getOrElse(Defines.Any))
 
@@ -271,7 +271,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       .map(_.rootCodeOrEmpty)
       .getOrElse(call.methodName match {
         case nameExpr: PhpNameExpr => nameExpr.name
-        case other =>
+        case other                 =>
           logger.error(s"Found unexpected call target type: Crash for now to handle properly later: $other")
           ???
       })
@@ -310,8 +310,8 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       .map {
         case PhpArrayItem(_, _ @PhpVariable(name: PhpNameExpr, _), _, _, _) => s"$$${name.name}"
         case PhpArrayItem(_, value: PhpListExpr, _, _, _)                   => createListExprCodeField(value)
-        case x =>
-          logger.warn(s"Invalid arg type for code field: ${x.getClass}")
+        case other                                                          =>
+          logger.warn(s"Invalid arg type for code field: ${other.getClass}")
           ""
       }
       .mkString(",")

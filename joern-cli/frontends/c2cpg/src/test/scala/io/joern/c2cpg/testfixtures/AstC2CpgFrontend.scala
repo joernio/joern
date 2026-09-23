@@ -16,7 +16,7 @@ trait AstC2CpgFrontend extends LanguageFrontend {
   def execute(sourceCodePath: java.io.File): Cpg = {
     val cpg          = newEmptyCpg()
     val pathAsString = sourceCodePath.getAbsolutePath
-    val config = getConfig()
+    val config       = getConfig()
       .getOrElse(Config())
       .withInputPath(pathAsString)
       .withSchemaValidation(ValidationMode.Enabled)

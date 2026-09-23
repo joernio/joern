@@ -65,7 +65,7 @@ object MavenDependencies {
     }
 
     var classPathNext = false
-    val deps = lines
+    val deps          = lines
       .flatMap { line =>
         val isClassPathNow = classPathNext
         classPathNext = line.endsWith("Dependencies classpath:")

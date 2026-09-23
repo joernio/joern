@@ -224,7 +224,7 @@ object SwiftTypesProvider {
     *   A sequence containing the resolved swift-demangle command path followed by the provided arguments
     */
   private def resolveSwiftDemangleCommand(args: Seq[String]): Seq[String] = {
-    val defaultCommand = SwiftDemangleCommand ++ args
+    val defaultCommand    = SwiftDemangleCommand ++ args
     val osSpecificCommand = Environment.operatingSystem match {
       case io.joern.x2cpg.utils.Environment.OperatingSystemType.Windows =>
         // The Windows installation of Swift puts swift-demangle into the PATH automatically
@@ -394,7 +394,7 @@ object SwiftTypesProvider {
         case "builtin-Swift-Compilation" :: tail              => loop(tail, result)
         case "builtin-SwiftDriver" :: tail                    => loop(tail, result)
         case "builtin-Swift-Compilation-Requirements" :: tail => loop(tail, result)
-        case head :: tail if argShouldBeFiltered(head) =>
+        case head :: tail if argShouldBeFiltered(head)        =>
           val remainingArgs = if (tail.headOption.exists(!_.startsWith("-"))) {
             val nextFlagIdx = tail.indexWhere(_.startsWith("-"))
             if (nextFlagIdx >= 0) tail.drop(nextFlagIdx) else Nil
@@ -496,8 +496,8 @@ object SwiftTypesProvider {
       logger.info(s"Building Swift type map from compiler log at ${path.toFile.toString}")
     )
 
-    val sourceModules    = listReadableDirectories(Paths.get(config.inputPath))
-    val swiftInvocations = compilerOutput.filter(isSwiftInvocation)
+    val sourceModules          = listReadableDirectories(Paths.get(config.inputPath))
+    val swiftInvocations       = compilerOutput.filter(isSwiftInvocation)
     val parsedSwiftInvocations =
       swiftInvocations.map(l => parseSwiftCompilerArgs(argsFromLine(l)) ++ SwiftCompilerDumpOptions).filter { args =>
         val moduleNameIndex = args.indexOf("-module-name")
@@ -581,7 +581,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     // Ordered list of unique stripped names and their stdin representations.
     // swift-demangle needs the `$` prefix when reading from stdin.
     val orderedStripped = grouped.keys.toSeq
-    val stdinNames = orderedStripped.map { stripped =>
+    val stdinNames      = orderedStripped.map { stripped =>
       if (stripped.startsWith("s") || stripped.startsWith("S")) s"$$$stripped" else stripped
     }
 
@@ -595,7 +595,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
         // Read stdout on a separate thread to avoid deadlock: if the pipe buffer fills up,
         // swift-demangle blocks on writing stdout, and we would block on writing stdin.
         val readerExecutor = Executors.newSingleThreadExecutor()
-        val readFuture = readerExecutor.submit(new Callable[Unit] {
+        val readFuture     = readerExecutor.submit(new Callable[Unit] {
           override def call(): Unit = {
             Using.resource(new BufferedReader(new InputStreamReader(process.getInputStream))) { reader =>
               orderedStripped.foreach { stripped =>
@@ -871,7 +871,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     try {
       // Phase 1: Collect all raw TypeInfo (no demangling yet)
       val allTypeInfos = new java.util.concurrent.ConcurrentLinkedQueue[TypeInfo]()
-      val futures = parsedSwiftInvocations.map { invocationCommand =>
+      val futures      = parsedSwiftInvocations.map { invocationCommand =>
         invocationPool.submit(new Callable[Unit] {
           def call(): Unit = {
             Using.Manager { use =>

@@ -30,14 +30,14 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     val elseIfIfConfigClauses = children.filter(c => code(c.poundKeyword) == "#elseif")
     val elseIfConfigClauses   = children.filter(c => code(c.poundKeyword) == "#else")
     ifIfConfigClauses match {
-      case Nil => Seq.empty
+      case Nil                                                                           => Seq.empty
       case ifIfConfigClause :: Nil if ifConfigDeclConditionIsSatisfied(ifIfConfigClause) =>
         jumpTargetFromIfConfigClauseSyntax(ifIfConfigClause)
       case _ :: Nil =>
         val firstElseIfSatisfied = elseIfIfConfigClauses.find(ifConfigDeclConditionIsSatisfied)
         firstElseIfSatisfied match {
           case Some(elseIfIfConfigClause) => jumpTargetFromIfConfigClauseSyntax(elseIfIfConfigClause)
-          case None =>
+          case None                       =>
             elseIfConfigClauses match {
               case Nil                       => Seq.empty
               case elseIfConfigClause :: Nil => jumpTargetFromIfConfigClauseSyntax(elseIfConfigClause)

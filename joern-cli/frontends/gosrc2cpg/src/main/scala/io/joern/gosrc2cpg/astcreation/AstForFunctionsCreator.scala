@@ -20,7 +20,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       getReturnType(funcDecl.json(ParserKeys.Type), methodMetadata.genericTypeMethodMap).headOption
         .getOrElse((Defines.voidTypeName, funcDecl))
     val methodReturn = methodReturnNode(returnTypeInfo, returnTypeStr)
-    val methodNode_ = methodNode(
+    val methodNode_  = methodNode(
       funcDecl,
       methodMetadata.name,
       funcDecl.code,

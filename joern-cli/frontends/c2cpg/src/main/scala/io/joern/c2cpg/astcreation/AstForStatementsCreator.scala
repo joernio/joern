@@ -24,7 +24,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val codeString  = code(blockStmt)
     val blockLine   = line(blockStmt)
     val blockColumn = column(blockStmt)
-    val node = blockNode
+    val node        = blockNode
       .code(codeString)
       .lineNumber(blockLine)
       .columnNumber(blockColumn)
@@ -87,8 +87,8 @@ trait AstForStatementsCreator { this: AstCreator =>
     init: Option[IASTInitializerClause] = None
   ): Seq[Ast] = {
     def leftAst(astName: IASTNode, localName: String, codeString: String, tpe: String): (NewCall, NewLocal, Ast) = {
-      val op             = Operators.assignment
-      val assignmentCode = s"$localName = $codeString"
+      val op                 = Operators.assignment
+      val assignmentCode     = s"$localName = $codeString"
       val assignmentCallNode =
         callNode(astName, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Void)))
       val localNameNode = localNode(astName, localName, localName, tpe)
@@ -104,9 +104,9 @@ trait AstForStatementsCreator { this: AstCreator =>
     val localTmpNode = localNode(struct, tmpName, tmpName, tpe)
     scope.addVariable(tmpName, localTmpNode, tpe, VariableScopeManager.ScopeType.BlockScope)
 
-    val idNode = identifierNode(struct, tmpName, tmpName, tpe)
-    val rhsAst = astForNode(initializer)
-    val op     = Operators.assignment
+    val idNode         = identifierNode(struct, tmpName, tmpName, tpe)
+    val rhsAst         = astForNode(initializer)
+    val op             = Operators.assignment
     val assignmentCode =
       s"$tmpName = ${code(initializer).strip().stripPrefix("=").strip()}"
     val assignmentCallNode =
@@ -146,20 +146,20 @@ trait AstForStatementsCreator { this: AstCreator =>
 
   private def astsForIASTSimpleDeclaration(simpleDecl: IASTSimpleDeclaration): Seq[Ast] = {
     val declarators = simpleDecl.getDeclarators
-    val declAsts = declarators.zipWithIndex.map {
+    val declAsts    = declarators.zipWithIndex.map {
       case (d: IASTFunctionDeclarator, _) => astForFunctionDeclarator(d)
       case (d, i)                         => astForDeclarator(simpleDecl, d, i)
     }
     val arrayModCallsAsts = declarators
       .collect { case d: IASTArrayDeclarator if hasValidArrayModifier(d) => d }
       .map { d =>
-        val name          = Operators.alloc
-        val tpe           = registerType(typeFor(d))
-        val codeString    = code(d)
-        val idNode        = identifierNode(d, tpe, tpe, tpe)
-        val allocCallNode = callNode(d, codeString, name, name, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
-        val allocCallAst  = callAst(allocCallNode, Ast(idNode) +: d.getArrayModifiers.toIndexedSeq.map(astForNode))
-        val operatorName  = Operators.assignment
+        val name               = Operators.alloc
+        val tpe                = registerType(typeFor(d))
+        val codeString         = code(d)
+        val idNode             = identifierNode(d, tpe, tpe, tpe)
+        val allocCallNode      = callNode(d, codeString, name, name, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+        val allocCallAst       = callAst(allocCallNode, Ast(idNode) +: d.getArrayModifiers.toIndexedSeq.map(astForNode))
+        val operatorName       = Operators.assignment
         val assignmentCallNode =
           callNode(
             d,
@@ -306,7 +306,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val isFromMacroExpansion = statement.getProblem.getNodeLocations.exists(_.isInstanceOf[IASTMacroExpansionLocation])
     val code                 = statement.getRawSignature
     val file                 = Paths.get(statement.getContainingFilename)
-    val asts = if (isFromMacroExpansion) {
+    val asts                 = if (isFromMacroExpansion) {
       new CdtParser(config, headerFileFinder, None).parse(code, file, accumulator) match {
         case Some(translationUnit: IASTTranslationUnit) =>
           translationUnit.getDeclarations.toIndexedSeq.flatMap(d => astsForDeclaration(d))
@@ -351,7 +351,7 @@ trait AstForStatementsCreator { this: AstCreator =>
         val (condLocals, condOtherAsts) = condRaw.partition(_.root.exists(_.isInstanceOf[NewLocal]))
         val initRaw                     = nullSafeAst(statement.getInitializerStatement)
         val (initLocals, initOtherAsts) = initRaw.partition(_.root.exists(_.isInstanceOf[NewLocal]))
-        val cmp = wrapInNullComparison(
+        val cmp                         = wrapInNullComparison(
           statement.getConditionDeclaration,
           wrapMultipleInBlock(condOtherAsts, line(statement.getConditionDeclaration))
         )
@@ -572,7 +572,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     }
     conditionAst match {
       case ast if !isWrapCandidate(ast) => ast
-      case ast =>
+      case ast                          =>
         val nullNode = conditionAst.root match {
           case Some(id: NewIdentifier) if id.typeFullName.endsWith("*") => literalNode(node, "NULL", Defines.Any)
           case _                                                        => literalNode(node, "0", "int")
@@ -609,7 +609,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     val thenAst = ifStmt.getThenClause match {
       case block: IASTCompoundStatement => astForBlockStatement(block, blockNode(block))
-      case other if other != null =>
+      case other if other != null       =>
         val thenBlock = blockNode(other)
         scope.pushNewBlockScope(thenBlock)
         val statementAsts = astsForStatement(other)

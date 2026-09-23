@@ -2460,15 +2460,15 @@ class AstCreationPassTests extends AstC2CpgSuite {
 
     // for https://github.com/ShiftLeftSecurity/codepropertygraph/issues/1321
     "have correct line/column numbers on all platforms" in {
-      val windowsNewline = "\r\n"
+      val windowsNewline      = "\r\n"
       val windowsFixture: Cpg = code(
         s"void offset() {${windowsNewline}char * data = NULL;${windowsNewline}memset(data, 'A', 100-1); /* fill with 'A's */${windowsNewline}data = dataBuffer;$windowsNewline}"
       )
-      val macNewline = "\r"
+      val macNewline      = "\r"
       val macFixture: Cpg = code(
         s"void offset() {${macNewline}char * data = NULL;${macNewline}memset(data, 'A', 100-1); /* fill with 'A's */${macNewline}data = dataBuffer;$macNewline}"
       )
-      val linuxNewline = "\n"
+      val linuxNewline      = "\n"
       val linuxFixture: Cpg = code(
         s"void offset() {${linuxNewline}char * data = NULL;${linuxNewline}memset(data, 'A', 100-1); /* fill with 'A's */${linuxNewline}data = dataBuffer;$linuxNewline}"
       )

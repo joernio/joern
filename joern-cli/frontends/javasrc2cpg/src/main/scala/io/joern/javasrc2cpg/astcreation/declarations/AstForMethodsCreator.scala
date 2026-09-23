@@ -34,7 +34,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     val typeParameters = getIdentifiersForTypeParameters(methodDeclaration)
     methodDeclaration.getType
 
-    val maybeResolved = tryWithSafeStackOverflow(methodDeclaration.resolve()).toOption
+    val maybeResolved      = tryWithSafeStackOverflow(methodDeclaration.resolve()).toOption
     val expectedReturnType = tryWithSafeStackOverflow(
       symbolSolver.toResolvedType(methodDeclaration.getType, classOf[ResolvedType])
     ).toOption
@@ -118,7 +118,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       methodReturnNode(parameter, parameterTypeFullName)
 
     val genericSignature = binarySignatureCalculator.recordParameterAccessorBinarySignature(parameter)
-    val methodRoot = methodNode(
+    val methodRoot       = methodNode(
       parameter,
       parameterName,
       s"public ${code(parameter.getType)} ${parameterName}()",
@@ -205,7 +205,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
   private def getIdentifiersForTypeParameters(methodDeclaration: CallableDeclaration[?]): List[NewIdentifier] = {
     methodDeclaration.getTypeParameters.asScala.map { typeParameter =>
-      val name = typeParameter.getNameAsString
+      val name         = typeParameter.getNameAsString
       val typeFullName = tryWithSafeStackOverflow(typeParameter.getTypeBound.asScala.headOption).toOption.flatten
         .flatMap(typeInfoCalc.fullName)
         .getOrElse(TypeConstants.Object)
@@ -242,7 +242,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   def astForDefaultConstructor(originNode: Node, instanceFieldDeclarations: List[FieldDeclaration]): Ast = {
     val parameters       = scope.enclosingTypeDecl.get.recordParameters
     val genericSignature = binarySignatureCalculator.defaultConstructorSignature(parameters)
-    val constructorNode = NewMethod()
+    val constructorNode  = NewMethod()
       .name(io.joern.x2cpg.Defines.ConstructorMethodName)
       .filename(filename)
       .isExternal(false)
@@ -259,7 +259,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
     val typeFullName = scope.enclosingTypeDecl.fullName
     val signature    = composeSignature(Option(TypeConstants.Void), resolvedParameterTypes, parameterAsts.size)
-    val fullName = composeMethodFullName(
+    val fullName     = composeMethodFullName(
       typeFullName.getOrElse(Defines.UnresolvedNamespace),
       Defines.ConstructorMethodName,
       signature
@@ -347,11 +347,11 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   }
 
   private def astForParameter(parameter: Parameter, childNum: Int): Ast = {
-    val maybeArraySuffix = if (parameter.isVarArgs) "[]" else ""
+    val maybeArraySuffix     = if (parameter.isVarArgs) "[]" else ""
     val rawParameterTypeName =
       tryWithSafeStackOverflow(parameter.getTypeAsString).map(Util.stripGenericTypes).getOrElse(NameConstants.Unknown)
     val parameterType = tryWithSafeStackOverflow(parameter.getType).toOption
-    val typeFullName =
+    val typeFullName  =
       parameterType
         .flatMap(typeInfoCalc.fullName)
         .orElse(scope.lookupType(rawParameterTypeName))
@@ -466,15 +466,15 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         case compactConstructor: CompactConstructorDeclaration => scope.enclosingTypeDecl.get.recordParameters
       }
       val parameterAsts = astsForParameterList(parameters).toList
-      val paramTypes = constructorDeclaration match {
-        case constructor: ConstructorDeclaration => argumentTypesForMethodLike(maybeResolved)
+      val paramTypes    = constructorDeclaration match {
+        case constructor: ConstructorDeclaration        => argumentTypesForMethodLike(maybeResolved)
         case constructor: CompactConstructorDeclaration =>
           val resolvedParams = parameters.flatMap(param => tryWithSafeStackOverflow(param.resolve()).toOption).toList
           calcParameterTypes(resolvedParams, ResolvedTypeParametersMap.empty())
       }
       val signature    = composeSignature(Some(TypeConstants.Void), paramTypes, parameterAsts.size)
       val typeFullName = scope.enclosingTypeDecl.fullName
-      val fullName =
+      val fullName     =
         composeMethodFullName(
           typeFullName.getOrElse(Defines.UnresolvedNamespace),
           Defines.ConstructorMethodName,
@@ -510,8 +510,8 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         case _ => Nil
       }
 
-      val bodyStatements = constructorDeclaration.getBody.getStatements.asScala.toList
-      val statementsAsts = bodyStatements.flatMap(astsForStatement)
+      val bodyStatements   = constructorDeclaration.getBody.getStatements.asScala.toList
+      val statementsAsts   = bodyStatements.flatMap(astsForStatement)
       val bodyContainsThis = bodyStatements.headOption
         .collect { case consInvocation: ExplicitConstructorInvocationStmt => consInvocation.isThis }
         .getOrElse(false)
@@ -595,7 +595,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       )
     }
 
-    val thisNode = partialConstructor.thisNode
+    val thisNode               = partialConstructor.thisNode
     val assignmentsForCaptures =
       if (partialConstructor.startsWithThisCall) {
         // Register the synthetic capture parameters for this constructor's this() call

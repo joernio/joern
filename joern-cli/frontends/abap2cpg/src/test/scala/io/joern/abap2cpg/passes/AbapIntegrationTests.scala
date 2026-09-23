@@ -83,7 +83,7 @@ class AbapIntegrationTests extends Abap2CpgSuite {
     }
 
     "not contain method names with spaces or special characters (no garbage names)" in {
-      val cpg = code(abapCode, fileName)
+      val cpg          = code(abapCode, fileName)
       val garbageNames =
         cpg.method.name.filter(n => n.contains(" ") || n.contains("=") || n.contains("(") || n.contains(")")).l
       withClue(s"Garbage method names: $garbageNames") {
@@ -123,7 +123,7 @@ class AbapIntegrationTests extends Abap2CpgSuite {
     "not contain ABAP keywords as parameter names" in {
       val abapParamKeywords =
         Set("TYPE", "IMPORTING", "EXPORTING", "RETURNING", "OPTIONAL", "DEFAULT", "TO", "(", ")", ".", ":")
-      val cpg = code(abapCode, fileName)
+      val cpg        = code(abapCode, fileName)
       val paramNames = cpg.method.fullName
         .filter(_.startsWith("zcl_simple::"))
         .flatMap(_.split("::").lastOption)
@@ -136,7 +136,7 @@ class AbapIntegrationTests extends Abap2CpgSuite {
     }
 
     "not contain parameter names with spaces or punctuation" in {
-      val cpg = code(abapCode, fileName)
+      val cpg       = code(abapCode, fileName)
       val badParams =
         cpg.parameter.name.filter(n => n.contains(" ") || n.contains("=") || n.contains("(") || n.contains(")")).l
       withClue(s"Garbage parameter names: $badParams") {
@@ -342,10 +342,7 @@ class AbapIntegrationTests extends Abap2CpgSuite {
 
     "create methods with class-qualified full names" in {
       val cpg = code(abapCode, fileName)
-      cpg.method.fullName.l should contain allOf (
-        "zcl_simple::greet",
-        "zcl_simple::add"
-      )
+      cpg.method.fullName.l should contain allOf ("zcl_simple::greet", "zcl_simple::add")
     }
 
     "create accessible importing parameters for greet (iv_name)" in {
@@ -400,7 +397,7 @@ class AbapIntegrationTests extends Abap2CpgSuite {
 
   // Separate ABAP snippet with explicit literals for literal-specific tests
   val literalFileName = "zcl_literals.clas.abap"
-  val literalCode =
+  val literalCode     =
     """CLASS zcl_literals DEFINITION PUBLIC.
       |  PUBLIC SECTION.
       |    METHODS with_number RETURNING VALUE(rv_result) TYPE i.

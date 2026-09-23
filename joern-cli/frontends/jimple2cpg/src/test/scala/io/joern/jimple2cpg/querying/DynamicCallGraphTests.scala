@@ -69,7 +69,7 @@ class DynamicCallGraphTests extends JimpleCode2CpgFixture {
 
   "call from a method not overridden in a child class" should {
     implicit val resolver: NoResolve.type = NoResolve
-    val cpg = code("""
+    val cpg                               = code("""
         |class Foo {
         |
         |  private int x = 0;

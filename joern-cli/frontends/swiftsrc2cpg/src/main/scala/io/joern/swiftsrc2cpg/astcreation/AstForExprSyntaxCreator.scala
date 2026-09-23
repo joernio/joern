@@ -223,7 +223,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val args = argAstsForCall(callExpr)
 
     val callExprCode = code(callExpr)
-    val callCode = if (callExprCode.startsWith(".")) {
+    val callCode     = if (callExprCode.startsWith(".")) {
       s"${codeOf(baseAst.root.get)}$callExprCode"
     } else if (callExprCode.contains("#if ")) {
       s"${codeOf(baseAst.root.get)}.$callName(${code(callExpr.arguments)})"
@@ -305,9 +305,9 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val tmpNode = identifierNode(expr, tmpNodeName, tmpNodeName, tpe)
     scope.addVariableReference(tmpNodeName, tmpNode, tpe, EvaluationStrategies.BY_SHARING)
 
-    val allocOp          = Operators.alloc
-    val allocCallNode    = callNode(expr, allocOp, allocOp, allocOp, DispatchTypes.STATIC_DISPATCH)
-    val assignmentCallOp = Operators.assignment
+    val allocOp            = Operators.alloc
+    val allocCallNode      = callNode(expr, allocOp, allocOp, allocOp, DispatchTypes.STATIC_DISPATCH)
+    val assignmentCallOp   = Operators.assignment
     val assignmentCallNode =
       callNode(expr, s"$tmpNodeName = $allocOp", assignmentCallOp, assignmentCallOp, DispatchTypes.STATIC_DISPATCH)
     val assignmentAst = callAst(assignmentCallNode, List(Ast(tmpNode), Ast(allocCallNode)))
@@ -379,9 +379,9 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       callee match {
         case m: MemberAccessExprSyntax if isRefToExtensionMethod(node) =>
           val memberCode = code(m.declName)
-          val baseAst = m.base match {
+          val baseAst    = m.base match {
             case Some(base) if code(base) != "self" => astForNode(base)
-            case _ =>
+            case _                                  =>
               val selfTpe  = fullNameOfEnclosingTypeDecl()
               val selfNode = identifierNode(node, "self", "self", selfTpe)
               scope.addVariableReference("self", selfNode, selfTpe, EvaluationStrategies.BY_REFERENCE)
@@ -427,7 +427,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val args = argAstsForCall(expr)
 
     val callExprCode = code(expr)
-    val callNode_ = callNode(
+    val callNode_    = callNode(
       expr,
       callExprCode,
       callName,
@@ -615,7 +615,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val trailingClosureAsts            = node.trailingClosure.toList.map(astForNode)
     val additionalTrailingClosuresAsts = node.additionalTrailingClosures.children.map(c => astForNode(c.closure))
 
-    val argAsts = astForNode(node.arguments) +: (trailingClosureAsts ++ additionalTrailingClosuresAsts)
+    val argAsts  = astForNode(node.arguments) +: (trailingClosureAsts ++ additionalTrailingClosuresAsts)
     val callNode =
       NewCall()
         .name(nodeCode)
@@ -629,8 +629,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForMemberAccessExprSyntax(node: MemberAccessExprSyntax): Ast = {
-    val base   = node.base
-    val member = node.declName
+    val base    = node.base
+    val member  = node.declName
     val baseAst = base match {
       case None =>
         // Swift's documentation refers to this as "implicit member expression" or "shorthand syntax for enumeration cases".
@@ -686,7 +686,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     node.base match {
       case Some(base) =>
         val maybeFunctionCallExpr = ifIfConfigClauses match {
-          case Nil => None
+          case Nil                                                                           => None
           case ifIfConfigClause :: Nil if ifConfigDeclConditionIsSatisfied(ifIfConfigClause) =>
             ifIfConfigClause.elements
           case _ :: Nil =>
@@ -807,7 +807,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     subjectFieldPath: List[String],
     node: SwiftNode
   ): Ast = {
-    val elements = tupleExpr.elements.children.toList
+    val elements     = tupleExpr.elements.children.toList
     val equalityAsts = elements.zipWithIndex.map { case (element, idx) =>
       val currentPath = subjectFieldPath :+ s"$idx"
       element.expression match {
@@ -837,7 +837,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astsForCaseItemPattern(item: SwitchCaseItemSyntax, subjectTmpName: Option[String]): List[Ast] = {
     subjectTmpName match {
-      case None => List(astForNode(item.pattern))
+      case None          => List(astForNode(item.pattern))
       case Some(tmpName) =>
         item.pattern match {
           case ep: ExpressionPatternSyntax if ep.expression.isInstanceOf[TupleExprSyntax] =>
@@ -1040,7 +1040,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def extractBindingName(expr: ExprSyntax): String = {
     expr match {
       case d: DeclReferenceExprSyntax => code(d)
-      case p: PatternExprSyntax =>
+      case p: PatternExprSyntax       =>
         p.pattern match {
           case vb: ValueBindingPatternSyntax => code(vb.pattern)
           case other                         => code(other)
@@ -1053,7 +1053,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     switchCase: SwitchCaseSyntax | IfConfigDeclSyntax,
     subjectTmpName: Option[String] = None
   ): List[Ast] = {
-    val labelAst = Ast(createJumpTarget(switchCase))
+    val labelAst                   = Ast(createJumpTarget(switchCase))
     val (testAsts, consequentAsts) = switchCase match {
       case s: SwitchCaseSyntax =>
         val (tAsts, flowAst) = s.label match {
@@ -1065,7 +1065,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
                 val whereClause = child.whereClause.get
                 val whereAst    = astForNode(whereClause)
 
-                val op = Operators.logicalNot
+                val op                  = Operators.logicalNot
                 val whereClauseCallNode =
                   createStaticCallNode(
                     whereClause.condition,
@@ -1086,7 +1086,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         val needsSyntheticBreak = !s.statements.children.lastOption.exists(_.item.isInstanceOf[FallThroughStmtSyntax])
         val statementsAsts      = if (s.statements.children.isEmpty) List.empty else List(astForNode(s.statements))
         val asts                = flowAst ++ statementsAsts
-        val cAsts = if (needsSyntheticBreak) {
+        val cAsts               = if (needsSyntheticBreak) {
           asts :+ breakAst(s, "break")
         } else asts
         (tAsts, cAsts.toList)

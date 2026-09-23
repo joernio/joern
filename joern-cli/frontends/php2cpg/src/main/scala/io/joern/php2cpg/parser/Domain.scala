@@ -182,7 +182,7 @@ object Domain {
   }
   final case class PhpVariadicPlaceholder(attributes: Domain.PhpAttributes) extends PhpArgument
 
-  sealed trait PhpStmt extends PhpNode
+  sealed trait PhpStmt         extends PhpNode
   sealed trait PhpStmtWithBody extends PhpStmt {
     def stmts: List[PhpStmt]
   }
@@ -506,7 +506,7 @@ object Domain {
   final case class PhpIsset(vars: Seq[PhpExpr], attributes: PhpAttributes) extends PhpExpr
   final case class PhpPrint(expr: PhpExpr, attributes: PhpAttributes)      extends PhpExpr
 
-  sealed trait PhpScalar extends PhpExpr
+  sealed trait PhpScalar                                          extends PhpExpr
   sealed abstract class PhpSimpleScalar(val typeFullName: String) extends PhpScalar {
     def value: String
     def attributes: PhpAttributes
@@ -647,7 +647,7 @@ object Domain {
       case "Stmt_GroupUse"     => readGroupUse(json)
       case "Stmt_Foreach"      => readForeach(json)
       case "Stmt_TraitUse"     => readTraitUse(json)
-      case unhandled =>
+      case unhandled           =>
         logger.error(s"Found unhandled stmt type: $unhandled")
         ???
     }
@@ -745,12 +745,12 @@ object Domain {
   }
 
   private def readInclude(json: Value): PhpIncludeExpr = {
-    val expr = readExpr(json("expr"))
+    val expr        = readExpr(json("expr"))
     val includeType = json("type").num.toInt match {
-      case 1 => PhpIncludeType.Include
-      case 2 => PhpIncludeType.IncludeOnce
-      case 3 => PhpIncludeType.Require
-      case 4 => PhpIncludeType.RequireOnce
+      case 1     => PhpIncludeType.Include
+      case 2     => PhpIncludeType.IncludeOnce
+      case 3     => PhpIncludeType.Require
+      case 4     => PhpIncludeType.RequireOnce
       case other =>
         logger.warn(s"Unhandled include type: $other. Defaulting to regular include.")
         PhpIncludeType.Include
@@ -812,7 +812,7 @@ object Domain {
 
   private def readClassConstFetch(json: Value): PhpClassConstFetchExpr = {
     val classNameType = json("class")("nodeType").str
-    val className =
+    val className     =
       if (classNameType.startsWith("Name"))
         readName(json("class"))
       else
@@ -1109,7 +1109,7 @@ object Domain {
       logger.error(s"Variable did not contain name: $json")
     }
     val varAttrs = PhpAttributes(json)
-    val name = json("name") match {
+    val name     = json("name") match {
       case Str(value) => readName(value).copy(attributes = varAttrs)
       case Obj(_)     => readNameOrExpr(json, "name")
       case value      => readExpr(value)
@@ -1195,7 +1195,7 @@ object Domain {
     val name        = readName(json("name"))
     val params      = json("params").arr.map(readParam).toList
     val returnType  = Option.unless(json("returnType").isNull)(readType(json("returnType")))
-    val stmts =
+    val stmts       =
       if (json("stmts").isNull)
         Nil
       else
@@ -1271,7 +1271,7 @@ object Domain {
     val stmts = json("stmts") match {
       case ujson.Null => Nil
       case stmts: Arr => stmts.arr.map(readStmt).toList
-      case unhandled =>
+      case unhandled  =>
         logger.warn(s"Unhandled namespace stmts type $unhandled")
         ???
     }
@@ -1363,8 +1363,8 @@ object Domain {
   }
 
   private def readUseUse(json: Value, parentType: PhpUseType): PhpUseUse = {
-    val name  = readName(json("name"))
-    val alias = Option.unless(json("alias").isNull)(readName(json("alias")))
+    val name    = readName(json("name"))
+    val alias   = Option.unless(json("alias").isNull)(readName(json("alias")))
     val useType =
       if (parentType == PhpUseType.Unknown)
         getUseType(json("type").num.toInt)

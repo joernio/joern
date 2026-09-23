@@ -184,7 +184,7 @@ object FileUtil {
 
         entries.foreach { entry =>
           val entryName = entry.getName.replace("\\", "/")
-          val child = (destination / entryName).createWithParentsIfNotExists(
+          val child     = (destination / entryName).createWithParentsIfNotExists(
             asDirectory = entry.isDirectory,
             createParents = true
           )

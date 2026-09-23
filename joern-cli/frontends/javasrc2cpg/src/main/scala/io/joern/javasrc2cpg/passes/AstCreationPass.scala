@@ -111,7 +111,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     if (shouldFetch) {
       DependencyResolver.getDependencies(Paths.get(inputPath)) match {
         case Some(deps) => deps.toList
-        case None =>
+        case None       =>
           logger.warn(s"Could not fetch dependencies for project at path $inputPath")
           List()
       }
@@ -136,7 +136,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     val symbolSolver       = new JavaSymbolSolver(combinedTypeSolver)
 
     val jdkPathFromEnvVar = Option(System.getenv(JavaSrcEnvVar.JdkPath.name))
-    val jdkPath = (config.jdkPath, jdkPathFromEnvVar) match {
+    val jdkPath           = (config.jdkPath, jdkPathFromEnvVar) match {
       case (None, None) =>
         val javaHome = System.getProperty("java.home")
         logger.info(s"No explicit jdk-path set in , so using system java.home for JDK type information: $javaHome")

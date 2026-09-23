@@ -52,10 +52,10 @@ class SarifExtension(val traversal: Iterator[Finding]) extends AnyVal {
     }
 
     traversal.l match {
-      case Nil => generateSarif(results = Nil, reportingDescriptors = Nil, baseUri = None)
+      case Nil                  => generateSarif(results = Nil, reportingDescriptors = Nil, baseUri = None)
       case findings @ head :: _ =>
-        val baseUri = Cpg(head.graph).metaData.root.headOption.map(java.io.File(_).toURI)
-        val results = findings.map(config.resultConverter.convertFindingToResult)
+        val baseUri              = Cpg(head.graph).metaData.root.headOption.map(java.io.File(_).toURI)
+        val results              = findings.map(config.resultConverter.convertFindingToResult)
         val reportingDescriptors =
           findings.flatMap(config.resultConverter.convertFindingToReportingDescriptor).distinctBy(_.id)
         generateSarif(results, reportingDescriptors, baseUri)

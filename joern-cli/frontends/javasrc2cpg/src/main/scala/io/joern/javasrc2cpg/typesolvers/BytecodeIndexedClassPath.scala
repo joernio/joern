@@ -41,7 +41,7 @@ class BytecodeIndexedClassPath(archivePath: String) extends ClassPath with AutoC
       .flatMap { entry =>
         readClassName(entry) match {
           case Some(className) => Some(className -> entry)
-          case None =>
+          case None            =>
             logger.debug(s"Could not read class name from entry ${entry.getName} in $archivePath")
             None
         }

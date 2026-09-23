@@ -102,7 +102,7 @@ private class SamTypeDeclAstBuilder()(implicit withSchemaValidation: ValidationM
     )
 
     val samMethodFullName = s"${samInfo.methodRefName}:${samInfo.signature}"
-    val bindings =
+    val bindings          =
       createBindingInfo(samInfo.samMethodName, samInfo.samMethodSig, samMethodFullName, samInfo.samGenericMethodSig)
 
     SamTypeDeclBuild(Ast(samTypeDecl), samTypeDecl, bindings)
@@ -113,8 +113,8 @@ private class SamTypeDeclAstBuilder()(implicit withSchemaValidation: ValidationM
     receiverTypeFullName: String,
     implementationTypeFullName: String
   ): Ast = {
-    val thisIdent  = identifierNode(expr, "this", "this", implementationTypeFullName)
-    val fieldIdent = fieldIdentifierNode(expr, Constants.ReceiverName, Constants.ReceiverName)
+    val thisIdent           = identifierNode(expr, "this", "this", implementationTypeFullName)
+    val fieldIdent          = fieldIdentifierNode(expr, Constants.ReceiverName, Constants.ReceiverName)
     val receiverFieldAccess = callNode(
       expr,
       "this.receiver",
@@ -210,7 +210,7 @@ private class SamTypeDeclAstBuilder()(implicit withSchemaValidation: ValidationM
   private def createBoundSamConstructorAst(relativizedPath: String, samInfo: BoundSamInfo): Ast = {
     val receiverType = samInfo.receiverTypeFullName
     val ctorFullName = s"${samInfo.samImplClass}.<init>:void(${receiverType})"
-    val ctorNode =
+    val ctorNode     =
       methodNode(samInfo.expr, "<init>", "<init>", ctorFullName, Some(s"void(${receiverType})"), relativizedPath)
 
     val ctorThisParam =

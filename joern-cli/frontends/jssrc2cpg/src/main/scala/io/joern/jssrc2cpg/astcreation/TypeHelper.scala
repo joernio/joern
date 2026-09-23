@@ -45,7 +45,7 @@ trait TypeHelper { this: AstCreator =>
     case BooleanLiteralTypeAnnotation => code(flowType.json)
     case NullLiteralTypeAnnotation    => code(flowType.json)
     case StringLiteralTypeAnnotation  => code(flowType.json)
-    case GenericTypeAnnotation =>
+    case GenericTypeAnnotation        =>
       code(flowType.json("id")) match {
         case tpe if isNumberType(tpe) => Defines.Number
         case tpe if isStringType(tpe) => Defines.String
@@ -69,7 +69,7 @@ trait TypeHelper { this: AstCreator =>
     case TSUndefinedKeyword => Defines.Undefined
     case TSNeverKeyword     => Defines.Never
     case TSIntrinsicKeyword => code(tsType.json)
-    case TSTypeReference =>
+    case TSTypeReference    =>
       code(tsType.json) match {
         case tpe if isNumberType(tpe) => Defines.Number
         case tpe if isStringType(tpe) => Defines.String
@@ -102,7 +102,7 @@ trait TypeHelper { this: AstCreator =>
       case Some(value) if value == "null"     => Defines.Null
       case Some(value) if isStringType(value) => Defines.String
       case Some(value) if isNumberType(value) => Defines.Number
-      case Some(value) =>
+      case Some(value)                        =>
         val matcher = ImportMatcher.matcher(value)
         if (matcher.matches()) importToModule(value, matcher) else value
       case None => Defines.Any
@@ -140,7 +140,7 @@ trait TypeHelper { this: AstCreator =>
 
   protected def typeHintForThisExpression(node: Option[BabelNodeInfo] = None): Seq[String] = {
     dynamicInstanceTypeStack.headOption match {
-      case Some(tpe) => Seq(tpe)
+      case Some(tpe)              => Seq(tpe)
       case None if node.isDefined =>
         typeFor(node.get) match {
           case tpe if tpe != Defines.Any && tpe != "this" => if (Defines.isBuiltinType(tpe)) Seq(tpe) else Seq.empty

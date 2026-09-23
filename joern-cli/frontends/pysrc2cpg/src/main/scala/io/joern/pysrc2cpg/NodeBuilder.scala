@@ -172,7 +172,7 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
           //  without type args. To see the type arguments, see ast.Subscript.slice
           case attr: ast.Attribute =>
             extractTypesFromHint(Some(attr.value)).map { x => x + "." + attr.attr }
-          case n: ast.Subscript if n.value.isInstanceOf[ast.Name] => Option(n.value.asInstanceOf[ast.Name].id)
+          case n: ast.Subscript if n.value.isInstanceOf[ast.Name]          => Option(n.value.asInstanceOf[ast.Name].id)
           case n: ast.Constant if n.value.isInstanceOf[ast.StringConstant] =>
             Option(n.value.asInstanceOf[ast.StringConstant].value)
           case _ => None

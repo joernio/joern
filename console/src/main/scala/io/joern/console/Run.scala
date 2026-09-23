@@ -17,7 +17,7 @@ object Run {
 
       override def create(context: LayerCreatorContext): Unit = {
         val pass: CpgPass = new CpgPass(console.cpg) {
-          override val name = "custom"
+          override val name                                 = "custom"
           override def run(builder: DiffGraphBuilder): Unit = {
             query.store()(builder)
           }

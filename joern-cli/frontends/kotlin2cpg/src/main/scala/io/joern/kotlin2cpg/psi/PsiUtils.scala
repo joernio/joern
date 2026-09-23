@@ -26,7 +26,7 @@ object PsiUtils {
       }
     }
 
-    val buf = scala.collection.mutable.ListBuffer.empty[KtObjectDeclaration]
+    val buf     = scala.collection.mutable.ListBuffer.empty[KtObjectDeclaration]
     val visitor =
       new ForEachTreeVisitor({
         case e: KtObjectDeclaration => buf.append(e)

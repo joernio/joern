@@ -44,7 +44,7 @@ class ProjectParseTests extends SwiftSrc2CpgSuite with BeforeAndAfterAll {
   private object ProjectParseTestsFixture {
     def apply(projectDir: Path)(f: Cpg => Unit): Unit = {
       FileUtil.usingTemporaryDirectory("swiftsrc2cpgTests") { tmpDir =>
-        val cpg = newEmptyCpg()
+        val cpg    = newEmptyCpg()
         val config = Config()
           .withInputPath(projectDir.toString)
           .withOutputPath(tmpDir.toString)

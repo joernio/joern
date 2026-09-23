@@ -48,7 +48,7 @@ class TypeNodePass protected (registeredTypes: Set[String], cpg: Cpg, getTypesFr
 
     usedTypes.foreach { typeName =>
       val shortName = fullToShortName(typeName)
-      val node = NewType()
+      val node      = NewType()
         .name(shortName)
         .fullName(typeName)
         .typeDeclFullName(typeName)

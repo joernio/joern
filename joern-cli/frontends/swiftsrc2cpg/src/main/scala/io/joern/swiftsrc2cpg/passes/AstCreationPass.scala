@@ -105,9 +105,9 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
   override def finish(): Unit = {
     astGenRunnerResult.skippedFiles.foreach { skippedFile =>
       val filePath = Paths.get(skippedFile)
-      val fileLOC = Try(IOUtils.readLinesInFile(filePath)) match {
+      val fileLOC  = Try(IOUtils.readLinesInFile(filePath)) match {
         case Success(fileContent) => fileContent.size
-        case Failure(exception) =>
+        case Failure(exception)   =>
           logger.warn(s"Failed to read file: '$filePath'", exception)
           -1
       }
@@ -125,7 +125,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
     // Try exact match first (O(1)), then fall back to suffix match for CI path differences
     // (Windows short paths, macOS /private/var vs /var symlinks).
     val normalizedFilename = filename.replace("\\", "/")
-    val mutableMap = Option(typesMap.remove(normalizedFilename)).orElse {
+    val mutableMap         = Option(typesMap.remove(normalizedFilename)).orElse {
       typesMap
         .keys()
         .asScala

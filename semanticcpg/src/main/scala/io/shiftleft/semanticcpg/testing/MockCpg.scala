@@ -56,7 +56,7 @@ case class MockCpg(cpg: Cpg = Cpg.emptyCpg) {
   ): MockCpg =
     withCustom { (graph, _) =>
       {
-        val typeNode = NewType().name(name)
+        val typeNode     = NewType().name(name)
         val typeDeclNode = NewTypeDecl()
           .name(name)
           .fullName(name)
@@ -100,7 +100,7 @@ case class MockCpg(cpg: Cpg = Cpg.emptyCpg) {
       val param     = NewMethodParameterIn().order(1).index(1).name("param1")
       val paramType = NewType().name("paramtype")
       val paramOut  = NewMethodParameterOut().name("param1").order(1)
-      val method =
+      val method    =
         NewMethod().isExternal(external).name(name).fullName(name).signature("asignature").filename(fileName)
       offset.foreach(method.offset(_))
       offsetEnd.foreach(method.offsetEnd(_))
@@ -187,7 +187,7 @@ case class MockCpg(cpg: Cpg = Cpg.emptyCpg) {
       val callNode    = cpg.call(callName).head
       val methodNode  = callNode.method
       val literalNode = NewLiteral().code(literalCode)
-      val typeDecl = NewTypeDecl()
+      val typeDecl    = NewTypeDecl()
         .name("ATypeDecl")
         .fullName("ATypeDecl")
 

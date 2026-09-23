@@ -117,8 +117,8 @@ class AbapJsonParser {
     }.toSeq
 
     // Standalone methods (FORMs / functions not inside a class)
-    val classMethodNames = classDefs.values.flatMap(_.methods.map(_.name.toUpperCase)).toSet
-    val standaloneNames  = bodies.keySet.filterNot(classMethodNames.contains)
+    val classMethodNames  = classDefs.values.flatMap(_.methods.map(_.name.toUpperCase)).toSet
+    val standaloneNames   = bodies.keySet.filterNot(classMethodNames.contains)
     val standaloneMethods = standaloneNames.toSeq.map { name =>
       val body = bodies(name)
       MethodDef(
@@ -305,7 +305,7 @@ class AbapJsonParser {
 
       case "Transfer" =>
         // TRANSFER <data> TO <file>
-        val toIdx = tokens.indexWhere(_.equalsIgnoreCase("TO"))
+        val toIdx   = tokens.indexWhere(_.equalsIgnoreCase("TO"))
         val fileArg =
           if (toIdx >= 0)
             tokens
@@ -358,7 +358,7 @@ class AbapJsonParser {
         // DO <n> TIMES  — <n> can be a literal or variable
         val timesIdx = tokens.indexWhere(_.equalsIgnoreCase("TIMES"))
         val countArg = if (timesIdx > 0) {
-          val raw = tokens(timesIdx - 1)
+          val raw  = tokens(timesIdx - 1)
           val expr =
             if (raw.matches("\\d+")) LiteralExpr(raw, "NUMBER", span)
             else IdentifierExpr(raw, span)
@@ -452,7 +452,7 @@ class AbapJsonParser {
     if (toIndex <= 1 || toIndex >= tokens.length - 1) return UnknownNode("Assign", span)
     val source     = parseExpression(tokens.slice(1, toIndex), span)
     val targetToks = tokens.drop(toIndex + 1).filterNot(_ == ".")
-    val target =
+    val target     =
       if (targetToks.isEmpty) IdentifierExpr("", span)
       else if (targetToks.head.startsWith("<") && targetToks.head.endsWith(">"))
         IdentifierExpr(targetToks.head, span)
@@ -467,8 +467,8 @@ class AbapJsonParser {
     val varName = tokens(nameIdx)
     val typeIdx = tokens.indexWhere(_.equalsIgnoreCase("TYPE"))
     if (typeIdx < 0 || typeIdx >= tokens.length - 1) return UnknownNode("Data", span)
-    val typeName = tokens(typeIdx + 1)
-    val valueIdx = tokens.indexWhere(_.equalsIgnoreCase("VALUE"))
+    val typeName     = tokens(typeIdx + 1)
+    val valueIdx     = tokens.indexWhere(_.equalsIgnoreCase("VALUE"))
     val initialValue = if (valueIdx > 0 && valueIdx < tokens.length - 1) {
       val vToks = tokens.drop(valueIdx + 1).takeWhile(_ != ".")
       if (vToks.nonEmpty) Some(parseExpression(vToks, span)) else None
@@ -565,7 +565,7 @@ class AbapJsonParser {
 
     val closeParen = tokens.lastIndexOf(")")
     if (closeParen <= openParen) return IdentifierExpr(tokens.mkString(" "), span)
-    val argToks = tokens.slice(openParen + 1, closeParen)
+    val argToks   = tokens.slice(openParen + 1, closeParen)
     val arguments =
       if (argToks.isEmpty) Seq.empty[Argument]
       else
@@ -614,8 +614,8 @@ class AbapJsonParser {
   }
 
   private def parseCallStatement(tokens: Seq[String], stmtType: String, span: TextSpan): AbapNode = {
-    val instIdx = tokens.lastIndexOf("->")
-    val statIdx = tokens.lastIndexOf("=>")
+    val instIdx              = tokens.lastIndexOf("->")
+    val statIdx              = tokens.lastIndexOf("=>")
     val (arrowIdx, isStatic) =
       if (instIdx > statIdx) (instIdx, false)
       else if (statIdx >= 0) (statIdx, true)
@@ -641,7 +641,7 @@ class AbapJsonParser {
 
       val parenStart = tokens.indexWhere(_ == "(", arrowIdx + 1)
       val parenEnd   = if (parenStart >= 0) tokens.indexWhere(_ == ")", parenStart) else -1
-      val args = if (parenStart >= 0 && parenEnd > parenStart) {
+      val args       = if (parenStart >= 0 && parenEnd > parenStart) {
         val argToks = tokens.slice(parenStart + 1, parenEnd)
         // Split by comma and check for named parameter syntax (param = value)
         splitByComma(argToks).map { argChunk =>
@@ -674,7 +674,7 @@ class AbapJsonParser {
     }
 
     val first = tokens.headOption.getOrElse("UNKNOWN")
-    val name = abapConstructorOperators.getOrElse(
+    val name  = abapConstructorOperators.getOrElse(
       first.toUpperCase,
       if (first.forall(c => c.isLetterOrDigit || c == '_' || c == '#' || c == '~')) first
       else "UNKNOWN"

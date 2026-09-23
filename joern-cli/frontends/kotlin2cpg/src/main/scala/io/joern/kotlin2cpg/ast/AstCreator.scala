@@ -175,7 +175,7 @@ class AstCreator(
     fullNameFallback: => String,
     signatureFallback: => String
   ): (String, String) = {
-    val funcDesc = bindingUtils.getCalledFunctionDesc(calleeExpr)
+    val funcDesc     = bindingUtils.getCalledFunctionDesc(calleeExpr)
     val descFullName = funcDesc
       .orElse(getAmbiguousFuncDescIfFullNamesEqual(calleeExpr))
       .flatMap(nameRenderer.descFullName)
@@ -336,10 +336,10 @@ class AstCreator(
       case typedExpr: KtBlockExpression      => Seq(astForBlock(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtBinaryExpressionWithTypeRHS =>
         Seq(astForBinaryExprWithTypeRHS(typedExpr, argIdxMaybe, argNameMaybe, annotations))
-      case typedExpr: KtBreakExpression    => Seq(astForBreak(typedExpr))
-      case typedExpr: KtCallExpression     => astsForCall(typedExpr, argIdxMaybe, argNameMaybe, annotations)
-      case typedExpr: KtConstantExpression => Seq(astForLiteral(typedExpr, argIdxMaybe, argNameMaybe, annotations))
-      case typedExpr: KtClass              => Seq(astForClassOrObject(typedExpr, None, annotations))
+      case typedExpr: KtBreakExpression        => Seq(astForBreak(typedExpr))
+      case typedExpr: KtCallExpression         => astsForCall(typedExpr, argIdxMaybe, argNameMaybe, annotations)
+      case typedExpr: KtConstantExpression     => Seq(astForLiteral(typedExpr, argIdxMaybe, argNameMaybe, annotations))
+      case typedExpr: KtClass                  => Seq(astForClassOrObject(typedExpr, None, annotations))
       case typedExpr: KtClassLiteralExpression =>
         Seq(astForClassLiteral(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtSafeQualifiedExpression =>
@@ -347,7 +347,7 @@ class AstCreator(
       case typedExpr: KtContinueExpression => Seq(astForContinue(typedExpr))
       // note: annotations are not currently (Kotlin 1.9.0) supported on destructuring declarations
       case typedExpr: KtDestructuringDeclaration => astsForDestructuringDeclaration(typedExpr)
-      case typedExpr: KtDotQualifiedExpression =>
+      case typedExpr: KtDotQualifiedExpression   =>
         Seq(astForQualifiedExpression(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtDoWhileExpression => Seq(astForDoWhile(typedExpr, annotations))
       case typedExpr: KtForExpression     => Seq(astForFor(typedExpr, annotations))
@@ -358,7 +358,7 @@ class AstCreator(
       case typedExpr: KtLambdaExpression => Seq(astForLambda(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtNameReferenceExpression if typedExpr.getReferencedNameElementType == KtTokens.IDENTIFIER =>
         Seq(astForNameReference(typedExpr, argIdxMaybe, argNameMaybe, annotations))
-      case _: KtNameReferenceExpression => Seq()
+      case _: KtNameReferenceExpression             => Seq()
       case typedExpr: KtCallableReferenceExpression =>
         Seq(astForCallableReferenceExpression(typedExpr, argIdxMaybe, argNameMaybe, annotations, argTypeFallback))
       case typedExpr: KtObjectLiteralExpression =>
@@ -371,7 +371,7 @@ class AstCreator(
         Seq(astForPrefixExpression(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtProperty if typedExpr.isLocal =>
         astsForProperty(typedExpr, annotations ++ typedExpr.getAnnotationEntries.asScala.toSeq)
-      case typedExpr: KtReturnExpression => Seq(astForReturnExpression(typedExpr))
+      case typedExpr: KtReturnExpression         => Seq(astForReturnExpression(typedExpr))
       case typedExpr: KtStringTemplateExpression =>
         Seq(astForStringTemplate(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtSuperExpression => Seq(astForSuperExpression(typedExpr, argIdxMaybe, argNameMaybe, annotations))
@@ -406,7 +406,7 @@ class AstCreator(
     val importAsts       = importDirectives.toList.map(astForImportDirective)
 
     val packageName = ktFile.getPackageFqName.toString
-    val node =
+    val node        =
       if (packageName == Constants.Root) {
         namespaceBlockNode(
           fileWithMeta.f,
@@ -424,7 +424,7 @@ class AstCreator(
     val fullName                   = node.fullName
     val fakeGlobalTypeDeclFullName = s"$relativizedPath:$fullName"
     val fakeGlobalMethodFullName   = s"$fakeGlobalTypeDeclFullName.global"
-    val fakeGlobalTypeDecl =
+    val fakeGlobalTypeDecl         =
       typeDeclNode(ktFile, name, fakeGlobalTypeDeclFullName, relativizedPath, name, NodeTypes.NAMESPACE_BLOCK, fullName)
     methodAstParentStack.push(fakeGlobalTypeDecl)
 
@@ -456,7 +456,7 @@ class AstCreator(
     methodAstParentStack.pop()
 
     val allDeclarationAsts = declarationsAsts ++ lambdaAstQueue ++ lambdaTypeDecls.distinct
-    val fakeTypeDeclAst =
+    val fakeTypeDeclAst    =
       Ast(fakeGlobalTypeDecl)
         .withChild(
           methodAst(fakeGlobalMethod, Seq.empty, blockAst(blockNode_, allDeclarationAsts.toList), methodReturn)
@@ -477,7 +477,7 @@ class AstCreator(
           case t: KtTypeAlias            => Seq(astForTypeAlias(t))
           case s: KtSecondaryConstructor => Seq(astForUnknown(s, None, None))
           case p: KtProperty             => astsForProperty(p)
-          case unhandled =>
+          case unhandled                 =>
             logger.error(
               s"Unknown declaration type encountered in this file `$relativizedPath` with text `${unhandled.getText}` and class `${unhandled.getClass}`!"
             )
@@ -520,7 +520,7 @@ class AstCreator(
     val assignmentLHSNode = identifierNode(entry, entry.getText, entry.getText, entryTypeFullName)
     val assignmentLHSAst  = astWithRefEdgeMaybe(assignmentLHSNode.name, assignmentLHSNode)
 
-    val desc = bindingUtils.getCalledFunctionDesc(entry)
+    val desc         = bindingUtils.getCalledFunctionDesc(entry)
     val descFullName = desc
       .flatMap(nameRenderer.descFullName)
       .getOrElse(s"${Defines.UnresolvedNamespace}${Constants.ComponentNPrefix}$componentIdx")

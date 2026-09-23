@@ -95,7 +95,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
         }
         .map { case (_, list) =>
           val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
-          val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
+          val withMaxLength  = (lenIdPathPairs.sortBy(_._1).reverse match {
             case Nil    => Nil
             case h :: t => h :: t.takeWhile(y => y._1 == h._1)
           }).map(_._2)

@@ -48,7 +48,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case propertyFetchExpr: PhpPropertyFetchExpr     => astForPropertyFetchExpr(propertyFetchExpr)
       case includeExpr: PhpIncludeExpr                 => astForIncludeExpr(includeExpr)
       case shellExecExpr: PhpShellExecExpr             => astForShellExecExpr(shellExecExpr)
-      case null =>
+      case null                                        =>
         logger.warn("expr was null")
         ???
       case other => throw new NotImplementedError(s"unexpected expression '$other' of type ${other.getClass}")
@@ -219,8 +219,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def createArrayPushAssignment(origin: PhpNode, arrayVar: PhpExpr, valueAst: Ast): Ast = {
-    val arrayAst      = astForExpr(arrayVar)
-    val arrayPushCode = s"${arrayAst.rootCodeOrEmpty}[] = ${valueAst.rootCodeOrEmpty}"
+    val arrayAst          = astForExpr(arrayVar)
+    val arrayPushCode     = s"${arrayAst.rootCodeOrEmpty}[] = ${valueAst.rootCodeOrEmpty}"
     val arrayPushCallNode = callNode(
       origin,
       arrayPushCode,
@@ -357,7 +357,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val arrayTmpLocal = handleVariableOccurrence(origin, arrayTmpName)
 
     // Create the array initialization: arrayTmp = array()
-    val initArrayCode = "array()"
+    val initArrayCode     = "array()"
     val initArrayCallNode = callNode(
       origin,
       initArrayCode,
@@ -378,7 +378,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val arrayTmpIdentAst2 = createTmpIdentifierAst(origin, arrayTmpName, arrayTmpLocal)
 
     // Create a block for the array creation
-    val arrayBlock = blockNode(origin)
+    val arrayBlock    = blockNode(origin)
     val arrayBlockAst = Ast(arrayBlock)
       .withChild(initAssign)
       .withChild(elemAssign)
@@ -571,7 +571,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     args match {
       case singleArg :: Nil => singleArg
-      case _ =>
+      case _                =>
         val callNode = operatorCallNode(encapsed, code, PhpOperators.encaps, Some(TypeConstants.String))
         callAst(callNode, args)
     }
@@ -581,7 +581,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     scalar match {
       case encapsed: PhpEncapsed         => astForEncapsed(encapsed)
       case simpleScalar: PhpSimpleScalar => Ast(literalNode(scalar, simpleScalar.value, simpleScalar.typeFullName))
-      case null =>
+      case null                          =>
         logger.warn("scalar was null")
         ???
     }
@@ -607,7 +607,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val exprAst = astForExpr(unaryOp.expr)
 
     val symbol = operatorSymbols.getOrElse(unaryOp.operator, unaryOp.operator)
-    val code =
+    val code   =
       if (isPostfixOperator(unaryOp.operator))
         s"${exprAst.rootCodeOrEmpty}$symbol"
       else
@@ -660,7 +660,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val elseAst      = astForExpr(ternaryOp.elseExpr)
 
     val operatorName = if (maybeThenAst.isDefined) Operators.conditional else PhpOperators.elvisOp
-    val code = maybeThenAst match {
+    val code         = maybeThenAst match {
       case Some(thenAst) => s"${conditionAst.rootCodeOrEmpty} ? ${thenAst.rootCodeOrEmpty} : ${elseAst.rootCodeOrEmpty}"
       case None          => s"${conditionAst.rootCodeOrEmpty} ?: ${elseAst.rootCodeOrEmpty}"
     }
@@ -747,7 +747,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForPropertyFetchExpr(expr: PhpPropertyFetchExpr): Ast = {
 
     def fieldNodeAndName(nameExpr: PhpExpr): (PhpExpr, Option[String]) = nameExpr match {
-      case name: PhpNameExpr => (name, Option(name.name))
+      case name: PhpNameExpr     => (name, Option(name.name))
       case variable: PhpVariable =>
         val (expr, maybeName) = fieldNodeAndName(variable.value)
         (expr, maybeName.map(name => s"$$$name"))
@@ -772,8 +772,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       else if (expr.isNullsafe) s"?$InstanceMethodDelimiter"
       else InstanceMethodDelimiter
 
-    val targetAst  = astForExpr(expr.expr)
-    val targetCode = targetAst.rootCodeOrEmpty
+    val targetAst    = astForExpr(expr.expr)
+    val targetCode   = targetAst.rootCodeOrEmpty
     val fieldAstCode = fieldName match {
       case Some(_) => fieldAst.rootCodeOrEmpty
       case None    => s"{${fieldAst.rootCodeOrEmpty}}"
@@ -879,7 +879,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val itemAssignments = expr.items.flatMap {
       case Some(item) => Option(assignForArrayItem(item, tmpName, idxTracker))
-      case None =>
+      case None       =>
         idxTracker.next // Skip an index
         None
     }
@@ -1090,7 +1090,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val allocAst        = callAst(allocNode, base = maybeNameAst)
     val allocAssignCode = s"${tmpIdentifier.code} = ${allocAst.rootCodeOrEmpty}"
     val allocAssignNode = operatorCallNode(expr, allocAssignCode, Operators.assignment, Option(className))
-    val allocAssignAst =
+    val allocAssignAst  =
       callAst(allocAssignNode, astForIdentifierWithLocalRef(tmpIdentifier, local) :: allocAst :: Nil)
 
     // Init node
@@ -1098,7 +1098,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val initFullName  = s"$className$MethodDelimiter$ConstructorMethodName"
     val initCode      = s"new $className(${initArgs.map(_.rootCodeOrEmpty).mkString(",")})"
     val maybeTypeHint = scope.resolveClassIdentifier(className).map(_.name) // consider imported or defined types
-    val initCallNode = callNode(
+    val initCallNode  = callNode(
       expr,
       initCode,
       ConstructorMethodName,

@@ -214,7 +214,7 @@ abstract class FunctionPass(
         val opObjects = instruction.getOpObjects(index)
         if (opObjects.length > 1) {
           val argument = String.valueOf(instruction.getDefaultOperandRepresentation(index))
-          val node = createIdentifier(
+          val node     = createIdentifier(
             argument,
             argument,
             index + 1,
@@ -228,7 +228,7 @@ abstract class FunctionPass(
             opObject.getClass.getSimpleName match {
               case "Register" =>
                 val register = opObject.asInstanceOf[Register]
-                val node = createIdentifier(
+                val node     = createIdentifier(
                   register.getName,
                   register.getName,
                   index + 1,

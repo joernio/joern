@@ -96,7 +96,7 @@ object GradleDependenciesV2 {
     androidVariant: String
   ): GradleDepsInitScript = {
     val taskName = taskNamePrefix + "_" + (Random.alphanumeric take 8).toList.mkString
-    val content =
+    val content  =
       getInitScriptContent(taskName, destinationDir.toString, gradleVersion, configurationNameOverride, androidVariant)
     GradleDepsInitScript(content, taskName)
   }
@@ -202,12 +202,12 @@ object GradleDependenciesV2 {
   ): Boolean = {
     logger.info(s"Fetching Gradle project information at path `$projectDir`.")
     acquireInitTmpFileAndConn(projectDir) match {
-      case Failure(_) => false
+      case Failure(_)                            => false
       case Success((initScriptFile, connection)) =>
         Using.resource(connection) { conn =>
           val gradleVersion  = getGradleVersionMajorMinor(conn)
           val androidVariant = androidVariantOverride.getOrElse(DefaultAndroidVariant)
-          val initScript =
+          val initScript     =
             makeInitScript(destinationDir, gradleVersion, configurationNameOverride, androidVariant)
           Files.writeString(initScriptFile, initScript.contents)
           val ranOk = runGradleTask(conn, initScript.taskName, initScriptFile.toString)

@@ -101,8 +101,8 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
       .flatMap {
         case x if x.name == Initialize =>
           x.receiver.headOption.flatMap {
-            case x: TypeRef    => Option(getFieldBaseFromString(x.code))
-            case x: Identifier => Option(x.name)
+            case x: TypeRef                                 => Option(getFieldBaseFromString(x.code))
+            case x: Identifier                              => Option(x.name)
             case x: Call if x.name == Operators.fieldAccess =>
               Option(fieldAccessBase(x.asInstanceOf[FieldAccess]))
             case _ => None

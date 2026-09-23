@@ -80,7 +80,7 @@ object CSharpSrc2Cpg {
         astFiles
           .map(file =>
             Future {
-              val parserResult = DotNetJsonParser.readFile(Paths.get(file))
+              val parserResult     = DotNetJsonParser.readFile(Paths.get(file))
               val relativeFileName = if (Environment.operatingSystem == Environment.OperatingSystemType.Windows) {
                 handleWinUserTemp(parserResult.fullPath, config.inputPath)
               } else {

@@ -45,7 +45,7 @@ package object importresolver {
         val opts = valueToOptions(tag.value)
         ResolvedMethod(opts(OPT_FULL_NAME), opts(OPT_ALIAS), opts.get(OPT_RECEIVER))
       case RESOLVED_TYPE_DECL => ResolvedTypeDecl(tag.value)
-      case RESOLVED_MEMBER =>
+      case RESOLVED_MEMBER    =>
         val opts = valueToOptions(tag.value)
         ResolvedMember(opts(OPT_BASE_PATH), opts(OPT_NAME))
       case UNKNOWN_METHOD =>

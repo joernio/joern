@@ -1327,7 +1327,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .l
       val appIncludeRouterCalls = variables.invokingCalls.nameExact("include_router")
       val includedRouters       = appIncludeRouterCalls.argument.argumentIndexGte(1).moduleVariables
-      val definitionsOfRouters =
+      val definitionsOfRouters  =
         includedRouters.definitions.whereNot(_.source.isCall.nameExact(Operators.importCall))
       val List(adminRouter, normalRouter, itemsRouter) =
         definitionsOfRouters.map(x => (x.code, x.method.fullName)).sortBy(_._1).l: @unchecked

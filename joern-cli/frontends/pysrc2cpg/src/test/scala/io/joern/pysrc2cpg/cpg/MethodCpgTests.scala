@@ -26,7 +26,7 @@ class MethodCpgTests extends PySrc2CpgFixture with Matchers {
 
   "test method redefinition" in {
     val path = Seq("a", "b.py").mkString(File.separator)
-    val cpg = code(
+    val cpg  = code(
       """
         |class Foo():
         |  def method():

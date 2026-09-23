@@ -16,7 +16,7 @@ class ConfigTests extends AnyWordSpec with Matchers with Inside {
 
     "handle command line args correctly" in {
       val parser = Main.cmdLineParser
-      val args = Array(
+      val args   = Array(
         // Common args
         "INPUT",
         "--output",

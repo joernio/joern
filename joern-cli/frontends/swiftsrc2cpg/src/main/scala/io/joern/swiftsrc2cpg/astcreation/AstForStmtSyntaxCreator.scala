@@ -59,7 +59,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     node.whereClause match {
       case Some(whereClause: WhereClauseSyntax) =>
         val testAstRaw = astForNode(whereClause)
-        val testAst = testAstRaw.root match {
+        val testAst    = testAstRaw.root match {
           case Some(_) => testAstRaw
           case None    => blockAst(blockNode(whereClause), List.empty)
         }
@@ -101,7 +101,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.addVariableReference(iteratorName, iteratorNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
     // TODO: add operator to schema
-    var op = "<operator>.iterator"
+    var op           = "<operator>.iterator"
     val iteratorCall =
       createStaticCallNode(node, s"<operator>.iterator($collectionName)", op, op, Defines.Iterator)
 
@@ -235,7 +235,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.addVariableReference(iteratorName, iteratorNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
     // TODO: add operator to schema
-    var op = "<operator>.iterator"
+    var op           = "<operator>.iterator"
     val iteratorCall =
       createStaticCallNode(node, s"<operator>.iterator($collectionName)", op, op, Defines.Iterator)
 
@@ -362,7 +362,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.addVariableReference(iteratorName, iteratorNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
     // TODO: add operator to schema
-    var op = "<operator>.iterator"
+    var op           = "<operator>.iterator"
     val iteratorCall =
       createStaticCallNode(node, s"<operator>.iterator($collectionName)", op, op, Defines.Iterator)
 
@@ -445,7 +445,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       val variableMemberNode    = fieldIdentifierNode(node, s"_$index", s"_$index")
       val variableAccessAst     = createFieldAccessCallAst(node, accessAst, variableMemberNode)
 
-      val op = Operators.assignment
+      val op                         = Operators.assignment
       val loopVariableAssignmentNode =
         createStaticCallNode(node, s"$loopVariableName = $resultName.value._$index", op, op, Defines.Void)
 
@@ -470,7 +470,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.popScope()
     localAstParentStack.pop()
 
-    val whileLoopAst = whileAst(node, Some(testCallAst), List(whileLoopBlockAst))
+    val whileLoopAst      = whileAst(node, Some(testCallAst), List(whileLoopBlockAst))
     val blockNodeChildren =
       List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst
     blockAst(blockNode_, blockNodeChildren)

@@ -43,7 +43,7 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
       .logIfFailed()
       .successOption
       .map { stdOut =>
-        val asJson = linesToJsonValues(stdOut)
+        val asJson    = linesToJsonValues(stdOut)
         val asPhpFile = asJson.map { case (filename, jsonObjectOption, infoLines) =>
           (filename, jsonToPhpFile(jsonObjectOption, filename), infoLines)
         }
@@ -191,7 +191,7 @@ object PhpParser {
 
     Paths.get(pathString) match {
       case file if Files.exists(file) && Files.isRegularFile(file) => Some(file.absolutePathAsString)
-      case _ =>
+      case _                                                       =>
         logger.error(s"Invalid path for $identifier: $pathString")
         None
     }
@@ -209,7 +209,7 @@ object PhpParser {
   private def validateIniPath(userProvidedIni: String): Option[String] = {
     Paths.get(userProvidedIni) match {
       case file if Files.exists(file) && Files.isRegularFile(file) => Some(file.absolutePathAsString)
-      case _ =>
+      case _                                                       =>
         logger.error(s"Invalid path for PhpIni: $userProvidedIni")
         None
     }

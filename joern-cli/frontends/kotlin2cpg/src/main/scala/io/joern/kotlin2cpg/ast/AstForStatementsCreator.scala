@@ -65,7 +65,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val iteratorLocalAst      = Ast(localForIterator).withRefEdge(iteratorAssignmentLhs, localForIterator)
 
     // TODO: maybe use a different method here, one which does not translate `kotlin.collections.List` to `java.util.List`
-    val loopRangeExprTypeFullName = registerType(exprTypeFullName(expr.getLoopRange).getOrElse(TypeConstants.Any))
+    val loopRangeExprTypeFullName       = registerType(exprTypeFullName(expr.getLoopRange).getOrElse(TypeConstants.Any))
     val iteratorAssignmentRhsIdentifier =
       identifierNode(expr, loopRangeText, shortenCode(loopRangeText), loopRangeExprTypeFullName)
         .argumentIndex(0)
@@ -111,8 +111,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     scope.addToScope(localForTmp.name, localForTmp)
     val localForTmpAst = Ast(localForTmp)
 
-    val tmpIdentifier    = identifierNode(expr, tmpName, shortenCode(tmpName), TypeConstants.Any)
-    val tmpIdentifierAst = Ast(tmpIdentifier).withRefEdge(tmpIdentifier, localForTmp)
+    val tmpIdentifier          = identifierNode(expr, tmpName, shortenCode(tmpName), TypeConstants.Any)
+    val tmpIdentifierAst       = Ast(tmpIdentifier).withRefEdge(tmpIdentifier, localForTmp)
     val iteratorNextIdentifier =
       identifierNode(expr, iteratorName, shortenCode(iteratorName), TypeConstants.Any).argumentIndex(0)
     val iteratorNextIdentifierAst = Ast(iteratorNextIdentifier).withRefEdge(iteratorNextIdentifier, localForIterator)
@@ -145,8 +145,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
           assignmentAstForDestructuringEntry(entry, rhsBaseAst, idx + 1)
       }
 
-    val stmtAsts             = astsForExpression(expr.getBody, None)
-    val controlStructureBody = blockNode(expr.getBody, "", "")
+    val stmtAsts                = astsForExpression(expr.getBody, None)
+    val controlStructureBody    = blockNode(expr.getBody, "", "")
     val controlStructureBodyAst = blockAst(
       controlStructureBody,
       localsForDestructuringVars.toList ++
@@ -226,7 +226,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
         .flatMap(desc => nameRenderer.typeFullName(desc.getType))
         .getOrElse(TypeConstants.Any)
     )
-    val loopParameterName = expr.getLoopParameter.getText
+    val loopParameterName  = expr.getLoopParameter.getText
     val loopParameterLocal =
       localNode(expr, loopParameterName, shortenCode(loopParameterName), loopParameterTypeFullName)
     scope.addToScope(loopParameterName, loopParameterLocal)
@@ -255,8 +255,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val loopParameterNextAssignmentAst =
       callAst(loopParameterNextAssignment, List(Ast(loopParameterIdentifier), iteratorNextCallAst))
 
-    val stmtAsts             = astsForExpression(expr.getBody, Some(3))
-    val controlStructureBody = blockNode(expr.getBody, "", "")
+    val stmtAsts                = astsForExpression(expr.getBody, Some(3))
+    val controlStructureBody    = blockNode(expr.getBody, "", "")
     val controlStructureBodyAst =
       blockAst(controlStructureBody, List(loopParameterAst, loopParameterNextAssignmentAst) ++ stmtAsts)
 
@@ -281,7 +281,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForIfAsControlStructure(expr: KtIfExpression, annotations: Seq[KtAnnotationEntry] = Seq()): Ast = {
     val conditionAst = astsForExpression(expr.getCondition, None).headOption
     val thenAst      = wrapMultipleInBlock(astsForExpression(expr.getThen, None), line(expr.getThen))
-    val elseAst =
+    val elseAst      =
       Option(expr.getElse).map(elseExpr => wrapMultipleInBlock(astsForExpression(elseExpr, None), line(elseExpr)))
 
     val ifAst = ifThenElseAst(expr, conditionAst, thenAst, elseAst)
@@ -301,7 +301,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val allAsts = (conditionAsts ++ thenAsts ++ elseAsts).toList
     if (allAsts.nonEmpty) {
       val returnTypeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
-      val node =
+      val node               =
         operatorCallNode(expr, code(expr), Operators.conditional, Option(returnTypeFullName))
       callAst(withArgumentIndex(node, argIdx).argumentName(argNameMaybe), allAsts)
         .withChildren(annotations.map(astForAnnotationEntry))
@@ -346,7 +346,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val switchBlockNode = blockNode(expr, expr.getEntries.asScala.map(_.getText).mkString("\n"), TypeConstants.Any)
     val astForBlock     = blockAst(switchBlockNode, astsForEntries.toList)
-    val codeForSwitch = Option(expr.getSubjectExpression)
+    val codeForSwitch   = Option(expr.getSubjectExpression)
       .map(_.getText)
       .map { text => s"${Constants.WhenKeyword}($text)" }
       .getOrElse(Constants.WhenKeyword)
@@ -366,7 +366,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val subjectExpressionAsts = Option(expr.getSubjectExpression) match {
       case Some(subjectExpression) => astsForExpression(subjectExpression, None)
-      case _ =>
+      case _                       =>
         logger.warn(s"Subject Expression empty in this file '$relativizedPath'.")
         Seq.empty
     }
@@ -374,7 +374,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val subjectBlockAst = blockAst(subjectBlock, subjectExpressionAsts.toList)
 
     val argAsts = expr.getEntries.asScala.toList.map { e =>
-      val block = blockNode(e, "", "")
+      val block         = blockNode(e, "", "")
       val conditionAsts =
         e.getConditions
           .flatMap(_.getChildren)
@@ -456,7 +456,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForTryAsStatement(expr: KtTryExpression): Ast = {
-    val tryAst = astsForExpression(expr.getTryBlock, None).headOption.getOrElse(Ast())
+    val tryAst     = astsForExpression(expr.getTryBlock, None).headOption.getOrElse(Ast())
     val clauseAsts = expr.getCatchClauses.asScala.toSeq.map { catchClause =>
       val catchNode    = controlStructureNode(catchClause, ControlStructureTypes.CATCH, code(catchClause))
       val childrenAsts = astsForExpression(catchClause.getCatchBody, None)
@@ -483,7 +483,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       exprTypeFullName(expr.getTryBlock.getStatements.asScala.last).getOrElse(TypeConstants.Any)
     )
     val tryBlockAst = astsForExpression(expr.getTryBlock, None).headOption.getOrElse(Ast())
-    val clauseAsts = expr.getCatchClauses.asScala.toSeq.flatMap { entry =>
+    val clauseAsts  = expr.getCatchClauses.asScala.toSeq.flatMap { entry =>
       astsForExpression(entry.getCatchBody, None)
     }
     val node =
@@ -539,7 +539,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     preStatements: Option[Seq[Ast]] = None
   ): Ast = {
     val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
-    val node =
+    val node         =
       withArgumentIndex(
         blockNode(expr, expr.getStatements.asScala.map(_.getText).mkString("\n"), typeFullName),
         argIdxMaybe

@@ -12,7 +12,7 @@ class JavaScriptMetaDataPass(cpg: Cpg, hash: String, inputPath: String) extends 
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     val absolutePathToRoot = Paths.get(inputPath).absolutePathAsString
-    val metaNode = NewMetaData()
+    val metaNode           = NewMetaData()
       .language(Languages.JSSRC)
       .root(absolutePathToRoot)
       .hash(hash)

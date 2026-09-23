@@ -119,7 +119,7 @@ class CSharpScope(summary: CSharpProgramSummary)
     */
   def peekScope(): Option[TypedScopeElement] = {
     super.popScope() match {
-      case None => None
+      case None      => None
       case Some(top) =>
         super.pushNewScope(top)
         Option(top)
