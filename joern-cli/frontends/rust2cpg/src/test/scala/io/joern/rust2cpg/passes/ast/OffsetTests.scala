@@ -1,13 +1,10 @@
 package io.joern.rust2cpg.passes.ast
 
-import io.joern.rust2cpg.Config
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
-class OffsetTests extends Rust2CpgSuite(noSysRoot = true) {
-
-  private val contentEnabled = Config().withNoSysRoot(true).withDisableFileContent(false)
+class OffsetTests extends Rust2CpgSuite(noSysRoot = true, disableFileContent = false) {
 
   "top-level fn" should {
     val cpg = code("""
@@ -18,21 +15,21 @@ class OffsetTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct offsets on the method" in {
       inside(cpg.method.nameExact("main").l) { case main :: Nil =>
-        main.offset shouldBe Some(1)
-        main.offsetEnd shouldBe Some(27)
+        val fileContent = cpg.file.content.head
+        fileContent.substring(main.offset.get, main.offsetEnd.get) should include("fn main()")
       }
     }
 
     "have correct offsets on the literal" in {
       inside(cpg.literal.l) { case lit :: Nil =>
-        lit.offset shouldBe Some(22)
-        lit.offsetEnd shouldBe Some(24)
+        val fileContent = cpg.file.content.head
+        fileContent.substring(lit.offset.get, lit.offsetEnd.get) shouldBe "42"
       }
     }
   }
 
   "literal with an emoji" should {
-    val cpg = code("""fn f() { "🙂"; }""").withConfig(contentEnabled)
+    val cpg = code("""fn f() { "🙂"; }""")
 
     "have correct offsets" in {
       inside(cpg.literal.l) { case lit :: Nil =>
@@ -43,13 +40,11 @@ class OffsetTests extends Rust2CpgSuite(noSysRoot = true) {
   }
 
   "2-byte UTF-8 char (é) shifts subsequent offsets" should {
-    val cpg = code(
-      """fn f() {
+    val cpg = code("""fn f() {
         | let café = 1;
         | let next = 2;
         |}
-        |""".stripMargin
-    ).withConfig(contentEnabled)
+        |""".stripMargin)
 
     "have correct offset for literal after multi-byte char" in {
       inside(cpg.literal.code("2").l) { case lit :: Nil =>
@@ -60,13 +55,11 @@ class OffsetTests extends Rust2CpgSuite(noSysRoot = true) {
   }
 
   "3-byte UTF-8 chars (中文) shift subsequent offsets" should {
-    val cpg = code(
-      """fn f() {
+    val cpg = code("""fn f() {
         | let s = "中文";
         | let x = 42;
         |}
-        |""".stripMargin
-    ).withConfig(contentEnabled)
+        |""".stripMargin)
 
     "have correct offset for literal after CJK chars" in {
       inside(cpg.literal.code("42").l) { case lit :: Nil =>
@@ -77,13 +70,11 @@ class OffsetTests extends Rust2CpgSuite(noSysRoot = true) {
   }
 
   "4-byte UTF-8 char (🎉) in comment shifts subsequent offsets" should {
-    val cpg = code(
-      """// 🎉
+    val cpg = code("""// 🎉
         |fn f() {
         | let x = 1;
         |}
-        |""".stripMargin
-    ).withConfig(contentEnabled)
+        |""".stripMargin)
 
     "have correct offset for literal after emoji" in {
       inside(cpg.literal.code("1").l) { case lit :: Nil =>
