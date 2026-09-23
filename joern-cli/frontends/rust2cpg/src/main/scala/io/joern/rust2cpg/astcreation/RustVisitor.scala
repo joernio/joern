@@ -1115,6 +1115,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       callAst(nextCall, Seq.empty, base = Some(identifierAst(forExpr.pat, tmpName, tmpName, Defines.Any)))
     }
 
+    contextStack.pushBlock()
     val bindings    = collectPatternBindings(forExpr.pat)
     val localAsts   = createLocalsForBindings(bindings)
     val bindingAsts = if (bindings.length == 1) {
@@ -1131,7 +1132,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       (itemLocalAst +: localAsts) ++ (itemAssignAst +: assignments)
     }
 
-    val stmts        = visitStmtList(forExpr.blockExpr.stmtList)
+    val stmts = visitStmtList(forExpr.blockExpr.stmtList)
+    contextStack.pop()
     val bodyAst      = Ast(blockNode(forExpr.blockExpr)).withChildren(bindingAsts ++ stmts)
     val conditionAst = Ast(unknownNode(forExpr, code(forExpr)))
     val whileLoopAst = whileAst(forExpr, Some(conditionAst), Seq(bodyAst))
