@@ -895,4 +895,53 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "unit struct as Self" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo {
+        |  fn new() {
+        |    let foo = Self;
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct constructor call" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("foo")).source.l) { case (block: Block) :: Nil =>
+        block.code shouldBe "Self"
+        block.typeFullName shouldBe "rust2cpgtest::Foo"
+
+        inside(block.astChildren.l) {
+          case (local: Local) :: (allocAssign: Call) :: (init: Call) :: (ret: Identifier) :: Nil =>
+            local.name shouldBe "<tmp>0"
+            local.typeFullName shouldBe "rust2cpgtest::Foo"
+
+            allocAssign.methodFullName shouldBe Operators.assignment
+            allocAssign.code shouldBe s"<tmp>0 = ${Operators.alloc}"
+
+            init.name shouldBe "<init>"
+            init.methodFullName shouldBe "rust2cpgtest::Foo::<init>"
+            init.code shouldBe "Self"
+            init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+            init.typeFullName shouldBe "()"
+
+            // TODO: pending change to remove `&` to <init> calls.
+            inside(init.argument.sortBy(_.argumentIndex).l) { case (addressOf: Call) :: Nil =>
+              addressOf.name shouldBe Operators.addressOf
+              addressOf.code shouldBe "&<tmp>0"
+              addressOf.typeFullName shouldBe "&rust2cpgtest::Foo"
+
+              inside(addressOf.argument(1)) { case tmp: Identifier =>
+                tmp.name shouldBe "<tmp>0"
+                tmp.typeFullName shouldBe "rust2cpgtest::Foo"
+              }
+            }
+
+            ret.name shouldBe "<tmp>0"
+            ret.typeFullName shouldBe "rust2cpgtest::Foo"
+        }
+      }
+    }
+
+  }
 }
