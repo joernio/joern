@@ -68,6 +68,27 @@ class ForTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "for loop shadowing previous let" should {
+    val cpg = code("""
+        |fn foo(xs: Vec<i32>) {
+        |  let x = 1;
+        |  for x in xs {
+        |    bar(x);
+        |  }
+        |  bar(x);
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      cpg.local.nameExact("x").lineNumber.l shouldBe List(3, 4)
+    }
+
+    "have correct REF edges for each local" in {
+      cpg.local.nameExact("x").lineNumber(3).referencingIdentifiers.lineNumber.l shouldBe List(3, 7)
+      cpg.local.nameExact("x").lineNumber(4).referencingIdentifiers.lineNumber.l shouldBe List(4, 5)
+    }
+  }
 }
 
 class ForTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
