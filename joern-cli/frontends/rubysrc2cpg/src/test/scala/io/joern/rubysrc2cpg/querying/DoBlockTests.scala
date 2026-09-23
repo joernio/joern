@@ -584,5 +584,15 @@ class DoBlockTests extends RubyCode2CpgFixture {
         }
       }
     }
+
+    "have the lambda's foo refer to the parameter, not the outer local" in {
+      val lambdaMethod = cpg.method.where(_.fullName(".*<lambda>.*")).head
+      val fooParam     = lambdaMethod.parameter.nameExact("foo").head
+      val fooIds       = lambdaMethod.ast.isIdentifier.nameExact("foo").l
+      fooIds should not be empty
+      fooIds.foreach { id =>
+        id.refOut.head shouldBe fooParam
+      }
+    }
   }
 }
