@@ -41,7 +41,7 @@ class ModuleVariableTraversal(traversal: Iterator[OpNodes.ModuleVariable]) exten
         val modules       = cpg.method.isModule.l
         val variableNames = variables.name.toSet
         val immediateRef  = variables.referencingIdentifiers
-        val externalRefs = modules.call
+        val externalRefs  = modules.call
           .where(_.referencedImports)
           .flatMap { call =>
             val module = call.method

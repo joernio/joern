@@ -361,7 +361,7 @@ object X2Cpg {
       Try {
         applyPasses(cpg, config)
       } match {
-        case Success(_) => cpg
+        case Success(_)         => cpg
         case Failure(exception) =>
           cpg.close()
           throw exception

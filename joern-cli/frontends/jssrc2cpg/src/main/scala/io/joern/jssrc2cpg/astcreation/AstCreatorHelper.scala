@@ -117,8 +117,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   ): Ast = {
     registerType(methodFullName)
 
-    val astParentType     = parentNode.label
-    val astParentFullName = parentNode.properties(PropertyNames.FullName).toString
+    val astParentType        = parentNode.label
+    val astParentFullName    = parentNode.properties(PropertyNames.FullName).toString
     val functionTypeDeclNode =
       typeDeclNode(
         node,
@@ -204,7 +204,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val funcKey = functionNodeKey(func)
     functionNodeToNameAndFullName.get(funcKey) match {
       case Some(nameAndFullName) => nameAndFullName
-      case None =>
+      case None                  =>
         val intendedName   = calcMethodName(func)
         val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath}:"
         var name           = intendedName

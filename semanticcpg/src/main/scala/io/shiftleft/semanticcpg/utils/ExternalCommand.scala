@@ -96,7 +96,7 @@ object ExternalCommand {
     */
   def executableDir(packagePath: Path): Path = {
     val packagePathAbsolute = packagePath.toAbsolutePath
-    val fixedDir =
+    val fixedDir            =
       if (packagePathAbsolute.toString.contains("lib")) {
         var dir = packagePathAbsolute
         while (dir.toString.contains("lib"))

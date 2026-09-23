@@ -33,7 +33,7 @@ trait InitialMainSrcProcessor(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForPackage(rootNode: ParserNodeInfo): Ast = {
-    val pathTokens = relPathFileName.split(fileSeparateorPattern)
+    val pathTokens        = relPathFileName.split(fileSeparateorPattern)
     val packageFolderPath = if (pathTokens.nonEmpty && pathTokens.size > 1) {
       s"${File.separator}${pathTokens.dropRight(1).mkString(File.separator)}"
     } else {

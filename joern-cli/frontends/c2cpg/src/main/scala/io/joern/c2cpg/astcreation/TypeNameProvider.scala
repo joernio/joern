@@ -99,7 +99,7 @@ trait TypeNameProvider { this: AstCreator =>
   protected def cleanType(rawType: String): String = {
     if (rawType == Defines.Any) return rawType
     val normalizedTpe = StringUtils.normalizeSpace(rawType.stripSuffix(" ()"))
-    val tpe =
+    val tpe           =
       if (!ReservedKeywordsAtTypesSet.exists(normalizedTpe.contains)) normalizedTpe
       else
         ReservedKeywordsAtTypesPatterns.foldLeft(normalizedTpe) { case (cur, (prefix, infix)) =>
@@ -140,7 +140,7 @@ trait TypeNameProvider { this: AstCreator =>
       case cppBasicType: ICPPBasicType if cppBasicType.isLongLong => Defines.LongLong
       case cppBasicType: ICPPBasicType if cppBasicType.isShort    => Defines.Short
       case templateType: ICPPTemplateTypeParameter                => templateType.getName
-      case cppPackType: ICPPParameterPackType =>
+      case cppPackType: ICPPParameterPackType                     =>
         cppPackType.getType match {
           case templateType: ICPPTemplateTypeParameter                 => templateType.getName
           case refType: ICPPReferenceType if refType.isRValueReference => safeGetType(refType.getType) + "&&"
@@ -207,7 +207,7 @@ trait TypeNameProvider { this: AstCreator =>
         TypeFullNameInfo(name, scopeLocalUniqueNamespaceFullName(fullName_))
       case s: IASTCompositeTypeSpecifier =>
         val fullName_ = registerType(cleanType(fullName(s)))
-        val name_ = shortName(s) match {
+        val name_     = shortName(s) match {
           case n if n.isEmpty && fullName_.contains(".") => fullName_.substring(fullName_.lastIndexOf("."))
           case n if n.isEmpty                            => fullName_
           case other                                     => other
@@ -305,7 +305,7 @@ trait TypeNameProvider { this: AstCreator =>
 
   private def returnTypeForIASTFunctionDeclarator(declarator: IASTFunctionDeclarator): String = {
     safeGetBinding(declarator.getName) match {
-      case Some(_: ICPPConstructor) => Defines.Void
+      case Some(_: ICPPConstructor)                                                                   => Defines.Void
       case Some(_: ICPPFunctionTemplate) if declarator.getParent.isInstanceOf[IASTFunctionDefinition] =>
         cleanType(typeForDeclSpecifier(declarator.getParent.asInstanceOf[IASTFunctionDefinition].getDeclSpecifier))
       case Some(value: ICPPMethod) if !value.getType.toString.startsWith("?") =>
@@ -331,7 +331,7 @@ trait TypeNameProvider { this: AstCreator =>
         typeForDeclSpecifier(declarator.getTrailingReturnType.getDeclSpecifier)
       case _ =>
         safeGetEvaluation(lambda) match {
-          case Some(value) if !value.toString.endsWith(": <unknown>") => cleanType(value.getType.toString)
+          case Some(value) if !value.toString.endsWith(": <unknown>")    => cleanType(value.getType.toString)
           case Some(value) if value.getType.isInstanceOf[CPPClosureType] =>
             val closureType = value.getType.asInstanceOf[CPPClosureType]
             closureType.getMethods
@@ -381,7 +381,7 @@ trait TypeNameProvider { this: AstCreator =>
       case t             => t
     }
     val pointers = parentDecl.getPointerOperators
-    val arr = parentDecl match {
+    val arr      = parentDecl match {
       case p: IASTArrayDeclarator => p.getArrayModifiers.iterator.map(_.getRawSignature).mkString
       case _                      => ""
     }
@@ -441,7 +441,7 @@ trait TypeNameProvider { this: AstCreator =>
       val tpe = getNodeSignature(a).replace("[]", "").strip()
       val arr = a.getArrayModifiers.map {
         case m if m.getConstantExpression != null => s"[${nodeSignature(m.getConstantExpression)}]"
-        case _ if a.getInitializer != null =>
+        case _ if a.getInitializer != null        =>
           a.getInitializer match {
             case l: IASTInitializerList => s"[${l.getSize}]"
             case _                      => "[]"

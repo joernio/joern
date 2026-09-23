@@ -71,7 +71,7 @@ trait AstForStatementsCreator extends AstForSimpleStatementsCreator with AstForF
       case x: WhileStmt                  => astsForWhile(x)
       case x: LocalClassDeclarationStmt  => Seq(astForLocalClassDeclaration(x))
       case x: LocalRecordDeclarationStmt => Seq(astForLocalRecordDeclaration(x))
-      case x =>
+      case x                             =>
         logger.warn(s"Attempting to generate AST for unknown statement of type ${x.getClass}")
         Seq(unknownAst(x))
     }
@@ -86,7 +86,7 @@ trait AstForStatementsCreator extends AstForSimpleStatementsCreator with AstForF
   private[statements] def partitionPatternAstsByScope(
     stmt: IfStmt | WhileStmt | ForStmt | DoStmt
   ): PatternAstPartition = {
-    val typeSolver = new CombinedTypeSolver()
+    val typeSolver      = new CombinedTypeSolver()
     val (context, body) = stmt match {
       case ifStmt: IfStmt       => (new IfStatementContext(ifStmt, typeSolver), ifStmt.getThenStmt)
       case whileStmt: WhileStmt => (new WhileStatementContext(whileStmt, typeSolver), whileStmt.getBody)

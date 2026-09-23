@@ -128,7 +128,7 @@ object MethodStubCreator {
       }
       (firstParameterOrder to parameterCount).zipWithIndex.foreach { case (parameterOrder, index) =>
         val nameAndCode = s"p$parameterOrder"
-        val param = NewMethodParameterIn()
+        val param       = NewMethodParameterIn()
           .code(nameAndCode)
           .order(parameterOrder)
           .index(index + 1)
@@ -143,7 +143,7 @@ object MethodStubCreator {
       val ran = if (startWithInst.get) Range(0, parameterCount) else Range(1, parameterCount + 1)
       for (parameterOrder <- ran) {
         val nameAndCode = s"p$parameterOrder"
-        val param = NewMethodParameterIn()
+        val param       = NewMethodParameterIn()
           .code(nameAndCode)
           .order(parameterOrder)
           .index(parameterOrder)

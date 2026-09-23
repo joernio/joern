@@ -191,7 +191,7 @@ trait FullNameProvider { this: AstCreator =>
 
   private def fullNameForICPPASTLambdaExpression(): String = {
     val globalFullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
-    val fullName = scope.computeScopePath match {
+    val fullName       = scope.computeScopePath match {
       case ""    => ""
       case other => s".$other"
     }
@@ -228,7 +228,7 @@ trait FullNameProvider { this: AstCreator =>
 
   private def parameterListSignature(func: IASTNode): String = {
     val parameter = parameters(func)
-    val elements = parameter.map {
+    val elements  = parameter.map {
       case p: IASTParameterDeclaration => typeForDeclSpecifier(p.getDeclSpecifier)
       case other                       => typeForDeclSpecifier(other)
     }
@@ -362,7 +362,7 @@ trait FullNameProvider { this: AstCreator =>
             Option(fn)
           case Some(x @ (_: ICPPField | _: CPPVariable)) =>
             val fullNameNoSig = replaceQualifiedNameSeparator(x.getQualifiedName.mkString("."))
-            val fn = if (x.isExternC) { x.getName }
+            val fn            = if (x.isExternC) { x.getName }
             else {
               s"${stripTemplateTags(fullNameNoSig)}:${cleanType(safeCdtCall(safeGetType(x.getType)).getOrElse(Defines.Any))}"
             }
@@ -377,7 +377,7 @@ trait FullNameProvider { this: AstCreator =>
           case Some(_: IProblemBinding) =>
             val fullNameNoSig = replaceOperator(ASTStringUtil.getQualifiedName(declarator.getName))
             val fixedFullName = replaceQualifiedNameSeparator(fullNameNoSig)
-            val returnTpe = declarator.getParent match {
+            val returnTpe     = declarator.getParent match {
               case definition: ICPPASTFunctionDefinition if !bindsToConstructor(definition) => returnType(definition)
               case _                                                                        => returnType(declarator)
             }

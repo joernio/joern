@@ -85,7 +85,7 @@ object RubyJsonHelpers {
             val assignmentSpan = field.span.spanStart(s"${field.span.text} = nil")
             SingleAssignment(field, "=", nilLiteral(field.span))(assignmentSpan)
           case assignment @ SingleAssignment(_: RubyFieldIdentifier, _, _) => assignment
-          case assignment @ SingleAssignment(lhs: SimpleIdentifier, _, _) =>
+          case assignment @ SingleAssignment(lhs: SimpleIdentifier, _, _)  =>
             assignment.copy(lhs = ClassFieldIdentifier()(lhs.span))(assignment.span)
           case otherExpr => otherExpr
         }
@@ -268,7 +268,7 @@ object RubyJsonHelpers {
       case head :: tail                                        => head :: slurp(tail, expandSize)
       case Nil                                                 => List.empty
     }
-    val op = "="
+    val op                                               = "="
     def arraySpan(elems: List[RubyExpression]): TextSpan =
       obj.toTextSpan.spanStart(elems.map(_.span.text).mkString("[", ", ", "]"))
 
@@ -296,7 +296,7 @@ object RubyJsonHelpers {
                 val rhs = ArrayLiteral(rhss)(arraySpan(rhss))
                 SingleAssignment(lhs, op, rhs)(assignSpan(lhs, rhs))
               case (lhs, rhs :: Nil) => SingleAssignment(lhs, op, rhs)(assignSpan(lhs, rhs))
-              case (lhs, rhss) =>
+              case (lhs, rhss)       =>
                 val rhs = ArrayLiteral(rhss)(arraySpan(rhss))
                 SingleAssignment(lhs, op, rhs)(assignSpan(lhs, rhs))
             }
@@ -319,7 +319,7 @@ object RubyJsonHelpers {
                   SingleAssignment(lhs, op, splatRhs)(assignSpan(lhs, splatRhs))
                 }
               case (rhs, lhs :: Nil) => Seq(SingleAssignment(lhs, op, rhs)(assignSpan(lhs, rhs)))
-              case (rhs, lhss) =>
+              case (rhs, lhss)       =>
                 lhss.map { lhs =>
                   val splatRhs = SplattingRubyNode(rhs)(rhs.span)
                   SingleAssignment(lhs, op, splatRhs)(assignSpan(lhs, splatRhs))

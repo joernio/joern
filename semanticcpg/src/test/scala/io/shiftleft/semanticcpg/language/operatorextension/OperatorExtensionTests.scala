@@ -62,7 +62,7 @@ class OperatorExtensionTests extends AnyWordSpec with Matchers {
 
   "OpAstNode" should {
     "allow traversing to assignments" in {
-      val cpg     = mockCpgWithCallAndCode(Operators.assignment, "x = 10")
+      val cpg = mockCpgWithCallAndCode(Operators.assignment, "x = 10")
       val List(Call(name = Operators.assignment, code = "x = 10")) = cpg.method.assignment.l.runtimeChecked
     }
 

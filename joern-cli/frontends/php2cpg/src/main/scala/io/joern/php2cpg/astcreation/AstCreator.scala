@@ -32,10 +32,10 @@ class AstCreator(
     with AstForFunctionsCreator
     with AstForTypesCreator {
 
-  protected val logger: Logger   = LoggerFactory.getLogger(AstCreator.getClass)
-  protected val scope            = new Scope(summary)
-  protected val filePath         = Path.of(fileName)
-  protected val fileContentBytes = Files.readAllBytes(filePath)
+  protected val logger: Logger       = LoggerFactory.getLogger(AstCreator.getClass)
+  protected val scope                = new Scope(summary)
+  protected val filePath             = Path.of(fileName)
+  protected val fileContentBytes     = Files.readAllBytes(filePath)
   protected val fileCharset: Charset =
     Try(Charset.forName(UniversalDetector.detectCharset(filePath))).getOrElse(StandardCharsets.UTF_8)
   protected var fileContent = Option.empty[String]
@@ -139,7 +139,7 @@ class AstCreator(
       case traitUseStmt: PhpTraitUseStmt   => astforTraitUseStmt(traitUseStmt) :: Nil
       case enumCase: PhpEnumCaseStmt       => astForEnumCase(enumCase) :: Nil
       case staticStmt: PhpStaticStmt       => astsForStaticStmt(staticStmt)
-      case unhandled =>
+      case unhandled                       =>
         logger.error(s"Unhandled stmt $unhandled in $relativeFileName")
         ???
     }
@@ -178,9 +178,9 @@ class AstCreator(
   }
 
   private def astForUnsetStmt(stmt: PhpUnsetStmt): Ast = {
-    val name = PhpOperators.unset
-    val args = stmt.vars.map(astForExpr)
-    val code = s"$name(${args.map(_.rootCodeOrEmpty).mkString(", ")})"
+    val name     = PhpOperators.unset
+    val args     = stmt.vars.map(astForExpr)
+    val code     = s"$name(${args.map(_.rootCodeOrEmpty).mkString(", ")})"
     val callNode = operatorCallNode(stmt, code, name, Some(TypeConstants.Void))
       .methodFullName(PhpOperators.unset)
     callAst(callNode, args)
@@ -225,7 +225,7 @@ class AstCreator(
   private def astForUseUse(stmt: PhpUseUse, namePrefix: String = ""): Ast = {
     val originalName = s"$namePrefix${stmt.originalName.name}"
     val aliasCode    = stmt.alias.map(alias => s" as ${alias.name}").getOrElse("")
-    val typeCode = stmt.useType match {
+    val typeCode     = stmt.useType match {
       case PhpUseType.Function => s"function "
       case PhpUseType.Constant => s"const "
       case _                   => ""

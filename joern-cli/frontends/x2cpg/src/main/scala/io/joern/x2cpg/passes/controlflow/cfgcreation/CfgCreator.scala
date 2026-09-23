@@ -365,7 +365,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val conditionCfg = cfgFor(call.argument(1))
     val trueCfg      = call.argumentOption(2).map(cfgFor).getOrElse(Cfg.empty)
     val falseCfg     = call.argumentOption(3).map(cfgFor).getOrElse(Cfg.empty)
-    val diffGraphs = edgesFromFringeTo(conditionCfg, trueCfg.entryNode, TrueEdge) ++
+    val diffGraphs   = edgesFromFringeTo(conditionCfg, trueCfg.entryNode, TrueEdge) ++
       edgesFromFringeTo(conditionCfg, falseCfg.entryNode, FalseEdge)
 
     val trueFridge = if (trueCfg.entryNode.isDefined) {
@@ -399,7 +399,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       .reduceOption((accumCfg, nextCfg) => accumCfg ++ nextCfg)
       .getOrElse(Cfg.empty) ++ cfgForSingleNode(call)
     val cfgForExpansion = call.astChildren.lastOption.map(cfgFor).getOrElse(Cfg.empty)
-    val cfg = Cfg
+    val cfg             = Cfg
       .from(cfgForMacroCall, cfgForExpansion)
       .copy(
         entryNode = cfgForMacroCall.entryNode,
@@ -416,8 +416,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     * for the loop and a fringe.
     */
   protected def cfgForForStatement(node: ControlStructure): Cfg = {
-    val children = node.astChildren.l
-    val nLocals  = children.count(_.isLocal)
+    val children    = node.astChildren.l
+    val nLocals     = children.count(_.isLocal)
     val initExprCfg = Iterator(node)
       .coalesce(
         _._forInitOut.cast[AstNode],
@@ -642,7 +642,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     }
 
     val finallyControlStructures = node.astChildren.isControlStructure.isFinally.toList
-    val finallyBodyFallback =
+    val finallyBodyFallback      =
       if (catchControlStructures.isEmpty && finallyControlStructures.isEmpty) {
         node.astChildren.order(3)
       } else {

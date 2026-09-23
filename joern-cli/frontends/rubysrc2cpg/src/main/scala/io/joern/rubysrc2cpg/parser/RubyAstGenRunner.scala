@@ -65,8 +65,8 @@ class RubyAstGenRunner(config: Config, sharedJRubyEnv: Option[JRubyEnvironment] 
     }
 
     astGenOut.map(_.strip()).foreach {
-      case s"[WARN] $reason - $fileName"  => addReason(reason, Option(fileName))
-      case s"[ERR] '$fileName' - $reason" => addReason(reason, Option(fileName))
+      case s"[WARN] $reason - $fileName"               => addReason(reason, Option(fileName))
+      case s"[ERR] '$fileName' - $reason"              => addReason(reason, Option(fileName))
       case s"[ERR] Failed to parse $fileName: $reason" =>
         addReason(s"Failed to parse: $reason", Option(fileName))
       case s"[INFO] Processed: $fileName -> $_" => diagnosticMap.put(fileName, Nil)
@@ -94,7 +94,7 @@ class RubyAstGenRunner(config: Config, sharedJRubyEnv: Option[JRubyEnvironment] 
     try {
       // We use the URI format as this is the best in terms of language agnostic importing
       val requireFile = env.path.resolve("lib").resolve("ruby_ast_gen.rb").toUri.toString
-      val mainScript =
+      val mainScript  =
         s"""
           |options = {
           |  input: nil,
@@ -229,7 +229,7 @@ object RubyAstGenRunner {
         case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.ARMv8)     => "macos_arm"
         case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.X86)   => "win_x86"
         case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.ARMv8) => "win_arm"
-        case _ =>
+        case _                                                                             =>
           logger.warn("Could not detect OS version! Defaulting to 'Linux'.")
           "linux_x86"
       }

@@ -204,7 +204,7 @@ object GsonTypeInfoReader {
         case JsonToken.STRING  => Some(jsonReader.nextString())
         case JsonToken.NUMBER  => Some(jsonReader.nextString())
         case JsonToken.BOOLEAN => Some(jsonReader.nextBoolean().toString)
-        case JsonToken.NULL =>
+        case JsonToken.NULL    =>
           jsonReader.nextNull()
           None
         case _ =>
@@ -244,8 +244,8 @@ object GsonTypeInfoReader {
     }
 
     def extractTypeInfo(node: AstNode, filename: String, rangeOpt: Option[(Int, Int)]): Unit = {
-      val nodeKind   = node.kind
-      val maybeRange = rangeOpt.orElse(safeRange(node))
+      val nodeKind     = node.kind
+      val maybeRange   = rangeOpt.orElse(safeRange(node))
       lazy val declObj = nodeKind match {
         case kind if kind.endsWith(NodeKinds.CallExpr) => declFromCallExpr(node)
         case NodeKinds.MemberRefExpr                   => declFromMemberRefExpr(node)
@@ -375,7 +375,7 @@ object GsonTypeInfoReader {
       // Start parsing based on the root element type
       jsonReader.peek() match {
         case JsonToken.BEGIN_OBJECT => parseObject()
-        case JsonToken.BEGIN_ARRAY =>
+        case JsonToken.BEGIN_ARRAY  =>
           val sinkNode = new AstNode
           parseArray(sinkNode, "")
         case _ => shouldTerminate = true

@@ -25,7 +25,7 @@ object SecureXmlParsing {
 
       XML.withSAXParser(spf.newSAXParser()).loadString(content)
     } match {
-      case Success(elem) => Some(elem)
+      case Success(elem)      => Some(elem)
       case Failure(exception) =>
         logger.warn(s"Error creating XML secure parser: ${exception.getMessage}")
         None

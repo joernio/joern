@@ -21,9 +21,9 @@ object Definition {
 
 object ReachingDefProblem {
   def create(method: Method): DataFlowProblem[CfgNode, mutable.BitSet] = {
-    val flowGraph = new ReachingDefFlowGraph(method)
-    val transfer  = new OptimizedReachingDefTransferFunction(flowGraph)
-    val init      = new ReachingDefInit(transfer.gen)
+    val flowGraph                                                = new ReachingDefFlowGraph(method)
+    val transfer                                                 = new OptimizedReachingDefTransferFunction(flowGraph)
+    val init                                                     = new ReachingDefInit(transfer.gen)
     def meet: (mutable.BitSet, mutable.BitSet) => mutable.BitSet =
       (x: mutable.BitSet, y: mutable.BitSet) => { x.union(y) }
 
@@ -76,8 +76,8 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[CfgNode] {
     */
   private def initSucc(ns: List[CfgNode]): Map[CfgNode, List[CfgNode]] = {
     ns.map {
-      case n: Method   => n   -> firstParamOrBody(n)
-      case ret: Return => ret -> List(firstOutputParam.getOrElse(exitNode))
+      case n: Method                => n   -> firstParamOrBody(n)
+      case ret: Return              => ret -> List(firstOutputParam.getOrElse(exitNode))
       case param: MethodParameterIn =>
         param -> nextParamOrBody(param)
       case paramOut: MethodParameterOut => paramOut -> nextParamOutOrExit(paramOut)
@@ -187,7 +187,7 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
       .map { call =>
         call -> {
           val retVal = List(call)
-          val args = call.argument
+          val args   = call.argument
             .filter(hasValidGenType)
             .l
           mutable.BitSet(
@@ -306,7 +306,7 @@ class OptimizedReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
   lazy val loneIdentifiers: Map[Call, List[Definition]] = {
     val identifiersInReturns = method._returnViaContainsOut.ast.isIdentifier.name.l
     val paramAndLocalNames   = method.parameter.name.l ++ method.local.name.l
-    val callArgPairs = method.call.flatMap { call =>
+    val callArgPairs         = method.call.flatMap { call =>
       call.argument.isIdentifier
         .filterNot(i => paramAndLocalNames.contains(i.name))
         .filterNot(i => identifiersInReturns.contains(i.name))

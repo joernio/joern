@@ -20,7 +20,7 @@ object ParserConfig {
     )
 
   def fromConfig(config: Config, compilationDatabase: Option[CompilationDatabase]): ParserConfig = {
-    val commands = compilationDatabase.map(_.commands).getOrElse(Set.empty)
+    val commands                   = compilationDatabase.map(_.commands).getOrElse(Set.empty)
     val compilationDatabaseDefines = commands.map { c =>
       c.compiledFile() -> c.defines().toMap
     }.toMap

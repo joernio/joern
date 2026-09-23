@@ -104,7 +104,7 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, FunctionDec
     methodDeclarations.foreach { case (fullName, methodNodeInfo) =>
       val methodNode_    = methodNode(fullName, methodNodeInfo)
       val parameterNodes = methodNodeInfo.parameter.map(p => Ast(parameterInNode(p)))
-      val stubAst =
+      val stubAst        =
         methodStubAst(
           methodNode_,
           parameterNodes,

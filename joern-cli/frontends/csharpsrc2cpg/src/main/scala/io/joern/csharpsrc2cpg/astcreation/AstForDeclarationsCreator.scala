@@ -41,7 +41,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val namespaceParts = fullName.split("[.]").toList
     recurseNamespace(namespaceParts)
 
-    val name = fullName.split('.').filterNot(_.isBlank).lastOption.getOrElse(fullName)
+    val name           = fullName.split('.').filterNot(_.isBlank).lastOption.getOrElse(fullName)
     val namespaceBlock = NewNamespaceBlock()
       .name(name)
       .code(code(namespace))
@@ -55,8 +55,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForClassDeclaration(classDecl: DotNetNodeInfo): Seq[Ast] = {
-    val name     = nameFromNode(classDecl)
-    val fullName = astFullName(classDecl)
+    val name                     = nameFromNode(classDecl)
+    val fullName                 = astFullName(classDecl)
     val inheritsFromTypeFullName = Try(classDecl.json(ParserKeys.BaseList)).toOption match {
       case Some(baseList: ujson.Obj) =>
         baseList(ParserKeys.Types).arr.map { t =>
@@ -76,7 +76,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       typeDeclNode(classDecl, name, fullName, relativeFileName, code(classDecl), inherits = inheritsFromTypeFullName)
     scope.pushNewScope(TypeScope(fullName))
     val modifiers = astForModifiers(classDecl)
-    val members = astForMembers(classDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
+    val members   = astForMembers(classDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
       ++ addConstructorWithFieldInitializationsIfNeeded(classDecl, fullName)
       ++ addStaticConstructorWithFieldInitializationsIfNeeded(classDecl, fullName)
 
@@ -92,7 +92,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     node: DotNetNodeInfo,
     typeDeclFullName: String
   ): Seq[Ast] = {
-    val dynamicFields = scope.getFieldsInScope.filter(f => !f.isStatic && f.isInitialized)
+    val dynamicFields   = scope.getFieldsInScope.filter(f => !f.isStatic && f.isInitialized)
     val hasExplicitCtor =
       scope.tryResolveTypeReference(typeDeclFullName).exists(_.methods.exists(_.name == Defines.ConstructorMethodName))
     // We should only create the constructor when we are the FULL_AST parseLevel. Otherwise, hasExplicitCtor will
@@ -139,7 +139,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     node: DotNetNodeInfo,
     typeDeclFullname: String
   ): Seq[Ast] = {
-    val staticFields = scope.getFieldsInScope.filter(f => f.isStatic && f.isInitialized)
+    val staticFields    = scope.getFieldsInScope.filter(f => f.isStatic && f.isInitialized)
     val hasExplicitCtor =
       scope.tryResolveTypeReference(typeDeclFullname).exists(_.methods.exists(_.name == Defines.StaticInitMethodName))
     val shouldBuildCtor = staticFields.nonEmpty && !hasExplicitCtor && parseLevel == FULL_AST
@@ -147,7 +147,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     if (shouldBuildCtor) {
       val methodReturn = methodReturnNode(node, DotNetTypeMap(BuiltinTypes.Void))
       val signature    = composeMethodLikeSignature(methodReturn.typeFullName)
-      val modifiers = Seq(
+      val modifiers    = Seq(
         modifierNode(node, ModifierTypes.CONSTRUCTOR),
         modifierNode(node, ModifierTypes.INTERNAL),
         modifierNode(node, ModifierTypes.STATIC)
@@ -243,7 +243,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     *   Types</a>
     */
   protected def astForEnumMemberDeclaration(enumMemberDecl: DotNetNodeInfo): Seq[Ast] = {
-    val name = nameFromNode(enumMemberDecl)
+    val name         = nameFromNode(enumMemberDecl)
     val typeFullName = scope
       .peekScope()
       .collectFirst { case EnumScope(_, aliasFor) => aliasFor }
@@ -416,7 +416,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     methodDecl: DotNetNodeInfo,
     extraModifiers: List[NewModifier] = Nil
   ): Seq[Ast] = {
-    val name = nameFromNode(methodDecl)
+    val name   = nameFromNode(methodDecl)
     val params = methodDecl
       .json(ParserKeys.ParameterList)
       .obj(ParserKeys.Parameters)
@@ -440,12 +440,12 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     // In the case of interfaces, the method body may not be present
     val jsonBody = methodDecl.json(ParserKeys.Body)
-    val body =
+    val body     =
       if (!jsonBody.isNull && parseLevel == AstParseLevel.FULL_AST) astForBlock(createDotNetNodeInfo(jsonBody))
       else Ast(blockNode(methodDecl)) // Creates an empty block
     scope.popScope()
     val modifiers = modifiersForNode(methodDecl) ++ extraModifiers
-    val thisNode =
+    val thisNode  =
       if (!modifiers.exists(_.modifierType == ModifierTypes.STATIC)) astForThisParameter(methodDecl)
       else Ast()
     Seq(methodAstWithAnnotations(methodNode_, thisNode +: params, body, methodReturn, modifiers, annotationAsts))
@@ -456,7 +456,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val isVariadic         = false                                // TODO
     val typeFullName       = paramTypeHint.getOrElse(nodeTypeFullName(paramNode))
     val evaluationStrategy = EvaluationStrategies.BY_SHARING.name // TODO
-    val param =
+    val param              =
       parameterInNode(paramNode, name, code(paramNode), idx + 1, isVariadic, evaluationStrategy, Option(typeFullName))
     scope.addToScope(name, param)
     Ast(param)
@@ -470,7 +470,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForThisReceiver(invocationExpr: DotNetNodeInfo, typeFullName: Option[String] = None): Ast = {
-    val name = Constants.This
+    val name  = Constants.This
     val param = identifierNode(
       invocationExpr,
       name,
@@ -507,7 +507,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def modifiersForNode(node: DotNetNodeInfo): Seq[NewModifier] = {
     val explicitModifiers = node.json(ParserKeys.Modifiers).arr.flatMap(readModifier(node, _)).toList
-    val accessModifiers = explicitModifiers.map(_.modifierType) intersect List(
+    val accessModifiers   = explicitModifiers.map(_.modifierType) intersect List(
       ModifierTypes.PUBLIC,
       ModifierTypes.PRIVATE,
       ModifierTypes.INTERNAL,
@@ -537,7 +537,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         case "const"     => modifierNode(node, CSharpModifiers.CONST)
         case "abstract"  => modifierNode(node, ModifierTypes.ABSTRACT)
         case "protected" => modifierNode(node, ModifierTypes.PROTECTED)
-        case x =>
+        case x           =>
           logger.warn(s"Unhandled modifier name '$x'")
           null
       }
@@ -569,7 +569,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     accessorDecl.node match {
       case GetAccessorDeclaration => astForGetAccessorDeclaration(accessorDecl, propertyDecl)
       case SetAccessorDeclaration => astForSetAccessorDeclaration(accessorDecl, propertyDecl)
-      case _ =>
+      case _                      =>
         logger.warn(s"Unhandled property accessor '${accessorDecl.node}'")
         Nil
     }
@@ -586,7 +586,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val parameters = Option.unless(isStatic)(astForThisParameter(propertyDecl)).toList :+ valueParam
     val signature  = composeMethodLikeSignature(returnType, parameters)
     val fullName   = composeMethodFullName(baseType, name, signature)
-    val body =
+    val body       =
       Try(astForBlock(createDotNetNodeInfo(accessorDecl.json(ParserKeys.Body)))).getOrElse(Ast(blockNode(accessorDecl)))
     val methodReturn = methodReturnNode(accessorDecl, returnType)
     val methodNode_  = methodNode(accessorDecl, name, fullName, signature, relativeFileName)
@@ -622,7 +622,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     paramTypeHint: Option[String] = None
   ): Seq[Ast] = {
     // Create method declaration
-    val name = nextClosureName()
+    val name     = nextClosureName()
     val fullName = {
       val baseType  = withoutSignature(scope.surroundingScopeFullName.getOrElse(Defines.UnresolvedNamespace))
       val signature = Defines.UnresolvedSignature
@@ -664,7 +664,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       Option(NodeTypes.METHOD),
       scope.surroundingScopeFullName
     )
-    val modifiers = astForModifiers(lambdaExpression).flatMap(_.nodes).collect { case x: NewModifier => x }
+    val modifiers        = astForModifiers(lambdaExpression).flatMap(_.nodes).collect { case x: NewModifier => x }
     val lambdaReturnType = body.lastOption
       .getOrElse(Ast())
       .nodes

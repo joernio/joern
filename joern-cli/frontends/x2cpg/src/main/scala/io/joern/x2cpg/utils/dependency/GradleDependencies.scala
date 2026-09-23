@@ -102,7 +102,7 @@ object GradleDependencies {
     configurationNameOverride: Option[String]
   ): GradleDepsInitScript = {
     val taskName = taskNamePrefix + "_" + (Random.alphanumeric take 8).toList.mkString
-    val content = getInitScriptContent(
+    val content  = getInitScriptContent(
       taskName,
       destinationDir.toString,
       gradleVersion,
@@ -203,7 +203,7 @@ object GradleDependencies {
     val aarUnzipDirSuffix = ".unzipped"
     val outDir            = Paths.get(aar.toString + aarUnzipDirSuffix)
     aar.unzipTo(outDir)
-    val outFile = Paths.get(newPath)
+    val outFile           = Paths.get(newPath)
     val classesJarEntries =
       Files
         .walk(outDir)
@@ -250,7 +250,7 @@ object GradleDependencies {
               case Success(connection) =>
                 Using.resource(connection) { c =>
                   val gradleVersion = getGradleVersionMajorMinor(connection)
-                  val initScript =
+                  val initScript    =
                     makeInitScript(destinationDir, gradleVersion, projectNameOverride, configurationNameOverride)
                   Files.writeString(initScriptFile, initScript.contents)
                   runGradleTask(c, initScript.taskName, destinationDir, initScriptFile.toString).map {

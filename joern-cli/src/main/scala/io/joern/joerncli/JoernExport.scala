@@ -188,7 +188,7 @@ object JoernExport {
     windowsFilenameDeduplicationHelper: mutable.Set[String]
   ): String = {
     val sanitizedMethodName = methodName.replaceAll("[^a-zA-Z0-9-_\\.]", "_")
-    val sanitizedFilename =
+    val sanitizedFilename   =
       if (scala.util.Properties.isWin) {
         // windows has some quirks in it's file system, e.g. we need to ensure paths aren't too long - so we're using a
         // different strategy to sanitize windows file names: first occurrence of a given method uses the method name

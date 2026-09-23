@@ -136,7 +136,7 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   private def createAstForStringLiteralSegmentListSyntax(node: SwiftNode, children: Seq[SwiftNode]): Ast = {
     children match {
       case child :: Nil => astForNode(child)
-      case children =>
+      case children     =>
         val tpe              = Defines.String
         val op               = Operators.formatString
         val stringFormatCall = createStaticCallNode(node, code(node), op, op, tpe)

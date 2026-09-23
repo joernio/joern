@@ -107,7 +107,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
       val localAst  = astForLocalNode(lhsParserNode, Some(rhsTypeFullName))
       val lhsAst    = astForNode(lhsParserNode)
       val arguments = lhsAst ++: rhsAst
-      val cNode = callNode(
+      val cNode     = callNode(
         rhsParserNode,
         code,
         Operators.assignment,
@@ -125,7 +125,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
     lhsParserNode: ParserNodeInfo,
     rhsAst: Option[Seq[Ast]] = None
   ): Unit = {
-    val name = lhsParserNode.json(ParserKeys.Name).str
+    val name      = lhsParserNode.json(ParserKeys.Name).str
     val memberAst = Ast(
       memberNode(lhsParserNode, name, lhsParserNode.code, typeFullName)
         .astParentType(NodeTypes.TYPE_DECL)
@@ -139,7 +139,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
         // of package level initializer/constructor statement
         val lhsAst    = astForPackageGlobalFieldAccess(typeFullName, name, lhsParserNode)
         val arguments = Seq(lhsAst) ++: rhsSeqAst
-        val cNode = callNode(
+        val cNode     = callNode(
           lhsParserNode,
           lhsParserNode.code,
           Operators.assignment,

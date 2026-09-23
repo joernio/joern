@@ -64,7 +64,7 @@ class ArtifactFetcher(val cacheDir: Path) {
       case Some(existingFuture) =>
         Try(existingFuture.get(DownloadTimeoutMinutes, TimeUnit.MINUTES)) match {
           case Success(result) => result
-          case Failure(e) =>
+          case Failure(e)      =>
             logger.warn(s"Wait for existing download of ${artifact.url} failed or timed out: ${e.getMessage}")
             None
         }

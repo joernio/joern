@@ -33,7 +33,7 @@ class PhpTypeStubsParserPass(cpg: Cpg, config: XTypeStubsParserConfig = XTypeStu
   override def generateParts(): Array[KnownFunction] = {
     /* parse file and return each row as a KnownFunction object */
     val typeStubsFile = config.typeStubsFilePath
-    val source = typeStubsFile match {
+    val source        = typeStubsFile match {
       case Some(file) => Source.fromFile(file)
       case _          => Source.fromResource("php_known_function_signatures.txt")
     }

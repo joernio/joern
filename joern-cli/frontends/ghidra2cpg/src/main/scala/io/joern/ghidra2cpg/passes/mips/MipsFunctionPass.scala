@@ -151,7 +151,7 @@ class MipsFunctionPass(
       case INT_MULT | FLOAT_MULT =>
         handleTwoArguments(diffGraphBuilder, instruction, callNode, pcodeAst, "*", "<operator>.multiplication")
       case MULTIEQUAL | INDIRECT | PIECE => // not handled
-      case INT_XOR =>
+      case INT_XOR                       =>
         handleTwoArguments(diffGraphBuilder, instruction, callNode, pcodeAst, "^", "<operator>.xor")
       case INT_OR =>
         handleTwoArguments(diffGraphBuilder, instruction, callNode, pcodeAst, "^", "<operator>.xor")

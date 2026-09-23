@@ -113,7 +113,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
      * return types as they get collected across the multiple return statements
      * for a single function.
      */
-    val m = ret.method
+    val m             = ret.method
     val existingTypes = mutable.HashSet.from(
       (m.methodReturn.typeFullName +: m.methodReturn.dynamicTypeHintFullName)
         .filterNot(_ == "ANY")
@@ -132,7 +132,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
       case (head: Call) :: _ if head.name == Operators.fieldAccess =>
         val fieldAccess = head.asInstanceOf[FieldAccess]
         val (sym, ts)   = getSymbolFromCall(fieldAccess)
-        val cpgTypes = cpg.typeDecl
+        val cpgTypes    = cpg.typeDecl
           .fullNameExact(ts.map(_.compUnitFullName).toSeq*)
           .member
           .nameExact(sym.identifier)
@@ -172,7 +172,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
             case methodNameWithReturn :: className :: Nil =>
               val methodName     = methodNameWithReturn.split("\\.").dropRight(1).mkString(".")
               val methodFullName = s"$className<metaclass>$methodName"
-              val methodReturns =
+              val methodReturns  =
                 methodReturnValues(Seq(methodFullName)).filterNot(_.endsWith(s"${XTypeRecovery.DummyReturnType}"))
               methodReturns.nonEmpty
             case _ => false
@@ -185,7 +185,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
               methodReturns.nonEmpty
             case _ :: methodName :: typeFullName =>
               val methodFullName = Seq(s"${typeFullName.mkString(pathSep)}$pathSep$methodName")
-              val methodReturns = methodReturnValues(methodFullName)
+              val methodReturns  = methodReturnValues(methodFullName)
                 .filterNot(_.endsWith(s"${XTypeRecovery.DummyReturnType}"))
               methodReturns.nonEmpty
             case _ => false
@@ -251,7 +251,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
       case List(c: Call, idx: Call)             => CollectionVar(callName(c), callName(idx))
       case List(c: Call, idx: Literal)          => CollectionVar(callName(c), idx.code)
       case List(c: Call, idx: Identifier)       => CollectionVar(callName(c), idx.code)
-      case xs =>
+      case xs                                   =>
         logger.debug(s"Unhandled index access ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${c.name}")
         null
     })

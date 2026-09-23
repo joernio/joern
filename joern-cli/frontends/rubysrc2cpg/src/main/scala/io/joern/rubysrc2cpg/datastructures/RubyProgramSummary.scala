@@ -145,7 +145,7 @@ object RubyStubbedType {
   implicit val rubyTypeRw: ReadWriter[RubyStubbedType] = readwriter[ujson.Value].bimap[RubyStubbedType](
     x =>
       ujson.Obj(
-        "name" -> x.name,
+        "name"    -> x.name,
         "methods" -> x.methods.map { method =>
           ujson.Obj("name" -> method.name)
         },
@@ -187,7 +187,7 @@ object RubyType {
   implicit val rubyTypeRw: ReadWriter[RubyType] = readwriter[ujson.Value].bimap[RubyType](
     x =>
       ujson.Obj(
-        "name" -> x.name,
+        "name"    -> x.name,
         "methods" -> x.methods.map { method =>
           ujson.Obj("name" -> method.name)
         },

@@ -59,7 +59,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   // `unless T do B` is lowered as `if !T then B`
   private def astForUnlessStatement(node: UnlessExpression): Ast = {
     val notConditionAst = astForExpression(UnaryExpression("!", node.condition)(node.condition.span))
-    val thenAst = node.trueBranch match {
+    val thenAst         = node.trueBranch match {
       case stmtList: StatementList => astForStatementList(stmtList)
       case _                       => astForStatementList(StatementList(List(node.trueBranch))(node.trueBranch.span))
     }
@@ -73,7 +73,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       case elseNode: ElseClause =>
         elseNode.thenClause match {
           case stmtList: StatementList => astForStatementList(stmtList)
-          case node =>
+          case node                    =>
             logger.warn(s"Expecting statement list in ${code(node)} ($relativeFileName), skipping")
             astForUnknown(node)
         }
@@ -90,14 +90,14 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
 
     val baseForReceiver = astForExpression(node.iterableVariable)
     val fieldAccessCode = s"${code(node.iterableVariable)}.each"
-    val fieldAccess =
+    val fieldAccess     =
       callNode(node, fieldAccessCode, Operators.fieldAccess, Operators.fieldAccess, DispatchTypes.STATIC_DISPATCH)
     val eachFieldIdent = fieldIdentifierNode(node, "each", "each")
     val receiverAst    = callAst(fieldAccess, List(baseForReceiver, Ast(eachFieldIdent)))
 
     val baseForCall    = astForExpression(node.iterableVariable)
     val methodFullName = s"${Defines.prefixAsCoreType(Defines.Array)}.each"
-    val eachCall =
+    val eachCall       =
       callNode(node, code(node), "each", methodFullName, DispatchTypes.STATIC_DISPATCH)
 
     callAst(eachCall, List(typeRefAst), base = Some(baseForCall), receiver = Some(receiverAst))
@@ -167,8 +167,8 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
                 val stmts = x.children.zipWithIndex.flatMap {
                   case (lhs: MatchVariable, idx) if expr.isDefined =>
                     val arrAccess = {
-                      val code_ = s"${code(expr.get)}[$idx]"
-                      val base  = expr.get.copy()(expr.get.span.spanStart(code(expr.get)))
+                      val code_   = s"${code(expr.get)}[$idx]"
+                      val base    = expr.get.copy()(expr.get.span.spanStart(code(expr.get)))
                       val indices = StaticLiteral(Defines.prefixAsCoreType(Defines.Integer))(
                         expr.get.span.spanStart(idx.toString)
                       ) :: Nil

@@ -39,7 +39,7 @@ object ImplicitUsingsCollector {
       "System.Threading.Tasks"
     )
     Map(
-      "Microsoft.NET.Sdk" -> netSdkNamespace,
+      "Microsoft.NET.Sdk"     -> netSdkNamespace,
       "Microsoft.NET.Sdk.Web" -> netSdkNamespace.appendedAll(
         List(
           "System.Net.Http.Json",

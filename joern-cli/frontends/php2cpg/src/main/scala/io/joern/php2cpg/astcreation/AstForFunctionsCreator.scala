@@ -14,7 +14,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   protected def astForClosureExpr(closureExpr: PhpClosureExpr): Ast = {
     val methodName = scope.getScopedClosureName
-    val methodRef =
+    val methodRef  =
       methodRefNode(closureExpr, methodName, methodName, methodName).dynamicTypeHintFullName(methodName :: Nil)
 
     val localsForUses = closureExpr.uses.flatMap { closureUse =>
@@ -60,7 +60,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     // Static closures exist, but this only affects captures. They are always called dynamically, so treat them
     // as class methods.
     val isClassMethod = true
-    val methodDecl = PhpMethodDecl(
+    val methodDecl    = PhpMethodDecl(
       name,
       closureExpr.params,
       modifiers,
@@ -122,7 +122,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val allModifiers      = virtualModifier ++: constructorModifier ++: defaultAccessModifier ++: decl.modifiers
     val modifiers         = allModifiers.map(modifierNode(decl, _))
     val excludedModifiers = Set(ModifierTypes.MODULE, ModifierTypes.LAMBDA)
-    val modifierString = decl.modifiers.filterNot(excludedModifiers.contains) match {
+    val modifierString    = decl.modifiers.filterNot(excludedModifiers.contains) match {
       case Nil  => ""
       case mods => s"${mods.mkString(" ")} "
     }
@@ -177,7 +177,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val attributeAsts = decl.attributeGroups.flatMap(astForAttributeGroup)
     val methodBody    = blockAst(methodBodyNode, methodBodyStmts)
 
-    val scope_ = scope.popScope()
+    val scope_                 = scope.popScope()
     val additionalBodyChildren = scope_ match {
       case Some(ms: MethodScope) =>
         ms.additionalBodyChildren.map(Ast(_)).toList
@@ -217,7 +217,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     parameters: List[Ast]
   ): Unit = {
     val (astParentType, astParentFullName) = getAstParentInfo
-    val methodTypeDecl = typeDeclNode(
+    val methodTypeDecl                     = typeDeclNode(
       node = decl,
       name = method.name,
       fullName = method.fullName,
@@ -227,7 +227,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       code = method.name
     )
 
-    val binding = NewBinding().name(NameConstants.Invoke).signature("")
+    val binding           = NewBinding().name(NameConstants.Invoke).signature("")
     val methodTypeDeclAst = Ast(methodTypeDecl)
       .withBindsEdge(methodTypeDecl, binding)
       .withRefEdge(binding, method)
@@ -262,7 +262,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def defaultConstructorAst(originNode: PhpNode, fullNameOverride: Option[String] = None): Ast = {
-    val attributes = originNode.attributes
+    val attributes             = originNode.attributes
     val defaultConstructorDecl = PhpMethodDecl(
       name = PhpNameExpr(Domain.ConstructorMethodName, attributes),
       params = Nil,
@@ -284,8 +284,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   private def astForAttribute(attribute: PhpAttribute): Ast = {
-    val fullName = attribute.name.name
-    val name     = fullName.split('\\').last
+    val fullName        = attribute.name.name
+    val name            = fullName.split('\\').last
     val _annotationNode =
       annotationNode(attribute, code = fullName, name, fullName)
     val argsAst = attribute.args.map(astForCallArg)
@@ -316,7 +316,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case inits =>
         val (astParentType, astParentFullName) = getAstParentInfo
         val fullName                           = composeMethodFullName(Defines.StaticInitMethodName)
-        val methodNode_ = methodNode(
+        val methodNode_                        = methodNode(
           node = node,
           name = Defines.StaticInitMethodName,
           code = Defines.StaticInitMethodName,

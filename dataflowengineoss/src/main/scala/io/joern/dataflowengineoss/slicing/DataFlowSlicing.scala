@@ -32,7 +32,7 @@ object DataFlowSlicing {
       .runUsingThreadPool(tasks.iterator, config.parallelism.getOrElse(Runtime.getRuntime.availableProcessors()))
       .flatMap {
         case Success(slice) => slice
-        case Failure(e) =>
+        case Failure(e)     =>
           logger.warn("Exception encountered during slicing task", e)
           None
       }
@@ -79,7 +79,7 @@ object DataFlowSlicing {
       case n: Return    => sliceNode.copy(name = "RET", typeFullName = n.method.methodReturn.typeFullName)
       case n: MethodRef => sliceNode.copy(name = n.methodFullName, code = n.code)
       case n: TypeRef   => sliceNode.copy(name = n.typeFullName, code = n.code)
-      case n =>
+      case n            =>
         sliceNode.copy(
           name = n.propertyOption(Properties.Name).getOrElse(""),
           typeFullName = n.propertyOption(Properties.TypeFullName).getOrElse("")

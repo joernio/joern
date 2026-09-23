@@ -27,7 +27,7 @@ class DependencySymbolsPass(cpg: Cpg, dependencyDir: Path) extends ForkJoinParal
   implicit val validationMode: ValidationMode = ValidationMode.Disabled
 
   override def generateParts(): Array[ClassParserClass] = new ClassParser(dependencyDir).parse() match {
-    case Success(classes) => classes.toArray
+    case Success(classes)   => classes.toArray
     case Failure(exception) =>
       logger.error("Exception encountered while parsing symbols from dependencies", exception)
       Array.empty
@@ -36,7 +36,7 @@ class DependencySymbolsPass(cpg: Cpg, dependencyDir: Path) extends ForkJoinParal
   override def runOnPart(builder: DiffGraphBuilder, clazz: ClassParserClass): Unit = {
     val className     = clazz.name
     val classFullName = s"${clazz.namespace}\\$className"
-    val typeDecl = NewTypeDecl()
+    val typeDecl      = NewTypeDecl()
       .name(clazz.name)
       .fullName(classFullName)
       .isExternal(true)

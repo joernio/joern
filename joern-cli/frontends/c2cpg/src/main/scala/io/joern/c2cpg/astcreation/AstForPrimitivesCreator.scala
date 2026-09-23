@@ -67,7 +67,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   protected def astForIdentifier(ident: IASTNode): Ast = {
     maybeMethodRefForIdentifier(ident) match {
       case Some(ref) => Ast(ref)
-      case None =>
+      case None      =>
         val identifierName = nameForIdentifier(ident)
         typeNameForIdentifier(ident, identifierName) match {
           case identifierTypeName: String =>
@@ -131,7 +131,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
       case id: IASTElaboratedTypeSpecifier => shortName(id)
       case id: IASTNamedTypeSpecifier      => shortName(id)
       case id: IASTIdExpression            => shortName(id)
-      case id: IASTName =>
+      case id: IASTName                    =>
         val name = stripTemplateTags(ASTStringUtil.getSimpleName(id))
         if (name.isEmpty) safeGetBinding(id).map(_.getName).getOrElse(scopeLocalUniqueName(""))
         else name
@@ -196,7 +196,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
 
   private def isInCurrentScope(ident: CPPASTIdExpression, owner: String): Boolean = {
     val ownerWithOutTemplateTags = owner.takeWhile(_ != '<')
-    val isInMethodScope =
+    val isInMethodScope          =
       safeCdtCall(CPPVisitor.getContainingScope(ident).getScopeName.toString).exists(scopeName =>
         scopeName.startsWith(s"$ownerWithOutTemplateTags::") || scopeName.contains(s"::$ownerWithOutTemplateTags::")
       )
@@ -228,7 +228,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
       case Some(function: ICPPFunction) =>
         val name      = qualId.getLastName.toString
         val signature = if (function.isExternC) "" else functionTypeToSignature(function.getType)
-        val fullName = if (function.isExternC) {
+        val fullName  = if (function.isExternC) {
           StringUtils.normalizeSpace(name)
         } else {
           val fullNameNoSig = StringUtils.normalizeSpace(function.getQualifiedName.mkString("."))
@@ -242,8 +242,8 @@ trait AstForPrimitivesCreator { this: AstCreator =>
         val ma           = callNode(qualId, code(qualId), op, op, dispatchType, None, Some(Defines.Any))
 
         def fieldAccesses(names: List[IASTNode]): Ast = names match {
-          case Nil         => Ast()
-          case head :: Nil => astForNode(head)
+          case Nil          => Ast()
+          case head :: Nil  => astForNode(head)
           case head :: tail =>
             val (resultAst, _) = tail.foldLeft((astForNode(head), code(head))) { case ((accAst, accCode), nameNode) =>
               val nameCode  = code(nameNode)
@@ -255,7 +255,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
             resultAst
         }
         val qualifier = fieldAccesses(qualId.getQualifier.toIndexedSeq.toList)
-        val owner = if (qualifier != Ast()) { qualifier }
+        val owner     = if (qualifier != Ast()) { qualifier }
         else { Ast(literalNode(qualId.getLastName, "<global>", Defines.Any)) }
         val member = fieldIdentifierNode(
           qualId.getLastName,

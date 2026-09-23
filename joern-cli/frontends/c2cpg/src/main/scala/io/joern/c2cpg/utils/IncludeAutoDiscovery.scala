@@ -63,11 +63,11 @@ object IncludeAutoDiscovery {
   def gccAvailable(): Boolean = {
     isGccAvailable match {
       case Some(value) => value
-      case None =>
+      case None        =>
         IncludeAutoDiscovery.synchronized {
           isGccAvailable match {
             case Some(value) => value
-            case None =>
+            case None        =>
               val result = checkForGcc()
               isGccAvailable = Some(result)
               result
@@ -89,7 +89,7 @@ object IncludeAutoDiscovery {
 
   private def discoverPaths(command: Seq[String]): mutable.LinkedHashSet[Path] =
     GccSpecificExternalCommand.run(command, ".", LanguageSetting) match {
-      case Success(output) => extractPaths(output)
+      case Success(output)    => extractPaths(output)
       case Failure(exception) =>
         logger.warn(s"Unable to discover system include paths. Running '$command' failed.", exception)
         mutable.LinkedHashSet.empty
@@ -100,7 +100,7 @@ object IncludeAutoDiscovery {
     val endIndex   = output.indexWhere(_.startsWith("End of search list."))
     mutable.LinkedHashSet.from(output.slice(startIndex, endIndex).map { pathString =>
       val trimmedPathString = pathString.trim
-      val macSpecificFix = if (trimmedPathString.contains(" (") && trimmedPathString.endsWith(")")) {
+      val macSpecificFix    = if (trimmedPathString.contains(" (") && trimmedPathString.endsWith(")")) {
         trimmedPathString.substring(0, trimmedPathString.indexOf(" ("))
       } else trimmedPathString
       Paths.get(macSpecificFix).toRealPath()

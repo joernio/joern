@@ -64,7 +64,7 @@ class AstCreator(
   /** Translate compilation unit into AST
     */
   private def astForCompilationUnit(cls: SootClass): Ast = {
-    val ast = astForPackageDeclaration(cls.getPackageName)
+    val ast                    = astForPackageDeclaration(cls.getPackageName)
     val namespaceBlockFullName =
       ast.root.collect { case x: NewNamespaceBlock => x.fullName }.getOrElse("none")
     ast.withChild(astForTypeDecl(cls.getType, namespaceBlockFullName))
@@ -73,8 +73,8 @@ class AstCreator(
   /** Translate package declaration into AST consisting of a corresponding namespace block.
     */
   private def astForPackageDeclaration(packageDecl: String): Ast = {
-    val absolutePath = new java.io.File(filename).toPath.toAbsolutePath.normalize().toString
-    val name         = packageDecl.split("\\.").lastOption.getOrElse("")
+    val absolutePath   = new java.io.File(filename).toPath.toAbsolutePath.normalize().toString
+    val name           = packageDecl.split("\\.").lastOption.getOrElse("")
     val namespaceBlock = NewNamespaceBlock()
       .name(name)
       .fullName(packageDecl)
@@ -109,7 +109,7 @@ class AstCreator(
       case x: ParameterRef       => Seq(astForParameterRef(x, parentUnit))
       case x: IdentityRef        => Seq(astForIdentityRef(x, parentUnit))
       case x: ArrayRef           => Seq(astForArrayRef(x, parentUnit))
-      case x =>
+      case x                     =>
         logger.warn(s"Unhandled soot.Value type ${x.getClass}")
         Seq()
     }

@@ -75,7 +75,7 @@ class ExtendedCfgNodeMethods[CfgNodeType <: CfgNode](val node: CfgNodeType) exte
       return cache(node)
     }
 
-    val elems = Engine.expandIn(node, path)
+    val elems  = Engine.expandIn(node, path)
     val result = if (withInvisible) {
       elems
     } else {

@@ -128,7 +128,7 @@ class SimpleCombinedTypeSolver(enableVerboseTypeLogging: Boolean) extends TypeSo
     qualifiedModuleName: String,
     simpleTypeName: String
   ): SymbolReference[ResolvedReferenceTypeDeclaration] = {
-    val cacheKey = (qualifiedModuleName, simpleTypeName)
+    val cacheKey                   = (qualifiedModuleName, simpleTypeName)
     val typeLookupFn: TypeLookupFn = typeSolver =>
       typeSolver.tryToSolveTypeInModule(qualifiedModuleName, simpleTypeName)
     tryToSolveType(cacheKey, typeLookupFn)

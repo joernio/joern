@@ -37,9 +37,9 @@ package object language
   implicit def toAstNodeMethods(node: AstNode): AstNodeMethods           = new AstNodeMethods(node)
   implicit def toExpressionMethods(node: Expression): ExpressionMethods  = new ExpressionMethods(node)
 
-  implicit def toMethodMethods(node: Method): MethodMethods                   = new MethodMethods(node)
-  implicit def toMethodReturnMethods(node: MethodReturn): MethodReturnMethods = new MethodReturnMethods(node)
-  implicit def toCallMethods(node: Call): CallMethods                         = new CallMethods(node)
+  implicit def toMethodMethods(node: Method): MethodMethods                              = new MethodMethods(node)
+  implicit def toMethodReturnMethods(node: MethodReturn): MethodReturnMethods            = new MethodReturnMethods(node)
+  implicit def toCallMethods(node: Call): CallMethods                                    = new CallMethods(node)
   implicit def toMethodParamInMethods(node: MethodParameterIn): MethodParameterInMethods =
     new MethodParameterInMethods(node)
   implicit def toMethodParamOutMethods(node: MethodParameterOut): MethodParameterOutMethods =

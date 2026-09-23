@@ -48,7 +48,7 @@ class Scope(implicit withSchemaValidation: ValidationMode, disableTypeFallback: 
     methodNames: Set[String] = Set.empty,
     recordParameters: List[Parameter] = Nil
   ): Unit = {
-    val captures = getCapturesForNewScope(isStatic)
+    val captures       = getCapturesForNewScope(isStatic)
     val outerClassType = scopeStack.takeUntil(_.isInstanceOf[TypeDeclScope]) match {
       case Nil => None
 
@@ -419,7 +419,7 @@ object Scope {
     // TODO: Refactor and remove this
     def asNodeInfoOption: Option[NodeTypeInfo] = None
   }
-  case object NotInScope extends VariableLookupResult
+  case object NotInScope                              extends VariableLookupResult
   sealed trait FoundVariable(variable: ScopeVariable) extends VariableLookupResult {
     override val typeFullName: Option[String]          = Some(variable.typeFullName)
     override val variableNode: Option[NewVariableNode] = Some(variable.node)

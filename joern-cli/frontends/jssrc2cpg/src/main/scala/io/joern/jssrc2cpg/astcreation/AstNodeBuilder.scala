@@ -34,8 +34,8 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
   }
 
   protected def createIndexAccessCallAst(baseAst: Ast, partAst: Ast, line: Option[Int], column: Option[Int]): Ast = {
-    val baseCode = codeOf(baseAst.nodes.head)
-    val partCode = codeOf(partAst.nodes.head)
+    val baseCode  = codeOf(baseAst.nodes.head)
+    val partCode  = codeOf(partAst.nodes.head)
     val callNode_ =
       callNode(s"$baseCode[$partCode]", Operators.indexAccess, DispatchTypes.STATIC_DISPATCH, line, column)
     val arguments = List(baseAst, partAst)

@@ -16,7 +16,7 @@ trait AstForTypesCreator { this: AstCreator =>
   import FullNameProvider.*
 
   protected def astForDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier): Ast = {
-    val op = Defines.OperatorTypeOf
+    val op       = Defines.OperatorTypeOf
     val cpgUnary =
       callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
     val operand = nullSafeAst(decl.getDecltypeExpression)
@@ -37,7 +37,7 @@ trait AstForTypesCreator { this: AstCreator =>
   ): String = {
     declarator match {
       case arrayDecl: IASTArrayDeclarator => registerType(typeFor(arrayDecl))
-      case _ =>
+      case _                              =>
         safeGetBinding(declarator.getName) match {
           case Some(variable: ICPPVariable) if safeCdtCall(variable.getType).exists(_.isInstanceOf[CPPClosureType]) =>
             registerType(Defines.Function)
@@ -51,7 +51,7 @@ trait AstForTypesCreator { this: AstCreator =>
     val name = shortName(declarator)
     declaration match {
       case d if isTypeDef(d) && shortName(d.getDeclSpecifier).nonEmpty =>
-        val filename = fileName(declaration)
+        val filename    = fileName(declaration)
         val typeDefName = if (name.isEmpty) { safeGetBinding(declarator.getName).map(_.getName).getOrElse("") }
         else { name }
         val tpe                = registerType(typeFor(declarator))
@@ -127,7 +127,7 @@ trait AstForTypesCreator { this: AstCreator =>
 
   protected def astForInitializer(declarator: IASTDeclarator, init: IASTInitializer): Ast = {
     val name = ASTStringUtil.getSimpleName(declarator.getName)
-    val tpe = registerType(
+    val tpe  = registerType(
       scope.lookupVariable(name).map(_._2.takeWhile(isValidFullNameChar)).getOrElse(typeFor(declarator))
     )
     val constructorCallName = tpe.split("\\.").lastOption.getOrElse(tpe)
@@ -182,7 +182,7 @@ trait AstForTypesCreator { this: AstCreator =>
     val signature           = s"${Defines.Void}()"
     val fullNameWithSig     = s"$tpe.$constructorCallName:$signature"
     val constructorCallCode = s"$tpe.$constructorCallName()"
-    val rightAst =
+    val rightAst            =
       constructorInvocationBlockAst(declarator, tpe, fullNameWithSig, signature, constructorCallCode, List.empty)
 
     val assignmentCallNode = callNode(
@@ -202,7 +202,7 @@ trait AstForTypesCreator { this: AstCreator =>
     // the type specifier (stored in IASTSimpleDeclaration.getDeclSpecifier), not the variable name.
     // E.g. for `const char* c = read()`, CDT gives declarator code `* c = read()` but the assignment
     // expression should be `c = read()`.
-    val assignmentCode = code(declarator).replaceFirst("^[*&]+\\s*", "")
+    val assignmentCode     = code(declarator).replaceFirst("^[*&]+\\s*", "")
     val assignmentCallNode = callNode(
       declarator,
       assignmentCode,
@@ -229,7 +229,7 @@ trait AstForTypesCreator { this: AstCreator =>
   protected def astForAliasDeclaration(aliasDeclaration: ICPPASTAliasDeclaration): Ast = {
     val (name, fullName_) = scopeLocalUniqueName(aliasDeclaration.getAlias.toString, fullName(aliasDeclaration), "")
     val mappedName        = registerType(typeFor(aliasDeclaration.getMappingTypeId))
-    val typeDeclNode_ =
+    val typeDeclNode_     =
       typeDeclNode(
         aliasDeclaration,
         name,
@@ -318,7 +318,7 @@ trait AstForTypesCreator { this: AstCreator =>
 
   private def declHasInit(decl: IASTNode): Boolean = {
     decl match {
-      case a: ICPPASTStaticAssertDeclaration => true
+      case a: ICPPASTStaticAssertDeclaration                                         => true
       case declaration: IASTSimpleDeclaration if declaration.getDeclarators.nonEmpty =>
         declaration.getDeclarators.exists {
           // Out-of-class static member definitions (qualified names like `Foo::bar[N]`) must
@@ -341,7 +341,7 @@ trait AstForTypesCreator { this: AstCreator =>
     }
 
     decl match {
-      case a: ICPPASTStaticAssertDeclaration => Seq(astForStaticAssert(a))
+      case a: ICPPASTStaticAssertDeclaration                                         => Seq(astForStaticAssert(a))
       case declaration: IASTSimpleDeclaration if declaration.getDeclarators.nonEmpty =>
         declaration.getDeclarators.toList.map {
           // Skip out-of-class static member definitions; see comment in declHasInit.
@@ -360,7 +360,7 @@ trait AstForTypesCreator { this: AstCreator =>
   }
 
   private def astForIASTArrayDeclarator(arrayDecl: IASTArrayDeclarator): Ast = {
-    val op = Operators.arrayInitializer
+    val op           = Operators.arrayInitializer
     val initCallNode =
       callNode(arrayDecl, code(arrayDecl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
     val initArgs = arrayDecl.getArrayModifiers.toList.filter(m => m.getConstantExpression != null).map(astForNode)
@@ -378,7 +378,7 @@ trait AstForTypesCreator { this: AstCreator =>
     val TypeFullNameInfo(name, fullName) = typeFullNameInfo(namespaceDefinition)
     val codeString                       = code(namespaceDefinition)
     val filename                         = fileName(namespaceDefinition)
-    val namespaceBlockNode_ =
+    val namespaceBlockNode_              =
       namespaceBlockNode(namespaceDefinition, name, s"$filename:$fullName", filename).code(codeString)
     val blockNode_ = blockNode(namespaceDefinition)
     methodAstParentStack.push(blockNode_)
@@ -399,7 +399,7 @@ trait AstForTypesCreator { this: AstCreator =>
   private def codeForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator): String = {
     val specCode    = declaration.getDeclSpecifier.getRawSignature
     val declCodeRaw = declarator.getRawSignature
-    val declCode = declarator.getInitializer match {
+    val declCode    = declarator.getInitializer match {
       case null => declCodeRaw
       case _    => declCodeRaw.replace(declarator.getInitializer.getRawSignature, "")
     }
@@ -480,7 +480,7 @@ trait AstForTypesCreator { this: AstCreator =>
     val TypeFullNameInfo(name, fullName) = typeFullNameInfo(typeSpecifier)
     val nameAlias                        = decls.headOption.map(d => registerType(shortName(d))).filter(_.nonEmpty)
 
-    val alias = filterNameAlias(nameAlias, fullName)
+    val alias    = filterNameAlias(nameAlias, fullName)
     val declAsts = decls.zipWithIndex.map { case (d, i) =>
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, i)
     }
@@ -506,7 +506,7 @@ trait AstForTypesCreator { this: AstCreator =>
   protected def astForEnumeratorWithInit(enumerator: IASTEnumerationSpecifier.IASTEnumerator): Ast = {
     if (enumerator.getValue != null) {
       val operatorName = Operators.assignment
-      val callNode_ = callNode(
+      val callNode_    = callNode(
         enumerator,
         code(enumerator),
         operatorName,
@@ -527,7 +527,7 @@ trait AstForTypesCreator { this: AstCreator =>
     val constructorName = io.joern.x2cpg.Defines.StaticInitMethodName
     val fullName        = s"${typeDeclNode.fullName}.$constructorName:${typeDeclNode.fullName}()"
     val methodNode_     = methodNode(node, constructorName, constructorName, fullName, None, filename)
-    val modifiers =
+    val modifiers       =
       Seq(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), NewModifier().modifierType(ModifierTypes.STATIC))
 
     val blockNode = NewBlock()

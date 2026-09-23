@@ -44,8 +44,8 @@ object DotSerializer {
     }
 
     sb.append(s"""node [shape="rect"];  \n""")
-    val nodeStrings = graph.vertices.map(nodeToDot)
-    val edgeStrings = graph.edges.map(e => edgeToDot(e, withEdgeTypes))
+    val nodeStrings     = graph.vertices.map(nodeToDot)
+    val edgeStrings     = graph.edges.map(e => edgeToDot(e, withEdgeTypes))
     val subgraphStrings = graph.subgraph.zipWithIndex.map { case ((subgraph, nodes), idx) =>
       nodesToSubGraphs(subgraph, nodes, idx)
     }
@@ -54,7 +54,7 @@ object DotSerializer {
   }
 
   private def namedGraphBegin(root: AstNode): mutable.StringBuilder = {
-    val sb = new mutable.StringBuilder
+    val sb   = new mutable.StringBuilder
     val name = StringEscapeUtils.escapeHtml4(root match {
       case method: Method => method.name
       case _              => ""
@@ -71,7 +71,7 @@ object DotSerializer {
   private def limit(str: String): String = StringUtils.abbreviate(str, maxCharLimit)
 
   private def stringRepr(vertex: StoredNode): String = {
-    val lineOpt = vertex.property(Properties.LineNumber).map(_.toString)
+    val lineOpt  = vertex.property(Properties.LineNumber).map(_.toString)
     val attrList = (vertex match {
       case call: Call                            => List(call.name, limit(call.code))
       case ctrl: ControlStructure                => List(ctrl.label, ctrl.controlStructureType, limit(ctrl.code))

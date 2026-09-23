@@ -135,7 +135,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     def astForJsonIfStatement(node: IfExpression): Ast = {
       val conditionAst = astForExpression(node.condition)
       val thenAst      = astForThenClause(node.thenClause)
-      val elseAst = node.elseClause
+      val elseAst      = node.elseClause
         .map {
           case x: IfExpression =>
             val wrappedBlock = blockNode(x)

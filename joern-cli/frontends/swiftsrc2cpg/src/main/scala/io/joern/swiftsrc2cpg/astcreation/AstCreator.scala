@@ -77,7 +77,7 @@ class AstCreator(
     scope.pushNewMethodScope(fullName, name, fakeGlobalMethod, None)
     val sourceFileAst = astForNode(ast)
     val methodReturn  = methodReturnNode(ast, Defines.Any)
-    val modifiers =
+    val modifiers     =
       Seq(modifierNode(ast, ModifierTypes.VIRTUAL).order(0), modifierNode(ast, ModifierTypes.MODULE).order(1))
     Ast(fakeGlobalTypeDecl).withChild(
       methodAst(fakeGlobalMethod, Seq.empty, sourceFileAst, methodReturn, modifiers = modifiers)

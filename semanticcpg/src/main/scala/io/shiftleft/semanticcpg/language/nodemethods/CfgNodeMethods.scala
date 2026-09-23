@@ -113,7 +113,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     case callRepr: CallRepr if !callRepr.isInstanceOf[Call]             => walkUpAst(callRepr)
     case annotation: Annotation                                         => methodFromAnnotation(annotation)
     case annotationLiteral: AnnotationLiteral                           => methodFromAnnotation(annotationLiteral)
-    case expr: Expression =>
+    case expr: Expression                                               =>
       Try(methodViaContainsIn(expr)).recover { exception =>
         logger.info("Unable to expand to method from expr {}. Exception: {}", expr.code, exception)
         null

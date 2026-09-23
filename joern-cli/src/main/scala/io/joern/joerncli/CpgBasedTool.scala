@@ -61,7 +61,7 @@ object CpgBasedTool {
     */
   def splitArgs(args: Array[String]): (List[String], List[String]) = {
     args.indexOf(ARGS_DELIMITER) match {
-      case -1 => (args.toList, Nil)
+      case -1       => (args.toList, Nil)
       case splitIdx =>
         val (parseOpts, frontendOpts) = args.toList.splitAt(splitIdx)
         (parseOpts, frontendOpts.tail) // Take the tail to ignore the delimiter

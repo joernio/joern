@@ -312,7 +312,7 @@ case class Ast(
     }
 
     val oldToNew = astChildren.zip(newChildren).map { case (old, newChild) => old -> newChild.root.get }.toMap
-    def newIfExists(oldNode: NewNode) = oldToNew.getOrElse(oldNode, oldNode)
+    def newIfExists(oldNode: NewNode)                               = oldToNew.getOrElse(oldNode, oldNode)
     def remap(in: collection.Seq[AstEdge]): collection.Seq[AstEdge] =
       in.filter(_.src == node).map(edge => AstEdge(newNode, newIfExists(edge.dst)))
 

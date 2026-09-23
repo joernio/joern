@@ -73,7 +73,7 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
         .orElse(getTypeFullName(expectedType))
         .map(typeInfoCalc.registerType)
         .getOrElse(defaultTypeFallback(expr.getElementType))
-      val callNode = operatorCallNode(expr, expr.toString, Operators.alloc, typeFullName = Some(typeFullName))
+      val callNode  = operatorCallNode(expr, expr.toString, Operators.alloc, typeFullName = Some(typeFullName))
       val levelAsts = expr.getLevels.asScala.flatMap { lvl =>
         lvl.getDimension.toScala match {
           case Some(dimension) => astsForExpression(dimension, ExpectedType.Int)
@@ -299,11 +299,11 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
       }
       .getOrElse {
         val booleanTypeFullName = Some(TypeConstants.Boolean)
-        val callNode =
+        val callNode            =
           operatorCallNode(expr, code(expr), Operators.instanceOf, booleanTypeFullName)
 
-        val exprAst  = astsForExpression(expr.getExpression, ExpectedType.empty)
-        val exprType = tryWithSafeStackOverflow(expr.getType).toOption
+        val exprAst      = astsForExpression(expr.getExpression, ExpectedType.empty)
+        val exprType     = tryWithSafeStackOverflow(expr.getType).toOption
         val typeFullName = exprType
           .map(typ => typeInfoCalc.fullName(typ).getOrElse(defaultTypeFallback(typ)))
           .getOrElse(defaultTypeFallback())

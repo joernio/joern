@@ -149,7 +149,7 @@ class FrontendHTTPServer(executor: ExecutorService, handleRequest: Array[String]
       list.flatMap {
         case (key, ujson.Str(value)) => Some((key, Some(value)))
         case (key, ujson.Null)       => Some((key, None))
-        case (key, anything) =>
+        case (key, anything)         =>
           logger.warn("Ignoring HTTP request argument {} with unsupported json type {}", key, anything.getClass)
           None
       }

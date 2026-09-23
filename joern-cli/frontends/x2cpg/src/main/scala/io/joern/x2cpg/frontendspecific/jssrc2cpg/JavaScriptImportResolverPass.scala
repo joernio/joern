@@ -88,8 +88,8 @@ class JavaScriptImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
          exp.argument.l match {
            case ::(expCall: Call, ::(b: Identifier, _))
                if expCall.code.matches("^(module.)?exports[.]?.*") && b.name == alias =>
-             val moduleMethods      = targetModule.repeat(_.astChildren.isMethod)(_.emit).l
-             lazy val methodMatches = moduleMethods.name(b.name).l
+             val moduleMethods           = targetModule.repeat(_.astChildren.isMethod)(_.emit).l
+             lazy val methodMatches      = moduleMethods.name(b.name).l
              lazy val constructorMatches =
                moduleMethods.fullName(s".*${b.name}$pathSep${XDefines.ConstructorMethodName}$$").l
              lazy val moduleExportsThisVariable = moduleMethods.body.local
@@ -108,7 +108,7 @@ class JavaScriptImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
              }
            case ::(x: Call, ::(b: MethodRef, _)) =>
              // Exported function with a method ref of the function
-             val methodName = x.argumentOption(2).map(_.code).getOrElse(b.referencedMethod.name)
+             val methodName           = x.argumentOption(2).map(_.code).getOrElse(b.referencedMethod.name)
              val (callName, receiver) =
                if (methodName == "exports") (alias, Option("this")) else (methodName, Option(alias))
              b.referencedMethod.astParent.iterator

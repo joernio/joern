@@ -31,7 +31,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case x: MonitorStmt      => astsForMonitorStmt(x)
       case x: IdentityStmt     => astsForIdentityStmt(x)
       case _: NopStmt          => Seq() // Ignore NOP statements
-      case x =>
+      case x                   =>
         logger.warn(s"Unhandled soot.Unit type ${x.getClass}")
         Seq(astForUnknownStmt(x, None))
     }
@@ -68,7 +68,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val lhsCode = identifier.flatMap(_.root).flatMap(_.properties.get(PropertyNames.Code)).mkString
 
     val initAsts = astsForValue(initializer, assignStmt)
-    val rhsCode = initAsts
+    val rhsCode  = initAsts
       .flatMap(_.root)
       .map(_.properties.getOrElse(PropertyNames.Code, ""))
       .mkString(", ")
@@ -105,7 +105,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astsForTableSwitchStmt(tableSwitchStmt: SwitchStmt): Seq[Ast] = {
     val switchAst = astForSwitchWithDefaultAndCondition(tableSwitchStmt)
-    val tgtAsts = tableSwitchStmt.getTargets.asScala
+    val tgtAsts   = tableSwitchStmt.getTargets.asScala
       .filter(x => tableSwitchStmt.getDefaultTarget != x)
       .zipWithIndex
       .map { case (tgt, i) =>
@@ -133,7 +133,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astsForMonitorStmt(monitorStmt: MonitorStmt): Seq[Ast] = {
     val opAst      = astsForValue(monitorStmt.getOp, monitorStmt)
     val typeString = opAst.flatMap(_.root).map(_.properties(PropertyNames.Code)).mkString
-    val code = monitorStmt match {
+    val code       = monitorStmt match {
       case _: EnterMonitorStmt => s"entermonitor $typeString"
       case _: ExitMonitorStmt  => s"exitmonitor $typeString"
       case _                   => s"<unknown>monitor $typeString"
@@ -171,7 +171,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astsForReturnStmt(returnStmt: ReturnStmt): Seq[Ast] = {
     val astChildren = astsForValue(returnStmt.getOp, returnStmt)
-    val returnNode = NewReturn()
+    val returnNode  = NewReturn()
       .code(s"return ${astChildren.flatMap(_.root).map(_.properties(PropertyNames.Code)).mkString(" ")};")
       .lineNumber(line(returnStmt))
       .columnNumber(column(returnStmt))
@@ -224,7 +224,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       .columnNumber(column(switchStmt))
 
     val conditionalAst = astsForValue(switchStmt.getKey, switchStmt)
-    val defaultAst = Seq(
+    val defaultAst     = Seq(
       Ast(
         NewJumpTarget()
           .name("default")

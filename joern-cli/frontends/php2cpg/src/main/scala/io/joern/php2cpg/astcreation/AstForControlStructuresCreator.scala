@@ -76,7 +76,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
 
   private def astsForSwitchCase(caseStmt: PhpCaseStmt): List[Ast] = {
     val maybeConditionAst = caseStmt.condition.map(astForExpr)
-    val jumpTarget = maybeConditionAst match {
+    val jumpTarget        = maybeConditionAst match {
       case Some(conditionAst) => NewJumpTarget().name("case").code(s"case ${conditionAst.rootCodeOrEmpty}")
       case None               => NewJumpTarget().name("default").code("default")
     }
@@ -145,7 +145,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     // keep this just used to construct the `code` field
     val assignItemTargetString = stmt.keyVar match {
       case Some(key) => s"${codeForExpr(key)} => ${codeForExpr(stmt.valueVar)}"
-      case None =>
+      case None      =>
         stmt.valueVar match {
           case x: PhpListExpr => createListExprCodeField(x)
           case x              => astForExpr(x).rootCodeOrEmpty
@@ -167,8 +167,8 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       valueVar match {
         case x: PhpListExpr =>
           x.items match {
-            case List(None, _*)    => Ast()
-            case Some(head) :: Nil => createNotNullChecks(head) // only one item in the listExpr
+            case List(None, _*)     => Ast()
+            case Some(head) :: Nil  => createNotNullChecks(head) // only one item in the listExpr
             case Some(head) :: tail =>
               val headItem = createNotNullChecks(head)
               tail
@@ -196,7 +196,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
           }
         case PhpArrayItem(_, value: PhpVariable, _, _, _) => createNotNullCall(value)
         case PhpArrayItem(_, value: PhpListExpr, _, _, _) => createNotNullChecks(value)
-        case x =>
+        case x                                            =>
           createNotNullCall(x)
       }
     }
@@ -216,12 +216,12 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     // Update asts
     val nextIterIdent = astForIdentifierWithLocalRef(iterIdentifier.copy, localN)
     val nextCallCode  = s"${nextIterIdent.rootCodeOrEmpty}${InstanceMethodDelimiter}next()"
-    val nextCallNode =
+    val nextCallNode  =
       callNode(stmt, nextCallCode, "next", "Iterator.next", DispatchTypes.DYNAMIC_DISPATCH, None, Some(Defines.Any))
-    val nextCallAst = callAst(nextCallNode, base = Option(nextIterIdent))
+    val nextCallAst   = callAst(nextCallNode, base = Option(nextIterIdent))
     val itemUpdateAst = itemInitAst.root match {
       case Some(initRoot: AstNodeNew) => itemInitAst.subTreeCopy(initRoot)
-      case _ =>
+      case _                          =>
         logger.warn(s"Could not copy foreach init ast in $relativeFileName")
         Ast()
     }

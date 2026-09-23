@@ -728,7 +728,7 @@ object SwiftNodeSyntax {
     *   - ``ArrayElementListSyntax``
     */
   case class ArrayElementSyntax(json: Value) extends Syntax with WithTrailingComma {
-    lazy val expression: ExprSyntax = createSwiftNode(_childrenMap("expression")).asInstanceOf[ExprSyntax]
+    lazy val expression: ExprSyntax            = createSwiftNode(_childrenMap("expression")).asInstanceOf[ExprSyntax]
     lazy val trailingComma: Option[SwiftToken] =
       _childrenMap.get("trailingComma").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
   }
@@ -746,7 +746,7 @@ object SwiftNodeSyntax {
     * ### Nowhere contained in
     */
   case class ArrayExprSyntax(json: Value) extends ExprSyntax {
-    lazy val leftSquare: SwiftToken = createSwiftNode(_childrenMap("leftSquare")).asInstanceOf[SwiftToken]
+    lazy val leftSquare: SwiftToken           = createSwiftNode(_childrenMap("leftSquare")).asInstanceOf[SwiftToken]
     lazy val elements: ArrayElementListSyntax =
       createSwiftNode(_childrenMap("elements")).asInstanceOf[ArrayElementListSyntax]
     lazy val rightSquare: SwiftToken = createSwiftNode(_childrenMap("rightSquare")).asInstanceOf[SwiftToken]
@@ -1008,8 +1008,8 @@ object SwiftNodeSyntax {
     *   - ``SwitchCaseSyntax``.``SwitchCaseSyntax/attribute``
     */
   case class AttributeSyntax(json: Value) extends Syntax {
-    lazy val atSign: SwiftToken        = createSwiftNode(_childrenMap("atSign")).asInstanceOf[SwiftToken]
-    lazy val attributeName: TypeSyntax = createSwiftNode(_childrenMap("attributeName")).asInstanceOf[TypeSyntax]
+    lazy val atSign: SwiftToken            = createSwiftNode(_childrenMap("atSign")).asInstanceOf[SwiftToken]
+    lazy val attributeName: TypeSyntax     = createSwiftNode(_childrenMap("attributeName")).asInstanceOf[TypeSyntax]
     lazy val leftParen: Option[SwiftToken] =
       _childrenMap.get("leftParen").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
     lazy val arguments: Option[
@@ -1162,7 +1162,7 @@ object SwiftNodeSyntax {
   case class AvailabilityMacroDefinitionFileSyntax(json: Value) extends Syntax {
     lazy val platformVersion: PlatformVersionSyntax =
       createSwiftNode(_childrenMap("platformVersion")).asInstanceOf[PlatformVersionSyntax]
-    lazy val colon: SwiftToken = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
+    lazy val colon: SwiftToken                     = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
     lazy val specs: AvailabilityArgumentListSyntax =
       createSwiftNode(_childrenMap("specs")).asInstanceOf[AvailabilityArgumentListSyntax]
     lazy val endOfFileToken: SwiftToken = createSwiftNode(_childrenMap("endOfFileToken")).asInstanceOf[SwiftToken]
@@ -1265,7 +1265,7 @@ object SwiftNodeSyntax {
     * ### Nowhere contained in
     */
   case class BreakStmtSyntax(json: Value) extends StmtSyntax {
-    lazy val breakKeyword: SwiftToken = createSwiftNode(_childrenMap("breakKeyword")).asInstanceOf[SwiftToken]
+    lazy val breakKeyword: SwiftToken  = createSwiftNode(_childrenMap("breakKeyword")).asInstanceOf[SwiftToken]
     lazy val label: Option[SwiftToken] =
       _childrenMap.get("label").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
   }
@@ -1347,7 +1347,7 @@ object SwiftNodeSyntax {
     *   - ``CatchClauseListSyntax``
     */
   case class CatchClauseSyntax(json: Value) extends Syntax with WithCodeBlock {
-    lazy val catchKeyword: SwiftToken = createSwiftNode(_childrenMap("catchKeyword")).asInstanceOf[SwiftToken]
+    lazy val catchKeyword: SwiftToken        = createSwiftNode(_childrenMap("catchKeyword")).asInstanceOf[SwiftToken]
     lazy val catchItems: CatchItemListSyntax =
       createSwiftNode(_childrenMap("catchItems")).asInstanceOf[CatchItemListSyntax]
     lazy val body: CodeBlockSyntax = createSwiftNode(_childrenMap("body")).asInstanceOf[CodeBlockSyntax]
@@ -1486,7 +1486,7 @@ object SwiftNodeSyntax {
     *   - ``ClosureSignatureSyntax``.``ClosureSignatureSyntax/capture``
     */
   case class ClosureCaptureClauseSyntax(json: Value) extends Syntax {
-    lazy val leftSquare: SwiftToken = createSwiftNode(_childrenMap("leftSquare")).asInstanceOf[SwiftToken]
+    lazy val leftSquare: SwiftToken          = createSwiftNode(_childrenMap("leftSquare")).asInstanceOf[SwiftToken]
     lazy val items: ClosureCaptureListSyntax =
       createSwiftNode(_childrenMap("items")).asInstanceOf[ClosureCaptureListSyntax]
     lazy val rightSquare: SwiftToken = createSwiftNode(_childrenMap("rightSquare")).asInstanceOf[SwiftToken]
@@ -1525,7 +1525,7 @@ object SwiftNodeSyntax {
     *   - ``ClosureCaptureSyntax``.``ClosureCaptureSyntax/specifier``
     */
   case class ClosureCaptureSpecifierSyntax(json: Value) extends Syntax {
-    lazy val specifier: SwiftToken = createSwiftNode(_childrenMap("specifier")).asInstanceOf[SwiftToken]
+    lazy val specifier: SwiftToken         = createSwiftNode(_childrenMap("specifier")).asInstanceOf[SwiftToken]
     lazy val leftParen: Option[SwiftToken] =
       _childrenMap.get("leftParen").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
     lazy val detail: Option[SwiftToken] =
@@ -1653,7 +1653,7 @@ object SwiftNodeSyntax {
       createSwiftNode(_childrenMap("attributes")).asInstanceOf[AttributeListSyntax]
     lazy val modifiers: DeclModifierListSyntax =
       createSwiftNode(_childrenMap("modifiers")).asInstanceOf[DeclModifierListSyntax]
-    lazy val firstName: SwiftToken = createSwiftNode(_childrenMap("firstName")).asInstanceOf[SwiftToken]
+    lazy val firstName: SwiftToken          = createSwiftNode(_childrenMap("firstName")).asInstanceOf[SwiftToken]
     lazy val secondName: Option[SwiftToken] =
       _childrenMap.get("secondName").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
     lazy val colon: Option[SwiftToken] =
@@ -1706,7 +1706,7 @@ object SwiftNodeSyntax {
     *   - ``ClosureShorthandParameterListSyntax``
     */
   case class ClosureShorthandParameterSyntax(json: Value) extends Syntax with WithTrailingComma {
-    lazy val name: SwiftToken = createSwiftNode(_childrenMap("name")).asInstanceOf[SwiftToken]
+    lazy val name: SwiftToken                  = createSwiftNode(_childrenMap("name")).asInstanceOf[SwiftToken]
     lazy val trailingComma: Option[SwiftToken] =
       _childrenMap.get("trailingComma").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
   }
@@ -1830,7 +1830,7 @@ object SwiftNodeSyntax {
     *   - ``WhileStmtSyntax``.``WhileStmtSyntax/body``
     */
   case class CodeBlockSyntax(json: Value) extends Syntax with Braced with WithStatements {
-    lazy val leftBrace: SwiftToken = createSwiftNode(_childrenMap("leftBrace")).asInstanceOf[SwiftToken]
+    lazy val leftBrace: SwiftToken               = createSwiftNode(_childrenMap("leftBrace")).asInstanceOf[SwiftToken]
     lazy val statements: CodeBlockItemListSyntax =
       createSwiftNode(_childrenMap("statements")).asInstanceOf[CodeBlockItemListSyntax]
     lazy val rightBrace: SwiftToken = createSwiftNode(_childrenMap("rightBrace")).asInstanceOf[SwiftToken]
@@ -1869,7 +1869,7 @@ object SwiftNodeSyntax {
     *   - ``CompositionTypeElementListSyntax``
     */
   case class CompositionTypeElementSyntax(json: Value) extends Syntax {
-    lazy val `type`: TypeSyntax = createSwiftNode(_childrenMap("type")).asInstanceOf[TypeSyntax]
+    lazy val `type`: TypeSyntax             = createSwiftNode(_childrenMap("type")).asInstanceOf[TypeSyntax]
     lazy val ampersand: Option[TokenSyntax] =
       _childrenMap.get("ampersand").map(child => createSwiftNode(child).asInstanceOf[TokenSyntax])
   }
@@ -1981,7 +1981,7 @@ object SwiftNodeSyntax {
     */
   case class ContinueStmtSyntax(json: Value) extends StmtSyntax {
     lazy val continueKeyword: SwiftToken = createSwiftNode(_childrenMap("continueKeyword")).asInstanceOf[SwiftToken]
-    lazy val label: Option[SwiftToken] =
+    lazy val label: Option[SwiftToken]   =
       _childrenMap.get("label").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
   }
 
@@ -2079,7 +2079,7 @@ object SwiftNodeSyntax {
     *   - ``DeclModifierListSyntax``
     */
   case class DeclModifierSyntax(json: Value) extends Syntax {
-    lazy val name: SwiftToken = createSwiftNode(_childrenMap("name")).asInstanceOf[SwiftToken]
+    lazy val name: SwiftToken                         = createSwiftNode(_childrenMap("name")).asInstanceOf[SwiftToken]
     lazy val detail: Option[DeclModifierDetailSyntax] =
       _childrenMap.get("detail").map(child => createSwiftNode(child).asInstanceOf[DeclModifierDetailSyntax])
   }
@@ -2134,7 +2134,7 @@ object SwiftNodeSyntax {
     *   - ``DeclReferenceExprSyntax``.``DeclReferenceExprSyntax/argumentNames``
     */
   case class DeclNameArgumentsSyntax(json: Value) extends Syntax with Parenthesized {
-    lazy val leftParen: SwiftToken = createSwiftNode(_childrenMap("leftParen")).asInstanceOf[SwiftToken]
+    lazy val leftParen: SwiftToken                 = createSwiftNode(_childrenMap("leftParen")).asInstanceOf[SwiftToken]
     lazy val arguments: DeclNameArgumentListSyntax =
       createSwiftNode(_childrenMap("arguments")).asInstanceOf[DeclNameArgumentListSyntax]
     lazy val rightParen: SwiftToken = createSwiftNode(_childrenMap("rightParen")).asInstanceOf[SwiftToken]
@@ -2263,7 +2263,7 @@ object SwiftNodeSyntax {
     lazy val ofLabel: SwiftToken          = createSwiftNode(_childrenMap("ofLabel")).asInstanceOf[SwiftToken]
     lazy val colon: SwiftToken            = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
     lazy val originalDeclName: ExprSyntax = createSwiftNode(_childrenMap("originalDeclName")).asInstanceOf[ExprSyntax]
-    lazy val period: Option[SwiftToken] =
+    lazy val period: Option[SwiftToken]   =
       _childrenMap.get("period").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
     lazy val accessorSpecifier: Option[SwiftToken] =
       _childrenMap.get("accessorSpecifier").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
@@ -2342,9 +2342,9 @@ object SwiftNodeSyntax {
     *   - ``DictionaryElementListSyntax``
     */
   case class DictionaryElementSyntax(json: Value) extends Syntax with WithTrailingComma {
-    lazy val key: ExprSyntax   = createSwiftNode(_childrenMap("key")).asInstanceOf[ExprSyntax]
-    lazy val colon: SwiftToken = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
-    lazy val value: ExprSyntax = createSwiftNode(_childrenMap("value")).asInstanceOf[ExprSyntax]
+    lazy val key: ExprSyntax                   = createSwiftNode(_childrenMap("key")).asInstanceOf[ExprSyntax]
+    lazy val colon: SwiftToken                 = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
+    lazy val value: ExprSyntax                 = createSwiftNode(_childrenMap("value")).asInstanceOf[ExprSyntax]
     lazy val trailingComma: Option[SwiftToken] =
       _childrenMap.get("trailingComma").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
   }
@@ -2425,7 +2425,7 @@ object SwiftNodeSyntax {
     *   - ``DifferentiabilityWithRespectToArgumentSyntax``.``DifferentiabilityWithRespectToArgumentSyntax/arguments``
     */
   case class DifferentiabilityArgumentSyntax(json: Value) extends Syntax with WithTrailingComma {
-    lazy val argument: SwiftToken = createSwiftNode(_childrenMap("argument")).asInstanceOf[SwiftToken]
+    lazy val argument: SwiftToken              = createSwiftNode(_childrenMap("argument")).asInstanceOf[SwiftToken]
     lazy val trailingComma: Option[SwiftToken] =
       _childrenMap.get("trailingComma").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
   }
@@ -2578,8 +2578,8 @@ object SwiftNodeSyntax {
     * ### Nowhere contained in
     */
   case class DoExprSyntax(json: Value) extends ExprSyntax with WithCodeBlock {
-    lazy val doKeyword: SwiftToken = createSwiftNode(_childrenMap("doKeyword")).asInstanceOf[SwiftToken]
-    lazy val body: CodeBlockSyntax = createSwiftNode(_childrenMap("body")).asInstanceOf[CodeBlockSyntax]
+    lazy val doKeyword: SwiftToken               = createSwiftNode(_childrenMap("doKeyword")).asInstanceOf[SwiftToken]
+    lazy val body: CodeBlockSyntax               = createSwiftNode(_childrenMap("body")).asInstanceOf[CodeBlockSyntax]
     lazy val catchClauses: CatchClauseListSyntax =
       createSwiftNode(_childrenMap("catchClauses")).asInstanceOf[CatchClauseListSyntax]
   }
@@ -2601,7 +2601,7 @@ object SwiftNodeSyntax {
     lazy val doKeyword: SwiftToken = createSwiftNode(_childrenMap("doKeyword")).asInstanceOf[SwiftToken]
     lazy val throwsClause: Option[ThrowsClauseSyntax] =
       _childrenMap.get("throwsClause").map(child => createSwiftNode(child).asInstanceOf[ThrowsClauseSyntax])
-    lazy val body: CodeBlockSyntax = createSwiftNode(_childrenMap("body")).asInstanceOf[CodeBlockSyntax]
+    lazy val body: CodeBlockSyntax               = createSwiftNode(_childrenMap("body")).asInstanceOf[CodeBlockSyntax]
     lazy val catchClauses: CatchClauseListSyntax =
       createSwiftNode(_childrenMap("catchClauses")).asInstanceOf[CatchClauseListSyntax]
   }
@@ -2664,8 +2664,8 @@ object SwiftNodeSyntax {
     *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class DynamicReplacementAttributeArgumentsSyntax(json: Value) extends Syntax {
-    lazy val forLabel: SwiftToken = createSwiftNode(_childrenMap("forLabel")).asInstanceOf[SwiftToken]
-    lazy val colon: SwiftToken    = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
+    lazy val forLabel: SwiftToken              = createSwiftNode(_childrenMap("forLabel")).asInstanceOf[SwiftToken]
+    lazy val colon: SwiftToken                 = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
     lazy val declName: DeclReferenceExprSyntax =
       createSwiftNode(_childrenMap("declName")).asInstanceOf[DeclReferenceExprSyntax]
   }
@@ -2746,7 +2746,7 @@ object SwiftNodeSyntax {
       createSwiftNode(_childrenMap("attributes")).asInstanceOf[AttributeListSyntax]
     lazy val modifiers: DeclModifierListSyntax =
       createSwiftNode(_childrenMap("modifiers")).asInstanceOf[DeclModifierListSyntax]
-    lazy val caseKeyword: SwiftToken = createSwiftNode(_childrenMap("caseKeyword")).asInstanceOf[SwiftToken]
+    lazy val caseKeyword: SwiftToken             = createSwiftNode(_childrenMap("caseKeyword")).asInstanceOf[SwiftToken]
     lazy val elements: EnumCaseElementListSyntax =
       createSwiftNode(_childrenMap("elements")).asInstanceOf[EnumCaseElementListSyntax]
   }
@@ -2972,10 +2972,10 @@ object SwiftNodeSyntax {
     *   - ``StringLiteralSegmentListSyntax``
     */
   case class ExpressionSegmentSyntax(json: Value) extends Syntax with Parenthesized {
-    lazy val backslash: SwiftToken = createSwiftNode(_childrenMap("backslash")).asInstanceOf[SwiftToken]
+    lazy val backslash: SwiftToken      = createSwiftNode(_childrenMap("backslash")).asInstanceOf[SwiftToken]
     lazy val pounds: Option[SwiftToken] =
       _childrenMap.get("pounds").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
-    lazy val leftParen: SwiftToken = createSwiftNode(_childrenMap("leftParen")).asInstanceOf[SwiftToken]
+    lazy val leftParen: SwiftToken              = createSwiftNode(_childrenMap("leftParen")).asInstanceOf[SwiftToken]
     lazy val expressions: LabeledExprListSyntax =
       createSwiftNode(_childrenMap("expressions")).asInstanceOf[LabeledExprListSyntax]
     lazy val rightParen: SwiftToken = createSwiftNode(_childrenMap("rightParen")).asInstanceOf[SwiftToken]
@@ -3086,7 +3086,7 @@ object SwiftNodeSyntax {
     * ### Nowhere contained in
     */
   case class ForStmtSyntax(json: Value) extends StmtSyntax with WithCodeBlock {
-    lazy val forKeyword: SwiftToken = createSwiftNode(_childrenMap("forKeyword")).asInstanceOf[SwiftToken]
+    lazy val forKeyword: SwiftToken         = createSwiftNode(_childrenMap("forKeyword")).asInstanceOf[SwiftToken]
     lazy val tryKeyword: Option[SwiftToken] =
       _childrenMap.get("tryKeyword").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
     lazy val awaitKeyword: Option[SwiftToken] =
@@ -3137,7 +3137,7 @@ object SwiftNodeSyntax {
     * ### Nowhere contained in
     */
   case class FunctionCallExprSyntax(json: Value) extends ExprSyntax {
-    lazy val calledExpression: ExprSyntax = createSwiftNode(_childrenMap("calledExpression")).asInstanceOf[ExprSyntax]
+    lazy val calledExpression: ExprSyntax  = createSwiftNode(_childrenMap("calledExpression")).asInstanceOf[ExprSyntax]
     lazy val leftParen: Option[SwiftToken] =
       _childrenMap.get("leftParen").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
     lazy val arguments: LabeledExprListSyntax =
@@ -3310,11 +3310,11 @@ object SwiftNodeSyntax {
       createSwiftNode(_childrenMap("attributes")).asInstanceOf[AttributeListSyntax]
     lazy val modifiers: DeclModifierListSyntax =
       createSwiftNode(_childrenMap("modifiers")).asInstanceOf[DeclModifierListSyntax]
-    lazy val firstName: SwiftToken = createSwiftNode(_childrenMap("firstName")).asInstanceOf[SwiftToken]
+    lazy val firstName: SwiftToken          = createSwiftNode(_childrenMap("firstName")).asInstanceOf[SwiftToken]
     lazy val secondName: Option[SwiftToken] =
       _childrenMap.get("secondName").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
-    lazy val colon: SwiftToken  = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
-    lazy val `type`: TypeSyntax = createSwiftNode(_childrenMap("type")).asInstanceOf[TypeSyntax]
+    lazy val colon: SwiftToken            = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
+    lazy val `type`: TypeSyntax           = createSwiftNode(_childrenMap("type")).asInstanceOf[TypeSyntax]
     lazy val ellipsis: Option[SwiftToken] =
       _childrenMap.get("ellipsis").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
     lazy val defaultValue: Option[InitializerClauseSyntax] =
@@ -3395,7 +3395,7 @@ object SwiftNodeSyntax {
     *   - ``MemberTypeSyntax``.``MemberTypeSyntax/genericArgumentClause``
     */
   case class GenericArgumentClauseSyntax(json: Value) extends Syntax {
-    lazy val leftAngle: SwiftToken = createSwiftNode(_childrenMap("leftAngle")).asInstanceOf[SwiftToken]
+    lazy val leftAngle: SwiftToken                = createSwiftNode(_childrenMap("leftAngle")).asInstanceOf[SwiftToken]
     lazy val arguments: GenericArgumentListSyntax =
       createSwiftNode(_childrenMap("arguments")).asInstanceOf[GenericArgumentListSyntax]
     lazy val rightAngle: SwiftToken = createSwiftNode(_childrenMap("rightAngle")).asInstanceOf[SwiftToken]
@@ -3512,7 +3512,7 @@ object SwiftNodeSyntax {
       createSwiftNode(_childrenMap("attributes")).asInstanceOf[AttributeListSyntax]
     lazy val specifier: Option[SwiftToken] =
       _childrenMap.get("specifier").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
-    lazy val name: SwiftToken = createSwiftNode(_childrenMap("name")).asInstanceOf[SwiftToken]
+    lazy val name: SwiftToken          = createSwiftNode(_childrenMap("name")).asInstanceOf[SwiftToken]
     lazy val colon: Option[SwiftToken] =
       _childrenMap.get("colon").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
     lazy val inheritedType: Option[TypeSyntax] =
@@ -3709,7 +3709,7 @@ object SwiftNodeSyntax {
     *   - ``IfConfigClauseListSyntax``
     */
   case class IfConfigClauseSyntax(json: Value) extends Syntax {
-    lazy val poundKeyword: SwiftToken = createSwiftNode(_childrenMap("poundKeyword")).asInstanceOf[SwiftToken]
+    lazy val poundKeyword: SwiftToken      = createSwiftNode(_childrenMap("poundKeyword")).asInstanceOf[SwiftToken]
     lazy val condition: Option[ExprSyntax] =
       _childrenMap.get("condition").map(child => createSwiftNode(child).asInstanceOf[ExprSyntax])
     lazy val elements: Option[
@@ -3764,7 +3764,7 @@ object SwiftNodeSyntax {
     lazy val ifKeyword: SwiftToken = createSwiftNode(_childrenMap("ifKeyword")).asInstanceOf[SwiftToken]
     lazy val conditions: ConditionElementListSyntax =
       createSwiftNode(_childrenMap("conditions")).asInstanceOf[ConditionElementListSyntax]
-    lazy val body: CodeBlockSyntax = createSwiftNode(_childrenMap("body")).asInstanceOf[CodeBlockSyntax]
+    lazy val body: CodeBlockSyntax           = createSwiftNode(_childrenMap("body")).asInstanceOf[CodeBlockSyntax]
     lazy val elseKeyword: Option[SwiftToken] =
       _childrenMap.get("elseKeyword").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
     lazy val elseBody: Option[IfExprSyntax | CodeBlockSyntax] =
@@ -3786,8 +3786,8 @@ object SwiftNodeSyntax {
     *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class ImplementsAttributeArgumentsSyntax(json: Value) extends Syntax {
-    lazy val `type`: TypeSyntax = createSwiftNode(_childrenMap("type")).asInstanceOf[TypeSyntax]
-    lazy val comma: SwiftToken  = createSwiftNode(_childrenMap("comma")).asInstanceOf[SwiftToken]
+    lazy val `type`: TypeSyntax                = createSwiftNode(_childrenMap("type")).asInstanceOf[TypeSyntax]
+    lazy val comma: SwiftToken                 = createSwiftNode(_childrenMap("comma")).asInstanceOf[SwiftToken]
     lazy val declName: DeclReferenceExprSyntax =
       createSwiftNode(_childrenMap("declName")).asInstanceOf[DeclReferenceExprSyntax]
   }
@@ -3872,7 +3872,7 @@ object SwiftNodeSyntax {
     *   - ``ImportPathComponentListSyntax``
     */
   case class ImportPathComponentSyntax(json: Value) extends Syntax {
-    lazy val name: SwiftToken = createSwiftNode(_childrenMap("name")).asInstanceOf[SwiftToken]
+    lazy val name: SwiftToken                   = createSwiftNode(_childrenMap("name")).asInstanceOf[SwiftToken]
     lazy val trailingPeriod: Option[SwiftToken] =
       _childrenMap.get("trailingPeriod").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
   }
@@ -3935,7 +3935,7 @@ object SwiftNodeSyntax {
     *   - ``StructDeclSyntax``.``StructDeclSyntax/inheritanceClause``
     */
   case class InheritanceClauseSyntax(json: Value) extends Syntax {
-    lazy val colon: SwiftToken = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
+    lazy val colon: SwiftToken                       = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
     lazy val inheritedTypes: InheritedTypeListSyntax =
       createSwiftNode(_childrenMap("inheritedTypes")).asInstanceOf[InheritedTypeListSyntax]
   }
@@ -3971,7 +3971,7 @@ object SwiftNodeSyntax {
     *   - ``InheritedTypeListSyntax``
     */
   case class InheritedTypeSyntax(json: Value) extends Syntax with WithTrailingComma {
-    lazy val `type`: TypeSyntax = createSwiftNode(_childrenMap("type")).asInstanceOf[TypeSyntax]
+    lazy val `type`: TypeSyntax                = createSwiftNode(_childrenMap("type")).asInstanceOf[TypeSyntax]
     lazy val trailingComma: Option[SwiftToken] =
       _childrenMap.get("trailingComma").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
   }
@@ -4039,7 +4039,7 @@ object SwiftNodeSyntax {
       createSwiftNode(_childrenMap("attributes")).asInstanceOf[AttributeListSyntax]
     lazy val modifiers: DeclModifierListSyntax =
       createSwiftNode(_childrenMap("modifiers")).asInstanceOf[DeclModifierListSyntax]
-    lazy val initKeyword: SwiftToken = createSwiftNode(_childrenMap("initKeyword")).asInstanceOf[SwiftToken]
+    lazy val initKeyword: SwiftToken          = createSwiftNode(_childrenMap("initKeyword")).asInstanceOf[SwiftToken]
     lazy val optionalMark: Option[SwiftToken] =
       _childrenMap.get("optionalMark").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
     lazy val genericParameterClause: Option[GenericParameterClauseSyntax] =
@@ -4069,9 +4069,9 @@ object SwiftNodeSyntax {
     * ### Nowhere contained in
     */
   case class InlineArrayTypeSyntax(json: Value) extends TypeSyntax {
-    lazy val leftSquare: SwiftToken       = createSwiftNode(_childrenMap("leftSquare")).asInstanceOf[SwiftToken]
-    lazy val count: GenericArgumentSyntax = createSwiftNode(_childrenMap("count")).asInstanceOf[GenericArgumentSyntax]
-    lazy val separator: SwiftToken        = createSwiftNode(_childrenMap("separator")).asInstanceOf[SwiftToken]
+    lazy val leftSquare: SwiftToken         = createSwiftNode(_childrenMap("leftSquare")).asInstanceOf[SwiftToken]
+    lazy val count: GenericArgumentSyntax   = createSwiftNode(_childrenMap("count")).asInstanceOf[GenericArgumentSyntax]
+    lazy val separator: SwiftToken          = createSwiftNode(_childrenMap("separator")).asInstanceOf[SwiftToken]
     lazy val element: GenericArgumentSyntax =
       createSwiftNode(_childrenMap("element")).asInstanceOf[GenericArgumentSyntax]
     lazy val rightSquare: SwiftToken = createSwiftNode(_childrenMap("rightSquare")).asInstanceOf[SwiftToken]
@@ -4195,7 +4195,7 @@ object SwiftNodeSyntax {
     * ### Nowhere contained in
     */
   case class KeyPathExprSyntax(json: Value) extends ExprSyntax {
-    lazy val backslash: SwiftToken = createSwiftNode(_childrenMap("backslash")).asInstanceOf[SwiftToken]
+    lazy val backslash: SwiftToken    = createSwiftNode(_childrenMap("backslash")).asInstanceOf[SwiftToken]
     lazy val root: Option[TypeSyntax] =
       _childrenMap.get("root").map(child => createSwiftNode(child).asInstanceOf[TypeSyntax])
     lazy val components: KeyPathComponentListSyntax =
@@ -4220,7 +4220,7 @@ object SwiftNodeSyntax {
   case class KeyPathMethodComponentSyntax(json: Value) extends Syntax {
     lazy val declName: DeclReferenceExprSyntax =
       createSwiftNode(_childrenMap("declName")).asInstanceOf[DeclReferenceExprSyntax]
-    lazy val leftParen: SwiftToken = createSwiftNode(_childrenMap("leftParen")).asInstanceOf[SwiftToken]
+    lazy val leftParen: SwiftToken            = createSwiftNode(_childrenMap("leftParen")).asInstanceOf[SwiftToken]
     lazy val arguments: LabeledExprListSyntax =
       createSwiftNode(_childrenMap("arguments")).asInstanceOf[LabeledExprListSyntax]
     lazy val rightParen: SwiftToken = createSwiftNode(_childrenMap("rightParen")).asInstanceOf[SwiftToken]
@@ -4280,7 +4280,7 @@ object SwiftNodeSyntax {
     *   - ``KeyPathComponentSyntax``.``KeyPathComponentSyntax/component``
     */
   case class KeyPathSubscriptComponentSyntax(json: Value) extends Syntax {
-    lazy val leftSquare: SwiftToken = createSwiftNode(_childrenMap("leftSquare")).asInstanceOf[SwiftToken]
+    lazy val leftSquare: SwiftToken           = createSwiftNode(_childrenMap("leftSquare")).asInstanceOf[SwiftToken]
     lazy val arguments: LabeledExprListSyntax =
       createSwiftNode(_childrenMap("arguments")).asInstanceOf[LabeledExprListSyntax]
     lazy val rightSquare: SwiftToken = createSwiftNode(_childrenMap("rightSquare")).asInstanceOf[SwiftToken]
@@ -4334,7 +4334,7 @@ object SwiftNodeSyntax {
       _childrenMap.get("label").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
     lazy val colon: Option[SwiftToken] =
       _childrenMap.get("colon").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
-    lazy val expression: ExprSyntax = createSwiftNode(_childrenMap("expression")).asInstanceOf[ExprSyntax]
+    lazy val expression: ExprSyntax            = createSwiftNode(_childrenMap("expression")).asInstanceOf[ExprSyntax]
     lazy val trailingComma: Option[SwiftToken] =
       _childrenMap.get("trailingComma").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
   }
@@ -4355,9 +4355,9 @@ object SwiftNodeSyntax {
     *   - ``SpecializeAttributeArgumentListSyntax``
     */
   case class LabeledSpecializeArgumentSyntax(json: Value) extends Syntax with WithTrailingComma {
-    lazy val label: SwiftToken  = createSwiftNode(_childrenMap("label")).asInstanceOf[SwiftToken]
-    lazy val colon: SwiftToken  = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
-    lazy val value: TokenSyntax = createSwiftNode(_childrenMap("value")).asInstanceOf[TokenSyntax]
+    lazy val label: SwiftToken                 = createSwiftNode(_childrenMap("label")).asInstanceOf[SwiftToken]
+    lazy val colon: SwiftToken                 = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
+    lazy val value: TokenSyntax                = createSwiftNode(_childrenMap("value")).asInstanceOf[TokenSyntax]
     lazy val trailingComma: Option[SwiftToken] =
       _childrenMap.get("trailingComma").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
   }
@@ -4401,9 +4401,9 @@ object SwiftNodeSyntax {
     *   - ``GenericRequirementSyntax``.``GenericRequirementSyntax/requirement``
     */
   case class LayoutRequirementSyntax(json: Value) extends Syntax {
-    lazy val `type`: TypeSyntax          = createSwiftNode(_childrenMap("type")).asInstanceOf[TypeSyntax]
-    lazy val colon: SwiftToken           = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
-    lazy val layoutSpecifier: SwiftToken = createSwiftNode(_childrenMap("layoutSpecifier")).asInstanceOf[SwiftToken]
+    lazy val `type`: TypeSyntax            = createSwiftNode(_childrenMap("type")).asInstanceOf[TypeSyntax]
+    lazy val colon: SwiftToken             = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
+    lazy val layoutSpecifier: SwiftToken   = createSwiftNode(_childrenMap("layoutSpecifier")).asInstanceOf[SwiftToken]
     lazy val leftParen: Option[SwiftToken] =
       _childrenMap.get("leftParen").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
     lazy val size: Option[SwiftToken] =
@@ -4451,7 +4451,7 @@ object SwiftNodeSyntax {
     *   - `LifetimeSpecifierArgumentListSyntax`
     */
   case class LifetimeSpecifierArgumentSyntax(json: Value) extends Syntax with WithTrailingComma {
-    lazy val parameter: SwiftToken = createSwiftNode(_childrenMap("parameter")).asInstanceOf[SwiftToken]
+    lazy val parameter: SwiftToken             = createSwiftNode(_childrenMap("parameter")).asInstanceOf[SwiftToken]
     lazy val trailingComma: Option[SwiftToken] =
       _childrenMap.get("trailingComma").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
   }
@@ -4652,7 +4652,7 @@ object SwiftNodeSyntax {
   case class MemberAccessExprSyntax(json: Value) extends ExprSyntax {
     lazy val base: Option[ExprSyntax] =
       _childrenMap.get("base").map(child => createSwiftNode(child).asInstanceOf[ExprSyntax])
-    lazy val period: SwiftToken = createSwiftNode(_childrenMap("period")).asInstanceOf[SwiftToken]
+    lazy val period: SwiftToken                = createSwiftNode(_childrenMap("period")).asInstanceOf[SwiftToken]
     lazy val declName: DeclReferenceExprSyntax =
       createSwiftNode(_childrenMap("declName")).asInstanceOf[DeclReferenceExprSyntax]
   }
@@ -4706,7 +4706,7 @@ object SwiftNodeSyntax {
     *   - ``MemberBlockItemListSyntax``
     */
   case class MemberBlockItemSyntax(json: Value) extends Syntax {
-    lazy val decl: DeclSyntax = createSwiftNode(_childrenMap("decl")).asInstanceOf[DeclSyntax]
+    lazy val decl: DeclSyntax              = createSwiftNode(_childrenMap("decl")).asInstanceOf[DeclSyntax]
     lazy val semicolon: Option[SwiftToken] =
       _childrenMap.get("semicolon").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
   }
@@ -4731,7 +4731,7 @@ object SwiftNodeSyntax {
     *   - ``StructDeclSyntax``.``StructDeclSyntax/memberBlock``
     */
   case class MemberBlockSyntax(json: Value) extends Syntax with Braced {
-    lazy val leftBrace: SwiftToken = createSwiftNode(_childrenMap("leftBrace")).asInstanceOf[SwiftToken]
+    lazy val leftBrace: SwiftToken              = createSwiftNode(_childrenMap("leftBrace")).asInstanceOf[SwiftToken]
     lazy val members: MemberBlockItemListSyntax =
       createSwiftNode(_childrenMap("members")).asInstanceOf[MemberBlockItemListSyntax]
     lazy val rightBrace: SwiftToken = createSwiftNode(_childrenMap("rightBrace")).asInstanceOf[SwiftToken]
@@ -5165,11 +5165,11 @@ object SwiftNodeSyntax {
     *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class OriginallyDefinedInAttributeArgumentsSyntax(json: Value) extends Syntax {
-    lazy val moduleLabel: SwiftToken = createSwiftNode(_childrenMap("moduleLabel")).asInstanceOf[SwiftToken]
-    lazy val colon: SwiftToken       = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
+    lazy val moduleLabel: SwiftToken             = createSwiftNode(_childrenMap("moduleLabel")).asInstanceOf[SwiftToken]
+    lazy val colon: SwiftToken                   = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
     lazy val moduleName: StringLiteralExprSyntax =
       createSwiftNode(_childrenMap("moduleName")).asInstanceOf[StringLiteralExprSyntax]
-    lazy val comma: SwiftToken = createSwiftNode(_childrenMap("comma")).asInstanceOf[SwiftToken]
+    lazy val comma: SwiftToken                        = createSwiftNode(_childrenMap("comma")).asInstanceOf[SwiftToken]
     lazy val platforms: PlatformVersionItemListSyntax =
       createSwiftNode(_childrenMap("platforms")).asInstanceOf[PlatformVersionItemListSyntax]
   }
@@ -5351,7 +5351,7 @@ object SwiftNodeSyntax {
     *   - ``PlatformVersionItemSyntax``.``PlatformVersionItemSyntax/platformVersion``
     */
   case class PlatformVersionSyntax(json: Value) extends Syntax {
-    lazy val platform: SwiftToken = createSwiftNode(_childrenMap("platform")).asInstanceOf[SwiftToken]
+    lazy val platform: SwiftToken                = createSwiftNode(_childrenMap("platform")).asInstanceOf[SwiftToken]
     lazy val version: Option[VersionTupleSyntax] =
       _childrenMap.get("version").map(child => createSwiftNode(child).asInstanceOf[VersionTupleSyntax])
   }
@@ -5575,7 +5575,7 @@ object SwiftNodeSyntax {
     *   - ``PrecedenceGroupNameListSyntax``
     */
   case class PrecedenceGroupNameSyntax(json: Value) extends Syntax with WithTrailingComma {
-    lazy val name: SwiftToken = createSwiftNode(_childrenMap("name")).asInstanceOf[SwiftToken]
+    lazy val name: SwiftToken                  = createSwiftNode(_childrenMap("name")).asInstanceOf[SwiftToken]
     lazy val trailingComma: Option[SwiftToken] =
       _childrenMap.get("trailingComma").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
   }
@@ -5681,7 +5681,7 @@ object SwiftNodeSyntax {
     *   - ``PrimaryAssociatedTypeListSyntax``
     */
   case class PrimaryAssociatedTypeSyntax(json: Value) extends Syntax with WithTrailingComma {
-    lazy val name: SwiftToken = createSwiftNode(_childrenMap("name")).asInstanceOf[SwiftToken]
+    lazy val name: SwiftToken                  = createSwiftNode(_childrenMap("name")).asInstanceOf[SwiftToken]
     lazy val trailingComma: Option[SwiftToken] =
       _childrenMap.get("trailingComma").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
   }
@@ -5751,9 +5751,9 @@ object SwiftNodeSyntax {
   case class RegexLiteralExprSyntax(json: Value) extends ExprSyntax {
     lazy val openingPounds: Option[SwiftToken] =
       _childrenMap.get("openingPounds").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
-    lazy val openingSlash: SwiftToken = createSwiftNode(_childrenMap("openingSlash")).asInstanceOf[SwiftToken]
-    lazy val regex: SwiftToken        = createSwiftNode(_childrenMap("regex")).asInstanceOf[SwiftToken]
-    lazy val closingSlash: SwiftToken = createSwiftNode(_childrenMap("closingSlash")).asInstanceOf[SwiftToken]
+    lazy val openingSlash: SwiftToken          = createSwiftNode(_childrenMap("openingSlash")).asInstanceOf[SwiftToken]
+    lazy val regex: SwiftToken                 = createSwiftNode(_childrenMap("regex")).asInstanceOf[SwiftToken]
+    lazy val closingSlash: SwiftToken          = createSwiftNode(_childrenMap("closingSlash")).asInstanceOf[SwiftToken]
     lazy val closingPounds: Option[SwiftToken] =
       _childrenMap.get("closingPounds").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
   }
@@ -5811,7 +5811,7 @@ object SwiftNodeSyntax {
     * ### Nowhere contained in
     */
   case class ReturnStmtSyntax(json: Value) extends StmtSyntax {
-    lazy val returnKeyword: SwiftToken = createSwiftNode(_childrenMap("returnKeyword")).asInstanceOf[SwiftToken]
+    lazy val returnKeyword: SwiftToken      = createSwiftNode(_childrenMap("returnKeyword")).asInstanceOf[SwiftToken]
     lazy val expression: Option[ExprSyntax] =
       _childrenMap.get("expression").map(child => createSwiftNode(child).asInstanceOf[ExprSyntax])
   }
@@ -5833,7 +5833,7 @@ object SwiftNodeSyntax {
   case class SameTypeRequirementSyntax(json: Value) extends Syntax {
     lazy val leftType: TypeSyntax | ExprSyntax =
       createSwiftNode(_childrenMap("leftType")).asInstanceOf[TypeSyntax | ExprSyntax]
-    lazy val equal: SwiftToken = createSwiftNode(_childrenMap("equal")).asInstanceOf[SwiftToken]
+    lazy val equal: SwiftToken                  = createSwiftNode(_childrenMap("equal")).asInstanceOf[SwiftToken]
     lazy val rightType: TypeSyntax | ExprSyntax =
       createSwiftNode(_childrenMap("rightType")).asInstanceOf[TypeSyntax | ExprSyntax]
   }
@@ -6018,8 +6018,8 @@ object SwiftNodeSyntax {
     *   - ``SpecializeAttributeArgumentListSyntax``
     */
   case class SpecializeTargetFunctionArgumentSyntax(json: Value) extends Syntax with WithTrailingComma {
-    lazy val targetLabel: SwiftToken = createSwiftNode(_childrenMap("targetLabel")).asInstanceOf[SwiftToken]
-    lazy val colon: SwiftToken       = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
+    lazy val targetLabel: SwiftToken           = createSwiftNode(_childrenMap("targetLabel")).asInstanceOf[SwiftToken]
+    lazy val colon: SwiftToken                 = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
     lazy val declName: DeclReferenceExprSyntax =
       createSwiftNode(_childrenMap("declName")).asInstanceOf[DeclReferenceExprSyntax]
     lazy val trailingComma: Option[SwiftToken] =
@@ -6072,7 +6072,7 @@ object SwiftNodeSyntax {
     lazy val openingQuote: SwiftToken = createSwiftNode(_childrenMap("openingQuote")).asInstanceOf[SwiftToken]
     lazy val segments: StringLiteralSegmentListSyntax =
       createSwiftNode(_childrenMap("segments")).asInstanceOf[StringLiteralSegmentListSyntax]
-    lazy val closingQuote: SwiftToken = createSwiftNode(_childrenMap("closingQuote")).asInstanceOf[SwiftToken]
+    lazy val closingQuote: SwiftToken          = createSwiftNode(_childrenMap("closingQuote")).asInstanceOf[SwiftToken]
     lazy val closingPounds: Option[SwiftToken] =
       _childrenMap.get("closingPounds").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
   }
@@ -6364,7 +6364,7 @@ object SwiftNodeSyntax {
     *   - ``SwitchCaseSyntax``.``SwitchCaseSyntax/label``
     */
   case class SwitchCaseLabelSyntax(json: Value) extends Syntax {
-    lazy val caseKeyword: SwiftToken = createSwiftNode(_childrenMap("caseKeyword")).asInstanceOf[SwiftToken]
+    lazy val caseKeyword: SwiftToken             = createSwiftNode(_childrenMap("caseKeyword")).asInstanceOf[SwiftToken]
     lazy val caseItems: SwitchCaseItemListSyntax =
       createSwiftNode(_childrenMap("caseItems")).asInstanceOf[SwitchCaseItemListSyntax]
     lazy val colon: SwiftToken = createSwiftNode(_childrenMap("colon")).asInstanceOf[SwiftToken]
@@ -6551,7 +6551,7 @@ object SwiftNodeSyntax {
     *   - ``TypeEffectSpecifiersSyntax``.``TypeEffectSpecifiersSyntax/throwsClause``
     */
   case class ThrowsClauseSyntax(json: Value) extends Syntax {
-    lazy val throwsSpecifier: SwiftToken = createSwiftNode(_childrenMap("throwsSpecifier")).asInstanceOf[SwiftToken]
+    lazy val throwsSpecifier: SwiftToken   = createSwiftNode(_childrenMap("throwsSpecifier")).asInstanceOf[SwiftToken]
     lazy val leftParen: Option[SwiftToken] =
       _childrenMap.get("leftParen").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
     lazy val `type`: Option[TypeSyntax] =
@@ -6606,7 +6606,7 @@ object SwiftNodeSyntax {
     * ### Nowhere contained in
     */
   case class TupleExprSyntax(json: Value) extends ExprSyntax with Parenthesized {
-    lazy val leftParen: SwiftToken = createSwiftNode(_childrenMap("leftParen")).asInstanceOf[SwiftToken]
+    lazy val leftParen: SwiftToken           = createSwiftNode(_childrenMap("leftParen")).asInstanceOf[SwiftToken]
     lazy val elements: LabeledExprListSyntax =
       createSwiftNode(_childrenMap("elements")).asInstanceOf[LabeledExprListSyntax]
     lazy val rightParen: SwiftToken = createSwiftNode(_childrenMap("rightParen")).asInstanceOf[SwiftToken]
@@ -6649,7 +6649,7 @@ object SwiftNodeSyntax {
       _childrenMap.get("label").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
     lazy val colon: Option[SwiftToken] =
       _childrenMap.get("colon").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
-    lazy val pattern: PatternSyntax = createSwiftNode(_childrenMap("pattern")).asInstanceOf[PatternSyntax]
+    lazy val pattern: PatternSyntax            = createSwiftNode(_childrenMap("pattern")).asInstanceOf[PatternSyntax]
     lazy val trailingComma: Option[SwiftToken] =
       _childrenMap.get("trailingComma").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
   }
@@ -6726,7 +6726,7 @@ object SwiftNodeSyntax {
       _childrenMap.get("secondName").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
     lazy val colon: Option[SwiftToken] =
       _childrenMap.get("colon").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
-    lazy val `type`: TypeSyntax = createSwiftNode(_childrenMap("type")).asInstanceOf[TypeSyntax]
+    lazy val `type`: TypeSyntax           = createSwiftNode(_childrenMap("type")).asInstanceOf[TypeSyntax]
     lazy val ellipsis: Option[SwiftToken] =
       _childrenMap.get("ellipsis").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
     lazy val trailingComma: Option[SwiftToken] =
@@ -6746,7 +6746,7 @@ object SwiftNodeSyntax {
     * ### Nowhere contained in
     */
   case class TupleTypeSyntax(json: Value) extends TypeSyntax with Parenthesized {
-    lazy val leftParen: SwiftToken = createSwiftNode(_childrenMap("leftParen")).asInstanceOf[SwiftToken]
+    lazy val leftParen: SwiftToken                = createSwiftNode(_childrenMap("leftParen")).asInstanceOf[SwiftToken]
     lazy val elements: TupleTypeElementListSyntax =
       createSwiftNode(_childrenMap("elements")).asInstanceOf[TupleTypeElementListSyntax]
     lazy val rightParen: SwiftToken = createSwiftNode(_childrenMap("rightParen")).asInstanceOf[SwiftToken]
@@ -7116,7 +7116,7 @@ object SwiftNodeSyntax {
     *   - ``PlatformVersionSyntax``.``PlatformVersionSyntax/version``
     */
   case class VersionTupleSyntax(json: Value) extends Syntax {
-    lazy val major: SwiftToken = createSwiftNode(_childrenMap("major")).asInstanceOf[SwiftToken]
+    lazy val major: SwiftToken                      = createSwiftNode(_childrenMap("major")).asInstanceOf[SwiftToken]
     lazy val components: VersionComponentListSyntax =
       createSwiftNode(_childrenMap("components")).asInstanceOf[VersionComponentListSyntax]
   }
@@ -7233,7 +7233,7 @@ object SwiftNodeSyntax {
     *   - ``YieldedExpressionListSyntax``
     */
   case class YieldedExpressionSyntax(json: Value) extends Syntax {
-    lazy val expression: ExprSyntax = createSwiftNode(_childrenMap("expression")).asInstanceOf[ExprSyntax]
+    lazy val expression: ExprSyntax    = createSwiftNode(_childrenMap("expression")).asInstanceOf[ExprSyntax]
     lazy val comma: Option[SwiftToken] =
       _childrenMap.get("comma").map(child => createSwiftNode(child).asInstanceOf[SwiftToken])
   }
@@ -7253,7 +7253,7 @@ object SwiftNodeSyntax {
     *   - ``YieldStmtSyntax``.``YieldStmtSyntax/yieldedExpressions``
     */
   case class YieldedExpressionsClauseSyntax(json: Value) extends Syntax {
-    lazy val leftParen: SwiftToken = createSwiftNode(_childrenMap("leftParen")).asInstanceOf[SwiftToken]
+    lazy val leftParen: SwiftToken                 = createSwiftNode(_childrenMap("leftParen")).asInstanceOf[SwiftToken]
     lazy val elements: YieldedExpressionListSyntax =
       createSwiftNode(_childrenMap("elements")).asInstanceOf[YieldedExpressionListSyntax]
     lazy val rightParen: SwiftToken = createSwiftNode(_childrenMap("rightParen")).asInstanceOf[SwiftToken]

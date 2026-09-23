@@ -222,7 +222,7 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XT
 
   // fixme: enable or disable?
   override def isParallel: Boolean = true
-  override def init(): Unit = {
+  override def init(): Unit        = {
     super.init()
     state.setIteration(iteration)
   }
@@ -351,7 +351,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
     case x @ (_: Identifier | _: Local | _: MethodParameterIn) => symbolTable.append(x, x.getKnownTypes)
-    case call: Call =>
+    case call: Call                                            =>
       symbolTable.append(call, (call.methodFullName +: (call.dynamicTypeHintFullName ++ call.possibleTypes)).toSet)
     case _ =>
   }
@@ -419,7 +419,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       case ResolvedMember(basePath, memberName, _) =>
         val matchingIdentifiers = cpg.method.fullNameExact(basePath).local
         val matchingMembers     = cpg.typeDecl.fullNameExact(basePath).member
-        val memberTypes = (matchingMembers ++ matchingIdentifiers)
+        val memberTypes         = (matchingMembers ++ matchingIdentifiers)
           .nameExact(memberName)
           .getKnownTypes
         symbolTable.append(LocalVar(alias), memberTypes)
@@ -492,7 +492,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         case x: Block                                                      => visitStatementsInBlock(x)
         case x: Local                                                      => symbolTable.get(x)
         case _: ControlStructure                                           => Set.empty[String]
-        case x =>
+        case x                                                             =>
           logger.debug(s"Unhandled block element ${x.label}:${x.code} @ ${debugLocation(x)}")
           Set.empty[String]
       }
@@ -740,7 +740,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     case Operators.fieldAccess        => symbolTable.get(LocalVar(getFieldName(c.asInstanceOf[FieldAccess])))
     case _ if symbolTable.contains(c) => methodReturnValues(symbolTable.get(c).toSeq)
     case Operators.indexAccess        => getIndexAccessTypes(c)
-    case n =>
+    case n                            =>
       logger.debug(s"Unknown RHS call type '$n' @ ${debugLocation(c)}")
       Set.empty[String]
   }
@@ -792,7 +792,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       val fieldPaths = getFieldParents(fa).map(fp => FieldPath(fp, fieldName))
       (LocalVar(fieldName), fieldPaths)
     case Operators.indexAccess => (indexAccessToCollectionVar(c).getOrElse(LocalVar(c.name)), Set.empty)
-    case x =>
+    case x                     =>
       logger.debug(s"Using default LHS call name '$x' @ ${debugLocation(c)}")
       (LocalVar(c.name), Set.empty)
   }
@@ -849,7 +849,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           // This is an expensive level of precision to support
           symbolTable.append(CollectionVar(i.name, "*"), getTypesFromCall(c))
         case List(c: Call, l: Literal) => assignTypesToCall(c, getLiteralType(l))
-        case xs =>
+        case xs                        =>
           logger.debug(
             s"Unhandled index access point assigned to literal ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${debugLocation(c)}"
           )
@@ -888,7 +888,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       case List(c: Call, idx: Call)             => CollectionVar(callName(c), callName(idx))
       case List(c: Call, idx: Literal)          => CollectionVar(callName(c), idx.code)
       case List(c: Call, idx: Identifier)       => CollectionVar(callName(c), idx.code)
-      case xs =>
+      case xs                                   =>
         logger.debug(s"Unhandled index access ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${debugLocation(c)}")
         null
     })
@@ -964,18 +964,18 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       .filterNot(_ == "ANY")
 
   protected def visitReturns(ret: Return): Unit = {
-    val m = ret.method
+    val m             = ret.method
     val existingTypes = mutable.HashSet.from(
       (m.methodReturn.typeFullName +: (m.methodReturn.dynamicTypeHintFullName ++ m.methodReturn.possibleTypes))
         .filterNot(_ == "ANY")
     )
     @tailrec
     def extractTypes(xs: List[CfgNode]): Set[String] = xs match {
-      case ::(head: Literal, Nil) => getLiteralType(head)
+      case ::(head: Literal, Nil)                                    => getLiteralType(head)
       case ::(head: Call, Nil) if head.name == Operators.fieldAccess =>
         val fieldAccess = head.asInstanceOf[FieldAccess]
         val (sym, ts)   = getSymbolFromCall(fieldAccess)
-        val cpgTypes = cpg.typeDecl
+        val cpgTypes    = cpg.typeDecl
           .fullNameExact(ts.map(_.compUnitFullName).toSeq*)
           .member
           .nameExact(sym.identifier)
@@ -1020,7 +1020,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       .foreach {
         case x: Local if symbolTable.contains(x) => storeNodeTypeInfo(x, symbolTable.get(x).toSeq)
         case x: MethodParameterIn                => setTypeFromTypeHints(x)
-        case x: MethodReturn =>
+        case x: MethodReturn                     =>
           setTypeFromTypeHints(x)
         case x: Identifier if symbolTable.contains(x) =>
           setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.l)
@@ -1279,7 +1279,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         case l: Local                                    => storeLocalTypeInfo(l, types)
         case c: Call if !c.name.startsWith("<operator>") => storeCallTypeInfo(c, types)
         case _: Call                                     =>
-        case n =>
+        case n                                           =>
           setTypes(n, types)
       }
     }

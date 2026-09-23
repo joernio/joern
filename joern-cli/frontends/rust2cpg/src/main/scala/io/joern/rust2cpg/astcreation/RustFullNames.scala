@@ -129,7 +129,7 @@ trait RustFullNames { this: AstCreator =>
     selfParam.typeFullName.getOrElse {
       val enclosingType = enclosingTypeDeclFullName.getOrElse(Defines.Any)
       selfParam.typ match {
-        case Some(typ) => typeFullNameForType(typ)
+        case Some(typ)                            => typeFullNameForType(typ)
         case None if selfParam.ampToken.isDefined =>
           val mut = Option.when(selfParam.mutKwToken.isDefined)("mut ").getOrElse("")
           s"&$mut$enclosingType"

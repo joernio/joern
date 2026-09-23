@@ -76,7 +76,7 @@ object AstCreatorHelper {
   def cleanType(rawType: String): String = {
     if (rawType == Defines.Any) return rawType
     val normalizedTpe = StringUtils.normalizeSpace(rawType.stripSuffix(" ()")).stripSuffix(".Type")
-    val tpe = stripGenerics(normalizedTpe) match {
+    val tpe           = stripGenerics(normalizedTpe) match {
       // Empty or problematic types
       case ""                   => Defines.Any
       case t if t.contains("?") => Defines.Any
@@ -160,7 +160,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       otherElements.map(astForNode) ++ deferElementsAstsOrdered
     } else {
       val elementsBeforeGuard = otherElements.slice(0, indexOfGuardStmt)
-      val guardStmt =
+      val guardStmt           =
         otherElements(indexOfGuardStmt).asInstanceOf[CodeBlockItemSyntax].item.asInstanceOf[GuardStmtSyntax]
       val elementsAfterGuard = otherElements.slice(indexOfGuardStmt + 1, otherElements.size)
 
@@ -282,7 +282,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           case other =>
             val resolvedName = other.map(_.baseName).getOrElse(name)
             val identNode    = identifierNode(node, resolvedName)
-            val tpe = variableOption match {
+            val tpe          = variableOption match {
               case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
               case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
               case _                                                              => Defines.Any
@@ -364,7 +364,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       fullnameProvider.declFullname(node).orElse(legacyNode(node).flatMap(fullnameProvider.declFullname)) match {
         case Some(fullNameWithSignature) =>
           val (fullName, signature) = methodInfoFromFullNameWithSignature(fullNameWithSignature)
-          val returnType = node match {
+          val returnType            = node match {
             case _: DeinitializerDeclSyntax =>
               Defines.Void
             case _: InitializerDeclSyntax =>
@@ -376,7 +376,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           MethodInfo(name, fullName, signature, returnType)
         case None =>
           val (methodName, methodFullName) = calcNameAndFullName(name)
-          val (signature, returnType) = node match {
+          val (signature, returnType)      = node match {
             case f: FunctionDeclSyntax =>
               val returnType = f.signature.returnClause.fold(Defines.Any)(c => cleanType(code(c.`type`)))
               (s"${paramSignature(f.signature.parameterClause)}->$returnType", returnType)
@@ -440,7 +440,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   ): MethodInfo = {
     val accessorName = code(node.accessorSpecifier)
     val namePrefix   = if (variableName.nonEmpty) s"$variableName." else ""
-    val name = accessorName match {
+    val name         = accessorName match {
       case "set" => s"${namePrefix}setter"
       case "get" => s"${namePrefix}getter"
       case other => s"$namePrefix$other"
@@ -563,7 +563,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   private def calcNameAndFullName(name: String, fullNameSubscriptPrefix: String = ""): (String, String) = {
-    val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath}"
+    val fullNamePrefix                    = s"${parserResult.filename}:${scope.computeScopePath}"
     val methodFullNameWithSubscriptPrefix = if (fullNameSubscriptPrefix.nonEmpty) {
       s"$fullNamePrefix.$fullNameSubscriptPrefix.$name"
     } else {
@@ -721,14 +721,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     ) => T,
     onStandard: () => T
   ): T = {
-    val conditionsSeq = conditions.toSeq
+    val conditionsSeq    = conditions.toSeq
     val optionalBindings = conditionsSeq.collect {
       case condElem if condElem.condition.isInstanceOf[OptionalBindingConditionSyntax] =>
         condElem.condition.asInstanceOf[OptionalBindingConditionSyntax]
     }
 
     val (simpleBindings, tupleBindings) = optionalBindings.partition(binding => !isTupleLikePattern(binding.pattern))
-    val otherConditions =
+    val otherConditions                 =
       conditionsSeq.filterNot(condElem => condElem.condition.isInstanceOf[OptionalBindingConditionSyntax])
 
     val allBindings = simpleBindings ++ tupleBindings
@@ -805,7 +805,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           case Some(tmpName) =>
             val tmpIdentNode = identifierNode(info.binding, tmpName, tmpName, Defines.Any)
             scope.addVariableReference(tmpName, tmpIdentNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-            val initAst = astForNode(info.binding.initializer.get.value)
+            val initAst   = astForNode(info.binding.initializer.get.value)
             val assignAst = createAssignmentCallAst(
               info.binding,
               Ast(tmpIdentNode),
@@ -813,7 +813,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
               s"$tmpName = ${codeOf(initAst.root.get)}"
             )
 
-            val nilNode = literalNode(info.binding, "nil", Option(Defines.Nil))
+            val nilNode       = literalNode(info.binding, "nil", Option(Defines.Nil))
             val checkCallNode = createStaticCallNode(
               info.binding,
               s"($tmpName = ${codeOf(initAst.root.get)}) != nil",
@@ -823,8 +823,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
             )
             callAst(checkCallNode, List(assignAst, Ast(nilNode)))
           case None =>
-            val patternAst = astForNode(info.binding.pattern)
-            val nilNode    = literalNode(info.binding, "nil", Option(Defines.Nil))
+            val patternAst    = astForNode(info.binding.pattern)
+            val nilNode       = literalNode(info.binding, "nil", Option(Defines.Nil))
             val checkCallNode = createStaticCallNode(
               info.binding,
               s"${info.localName} != nil",
@@ -846,8 +846,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       blockAst(condBlockNode, List(combinedCheckAst))
     } else {
       val nilCheckAsts = bindingInfos.map { info =>
-        val patternAst = astForNode(info.binding.pattern)
-        val nilNode    = literalNode(info.binding, "nil", Option(Defines.Nil))
+        val patternAst    = astForNode(info.binding.pattern)
+        val nilNode       = literalNode(info.binding, "nil", Option(Defines.Nil))
         val checkCallNode = createStaticCallNode(
           info.binding,
           s"${info.localName} != nil",
@@ -883,7 +883,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     bodyStatements: Iterable[SwiftNode],
     bindingInfos: Seq[BindingInfo]
   ): Ast = {
-    val bindingsWithInitializer = bindingInfos.filter(info => info.tmpName.isDefined && !info.isWildcard)
+    val bindingsWithInitializer      = bindingInfos.filter(info => info.tmpName.isDefined && !info.isWildcard)
     val tupleBindingsWithInitializer =
       bindingInfos.filter(info => info.tmpName.isDefined && info.tuplePattern.isDefined)
     val hasUnwrapping = bindingsWithInitializer.nonEmpty || tupleBindingsWithInitializer.nonEmpty
@@ -931,7 +931,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
         val typeFullName =
           binding.typeAnnotation.map(typeAnn => AstCreatorHelper.cleanType(code(typeAnn.`type`))).getOrElse(Defines.Any)
-        val kind = code(binding.bindingSpecifier)
+        val kind      = code(binding.bindingSpecifier)
         val scopeType =
           if (kind == "let") VariableScopeManager.ScopeType.BlockScope
           else VariableScopeManager.ScopeType.MethodScope

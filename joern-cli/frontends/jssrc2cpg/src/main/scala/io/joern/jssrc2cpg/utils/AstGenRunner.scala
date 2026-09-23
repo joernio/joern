@@ -95,7 +95,7 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
   private val logger = LoggerFactory.getLogger(getClass)
 
   private val executableArgs = {
-    val tsArgs = if (!config.tsTypes) Seq("--no-tsTypes") else Seq.empty
+    val tsArgs            = if (!config.tsTypes) Seq("--no-tsTypes") else Seq.empty
     val ignoredFilesRegex = if (config.ignoredFilesRegex.toString().nonEmpty) {
       Seq("--exclude-regex", config.ignoredFilesRegex.toString())
     } else {
@@ -138,7 +138,7 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
         case _                                                                         => true
       }
     } match {
-      case Success(result) => result
+      case Success(result)    => result
       case Failure(exception) =>
         logger.warn(s"An error occurred while processing file path $file during filtering stage : ", exception)
         false
@@ -146,7 +146,7 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
   }
 
   private def isMinifiedFile(filePath: String, fileLines: => Seq[String]): Boolean = filePath match {
-    case _ if MinifiedPathRegex.matches(filePath) => true
+    case _ if MinifiedPathRegex.matches(filePath)                           => true
     case _ if Files.exists(Paths.get(filePath)) && filePath.endsWith(".js") =>
       val lines             = fileLines
       val linesOfCode       = lines.size

@@ -98,14 +98,14 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
         // Then we are assuming that the given function is defined inside same package as that of current file's package.
         // This assumption will be invalid when another package is imported with alias "."
         val methodFullName = s"$fullyQualifiedPackage.$methodName"
-        val methodInfo = goGlobal
+        val methodInfo     = goGlobal
           .getMethodMetadata(fullyQualifiedPackage, methodName)
           .getOrElse(MethodCacheMetaData(Defines.anyTypeName, s"$methodFullName()"))
         val (signature, fullName, returnTypeFullName) =
           Defines.builtinFunctions.getOrElse(methodName, (methodInfo.signature, methodFullName, methodInfo.returnType))
         val probableLambdaTypeFullName = scope.lookupVariable(methodName) match {
           case Some((_, lambdaTypeFullName)) => Some(lambdaTypeFullName)
-          case _ =>
+          case _                             =>
             goGlobal.getStructTypeMemberType(fullyQualifiedPackage, methodName)
         }
         val (postLambdaFullname, postLambdaSignature, postLambdaReturnTypeFullName) = probableLambdaTypeFullName match {
@@ -131,7 +131,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
                 val alias              = xnode.json(ParserKeys.Name).str
                 val fullNamespace      = resolveAliasToFullName(alias)
                 val callMethodFullName = s"$fullNamespace.$methodName"
-                val lambdaFullName =
+                val lambdaFullName     =
                   goGlobal.getStructTypeMemberType(fullNamespace, methodName).getOrElse(callMethodFullName)
                 val (nameSpace, memberName) = goGlobal.splitNamespaceFromMember(lambdaFullName)
                 val MethodCacheMetaData(returnTypeFullNameCache, signatureCache) =
@@ -157,14 +157,14 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
     methodName: String,
     xnode: ParserNodeInfo
   ): (String, String, String, String, Seq[Ast]) = {
-    val receiverAst = astForNode(xnode)
+    val receiverAst          = astForNode(xnode)
     val receiverTypeFullName =
       receiverAst.headOption
         .flatMap(_.root)
         .map(_.properties.get(PropertyNames.TypeFullName).get.toString)
         .getOrElse(Defines.anyTypeName)
         .stripPrefix("*")
-    val callMethodFullName = s"$receiverTypeFullName.$methodName"
+    val callMethodFullName                                           = s"$receiverTypeFullName.$methodName"
     val MethodCacheMetaData(returnTypeFullNameCache, signatureCache) = goGlobal
       .getMethodMetadata(receiverTypeFullName, methodName)
       .getOrElse(

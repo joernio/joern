@@ -25,7 +25,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def nullSafeCreateParserNodeInfo(json: Option[Value]): DotNetNodeInfo = {
     json match {
       case Some(value) if !value.isNull => createDotNetNodeInfo(value)
-      case _ => {
+      case _                            => {
         logger.warn("Key not found in json. Defaulting to a null node.")
         DotNetNodeInfo(DotNetJsonAst.Unknown, ujson.Null, "", None, None, None, None)
       }
@@ -137,7 +137,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case StringLiteralExpression                        => BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
       case TrueLiteralExpression | FalseLiteralExpression => BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool)
       case NullLiteralExpression                          => BuiltinTypes.DotNetTypeMap(BuiltinTypes.Null)
-      case ObjectCreationExpression =>
+      case ObjectCreationExpression                       =>
         val typeName = nameFromNode(createDotNetNodeInfo(node.json(ParserKeys.Type)))
         scope
           .tryResolveTypeReference(typeName)

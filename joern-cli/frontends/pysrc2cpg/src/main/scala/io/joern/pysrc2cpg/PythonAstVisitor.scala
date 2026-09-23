@@ -86,8 +86,8 @@ class PythonAstVisitor(
 
     defToRedefinedIndex ++= new RedefinitionCalculator().calculate(module)
 
-    val contentOption = if (enableFileContent) Some(nodeToCode.content) else None
-    val fileNode      = nodeBuilder.fileNode(relFileName, contentOption)
+    val contentOption      = if (enableFileContent) Some(nodeToCode.content) else None
+    val fileNode           = nodeBuilder.fileNode(relFileName, contentOption)
     val namespaceBlockNode =
       nodeBuilder.namespaceBlockNode(
         Constants.GLOBAL_NAMESPACE,
@@ -190,7 +190,7 @@ class PythonAstVisitor(
     val pos          = lineAndColOf(node)
     val lineNumber   = pos.line
     val columnNumber = pos.column
-    val text =
+    val text         =
       s"""Node type '${node.getClass.getName}' not handled yet!
          |  Code: '${node.toString}'
          |  File: '$relFileName'
@@ -272,7 +272,7 @@ class PythonAstVisitor(
   ): NewNode = {
     val methodIdentifierNode =
       createIdentifierNode(name, Store, lineAndColOf(functionDef))
-    val suffix = redefinedSuffixFor(functionDef)
+    val suffix                      = redefinedSuffixFor(functionDef)
     val (methodNode, methodRefNode) = createMethodAndMethodRef(
       name,
       Some(name + suffix),
@@ -458,7 +458,7 @@ class PythonAstVisitor(
     val metaTypeDeclName     = classDef.name + metaClassSuffix
     val metaTypeDeclFullName = classFullNameWithRedefinedSuffix(classDef, metaTypeDeclName)
 
-    val metaTypeNode = nodeBuilder.typeNode(metaTypeDeclName, metaTypeDeclFullName)
+    val metaTypeNode     = nodeBuilder.typeNode(metaTypeDeclName, metaTypeDeclFullName)
     val metaTypeDeclNode =
       nodeBuilder.typeDeclNode(
         metaTypeDeclName,
@@ -490,7 +490,7 @@ class PythonAstVisitor(
 
     val inheritsFrom = handleInheritance(classDef.bases.toList)
 
-    val instanceType = nodeBuilder.typeNode(instanceTypeDeclName, instanceTypeDeclFullName)
+    val instanceType     = nodeBuilder.typeNode(instanceTypeDeclName, instanceTypeDeclFullName)
     val instanceTypeDecl =
       nodeBuilder.typeDeclNode(
         instanceTypeDeclName,
@@ -505,7 +505,7 @@ class PythonAstVisitor(
     val className = classDef.name + redefinedSuffixFor(classDef)
     contextStack.pushClass(Some(className), instanceTypeDecl, scopeNames.namesInScope(classDef))
     val classBodyFunctionName = "<body>"
-    val (_, methodRefNode) = createMethodAndMethodRef(
+    val (_, methodRefNode)    = createMethodAndMethodRef(
       classBodyFunctionName,
       scopeName = None,
       parameterProvider = () =>
@@ -609,7 +609,7 @@ class PythonAstVisitor(
       createAssignmentToIdentifier(classDef.name, metaTypeRefNode, lineAndColOf(classDef))
     // Create call to <body> function and assignment of the meta class object to a identifier named
     // like the class.
-    val classIdentifierForCall = createIdentifierNode(classDef.name, Load, lineAndColOf(classDef))
+    val classIdentifierForCall  = createIdentifierNode(classDef.name, Load, lineAndColOf(classDef))
     val callToClassBodyFunction =
       createInstanceCall(methodRefNode, classIdentifierForCall, "", lineAndColOf(classDef), Nil, Nil, None)
 
@@ -678,7 +678,7 @@ class PythonAstVisitor(
       },
       bodyProvider = () => {
         val (arguments, keywordArguments) = createArguments(parameters, lineAndColumn)
-        val staticCall =
+        val staticCall                    =
           createStaticCall(adaptedMethodName, adaptedMethodFullName, lineAndColumn, arguments, keywordArguments)
         val returnNode = createReturn(Some(staticCall), None, lineAndColumn)
         returnNode :: Nil
@@ -936,19 +936,19 @@ class PythonAstVisitor(
 
     val (operatorCode, operatorFullName) =
       augAssign.op match {
-        case ast.Add  => ("+=", Operators.assignmentPlus)
-        case ast.Sub  => ("-=", Operators.assignmentMinus)
-        case ast.Mult => ("*=", Operators.assignmentMultiplication)
+        case ast.Add     => ("+=", Operators.assignmentPlus)
+        case ast.Sub     => ("-=", Operators.assignmentMinus)
+        case ast.Mult    => ("*=", Operators.assignmentMultiplication)
         case ast.MatMult =>
           ("@=", "<operator>.assignmentMatMult") // TODO make this a define and add policy for this
-        case ast.Div    => ("/=", Operators.assignmentDivision)
-        case ast.Mod    => ("%=", Operators.assignmentModulo)
-        case ast.Pow    => ("**=", Operators.assignmentExponentiation)
-        case ast.LShift => ("<<=", Operators.assignmentShiftLeft)
-        case ast.RShift => (">>=", Operators.assignmentArithmeticShiftRight)
-        case ast.BitOr  => ("|=", Operators.assignmentOr)
-        case ast.BitXor => ("^=", Operators.assignmentXor)
-        case ast.BitAnd => ("&=", Operators.assignmentAnd)
+        case ast.Div      => ("/=", Operators.assignmentDivision)
+        case ast.Mod      => ("%=", Operators.assignmentModulo)
+        case ast.Pow      => ("**=", Operators.assignmentExponentiation)
+        case ast.LShift   => ("<<=", Operators.assignmentShiftLeft)
+        case ast.RShift   => (">>=", Operators.assignmentArithmeticShiftRight)
+        case ast.BitOr    => ("|=", Operators.assignmentOr)
+        case ast.BitXor   => ("^=", Operators.assignmentXor)
+        case ast.BitAnd   => ("&=", Operators.assignmentAnd)
         case ast.FloorDiv =>
           ("//=", "<operator>.assignmentFloorDiv") // TODO make this a define and add policy for this
       }
@@ -1013,7 +1013,7 @@ class PythonAstVisitor(
     isAsync: Boolean,
     lineAndColumn: LineAndColumn
   ): nodes.NewNode = {
-    val iterVariableName = getUnusedName()
+    val iterVariableName     = getUnusedName()
     val iterExprIterCallNode =
       createXDotYCall(
         () => convert(iter),
@@ -1191,21 +1191,21 @@ class PythonAstVisitor(
       createAssignmentToIdentifier(managerIdentifierName, convert(withItem.context_expr), lineAndCol)
 
     val enterIdentifierName = getUnusedName("enter")
-    val assignmentToEnter = createAssignmentToIdentifier(
+    val assignmentToEnter   = createAssignmentToIdentifier(
       enterIdentifierName,
       createFieldAccess(createIdentifierNode(managerIdentifierName, Load, lineAndCol), "__enter__", lineAndCol),
       lineAndCol
     )
 
     val exitIdentifierName = getUnusedName("exit")
-    val assignmentToExit = createAssignmentToIdentifier(
+    val assignmentToExit   = createAssignmentToIdentifier(
       exitIdentifierName,
       createFieldAccess(createIdentifierNode(managerIdentifierName, Load, lineAndCol), "__exit__", lineAndCol),
       lineAndCol
     )
 
     val valueIdentifierName = getUnusedName("value")
-    val assignmentToValue = createAssignmentToIdentifier(
+    val assignmentToValue   = createAssignmentToIdentifier(
       valueIdentifierName,
       createInstanceCall(
         createIdentifierNode(enterIdentifierName, Load, lineAndCol),
@@ -1478,19 +1478,19 @@ class PythonAstVisitor(
 
     val opCodeAndFullName =
       binOp.op match {
-        case ast.Add  => ("+", Operators.addition)
-        case ast.Sub  => ("-", Operators.subtraction)
-        case ast.Mult => ("*", Operators.multiplication)
+        case ast.Add     => ("+", Operators.addition)
+        case ast.Sub     => ("-", Operators.subtraction)
+        case ast.Mult    => ("*", Operators.multiplication)
         case ast.MatMult =>
           ("@", "<operator>.matMult") // TODO make this a define and add policy for this
-        case ast.Div    => ("/", Operators.division)
-        case ast.Mod    => ("%", Operators.modulo)
-        case ast.Pow    => ("**", Operators.exponentiation)
-        case ast.LShift => ("<<", Operators.shiftLeft)
-        case ast.RShift => (">>", Operators.arithmeticShiftRight)
-        case ast.BitOr  => ("|", Operators.or)
-        case ast.BitXor => ("^", Operators.xor)
-        case ast.BitAnd => ("&", Operators.and)
+        case ast.Div      => ("/", Operators.division)
+        case ast.Mod      => ("%", Operators.modulo)
+        case ast.Pow      => ("**", Operators.exponentiation)
+        case ast.LShift   => ("<<", Operators.shiftLeft)
+        case ast.RShift   => (">>", Operators.arithmeticShiftRight)
+        case ast.BitOr    => ("|", Operators.or)
+        case ast.BitXor   => ("^", Operators.xor)
+        case ast.BitAnd   => ("&", Operators.and)
         case ast.FloorDiv =>
           ("//", "<operator>.floorDiv") // TODO make this a define and add policy for this
       }
@@ -1519,11 +1519,11 @@ class PythonAstVisitor(
 
   def convert(lambda: ast.Lambda): NewNode = {
     // TODO test lambda expression.
-    val lambdaCounter = contextStack.getAndIncLambdaCounter()
+    val lambdaCounter      = contextStack.getAndIncLambdaCounter()
     val lambdaNumberSuffix =
       if (lambdaCounter == 0) "" else lambdaCounter.toString
 
-    val name = nextClosureName()
+    val name               = nextClosureName()
     val (_, methodRefNode) = createMethodAndMethodRef(
       name,
       Some(name),
@@ -1557,8 +1557,8 @@ class PythonAstVisitor(
     */
   // TODO test
   def convert(dict: ast.Dict): NewNode = {
-    val MAX_KV_PAIRS    = 1000
-    val tmpVariableName = getUnusedName()
+    val MAX_KV_PAIRS     = 1000
+    val tmpVariableName  = getUnusedName()
     val dictOperatorCall =
       createLiteralOperatorCall("{", "}", "<operator>.dictLiteral", lineAndColOf(dict))
     val dictVariableAssigNode =
@@ -1846,7 +1846,7 @@ class PythonAstVisitor(
       val assignmentNode  = createAssignmentToIdentifier(tmpVariableName, rhsNode, lineAndColumn)
 
       val tmpIdentifierCompare1 = createIdentifierNode(tmpVariableName, Load, lineAndColumn)
-      val compareNode = createBinaryOperatorCall(
+      val compareNode           = createBinaryOperatorCall(
         lhsNode,
         compopToOpCodeAndFullName(compOperators.head),
         tmpIdentifierCompare1,
@@ -1876,7 +1876,7 @@ class PythonAstVisitor(
     *      https://docs.python.org/3/reference/datamodel.html#the-standard-type-hierarchy search for "Instance methods"
     */
   def convert(call: ast.Call): nodes.NewNode = {
-    val argumentNodes = call.args.map(convert).toSeq
+    val argumentNodes   = call.args.map(convert).toSeq
     val keywordArgNodes = call.keywords.map { keyword =>
       if (keyword.arg.isDefined) {
         (keyword.arg.get, convert(keyword.value))
@@ -1901,7 +1901,7 @@ class PythonAstVisitor(
         )
       case _ =>
         val receiverNode = convert(call.func)
-        val name = call.func match {
+        val name         = call.func match {
           case ast.Name(id, _) => id
           case _               => ""
         }
@@ -1912,7 +1912,7 @@ class PythonAstVisitor(
   def convert(formattedValue: ast.FormattedValue): nodes.NewNode = {
     val valueNode = convert(formattedValue.value)
 
-    val equalSignStr = if (formattedValue.equalSign) "=" else ""
+    val equalSignStr  = if (formattedValue.equalSign) "=" else ""
     val conversionStr = formattedValue.conversion match {
       case -1  => ""
       case 115 => "!s"
@@ -2025,7 +2025,7 @@ class PythonAstVisitor(
         val upper = slice.upper.map(convert).getOrElse(nodeBuilder.literalNode("None", None, noLineAndColumn))
         val step  = slice.step.map(convert).getOrElse(nodeBuilder.literalNode("None", None, noLineAndColumn))
 
-        val code = nodeToCode.getCode(subscript)
+        val code     = nodeToCode.getCode(subscript)
         val callNode =
           nodeBuilder.callNode(code, "<operator>.slice", DispatchTypes.STATIC_DISPATCH, lineAndColOf(slice))
 
@@ -2081,7 +2081,7 @@ class PythonAstVisitor(
     // createValueToTargetsDecomposition.
     assert(memOpMap.get(tuple).get == Load || memOpMap.get(tuple).get == Del)
     val tupleElementNodes = tuple.elts.map(convert)
-    val code =
+    val code              =
       if (tupleElementNodes.size != 1) tupleElementNodes.map(codeOf).mkString("(", ", ", ")")
       else "(" + codeOf(tupleElementNodes.head) + ",)"
 

@@ -180,8 +180,8 @@ class AstCreationPass(
     fileAndLanguage: (Path, ILanguage),
     accumulator: Accumulator
   ): Unit = {
-    val (path, language) = fileAndLanguage
-    val relPath          = SourceFiles.toRelativePath(path.toString, config.inputPath)
+    val (path, language)   = fileAndLanguage
+    val relPath            = SourceFiles.toRelativePath(path.toString, config.inputPath)
     val (gotCpg, duration) = TimeUtils.time {
       val parseResult = cdtParser.parse(path, language, accumulator)
       parseResult match {
@@ -190,7 +190,7 @@ class AstCreationPass(
           report.addReportInfo(relPath, fileLOC, parsed = true)
           try {
             val languageSuffix = suffixFromLanguage(relPath, language)
-            val localDiff =
+            val localDiff      =
               new AstCreator(relPath, accumulator, config, translationUnit, headerFileFinder, languageSuffix)(
                 config.schemaValidation
               ).createAst()

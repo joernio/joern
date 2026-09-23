@@ -46,7 +46,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
     val compareAsts = stmt.getCompare.toScala.toList.flatMap(astsForExpression(_, ExpectedType.Boolean))
 
     val updateAsts = stmt.getUpdate.asScala.toList match {
-      case Nil => Nil
+      case Nil         => Nil
       case expressions =>
         scope.pushBlockScope()
         scope.addLocalsForPatternsToEnclosingBlock(
@@ -97,7 +97,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
     val variableAssignAst      = astForIterableForEachItemAssign(stmt, iteratorLocalNode, variableLocal)
 
     val bodyPrefixAsts = Seq(Ast(variableLocal), variableAssignAst)
-    val bodyAst = stmt.getBody match {
+    val bodyAst        = stmt.getBody match {
       case block: BlockStmt =>
         astForBlockStatement(block, prefixAsts = bodyPrefixAsts)
 
@@ -118,13 +118,13 @@ trait AstForForLoopsCreator { this: AstCreator =>
     iteratorLocalNode: NewLocal,
     variableLocal: NewLocal
   ): Ast = {
-    val forVariableType = variableLocal.typeFullName
+    val forVariableType    = variableLocal.typeFullName
     val varLocalAssignNode =
       operatorCallNode(stmt, PropertyDefaults.Code, Operators.assignment, Some(forVariableType))
     val varLocalAssignIdentifier =
       identifierNode(stmt, variableLocal.name, variableLocal.name, variableLocal.typeFullName)
 
-    val iterNextCallSignature = composeSignature(Option(TypeConstants.Object), Option(Nil), 0)
+    val iterNextCallSignature      = composeSignature(Option(TypeConstants.Object), Option(Nil), 0)
     val iterNextCallMethodFullName =
       composeMethodFullName(TypeConstants.Iterator, NameConstants.NextCallName, iterNextCallSignature)
     val iterNextCallNode =
@@ -187,15 +187,15 @@ trait AstForForLoopsCreator { this: AstCreator =>
         logger.warn(s"Could not create AST for iterable expr $iterableExpression: $filename:l$lineNo")
         Ast()
       case iterableAstHead :: Nil => iterableAstHead
-      case iterableAsts =>
+      case iterableAsts           =>
         logger.warn(
           s"Found multiple ASTS for iterable expr $iterableExpression: $filename:l$lineNo\nDropping all but the first!"
         )
         iterableAsts.head
     }
 
-    val iterableName     = nextIterableName()
-    val genericSignature = binarySignatureCalculator.unspecifiedClassType
+    val iterableName      = nextIterableName()
+    val genericSignature  = binarySignatureCalculator.unspecifiedClassType
     val iterableLocalNode = localNode(
       iterableExpression,
       iterableName,
@@ -210,7 +210,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
     val iterableAssignIdentifier =
       identifierNode(iterableExpression, iterableName, iterableName, iterableType.getOrElse("ANY"))
     val iterableAssignArgs = List(Ast(iterableAssignIdentifier), iterableAst)
-    val iterableAssignAst =
+    val iterableAssignAst  =
       callAst(iterableAssignNode, iterableAssignArgs)
         .withRefEdge(iterableAssignIdentifier, iterableLocalNode)
 
@@ -224,7 +224,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
     val idxName          = nextIndexName()
     val typeFullName     = TypeConstants.Int
     val genericSignature = binarySignatureCalculator.variableBinarySignature(TypeConstants.Int)
-    val idxLocal =
+    val idxLocal         =
       NewLocal()
         .name(idxName)
         .typeFullName(typeFullName)
@@ -236,7 +236,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
   }
 
   private def nativeForEachIdxInitializerAst(stmt: ForEachStmt, idxLocal: NewLocal): Ast = {
-    val idxName = idxLocal.name
+    val idxName                = idxLocal.name
     val idxInitializerCallNode =
       operatorCallNode(stmt, s"int $idxName = 0", Operators.assignment, Some(TypeConstants.Int))
     val idxIdentifierArg      = identifierNode(stmt, idxName, idxName, idxLocal.typeFullName)
@@ -256,7 +256,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
       typeFullName = Some(TypeConstants.Boolean)
     )
     val comparisonIdxIdentifier = identifierNode(stmt, idxName, idxName, idxLocal.typeFullName)
-    val sizeOfCall = operatorCallNode(
+    val sizeOfCall              = operatorCallNode(
       stmt,
       code = s"${iterableSource.name}.${NameConstants.Length}",
       Operators.sizeOf,
@@ -292,7 +292,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
         logger.warn(s"ForEach statement has empty variable list: $filename$lineNo")
         None
       case variable :: Nil => Some(variable)
-      case variable :: _ =>
+      case variable :: _   =>
         logger.warn(s"ForEach statement defines multiple variables. Dropping all but the first: $filename$lineNo")
         Some(variable)
     }
@@ -306,7 +306,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
       case Some(variable) =>
         val originalName = variable.getNameAsString
         // TODO: Name mangling
-        val mangledName = originalName
+        val mangledName  = originalName
         val typeFullName =
           tryWithSafeStackOverflow(variable.getType).toOption.flatMap(typeInfoCalc.fullName).getOrElse("ANY")
         val localNode = partialLocalNode
@@ -344,7 +344,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
     val iteratorAssignIdentifier =
       identifierNode(iterExpr, iteratorLocalNode.name, iteratorLocalNode.name, iteratorLocalNode.typeFullName)
 
-    val iteratorCallSignature = composeSignature(Option(TypeConstants.Iterator), Option(Nil), 0)
+    val iteratorCallSignature  = composeSignature(Option(TypeConstants.Iterator), Option(Nil), 0)
     val iteratorCallMethodName = composeMethodFullName(
       iterableType.getOrElse(Defines.UnresolvedNamespace),
       NameConstants.IteratorCallName,
@@ -408,14 +408,14 @@ trait AstForForLoopsCreator { this: AstCreator =>
   ): Ast = {
     // Everything will be on the same line as the `for` statement, but this is the most useful
     // solution for debugging.
-    val lineNo = variableLocal.lineNumber
+    val lineNo        = variableLocal.lineNumber
     val varAssignNode =
       operatorCallNode(stmt, PropertyDefaults.Code, Operators.assignment, Option(variableLocal.typeFullName))
 
     val targetNode = identifierNode(stmt, variableLocal.name, variableLocal.name, variableLocal.typeFullName)
 
     val indexAccessTypeFullName = iterable.typeFullName.map(_.replaceAll(raw"\[]", ""))
-    val indexAccess =
+    val indexAccess             =
       operatorCallNode(stmt, PropertyDefaults.Code, Operators.indexAccess, indexAccessTypeFullName)
 
     val indexAccessIdentifier =

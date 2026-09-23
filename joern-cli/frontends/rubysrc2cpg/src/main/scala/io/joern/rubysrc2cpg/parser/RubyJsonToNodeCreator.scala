@@ -35,7 +35,7 @@ class RubyJsonToNodeCreator(
       case obj: ujson.Obj => visit(obj)
       case ujson.Null     => StatementList(Nil)(defaultTextSpan())
       case ujson.Str(x)   => StaticLiteral(Defines.prefixAsCoreType(Defines.String))(defaultTextSpan(x))
-      case x =>
+      case x              =>
         logger.warn(s"Unhandled ujson type ${x.getClass}")
         defaultResult()
     }
@@ -172,7 +172,7 @@ class RubyJsonToNodeCreator(
     val astTypeStr = obj(ParserKeys.Type).str
     AstType.fromString(astTypeStr) match {
       case Some(typ) => visitAstType(typ)
-      case _ =>
+      case _         =>
         logger.warn(s"Unhandled `parser` type '$astTypeStr'")
         defaultResult()
     }
@@ -183,9 +183,9 @@ class RubyJsonToNodeCreator(
       if (obj.contains(ParserKeys.Arguments)) obj.visitArray(ParserKeys.Arguments)
       else Nil
     obj(ParserKeys.Name).str match {
-      case "public"    => PublicModifier(args)(obj.toTextSpan)
-      case "private"   => PrivateModifier(args)(obj.toTextSpan)
-      case "protected" => ProtectedModifier(args)(obj.toTextSpan)
+      case "public"     => PublicModifier(args)(obj.toTextSpan)
+      case "private"    => PrivateModifier(args)(obj.toTextSpan)
+      case "protected"  => ProtectedModifier(args)(obj.toTextSpan)
       case modifierName =>
         logger.warn(s"Unknown modifier type $modifierName")
         defaultResult(Option(obj.toTextSpan))
@@ -255,9 +255,9 @@ class RubyJsonToNodeCreator(
 
     val singleAssignments = arrayParam.elements.map { param =>
       val rhsSplattingNode = SplattingRubyNode(tmpMandatoryParam)(arrayParam.span.spanStart(s"*$freshTmpVar"))
-      val lhs = param match {
+      val lhs              = param match {
         case x: SimpleIdentifier => SimpleIdentifier()(x.span)
-        case x: ArrayParameter =>
+        case x: ArrayParameter   =>
           SplattingRubyNode(SimpleIdentifier()(arrayParam.span.spanStart(x.span.text.stripPrefix("*"))))(
             arrayParam.span.spanStart(x.span.text)
           )
@@ -301,14 +301,14 @@ class RubyJsonToNodeCreator(
     visit(obj(ParserKeys.CallName)) match {
       case classNew: ObjectInstantiation if classNew.span.text == "Class.new" =>
         AnonymousClassDeclaration(freshClassName(obj.toTextSpan), None, block.toStatementList)(obj.toTextSpan)
-      case objNew: ObjectInstantiation                         => objNew.withBlock(block)
-      case lambda: SimpleIdentifier if lambda.text == "lambda" => ProcOrLambdaExpr(block)(obj.toTextSpan)
+      case objNew: ObjectInstantiation                          => objNew.withBlock(block)
+      case lambda: SimpleIdentifier if lambda.text == "lambda"  => ProcOrLambdaExpr(block)(obj.toTextSpan)
       case ident: SimpleIdentifier if ident.span.text == "loop" =>
         val trueLiteral = StaticLiteral(Defines.prefixAsCoreType(Defines.TrueClass))(ident.span.spanStart("true"))
         DoWhileExpression(trueLiteral, body)(ident.span)
       case simpleIdentifier: SimpleIdentifier =>
         SimpleCall(simpleIdentifier, Nil)(obj.toTextSpan).withBlock(block)
-      case simpleCall: RubyCall => simpleCall.withBlock(block)
+      case simpleCall: RubyCall                                => simpleCall.withBlock(block)
       case memberAccess @ MemberAccess(target, op, memberName) =>
         val memberCall = MemberCall(target, op, memberName, List.empty)(memberAccess.span)
         memberCall.withBlock(block)
@@ -469,7 +469,7 @@ class RubyJsonToNodeCreator(
 
   private def visitExecutableString(obj: Obj): RubyExpression = {
     val operatorName = RubyOperators.backticks
-    val callName =
+    val callName     =
       SimpleIdentifier(Option(Defines.prefixAsKernelDefined(operatorName)))(obj.toTextSpan.spanStart(operatorName))
     val arguments = obj.visitArray(ParserKeys.Arguments)
     SimpleCall(callName, arguments)(obj.toTextSpan)
@@ -490,7 +490,7 @@ class RubyJsonToNodeCreator(
     val span         = obj.toTextSpan
     val receiver     = visit(obj(ParserKeys.Receiver))
     val memberAccess = MemberAccess(receiver, ".", fieldName)(receiver.span.spanStart(s"${receiver.text}.@$fieldName"))
-    val argument = obj
+    val argument     = obj
       .visitArray(ParserKeys.Arguments)
       .headOption
       .getOrElse(StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(span.spanStart("nil")))
@@ -503,7 +503,7 @@ class RubyJsonToNodeCreator(
   private def visitForStatement(obj: Obj): RubyExpression = {
     val forVariable      = visit(obj(ParserKeys.Variable))
     val iterableVariable = visit(obj(ParserKeys.Collection))
-    val doBlock = visit(obj(ParserKeys.Body)) match {
+    val doBlock          = visit(obj(ParserKeys.Body)) match {
       case stmtList: StatementList => stmtList
       case other                   => StatementList(List(other))(other.span)
     }
@@ -610,8 +610,8 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitIndexAccessAsSend(obj: Obj): RubyExpression = {
-    val target  = visit(obj(ParserKeys.Receiver))
-    val indices = obj.visitArray(ParserKeys.Arguments)
+    val target       = visit(obj(ParserKeys.Receiver))
+    val indices      = obj.visitArray(ParserKeys.Arguments)
     val isRegexMatch = indices.headOption.exists {
       case x: StaticLiteral => x.typeFullName == Defines.prefixAsCoreType(Defines.Regexp)
       case _                => false
@@ -639,7 +639,7 @@ class RubyJsonToNodeCreator(
   private def visitInstanceVariable(obj: Obj): RubyExpression = InstanceFieldIdentifier()(obj.toTextSpan)
 
   private def visitKwArg(obj: Obj): RubyExpression = {
-    val name = obj(ParserKeys.Key).str
+    val name    = obj(ParserKeys.Key).str
     val default = obj
       .visitOption(ParserKeys.Value)
       .getOrElse(StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(obj.toTextSpan.spanStart("nil")))
@@ -650,7 +650,7 @@ class RubyJsonToNodeCreator(
     val stmts = obj(ParserKeys.Body) match {
       case o: Obj => visit(o) :: Nil
       case _: Arr => obj.visitArray(ParserKeys.Body)
-      case _ =>
+      case _      =>
         val span = obj.toTextSpan
         logger.warn(s"Unhandled JSON body type for `KwBegin`: ${span.text}")
         defaultResult(Option(span)) :: Nil
@@ -705,7 +705,7 @@ class RubyJsonToNodeCreator(
     obj(ParserKeys.Name).str match {
       case "public_class_method"  => PublicMethodModifier(args)(obj.toTextSpan)
       case "private_class_method" => PrivateMethodModifier(args)(obj.toTextSpan)
-      case modifierName =>
+      case modifierName           =>
         logger.warn(s"Unknown modifier type $modifierName")
         defaultResult(Option(obj.toTextSpan))
     }
@@ -714,7 +714,7 @@ class RubyJsonToNodeCreator(
   private def visitMethodDefinition(obj: Obj): RubyExpression = {
     val name       = obj(ParserKeys.Name).str
     val parameters = visitMethodParameters(obj(ParserKeys.Arguments).asInstanceOf[ujson.Obj])
-    val body = obj
+    val body       = obj
       .visitOption(ParserKeys.Body)
       .map {
         case x: StatementList => x
@@ -833,7 +833,7 @@ class RubyJsonToNodeCreator(
     AstType.fromString(paramsNode(ParserKeys.Type).str) match {
       case Some(AstType.Args)        => paramsNode.visitArray(ParserKeys.Children)
       case Some(AstType.ForwardArgs) => visit(paramsNode) :: Nil
-      case Some(x) =>
+      case Some(x)                   =>
         logger.warn(s"Not explicitly handled parameter type '$x', no special handling applied")
         visit(paramsNode) :: Nil
       case _ =>
@@ -853,7 +853,7 @@ class RubyJsonToNodeCreator(
     val target   = SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
 
     obj.visitArray(ParserKeys.Arguments) match {
-      case Nil => RaiseCall(target, List.empty)(obj.toTextSpan)
+      case Nil                              => RaiseCall(target, List.empty)(obj.toTextSpan)
       case (argument: StaticLiteral) :: Nil =>
         val simpleErrorId =
           SimpleIdentifier(Option(Defines.prefixAsCoreType("StandardError")))(argument.span.spanStart("StandardError"))
@@ -906,7 +906,7 @@ class RubyJsonToNodeCreator(
   private def visitResBody(obj: Obj): RubyExpression = {
     val exceptionClassList = obj.visitOption(ParserKeys.ExecList)
     val variables          = obj.visitOption(ParserKeys.ExecVar)
-    val body = obj.visitOption(ParserKeys.Body) match {
+    val body               = obj.visitOption(ParserKeys.Body) match {
       case Some(stmt: StatementList) => stmt
       case Some(expr)                => StatementList(expr :: Nil)(expr.span)
       case None                      => StatementList(Nil)(obj.toTextSpan)
@@ -918,7 +918,7 @@ class RubyJsonToNodeCreator(
     obj(ParserKeys.Value) match {
       case ujson.Null      => ArrayParameter("*")(obj.toTextSpan)
       case ujson.Str(name) => ArrayParameter(name)(obj.toTextSpan)
-      case x =>
+      case x               =>
         logger.warn(s"Unhandled `restarg` JSON type '$x'")
         defaultResult(Option(obj.toTextSpan))
     }
@@ -927,7 +927,7 @@ class RubyJsonToNodeCreator(
   private def visitRescueStatement(obj: Obj): RubyExpression = {
     val stmt          = visit(obj(ParserKeys.Statement))
     val rescueClauses = obj.visitArray(ParserKeys.Bodies).asInstanceOf[List[RescueClause]]
-    val elseClause = obj.visitOption(ParserKeys.ElseClause) match {
+    val elseClause    = obj.visitOption(ParserKeys.ElseClause) match {
       case Some(body) => Option(ElseClause(body)(body.span))
       case None       => Option.empty
     }
@@ -985,7 +985,7 @@ class RubyJsonToNodeCreator(
       case "private_class_method" | "public_class_method"                       => visitMethodAccessModifier(obj)
       case requireLike if ImportCallNames.contains(requireLike) && !hasReceiver => visitRequireLike(obj)
       case _ if BinaryOperators.isBinaryOperatorName(callName)                  => visitBinaryExpression(obj)
-      case _ if UnaryOperators.isUnaryOperatorName(callName) =>
+      case _ if UnaryOperators.isUnaryOperatorName(callName)                    =>
         UnaryExpression(callName, visit(obj(ParserKeys.Receiver)))(obj.toTextSpan)
       case _ if callName == RubyOperators.regexpMatch || RubyOperators.regexMethods.contains(callName) =>
         visitRegexMatchingSend(obj)
@@ -998,7 +998,7 @@ class RubyJsonToNodeCreator(
     val callName    = obj(ParserKeys.Name).str
     val target      = SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
     val argumentArr = obj.visitArray(ParserKeys.Arguments)
-    val arguments = argumentArr.flatMap {
+    val arguments   = argumentArr.flatMap {
       case hashLiteral: HashLiteral   => hashLiteral.elements // a hash is likely named arguments
       case assocList: AssociationList => assocList.elements   // same as above
       case x                          => x :: Nil
@@ -1009,7 +1009,7 @@ class RubyJsonToNodeCreator(
     if (obj.contains(ParserKeys.Receiver)) {
       val base         = visit(obj(ParserKeys.Receiver))
       val isMemberCall = usesParenthesis || callName == "<<" || hasArguments
-      val op = {
+      val op           = {
         val dot = if (objSpan.text.stripPrefix(base.text).startsWith("::")) "::" else "."
         if (isConditional) s"&$dot" else dot
       }
@@ -1068,7 +1068,7 @@ class RubyJsonToNodeCreator(
     val base       = visit(obj(ParserKeys.Base))
     val name       = obj(ParserKeys.Name).str
     val parameters = visitMethodParameters(obj(ParserKeys.Arguments).asInstanceOf[ujson.Obj])
-    val body =
+    val body       =
       obj.visitOption(ParserKeys.Body).getOrElse(StatementList(Nil)(obj.toTextSpan.spanStart("<empty>"))) match {
         case stmtList: StatementList => stmtList
         case expr                    => StatementList(expr :: Nil)(expr.span)
@@ -1124,7 +1124,7 @@ class RubyJsonToNodeCreator(
 
   private def visitSingleAssignment(obj: Obj): RubyExpression = {
     val lhsSpan = obj.toTextSpan.spanStart(obj(ParserKeys.Lhs).str)
-    val lhs = obj(ParserKeys.Lhs).str match {
+    val lhs     = obj(ParserKeys.Lhs).str match {
       case s"@@$_" => ClassFieldIdentifier()(lhsSpan)
       case s"@$_"  => InstanceFieldIdentifier()(lhsSpan)
       case _       => SimpleIdentifier()(lhsSpan)
@@ -1145,7 +1145,7 @@ class RubyJsonToNodeCreator(
   private def visitSplat(obj: Obj): RubyExpression = {
     obj.visitOption(ParserKeys.Value) match {
       case Some(x) => SplattingRubyNode(x)(obj.toTextSpan)
-      case None =>
+      case None    =>
         val emptyStar = SimpleIdentifier()(obj.toTextSpan.spanStart("_"))
         SplattingRubyNode(emptyStar)(obj.toTextSpan)
     }

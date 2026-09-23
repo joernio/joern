@@ -48,7 +48,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
     jsonFilename: String,
     usedTypes: mutable.HashSet[String]
   ): Unit = {
-    val parseResultMaybe = BabelJsonParser.readFile(Paths.get(config.inputPath), Paths.get(jsonFilename))
+    val parseResultMaybe               = BabelJsonParser.readFile(Paths.get(config.inputPath), Paths.get(jsonFilename))
     val ((gotCpg, filename), duration) = TimeUtils.time {
       parseResultMaybe match {
         case Success(parseResult) =>

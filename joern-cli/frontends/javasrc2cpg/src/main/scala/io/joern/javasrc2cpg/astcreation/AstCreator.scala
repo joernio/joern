@@ -172,7 +172,7 @@ class AstCreator(
   // TODO: Handle static imports correctly.
   private def addImportsToScope(compilationUnit: CompilationUnit): Seq[NewImport] = {
     val (asteriskImports, specificImports) = compilationUnit.getImports.asScala.toList.partition(_.isAsterisk)
-    val specificImportNodes = specificImports.map { importStmt =>
+    val specificImportNodes                = specificImports.map { importStmt =>
       val name         = importStmt.getName.getIdentifier
       val typeFullName = importStmt.getNameAsString // fully qualified name
       typeInfoCalc.registerType(typeFullName)
@@ -192,7 +192,7 @@ class AstCreator(
       case imp :: Nil =>
         val name         = NameConstants.WildcardImportName
         val typeFullName = imp.getNameAsString
-        val importNode = NewImport()
+        val importNode   = NewImport()
           .importedAs(name)
           .importedEntity(typeFullName)
           .isWildcard(true)
@@ -258,7 +258,7 @@ class AstCreator(
       Try(expr) match {
         case success: Success[_]                         => success
         case Failure(exception: UnsolvedSymbolException) => Failure(exception)
-        case failure: Failure[_] =>
+        case failure: Failure[_]                         =>
           val exceptionType = failure.exception.getClass
 
           val loggedCount = loggedExceptionCounts.updateWith(exceptionType) {

@@ -59,7 +59,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         val variadicParams = variadicParamsForCPPFunctionFromInfo(funcDecl, parameterNodeInfos)
 
         val (astParentType, astParentFullName) = methodDeclarationParentInfo()
-        val methodInfo = FunctionDeclNodePass.MethodInfo(
+        val methodInfo                         = FunctionDeclNodePass.MethodInfo(
           name,
           code = codeString,
           fileName = filename,
@@ -108,12 +108,12 @@ trait AstForFunctionsCreator { this: AstCreator =>
     registerMethodDefinition(fullName)
     val isConstructor                 = bindsToConstructor(funcDef) && fullName.contains(s".$name:")
     val shouldCreateFunctionReference = typeRefIdStack.headOption.isEmpty
-    val methodRefNode_ = if (!shouldCreateFunctionReference) { None }
+    val methodRefNode_                = if (!shouldCreateFunctionReference) { None }
     else { Option(methodRefNode(funcDef, name, fullName, fullName)) }
 
-    val codeString      = code(funcDef)
-    val methodBlockNode = blockNode(funcDef)
-    val methodNode_     = methodNode(funcDef, name, codeString, fullName, Some(signature), filename)
+    val codeString       = code(funcDef)
+    val methodBlockNode  = blockNode(funcDef)
+    val methodNode_      = methodNode(funcDef, name, codeString, fullName, Some(signature), filename)
     val capturingRefNode = if (shouldCreateFunctionReference) { methodRefNode_ }
     else { typeRefIdStack.headOption }
 
@@ -206,7 +206,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
   private def createFunctionTypeAndTypeDecl(funcDef: IASTFunctionDefinition, methodNode: NewMethod): Unit = {
     registerType(methodNode.fullName)
     val (astParentType, astParentFullName) = methodDeclarationParentInfo()
-    val methodTypeDeclNode = typeDeclNode(
+    val methodTypeDeclNode                 = typeDeclNode(
       funcDef,
       methodNode.name,
       methodNode.fullName,
@@ -281,8 +281,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
         val op       = Operators.assignment
         val leftCode =
           leftAst.root.collect { case expr: ExpressionNew => expr.code }.getOrElse(code(init.getMemberInitializerId))
-        val rightCode  = code(l)
-        val codeString = s"$leftCode = $rightCode"
+        val rightCode      = code(l)
+        val codeString     = s"$leftCode = $rightCode"
         val assignmentCall =
           callNode(init, codeString, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Void)))
         callAst(assignmentCall, List(leftAst, rightAst))
@@ -295,24 +295,24 @@ trait AstForFunctionsCreator { this: AstCreator =>
         val args                = astsForConstructorInitializer(c)
         constructorInvocationBlockAst(init, typeFullName, fullNameWithSig, signature, constructorCallCode, args)
       case _ =>
-        val leftAst = syntheticThisAccess(init.getMemberInitializerId, nameForIdentifier(init.getMemberInitializerId))
+        val leftAst  = syntheticThisAccess(init.getMemberInitializerId, nameForIdentifier(init.getMemberInitializerId))
         val rightAst = init.getInitializer match {
           case l: IASTInitializerList           => astForNode(l.getClauses.head)
           case c: ICPPASTConstructorInitializer => c.getArguments.headOption.map(astForNode).getOrElse(Ast())
-          case _ =>
+          case _                                =>
             val name   = nameForIdentifier(init.getMemberInitializerId)
             val tpe    = registerType(typeFor(init.getMemberInitializerId))
             val idNode = identifierNode(init.getMemberInitializerId, name, name, tpe)
             scope.addVariableReference(name, idNode, tpe, EvaluationStrategies.BY_REFERENCE)
             Ast(idNode)
         }
-        val op = Operators.assignment
+        val op       = Operators.assignment
         val leftCode =
           leftAst.root.collect { case expr: ExpressionNew => expr.code }.getOrElse(code(init.getMemberInitializerId))
         val rightCode =
           rightAst.root.collect { case expr: ExpressionNew => expr.code }.getOrElse(code(init.getInitializer))
 
-        val codeString = s"$leftCode = $rightCode"
+        val codeString     = s"$leftCode = $rightCode"
         val assignmentCall =
           callNode(init, codeString, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Void)))
         callAst(assignmentCall, List(leftAst, rightAst))
@@ -504,14 +504,14 @@ trait AstForFunctionsCreator { this: AstCreator =>
   }
 
   private def setEvaluationStrategyForCaptures(lambdaExpression: ICPPASTLambdaExpression, bodyAst: Ast): Unit = {
-    val captureDefault = lambdaExpression.getCaptureDefault
+    val captureDefault  = lambdaExpression.getCaptureDefault
     val strategyMapping = captureDefault match {
       case CaptureDefault.BY_REFERENCE => EvaluationStrategies.BY_REFERENCE
       case _                           => EvaluationStrategies.BY_VALUE
     }
     lambdaExpression.getCaptures match {
       case captures if captures.isEmpty && captureDefault == CaptureDefault.UNSPECIFIED => // do nothing
-      case captures if captures.isEmpty =>
+      case captures if captures.isEmpty                                                 =>
         bodyAst.nodes.foreach {
           case i: NewIdentifier if !scope.variableIsInMethodScope(i.name) =>
             scope.updateVariableReference(i, strategyMapping)
@@ -593,7 +593,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
   ): Unit = {
     registerType(lambdaMethodNode.fullName)
     val (astParentType, astParentFullName) = methodDeclarationParentInfo()
-    val lambdaTypeDeclNode = typeDeclNode(
+    val lambdaTypeDeclNode                 = typeDeclNode(
       lambdaExpression,
       lambdaMethodNode.name,
       lambdaMethodNode.fullName,

@@ -64,7 +64,7 @@ object FileOpRace extends QueryBundle {
 
         fileCalls(cpg.call)
           .filter(call => {
-            val otherCalls = fileCalls(call.method.ast.isCall).filter(_ != call)
+            val otherCalls        = fileCalls(call.method.ast.isCall).filter(_ != call)
             val argsForOtherCalls =
               otherCalls.flatMap(c => fileArgs(c)).code.toSet
 

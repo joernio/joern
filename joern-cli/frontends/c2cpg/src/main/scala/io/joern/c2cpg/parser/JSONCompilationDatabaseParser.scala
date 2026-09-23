@@ -79,7 +79,7 @@ object JSONCompilationDatabaseParser {
 
     def includes(): mutable.LinkedHashSet[String] = {
       val includesFromArguments = arguments.filter(a => a.startsWith("-I")).map(pathFromInclude)
-      val includesFromCommand = command.flatMap { c =>
+      val includesFromCommand   = command.flatMap { c =>
         val includes = includeInCommandPattern.findAllIn(c).toList
         includes.map(pathFromInclude)
       }
@@ -90,7 +90,7 @@ object JSONCompilationDatabaseParser {
 
     def defines(): mutable.LinkedHashSet[(String, String)] = {
       val definesFromArguments = arguments.filter(a => a.startsWith("-D")).map(nameValuePairFromDefine)
-      val definesFromCommand = command.flatMap { c =>
+      val definesFromCommand   = command.flatMap { c =>
         val defines = defineInCommandPattern.findAllIn(c).toList
         defines.map(nameValuePairFromDefine)
       }

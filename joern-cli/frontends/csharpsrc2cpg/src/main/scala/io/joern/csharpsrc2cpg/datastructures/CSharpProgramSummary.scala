@@ -114,11 +114,11 @@ object CSharpProgramSummary {
     CSharpProgramSummary(fromExternalJsons(paths))
 
   private def fromExternalJsons(paths: Set[String]): NamespaceToTypeMap = {
-    val jsonFiles = paths.flatMap(SourceFiles.determine(_, Set(".json"))(Seq.empty)).toList
+    val jsonFiles    = paths.flatMap(SourceFiles.determine(_, Set(".json"))(Seq.empty)).toList
     val inputStreams = jsonFiles.flatMap { path =>
       Try(java.io.FileInputStream(path)) match {
         case Success(stream) => Some(stream)
-        case Failure(exc) =>
+        case Failure(exc)    =>
           logger.warn(s"Unable to open file: $path", exc)
           None
       }
@@ -129,7 +129,7 @@ object CSharpProgramSummary {
       mutable.Map.empty
     } else {
       jsonToInitialMapping(loadAndMergeJsonStreams(inputStreams)) match {
-        case Success(mapping) => mapping
+        case Success(mapping)   => mapping
         case Failure(exception) =>
           logger.warn("Failed to parsed merged JSON streams", exception)
           mutable.Map.empty

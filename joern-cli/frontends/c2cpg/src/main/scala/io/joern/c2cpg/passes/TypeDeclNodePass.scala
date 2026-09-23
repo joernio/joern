@@ -45,7 +45,7 @@ class TypeDeclNodePass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
   }
 
   private def createGlobalAst(): Ast = {
-    val includesFile = NewFile().name(filename)
+    val includesFile   = NewFile().name(filename)
     val namespaceBlock = NewNamespaceBlock()
       .name(globalName)
       .fullName(fullName)

@@ -23,7 +23,7 @@ class ClosureBindingsPass(cpg: Cpg) extends CpgPass(cpg) {
   private def stubTypeDeclIfNeeded(diffGraph: DiffGraphBuilder, fullName: String): TypeDecl | NewTypeDecl = {
     cpg.typeDecl.fullNameExact(fullName).nextOption() match {
       case Some(existing) => existing
-      case None =>
+      case None           =>
         seenTypeDecls.getOrElseUpdate(
           fullName, {
             val typeDeclStub = TypeDeclStubCreator.createTypeDeclStub("Function", fullName)
@@ -42,7 +42,7 @@ class ClosureBindingsPass(cpg: Cpg) extends CpgPass(cpg) {
     val methodFullName = s"$closureMethodFullName.${Defines.ClosureApplyMethodName}:${closureMethod.signature}"
     cpg.method.fullNameExact(methodFullName).nextOption() match {
       case Some(existing) => existing
-      case None =>
+      case None           =>
         seenBoundMethods.getOrElseUpdate(
           methodFullName, {
             MethodStubCreator.createMethodStub(

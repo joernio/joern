@@ -197,7 +197,7 @@ object Misconfigurations extends QueryBundle {
         val targetSdkVersionMatch = """^[^t]+minSdk[^0-9]+(\d+)""".r
         val insecureSdkVersionMin = 16
         val insecureSdkVersionMax = 18
-        def satisfiesConfig = groovyBuildGradleFiles.filter { gradleFile =>
+        def satisfiesConfig       = groovyBuildGradleFiles.filter { gradleFile =>
           gradleFile.content
             .split('\n')
             .exists { line =>

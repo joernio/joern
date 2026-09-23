@@ -319,7 +319,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
     Try {
       CpgLoader.load(cpgFilename)
     } match {
-      case Success(v) => Some(v)
+      case Success(v)  => Some(v)
       case Failure(ex) =>
         System.err.println("Error loading CPG")
         ex.printStackTrace()
@@ -363,7 +363,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
     val project = projectByCpg(cpg)
     project match {
       case Some(p) => deleteProject(p)
-      case None =>
+      case None    =>
         report(s"Project for active CPG does not exist")
     }
   }

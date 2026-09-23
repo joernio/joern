@@ -29,7 +29,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
 
     stmt.name match {
-      case None => astForAnonymousClass(stmt, dynamicStmts, staticStmts)
+      case None                                           => astForAnonymousClass(stmt, dynamicStmts, staticStmts)
       case Some(name) if name.name.contains("anon-class") =>
         astForAnonymousClass(stmt, dynamicStmts, staticStmts)
       case Some(name) => astForNamedClass(stmt, name, dynamicStmts, staticStmts)
@@ -125,7 +125,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       diffGraph.addNode(typeDeclMember)
     }
 
-    val prefixAst = createTypeRefPointer(typeDeclTemp)
+    val prefixAst   = createTypeRefPointer(typeDeclTemp)
     val allChildren = List(
       modifiers,
       bodyStmts,
@@ -344,7 +344,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val modifierAsts = modifiers.map(modifierNode(stmt, _)).map(Ast(_))
 
       val name = varDecl.name.name
-      val ast = if (modifiers.contains(ModifierTypes.STATIC)) {
+      val ast  = if (modifiers.contains(ModifierTypes.STATIC)) {
         // A static member belongs to a class, not an instance
         val memberCode = s"static $$$name"
         astForConstOrStaticOrFieldValue(stmt, name, memberCode, varDecl.defaultValue, scope.addConstOrStaticInitToScope)

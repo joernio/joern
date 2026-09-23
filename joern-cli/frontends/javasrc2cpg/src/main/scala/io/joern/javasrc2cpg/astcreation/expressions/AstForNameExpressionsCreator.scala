@@ -19,7 +19,7 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   private[expressions] def astForNameExpr(nameExpr: NameExpr, expectedType: ExpectedType): Ast = {
-    val name = nameExpr.getName.toString
+    val name         = nameExpr.getName.toString
     val typeFullName = expressionReturnTypeFullName(nameExpr)
       .orElse(getTypeFullName(expectedType))
       .map(typeInfoCalc.registerType)
@@ -40,7 +40,7 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
 
       case SimpleVariable(variable) =>
         val mangledName = variable.mangledName
-        val identifier =
+        val identifier  =
           identifierNode(nameExpr, mangledName, mangledName, typeFullName.getOrElse(defaultTypeFallback()))
         val captured = variable.node match {
           case param: NewMethodParameterIn => Some(param)

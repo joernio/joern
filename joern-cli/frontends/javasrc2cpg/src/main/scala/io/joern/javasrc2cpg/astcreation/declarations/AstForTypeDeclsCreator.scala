@@ -106,7 +106,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     val (astParentType, astParentFullName) = getAstParentInfo()
 
     val genericSignature = binarySignatureCalculator.variableBinarySignature(expr.getType)
-    val typeDeclRoot =
+    val typeDeclRoot     =
       typeDeclNode(
         expr,
         typeName,
@@ -141,7 +141,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     scope.enclosingTypeDecl.foreach(_.registerCapturesForType(declScope.typeDecl.fullName, declScope.getUsedCaptures()))
 
     tryWithSafeStackOverflow(expr.getType.resolve().asReferenceType()).toOption.foreach { ancestorType =>
-      val parentType = bindingTypeForReferenceType(ancestorType)
+      val parentType      = bindingTypeForReferenceType(ancestorType)
       val resolvedMethods = body
         .collect { case method: MethodDeclaration =>
           tryWithSafeStackOverflow(method.resolve())
@@ -229,7 +229,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
     val annotationAsts = typeDeclaration.getAnnotations.asScala.map(astForAnnotationExpr)
     val modifiers      = modifiersForTypeDecl(typeDeclaration, isInterface)
-    val enumEntries = typeDeclaration match {
+    val enumEntries    = typeDeclaration match {
       case enumDeclaration: EnumDeclaration => enumDeclaration.getEntries.asScala.toList
       case _                                => Nil
     }
@@ -285,7 +285,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     val explicitMethodNames = recordDeclaration.getMethods.asScala.map(_.getNameAsString).toSet
 
     recordDeclaration.getParameters.asScala.toList.flatMap { parameter =>
-      val parameterName = parameter.getNameAsString
+      val parameterName         = parameter.getNameAsString
       val parameterTypeFullName = tryWithSafeStackOverflow {
         val typ = parameter.getType
         scope
@@ -296,7 +296,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       }.toOption.getOrElse(defaultTypeFallback())
 
       val genericSignature = binarySignatureCalculator.variableBinarySignature(parameter.getType)
-      val parameterMember = memberNode(
+      val parameterMember  = memberNode(
         parameter,
         parameterName,
         code(parameter),
@@ -725,7 +725,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     // Use type name without generics stripped in code
     val variableTypeString = tryWithSafeStackOverflow(v.getTypeAsString).getOrElse("")
     val genericSignature   = binarySignatureCalculator.variableBinarySignature(v.getType)
-    val node =
+    val node               =
       memberNode(v, name, s"$variableTypeString $name", typeFullName, genericSignature = Option(genericSignature))
     val memberAst      = Ast(node)
     val annotationAsts = annotations.asScala.map(astForAnnotationExpr)
@@ -767,9 +767,9 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     fullNameOverride: Option[String]
   ): NewTypeDecl = {
     val baseTypeFullNames = if (typ.isClassOrInterfaceDeclaration) {
-      val decl             = typ.asClassOrInterfaceDeclaration()
-      val extendedTypes    = decl.getExtendedTypes.asScala
-      val implementedTypes = decl.getImplementedTypes.asScala
+      val decl                  = typ.asClassOrInterfaceDeclaration()
+      val extendedTypes         = decl.getExtendedTypes.asScala
+      val implementedTypes      = decl.getImplementedTypes.asScala
       val inheritsFromTypeNames =
         (extendedTypes ++ implementedTypes).flatMap { typ =>
           typeInfoCalc.fullName(typ).orElse(scope.lookupType(typ.getNameAsString))
@@ -868,7 +868,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       tryWithSafeStackOverflow(entry.resolve().getType).toOption.flatMap(typeInfoCalc.fullName)
 
     val genericSignature = binarySignatureCalculator.enumEntryBinarySignature(entry)
-    val entryNode = memberNode(
+    val entryNode        = memberNode(
       entry,
       entry.getNameAsString,
       entry.toString,

@@ -11,7 +11,7 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
     val domNode      = templateDomNode(jsxElem.node.toString, jsxElem.code, jsxElem.lineNumber, jsxElem.columnNumber)
     val openingAst   = astForNodeWithFunctionReference(jsxElem.json("openingElement"))
     val childrenAsts = astForNodes(jsxElem.json("children").arr)
-    val closingAst = safeObj(jsxElem.json, "closingElement")
+    val closingAst   = safeObj(jsxElem.json, "closingElement")
       .map(e => astForNodeWithFunctionReference(Obj(e)))
       .getOrElse(Ast())
     val allChildrenAsts = openingAst +: childrenAsts :+ closingAst
@@ -80,7 +80,7 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
       jsxExprContainer.columnNumber
     )
     val nodeInfo = createBabelNodeInfo(jsxExprContainer.json("expression"))
-    val exprAst = nodeInfo.node match {
+    val exprAst  = nodeInfo.node match {
       case JSXEmptyExpression => Ast()
       case _                  => astForNodeWithFunctionReference(nodeInfo.json)
     }

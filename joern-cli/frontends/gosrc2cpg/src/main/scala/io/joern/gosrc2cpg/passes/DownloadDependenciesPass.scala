@@ -17,7 +17,7 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoGlobal, config: Config) {
-  private val logger = LoggerFactory.getLogger(getClass)
+  private val logger  = LoggerFactory.getLogger(getClass)
   def process(): Unit = {
     val processor       = new DependencyProcessorQueue()
     val processorThread = new Thread(processor)
@@ -67,13 +67,13 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
         }
       } catch {
         case exception: InterruptedException => logger.warn("Interrupted WriterThread", exception)
-        case NonFatal(exc) =>
+        case NonFatal(exc)                   =>
           logger.error("error in writer thread, ", exc)
       }
     }
 
     private def processDependency(dependency: GoModDependency): Unit = {
-      val gopath = Try(sys.env("GOPATH")).getOrElse(Seq(os.home, "go").mkString(JFile.separator))
+      val gopath             = Try(sys.env("GOPATH")).getOrElse(Seq(os.home, "go").mkString(JFile.separator))
       val dependencyLocation =
         (Seq(gopath, "pkg", "mod") ++ dependency.dependencyStr().split("/")).mkString(JFile.separator)
       FileUtil.usingTemporaryDirectory("godep") { astLocation =>

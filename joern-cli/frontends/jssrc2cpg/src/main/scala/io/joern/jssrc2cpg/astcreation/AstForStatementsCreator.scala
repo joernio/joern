@@ -27,8 +27,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def sortBlockStatements(blockStatements: List[BabelNodeInfo]): List[BabelNodeInfo] =
     blockStatements.sortBy { nodeInfo =>
       nodeInfo.node match {
-        case ImportDeclaration   => 0
-        case FunctionDeclaration => 1
+        case ImportDeclaration                                     => 0
+        case FunctionDeclaration                                   => 1
         case DeclareTypeAlias | TypeAlias | TSTypeAliasDeclaration =>
           if (isPlainTypeAlias(nodeInfo)) 4 else 3
         case _ => 2
@@ -46,7 +46,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     localAstParentStack.push(blockNode_)
     val objectAst    = astForNodeWithFunctionReferenceAndCall(withStatement.json("object"))
     val bodyNodeInfo = createBabelNodeInfo(withStatement.json("body"))
-    val bodyAsts = bodyNodeInfo.node match {
+    val bodyAsts     = bodyNodeInfo.node match {
       case BlockStatement => createBlockStatementAsts(bodyNodeInfo.json("body"))
       case _              => List(astForNodeWithFunctionReferenceAndCall(bodyNodeInfo.json))
     }
@@ -92,7 +92,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForTryStatement(tryStmt: BabelNodeInfo): Ast = {
-    val bodyAst = astForNodeWithFunctionReference(tryStmt.json("block"))
+    val bodyAst  = astForNodeWithFunctionReference(tryStmt.json("block"))
     val catchAst = safeObj(tryStmt.json, "handler").toList
       .map { handler =>
         val catchNodeInfo = createBabelNodeInfo(Obj(handler))
@@ -602,7 +602,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       val memberNode            = fieldIdentifierNode(forInOfStmt, "value", "value")
       val accessAst = createFieldAccessCallAst(baseNode, memberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val variableMemberNode = fieldIdentifierNode(forInOfStmt, loopVariableName, loopVariableName)
-      val variableAccessAst =
+      val variableAccessAst  =
         createFieldAccessCallAst(accessAst, variableMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val loopVariableAssignmentNode = callNode(
         forInOfStmt,
@@ -631,7 +631,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.popScope()
     localAstParentStack.pop()
 
-    val whileLoopAst = whileAst(forInOfStmt, Some(testCallAst), List(whileLoopBlockAst))
+    val whileLoopAst      = whileAst(forInOfStmt, Some(testCallAst), List(whileLoopBlockAst))
     val blockNodeChildren =
       List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst
     blockAst(blockNode_, blockNodeChildren)
@@ -747,7 +747,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       val memberNode            = fieldIdentifierNode(forInOfStmt, "value", "value")
       val accessAst = createFieldAccessCallAst(baseNode, memberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val variableMemberNode = literalNode(forInOfStmt, index.toString, dynamicTypeOption = Some(Defines.Number))
-      val variableAccessAst =
+      val variableAccessAst  =
         createIndexAccessCallAst(accessAst, Ast(variableMemberNode), forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val loopVariableAssignmentNode = callNode(
         forInOfStmt,
@@ -776,7 +776,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.popScope()
     localAstParentStack.pop()
 
-    val whileLoopAst = whileAst(forInOfStmt, Some(testCallAst), List(whileLoopBlockAst))
+    val whileLoopAst      = whileAst(forInOfStmt, Some(testCallAst), List(whileLoopBlockAst))
     val blockNodeChildren =
       List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst
     blockAst(blockNode_, blockNodeChildren)

@@ -40,7 +40,7 @@ class QueryDatabase(
       val bundleNamespace = bundle.getPackageName
       // the namespace currently looks like `io.joern.scanners.c.CopyLoops`
       val namespaceParts = bundleNamespace.split('.')
-      val language =
+      val language       =
         if (bundleNamespace.startsWith("io.shiftleft.ocular.scanners")) {
           namespaceParts(4)
         } else if (namespaceParts.length > 3) {

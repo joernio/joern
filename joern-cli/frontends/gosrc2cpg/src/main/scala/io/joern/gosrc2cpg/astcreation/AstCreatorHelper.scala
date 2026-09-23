@@ -197,7 +197,7 @@ trait AstCreatorHelper { this: AstCreator =>
     nodeInfo.node match {
       case Ident =>
         val typeNameForcode = nodeInfo.json(ParserKeys.Name).str
-        val fullName =
+        val fullName        =
           generateTypeFullName(typeName = Some(typeNameForcode), genericTypeMethodMap = genericTypeMethodMap)
         (fullName, typeNameForcode)
       case SelectorExpr =>

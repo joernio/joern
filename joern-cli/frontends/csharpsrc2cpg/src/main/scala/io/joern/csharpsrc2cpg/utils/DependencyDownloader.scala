@@ -75,7 +75,7 @@ class DependencyDownloader(
     */
   private def downloadDependency(targetDir: Path, dependency: Dependency): Unit = {
 
-    val dependencyName = dependency.name.strip()
+    val dependencyName                                  = dependency.name.strip()
     def getVersion(packageName: String): Option[String] = Try {
       Using.resource(URI(s"https://$NUGET_BASE_API_V3/${packageName.toLowerCase}/index.json").toURL.openStream()) {
         is =>
@@ -92,7 +92,7 @@ class DependencyDownloader(
     def createUrl(packageType: String, version: String): Option[URL] = {
       Try(new URI(s"https://$NUGET_BASE_API_V2/$packageType/${dependencyName}/$version").toURL) match {
         case Success(url) => Some(url)
-        case Failure(e) =>
+        case Failure(e)   =>
           logger.debug(s"Failed to create URL for packageType: $packageType, version: $version. Error: ${e.getMessage}")
           None
       }
@@ -211,7 +211,7 @@ class DependencyDownloader(
   private def summarizeDependencies(targetDir: Path): CSharpProgramSummary = {
     val astGenRunner       = new DotNetAstGenRunner(config.withInputPath(targetDir.toString))
     val astGenRunnerResult = astGenRunner.execute(targetDir)
-    val summaries = astGenRunnerResult.parsedFiles
+    val summaries          = astGenRunnerResult.parsedFiles
       .map(x => Paths.get(x))
       .flatMap { f =>
         Using.resource(Files.newInputStream(f)) { fis =>

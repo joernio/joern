@@ -57,7 +57,7 @@ private[joern] case class DependencyGraph(
       Try(path.toRealPath()).getOrElse(path.toAbsolutePath.normalize())
 
     val resolvedInputDir = realPath(inputDir)
-    val matchedProjects = nodes.valuesIterator.filter { project =>
+    val matchedProjects  = nodes.valuesIterator.filter { project =>
       project.sourcePaths.exists(sourcePath => realPath(sourcePath).startsWith(resolvedInputDir))
     }.toList
 
@@ -111,7 +111,7 @@ private[joern] object DependencyGraph {
     next: MavenArtifactDependency
   ): Unit = {
     acc.get(next.identity) match {
-      case None => acc.put(next.identity, next)
+      case None                                                      => acc.put(next.identity, next)
       case Some(existing) if isNewer(next.version, existing.version) =>
         logger.debug(
           s"Replacing ${existing.group.getOrElse("?")}:${existing.name}:${existing.version.getOrElse("?")} " +

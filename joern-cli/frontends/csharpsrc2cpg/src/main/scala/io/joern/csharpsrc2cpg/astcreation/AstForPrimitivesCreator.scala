@@ -41,7 +41,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astForFieldIdentifier(baseTypeFullName: String, baseIdentifierName: String, field: FieldDecl) = {
     val fieldAccess =
       operatorCallNode(field.node, field.node.code, Operators.fieldAccess, Some(field.typeFullName))
-    val identifierAst = Ast(identifierNode(field.node, baseIdentifierName, baseIdentifierName, baseTypeFullName))
+    val identifierAst   = Ast(identifierNode(field.node, baseIdentifierName, baseIdentifierName, baseTypeFullName))
     val fieldIdentifier = Ast(
       NewFieldIdentifier()
         .code(field.name)

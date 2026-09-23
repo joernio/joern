@@ -43,7 +43,7 @@ object ProgramHandlingUtil {
     def isZipSlip: Boolean = entry.fold(_ => false, _.getName.split("[/\\\\]").contains(".."))
 
     def isZipFile: Boolean = entry match {
-      case Left(file: Path) => isValidZipFile(file)
+      case Left(file: Path)                        => isValidZipFile(file)
       case Right(zipEntry: ZipEntry) if !isZipSlip =>
         parentArchive.exists { f =>
           Using.resource(f.getInputStream(zipEntry)) { is =>
@@ -118,7 +118,7 @@ object ProgramHandlingUtil {
       Seq()
     } else {
       emitOrUnpack(src) match {
-        case Left(a) => Seq(a)
+        case Left(a)             => Seq(a)
         case Right(disposeFiles) =>
           disposeFiles.flatMap(x =>
             x._2.flatMap(f =>
@@ -179,7 +179,7 @@ object ProgramHandlingUtil {
             Using.resource(new ZipFile(f.absolutePathAsString)) { zipFile =>
               Try(f.unzipTo(xTmp, e => shouldExtract(Entry(e, zipFile)))) match {
                 case Success(dir) => List(dir)
-                case Failure(e) =>
+                case Failure(e)   =>
                   logger.warn(s"Failed to extract archive", e)
                   List.empty
               }

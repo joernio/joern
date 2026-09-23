@@ -22,7 +22,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   protected def astForClassDeclaration(node: RubyExpression & TypeDeclaration): Seq[Ast] = {
     node.name match {
       case name: SimpleIdentifier => astForSimpleNamedClassDeclaration(node, name)
-      case name =>
+      case name                   =>
         logger.warn(s"Qualified class names are not supported yet: ${name.text} ($relativeFileName), skipping")
         astForUnknown(node) :: Nil
     }
@@ -83,7 +83,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val (typeDecl, classFullName, shouldPopAdditionalScope) = node match {
       case x: NamespaceDeclaration if x.namespaceParts.isDefined =>
-        val className = nameIdentifier.text
+        val className    = nameIdentifier.text
         val typeDeclTemp = typeDeclNode(
           node = node,
           name = className,
@@ -148,7 +148,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         )
     }
 
-    val statementsToForwardUpTheAst = mutable.ArrayBuffer.empty[Ast]
+    val statementsToForwardUpTheAst                          = mutable.ArrayBuffer.empty[Ast]
     def separateStatementsFromBody(ss: List[RubyExpression]) = {
       // There may be additional expression nodes introduced from nodes such as type decls, so we must
       // re-distribute these back into the <body> method
@@ -199,7 +199,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       diffGraph.addNode(typeDeclMember)
     }
 
-    val prefixAst = createTypeRefPointer(typeDecl)
+    val prefixAst   = createTypeRefPointer(typeDecl)
     val typeDeclAst = Ast(typeDecl)
       .withChildren(classModifiers)
       .withChildren(fieldTypeMemberNodes.map(_._2))
@@ -243,7 +243,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
       val typeRefIdent = {
         val self = NewIdentifier().name(Defines.Self).code(Defines.Self).typeFullName(Defines.Any)
-        val fi = NewFieldIdentifier()
+        val fi   = NewFieldIdentifier()
           .code(typeDecl.name)
           .canonicalName(typeDecl.name)
           .lineNumber(typeDecl.lineNumber)
@@ -296,8 +296,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   // creates a `def <name>() { return <fieldName> }` METHOD, for <fieldName> = @<name>.
   private def astForGetterMethod(node: FieldsDeclaration, fieldName: String): Seq[Ast] = {
-    val name = fieldName.drop(1)
-    val code = s"def $name (...)"
+    val name       = fieldName.drop(1)
+    val code       = s"def $name (...)"
     val methodDecl = MethodDeclaration(
       name,
       Nil,
@@ -310,8 +310,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   // creates a `def <name>=(x) { <fieldName> = x }` METHOD, for <fieldName> = @<name>
   private def astForSetterMethod(node: FieldsDeclaration, fieldName: String): Seq[Ast] = {
-    val name = fieldName.drop(1) + "="
-    val code = s"def $name (...)"
+    val name       = fieldName.drop(1) + "="
+    val code       = s"def $name (...)"
     val assignment = SingleAssignment(
       InstanceFieldIdentifier()(node.span.spanStart(fieldName)),
       "=",
@@ -350,7 +350,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         val modifier = accessModifierType(node)
         node.arguments.foreach {
           case lit: StaticLiteral => visibilityMap.put(symbolName(lit), modifier)
-          case arr: ArrayLiteral =>
+          case arr: ArrayLiteral  =>
             arr.elements.foreach(el => visibilityMap.put(symbolName(el), modifier))
           case _ =>
         }
@@ -362,7 +362,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         node.arguments.foreach {
           case proc: ProcedureDeclaration => visibilityMap.put(proc.methodName, modifier)
           case lit: StaticLiteral         => visibilityMap.put(symbolName(lit), modifier)
-          case arr: ArrayLiteral =>
+          case arr: ArrayLiteral          =>
             arr.elements.foreach(el => visibilityMap.put(symbolName(el), modifier))
           case _ =>
         }

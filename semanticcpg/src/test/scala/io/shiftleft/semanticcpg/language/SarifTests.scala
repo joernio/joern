@@ -318,7 +318,7 @@ class SarifTests extends AnyWordSpec with Matchers {
 object SarifTests {
 
   def createValidFindingNode(cpg: Cpg): Unit = {
-    val dg = Cpg.newDiffGraphBuilder
+    val dg     = Cpg.newDiffGraphBuilder
     val method = NewMethod()
       .name("Foo")
       .lineNumber(2)
@@ -341,7 +341,7 @@ object SarifTests {
   }
 
   def createInvalidFindingNode(cpg: Cpg): Unit = {
-    val dg = Cpg.newDiffGraphBuilder
+    val dg     = Cpg.newDiffGraphBuilder
     val method = NewMethod()
       .name("Foo")
       .lineNumber(2)

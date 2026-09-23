@@ -52,7 +52,7 @@ class EjsPreprocessor {
     val positions = matches.flatMap {
       case ma if ma.group(1) == CommentTag               => None // ignore comments
       case ma if ma.group(2).trim.startsWith("include ") => None // ignore including other ejs templates
-      case ma =>
+      case ma                                            =>
         val start = ma.start + ma.group(1).length
         val end   = ma.end - ma.group(3).length
         Option((start, end))

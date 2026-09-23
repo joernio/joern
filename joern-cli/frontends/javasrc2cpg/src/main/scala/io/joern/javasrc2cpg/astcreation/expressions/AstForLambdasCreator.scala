@@ -222,7 +222,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
           // See https://docs.oracle.com/javase/8/docs/api/java/lang/FunctionalInterface.html for details.
           Try(method.getSignature) match {
             case Success(signature) => ObjectMethodSignatures.contains(signature)
-            case Failure(_) =>
+            case Failure(_)         =>
               false // If the signature could not be calculated, it's probably not a standard object method.
           }
         }
@@ -249,7 +249,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
 
     val variablesInScope = scope.variablesInScope
 
-    val implementedInfo = getLambdaImplementedInfo(expr, expectedType)
+    val implementedInfo                = getLambdaImplementedInfo(expr, expectedType)
     val (lambdaMethodNode, lambdaBody) =
       createAndPushLambdaMethod(expr, lambdaMethodName, implementedInfo, variablesInScope, expectedType)
 
@@ -326,8 +326,8 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     scope.pushBlockScope()
     val outerScopeVariableNames = variablesInScope.map(x => x.name -> x).toMap
 
-    val capturedVariableUses = captureUseFinder.getUndeclaredVariables(lambdaExpr)
-    var thisCaptureHandled   = false
+    val capturedVariableUses                = captureUseFinder.getUndeclaredVariables(lambdaExpr)
+    var thisCaptureHandled                  = false
     val closureBindingsAndLocalsForCaptures = capturedVariableUses.toList.sorted.flatMap { name =>
       val capturedResult = scope.lookupVariable(name)
 
@@ -393,7 +393,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
         val stmts = block.getStatements.asScala.flatMap(astsForStatement).toSeq
         stmts
       case stmt if returnType.contains(TypeConstants.Void) => astsForStatement(stmt)
-      case stmt =>
+      case stmt                                            =>
         val retNode    = returnNode(stmt, s"return ${body.toString}")
         val returnArgs = astsForStatement(stmt)
         Seq(returnAst(retNode, returnArgs))
@@ -426,7 +426,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     expectedTypeParamTypes: ResolvedTypeParametersMap
   ): Seq[Ast] = {
     val lambdaParameters = expr.getParameters.asScala.toList
-    val paramTypesList = maybeBoundMethod match {
+    val paramTypesList   = maybeBoundMethod match {
       case Some(resolvedMethod) =>
         val resolvedParameters = (0 until resolvedMethod.getNumberOfParams).map(resolvedMethod.getParam)
 
@@ -460,7 +460,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
         val name         = param.getNameAsString
         val typeFullName = maybeType.getOrElse(defaultTypeFallback())
         val code         = s"$typeFullName $name"
-        val evalStrat =
+        val evalStrat    =
           if (tryWithSafeStackOverflow(param.getType).toOption.exists(_.isPrimitiveType)) EvaluationStrategies.BY_VALUE
           else EvaluationStrategies.BY_SHARING
         val paramNode = NewMethodParameterIn()

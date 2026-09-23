@@ -55,7 +55,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     createLocals: Boolean = true
   ): Seq[NewMethodParameterIn] =
     withIndex(parameters) { case (param, index) =>
-      val nodeInfo = createBabelNodeInfo(param)
+      val nodeInfo  = createBabelNodeInfo(param)
       val paramNode = nodeInfo.node match {
         case RestElement =>
           val paramName     = nodeInfo.code.replace("...", "")
@@ -77,7 +77,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           lhsNodeInfo.node match {
             case ObjectPattern | ArrayPattern =>
               val paramName = generateUnusedVariableName(usedVariableNames, s"param$index")
-              val param = parameterInNode(
+              val param     = parameterInNode(
                 nodeInfo,
                 paramName,
                 nodeInfo.code,
@@ -103,7 +103,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           val tpe           = typeFor(nodeInfo)
           val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
           val possibleTypes = Seq(tpe)
-          val param = parameterInNode(
+          val param         = parameterInNode(
             nodeInfo,
             paramName,
             nodeInfo.code,
@@ -122,7 +122,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
                   val typeFullName   = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
                   val possibleTypes  = Seq(tpe)
                   val localParamNode = identifierNode(elementNodeInfo, elemName).possibleTypes(possibleTypes)
-                  val localTmpNode = localNode(elementNodeInfo, elemName, elemName, typeFullName)
+                  val localTmpNode   = localNode(elementNodeInfo, elemName, elemName, typeFullName)
                     .order(0)
                     .possibleTypes(possibleTypes)
                   diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
@@ -131,7 +131,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
                   val paramNode = identifierNode(elementNodeInfo, paramName)
                   scope.addVariableReference(paramName, paramNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
-                  val keyNode = fieldIdentifierNode(elementNodeInfo, elemName, elemName)
+                  val keyNode   = fieldIdentifierNode(elementNodeInfo, elemName, elemName)
                   val accessAst = createFieldAccessCallAst(
                     paramNode,
                     keyNode,
@@ -200,7 +200,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
                 val paramNode = identifierNode(elementNodeInfo, paramName)
                 scope.addVariableReference(paramName, paramNode, typeFullName, EvaluationStrategies.BY_REFERENCE)
 
-                val keyNode = fieldIdentifierNode(elementNodeInfo, elemName, elemName)
+                val keyNode   = fieldIdentifierNode(elementNodeInfo, elemName, elemName)
                 val accessAst =
                   createFieldAccessCallAst(paramNode, keyNode, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
                 val assignmentCallAst = createAssignmentCallAst(
@@ -270,7 +270,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           val tpe           = typeFor(nodeInfo)
           val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
           val possibleTypes = Seq(tpe)
-          val node =
+          val node          =
             parameterInNode(
               nodeInfo,
               nodeInfo.code,
@@ -298,7 +298,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val lhsAst     = astForNode(lhsElement)
 
     val testAst = {
-      val keyNode = identifierNode(element, codeOf(lhsAst.nodes.head))
+      val keyNode      = identifierNode(element, codeOf(lhsAst.nodes.head))
       val voidCallNode =
         callNode(element, "void 0", "<operator>.void", DispatchTypes.STATIC_DISPATCH)
       val equalsCallAst = createEqualsCallAst(Ast(keyNode), Ast(voidCallNode), element.lineNumber, element.columnNumber)
@@ -326,7 +326,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val tpe           = typeFor(func)
     val possibleTypes = Seq(tpe)
     val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
-    val memberNode_ = memberNode(func, functionNode.name, func.code, typeFullName, Seq(functionNode.fullName))
+    val memberNode_   = memberNode(func, functionNode.name, func.code, typeFullName, Seq(functionNode.fullName))
       .possibleTypes(possibleTypes)
     diffGraph.addEdge(getParentTypeDecl, memberNode_, EdgeTypes.AST)
     addModifier(functionNode, func.json)
@@ -335,7 +335,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   protected def createMethodDefinitionNode(func: BabelNodeInfo, methodBlockContent: ConstructorContent): NewMethod = {
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
-    val methodNode_ = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
+    val methodNode_    = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
     val lambdaModifier = if (methodName.startsWith(io.joern.x2cpg.Defines.ClosurePrefix)) {
       modifierNode(func, ModifierTypes.LAMBDA) :: Nil
     } else {
@@ -417,7 +417,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       Ast()
     }
 
-    val methodNode_ = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
+    val methodNode_    = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
     val lambdaModifier = if (methodName.startsWith(io.joern.x2cpg.Defines.ClosurePrefix)) {
       modifierNode(func, ModifierTypes.LAMBDA) :: Nil
     } else {

@@ -127,7 +127,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   override def addToScope(identifier: String, variable: DeclarationNew): TypedScopeElement = {
     variable match {
       case _: NewMethodParameterIn => super.addToScope(identifier, variable)
-      case _ =>
+      case _                       =>
         stack.collectFirst {
           case x @ ScopeElement(_: MethodLikeScope, _) => x
           case x @ ScopeElement(_: ProgramScope, _)    => x
@@ -298,7 +298,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   def anonProcParam: Option[String] = stack.collectFirst {
     case ScopeElement(x: MethodLikeScope, _) if x.procParam.isLeft =>
       x.procParam match {
-        case Left(param) => param
+        case Left(param)  => param
         case Right(param) =>
           param // this is just so that we don't get a pattern match warning, but should never be triggered
       }

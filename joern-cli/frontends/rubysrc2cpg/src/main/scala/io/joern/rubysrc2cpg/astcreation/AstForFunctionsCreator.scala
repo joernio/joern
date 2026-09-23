@@ -240,7 +240,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     createClosureBindingInformation(capturedNodes)
       .collect { case (capturedLocal, name, code, Some(closureBindingId)) =>
         val selfCapturingLocal = Option.when(name == Defines.Self)(scope.lookupSelfInCurrentScope).flatten
-        val capturingLocal = selfCapturingLocal.getOrElse(
+        val capturingLocal     = selfCapturingLocal.getOrElse(
           localNode(originNode, name, name, Defines.Any, closureBindingId = Option(closureBindingId))
         )
 
@@ -302,7 +302,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           case ArrayParameter(_) => prefixAsCoreType("Array")
           case HashParameter(_)  => prefixAsCoreType("Hash")
         }
-        val name = node.name.stripPrefix("*")
+        val name        = node.name.stripPrefix("*")
         val parameterIn = parameterInNode(
           node = node,
           name = name,
@@ -506,7 +506,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
       val methodRefIdent = {
         val self = NewIdentifier().name(Defines.Self).code(Defines.Self).typeFullName(Defines.Any)
-        val fi = NewFieldIdentifier()
+        val fi   = NewFieldIdentifier()
           .code(method.name)
           .canonicalName(method.name)
           .lineNumber(method.lineNumber)
