@@ -225,7 +225,7 @@ if [ $INSTALL_DEFAULT_PLUGINS = true ]; then
   if [ "$JOERN_VERSION" = "" ]; then
     ./joern-scan --updatedb
   else
-    ./joern-scan --updatedb --dbversion "$JOERN_VERSION"
+    ./joern-scan --updatedb --dbversion "${JOERN_VERSION#v}"
   fi
   cd "$CURDIR"
 fi
