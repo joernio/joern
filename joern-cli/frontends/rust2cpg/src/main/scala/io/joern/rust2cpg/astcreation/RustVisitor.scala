@@ -1412,8 +1412,14 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   private def lowerUnitVariant(variant: Variant, enumFullName: String): Ast = {
+    val typeDecl   = typeDeclForVariant(variant, enumFullName)
     val attributes = variant.attr.map(visitAttr)
-    Ast(memberNode(variant, code(variant.name), code(variant), enumFullName)).withChildren(attributes)
+
+    contextStack.pushTypeDecl(typeDecl)
+    val ctorAst = structCtorMethodAst(variant, typeDecl, Nil)
+    contextStack.pop()
+
+    Ast(typeDecl).withChild(ctorAst).withChildren(attributes)
   }
 
   private def lowerRecordVariant(variant: Variant, enumFullName: String, recordFieldList: RecordFieldList): Ast = {

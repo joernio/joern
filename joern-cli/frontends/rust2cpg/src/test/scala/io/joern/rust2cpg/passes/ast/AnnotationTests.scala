@@ -289,7 +289,7 @@ class AnnotationTests extends Rust2CpgSuite(noSysRoot = true) {
         |""".stripMargin)
 
     "have correct annotation" in {
-      inside(cpg.typeDecl.nameExact("Foo").member.nameExact("A").annotation.l) { case attr :: Nil =>
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::Foo::A").annotation.l) { case attr :: Nil =>
         attr.name shouldBe "default"
         attr.fullName shouldBe "default"
         attr.code shouldBe "#[default]"
