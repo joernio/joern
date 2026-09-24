@@ -345,7 +345,12 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     codeOverride: Option[String] = None
   ): Seq[Ast] = {
     pat match {
-      case identPat: IdentPat             => createAssignmentsForIdentPattern(identPat, mkSourceAst, codeOverride)
+      case identPat: IdentPat =>
+        if (identPat.isPath.isDefined) {
+          Nil
+        } else {
+          createAssignmentsForIdentPattern(identPat, mkSourceAst, codeOverride)
+        }
       case parenPat: ParenPat             => createAssignmentsForPattern(parenPat.pat, mkSourceAst, codeOverride)
       case recordPat: RecordPat           => createAssignmentsForRecordPattern(recordPat, mkSourceAst)
       case tuplePat: TuplePat             => createAssignmentsForTuplePattern(tuplePat, mkSourceAst)
@@ -503,9 +508,13 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     case constBlockPat: ConstBlockPat => Nil
     case derefPat: DerefPat           => collectPatternBindings(derefPat.pat)
     case identPat: IdentPat           =>
-      val nameBindings = identPat.name.identToken.toList.map(ident => (ident, typeFullNameForIdentPat(identPat)))
-      val patBindings  = identPat.pat.toList.flatMap(collectPatternBindings)
-      nameBindings ++ patBindings
+      if (identPat.isPath.isDefined) {
+        Nil
+      } else {
+        val nameBindings = identPat.name.identToken.toList.map(ident => (ident, typeFullNameForIdentPat(identPat)))
+        val patBindings  = identPat.pat.toList.flatMap(collectPatternBindings)
+        nameBindings ++ patBindings
+      }
     case literalPat: LiteralPat => Nil
     case macroPat: MacroPat     => Nil // TODO: needs to see the macro expansion.
     case orPat: OrPat           => orPat.pat.headOption.map(collectPatternBindings).getOrElse(Nil)

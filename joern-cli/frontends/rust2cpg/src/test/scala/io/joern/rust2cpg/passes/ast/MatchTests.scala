@@ -237,6 +237,56 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "match with a unit variant case" should {
+    val cpg = code("""
+        |enum E { A(i32), B }
+        |use E::*;
+        |
+        |fn foo(e: E) -> i32 {
+        |  match e {
+        |    A(x) => x,
+        |    B => 0,
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.method.nameExact("foo").local.l) { case xLocal :: Nil =>
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct assignments" in {
+      cpg.method.nameExact("foo").call.isAssignment.code.l shouldBe
+        List("x = (e as rust2cpgtest::E::A).0")
+    }
+  }
+
+  "match with a const case" should {
+    val cpg = code("""
+        |const MAX: i32 = 10;
+        |
+        |fn foo(n: i32) -> i32 {
+        |  match n {
+        |    MAX => 1,
+        |    y => y,
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.method.nameExact("foo").local.l) { case yLocal :: Nil =>
+        yLocal.name shouldBe "y"
+        yLocal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct assignments" in {
+      cpg.method.nameExact("foo").call.isAssignment.code.l shouldBe List("y = n")
+    }
+  }
+
   "match shadowing previous let" should {
     val cpg = code("""
         |fn foo(opt: Option<i32>) {
