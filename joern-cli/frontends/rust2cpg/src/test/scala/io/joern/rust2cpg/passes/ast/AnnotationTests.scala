@@ -330,4 +330,35 @@ class AnnotationTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "record field with attribute" should {
+    val cpg = code("""
+        |struct Foo {
+        |  #[serde(rename = "id")]
+        |  x: i32
+        |}
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(cpg.typeDecl.nameExact("Foo").member.nameExact("x").annotation.l) { case attr :: Nil =>
+        attr.name shouldBe "serde"
+        attr.fullName shouldBe "serde"
+        attr.code shouldBe """#[serde(rename = "id")]"""
+      }
+    }
+  }
+
+  "tuple field with attribute" should {
+    val cpg = code("""
+        |struct Foo(#[serde(skip)] i32);
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(cpg.typeDecl.nameExact("Foo").member.nameExact("0").annotation.l) { case attr :: Nil =>
+        attr.name shouldBe "serde"
+        attr.fullName shouldBe "serde"
+        attr.code shouldBe "#[serde(skip)]"
+      }
+    }
+  }
 }
