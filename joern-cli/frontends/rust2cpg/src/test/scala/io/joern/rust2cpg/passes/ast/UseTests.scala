@@ -137,4 +137,59 @@ class UseTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "extern crate" should {
+    val cpg = code("extern crate alloc;")
+
+    "have correct properties" in {
+      inside(cpg.imports.l) { case externCrate :: Nil =>
+        externCrate.code shouldBe "extern crate alloc;"
+        externCrate.importedEntity shouldBe Some("alloc")
+        externCrate.importedAs shouldBe Some("alloc")
+        externCrate.isWildcard shouldBe None
+      }
+    }
+  }
+
+  "extern crate with rename" should {
+    val cpg = code("extern crate alloc as heap;")
+
+    "have correct properties" in {
+      inside(cpg.imports.l) { case externCrate :: Nil =>
+        externCrate.code shouldBe "extern crate alloc as heap;"
+        externCrate.importedEntity shouldBe Some("alloc")
+        externCrate.importedAs shouldBe Some("heap")
+        externCrate.isWildcard shouldBe None
+      }
+    }
+  }
+
+  "extern crate with underscore rename" should {
+    val cpg = code("extern crate alloc as _;")
+
+    "have correct properties" in {
+      inside(cpg.imports.l) { case externCrate :: Nil =>
+        externCrate.code shouldBe "extern crate alloc as _;"
+        externCrate.importedEntity shouldBe Some("alloc")
+        externCrate.importedAs shouldBe Some("_")
+        externCrate.isWildcard shouldBe None
+      }
+    }
+  }
+
+  "extern crate with attribute" should {
+    val cpg = code("""
+        |#[macro_use]
+        |extern crate alloc;
+        |""".stripMargin)
+
+    "have correct properties" in {
+      inside(cpg.imports.l) { case externCrate :: Nil =>
+        externCrate.code shouldBe "#[macro_use]\nextern crate alloc;"
+        externCrate.importedEntity shouldBe Some("alloc")
+        externCrate.importedAs shouldBe Some("alloc")
+        externCrate.isWildcard shouldBe None
+      }
+    }
+  }
+
 }

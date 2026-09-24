@@ -52,23 +52,23 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   private def visitItem(item: Item): Seq[Ast] = item match {
-    case const: Const           => visitConst(const)
-    case enum_ : Enum           => visitEnum(enum_) :: Nil
-    case x: ExternBlock         => notHandledYet(x) :: Nil
-    case x: ExternCrate         => notHandledYet(x) :: Nil
-    case fn: Fn                 => visitFn(fn) :: Nil
-    case impl: Impl             => visitImpl(impl)
-    case macroCall: MacroCall   => visitMacroCall(macroCall)
-    case macroRules: MacroRules => visitMacroRules(macroRules)
-    case macroDef: MacroDef     => visitMacroDef(macroDef)
-    case module: Module         => visitModule(module)
-    case static: Static         => visitStatic(static)
-    case struct: Struct         => visitStruct(struct)
-    case trait_ : Trait         => visitTrait(trait_) :: Nil
-    case typeAlias: TypeAlias   => visitTypeAlias(typeAlias) :: Nil
-    case x: Union               => notHandledYet(x) :: Nil
-    case use: Use               => visitUse(use)
-    case x: AsmExpr             => notHandledYet(x) :: Nil
+    case const: Const             => visitConst(const)
+    case enum_ : Enum             => visitEnum(enum_) :: Nil
+    case x: ExternBlock           => notHandledYet(x) :: Nil
+    case externCrate: ExternCrate => visitExternCrate(externCrate) :: Nil
+    case fn: Fn                   => visitFn(fn) :: Nil
+    case impl: Impl               => visitImpl(impl)
+    case macroCall: MacroCall     => visitMacroCall(macroCall)
+    case macroRules: MacroRules   => visitMacroRules(macroRules)
+    case macroDef: MacroDef       => visitMacroDef(macroDef)
+    case module: Module           => visitModule(module)
+    case static: Static           => visitStatic(static)
+    case struct: Struct           => visitStruct(struct)
+    case trait_ : Trait           => visitTrait(trait_) :: Nil
+    case typeAlias: TypeAlias     => visitTypeAlias(typeAlias) :: Nil
+    case x: Union                 => notHandledYet(x) :: Nil
+    case use: Use                 => visitUse(use)
+    case x: AsmExpr               => notHandledYet(x) :: Nil
   }
 
   private def visitStmt(stmt: Stmt): Seq[Ast] = stmt match {
@@ -1974,6 +1974,15 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
   private def mkImport(use: Use, path: Seq[Path], importedAs: String): NewImport = {
     newImportNode(code(use), path.map(code).mkString(PathSep), importedAs, use)
+  }
+
+  // ExternCrate =
+  //  Attr* Visibility?
+  //  'extern' 'crate' NameRef Rename? ';'
+  private def visitExternCrate(externCrate: ExternCrate): Ast = {
+    val name      = code(externCrate.nameRef)
+    val renamedAs = externCrate.rename.flatMap(rename => rename.name.orElse(rename.underscoreToken)).map(code)
+    Ast(newImportNode(code(externCrate), name, renamedAs.getOrElse(name), externCrate))
   }
 
   // Attr =
