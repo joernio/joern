@@ -110,6 +110,27 @@ class TraitTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "const in a trait" should {
+    val cpg = code("""
+        |trait Foo {
+        |  const MAX: usize;
+        |  const MIN: usize = 0;
+        |}
+        |""".stripMargin)
+
+    "have correct members" in {
+      inside(cpg.typeDecl.nameExact("Foo").member.sortBy(_.name).l) { case max :: min :: Nil =>
+        max.name shouldBe "MAX"
+        max.code shouldBe "const MAX: usize;"
+        max.typeFullName shouldBe "usize"
+
+        min.name shouldBe "MIN"
+        min.code shouldBe "const MIN: usize = 0;"
+        min.typeFullName shouldBe "usize"
+      }
+    }
+  }
+
   "an empty trait" should {
     val cpg = code("trait Empty {}")
 
