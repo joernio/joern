@@ -435,7 +435,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     call: Option[NewCall]
   ): NewImport = {
     val impNode = newImportNode(impDecl.code.stripSuffix(";"), importedEntity, importedAs, impDecl)
-    call.foreach { c => diffGraph.addEdge(c, impNode, EdgeTypes.IS_CALL_FOR_IMPORT) }
+    call.foreach { _call => diffGraph.addEdge(_call, impNode, EdgeTypes.IS_CALL_FOR_IMPORT) }
     methodAstParentStack
       .collectFirst { case m: NewMethod if m.name == Defines.Program => m }
       .foreach(diffGraph.addEdge(_, impNode, EdgeTypes.AST))
