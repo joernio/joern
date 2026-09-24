@@ -1,7 +1,7 @@
 package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -19,28 +19,81 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.typeDecl.nameExact("Color").fullName.l shouldBe List("rust2cpgtest::Color")
     }
 
-    "have correct members" in {
-      inside(cpg.typeDecl.nameExact("Color").member.l) { case red :: green :: Nil =>
-        red.name shouldBe "Red"
-        red.code shouldBe "Red"
-        red.typeFullName shouldBe "rust2cpgtest::Color"
+    "have correct variant fullNames" in {
+      cpg.typeDecl.nameExact("Red").fullName.l shouldBe List("rust2cpgtest::Color::Red")
+      cpg.typeDecl.nameExact("Green").fullName.l shouldBe List("rust2cpgtest::Color::Green")
+    }
 
-        green.name shouldBe "Green"
-        green.code shouldBe "Green"
-        green.typeFullName shouldBe "rust2cpgtest::Color"
+    "have correct inheritsFrom" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Color::Red").inheritsFromTypeFullName.l shouldBe List(
+        "rust2cpgtest::Color"
+      )
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Color::Green").inheritsFromTypeFullName.l shouldBe List(
+        "rust2cpgtest::Color"
+      )
+    }
+
+    "have correct constructor" in {
+      inside(cpg.typeDecl.nameExact("Red").method.l) { case init :: Nil =>
+        init.name shouldBe "<init>"
+        init.fullName shouldBe "rust2cpgtest::Color::Red::<init>"
+        init.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR)
+        init.methodReturn.typeFullName shouldBe "()"
+      }
+      inside(cpg.typeDecl.nameExact("Green").method.l) { case init :: Nil =>
+        init.name shouldBe "<init>"
+        init.fullName shouldBe "rust2cpgtest::Color::Green::<init>"
+        init.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR)
+        init.methodReturn.typeFullName shouldBe "()"
       }
     }
 
-    "have correct field access" in {
-      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("c")).source.l) { case (fieldAccess: Call) :: Nil =>
-        fieldAccess.methodFullName shouldBe Operators.fieldAccess
-        fieldAccess.code shouldBe "Color::Red"
-        fieldAccess.typeFullName shouldBe "rust2cpgtest::Color"
-        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
-          case (base: TypeRef) :: (field: FieldIdentifier) :: Nil =>
-            base.code shouldBe "Color"
-            base.typeFullName shouldBe "rust2cpgtest::Color"
-            field.canonicalName shouldBe "Red"
+    "have correct constructor parameters" in {
+      inside(cpg.typeDecl.nameExact("Red").method.parameter.l) { case self :: Nil =>
+        self.name shouldBe "self"
+        self.index shouldBe 0
+        self.typeFullName shouldBe "rust2cpgtest::Color::Red"
+      }
+      inside(cpg.typeDecl.nameExact("Green").method.parameter.l) { case self :: Nil =>
+        self.name shouldBe "self"
+        self.index shouldBe 0
+        self.typeFullName shouldBe "rust2cpgtest::Color::Green"
+      }
+    }
+
+    "have correct constructor call" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("c")).source.l) { case (block: Block) :: Nil =>
+        block.code shouldBe "Color::Red"
+        block.typeFullName shouldBe "rust2cpgtest::Color"
+
+        inside(block.astChildren.l) {
+          case (local: Local) :: (allocAssign: Call) :: (init: Call) :: (ret: Identifier) :: Nil =>
+            local.name shouldBe "<tmp>0"
+            local.typeFullName shouldBe "rust2cpgtest::Color"
+
+            allocAssign.methodFullName shouldBe Operators.assignment
+            allocAssign.code shouldBe s"<tmp>0 = ${Operators.alloc}"
+
+            init.name shouldBe "<init>"
+            init.methodFullName shouldBe "rust2cpgtest::Color::Red::<init>"
+            init.code shouldBe "Color::Red"
+            init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+            init.typeFullName shouldBe "()"
+
+            // TODO: pending change to remove `&` to <init> calls.
+            inside(init.argument.sortBy(_.argumentIndex).l) { case (addressOf: Call) :: Nil =>
+              addressOf.name shouldBe Operators.addressOf
+              addressOf.code shouldBe "&<tmp>0"
+              addressOf.typeFullName shouldBe "&rust2cpgtest::Color"
+
+              inside(addressOf.argument(1)) { case tmp: Identifier =>
+                tmp.name shouldBe "<tmp>0"
+                tmp.typeFullName shouldBe "rust2cpgtest::Color"
+              }
+            }
+
+            ret.name shouldBe "<tmp>0"
+            ret.typeFullName shouldBe "rust2cpgtest::Color"
         }
       }
     }
@@ -60,24 +113,18 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.typeDecl.nameExact("Color").fullName.l shouldBe List("rust2cpgtest::m::Color")
     }
 
-    "have correct members" in {
-      inside(cpg.typeDecl.nameExact("Color").member.l) { case red :: Nil =>
-        red.name shouldBe "Red"
-        red.code shouldBe "Red"
-        red.typeFullName shouldBe "rust2cpgtest::m::Color"
-      }
+    "have correct variant fullName" in {
+      cpg.typeDecl.nameExact("Red").fullName.l shouldBe List("rust2cpgtest::m::Color::Red")
     }
 
-    "have correct field access" in {
-      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("c")).source.l) { case (fieldAccess: Call) :: Nil =>
-        fieldAccess.name shouldBe Operators.fieldAccess
-        fieldAccess.code shouldBe "m::Color::Red"
-        fieldAccess.typeFullName shouldBe "rust2cpgtest::m::Color"
-        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
-          case (base: TypeRef) :: (field: FieldIdentifier) :: Nil =>
-            base.code shouldBe "m::Color"
-            base.typeFullName shouldBe "rust2cpgtest::m::Color"
-            field.canonicalName shouldBe "Red"
+    "have correct constructor call" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("c")).source.l) { case (block: Block) :: Nil =>
+        block.code shouldBe "m::Color::Red"
+        block.typeFullName shouldBe "rust2cpgtest::m::Color"
+
+        inside(block.astChildren.isCall.nameExact("<init>").l) { case init :: Nil =>
+          init.methodFullName shouldBe "rust2cpgtest::m::Color::Red::<init>"
+          init.code shouldBe "m::Color::Red"
         }
       }
     }
@@ -95,24 +142,76 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.typeDecl.nameExact("Color").fullName.l shouldBe List("rust2cpgtest::Color")
     }
 
-    "have correct members" in {
-      inside(cpg.typeDecl.nameExact("Color").member.l) { case red :: Nil =>
-        red.name shouldBe "Red"
-        red.code shouldBe "Red"
-        red.typeFullName shouldBe "rust2cpgtest::Color"
-      }
+    "have correct variant fullName" in {
+      cpg.typeDecl.nameExact("Red").fullName.l shouldBe List("rust2cpgtest::Color::Red")
     }
 
-    "have correct field access" in {
-      inside(cpg.method.nameExact("red").ast.isCall.nameExact(Operators.fieldAccess).l) { case fieldAccess :: Nil =>
-        fieldAccess.code shouldBe "Self::Red"
-        fieldAccess.typeFullName shouldBe "rust2cpgtest::Color"
-        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
-          case (base: TypeRef) :: (field: FieldIdentifier) :: Nil =>
-            base.code shouldBe "Self"
-            base.typeFullName shouldBe "rust2cpgtest::Color"
-            field.canonicalName shouldBe "Red"
+    "have correct constructor call" in {
+      inside(cpg.method.nameExact("red").ast.isCall.nameExact("<init>").l) { case init :: Nil =>
+        init.methodFullName shouldBe "rust2cpgtest::Color::Red::<init>"
+        init.code shouldBe "Self::Red"
+      }
+    }
+  }
+
+  "glob-imported unit variant" should {
+    val cpg = code("""
+        |enum Color { Red, Green }
+        |use Color::*;
+        |fn main() {
+        |  let c = Green;
+        |}
+        |""".stripMargin)
+
+    "have correct constructor call" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("c")).source.l) { case (block: Block) :: Nil =>
+        block.code shouldBe "Green"
+        block.typeFullName shouldBe "rust2cpgtest::Color"
+
+        inside(block.astChildren.isCall.nameExact("<init>").l) { case init :: Nil =>
+          init.methodFullName shouldBe "rust2cpgtest::Color::Green::<init>"
+          init.code shouldBe "Green"
         }
+      }
+    }
+  }
+
+  "generic unit variant" should {
+    val cpg = code("""
+        |enum Wrapper<T> { Empty, One(T) }
+        |fn main() {
+        |  let w = Wrapper::<u8>::Empty;
+        |}
+        |""".stripMargin)
+
+    "have correct variant fullName" in {
+      cpg.typeDecl.nameExact("Empty").fullName.l shouldBe List("rust2cpgtest::Wrapper<T>::Empty")
+    }
+
+    "have correct constructor call" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("w")).source.l) { case (block: Block) :: Nil =>
+        block.code shouldBe "Wrapper::<u8>::Empty"
+        block.typeFullName shouldBe "rust2cpgtest::Wrapper<u8>"
+
+        inside(block.astChildren.isCall.nameExact("<init>").l) { case init :: Nil =>
+          init.methodFullName shouldBe "rust2cpgtest::Wrapper<T>::Empty::<init>"
+          init.code shouldBe "Wrapper::<u8>::Empty"
+        }
+      }
+    }
+  }
+
+  "record expression of a unit variant" should {
+    val cpg = code("""
+        |enum Color { Red }
+        |fn main() {
+        |  let c = Color::Red {};
+        |}
+        |""".stripMargin)
+
+    "have correct constructor call" in {
+      inside(cpg.call.nameExact("<init>").l) { case init :: Nil =>
+        init.methodFullName shouldBe "rust2cpgtest::Color::Red::<init>"
       }
     }
   }
