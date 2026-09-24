@@ -672,6 +672,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  'trait' Name GenericParamList?
   //  (((':' TypeBoundList?)? WhereClause? AssocItemList) |
   //  ('=' TypeBoundList? WhereClause? ';'))
+  // TODO: lower the RHS of assoc const.
   private def visitTrait(trait_ : Trait): Ast = {
     val name     = code(trait_.name)
     val fullName = composeRustFullName(name)
@@ -687,10 +688,13 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val methodAsts = trait_.assocItemList.toSeq.flatMap(_.assocItem).collect { case fn: Fn =>
       visitFn(fn).withChild(Ast(NewModifier().modifierType(ModifierTypes.VIRTUAL)))
     }
+    val constMemberAsts = trait_.assocItemList.toSeq.flatMap(_.assocItem).collect {
+      case const: Const if const.name.isDefined => Ast(memberForAssocConst(const))
+    }
     contextStack.pop()
     val attributes = trait_.attr.map(visitAttr)
     addDetachedBindingAsts(typeDecl, methodAsts, signature = fullName)
-    Ast(typeDecl).withChildren(methodAsts).withChildren(attributes)
+    Ast(typeDecl).withChildren(methodAsts).withChildren(attributes).withChildren(constMemberAsts)
   }
 
   // BlockExpr =
