@@ -672,7 +672,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
           visitFn(fn).withChild(Ast(NewModifier().modifierType(ModifierTypes.VIRTUAL)))
         }
         val constMemberAsts = impl.assocItemList.assocItem.collect {
-          case const: Const if const.name.isDefined => Ast(memberForAssocConst(const))
+          case const: Const if const.name.isDefined =>
+            Ast(memberForAssocConst(const)).withChildren(const.attr.map(visitAttr))
         }
         contextStack.pop()
         val attributes = impl.attr.map(visitAttr)
@@ -689,7 +690,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     contextStack.pushTypeDecl(typeDeclForImpl(impl))
     val itemAsts = impl.assocItemList.assocItem.collect {
       case fn: Fn                               => visitFn(fn)
-      case const: Const if const.name.isDefined => Ast(memberForAssocConst(const))
+      case const: Const if const.name.isDefined =>
+        Ast(memberForAssocConst(const)).withChildren(const.attr.map(visitAttr))
     }
     contextStack.pop()
     itemAsts.foreach(addDetachedAst)

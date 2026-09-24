@@ -215,6 +215,45 @@ class AnnotationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "const in an inherent impl with attribute" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo {
+        |  #[doc(hidden)]
+        |  const MAX: usize = 3;
+        |}
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(cpg.typeDecl.nameExact("Foo").member.nameExact("MAX").annotation.l) { case attr :: Nil =>
+        attr.name shouldBe "doc"
+        attr.fullName shouldBe "doc"
+        attr.code shouldBe "#[doc(hidden)]"
+      }
+    }
+  }
+
+  "const in a trait impl with attribute" should {
+    val cpg = code("""
+        |trait Bar { const MAX: usize; }
+        |struct Foo;
+        |impl Bar for Foo {
+        |  #[doc(hidden)]
+        |  const MAX: usize = 3;
+        |}
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(
+        cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>").member.nameExact("MAX").annotation.l
+      ) { case attr :: Nil =>
+        attr.name shouldBe "doc"
+        attr.fullName shouldBe "doc"
+        attr.code shouldBe "#[doc(hidden)]"
+      }
+    }
+  }
+
   "trait with attribute" should {
     val cpg = code("""
         |#[must_use]
