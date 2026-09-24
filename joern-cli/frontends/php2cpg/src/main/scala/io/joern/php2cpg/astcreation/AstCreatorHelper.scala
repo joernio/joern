@@ -26,8 +26,8 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
 
   protected def code(phpNode: PhpNode): String = "" // Sadly, the Php AST does not carry any code fields
 
-  protected lazy val byteToUtf16Offset: Array[Int] =
-    OffsetUtils.buildByteToUtf16OffsetTable(fileContentBytes, fileCharset)
+  protected lazy val byteToUtf16Offset: Int => Int =
+    OffsetUtils.buildOffsetConverter(OffsetUtils.OffsetSource.Bytes(fileContentBytes, fileCharset))
 
   override protected def offset(phpNode: PhpNode): Option[(Int, Int)] = {
     Option.when(!disableFileContent) {

@@ -1,8 +1,23 @@
 package io.joern.x2cpg.utils
 
+import org.slf4j.LoggerFactory
+
 import java.nio.charset.{Charset, StandardCharsets}
 
 object OffsetUtils {
+
+  private val logger = LoggerFactory.getLogger(getClass)
+
+  sealed trait OffsetSource
+  object OffsetSource {
+
+    /** Parser offsets are byte offsets into `bytes`, encoded using `charset`. */
+    final case class Bytes(bytes: Array[Byte], charset: Charset) extends OffsetSource
+
+    /** Parser offsets are Unicode codepoint offsets into `content`. */
+    final case class Codepoints(content: String) extends OffsetSource
+  }
+
   def getLineOffsetTable(fileContent: Option[String]): Array[Int] = {
     fileContent
       .map { content =>
@@ -28,7 +43,19 @@ object OffsetUtils {
     (offset, offsetEnd)
   }
 
-  def buildUtf8ToUtf16OffsetTable(utf8Bytes: Array[Byte]): Array[Int] = {
+  def buildOffsetConverter(source: OffsetSource): Int => Int = source match {
+    case OffsetSource.Bytes(bytes, charset) if charset == StandardCharsets.UTF_8 =>
+      buildUtf8ToUtf16OffsetTable(bytes)(_)
+    case OffsetSource.Bytes(_, charset) if charset == StandardCharsets.ISO_8859_1 =>
+      identity
+    case OffsetSource.Bytes(_, charset) =>
+      logger.warn(s"Unhandled charset ${charset.name()} for offset conversion, defaulting to identity mapping")
+      identity
+    case OffsetSource.Codepoints(content) =>
+      buildCodepointToUtf16OffsetTable(content)(_)
+  }
+
+  private def buildUtf8ToUtf16OffsetTable(utf8Bytes: Array[Byte]): Array[Int] = {
     val table    = new Array[Int](utf8Bytes.length + 1)
     var utf16Idx = 0
     var byteIdx  = 0
@@ -53,7 +80,7 @@ object OffsetUtils {
     table
   }
 
-  def buildCodepointToUtf16OffsetTable(content: String): Array[Int] = {
+  private def buildCodepointToUtf16OffsetTable(content: String): Array[Int] = {
     val codepointCount = content.codePointCount(0, content.length)
     val table          = new Array[Int](codepointCount + 1)
     var utf16Idx       = 0
@@ -65,54 +92,6 @@ object OffsetUtils {
       cpIdx += 1
     }
     table(cpIdx) = utf16Idx
-    table
-  }
-
-  def buildIso8859ToUtf16OffsetTable(bytes: Array[Byte]): Array[Int] = {
-    val table = new Array[Int](bytes.length + 1)
-    var i     = 0
-    while (i <= bytes.length) {
-      table(i) = i
-      i += 1
-    }
-    table
-  }
-
-  def buildByteToUtf16OffsetTable(bytes: Array[Byte], charset: Charset): Array[Int] = {
-    if (charset == StandardCharsets.UTF_8 || charset.name() == "UTF-8") {
-      return buildUtf8ToUtf16OffsetTable(bytes)
-    }
-    if (charset == StandardCharsets.ISO_8859_1 || charset.name() == "ISO-8859-1") {
-      return buildIso8859ToUtf16OffsetTable(bytes)
-    }
-    // For non-UTF-8 charsets, decode to string and walk the UTF-16 representation to build the mapping.
-    val content  = new String(bytes, charset)
-    val table    = new Array[Int](bytes.length + 1)
-    var byteIdx  = 0
-    var utf16Idx = 0
-    while (utf16Idx < content.length && byteIdx < bytes.length) {
-      table(byteIdx) = utf16Idx
-      val ch      = content.charAt(utf16Idx)
-      val charStr = if (Character.isHighSurrogate(ch) && utf16Idx + 1 < content.length) {
-        utf16Idx += 1
-        new String(Array(ch, content.charAt(utf16Idx)), 0, 2)
-      } else {
-        String.valueOf(ch)
-      }
-      val charBytes = charStr.getBytes(charset).length
-      var i         = 1
-      while (i < charBytes && (byteIdx + i) < bytes.length) {
-        table(byteIdx + i) = table(byteIdx)
-        i += 1
-      }
-      byteIdx += charBytes
-      utf16Idx += 1
-    }
-    // Fill any remaining positions
-    while (byteIdx <= bytes.length) {
-      table(byteIdx) = utf16Idx
-      byteIdx += 1
-    }
     table
   }
 }
