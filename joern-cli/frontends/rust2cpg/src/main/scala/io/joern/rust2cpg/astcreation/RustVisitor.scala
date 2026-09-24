@@ -1313,12 +1313,32 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  | Expr ';' Expr
   //  )']'
   private def visitArrayExpr(arrayExpr: ArrayExpr): Ast = {
-    val typeFullName = typeFullNameForExpr(arrayExpr)
     val isRepeatForm = arrayExpr.semicolonToken.isDefined
-    val operator     = if (isRepeatForm) RustOperators.repeatInArray else Operators.arrayInitializer
-    val callNode     = operatorCallNode(arrayExpr, code(arrayExpr), operator, Some(typeFullName))
+    if (isRepeatForm) {
+      lowerRepeatInArrayExpr(arrayExpr)
+    } else {
+      lowerArrayInitializerExpr(arrayExpr)
+    }
+  }
 
+  private def lowerArrayInitializerExpr(arrayExpr: ArrayExpr): Ast = {
+    val typeFullName = typeFullNameForExpr(arrayExpr)
+    val callNode     = operatorCallNode(arrayExpr, code(arrayExpr), Operators.arrayInitializer, Some(typeFullName))
     callAst(callNode, arrayExpr.expr.map(visitExpr))
+  }
+
+  private def lowerRepeatInArrayExpr(arrayExpr: ArrayExpr): Ast = {
+    val typeFullName = typeFullNameForExpr(arrayExpr)
+    val callNode     = operatorCallNode(arrayExpr, code(arrayExpr), RustOperators.repeatInArray, Some(typeFullName))
+    val Seq(value, count) = arrayExpr.expr
+    val valueAst          = visitExpr(value)
+    val countAst          = count match {
+      case underscoreExpr: UnderscoreExpr =>
+        Ast(literalNode(underscoreExpr, code(underscoreExpr), typeFullNameForExpr(underscoreExpr)))
+      case other =>
+        visitExpr(other)
+    }
+    callAst(callNode, Seq(valueAst, countAst))
   }
 
   // FieldExpr =

@@ -105,6 +105,31 @@ class ArrayTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "repeat array literal with _" should {
+    val cpg = code("""
+        |fn main() {
+        | let xs: [i32; 5] = [0; _];
+        |}
+        |""".stripMargin)
+
+    "have correct typeFullName" in {
+      cpg.call.nameExact(RustOperators.repeatInArray).typeFullName.l shouldBe List("[i32; 5]")
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact(RustOperators.repeatInArray).argument.sortBy(_.argumentIndex).l) {
+        case (value: Literal) :: (count: Literal) :: Nil =>
+          value.code shouldBe "0"
+          value.argumentIndex shouldBe 1
+          value.typeFullName shouldBe "i32"
+
+          count.code shouldBe "_"
+          count.argumentIndex shouldBe 2
+          count.typeFullName shouldBe "usize"
+      }
+    }
+  }
+
   "a nested array literal" should {
     val cpg = code("""
         |fn main() {
