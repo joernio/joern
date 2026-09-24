@@ -1694,7 +1694,9 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  Attr* Visibility? 'unsafe'?
   //  Name ':' Type ('=' default_val:ConstArg)?
   private def visitRecordField(recordField: RecordField): Ast = {
+    val attributes = recordField.attr.map(visitAttr)
     Ast(memberNode(recordField, code(recordField.name), code(recordField), typeFullNameForType(recordField.typ)))
+      .withChildren(attributes)
   }
 
   // TupleFieldList =
@@ -1707,7 +1709,9 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  Attr* Visibility?
   //  Type
   private def visitTupleField(tupleField: TupleField, index: Int): Ast = {
+    val attributes = tupleField.attr.map(visitAttr)
     Ast(memberNode(tupleField, index.toString, code(tupleField), typeFullNameForType(tupleField.typ)))
+      .withChildren(attributes)
   }
 
   // Nil on purpose: we don't have a suitable CPG representation for macro declarations.
