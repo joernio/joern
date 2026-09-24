@@ -93,7 +93,7 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
   override protected def columnEnd(node: RustNode): Option[Int] = None
 
   private lazy val Utf8ToUtf16Offset =
-    OffsetUtils.buildUtf8ToUtf16OffsetTable(parseResult.contentBytes)
+    OffsetUtils.buildOffsetConverter(OffsetUtils.OffsetSource.Bytes(parseResult.contentBytes, StandardCharsets.UTF_8))
 
   override protected def offset(node: RustNode): Option[(Int, Int)] = {
     if (node.isMacroExpanded) None
