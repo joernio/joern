@@ -721,7 +721,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       visitFn(fn).withChild(Ast(NewModifier().modifierType(ModifierTypes.VIRTUAL)))
     }
     val constMemberAsts = trait_.assocItemList.toSeq.flatMap(_.assocItem).collect {
-      case const: Const if const.name.isDefined => Ast(memberForAssocConst(const))
+      case const: Const if const.name.isDefined =>
+        Ast(memberForAssocConst(const)).withChildren(const.attr.map(visitAttr))
     }
     contextStack.pop()
     val attributes = trait_.attr.map(visitAttr)
@@ -2046,6 +2047,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   private def lowerClosureExprAsDetachedAst(closureExpr: ClosureExpr, method: NewMethod): Unit = {
+    val attributes                       = closureExpr.attr.map(visitAttr)
     val (paramAsts, paramAssignmentAsts) = lowerParamList(closureExpr.paramList)
     val bodyAst                          = closureExpr.expr match {
       case blockExpr: BlockExpr => lowerFnBody(blockExpr, paramAssignmentAsts)
@@ -2057,7 +2059,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     }
     val methodRet = methodReturnNode(closureExpr, retTypeFullName)
     val modifiers = Seq(ModifierTypes.VIRTUAL, ModifierTypes.LAMBDA).map(modifierNode(closureExpr, _))
-    addDetachedAst(methodAst(method, paramAsts, bodyAst, methodRet, modifiers))
+    addDetachedAst(methodAstWithAnnotations(method, paramAsts, bodyAst, methodRet, modifiers, attributes))
   }
 
   // Use =
