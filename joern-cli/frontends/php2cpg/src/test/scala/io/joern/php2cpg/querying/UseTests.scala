@@ -69,6 +69,16 @@ class UseTests extends PhpCode2CpgFixture {
     }
   }
 
+  "use statements should have the correct line number" in {
+    val cpg = code("""<?php
+      |use A\B;
+      |""".stripMargin)
+
+    inside(cpg.imports.l) { case List(importStmt) =>
+      importStmt.lineNumber shouldBe Some(2)
+    }
+  }
+
   "group uses should have the correct names for all elements in the group" in {
     val cpg = code("""<?php
       |use A\{B\C, D};

@@ -176,10 +176,8 @@ class AstCreator(
       val name         = importStmt.getName.getIdentifier
       val typeFullName = importStmt.getNameAsString // fully qualified name
       typeInfoCalc.registerType(typeFullName)
-      val importNode = NewImport()
-        .importedAs(name)
-        .importedEntity(typeFullName)
-        .code(getImportCode(importStmt))
+
+      val importNode = newImportNode(getImportCode(importStmt), typeFullName, name, importStmt)
         .isModuleImport(importStmt.isModule)
 
       if (!importStmt.isStatic && !importStmt.isModule) {
@@ -192,11 +190,8 @@ class AstCreator(
       case imp :: Nil =>
         val name         = NameConstants.WildcardImportName
         val typeFullName = imp.getNameAsString
-        val importNode   = NewImport()
-          .importedAs(name)
-          .importedEntity(typeFullName)
+        val importNode   = newImportNode(getImportCode(imp), typeFullName, name, imp)
           .isWildcard(true)
-          .code(getImportCode(imp))
         scope.addWildcardImport(typeFullName)
         Seq(importNode)
       case _ => // Only try to guess a wildcard import if exactly one is defined

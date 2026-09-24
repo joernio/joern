@@ -1,5 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
+import io.joern.kotlin2cpg.Config
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
@@ -39,6 +40,29 @@ class ImportTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       imp.columnNumber shouldBe Some(0)
       imp.isWildcard shouldBe Some(true)
       imp.isExplicit shouldBe Some(true)
+    }
+  }
+
+  "CPG for code with imports and file content enabled" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |import kotlin.io.collections.listOf
+        |import kotlin.comparisons.*
+        |
+        |fun main(args : Array<String>) {
+        |  println("Hello, world")
+        |}
+        |""".stripMargin).withConfig(Config().withDisableFileContent(false))
+
+    "should have the correct source code content for imports based on their offsets" in {
+      val List(listOfImport) = cpg.imports.code(".*listOf.*").l
+      listOfImport.file.head.content.substring(listOfImport.offset.get, listOfImport.offsetEnd.get) shouldBe
+        "import kotlin.io.collections.listOf"
+
+      val List(wildcardImport) = cpg.imports.code(".*comparisons.*").l
+      wildcardImport.file.head.content.substring(wildcardImport.offset.get, wildcardImport.offsetEnd.get) shouldBe
+        "import kotlin.comparisons.*"
     }
   }
 

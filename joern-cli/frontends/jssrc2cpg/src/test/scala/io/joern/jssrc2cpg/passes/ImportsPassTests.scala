@@ -43,6 +43,15 @@ class ImportsPassTests extends Code2CpgFixture(() => new TestCpgWithoutDataFlow(
       val source = assignment.source
       source shouldBe call
     }
+
+    "have the correct line and column numbers for the IMPORT node" in {
+      val cpg = code("""
+        |var barOrBaz = require('./bar.js');
+        |""".stripMargin)
+      val List(x) = cpg.imports.l
+      x.lineNumber shouldBe Some(2)
+      x.columnNumber shouldBe Some(4)
+    }
   }
 }
 

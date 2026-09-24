@@ -233,11 +233,8 @@ class AstCreator(
     val code              = s"use $typeCode$originalName$aliasCode"
     lazy val defaultAlias = originalName.split("\\\\").last
 
-    val importNode = NewImport()
-      .importedEntity(originalName)
-      .importedAs(stmt.alias.map(_.name).getOrElse(defaultAlias))
+    val importNode = newImportNode(code, originalName, stmt.alias.map(_.name).getOrElse(defaultAlias), stmt)
       .isExplicit(true)
-      .code(code)
 
     Ast(importNode)
   }

@@ -33,6 +33,15 @@ class ImportTests extends JavaSrcCode2CpgFixture {
       asterix.importedEntity shouldBe Some("org.codeminers.thirdparty.util")
       asterix.code shouldBe "import org.codeminers.thirdparty.util.*"
     }
+
+    "have correct line and column numbers for import nodes" in {
+      val List(thirdParty, asterix) = cpg.imports.l
+      thirdParty.lineNumber shouldBe Some(4)
+      thirdParty.columnNumber shouldBe Some(1)
+
+      asterix.lineNumber shouldBe Some(5)
+      asterix.columnNumber shouldBe Some(1)
+    }
   }
 
 }
