@@ -1,6 +1,7 @@
 package io.joern.x2cpg
 
 import io.joern.x2cpg.utils.OffsetUtils
+import io.joern.x2cpg.utils.OffsetUtils.OffsetSource
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -8,11 +9,11 @@ import java.nio.charset.StandardCharsets
 
 class OffsetUtilsTests extends AnyWordSpec with Matchers {
 
-  "buildUtf8ToUtf16OffsetTable" should {
+  "buildOffsetConverter for UTF-8 byte offsets" should {
 
     "be identity for ASCII-only content" in {
       val bytes = "hello world".getBytes(StandardCharsets.UTF_8)
-      val table = OffsetUtils.buildUtf8ToUtf16OffsetTable(bytes)
+      val table = OffsetUtils.buildOffsetConverter(OffsetSource.Bytes(bytes, StandardCharsets.UTF_8))
       for (i <- bytes.indices) {
         table(i) shouldBe i
       }
@@ -20,8 +21,7 @@ class OffsetUtilsTests extends AnyWordSpec with Matchers {
     }
 
     "handle empty input" in {
-      val table = OffsetUtils.buildUtf8ToUtf16OffsetTable(Array.empty)
-      table.length shouldBe 1
+      val table = OffsetUtils.buildOffsetConverter(OffsetSource.Bytes(Array.empty, StandardCharsets.UTF_8))
       table(0) shouldBe 0
     }
 
@@ -32,7 +32,7 @@ class OffsetUtilsTests extends AnyWordSpec with Matchers {
       bytes.length shouldBe 5
       str.length shouldBe 4
 
-      val table = OffsetUtils.buildUtf8ToUtf16OffsetTable(bytes)
+      val table = OffsetUtils.buildOffsetConverter(OffsetSource.Bytes(bytes, StandardCharsets.UTF_8))
       // c=byte0→char0, a=byte1→char1, f=byte2→char2, é=byte3→char3, end=byte5→char4
       table(0) shouldBe 0 // 'c'
       table(1) shouldBe 1 // 'a'
@@ -49,7 +49,7 @@ class OffsetUtilsTests extends AnyWordSpec with Matchers {
       bytes.length shouldBe 6
       str.length shouldBe 2
 
-      val table = OffsetUtils.buildUtf8ToUtf16OffsetTable(bytes)
+      val table = OffsetUtils.buildOffsetConverter(OffsetSource.Bytes(bytes, StandardCharsets.UTF_8))
       table(0) shouldBe 0 // '中' first byte
       table(3) shouldBe 1 // '文' first byte
       table(6) shouldBe 2 // end of string
@@ -62,7 +62,7 @@ class OffsetUtilsTests extends AnyWordSpec with Matchers {
       bytes.length shouldBe 4
       str.length shouldBe 2
 
-      val table = OffsetUtils.buildUtf8ToUtf16OffsetTable(bytes)
+      val table = OffsetUtils.buildOffsetConverter(OffsetSource.Bytes(bytes, StandardCharsets.UTF_8))
       table(0) shouldBe 0 // '🎉' first byte
       table(1) shouldBe 0 // intermediate
       table(2) shouldBe 0 // intermediate
@@ -77,7 +77,7 @@ class OffsetUtilsTests extends AnyWordSpec with Matchers {
       bytes.length shouldBe 6
       str.length shouldBe 4
 
-      val table = OffsetUtils.buildUtf8ToUtf16OffsetTable(bytes)
+      val table = OffsetUtils.buildOffsetConverter(OffsetSource.Bytes(bytes, StandardCharsets.UTF_8))
       table(0) shouldBe 0 // 'A'
       table(1) shouldBe 1 // '🎉' first byte
       table(5) shouldBe 3 // 'B'
@@ -89,7 +89,7 @@ class OffsetUtilsTests extends AnyWordSpec with Matchers {
       // should map to char offsets that correctly substring the Java String.
       val source = "// 🎉\nlet x = 42\n"
       val bytes  = source.getBytes(StandardCharsets.UTF_8)
-      val table  = OffsetUtils.buildUtf8ToUtf16OffsetTable(bytes)
+      val table  = OffsetUtils.buildOffsetConverter(OffsetSource.Bytes(bytes, StandardCharsets.UTF_8))
 
       // "42" in UTF-8 bytes starts at byte 12, ends at byte 14
       // (// =2, space=1, 🎉=4, \n=1, let=3, space=1 = byte 12)
@@ -102,11 +102,11 @@ class OffsetUtilsTests extends AnyWordSpec with Matchers {
     }
   }
 
-  "buildIso8859ToUtf16OffsetTable" should {
+  "buildOffsetConverter for ISO-8859-1 byte offsets" should {
 
     "be identity for ASCII content" in {
       val bytes = "hello".getBytes(StandardCharsets.ISO_8859_1)
-      val table = OffsetUtils.buildIso8859ToUtf16OffsetTable(bytes)
+      val table = OffsetUtils.buildOffsetConverter(OffsetSource.Bytes(bytes, StandardCharsets.ISO_8859_1))
       for (i <- 0 to bytes.length) {
         table(i) shouldBe i
       }
@@ -118,7 +118,7 @@ class OffsetUtilsTests extends AnyWordSpec with Matchers {
       val bytes = str.getBytes(StandardCharsets.ISO_8859_1)
       bytes.length shouldBe 3
 
-      val table = OffsetUtils.buildIso8859ToUtf16OffsetTable(bytes)
+      val table = OffsetUtils.buildOffsetConverter(OffsetSource.Bytes(bytes, StandardCharsets.ISO_8859_1))
       table(0) shouldBe 0 // ä
       table(1) shouldBe 1 // ö
       table(2) shouldBe 2 // ü
@@ -129,7 +129,7 @@ class OffsetUtilsTests extends AnyWordSpec with Matchers {
       // Mixed accented + ASCII: "café = 1" in ISO-8859-1
       val str   = "café = 1"
       val bytes = str.getBytes(StandardCharsets.ISO_8859_1)
-      val table = OffsetUtils.buildIso8859ToUtf16OffsetTable(bytes)
+      val table = OffsetUtils.buildOffsetConverter(OffsetSource.Bytes(bytes, StandardCharsets.ISO_8859_1))
 
       // "1" is at byte index 7 in ISO-8859-1 (c=0, a=1, f=2, é=3, space=4, ==5, space=6, 1=7)
       val content = new String(bytes, StandardCharsets.ISO_8859_1)
@@ -137,23 +137,34 @@ class OffsetUtilsTests extends AnyWordSpec with Matchers {
     }
 
     "handle empty input" in {
-      val table = OffsetUtils.buildIso8859ToUtf16OffsetTable(Array.empty)
-      table.length shouldBe 1
+      val table = OffsetUtils.buildOffsetConverter(OffsetSource.Bytes(Array.empty, StandardCharsets.ISO_8859_1))
       table(0) shouldBe 0
     }
   }
 
-  "buildCodepointToUtf16OffsetTable" should {
+  "buildOffsetConverter for an unhandled charset" should {
+
+    "fall back to identity mapping" in {
+      // US-ASCII is single-byte but not one of the fast-pathed charsets — should still work via the fallback.
+      val bytes = "hello".getBytes(StandardCharsets.US_ASCII)
+      val table = OffsetUtils.buildOffsetConverter(OffsetSource.Bytes(bytes, StandardCharsets.US_ASCII))
+      for (i <- 0 to bytes.length) {
+        table(i) shouldBe i
+      }
+    }
+  }
+
+  "buildOffsetConverter for codepoint offsets" should {
 
     "be identity for ASCII-only content" in {
-      val table = OffsetUtils.buildCodepointToUtf16OffsetTable("hello")
+      val table = OffsetUtils.buildOffsetConverter(OffsetSource.Codepoints("hello"))
       for (i <- 0 to 5) { table(i) shouldBe i }
     }
 
     "be identity for BMP characters (é, 中)" in {
       // "café" = 4 codepoints, 4 UTF-16 code units
       val str   = "café"
-      val table = OffsetUtils.buildCodepointToUtf16OffsetTable(str)
+      val table = OffsetUtils.buildOffsetConverter(OffsetSource.Codepoints(str))
       table(0) shouldBe 0 // c
       table(1) shouldBe 1 // a
       table(2) shouldBe 2 // f
@@ -164,7 +175,7 @@ class OffsetUtilsTests extends AnyWordSpec with Matchers {
     "shift offsets for supplementary plane characters (emoji)" in {
       // "A🎉B" = 3 codepoints, but 4 UTF-16 code units (🎉 = surrogate pair)
       val str   = "A🎉B"
-      val table = OffsetUtils.buildCodepointToUtf16OffsetTable(str)
+      val table = OffsetUtils.buildOffsetConverter(OffsetSource.Codepoints(str))
       str.codePointCount(0, str.length) shouldBe 3
       str.length shouldBe 4
 
@@ -176,7 +187,7 @@ class OffsetUtilsTests extends AnyWordSpec with Matchers {
 
     "produce offsets that correctly index into a Java String" in {
       val source = "# 🎉\nx = 42\n"
-      val table  = OffsetUtils.buildCodepointToUtf16OffsetTable(source)
+      val table  = OffsetUtils.buildOffsetConverter(OffsetSource.Codepoints(source))
 
       // "42" in codepoints: # (1) space(1) 🎉(1) \n(1) x(1) space(1) =(1) space(1) = codepoint 8
       val cpStart = source.codePointCount(0, source.indexOf("42"))

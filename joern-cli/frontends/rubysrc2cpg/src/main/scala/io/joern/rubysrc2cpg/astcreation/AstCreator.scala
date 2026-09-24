@@ -42,15 +42,23 @@ class AstCreator(
 
   private val isErbFile = fileName.endsWith(".erb")
 
-  private lazy val codepointToUtf16Offset = OffsetUtils.buildCodepointToUtf16OffsetTable(fileContent)
+  private lazy val codepointToUtf16Offset =
+    OffsetUtils.buildOffsetConverter(OffsetUtils.OffsetSource.Codepoints(fileContent))
 
   override protected def offset(node: RubyExpression): Option[(Int, Int)] = {
-    // ERB parser offsets reference synthetic (expanded) Ruby, not the original .erb in file.content.
-    // Return raw offsets as-is since no meaningful conversion is possible.
-    if (isErbFile) return node.offset
-    node.offset.flatMap { case (start, end) =>
-      Some((codepointToUtf16Offset(start), codepointToUtf16Offset(end)))
-    }
+    // The SIGNATURES pass discards its AST after summarizing, so offsets are never used there —
+    // skip conversion to avoid building codepointToUtf16Offset twice per file (once per pass).
+    // ERB parser offsets reference synthetic (expanded) Ruby, not the original .erb in file.content,
+    // so no meaningful conversion is possible for those either.
+    val skipConversion = parseLevel == AstParseLevel.SIGNATURES || isErbFile
+    Option
+      .unless(skipConversion) {
+        node.offset.flatMap { case (start, end) =>
+          Some((codepointToUtf16Offset(start), codepointToUtf16Offset(end)))
+        }
+      }
+      .flatten
+      .orElse(Option.when(skipConversion)(node.offset).flatten)
   }
 
   protected val relativeFileName: String =

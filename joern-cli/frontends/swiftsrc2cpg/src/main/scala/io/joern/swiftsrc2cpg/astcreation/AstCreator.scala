@@ -113,7 +113,7 @@ class AstCreator(
   override protected def columnEnd(node: SwiftNode): Option[Int] = node.endColumn
 
   private lazy val Utf8ToUtf16Offset =
-    OffsetUtils.buildUtf8ToUtf16OffsetTable(parserResult.contentBytes)
+    OffsetUtils.buildOffsetConverter(OffsetUtils.OffsetSource.Bytes(parserResult.contentBytes, StandardCharsets.UTF_8))
 
   private def nodeOffsets(node: SwiftNode): Option[(Int, Int)] = {
     for {
