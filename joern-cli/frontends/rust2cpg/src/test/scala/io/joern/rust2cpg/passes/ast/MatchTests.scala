@@ -287,6 +287,28 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "match with slice pattern case" should {
+    val cpg = code("""
+        |fn foo(s: &[i32]) -> i32 {
+        |  match s {
+        |    [] => 0,
+        |    [first, ..] => *first,
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.method.nameExact("foo").local.l) { case first :: Nil =>
+        first.name shouldBe "first"
+        first.typeFullName shouldBe "&i32"
+      }
+    }
+
+    "have correct assignments" in {
+      cpg.method.nameExact("foo").call.isAssignment.code.l shouldBe List("first = s[0]")
+    }
+  }
+
   "match with range case" should {
     val cpg = code("""
         |fn foo(n: i32) -> i32 {

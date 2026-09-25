@@ -355,6 +355,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       case recordPat: RecordPat           => createAssignmentsForRecordPattern(recordPat, mkSourceAst)
       case tuplePat: TuplePat             => createAssignmentsForTuplePattern(tuplePat, mkSourceAst)
       case tupleStructPat: TupleStructPat => createAssignmentsForTupleStructPattern(tupleStructPat, mkSourceAst)
+      case slicePat: SlicePat             => createAssignmentsForSlicePattern(slicePat, mkSourceAst)
       case wildcardPat: WildcardPat       => Nil
       case literalPat: LiteralPat         => Nil
       case rangePat: RangePat             => Nil
@@ -414,6 +415,34 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     } else {
       assignments :+ notHandledYet(pat)
     }
+  }
+
+  // TODO(rust_ast_gen): need type and size on the patterns.
+  private def createAssignmentsForSlicePattern(slicePat: SlicePat, mkSourceAst: () => Ast): Seq[Ast] = {
+    val (prefix, fromRest) = slicePat.pat.span(!matchesRest(_))
+    val assignments        = prefix.zipWithIndex.flatMap { case (element, index) =>
+      val elementType          = typeFullNameForPat(element)
+      def mkIndexAccess(): Ast = {
+        val sourceAst       = mkSourceAst()
+        val indexAccessCode = s"${sourceAst.rootCodeOrEmpty}[$index]"
+        val indexAst        = Ast(literalNode(element, index.toString, "usize"))
+        val callNode        = operatorCallNode(element, indexAccessCode, Operators.indexAccess, Some(elementType))
+        callAst(callNode, Seq(sourceAst, indexAst))
+      }
+      createAssignmentsForPattern(element, mkIndexAccess)
+    }
+    val bindingsFromRest = fromRest.flatMap(collectPatternBindings)
+    if (bindingsFromRest.isEmpty) {
+      assignments
+    } else {
+      assignments :+ notHandledYet(slicePat)
+    }
+  }
+
+  private def matchesRest(pat: Pat): Boolean = pat match {
+    case identPat: IdentPat => identPat.pat.exists(matchesRest)
+    case _: RestPat         => true
+    case _                  => false
   }
 
   private def createAssignmentsForRecordPattern(recordPat: RecordPat, mkSourceAst: () => Ast): Seq[Ast] = {
