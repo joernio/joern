@@ -66,6 +66,32 @@ class ImportTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "an import with extra whitespace between `import` and the package name" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |import    kotlin.io.collections.listOf
+        |
+        |fun main(args : Array<String>) {
+        |  println("Hello, world")
+        |}
+        |""".stripMargin).withConfig(Config().withDisableFileContent(false))
+
+    "have the expected properties" in {
+      val List(imp) = cpg.imports.l
+      imp.importedEntity shouldBe Some("kotlin.io.collections.listOf")
+      // code is built from the `import` keyword and the resolved path, not the raw source text,
+      // so extra whitespace is normalized to a single space
+      imp.code shouldBe "import kotlin.io.collections.listOf"
+      imp.lineNumber shouldBe Some(4)
+      imp.columnNumber shouldBe Some(0)
+
+      // offset/offsetEnd are derived from the PSI element's own text range, so the extra whitespace is preserved
+      val fileContent = cpg.file.head.content
+      fileContent.substring(imp.offset.get, imp.offsetEnd.get) shouldBe "import    kotlin.io.collections.listOf"
+    }
+  }
+
   "CPG for code without explicit imports" should {
     val cpg = code("""
         |package mypkg

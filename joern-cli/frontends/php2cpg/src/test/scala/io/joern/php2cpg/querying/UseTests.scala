@@ -1,5 +1,6 @@
 package io.joern.php2cpg.querying
 
+import io.joern.php2cpg.Config
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
@@ -76,6 +77,17 @@ class UseTests extends PhpCode2CpgFixture {
 
     inside(cpg.imports.l) { case List(importStmt) =>
       importStmt.lineNumber shouldBe Some(2)
+    }
+  }
+
+  "use statements should have the correct offset" in {
+    val cpg = code("""<?php
+      |use A\B;
+      |""".stripMargin).withConfig(Config().withDisableFileContent(false))
+
+    inside(cpg.imports.l) { case List(importStmt) =>
+      val fileContent = cpg.file.head.content
+      fileContent.substring(importStmt.offset.get, importStmt.offsetEnd.get) shouldBe "A\\B"
     }
   }
 

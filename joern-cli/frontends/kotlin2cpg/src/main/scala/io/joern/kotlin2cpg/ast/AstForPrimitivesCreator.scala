@@ -224,10 +224,10 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     val importedAs = Try(directive.getImportedName.getIdentifier).toOption
     val isWildcard = importedAs.contains(Constants.WildcardImportName) || directive.getImportedName == null
     val node       = newImportNode(
-      s"${Constants.ImportKeyword} ${directive.getImportPath.getPathStr}",
-      directive.getImportPath.getPathStr,
-      importedAs.getOrElse(Constants.WildcardImportName),
-      directive
+      code = s"${Constants.ImportKeyword} ${directive.getImportPath.getPathStr}",
+      importedEntity = directive.getImportPath.getPathStr,
+      importedAs = importedAs.getOrElse(Constants.WildcardImportName),
+      include = directive
     ).isWildcard(isWildcard)
       .isExplicit(true)
     Ast(node)
