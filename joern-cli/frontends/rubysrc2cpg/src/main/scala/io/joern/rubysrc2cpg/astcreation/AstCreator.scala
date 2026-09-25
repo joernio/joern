@@ -42,24 +42,16 @@ class AstCreator(
 
   private val isErbFile = fileName.endsWith(".erb")
 
-  private lazy val codepointToUtf16Offset =
-    OffsetUtils.buildOffsetConverter(OffsetUtils.OffsetSourceType.Codepoints(fileContent))
+  // The SIGNATURES pass discards its AST after summarizing, so offsets are never used there
+  override protected def isOffsetNeeded: Boolean =
+    enableFileContents && parseLevel != AstParseLevel.SIGNATURES
 
-  override protected def offset(node: RubyExpression): Option[(Int, Int)] = {
-    // The SIGNATURES pass discards its AST after summarizing, so offsets are never used there —
-    // skip conversion to avoid building codepointToUtf16Offset twice per file (once per pass).
-    // ERB parser offsets reference synthetic (expanded) Ruby, not the original .erb in file.content,
-    // so no meaningful conversion is possible for those either.
-    val skipConversion = parseLevel == AstParseLevel.SIGNATURES || isErbFile
-    Option
-      .unless(skipConversion) {
-        node.offset.flatMap { case (start, end) =>
-          Some((codepointToUtf16Offset(start), codepointToUtf16Offset(end)))
-        }
-      }
-      .flatten
-      .orElse(Option.when(skipConversion)(node.offset).flatten)
-  }
+  // ERB parser offsets reference synthetic (expanded) Ruby, not the original .erb in file.content, so
+  // no meaningful conversion is possible for those — fall back to identity (raw offsets as-is).
+  override protected lazy val offsetNormalizer: Int => Int =
+    if (isErbFile) identity else OffsetUtils.buildOffsetConverter(OffsetUtils.OffsetSourceType.Codepoints(fileContent))
+
+  override protected def unadjustedOffset(node: RubyExpression): Option[(Int, Int)] = node.offset
 
   protected val relativeFileName: String =
     projectRoot

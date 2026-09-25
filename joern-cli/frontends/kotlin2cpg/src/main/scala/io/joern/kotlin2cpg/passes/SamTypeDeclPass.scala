@@ -62,7 +62,7 @@ private class SamTypeDeclAstBuilder()(implicit withSchemaValidation: ValidationM
 
   override def columnEnd(element: PsiElement): Option[Int] = column(element)
 
-  override def offset(element: PsiElement): Option[(Int, Int)] = {
+  override def unadjustedOffset(element: PsiElement): Option[(Int, Int)] = {
     Option(element).map { someElement =>
       val textRange = someElement.getTextRange
       (textRange.getStartOffset, textRange.getEndOffset)

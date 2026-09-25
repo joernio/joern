@@ -92,18 +92,15 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
   override protected def lineEnd(node: RustNode): Option[Int]   = None
   override protected def columnEnd(node: RustNode): Option[Int] = None
 
-  private lazy val Utf8ToUtf16Offset =
+  override protected def isOffsetNeeded: Boolean = !config.disableFileContent
+
+  override protected lazy val offsetNormalizer: Int => Int =
     OffsetUtils.buildOffsetConverter(
       OffsetUtils.OffsetSourceType.Bytes(parseResult.contentBytes, StandardCharsets.UTF_8)
     )
 
-  override protected def offset(node: RustNode): Option[(Int, Int)] = {
-    if (node.isMacroExpanded) None
-    else
-      node.startOffset.zip(node.endOffset).map { case (start, end) =>
-        (Utf8ToUtf16Offset(start), Utf8ToUtf16Offset(end))
-      }
-  }
+  override protected def unadjustedOffset(node: RustNode): Option[(Int, Int)] =
+    if (node.isMacroExpanded) None else node.startOffset.zip(node.endOffset)
 
   override protected def code(node: RustNode): String = text(node).map(shortenCode(_)).getOrElse(PropertyDefaults.Code)
 
