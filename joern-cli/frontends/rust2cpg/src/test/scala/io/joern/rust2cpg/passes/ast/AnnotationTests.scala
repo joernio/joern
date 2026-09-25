@@ -249,6 +249,53 @@ class AnnotationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "fn parameter with attribute" should {
+    val cpg = code("""
+        |fn foo(#[allow(unused)] x: i32) {}
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(cpg.method.nameExact("foo").parameter.nameExact("x").annotation.l) { case attr :: Nil =>
+        attr.name shouldBe "allow"
+        attr.fullName shouldBe "allow"
+        attr.code shouldBe "#[allow(unused)]"
+      }
+    }
+  }
+
+  "self parameter with attribute" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo {
+        |  fn bar(#[allow(unused)] &self) {}
+        |}
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(cpg.method.nameExact("bar").parameter.nameExact("self").annotation.l) { case attr :: Nil =>
+        attr.name shouldBe "allow"
+        attr.fullName shouldBe "allow"
+        attr.code shouldBe "#[allow(unused)]"
+      }
+    }
+  }
+
+  "closure parameter with attribute" should {
+    val cpg = code("""
+        |fn foo() {
+        |  let f = |#[allow(unused)] x: i32| 0;
+        |}
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(cpg.method.nameExact("<lambda>0").parameter.nameExact("x").annotation.l) { case attr :: Nil =>
+        attr.name shouldBe "allow"
+        attr.fullName shouldBe "allow"
+        attr.code shouldBe "#[allow(unused)]"
+      }
+    }
+  }
+
   "type alias with attribute" should {
     val cpg = code("""
         |struct Foo;

@@ -832,6 +832,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         case Some(pat) if collectPatternBindings(pat).nonEmpty       => (code(pat), Some(pat))
         case pat                                                     => (contextStack.nextTmpName(), pat)
       }
+      val attributes   = param.attr.map(visitAttr)
       val typeFullName = typeFullNameForParam(param)
       val paramNode    = parameterInNode(
         node = param,
@@ -848,7 +849,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         val mkParamIdentAst = () => identifierAst(pat, paramName, paramName, typeFullName)
         createLocalsForBindings(collectPatternBindings(pat)) ++ createAssignmentsForPattern(pat, mkParamIdentAst)
       }
-      (Ast(paramNode), patternAssignmentAsts)
+      (Ast(paramNode).withChildren(attributes), patternAssignmentAsts)
     }.unzip
 
     (selfParamAst ++ paramAsts, paramAssignmentAsts.flatten)
@@ -857,6 +858,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // SelfParam =
   //  Attr* ( ('&' Lifetime?)? 'mut'? Name | 'mut'? Name ':' Type )
   private def visitSelfParam(selfParam: SelfParam): Ast = {
+    val attributes         = selfParam.attr.map(visitAttr)
     val typeFullName       = typeFullNameForSelfParam(selfParam)
     val evaluationStrategy =
       if (selfParam.ampToken.isDefined) EvaluationStrategies.BY_SHARING else EvaluationStrategies.BY_VALUE
@@ -870,7 +872,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       typeFullName = typeFullName
     )
     contextStack.declareParameter(paramNode)
-    Ast(paramNode)
+    Ast(paramNode).withChildren(attributes)
   }
 
   // PathExpr =
