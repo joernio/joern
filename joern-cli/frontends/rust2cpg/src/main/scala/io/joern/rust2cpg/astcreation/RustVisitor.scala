@@ -357,6 +357,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       case tupleStructPat: TupleStructPat => createAssignmentsForTupleStructPattern(tupleStructPat, mkSourceAst)
       case wildcardPat: WildcardPat       => Nil
       case literalPat: LiteralPat         => Nil
+      case rangePat: RangePat             => Nil
       case pathPat: PathPat               => Nil
       case refPat: RefPat                 => createAssignmentsForRefPattern(refPat, mkSourceAst)
       case orPat: OrPat                   => createAssignmentsForOrPattern(orPat, mkSourceAst)
