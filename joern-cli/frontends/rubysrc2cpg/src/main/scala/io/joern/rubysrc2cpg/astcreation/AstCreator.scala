@@ -43,7 +43,7 @@ class AstCreator(
   private val isErbFile = fileName.endsWith(".erb")
 
   private lazy val codepointToUtf16Offset =
-    OffsetUtils.buildOffsetConverter(OffsetUtils.OffsetSource.Codepoints(fileContent))
+    OffsetUtils.buildOffsetConverter(OffsetUtils.OffsetSourceType.Codepoints(fileContent))
 
   override protected def offset(node: RubyExpression): Option[(Int, Int)] = {
     // The SIGNATURES pass discards its AST after summarizing, so offsets are never used there —
