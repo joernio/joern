@@ -1,3 +1,5 @@
+import sbt.BareBuildSyntax.dependsOn
+
 name := "ghidra2cpg"
 
 dependsOn(Projects.dataflowengineoss % Test, Projects.x2cpg % "compile->compile;test->test", Projects.linterRules % ScalafixConfig)
@@ -30,11 +32,14 @@ enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 Test / scalacOptions += "-language:implicitConversions"
 Test / testForkedParallel := false // ghidra is not thread-safe
 
-// The serialFilterFactory is mandatory since ghidra 12.2: headless initialization installs it unconditionally and
-// fails if the JVM has already pinned its builtin factory (which any forked sbt test JVM has). Side effect: once
-// ghidra is initialized, the JVM-wide filter also rejects sbt's own end-of-run test protocol message, so every test
-// run ends with a cosmetic "Internal error when running tests: ... Broken pipe" line. Test results are unaffected.
-javaOptions := Seq(
-  "-Djava.protocol.handler.pkgs=ghidra.framework.protocol",
-  "-Djdk.serialFilterFactory=ghidra.framework.remote.GhidraSerialFilterFactory"
-)
+// Since ghidra 12.2, headless initialization installs a JVM-wide serial filter factory unconditionally and fails
+// if another factory has been pinned already (i.e. once any ObjectInputStream was created). Do NOT set
+// -Djdk.serialFilterFactory: the JDK instantiates that class eagerly through the system class loader, and with
+// sbt 2's JSON-based test worker nothing pins the builtin factory first, so the property only causes a re-entrant
+// double instantiation ("Serial filter factory has previously been instantiated") which aborts ghidra init.
+// The ghidra:// URL protocol handler below is also looked up through the system class loader, and sbt 2 by
+// default launches forked test workers with only the worker jars on java.class.path (the real classpath lives in
+// a child URLClassLoader). The Raw layering strategy instead forks tests with the full classpath on the system
+// class loader.
+javaOptions := Seq("-Djava.protocol.handler.pkgs=ghidra.framework.protocol")
+Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Raw

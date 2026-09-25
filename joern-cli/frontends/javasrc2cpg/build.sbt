@@ -1,3 +1,5 @@
+import sbt.BareBuildSyntax.dependsOn
+
 name := "javasrc2cpg"
 
 dependsOn(
@@ -21,7 +23,8 @@ libraryDependencies ++= Seq(
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
 lazy val packTestCode = taskKey[Unit]("Packs test code for JarTypeReader into jars.")
-packTestCode := {
+packTestCode := Def.uncached {
+  val _ = (Test / compile).value // ensure the test classes are compiled before packaging them
   import better.files._
   import net.lingala.zip4j.ZipFile
   import net.lingala.zip4j.model.ZipParameters
@@ -29,10 +32,10 @@ packTestCode := {
   import java.nio.file.Paths
 
   val pkgRoot              = "io"
-  val testClassOutputPath  = target.value / ("scala-" + scalaVersion.value) / "test-classes"
+  val testClassOutputPath  = (Test / classDirectory).value
   val relativeTestCodePath = Paths.get(pkgRoot, "joern", "javasrc2cpg", "jartypereader", "testcode")
 
-  val jarFileRoot = target.value.toScala / "testjars"
+  val jarFileRoot = (baseDirectory.value / "target" / "testjars").toScala
   if (jarFileRoot.exists()) jarFileRoot.delete()
   jarFileRoot.createDirectories()
 
@@ -52,4 +55,7 @@ packTestCode := {
     jarFile.addFolder(File(testRootPath).toJava)
   }
 }
-packTestCode := packTestCode.triggeredBy(Test / compile).value
+// triggeredBy does not fire when `Test / compile` is served from the sbt 2.x task cache,
+// so make test execution depend on the test jars explicitly instead (testLoader is the
+// common choke point of test, testOnly and testQuick in sbt 2.x).
+Test / testLoader := Def.uncached((Test / testLoader).dependsOn(packTestCode).value)

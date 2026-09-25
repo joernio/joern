@@ -56,7 +56,7 @@ object Versions {
     val versionRegexp = s""".*val $key[ ]+=[ ]?"(.*?)"""".r
     val versions: List[String] = scala.io.Source
       .fromFile("build.sbt")
-      .getLines
+      .getLines()
       .filter(_.contains(s"val $key"))
       .collect { case versionRegexp(version) => version }
       .toList

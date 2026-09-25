@@ -63,7 +63,18 @@ jobs:
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
       - name: Build distribution
-        run: sbt stage createDistribution
+        # --server --batch: foreground server for one-shot commands; avoids thin-client
+        # cold-start connect failures (https://github.com/sbt/sbt/issues/9417)
+        run: sbt --server --batch "stage ; createDistribution"
+      - name: Stage distribution zip
+        if: runner.os != 'Windows'
+        run: cp target/out/jvm/*/joern/joern-cli-${{ matrix.platform }}.zip target/
+      - name: Stage distribution zip
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem -Path "target\out\jvm\*\joern\joern-cli-${{ matrix.platform }}.zip" | Select-Object -First 1
+          Copy-Item $zip.FullName -Destination "target\"
       - name: Generate SHA512 checksum
         run: sha512sum target/joern-cli-${{ matrix.platform }}.zip > target/joern-cli-${{ matrix.platform }}.zip.sha512
         if: runner.os != 'Windows'
@@ -83,10 +94,13 @@ jobs:
           retention-days: 1
       - name: Dump query database
         if: matrix.platform == 'linux-x86_64'
-        run: sbt "querydb/runMain io.joern.dumpq.Main"
+        run: sbt --server --batch "querydb/runMain io.joern.dumpq.Main"
       - name: Prepare querydb artifacts
         if: matrix.platform == 'linux-x86_64'
-        run: cp /tmp/querydb.json querydb/target/querydb.json
+        run: |
+          mkdir -p querydb/target
+          cp target/out/jvm/*/querydb/querydb.zip querydb/target/
+          cp /tmp/querydb.json querydb/target/querydb.json
       - name: Upload querydb artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: matrix.platform == 'linux-x86_64'

@@ -1,3 +1,5 @@
+import sbt.BareBuildSyntax.dependsOn
+
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.sbt.packager.Keys.stagingDirectory
 import versionsort.VersionHelper
@@ -73,7 +75,7 @@ goAstGenBinaryNames := {
 }
 
 lazy val goAstGenDlTask = taskKey[Unit](s"Download goastgen binaries")
-goAstGenDlTask := {
+goAstGenDlTask := Def.uncached {
   val goAstGenDir = baseDirectory.value / "bin" / "astgen"
 
   goAstGenBinaryNames.value.foreach { fileName =>
@@ -88,8 +90,8 @@ goAstGenDlTask := {
   IO.copyDirectory(goAstGenDir, distDir, preserveExecutable = true)
 }
 
-Compile / compile := ((Compile / compile) dependsOn goAstGenDlTask).value
+Compile / compile := Def.uncached { ((Compile / compile).dependsOn(goAstGenDlTask)).value }
 
 /** write the astgen version to the manifest for downstream usage */
 Compile / packageBin / packageOptions +=
-  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Go-AstGen-Version") -> goAstGenVersion.value)
+  Package.ManifestAttributes("Go-AstGen-Version" -> goAstGenVersion.value)

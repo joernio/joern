@@ -1,3 +1,5 @@
+import sbt.BareBuildSyntax.dependsOn
+
 import better.files.File
 import com.typesafe.sbt.packager.Keys.stagingDirectory
 
@@ -24,7 +26,7 @@ libraryDependencies ++= Seq(
 )
 
 lazy val phpParseInstallTask = taskKey[Unit]("Install PHP-Parse using PHP Composer")
-phpParseInstallTask := {
+phpParseInstallTask := Def.uncached {
   val phpBinDir = baseDirectory.value / "bin" / "php-parser"
   DownloadHelper.ensureIsAvailable(phpParserDlUrl, phpBinDir / versionedParserBinName)
   File((phpBinDir / "php-parser.php").getPath)
@@ -36,10 +38,10 @@ phpParseInstallTask := {
   IO.copyDirectory(phpBinDir, distDir)
 }
 
-Compile / compile := ((Compile / compile) dependsOn phpParseInstallTask).value
+Compile / compile := Def.uncached { ((Compile / compile).dependsOn(phpParseInstallTask)).value }
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
 /** write the php parser version to the manifest for downstream usage */
 Compile / packageBin / packageOptions +=
-  Package.ManifestAttributes(new java.util.jar.Attributes.Name("PHP-Parser-Version") -> Versions.phpParser)
+  Package.ManifestAttributes("PHP-Parser-Version" -> Versions.phpParser)

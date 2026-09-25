@@ -1,3 +1,5 @@
+import sbt.BareBuildSyntax.dependsOn
+
 name := "dataflowengineoss"
 
 dependsOn(
@@ -17,7 +19,6 @@ libraryDependencies ++= Seq(
 
 enablePlugins(Antlr4Plugin)
 
-Antlr4 / antlr4PackageName := Some("io.joern.dataflowengineoss")
-Antlr4 / antlr4Version     := Versions.antlr
-Antlr4 / javaSource        := (Compile / sourceManaged).value
+Antlr4 / antlr4Package := Some("io.joern.dataflowengineoss")
+Antlr4 / antlr4Version := Some(Versions.antlr)
 Compile / doc / sources ~= (_ filter (_ => false))

@@ -48,9 +48,22 @@ object Delombok {
     dependencies: List[String],
     peerSourceRoots: Seq[Path]
   ) = {
-    val javaPath     = analysisJavaHome.getOrElse(systemJavaPath)
-    val ownClasspath = System.getProperty("java.class.path")
-    val ownEntries   = ownClasspath.split(File.pathSeparator).toList
+    val javaPath = analysisJavaHome.getOrElse(systemJavaPath)
+    // In SBT 2.x forked tests, java.class.path only contains SBT worker jars; the real test/compile
+    // classpath lives on the context URLClassLoader. Collect from both sources so this works in all
+    // environments (packaged jar, SBT 2.x, IDE test runners).
+    def collectLoaderEntries(cl: ClassLoader): List[String] = cl match {
+      case null                           => Nil
+      case urlCl: java.net.URLClassLoader =>
+        urlCl.getURLs.toList
+          .flatMap(url => Try(Paths.get(url.toURI).toAbsolutePath.toString).toOption) ++
+          collectLoaderEntries(urlCl.getParent)
+      case other => collectLoaderEntries(other.getParent)
+    }
+    val javaClassPathEntries =
+      Option(System.getProperty("java.class.path")).filter(_.nonEmpty).toList.flatMap(_.split(File.pathSeparator))
+    val ownEntries =
+      (javaClassPathEntries ++ collectLoaderEntries(Thread.currentThread().getContextClassLoader)).distinct
     // Ask the classloader where lombok.launch.Main came from — this is more robust than a filename
     // heuristic, which breaks under packaging layouts that rename jars (e.g. sbt-native-packager's
     // `org.projectlombok.lombok-<version>.jar`) or fat-jar setups. `Class.forName` is used because
@@ -62,10 +75,12 @@ object Delombok {
     }.toOption
     val (lombokEntries, otherEntries) = bundledLombokEntry match {
       case Some(entry) =>
-        ownEntries.partition(ent => Paths.get(ent).toAbsolutePath.normalize.toString == entry)
+        val (found, rest) = ownEntries.partition(ent => Paths.get(ent).toAbsolutePath.normalize.toString == entry)
+        // Jar resolved via classloader but not yet in ownEntries — add it directly (SBT 2.x edge case).
+        if (found.nonEmpty) (found, rest) else (List(entry), ownEntries)
       case None => (Nil, ownEntries)
     }
-    if (lombokEntries.isEmpty) {
+    if (bundledLombokEntry.isEmpty) {
       logger.warn(
         "Could not locate joern's bundled lombok jar on the classpath. If a project dependency supplies a " +
           "lombok version incompatible with the analysis JDK, delombok may fail."
