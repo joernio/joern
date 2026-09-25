@@ -200,14 +200,17 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     }
 
     val caseExpr = node.expression
-      .map {
-        case arrayLiteral: ArrayLiteral =>
-          val tmp             = SimpleIdentifier(None)(arrayLiteral.span.spanStart(scope.getNewVarTmp))
-          val arrayLiteralAst = DummyAst(astForArrayLiteral(arrayLiteral))(arrayLiteral.span)
-          (tmp, arrayLiteralAst)
-        case e =>
-          val tmp = SimpleIdentifier(None)(e.span.spanStart(scope.getNewVarTmp))
-          (tmp, e)
+      .map { expr =>
+        val tmpName = createScopedTmpLocal()
+        expr match {
+          case arrayLiteral: ArrayLiteral =>
+            val tmp             = SimpleIdentifier(None)(arrayLiteral.span.spanStart(tmpName))
+            val arrayLiteralAst = DummyAst(astForArrayLiteral(arrayLiteral))(arrayLiteral.span)
+            (tmp, arrayLiteralAst)
+          case e =>
+            val tmp = SimpleIdentifier(None)(e.span.spanStart(tmpName))
+            (tmp, e)
+        }
       }
       .map((tmp, e) => StatementList(List(SingleAssignment(tmp, "=", e)(e.span)) ++ goCase(Some(tmp)))(node.span))
       .getOrElse(StatementList(goCase(None))(node.span))

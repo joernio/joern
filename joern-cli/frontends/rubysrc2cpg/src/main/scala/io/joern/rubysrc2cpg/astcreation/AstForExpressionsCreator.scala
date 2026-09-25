@@ -354,13 +354,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
           //  we want to clean this creation up.
           Option(tmpName)
         case None =>
-          val tmpName     = scope.getNewVarTmp
-          val tmpGenLocal = NewLocal().name(tmpName).code(tmpName).typeFullName(Defines.Any)
-          scope.addToScope(tmpName, tmpGenLocal) match {
-            case BlockScope(block) => diffGraph.addEdge(block, tmpGenLocal, EdgeTypes.AST)
-            case _                 =>
-          }
-          Option(tmpName)
+          Option(createScopedTmpLocal())
       }
       .get
     val tmpIden    = NewIdentifier().name(tmpName).code(tmpName).typeFullName(Defines.Any)
@@ -774,16 +768,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     if (node.elements.isEmpty) {
       arrayInitCall
     } else {
-      val tmp = scope.getNewVarTmp
+      val block = blockNode(node, code(node), Defines.Any)
+      scope.pushNewScope(BlockScope(block))
+      val tmp = createScopedTmpLocal()
 
       def tmpRubyNode(tmpNode: Option[RubyExpression] = None) =
         SimpleIdentifier()(tmpNode.map(_.span).getOrElse(node.span).spanStart(tmp))
 
       def tmpAst(tmpNode: Option[RubyExpression] = None) = astForSimpleIdentifier(tmpRubyNode(tmpNode))
-
-      val block = blockNode(node, code(node), Defines.Any)
-      scope.pushNewScope(BlockScope(block))
-      handleVariableOccurrence(tmp, node)
 
       val arguments = if (node.text.startsWith("%")) {
         val argumentsType =
@@ -817,15 +809,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForHashLiteral(node: HashLike): Ast = {
-    val tmp = scope.getNewVarTmp
+    val block = blockNode(node)
+    scope.pushNewScope(BlockScope(block))
+    val tmp = createScopedTmpLocal()
 
     def tmpAst(tmpNode: Option[RubyExpression] = None) = astForSimpleIdentifier(
       SimpleIdentifier()(tmpNode.map(_.span).getOrElse(node.span).spanStart(tmp))
     )
-
-    val block = blockNode(node)
-    scope.pushNewScope(BlockScope(block))
-    handleVariableOccurrence(tmp, node)
 
     val argumentAsts = node.elements.flatMap(elem =>
       elem match {

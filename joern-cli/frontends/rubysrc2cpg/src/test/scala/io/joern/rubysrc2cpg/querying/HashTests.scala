@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, TypeRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Local, TypeRef}
 import io.shiftleft.semanticcpg.language.*
 
 @scala.annotation.nowarn("cat=deprecation")
@@ -239,6 +239,24 @@ class HashTests extends RubyCode2CpgFixture {
 
       val List(selfCallArg, literalCallArg) = splatCallArg.argument.l
       literalCallArg.code shouldBe "13"
+    }
+  }
+
+  "a hash literal should not produce cross-scope REF edges when the enclosing type has a bodyMemberCall" in {
+    val cpg = code("""
+        |module M
+        |  extend A::B
+        |  def foo
+        |    {a: 1, b: 2}
+        |  end
+        |end
+        |""".stripMargin)
+    cpg.identifier.filter(_.name.startsWith("<tmp-")).foreach { id =>
+      id.refOut.collectAll[Local].foreach { local =>
+        withClue(s"'${id.name}' should not ref a local in a different method: ") {
+          local.method.next().fullName shouldBe id.method.fullName
+        }
+      }
     }
   }
 }
