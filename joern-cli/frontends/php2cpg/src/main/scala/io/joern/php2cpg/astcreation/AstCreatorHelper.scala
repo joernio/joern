@@ -26,13 +26,17 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
 
   protected def code(phpNode: PhpNode): String = "" // Sadly, the Php AST does not carry any code fields
 
-  protected lazy val byteToUtf16Offset: Int => Int =
+  override protected def isOffsetNeeded: Boolean = !disableFileContent
+
+  override protected lazy val offsetNormalizer: Int => Int =
     OffsetUtils.buildOffsetConverter(OffsetUtils.OffsetSourceType.Bytes(fileContentBytes, fileCharset))
 
-  override protected def offset(phpNode: PhpNode): Option[(Int, Int)] = {
-    Option.when(!disableFileContent) {
-      (byteToUtf16Offset(phpNode.attributes.startFilePos), byteToUtf16Offset(phpNode.attributes.endFilePos))
-    }
+  // The PHP parser uses -1 to signal it couldn't determine a position (rare parse errors) — treat
+  // that as no offset info at all, rather than normalizing a nonsensical value.
+  override protected def unadjustedOffset(phpNode: PhpNode): Option[(Int, Int)] = {
+    val start = phpNode.attributes.startFilePos
+    val end   = phpNode.attributes.endFilePos
+    Option.when(start >= 0 && end >= 0)((start, end))
   }
 
   protected def getTmpIdentifier(

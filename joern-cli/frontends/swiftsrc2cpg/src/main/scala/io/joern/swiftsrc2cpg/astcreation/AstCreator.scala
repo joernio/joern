@@ -112,7 +112,9 @@ class AstCreator(
   override protected def lineEnd(node: SwiftNode): Option[Int]   = node.endLine
   override protected def columnEnd(node: SwiftNode): Option[Int] = node.endColumn
 
-  private lazy val Utf8ToUtf16Offset =
+  override protected def isOffsetNeeded: Boolean = !config.disableFileContent
+
+  override protected lazy val offsetNormalizer: Int => Int =
     OffsetUtils.buildOffsetConverter(
       OffsetUtils.OffsetSourceType.Bytes(parserResult.contentBytes, StandardCharsets.UTF_8)
     )
@@ -124,15 +126,7 @@ class AstCreator(
     } yield (math.max(startOffset, 0), math.min(endOffset, parserResult.contentBytes.length))
   }
 
-  override protected def offset(node: SwiftNode): Option[(Int, Int)] = {
-    Option
-      .when(!config.disableFileContent) {
-        nodeOffsets(node).map { case (start, end) =>
-          (Utf8ToUtf16Offset(start), Utf8ToUtf16Offset(end))
-        }
-      }
-      .flatten
-  }
+  override protected def unadjustedOffset(node: SwiftNode): Option[(Int, Int)] = nodeOffsets(node)
 
   override protected def code(node: SwiftNode): String = {
     val (start, end) = nodeOffsets(node) match {
