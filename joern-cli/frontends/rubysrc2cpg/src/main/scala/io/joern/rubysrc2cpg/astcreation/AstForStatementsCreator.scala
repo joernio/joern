@@ -218,7 +218,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           assignmentAsts += astForExpression(assignment)
           returnExprNames += simpleExpressionName(assignment.lhs)
         } else {
-          val tmpName = scope.getNewVarTmp
+          val tmpName = createScopedTmpLocal()
 
           val tmpLhsAst     = handleVariableOccurrence(tmpName, assignment)
           val rhsAst        = astForExpression(assignment.rhs)
@@ -245,7 +245,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           returnExprNames += tmpName
         }
       }
-      val arrayTmpName = scope.getNewVarTmp
+      val arrayTmpName = createScopedTmpLocal()
 
       val allocCall = callNode(node, Operators.alloc, Operators.alloc, Operators.alloc, DispatchTypes.STATIC_DISPATCH)
       val arrayAssignCall = callNode(

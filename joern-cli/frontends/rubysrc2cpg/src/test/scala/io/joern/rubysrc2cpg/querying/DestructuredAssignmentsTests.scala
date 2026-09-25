@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, Local}
 import io.shiftleft.semanticcpg.language.*
 
 @scala.annotation.nowarn("cat=deprecation")
@@ -427,6 +427,24 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
 
         inside(retBlock.astChildren.l.last) { case returnedArray: Identifier =>
           returnedArray.code shouldBe "<tmp-2>"
+        }
+      }
+    }
+  }
+
+  "a multiple assignment should not produce cross-scope REF edges when the enclosing type has a bodyMemberCall" in {
+    val cpg = code("""
+        |module M
+        |  extend A::B
+        |  def foo
+        |    a, b = 1, 2
+        |  end
+        |end
+        |""".stripMargin)
+    cpg.identifier.filter(_.name.startsWith("<tmp-")).foreach { id =>
+      id.refOut.collectAll[Local].foreach { local =>
+        withClue(s"'${id.name}' should not ref a local in a different method: ") {
+          local.method.next().fullName shouldBe id.method.fullName
         }
       }
     }

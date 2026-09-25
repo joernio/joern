@@ -225,4 +225,26 @@ class CaseTests extends RubyCode2CpgFixture {
         }
     }
   }
+
+  "a case expression should not produce cross-scope REF edges when the enclosing type has a bodyMemberCall" in {
+    val cpg = code("""
+        |module M
+        |  extend A::B
+        |  def foo
+        |    items.each do |x|
+        |      case x
+        |      when "a" then 1
+        |      end
+        |    end
+        |  end
+        |end
+        |""".stripMargin)
+    cpg.identifier.filter(_.name.startsWith("<tmp-")).foreach { id =>
+      id.refOut.collectAll[Local].foreach { local =>
+        withClue(s"'${id.name}' should not ref a local in a different method: ") {
+          local.method.next().fullName shouldBe id.method.fullName
+        }
+      }
+    }
+  }
 }

@@ -224,19 +224,24 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     )
   }
 
+  protected def createScopedTmpLocal(): String = {
+    val tmpName  = scope.getNewVarTmp
+    val tmpLocal = NewLocal().name(tmpName).code(tmpName).typeFullName(Defines.Any)
+    scope.addToScope(tmpName, tmpLocal) match {
+      case BlockScope(block) => diffGraph.addEdge(block, tmpLocal, EdgeTypes.AST)
+      case _                 =>
+    }
+    tmpName
+  }
+
   /** Regex matches implicitly assign values to global variables. Lowering the `=~` operator may look like
     *
     * { tmp = 'hello'.match(/h(el)lo/); if tmp; $~ = tmp; $& = tmp[0]; tmp.begin(0); else $~= nil; $& = nil; nil end; }
     */
   def lowerRegexMatch(target: RubyExpression, regex: RubyExpression, originSpan: TextSpan): RubyExpression = {
     // Create tmpName that takes the regex match result
-    val tmpName     = scope.getNewVarTmp
-    val tmpGenLocal = NewLocal().name(tmpName).code(tmpName).typeFullName(Defines.Any)
-    scope.addToScope(tmpName, tmpGenLocal) match {
-      case BlockScope(block) => diffGraph.addEdge(block, tmpGenLocal, EdgeTypes.AST)
-      case _                 =>
-    }
-    def tmp = SimpleIdentifier()(originSpan.spanStart(tmpName))
+    val tmpName = createScopedTmpLocal()
+    def tmp     = SimpleIdentifier()(originSpan.spanStart(tmpName))
 
     val matchCall = {
       val code_ = s"${code(regex)}.match(${code(target)})"

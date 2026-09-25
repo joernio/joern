@@ -297,4 +297,22 @@ class ArrayTests extends RubyCode2CpgFixture {
         hashInitCall.methodFullName shouldBe RubyOperators.hashInitializer
     }
   }
+
+  "an array literal should not produce cross-scope REF edges when the enclosing type has a bodyMemberCall" in {
+    val cpg = code("""
+        |module M
+        |  extend A::B
+        |  def foo
+        |    %w(a b)
+        |  end
+        |end
+        |""".stripMargin)
+    cpg.identifier.filter(_.name.startsWith("<tmp-")).foreach { id =>
+      id.refOut.collectAll[Local].foreach { local =>
+        withClue(s"'${id.name}' should not ref a local in a different method: ") {
+          local.method.next().fullName shouldBe id.method.fullName
+        }
+      }
+    }
+  }
 }
