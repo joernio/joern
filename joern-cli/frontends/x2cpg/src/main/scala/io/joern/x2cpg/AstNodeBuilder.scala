@@ -55,7 +55,19 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     }
   }
 
-  protected def offset(node: Node): Option[(Int, Int)] = None
+  protected def offsetNormalizer: Int => Int = identity
+
+  protected def unadjustedOffset(node: Node): Option[(Int, Int)] = None
+
+  protected def isOffsetNeeded: Boolean = true
+
+  protected final def offset(node: Node): Option[(Int, Int)] = {
+    Option
+      .when(isOffsetNeeded) {
+        unadjustedOffset(node).map { case (start, end) => (offsetNormalizer(start), offsetNormalizer(end)) }
+      }
+      .flatten
+  }
 
   protected def unknownNode(node: Node, code: String): NewUnknown = {
     val node_ = NewUnknown()

@@ -146,23 +146,15 @@ class AstCreator(
 
   private val lineOffsetTable = OffsetUtils.getLineOffsetTable(fileContent)
 
-  override protected def offset(node: Node): Option[(Int, Int)] = {
-    Option
-      .when(fileContent.isDefined) {
-        for {
-          lineNr      <- line(node)
-          columnNr    <- column(node)
-          lineEndNr   <- lineEnd(node)
-          columnEndNr <- columnEnd(node)
-        } yield OffsetUtils.coordinatesToOffset(
-          lineOffsetTable,
-          lineNr - 1,
-          columnNr - 1,
-          lineEndNr - 1,
-          columnEndNr - 1
-        )
-      }
-      .flatten
+  override protected def isOffsetNeeded: Boolean = fileContent.isDefined
+
+  override protected def unadjustedOffset(node: Node): Option[(Int, Int)] = {
+    for {
+      lineNr      <- line(node)
+      columnNr    <- column(node)
+      lineEndNr   <- lineEnd(node)
+      columnEndNr <- columnEnd(node)
+    } yield OffsetUtils.coordinatesToOffset(lineOffsetTable, lineNr - 1, columnNr - 1, lineEndNr - 1, columnEndNr - 1)
   }
 
   private def getImportCode(importDeclaration: ImportDeclaration): String = {
