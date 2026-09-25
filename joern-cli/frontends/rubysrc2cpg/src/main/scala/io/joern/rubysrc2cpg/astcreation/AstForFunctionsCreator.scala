@@ -102,7 +102,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     // Consider which variables are captured from the outer scope
     val stmtBlockAst = if (isClosure || isSingletonObjectMethod) {
       // create closure `self` local used for capturing
-      scope.lookupSelfInOuterScope
+      scope
+        .lookupCapturedVariable(Defines.Self)
         .collect {
           case local: NewLocal             => local.name
           case param: NewMethodParameterIn => param.name
@@ -212,12 +213,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val capturedLocalNodes = baseStmtBlockAst.nodes
       .collect { case x: NewIdentifier if x.name != Defines.Self => x }
       .distinctBy(_.name)
-      .map(i => scope.lookupVariableInOuterScope(i.name))
-      .filter(_.iterator.nonEmpty)
-      .flatten
+      .filter { i =>
+        val localVar    = scope.lookupVariable(i.name)
+        val capturedVar = scope.lookupCapturedVariable(i.name)
+        localVar.isEmpty || capturedVar.contains(localVar.get)
+      }
+      .flatMap(i => scope.lookupCapturedVariable(i.name))
       .toSet
 
-    val selfLocal     = scope.lookupSelfInOuterScope.toSet
+    val selfLocal     = scope.lookupCapturedVariable(Defines.Self).toSet
     val capturedNodes = capturedLocalNodes ++ selfLocal
 
     val capturedIdentifiers = baseStmtBlockAst.nodes.collect {

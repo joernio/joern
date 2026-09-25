@@ -516,4 +516,83 @@ class DoBlockTests extends RubyCode2CpgFixture {
       cpg.local.nameExact("self").size shouldBe 2
     }
   }
+
+  "Identifiers in a lambda should not have multiple REF edges" should {
+    val cpg = code("""
+        |module Foo
+        |  class FooError < StandardError; end
+        |
+        |  def bar
+        |    x.qux { |aaa| puts aaa }
+        |  end
+        |end
+        |""".stripMargin)
+
+    "not produce identifiers with multiple refOut edges" in {
+      cpg.identifier.foreach { id =>
+        withClue(s"Identifier '${id.name}' (line ${id.lineNumber.getOrElse("?")}) has multiple refOut edges: ") {
+          id.refOut.size should be <= 1
+        }
+      }
+    }
+
+    "not have duplicate locals with the same name" in {
+      cpg.method.isLambda.foreach { m =>
+        val locals = m.local.b
+        val dupes  = locals.groupBy(_.name).filter(_._2.size > 1)
+        withClue(s"Method '${m.fullName}' has duplicate locals: ${dupes.keys.mkString(", ")}") {
+          dupes shouldBe empty
+        }
+      }
+    }
+  }
+
+  "Chained method call with block should not produce duplicate REF edges" should {
+    val cpg = code("""
+        |module SignatureVerification
+        |
+        |  class SignatureVerificationError < StandardError; end
+        |
+        |  def stoplight_wrapper
+        |    Stoplight("source:#{request.remote_ip}")
+        |      .with_error_handler { |aaa| puts aaa }
+        |  end
+        |end
+        |""".stripMargin)
+
+    "not produce identifiers with multiple refOut edges" in {
+      cpg.identifier.foreach { id =>
+        withClue(s"Identifier '${id.name}' (line ${id.lineNumber.getOrElse("?")}) has multiple refOut edges: ") {
+          id.refOut.size should be <= 1
+        }
+      }
+    }
+  }
+
+  "A lambda parameter that shadows an outer variable" should {
+    val cpg = code("""
+        |def bar
+        |  foo = 1
+        |  items.each { |foo| puts foo }
+        |end
+        |""".stripMargin)
+
+    "not produce identifiers with multiple refOut edges" in {
+      cpg.identifier.nameExact("foo").foreach { id =>
+        withClue(s"Identifier 'foo' (line ${id.lineNumber.getOrElse("?")}) has multiple refOut edges: ") {
+          id.refOut.size should be <= 1
+        }
+      }
+    }
+
+    "have the lambda's foo refer to the parameter, not the outer local" in {
+      val lambdaMethod = cpg.method.where(_.fullName(".*<lambda>.*")).head
+      val fooParam     = lambdaMethod.parameter.nameExact("foo").head
+      val fooIds       = lambdaMethod.ast.isIdentifier.nameExact("foo").l
+      fooIds should not be empty
+      fooIds.foreach { id =>
+        id.refOut.head shouldBe fooParam
+      }
+    }
+  }
 }
