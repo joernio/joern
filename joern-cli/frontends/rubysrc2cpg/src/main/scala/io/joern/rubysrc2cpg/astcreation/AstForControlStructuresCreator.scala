@@ -207,9 +207,9 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
             val tmp             = SimpleIdentifier(None)(arrayLiteral.span.spanStart(tmpName))
             val arrayLiteralAst = DummyAst(astForArrayLiteral(arrayLiteral))(arrayLiteral.span)
             (tmp, arrayLiteralAst)
-          case e =>
-            val tmp = SimpleIdentifier(None)(e.span.spanStart(tmpName))
-            (tmp, e)
+          case el =>
+            val tmp = SimpleIdentifier(None)(el.span.spanStart(tmpName))
+            (tmp, el)
         }
       }
       .map((tmp, e) => StatementList(List(SingleAssignment(tmp, "=", e)(e.span)) ++ goCase(Some(tmp)))(node.span))
