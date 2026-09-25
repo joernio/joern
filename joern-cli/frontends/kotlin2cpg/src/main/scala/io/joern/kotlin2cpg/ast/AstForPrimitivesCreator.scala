@@ -9,7 +9,6 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotation
 import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotationLiteral
-import io.shiftleft.codepropertygraph.generated.nodes.NewImport
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import io.shiftleft.codepropertygraph.generated.nodes.NewMember
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
@@ -224,15 +223,13 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   def astForImportDirective(directive: KtImportDirective): Ast = {
     val importedAs = Try(directive.getImportedName.getIdentifier).toOption
     val isWildcard = importedAs.contains(Constants.WildcardImportName) || directive.getImportedName == null
-    val node       =
-      NewImport()
-        .isWildcard(isWildcard)
-        .isExplicit(true)
-        .importedAs(importedAs)
-        .importedEntity(directive.getImportPath.getPathStr)
-        .code(s"${Constants.ImportKeyword} ${directive.getImportPath.getPathStr}")
-        .lineNumber(line(directive))
-        .columnNumber(column(directive))
+    val node       = newImportNode(
+      code = s"${Constants.ImportKeyword} ${directive.getImportPath.getPathStr}",
+      importedEntity = directive.getImportPath.getPathStr,
+      importedAs = importedAs.getOrElse(Constants.WildcardImportName),
+      include = directive
+    ).isWildcard(isWildcard)
+      .isExplicit(true)
     Ast(node)
   }
 

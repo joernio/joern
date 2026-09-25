@@ -1,6 +1,6 @@
 package io.joern.jssrc2cpg.passes
 
-import io.joern.jssrc2cpg.JsSrc2Cpg
+import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgFrontend
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.frontendspecific.jssrc2cpg
@@ -42,6 +42,24 @@ class ImportsPassTests extends Code2CpgFixture(() => new TestCpgWithoutDataFlow(
       assignment.target.code shouldBe "barOrBaz"
       val source = assignment.source
       source shouldBe call
+    }
+
+    "have the correct line and column numbers for the IMPORT node" in {
+      val cpg = code("""
+        |var barOrBaz = require('./bar.js');
+        |""".stripMargin)
+      val List(x) = cpg.imports.l
+      x.lineNumber shouldBe Some(2)
+      x.columnNumber shouldBe Some(4)
+    }
+
+    "have the correct offset for the IMPORT node" in {
+      val cpg = code("""
+        |var barOrBaz = require('./bar.js');
+        |""".stripMargin).withConfig(Config().withDisableFileContent(false))
+      val List(x)     = cpg.imports.l
+      val fileContent = cpg.file.head.content
+      fileContent.substring(x.offset.get, x.offsetEnd.get) shouldBe "barOrBaz = require('./bar.js')"
     }
   }
 }
