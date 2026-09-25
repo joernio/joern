@@ -1473,6 +1473,109 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "let with slice pattern" should {
+    val cpg = code("""
+        |fn foo(xs: [i32; 2]) {
+        | let [a, b] = xs;
+        |}
+        |""".stripMargin)
+
+    "have correct children" in {
+      inside(cpg.method.nameExact("foo").block.astChildren.l) {
+        case (tmp: Local) :: (aLocal: Local) :: (bLocal: Local) :: (tmpAssign: Call) ::
+            (aAssign: Call) :: (bAssign: Call) :: Nil =>
+          tmp.name shouldBe "<tmp>0"
+          tmp.typeFullName shouldBe "[i32; 2]"
+          tmpAssign.code shouldBe "<tmp>0 = xs"
+
+          aLocal.name shouldBe "a"
+          aLocal.typeFullName shouldBe "i32"
+          aAssign.code shouldBe "a = <tmp>0[0]"
+
+          bLocal.name shouldBe "b"
+          bLocal.typeFullName shouldBe "i32"
+          bAssign.code shouldBe "b = <tmp>0[1]"
+      }
+    }
+  }
+
+  "let with slice pattern with _" should {
+    val cpg = code("""
+        |fn foo(xs: [i32; 2]) {
+        | let [_, b] = xs;
+        |}
+        |""".stripMargin)
+
+    "have correct children" in {
+      inside(cpg.method.nameExact("foo").block.astChildren.l) { case (bLocal: Local) :: (bAssign: Call) :: Nil =>
+        bLocal.name shouldBe "b"
+        bLocal.typeFullName shouldBe "i32"
+        bAssign.code shouldBe "b = xs[1]"
+      }
+    }
+  }
+
+  "let with slice pattern with .." should {
+    val cpg = code("""
+        |fn foo(xs: [i32; 3]) {
+        | let [a, ..] = xs;
+        |}
+        |""".stripMargin)
+
+    "have correct children" in {
+      inside(cpg.method.nameExact("foo").block.astChildren.l) { case (aLocal: Local) :: (aAssign: Call) :: Nil =>
+        aLocal.name shouldBe "a"
+        aLocal.typeFullName shouldBe "i32"
+        aAssign.code shouldBe "a = xs[0]"
+      }
+    }
+
+    "have correct assignment" in {
+      inside(cpg.assignment.l) { case aAssign :: Nil =>
+        inside(aAssign.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "a"
+          lhs.typeFullName shouldBe "i32"
+
+          rhs.name shouldBe Operators.indexAccess
+          rhs.typeFullName shouldBe "i32"
+          inside(rhs.argument.sortBy(_.argumentIndex).l) { case (ident: Identifier) :: (index: Literal) :: Nil =>
+            ident.name shouldBe "xs"
+            ident.typeFullName shouldBe "[i32; 3]"
+
+            index.code shouldBe "0"
+            index.typeFullName shouldBe "usize"
+          }
+        }
+      }
+    }
+  }
+
+  "let with slice pattern with .., b" should {
+    val cpg = code("""
+        |fn foo(xs: [i32; 3]) {
+        | let [a, .., b] = xs;
+        |}
+        |""".stripMargin)
+
+    "have correct children" in {
+      inside(cpg.method.nameExact("foo").block.astChildren.l) {
+        case (tmp: Local) :: (aLocal: Local) :: (bLocal: Local) :: (tmpAssign: Call) ::
+            (aAssign: Call) :: (bAssign: Unknown) :: Nil =>
+          tmp.name shouldBe "<tmp>0"
+          tmpAssign.code shouldBe "<tmp>0 = xs"
+
+          aLocal.name shouldBe "a"
+          aLocal.typeFullName shouldBe "i32"
+          aAssign.code shouldBe "a = <tmp>0[0]"
+
+          // TODO(rust_ast_gen): need size to replace the Unknown.
+          bLocal.name shouldBe "b"
+          bLocal.typeFullName shouldBe "i32"
+          bAssign.code shouldBe "[a, .., b]"
+      }
+    }
+  }
+
   "unnamed top-level const" should {
     val cpg = code("""
         |fn foo() {}
