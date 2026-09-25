@@ -287,6 +287,39 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "match with range case" should {
+    val cpg = code("""
+        |fn foo(n: i32) -> i32 {
+        |  match n {
+        |    1..=5 => 1,
+        |    y => y,
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct jump targets" in {
+      inside(cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.MATCH).whenTrue.astChildren.l) {
+        case (case1: JumpTarget) :: (block1: Block) :: (case2: JumpTarget) :: (block2: Block) :: Nil =>
+          case1.name shouldBe "case 1..=5"
+          case1.code shouldBe "1..=5"
+          inside(block1.astChildren.l) { case (lit: Literal) :: Nil =>
+            lit.typeFullName shouldBe "i32"
+            lit.code shouldBe "1"
+          }
+
+          case2.name shouldBe "case y"
+          case2.code shouldBe "y"
+          inside(block2.astChildren.l) { case (yLocal: Local) :: (assignment: Call) :: (yIdent: Identifier) :: Nil =>
+            yLocal.name shouldBe "y"
+            yLocal.typeFullName shouldBe "i32"
+            assignment.code shouldBe "y = n"
+            yIdent.name shouldBe "y"
+            yIdent.typeFullName shouldBe "i32"
+          }
+      }
+    }
+  }
+
   "match shadowing previous let" should {
     val cpg = code("""
         |fn foo(opt: Option<i32>) {
