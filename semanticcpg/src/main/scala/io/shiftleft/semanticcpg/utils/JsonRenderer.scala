@@ -35,7 +35,7 @@ class JsonRenderer(customSerializers: List[JsonRenderer.Serializer] = Nil) {
     case o: Option[?]                  => o.map(render).getOrElse(ujson.Null)
     case m: scala.collection.Map[?, ?] => renderMap(m)
     case it: Iterable[?]               => renderIterable(it)
-    case a: Array[?]                   => renderIterable(a.toList)
+    case a: Array[?]                   => renderIterable(a.iterator)
     case c: java.util.Collection[?]    => renderIterable(scala.jdk.CollectionConverters.CollectionHasAsScala(c).asScala)
     case (k: String, v)                => renderMap(Map(k -> v))
     case (k: Symbol, v)                => renderMap(Map(k.name -> v))
@@ -59,9 +59,9 @@ class JsonRenderer(customSerializers: List[JsonRenderer.Serializer] = Nil) {
     obj
   }
 
-  private def renderIterable(it: Iterable[?]): ujson.Arr = {
+  private def renderIterable(it: IterableOnce[?]): ujson.Arr = {
     val arr = ujson.Arr()
-    it.foreach(element => renderField(element).foreach(arr.value += _))
+    it.iterator.foreach(element => renderField(element).foreach(arr.value += _))
     arr
   }
 

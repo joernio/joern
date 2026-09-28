@@ -60,10 +60,12 @@ class WorkspaceLoaderTests extends AnyWordSpec with Matchers {
 
   "ProjectFile" should {
 
-    implicit val projectFileRw: upickle.default.ReadWriter[ProjectFile] = upickle.default.macroRW
-
     "be serializable to json" in {
-      upickle.default.write(ProjectFile("foo", "aname")) shouldBe """{"inputPath":"foo","name":"aname"}"""
+      FileUtil.usingTemporaryDirectory(tmpDirPrefix) { tmpDir =>
+        val manager     = new WorkspaceManager(tmpDir.toString)
+        val projectPath = manager.writeProjectFile(ProjectFile("foo", "aname"), tmpDir)
+        Files.readString(projectPath) shouldBe """{"inputPath":"foo","name":"aname"}"""
+      }
     }
 
   }

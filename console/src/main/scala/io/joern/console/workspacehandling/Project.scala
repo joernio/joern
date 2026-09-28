@@ -14,6 +14,10 @@ object Project {
 
 case class ProjectFile(inputPath: String, name: String)
 
+object ProjectFile {
+  implicit val readWriter: upickle.default.ReadWriter[ProjectFile] = upickle.default.macroRW
+}
+
 /** @param path
   *   absolute path to directory holding the project
   * @param cpg

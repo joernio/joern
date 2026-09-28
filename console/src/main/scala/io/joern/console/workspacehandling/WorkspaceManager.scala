@@ -84,9 +84,9 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
 
   /** Write the project's `project.json`, a JSON file that holds meta information.
     */
-  private def writeProjectFile(projectFile: ProjectFile, dirPath: Path): Path = {
+  private[workspacehandling] def writeProjectFile(projectFile: ProjectFile, dirPath: Path): Path = {
     val PROJECTFILE_NAME = "project.json"
-    val content          = ujson.write(ujson.Obj("inputPath" -> projectFile.inputPath, "name" -> projectFile.name))
+    val content          = upickle.default.write(projectFile)
     val projectPath      = dirPath.resolve(PROJECTFILE_NAME)
     Files.writeString(projectPath, content)
     projectPath
