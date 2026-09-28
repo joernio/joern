@@ -984,6 +984,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     ifExpr.expr match {
       case letExpr: LetExpr =>
         lowerIfLet(ifExpr, letExpr)
+      case binExpr: BinExpr if isLetChain(binExpr) =>
+        lowerIfLetChain(ifExpr, binExpr)
       case condition =>
         val conditionAst = visitExpr(condition)
         val thenAst      = visitBlockExpr(ifExpr.thenBranch)
@@ -1026,6 +1028,75 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val ifAst        = ifThenElseAst(ifExpr, Some(conditionAst), thenAst, elseAst)
 
     blockAst(blockNode(ifExpr), List(tmpLocalAst, tmpAssignAst, ifAst))
+  }
+
+  // `if let pat1 = expr1 && let pat2 = expr2 { then } else { else }` becomes:
+  // BLOCK {
+  //   LOCAL tmp1
+  //   tmp1 = expr1
+  //   <createLocalsForBindings(pat1)>
+  //   <createAssignmentsForPattern(pat1, tmp1)>
+  //
+  //   LOCAL tmp2
+  //   tmp2 = expr2
+  //   <createLocalsForBindings(pat2)>
+  //   <createAssignmentsForPattern(pat2, tmp2)>
+  //
+  //   IF (UNKNOWN(pat1) && UNKNOWN(pat2)) {
+  //    then
+  //   }
+  //   ELSE {
+  //    else
+  //   }
+  // }
+  private def lowerIfLetChain(ifExpr: IfExpr, binExpr: BinExpr): Ast = {
+    contextStack.pushBlock()
+    val (bindingAsts, conditionAst) = lowerLetChain(binExpr)
+    val thenAst                     = visitBlockExpr(ifExpr.thenBranch)
+    contextStack.pop()
+
+    val elseAst = ifExpr.elseBranch.map(visitExpr)
+    val ifAst   = ifThenElseAst(ifExpr, Some(conditionAst), thenAst, elseAst)
+
+    blockAst(blockNode(ifExpr), (bindingAsts :+ ifAst).toList)
+  }
+
+  private def isLetChain(binExpr: BinExpr): Boolean = {
+    binExpr.amp2Token.isDefined && binExpr.expr.exists {
+      case _: LetExpr    => true
+      case expr: BinExpr => isLetChain(expr)
+      case _             => false
+    }
+  }
+
+  private def lowerLetChain(expr: Expr): (bindingAsts: Seq[Ast], conditionAst: Ast) = {
+    expr match {
+      case letExpr: LetExpr =>
+        val tmpName      = contextStack.nextTmpName()
+        val rhsAst       = visitExpr(letExpr.expr)
+        val typeFullName = rhsAst.rootType.getOrElse(Defines.Any)
+        val tmpLocalAst  = localAst(letExpr, tmpName, tmpName, typeFullName)
+        val mkTmpAst     = () => identifierAst(letExpr, tmpName, tmpName, typeFullName)
+        val tmpAssignAst =
+          callAst(assignmentNode(letExpr, s"$tmpName = ${code(letExpr.expr)}"), Seq(mkTmpAst(), rhsAst))
+        val localAsts    = createLocalsForBindings(collectPatternBindings(letExpr.pat))
+        val assignments  = createAssignmentsForPattern(letExpr.pat, mkTmpAst)
+        val conditionAst = Ast(unknownNode(letExpr.pat, code(letExpr.pat)))
+
+        (tmpLocalAst +: tmpAssignAst +: (localAsts ++ assignments), conditionAst)
+
+      case binExpr: BinExpr if isLetChain(binExpr) =>
+        val typeFullName  = typeFullNameForExpr(binExpr)
+        val callNode      = operatorCallNode(binExpr, code(binExpr), Operators.logicalAnd, Some(typeFullName))
+        val Seq(lhs, rhs) = binExpr.expr
+        val (lhsBindingAsts, lhsConditionAst) = lowerLetChain(lhs)
+        val (rhsBindingAsts, rhsConditionAst) = lowerLetChain(rhs)
+
+        (lhsBindingAsts ++ rhsBindingAsts, callAst(callNode, Seq(lhsConditionAst, rhsConditionAst)))
+
+      case condition =>
+        (Nil, visitExpr(condition))
+    }
   }
 
   // CastExpr =
