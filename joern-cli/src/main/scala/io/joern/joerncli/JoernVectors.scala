@@ -120,7 +120,7 @@ trait EmbeddingGenerator[T, S] {
 
   def vectorToString(vector: Map[S, Double]): String = defaultToString(vector)
 
-  def defaultToString[M](v: M): String = ujson.write(JoernVectors.jsonRenderer.render(v))
+  def defaultToString[M](value: M): String = ujson.write(JoernVectors.jsonRenderer.render(value))
 
 }
 

@@ -43,17 +43,17 @@ class JsonRenderer(customSerializers: List[JsonRenderer.Serializer] = Nil) {
     case other                         => ujson.Str(other.toString)
   }
 
-  private def renderMap(m: scala.collection.Map[?, ?]): ujson.Obj = {
+  private def renderMap(map: scala.collection.Map[?, ?]): ujson.Obj = {
     val obj = ujson.Obj()
-    m.foreach { case (k, v) =>
+    map.foreach { case (k, v) =>
       renderField(v).foreach(obj(k.toString) = _)
     }
     obj
   }
 
-  private def renderProduct(p: Product): ujson.Obj = {
+  private def renderProduct(product: Product): ujson.Obj = {
     val obj = ujson.Obj()
-    p.productElementNames.zip(p.productIterator).foreach { case (name, value) =>
+    product.productElementNames.zip(product.productIterator).foreach { case (name, value) =>
       renderField(value).foreach(obj(name) = _)
     }
     obj
@@ -61,7 +61,7 @@ class JsonRenderer(customSerializers: List[JsonRenderer.Serializer] = Nil) {
 
   private def renderIterable(it: Iterable[?]): ujson.Arr = {
     val arr = ujson.Arr()
-    it.foreach(v => renderField(v).foreach(arr.value += _))
+    it.foreach(element => renderField(element).foreach(arr.value += _))
     arr
   }
 

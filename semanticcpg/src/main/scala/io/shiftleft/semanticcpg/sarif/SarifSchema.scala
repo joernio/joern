@@ -348,13 +348,13 @@ object SarifSchema {
     },
     renderer => { case location: SarifSchema.ArtifactLocation =>
       val elementMap = Map.newBuilder[String, Any]
-      location.uri.foreach(x => elementMap.addOne("uri" -> x))
+      location.uri.foreach(uri => elementMap.addOne("uri" -> uri))
       elementMap.addOne("uriBaseId" -> location.uriBaseId)
       renderer.render(elementMap.result())
     },
     renderer => { case flow: SarifSchema.CodeFlow =>
       val elementMap = Map.newBuilder[String, Any]
-      flow.message.foreach(x => elementMap.addOne("message" -> x))
+      flow.message.foreach(message => elementMap.addOne("message" -> message))
       elementMap.addOne("threadFlows" -> flow.threadFlows)
       renderer.render(elementMap.result())
     },
@@ -366,20 +366,20 @@ object SarifSchema {
     },
     renderer => { case region: SarifSchema.Region =>
       val elementMap = Map.newBuilder[String, Any]
-      region.startLine.filterNot(x => x <= 0).foreach(x => elementMap.addOne("startLine" -> x))
-      region.startColumn.filterNot(x => x <= 0).foreach(x => elementMap.addOne("startColumn" -> x))
-      region.endLine.filterNot(x => x <= 0).foreach(x => elementMap.addOne("endLine" -> x))
-      region.endColumn.filterNot(x => x <= 0).foreach(x => elementMap.addOne("endColumn" -> x))
-      region.snippet.foreach(x => elementMap.addOne("snippet" -> x))
+      region.startLine.filterNot(line => line <= 0).foreach(line => elementMap.addOne("startLine" -> line))
+      region.startColumn.filterNot(column => column <= 0).foreach(column => elementMap.addOne("startColumn" -> column))
+      region.endLine.filterNot(line => line <= 0).foreach(line => elementMap.addOne("endLine" -> line))
+      region.endColumn.filterNot(column => column <= 0).foreach(column => elementMap.addOne("endColumn" -> column))
+      region.snippet.foreach(snippet => elementMap.addOne("snippet" -> snippet))
       renderer.render(elementMap.result())
     },
     renderer => { case x: ReportingDescriptor =>
       val elementMap   = Map.newBuilder[String, Any]
       elementMap.addOne("id"   -> x.id)
       elementMap.addOne("name" -> x.name)
-      x.shortDescription.foreach(x => elementMap.addOne("shortDescription" -> x))
-      x.fullDescription.foreach(x => elementMap.addOne("fullDescription" -> x))
-      x.helpUri.foreach(x => elementMap.addOne("helpUri" -> x))
+      x.shortDescription.foreach(description => elementMap.addOne("shortDescription" -> description))
+      x.fullDescription.foreach(description => elementMap.addOne("fullDescription" -> description))
+      x.helpUri.foreach(uri => elementMap.addOne("helpUri" -> uri))
       renderer.render(elementMap.result())
     },
     renderer => { case result: SarifSchema.Result =>
@@ -402,10 +402,10 @@ object SarifSchema {
     renderer => { case x: ToolComponent =>
       val elementMap = Map.newBuilder[String, Any]
       elementMap.addOne("name" -> x.name)
-      x.fullName.foreach(x => elementMap.addOne("fullName" -> x))
-      x.organization.foreach(x => elementMap.addOne("organization" -> x))
-      x.semanticVersion.foreach(x => elementMap.addOne("semanticVersion" -> x))
-      x.informationUri.foreach(x => elementMap.addOne("informationUri" -> x))
+      x.fullName.foreach(name => elementMap.addOne("fullName" -> name))
+      x.organization.foreach(organization => elementMap.addOne("organization" -> organization))
+      x.semanticVersion.foreach(version => elementMap.addOne("semanticVersion" -> version))
+      x.informationUri.foreach(uri => elementMap.addOne("informationUri" -> uri))
       elementMap.addOne("rules" -> x.rules)
       renderer.render(elementMap.result())
     },
