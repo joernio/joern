@@ -1,3 +1,5 @@
+import sbt.BareBuildSyntax.dependsOn
+
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.sbt.packager.Keys.stagingDirectory
 
@@ -66,18 +68,22 @@ def hasCompatibleAstGenVersion(astGenBaseDir: File, astGenVersion: String): Bool
 }
 
 lazy val astGenResourceTask = taskKey[Seq[File]](s"Download `ruby_ast_gen` and package this under `resources`")
-astGenResourceTask := {
+astGenResourceTask := Def.uncached {
   val targetDir           = baseDirectory.value / "src" / "main" / "resources"
   val gemName             = s"ruby_ast_gen-${astGenPlatformSuffix.value}_v${astGenVersion.value}.zip"
-  val compressGemPath     = targetDir / gemName
+  // Download to a transient location outside src/main/resources: the zip is deleted after
+  // unpacking, and a concurrent or cached (sbt 2.x) resource listing must never observe it,
+  // otherwise e.g. packageSrc references a file that no longer exists.
+  val compressGemPath     = target.value / "astgen-download" / gemName
   val unpackedGemFullPath = targetDir / "ruby_ast_gen"
   if (!hasCompatibleAstGenVersion(unpackedGemFullPath, astGenVersion.value)) {
     if (unpackedGemFullPath.exists()) IO.delete(unpackedGemFullPath)
+    IO.createDirectory(compressGemPath.getParentFile)
     DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}$gemName", compressGemPath)
     IO.unzip(compressGemPath, unpackedGemFullPath)
     IO.delete(compressGemPath)
   }
-  (unpackedGemFullPath ** "*").get.filter(_.isFile)
+  (unpackedGemFullPath ** "*").get().filter(_.isFile)
 }
 
 Compile / resourceGenerators += astGenResourceTask
@@ -86,7 +92,7 @@ lazy val joernTypeStubsDlUrl = settingKey[String]("joern_type_stubs download url
 joernTypeStubsDlUrl := s"https://github.com/joernio/joern-type-stubs/releases/download/v${joernTypeStubsVersion.value}/"
 
 lazy val joernTypeStubsDlTask = taskKey[Unit]("Download joern-type-stubs")
-joernTypeStubsDlTask := {
+joernTypeStubsDlTask := Def.uncached {
   val joernTypeStubsDir = baseDirectory.value / "type_stubs"
   val fileName          = "rubysrc_builtin_types.zip"
   val shaFileName       = s"$fileName.sha512"
@@ -117,11 +123,13 @@ joernTypeStubsDlTask := {
   IO.copyDirectory(joernTypeStubsDir, distDir)
 }
 
-Compile / compile := ((Compile / compile) dependsOn joernTypeStubsDlTask).value
+Compile / compile := Def.uncached { ((Compile / compile).dependsOn(joernTypeStubsDlTask)).value }
+
+Compile / packageSrc / mappings ~= (_.distinctBy(_._2))
 
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None
 
 /** write the astgen version to the manifest for downstream usage */
 Compile / packageBin / packageOptions +=
-  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Ruby-AstGen-Version") -> astGenVersion.value)
+  Package.ManifestAttributes("Ruby-AstGen-Version" -> astGenVersion.value)

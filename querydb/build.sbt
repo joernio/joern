@@ -1,3 +1,5 @@
+import sbt.BareBuildSyntax.dependsOn
+
 name := "querydb"
 
 enablePlugins(JavaAppPackaging)
@@ -26,9 +28,10 @@ excludeDependencies ++= Seq(
 topLevelDirectory := Some(name.value)
 
 lazy val createDistribution = taskKey[File]("Create binary distribution of extension")
-createDistribution := {
+createDistribution := Def.uncached {
   import better.files._
-  val pkgBin        = (Universal / packageBin).value
+  val pkgBinRef     = (Universal / packageBin).value
+  val pkgBin        = fileConverter.value.toPath(pkgBinRef).toFile
   val tmpDstArchive = "/tmp/querydb.zip"
   val dstArchive    = (target.value / "querydb.zip").toScala
   if (dstArchive.exists) dstArchive.delete()
@@ -73,9 +76,10 @@ createDistribution := {
 Compile / scalacOptions += "-language:implicitConversions"
 
 fork               := true
-Test / javaOptions := Seq(
-  "-Djava.protocol.handler.pkgs=ghidra.framework.protocol",
-  "-Djdk.serialFilterFactory=ghidra.framework.remote.GhidraSerialFilterFactory"
-)
+// ghidra query suites initialize ghidra in-process; see ghidra2cpg/build.sbt for why the Raw layering strategy
+// is required and why -Djdk.serialFilterFactory must not be set
+Test / javaOptions                 := Seq("-Djava.protocol.handler.pkgs=ghidra.framework.protocol")
+Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Raw
+Test / testForkedParallel          := false // ghidra is not thread-safe (same as ghidra2cpg)
 
 maintainer := "fabs@shiftleft.io"

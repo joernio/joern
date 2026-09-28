@@ -1,3 +1,5 @@
+import sbt.BareBuildSyntax.dependsOn
+
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.sbt.packager.Keys.stagingDirectory
 import versionsort.VersionHelper
@@ -70,7 +72,7 @@ astGenBinaryNames := {
 }
 
 lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries")
-astGenDlTask := {
+astGenDlTask := Def.uncached {
   val astGenDir = baseDirectory.value / "bin" / "astgen"
   astGenDir.mkdirs()
 
@@ -86,11 +88,11 @@ astGenDlTask := {
   IO.copyDirectory(astGenDir, distDir, preserveExecutable = true)
 }
 
-Compile / compile := ((Compile / compile) dependsOn astGenDlTask).value
+Compile / compile := Def.uncached { ((Compile / compile).dependsOn(astGenDlTask)).value }
 
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None
 
 /** write the astgen version to the manifest for downstream usage */
 Compile / packageBin / packageOptions +=
-  Package.ManifestAttributes(new java.util.jar.Attributes.Name("DotNet-AstGen-Version") -> astGenVersion.value)
+  Package.ManifestAttributes("DotNet-AstGen-Version" -> astGenVersion.value)

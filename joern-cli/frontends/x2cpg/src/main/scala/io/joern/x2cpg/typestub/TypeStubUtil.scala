@@ -1,5 +1,8 @@
 package io.joern.x2cpg.typestub
 
+import io.shiftleft.semanticcpg.utils.ExternalCommand
+
+import java.net.URI
 import java.nio.file.{Path, Paths}
 
 object TypeStubUtil {
@@ -9,18 +12,12 @@ object TypeStubUtil {
     *   the directory where type stubs are.
     */
   def typeStubDir(codeSourceLocation: String): Path = {
-    val indexOfLib = codeSourceLocation.lastIndexOf("lib")
-    val fixedDir   = if (indexOfLib != -1) {
-      new java.io.File(codeSourceLocation.substring("file:".length, indexOfLib)).toString
-    } else {
-      val indexOfTarget = codeSourceLocation.lastIndexOf("target")
-      if (indexOfTarget != -1) {
-        new java.io.File(codeSourceLocation.substring("file:".length, indexOfTarget)).toString
-      } else {
-        "."
-      }
-    }
-    Paths.get(fixedDir, "type_stubs")
+    // Parse as a URI rather than stripping the scheme manually: on Windows the code source URL is
+    // `file:/D:/...`, and only URI-aware conversion turns that into a valid `D:\...` path.
+    // The location string may contain unescaped spaces (e.g. `file:/Users/John Doe/...`),
+    // which `URI.create` rejects -- escape them first.
+    val path = Paths.get(URI.create(codeSourceLocation.replace(" ", "%20"))).toAbsolutePath
+    ExternalCommand.executableDir(path).getParent.resolve("type_stubs")
   }
 
 }

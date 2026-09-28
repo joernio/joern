@@ -1,3 +1,5 @@
+import sbt.BareBuildSyntax.dependsOn
+
 name := "console"
 
 enablePlugins(JavaAppPackaging)
@@ -12,7 +14,7 @@ dependsOn(
 
 libraryDependencies ++= Seq(
   "io.shiftleft"         %% "codepropertygraph"    % Versions.cpg,
-  "com.michaelpollmeier"  % "scala-repl-pp-server" % Versions.scalaReplPP cross CrossVersion.full,
+  ("com.michaelpollmeier" % "scala-repl-pp-server" % Versions.scalaReplPP).cross(CrossVersion.full),
   "com.github.scopt"     %% "scopt"                % Versions.scopt,
   "org.typelevel"        %% "cats-effect"          % Versions.catsEffect,
   "org.zeroturnaround"    % "zt-zip"               % Versions.zeroTurnaround,
@@ -23,7 +25,3 @@ libraryDependencies ++= Seq(
   "org.apache.commons"    % "commons-lang3"        % Versions.commonsLang,
   "org.scalatest"        %% "scalatest"            % Versions.scalatest % Test
 )
-
-Test / compile := (Test / compile)
-  .dependsOn(Projects.c2cpg / stage, Projects.jssrc2cpg / stage, Projects.swiftsrc2cpg / stage)
-  .value

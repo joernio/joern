@@ -29,12 +29,12 @@ jobs:
         with:
           toolchain: stable
           components: rust-src
-      - uses: sbt/setup-sbt@82da71df4e122282484a99a8d70096bc2369dbd8 # v1.5.9
+      - uses: sbt/setup-sbt@1a9b426537af6542b494d3fa96cef6f3e60da4f5 # v1.5.11
       - name: Upgrade all (internal) dependencies
         run: ./updateDependencies.sh --non-interactive
-      - run: sbt clean test
+      - run: sbt --server --batch "clean ; c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage ; testFull"
       - name: Test distribution
         run: |
           python -m pip install requests pexpect
-          sbt joerncli/stage querydb/createDistribution
+          sbt --server --batch "joerncli/stage ; querydb/createDistribution"
           python -u ./testDistro.py

@@ -16,9 +16,9 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@82da71df4e122282484a99a8d70096bc2369dbd8 # v1.5.9
+      - uses: sbt/setup-sbt@1a9b426537af6542b494d3fa96cef6f3e60da4f5 # v1.5.11
       - name: Check formatting
-        run: sbt scalafmtCheck Test/scalafmtCheck
+        run: sbt --server --batch "scalafmtCheck ; Test/scalafmtCheck"
       - run: echo "Previous step failed because code is not formatted. Run 'sbt scalafmt Test/scalafmt'"
         if: ${{ failure() }}
       - name: Validate CITATION.cff
@@ -38,7 +38,7 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@82da71df4e122282484a99a8d70096bc2369dbd8 # v1.5.9
+      - uses: sbt/setup-sbt@1a9b426537af6542b494d3fa96cef6f3e60da4f5 # v1.5.11
       - name: Check for lintable changes
         id: lintable-changes
         run: |
@@ -54,7 +54,7 @@ jobs:
           fi
       - name: Run scalafix linting
         if: steps.lintable-changes.outputs.changed == 'true'
-        run: sbt "scalafix --diff-base origin/${{ github.event.pull_request.base.ref }} RestrictedImports SingleLetterIdentifiers UnorderedIteration"
+        run: sbt --server --batch "scalafix --diff-base origin/${{ github.event.pull_request.base.ref }} RestrictedImports SingleLetterIdentifiers UnorderedIteration"
       - run: echo "Previous step failed because certain coding quality expectations were violated. Please check the logs."
         if: ${{ failure() }}
 
@@ -74,7 +74,7 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@82da71df4e122282484a99a8d70096bc2369dbd8 # v1.5.9
+      - uses: sbt/setup-sbt@1a9b426537af6542b494d3fa96cef6f3e60da4f5 # v1.5.11
       - name: Install php
         if: matrix.os == 'macos-latest'
         run: brew install php
@@ -109,7 +109,7 @@ jobs:
           toolchain: stable
           components: rust-src
       - name: Run tests
-        run: sbt clean test
+        run: sbt --server --batch "clean ; c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage ; testFull"
 
   test-scripts:
     needs: [formatting, linting]
@@ -127,7 +127,7 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@82da71df4e122282484a99a8d70096bc2369dbd8 # v1.5.9
+      - uses: sbt/setup-sbt@1a9b426537af6542b494d3fa96cef6f3e60da4f5 # v1.5.11
       - name: Install coreutils
         if: matrix.os == 'macos-latest'
         run: brew install coreutils
@@ -145,5 +145,5 @@ jobs:
           python -m pip install requests wexpect
       - name: Test distribution
         run: |
-          sbt joerncli/stage querydb/createDistribution
+          sbt --server --batch "joerncli/stage ; querydb/createDistribution"
           python -u ./testDistro.py

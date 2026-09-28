@@ -183,7 +183,10 @@ class TestRunner:
         """Test querydb plugin functionality"""
         self.clean_workspace()
         
-        querydb_zip = self.script_dir / "querydb" / "target" / "querydb.zip"
+        querydb_zips = sorted(self.script_dir.glob("target/out/jvm/*/querydb/querydb.zip"))
+        if not querydb_zips:
+            raise RuntimeError("querydb.zip not found under target/out/jvm - was querydb/createDistribution run?")
+        querydb_zip = querydb_zips[0]
 
         # Remove and re-add plugin
         self.run_command([self.joern_exe, "--remove-plugin", "querydb"], 
@@ -361,7 +364,7 @@ class TestRunner:
         env = os.environ.copy()
         env["CPG_VERSION"] = cpg_version
         
-        self.run_command([self.sbt_exe, "clean", "replaceDomainClassesInJoern"],
+        self.run_command([self.sbt_exe, "--server", "--batch", "clean ; replaceDomainClassesInJoern"],
                         "Run SBT clean replaceDomainClassesInJoern", 
                         cwd=schema_extender_dir, env=env)
         

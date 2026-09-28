@@ -1,3 +1,5 @@
+import sbt.BareBuildSyntax.dependsOn
+
 name := "c2cpg"
 
 dependsOn(

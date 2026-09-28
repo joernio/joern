@@ -18,7 +18,7 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@82da71df4e122282484a99a8d70096bc2369dbd8 # v1.5.9
+      - uses: sbt/setup-sbt@1a9b426537af6542b494d3fa96cef6f3e60da4f5 # v1.5.11
       - name: Set up Ruby
         uses: ruby/setup-ruby@a0102e0972be65f351c307e2d64b9314a57c8073 # v1.324.0
         with:
@@ -34,9 +34,9 @@ jobs:
         with:
           toolchain: stable
           components: rust-src
-      - run: sbt scalafmtCheck test
+      - run: sbt --server --batch "scalafmtCheck ; c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage ; testFull"
       - name: Test distribution
         run: |
           python -m pip install requests pexpect
-          sbt joerncli/stage querydb/createDistribution
+          sbt --server --batch "joerncli/stage ; querydb/createDistribution"
           python -u ./testDistro.py
