@@ -1,7 +1,7 @@
 package io.joern.console.cpgcreation
 
 import io.joern.console.FrontendConfig
-import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg
 import io.shiftleft.codepropertygraph.generated.Cpg
 
 import java.nio.file.Path
@@ -21,8 +21,7 @@ case class RubyCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
   override def isJvmBased = true
 
   override def applyPostProcessingPasses(cpg: Cpg): Cpg = {
-    val rubyConfig = Config()
-    RubySrc2Cpg.postProcessingPasses(cpg, rubyConfig).foreach(_.createAndApply())
+    rubysrc2cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
     cpg
   }
 

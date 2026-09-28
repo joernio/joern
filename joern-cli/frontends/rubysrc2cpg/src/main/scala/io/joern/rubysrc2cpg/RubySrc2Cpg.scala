@@ -7,14 +7,10 @@ import io.joern.rubysrc2cpg.parser.*
 import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.JRubyEnvironment
 import io.joern.rubysrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass, DependencyPass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.frontendspecific.rubysrc2cpg.*
-import io.joern.x2cpg.passes.base.AstLinkerPass
-import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
-import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
-import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.FileUtil
 import org.slf4j.LoggerFactory
@@ -89,13 +85,6 @@ class RubySrc2Cpg(sharedJRubyEnv: Option[JRubyEnvironment] = None) extends X2Cpg
 }
 
 object RubySrc2Cpg {
-
-  def postProcessingPasses(cpg: Cpg, config: Config): List[CpgPassBase] = {
-    val implicitRequirePass = if (cpg.dependency.name.contains("zeitwerk")) ImplicitRequirePass(cpg) :: Nil else Nil
-    implicitRequirePass ++ List(ImportsPass(cpg), RubyImportResolverPass(cpg)) ++
-      new RubyTypeRecoveryPassGenerator(cpg, config = XTypeRecoveryConfig(iterations = 4))
-        .generate() ++ List(new RubyTypeHintCallLinker(cpg), new NaiveCallLinker(cpg), new AstLinkerPass(cpg))
-  }
 
   /** Parses the generated AST Gen files in parallel and produces AstCreators from each.
     */
