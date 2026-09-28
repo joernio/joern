@@ -7,6 +7,7 @@ import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, Semantic
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.JRubyEnvironment
 import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg
 import io.joern.x2cpg.testfixtures.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
@@ -60,7 +61,7 @@ class DefaultTestCpgWithRuby(disableFileContent: Boolean = true)
   }
 
   override protected def applyPostProcessingPasses(): Unit = {
-    RubySrc2Cpg.postProcessingPasses(this, config).foreach(_.createAndApply())
+    rubysrc2cpg.postProcessingPasses(this).foreach(_.createAndApply())
   }
 }
 

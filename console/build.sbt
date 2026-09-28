@@ -7,7 +7,6 @@ enablePlugins(JavaAppPackaging)
 dependsOn(
   Projects.semanticcpg,
   Projects.macros,
-  Projects.rubysrc2cpg,
   Projects.x2cpg              % "compile->compile;test->test",
   Projects.linterRules % ScalafixConfig
 )
