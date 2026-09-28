@@ -253,6 +253,88 @@ class ControlStructureTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "if-let chain" should {
+    val cpg = code("""
+        |fn main() {
+        | if let Some(x) = foo() && x > 0 && let Some(y) = bar(x) {
+        |  sink(y);
+        | } else {
+        |  baz();
+        | };
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      cpg.method.nameExact("main").block.astChildren.isBlock.astChildren.isLocal.name.l shouldBe
+        List("<tmp>0", "x", "<tmp>1", "y")
+    }
+
+    "have correct assignments" in {
+      cpg.method.nameExact("main").block.astChildren.isBlock.astChildren.isCall.code.l shouldBe
+        List("<tmp>0 = foo()", "x = <tmp>0.0", "<tmp>1 = bar(x)", "y = <tmp>1.0")
+    }
+
+    "have correct condition" in {
+      inside(cpg.ifBlock.condition.isCall.l) { case condition :: Nil =>
+        condition.methodFullName shouldBe Operators.logicalAnd
+        condition.code shouldBe "let Some(x) = foo() && x > 0 && let Some(y) = bar(x)"
+      }
+
+      inside(cpg.ifBlock.condition.isCall.argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Call) :: (rhs: Unknown) :: Nil =>
+          lhs.methodFullName shouldBe Operators.logicalAnd
+          lhs.code shouldBe "let Some(x) = foo() && x > 0"
+          rhs.code shouldBe "Some(y)"
+      }
+
+      inside(cpg.ifBlock.condition.isCall.argument(1).isCall.argument.sortBy(_.argumentIndex).l) {
+        case (lhs: Unknown) :: (rhs: Call) :: Nil =>
+          lhs.code shouldBe "Some(x)"
+          rhs.methodFullName shouldBe Operators.greaterThan
+          rhs.code shouldBe "x > 0"
+      }
+    }
+
+    "have correct then-branch" in {
+      inside(cpg.ifBlock.whenTrue.isBlock.astChildren.sortBy(_.order).l) { case (body: Call) :: Nil =>
+        body.code shouldBe "sink(y)"
+      }
+    }
+
+    "have correct else-branch" in {
+      inside(cpg.ifBlock.whenFalse.isBlock.astChildren.sortBy(_.order).l) { case (body: Call) :: Nil =>
+        body.code shouldBe "baz()"
+      }
+    }
+
+    "have correct REF edges" in {
+      cpg.local.nameExact("x").referencingIdentifiers.lineNumber.l shouldBe List(3, 3, 3)
+      cpg.local.nameExact("y").referencingIdentifiers.lineNumber.l shouldBe List(3, 4)
+    }
+  }
+
+  "if-let chain shadowing previous let" should {
+    val cpg = code("""
+        |fn main() {
+        | let x = 1;
+        | if let Some(x) = foo() && x > 0 {
+        |  sink(x);
+        | } else {
+        |  sink(x);
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      cpg.local.nameExact("x").lineNumber.l shouldBe List(3, 4)
+    }
+
+    "have correct REF edges for each local" in {
+      cpg.local.nameExact("x").lineNumber(3).referencingIdentifiers.lineNumber.l shouldBe List(3, 7)
+      cpg.local.nameExact("x").lineNumber(4).referencingIdentifiers.lineNumber.l shouldBe List(4, 4, 5)
+    }
+  }
+
   "a while loop" should {
     val cpg = code("""
         |fn main(x: i32, y: i32) {
