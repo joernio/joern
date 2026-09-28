@@ -1,9 +1,8 @@
 package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.generated.nodes.{AbstractNode, StoredNode}
-import org.json4s.native.Serialization.{write, writePretty}
-import org.json4s.{CustomSerializer, Extraction, Formats}
 import io.shiftleft.codepropertygraph.generated.help.{Doc, Traversal}
+import io.shiftleft.semanticcpg.utils.JsonRenderer
 import replpp.Colors
 import replpp.Operators.*
 
@@ -71,11 +70,10 @@ class Steps[A](val traversal: Iterator[A]) extends AnyVal {
   def toJsonPretty: String = toJson(pretty = true)
 
   protected def toJson(pretty: Boolean): String = {
-    implicit val formats: Formats = org.json4s.DefaultFormats + nodeSerializer + productSerializer
-
-    val results = traversal.toList
-    if (pretty) writePretty(results)
-    else write(results)
+    val renderer = new JsonRenderer(List(nodeSerializer, productSerializer))
+    val json     = renderer.render(traversal.toList)
+    if (pretty) ujson.write(json, indent = 2)
+    else ujson.write(json)
   }
 
 }
@@ -89,26 +87,18 @@ object Steps {
     */
   trait JsonSerializeAsProduct extends Product
 
-  private lazy val nodeSerializer = new CustomSerializer(implicit format =>
-    (
-      { case _ => ??? }, // deserializer not required for now
-      { case node: AbstractNode =>
-        val elementMap = productElements(node)
-        elementMap.addOne("_label" -> node.label)
-        if (node.isInstanceOf[StoredNode]) {
-          elementMap.addOne("_id" -> node.asInstanceOf[StoredNode].id())
-        }
-        Extraction.decompose(elementMap.result())
-      }
-    )
-  )
+  private lazy val nodeSerializer: JsonRenderer.Serializer = renderer => { case node: AbstractNode =>
+    val elementMap = productElements(node)
+    elementMap.addOne("_label" -> node.label)
+    if (node.isInstanceOf[StoredNode]) {
+      elementMap.addOne("_id" -> node.asInstanceOf[StoredNode].id())
+    }
+    renderer.render(elementMap.result())
+  }
 
-  private lazy val productSerializer = new CustomSerializer(implicit format =>
-    (
-      { case _ => ??? }, // deserializer not required for now
-      { case node: JsonSerializeAsProduct => Extraction.decompose(productElements(node).result()) }
-    )
-  )
+  private lazy val productSerializer: JsonRenderer.Serializer = renderer => { case node: JsonSerializeAsProduct =>
+    renderer.render(productElements(node).result())
+  }
 
   private def productElements(product: Product) = {
     val elementMap = Map.newBuilder[String, Any]

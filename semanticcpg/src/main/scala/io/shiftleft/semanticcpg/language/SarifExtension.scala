@@ -6,8 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.Finding
 import io.shiftleft.semanticcpg.sarif.SarifConfig.SarifVersion
 import io.shiftleft.semanticcpg.sarif.SarifSchema.{Sarif, Sarif2_1_0}
 import io.shiftleft.semanticcpg.sarif.{SarifConfig, SarifSchema, v2_1_0}
-import org.json4s.Formats
-import org.json4s.native.Serialization.{write, writePretty}
+import io.shiftleft.semanticcpg.utils.JsonRenderer
 
 import java.net.URI
 
@@ -65,11 +64,10 @@ class SarifExtension(val traversal: Iterator[Finding]) extends AnyVal {
 
   @Doc(info = "execute this traversal and convert findings to SARIF format as JSON")
   def toSarifJson(pretty: Boolean = false)(implicit config: SarifConfig = SarifConfig()): String = {
-    implicit val formats: Formats = org.json4s.DefaultFormats ++ config.customSerializers
-
-    val results = toSarif
-    if (pretty) writePretty(results)
-    else write(results)
+    val renderer = new JsonRenderer(config.customSerializers)
+    val json     = renderer.render(toSarif)
+    if (pretty) ujson.write(json, indent = 2)
+    else ujson.write(json)
   }
 
 }

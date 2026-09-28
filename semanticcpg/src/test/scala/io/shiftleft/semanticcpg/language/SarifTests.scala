@@ -70,80 +70,80 @@ class SarifTests extends AnyWordSpec with Matchers {
     "create a valid SARIF JSON" in {
       cpg.finding.toSarifJson(pretty = true) shouldBe
         """{
-          |  "version":"2.1.0",
-          |  "$schema":"https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
-          |  "runs":[
+          |  "version": "2.1.0",
+          |  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+          |  "runs": [
           |    {
-          |      "tool":{
-          |        "driver":{
-          |          "organization":"Joern.io",
-          |          "name":"Joern",
-          |          "informationUri":"https://joern.io",
-          |          "fullName":"Joern - The Bug Hunter's Workbench",
-          |          "rules":[
+          |      "tool": {
+          |        "driver": {
+          |          "organization": "Joern.io",
+          |          "name": "Joern",
+          |          "informationUri": "https://joern.io",
+          |          "fullName": "Joern - The Bug Hunter's Workbench",
+          |          "rules": [
           |            {
-          |              "id":"f1",
-          |              "name":"Rule 1",
-          |              "fullDescription":{
-          |                "text":"something bad happened"
+          |              "id": "f1",
+          |              "name": "Rule 1",
+          |              "fullDescription": {
+          |                "text": "something bad happened"
           |              }
           |            }
           |          ]
           |        }
           |      },
-          |      "results":[
+          |      "results": [
           |        {
-          |          "locations":[
+          |          "locations": [
           |            {
-          |              "physicalLocation":{
-          |                "artifactLocation":{
-          |                  "uri":"Bar.java",
-          |                  "uriBaseId":"PROJECT_ROOT"
+          |              "physicalLocation": {
+          |                "artifactLocation": {
+          |                  "uri": "Bar.java",
+          |                  "uriBaseId": "PROJECT_ROOT"
           |                },
-          |                "region":{
-          |                  "startLine":2,
-          |                  "snippet":{
-          |                    "text":"public foo()"
+          |                "region": {
+          |                  "startLine": 2,
+          |                  "snippet": {
+          |                    "text": "public foo()"
           |                  }
           |                }
           |              }
           |            }
           |          ],
-          |          "relatedLocations":[
+          |          "relatedLocations": [
           |            {
-          |              "physicalLocation":{
-          |                "artifactLocation":{
-          |                  "uri":"Bar.java",
-          |                  "uriBaseId":"PROJECT_ROOT"
+          |              "physicalLocation": {
+          |                "artifactLocation": {
+          |                  "uri": "Bar.java",
+          |                  "uriBaseId": "PROJECT_ROOT"
           |                },
-          |                "region":{
-          |                  "startLine":2,
-          |                  "snippet":{
-          |                    "text":"public foo()"
+          |                "region": {
+          |                  "startLine": 2,
+          |                  "snippet": {
+          |                    "text": "public foo()"
           |                  }
           |                }
           |              }
           |            }
           |          ],
-          |          "message":{
-          |            "text":"Rule 1"
+          |          "message": {
+          |            "text": "Rule 1"
           |          },
-          |          "codeFlows":[
+          |          "codeFlows": [
           |            {
-          |              "threadFlows":[
+          |              "threadFlows": [
           |                {
-          |                  "locations":[
+          |                  "locations": [
           |                    {
-          |                      "location":{
-          |                        "physicalLocation":{
-          |                          "artifactLocation":{
-          |                            "uri":"Bar.java",
-          |                            "uriBaseId":"PROJECT_ROOT"
+          |                      "location": {
+          |                        "physicalLocation": {
+          |                          "artifactLocation": {
+          |                            "uri": "Bar.java",
+          |                            "uriBaseId": "PROJECT_ROOT"
           |                          },
-          |                          "region":{
-          |                            "startLine":2,
-          |                            "snippet":{
-          |                              "text":"public foo()"
+          |                          "region": {
+          |                            "startLine": 2,
+          |                            "snippet": {
+          |                              "text": "public foo()"
           |                            }
           |                          }
           |                        }
@@ -154,13 +154,13 @@ class SarifTests extends AnyWordSpec with Matchers {
           |              ]
           |            }
           |          ],
-          |          "ruleId":"f1",
-          |          "level":"error"
+          |          "ruleId": "f1",
+          |          "level": "error"
           |        }
           |      ],
-          |      "originalUriBaseIds":{
-          |        "PROJECT_ROOT":{
-          |          "uriBaseId":"<empty>"
+          |      "originalUriBaseIds": {
+          |        "PROJECT_ROOT": {
+          |          "uriBaseId": "<empty>"
           |        }
           |      }
           |    }
@@ -215,77 +215,77 @@ class SarifTests extends AnyWordSpec with Matchers {
       cpg.finding.toSarifJson(pretty = true) shouldBe
         """
           |{
-          |  "version":"2.1.0",
-          |  "$schema":"https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
-          |  "runs":[
+          |  "version": "2.1.0",
+          |  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+          |  "runs": [
           |    {
-          |      "tool":{
-          |        "driver":{
-          |          "organization":"Joern.io",
-          |          "name":"Joern",
-          |          "informationUri":"https://joern.io",
-          |          "fullName":"Joern - The Bug Hunter's Workbench",
-          |          "rules":[
+          |      "tool": {
+          |        "driver": {
+          |          "organization": "Joern.io",
+          |          "name": "Joern",
+          |          "informationUri": "https://joern.io",
+          |          "fullName": "Joern - The Bug Hunter's Workbench",
+          |          "rules": [
           |            {
-          |              "id":"f1",
-          |              "name":"<empty>",
-          |              "fullDescription":{
-          |                "text":"something bad happened"
+          |              "id": "f1",
+          |              "name": "<empty>",
+          |              "fullDescription": {
+          |                "text": "something bad happened"
           |              }
           |            }
           |          ]
           |        }
           |      },
-          |      "results":[
+          |      "results": [
           |        {
-          |          "locations":[
+          |          "locations": [
           |            {
-          |              "physicalLocation":{
-          |                "artifactLocation":{
-          |                  "uriBaseId":"PROJECT_ROOT"
+          |              "physicalLocation": {
+          |                "artifactLocation": {
+          |                  "uriBaseId": "PROJECT_ROOT"
           |                },
-          |                "region":{
-          |                  "startLine":2,
-          |                  "snippet":{
-          |                    "text":"public foo()"
+          |                "region": {
+          |                  "startLine": 2,
+          |                  "snippet": {
+          |                    "text": "public foo()"
           |                  }
           |                }
           |              }
           |            }
           |          ],
-          |          "relatedLocations":[
+          |          "relatedLocations": [
           |            {
-          |              "physicalLocation":{
-          |                "artifactLocation":{
-          |                  "uriBaseId":"PROJECT_ROOT"
+          |              "physicalLocation": {
+          |                "artifactLocation": {
+          |                  "uriBaseId": "PROJECT_ROOT"
           |                },
-          |                "region":{
-          |                  "startLine":2,
-          |                  "snippet":{
-          |                    "text":"public foo()"
+          |                "region": {
+          |                  "startLine": 2,
+          |                  "snippet": {
+          |                    "text": "public foo()"
           |                  }
           |                }
           |              }
           |            }
           |          ],
-          |          "message":{
-          |            "text":"<empty>"
+          |          "message": {
+          |            "text": "<empty>"
           |          },
-          |          "codeFlows":[
+          |          "codeFlows": [
           |            {
-          |              "threadFlows":[
+          |              "threadFlows": [
           |                {
-          |                  "locations":[
+          |                  "locations": [
           |                    {
-          |                      "location":{
-          |                        "physicalLocation":{
-          |                          "artifactLocation":{
-          |                            "uriBaseId":"PROJECT_ROOT"
+          |                      "location": {
+          |                        "physicalLocation": {
+          |                          "artifactLocation": {
+          |                            "uriBaseId": "PROJECT_ROOT"
           |                          },
-          |                          "region":{
-          |                            "startLine":2,
-          |                            "snippet":{
-          |                              "text":"public foo()"
+          |                          "region": {
+          |                            "startLine": 2,
+          |                            "snippet": {
+          |                              "text": "public foo()"
           |                            }
           |                          }
           |                        }
@@ -296,13 +296,13 @@ class SarifTests extends AnyWordSpec with Matchers {
           |              ]
           |            }
           |          ],
-          |          "ruleId":"f1",
-          |          "level":"warning"
+          |          "ruleId": "f1",
+          |          "level": "warning"
           |        }
           |      ],
-          |      "originalUriBaseIds":{
-          |        "PROJECT_ROOT":{
-          |          "uriBaseId":"<empty>"
+          |      "originalUriBaseIds": {
+          |        "PROJECT_ROOT": {
+          |          "uriBaseId": "<empty>"
           |        }
           |      }
           |    }

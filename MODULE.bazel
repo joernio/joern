@@ -3,7 +3,7 @@ module(name = "joern")
 bazel_dep(name = "rules_scala", version = "7.2.5")
 bazel_dep(name = "codepropertygraph")
 
-CODEPROPERTYGRAPH_VERSION = "9d4b36e50cbffefcf9730e3afa9d4522e4f19e7c"
+CODEPROPERTYGRAPH_VERSION = "1735c289d7258d4ef02f6c39ce635581cca4f330"
 
 BAZEL_TOOLING_VERSION = "fbdfc66995360c408ecf94d34837a0355aa7ac4d"
 
@@ -49,9 +49,8 @@ maven.install(
         "org.projectlombok:lombok:1.18.42",
         "net.lingala.zip4j:zip4j:2.11.5",
         "org.gradle:gradle-tooling-api:8.3",
-        "com.lihaoyi:ujson_3:4.0.2",
-        "com.lihaoyi:upickle_3:4.0.2",
-        "org.json4s:json4s-native_3:4.0.7",
+        "com.lihaoyi:ujson_3:4.4.3",
+        "com.lihaoyi:upickle_3:4.4.3",
         "com.michaelpollmeier:scala-repl-pp_3.3.6:0.6.3",
         "commons-io:commons-io:2.22.0",
         "org.apache.commons:commons-lang3:3.14.0",
