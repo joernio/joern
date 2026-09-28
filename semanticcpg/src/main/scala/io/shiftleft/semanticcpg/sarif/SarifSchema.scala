@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.sarif
 
-import org.json4s.{CustomSerializer, Extraction, Serializer}
+import io.shiftleft.semanticcpg.utils.JsonRenderer
 import org.slf4j.LoggerFactory
 
 import java.net.URI
@@ -342,139 +342,76 @@ object SarifSchema {
 
   }
 
-  val serializers: List[Serializer[?]] = List(
-    new CustomSerializer[SarifSchema.Sarif](implicit format =>
-      (
-        { case _ =>
-          ???
-        },
-        { case sarif: SarifSchema.Sarif =>
-          Extraction.decompose(Map("version" -> sarif.version, "$schema" -> sarif.schema, "runs" -> sarif.runs))
-        }
-      )
-    ),
-    new CustomSerializer[SarifSchema.ArtifactLocation](implicit format =>
-      (
-        { case _ =>
-          ???
-        },
-        { case location: SarifSchema.ArtifactLocation =>
-          val elementMap = Map.newBuilder[String, Any]
-          location.uri.foreach(x => elementMap.addOne("uri" -> x))
-          elementMap.addOne("uriBaseId" -> location.uriBaseId)
-          Extraction.decompose(elementMap.result())
-        }
-      )
-    ),
-    new CustomSerializer[SarifSchema.CodeFlow](implicit format =>
-      (
-        { case _ =>
-          ???
-        },
-        { case flow: SarifSchema.CodeFlow =>
-          val elementMap = Map.newBuilder[String, Any]
-          flow.message.foreach(x => elementMap.addOne("message" -> x))
-          elementMap.addOne("threadFlows" -> flow.threadFlows)
-          Extraction.decompose(elementMap.result())
-        }
-      )
-    ),
-    new CustomSerializer[SarifSchema.PhysicalLocation](implicit format =>
-      (
-        { case _ =>
-          ???
-        },
-        { case location: SarifSchema.PhysicalLocation =>
-          val elementMap = Map.newBuilder[String, Any]
-          elementMap.addOne("artifactLocation" -> location.artifactLocation)
-          if (!location.region.isEmpty) { elementMap.addOne("region" -> Extraction.decompose(location.region)) }
-          Extraction.decompose(elementMap.result())
-        }
-      )
-    ),
-    new CustomSerializer[SarifSchema.Region](implicit format =>
-      (
-        { case _ =>
-          ???
-        },
-        { case region: SarifSchema.Region =>
-          val elementMap = Map.newBuilder[String, Any]
-          region.startLine.filterNot(x => x <= 0).foreach(x => elementMap.addOne("startLine" -> x))
-          region.startColumn.filterNot(x => x <= 0).foreach(x => elementMap.addOne("startColumn" -> x))
-          region.endLine.filterNot(x => x <= 0).foreach(x => elementMap.addOne("endLine" -> x))
-          region.endColumn.filterNot(x => x <= 0).foreach(x => elementMap.addOne("endColumn" -> x))
-          region.snippet.foreach(x => elementMap.addOne("snippet" -> x))
-          Extraction.decompose(elementMap.result())
-        }
-      )
-    ),
-    new CustomSerializer[ReportingDescriptor](implicit format =>
-      (
-        { case _ =>
-          ???
-        },
-        { case x: ReportingDescriptor =>
-          val elementMap   = Map.newBuilder[String, Any]
-          elementMap.addOne("id"   -> x.id)
-          elementMap.addOne("name" -> x.name)
-          x.shortDescription.foreach(x => elementMap.addOne("shortDescription" -> x))
-          x.fullDescription.foreach(x => elementMap.addOne("fullDescription" -> x))
-          x.helpUri.foreach(x => elementMap.addOne("helpUri" -> x))
-          Extraction.decompose(elementMap.result())
-        }
-      )
-    ),
-    new CustomSerializer[SarifSchema.Result](implicit format =>
-      (
-        { case _ =>
-          ???
-        },
-        { case result: SarifSchema.Result =>
-          val elementMap  = Map.newBuilder[String, Any]
-          elementMap.addOne("ruleId"  -> result.ruleId)
-          elementMap.addOne("message" -> result.message)
-          elementMap.addOne("level"   -> result.level)
-          // Locations & related locations have no minimum, but do not allow duplicates
-          elementMap.addOne("locations"        -> result.locations.distinct)
-          elementMap.addOne("relatedLocations" -> result.relatedLocations.distinct)
-          // codeFlows may be empty, but thread flows may not have empty arrays
-          elementMap.addOne("codeFlows" -> result.codeFlows.filterNot(_.threadFlows.isEmpty))
+  val serializers: List[JsonRenderer.Serializer] = List(
+    renderer => { case sarif: SarifSchema.Sarif =>
+      renderer.render(Map("version" -> sarif.version, "$schema" -> sarif.schema, "runs" -> sarif.runs))
+    },
+    renderer => { case location: SarifSchema.ArtifactLocation =>
+      val elementMap = Map.newBuilder[String, Any]
+      location.uri.foreach(uri => elementMap.addOne("uri" -> uri))
+      elementMap.addOne("uriBaseId" -> location.uriBaseId)
+      renderer.render(elementMap.result())
+    },
+    renderer => { case flow: SarifSchema.CodeFlow =>
+      val elementMap = Map.newBuilder[String, Any]
+      flow.message.foreach(message => elementMap.addOne("message" -> message))
+      elementMap.addOne("threadFlows" -> flow.threadFlows)
+      renderer.render(elementMap.result())
+    },
+    renderer => { case location: SarifSchema.PhysicalLocation =>
+      val elementMap = Map.newBuilder[String, Any]
+      elementMap.addOne("artifactLocation" -> location.artifactLocation)
+      if (!location.region.isEmpty) { elementMap.addOne("region" -> location.region) }
+      renderer.render(elementMap.result())
+    },
+    renderer => { case region: SarifSchema.Region =>
+      val elementMap = Map.newBuilder[String, Any]
+      region.startLine.filterNot(line => line <= 0).foreach(line => elementMap.addOne("startLine" -> line))
+      region.startColumn.filterNot(column => column <= 0).foreach(column => elementMap.addOne("startColumn" -> column))
+      region.endLine.filterNot(line => line <= 0).foreach(line => elementMap.addOne("endLine" -> line))
+      region.endColumn.filterNot(column => column <= 0).foreach(column => elementMap.addOne("endColumn" -> column))
+      region.snippet.foreach(snippet => elementMap.addOne("snippet" -> snippet))
+      renderer.render(elementMap.result())
+    },
+    renderer => { case x: ReportingDescriptor =>
+      val elementMap   = Map.newBuilder[String, Any]
+      elementMap.addOne("id"   -> x.id)
+      elementMap.addOne("name" -> x.name)
+      x.shortDescription.foreach(description => elementMap.addOne("shortDescription" -> description))
+      x.fullDescription.foreach(description => elementMap.addOne("fullDescription" -> description))
+      x.helpUri.foreach(uri => elementMap.addOne("helpUri" -> uri))
+      renderer.render(elementMap.result())
+    },
+    renderer => { case result: SarifSchema.Result =>
+      val elementMap  = Map.newBuilder[String, Any]
+      elementMap.addOne("ruleId"  -> result.ruleId)
+      elementMap.addOne("message" -> result.message)
+      elementMap.addOne("level"   -> result.level)
+      // Locations & related locations have no minimum, but do not allow duplicates
+      elementMap.addOne("locations"        -> result.locations.distinct)
+      elementMap.addOne("relatedLocations" -> result.relatedLocations.distinct)
+      // codeFlows may be empty, but thread flows may not have empty arrays
+      elementMap.addOne("codeFlows" -> result.codeFlows.filterNot(_.threadFlows.isEmpty))
 
-          if (result.partialFingerprints.nonEmpty) {
-            elementMap.addOne("partialFingerprints" -> result.partialFingerprints)
-          }
+      if (result.partialFingerprints.nonEmpty) {
+        elementMap.addOne("partialFingerprints" -> result.partialFingerprints)
+      }
 
-          Extraction.decompose(elementMap.result())
-        }
-      )
-    ),
-    new CustomSerializer[ToolComponent](implicit format =>
-      (
-        { case _ =>
-          ???
-        },
-        { case x: ToolComponent =>
-          val elementMap = Map.newBuilder[String, Any]
-          elementMap.addOne("name" -> x.name)
-          x.fullName.foreach(x => elementMap.addOne("fullName" -> x))
-          x.organization.foreach(x => elementMap.addOne("organization" -> x))
-          x.semanticVersion.foreach(x => elementMap.addOne("semanticVersion" -> x))
-          x.informationUri.foreach(x => elementMap.addOne("informationUri" -> x))
-          elementMap.addOne("rules" -> x.rules)
-          Extraction.decompose(elementMap.result())
-        }
-      )
-    ),
-    new CustomSerializer[URI](implicit format =>
-      (
-        { case _ =>
-          ???
-        },
-        { case uri: URI =>
-          Extraction.decompose(uri.toString)
-        }
-      )
-    )
+      renderer.render(elementMap.result())
+    },
+    renderer => { case x: ToolComponent =>
+      val elementMap = Map.newBuilder[String, Any]
+      elementMap.addOne("name" -> x.name)
+      x.fullName.foreach(name => elementMap.addOne("fullName" -> name))
+      x.organization.foreach(organization => elementMap.addOne("organization" -> organization))
+      x.semanticVersion.foreach(version => elementMap.addOne("semanticVersion" -> version))
+      x.informationUri.foreach(uri => elementMap.addOne("informationUri" -> uri))
+      elementMap.addOne("rules" -> x.rules)
+      renderer.render(elementMap.result())
+    },
+    renderer => { case uri: URI =>
+      renderer.render(uri.toString)
+    }
   )
 
 }

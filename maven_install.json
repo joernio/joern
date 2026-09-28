@@ -14,8 +14,8 @@
     "com.googlecode.plist:dd-plist": -594010571,
     "com.lihaoyi:os-lib_3": 899915638,
     "com.lihaoyi:requests_3": -1275628490,
-    "com.lihaoyi:ujson_3": 1587972631,
-    "com.lihaoyi:upickle_3": -1467042423,
+    "com.lihaoyi:ujson_3": 1182647324,
+    "com.lihaoyi:upickle_3": -1872367730,
     "com.michaelpollmeier:scala-repl-pp_3.3.6": -995643616,
     "com.michaelpollmeier:versionsort": 605653562,
     "com.squareup.tools.build:maven-archeologist": 943047605,
@@ -46,7 +46,6 @@
     "org.jetbrains.kotlin:kotlin-stdlib-jdk8": 1654605853,
     "org.jline:jline": 214767589,
     "org.jruby:jruby-complete": -26341225,
-    "org.json4s:json4s-native_3": -1513317579,
     "org.ow2.asm:asm": 1206815935,
     "org.projectlombok:lombok": -1238622139,
     "org.scala-lang.modules:scala-parallel-collections_3": -115965401,
@@ -97,16 +96,16 @@
     "com.lihaoyi:os-lib_3:jar:sources": 1732147675,
     "com.lihaoyi:requests_3": -1758082529,
     "com.lihaoyi:requests_3:jar:sources": -476359424,
-    "com.lihaoyi:ujson_3": 126745168,
-    "com.lihaoyi:ujson_3:jar:sources": 1676340764,
-    "com.lihaoyi:upack_3": -1457524199,
-    "com.lihaoyi:upack_3:jar:sources": -440068608,
-    "com.lihaoyi:upickle-core_3": 911572118,
-    "com.lihaoyi:upickle-core_3:jar:sources": 1793823939,
-    "com.lihaoyi:upickle-implicits_3": -1958842126,
-    "com.lihaoyi:upickle-implicits_3:jar:sources": -1242861604,
-    "com.lihaoyi:upickle_3": -504168708,
-    "com.lihaoyi:upickle_3:jar:sources": -590395021,
+    "com.lihaoyi:ujson_3": -675221214,
+    "com.lihaoyi:ujson_3:jar:sources": 1401892679,
+    "com.lihaoyi:upack_3": -1069071567,
+    "com.lihaoyi:upack_3:jar:sources": 651497665,
+    "com.lihaoyi:upickle-core_3": -1369261776,
+    "com.lihaoyi:upickle-core_3:jar:sources": 1761591552,
+    "com.lihaoyi:upickle-implicits_3": 377532253,
+    "com.lihaoyi:upickle-implicits_3:jar:sources": -1321765235,
+    "com.lihaoyi:upickle_3": 1093385801,
+    "com.lihaoyi:upickle_3:jar:sources": -687406193,
     "com.michaelpollmeier:scala-repl-pp-shaded-libs_3": 568625696,
     "com.michaelpollmeier:scala-repl-pp-shaded-libs_3:jar:sources": 822914801,
     "com.michaelpollmeier:scala-repl-pp_3.3.6": -859517320,
@@ -123,8 +122,6 @@
     "com.squareup.okio:okio:jar:sources": -2122820827,
     "com.squareup.tools.build:maven-archeologist": 828402239,
     "com.squareup.tools.build:maven-archeologist:jar:sources": 1440014015,
-    "com.thoughtworks.paranamer:paranamer": 216030769,
-    "com.thoughtworks.paranamer:paranamer:jar:sources": 1185138559,
     "com.typesafe:config": 1422037420,
     "com.typesafe:config:jar:sources": 1794326800,
     "commons-codec:commons-codec": -1161719307,
@@ -135,13 +132,13 @@
     "io.get-coursier:interface:jar:sources": -37171318,
     "io.joern:eclipse-cdt-core": 956507630,
     "io.joern:eclipse-cdt-core:jar:sources": -1789927640,
-    "io.joern:flatgraph-core_3": 839026010,
+    "io.joern:flatgraph-core_3": 1182992137,
     "io.joern:flatgraph-core_3:jar:sources": 575284637,
     "io.joern:flatgraph-domain-classes-generator_3": 170340065,
     "io.joern:flatgraph-domain-classes-generator_3:jar:sources": -123490520,
-    "io.joern:flatgraph-help_3": 1134562627,
+    "io.joern:flatgraph-help_3": -834758757,
     "io.joern:flatgraph-help_3:jar:sources": -1476209185,
-    "io.joern:flatgraph-odb-convert_3": -1972259056,
+    "io.joern:flatgraph-odb-convert_3": -1299461830,
     "io.joern:flatgraph-odb-convert_3:jar:sources": 1706697962,
     "io.shiftleft:overflowdb-core_3": -1655377345,
     "io.shiftleft:overflowdb-core_3:jar:sources": 422126785,
@@ -278,16 +275,6 @@
     "org.jline:jline-terminal:jar:sources": -214275357,
     "org.jline:jline:jar:sources": 2039073485,
     "org.jruby:jruby-complete": 1785345668,
-    "org.json4s:json4s-ast_3": -507419474,
-    "org.json4s:json4s-ast_3:jar:sources": 2122540071,
-    "org.json4s:json4s-core_3": 1015651488,
-    "org.json4s:json4s-core_3:jar:sources": 2040071554,
-    "org.json4s:json4s-native-core_3": 253674937,
-    "org.json4s:json4s-native-core_3:jar:sources": 2061583826,
-    "org.json4s:json4s-native_3": 102813134,
-    "org.json4s:json4s-native_3:jar:sources": 735918075,
-    "org.json4s:json4s-scalap_3": -1857539469,
-    "org.json4s:json4s-scalap_3:jar:sources": -1220218122,
     "org.jspecify:jspecify": 117231129,
     "org.jspecify:jspecify:jar:sources": -2134060298,
     "org.msgpack:msgpack-core": -1705007667,
@@ -331,7 +318,6 @@
     "com.google.errorprone:error_prone_annotations:2.5.1": "com.google.errorprone:error_prone_annotations:2.41.0",
     "com.google.guava:guava:32.0.1-jre": "com.google.guava:guava:33.5.0-jre",
     "com.google.j2objc:j2objc-annotations:2.8": "com.google.j2objc:j2objc-annotations:3.1",
-    "com.lihaoyi:ujson_3:4.0.2": "com.lihaoyi:ujson_3:4.4.1",
     "org.apache.commons:commons-lang3:3.14.0": "org.apache.commons:commons-lang3:3.17.0",
     "org.apache.commons:commons-text:1.12.0": "org.apache.commons:commons-text:1.13.0",
     "org.slf4j:slf4j-api:2.0.7": "org.slf4j:slf4j-api:2.0.17"
@@ -478,38 +464,38 @@
     },
     "com.lihaoyi:ujson_3": {
       "shasums": {
-        "jar": "dd4109dc66963a3552154f59f20858e2907c13bc1a9410ae46573cdfa94e7517",
-        "sources": "082f8d8759a6f6db5bbed0bd13e274c404000eabb4777ff5e14a7232964d78d8"
+        "jar": "2fd8083aabc7fb4252c299909b19b2881326a03502eba8859d39d4b2ceb7a8b2",
+        "sources": "e64a5a38ab13502eb021c9fc1c8740fa825dbb11c717268fc9b308ee099ce3ae"
       },
-      "version": "4.4.1"
+      "version": "4.4.3"
     },
     "com.lihaoyi:upack_3": {
       "shasums": {
-        "jar": "294b2cf0a4ba6a2803412f0b9a3dbbc2dc1dc420a48c3746d582c7f3f16a4181",
-        "sources": "c206f023be6f51092285500a75fcbb76f474f5543394df7c566f608853433519"
+        "jar": "40bc531f04388ff1993078effb73fa601ab8f138f45639ce922c652cb4594268",
+        "sources": "b4b2355e6cae5e3d9cfcb0c0a2df5ab92ec5a2d6a7e43efcdea56fed317851b4"
       },
-      "version": "4.0.2"
+      "version": "4.4.3"
     },
     "com.lihaoyi:upickle-core_3": {
       "shasums": {
-        "jar": "4b7566695c789c9a031167a296c67f08b06107124edfbb58e6e187caaa2dc592",
-        "sources": "ae95168d863b4df5d6f6e2c64caf02fb1da99a50b08d6d2f51b3c4ed10080a76"
+        "jar": "9b9be4b677ab6fbc6b82fe5486908a39664f51e9344d1903ada1c6766d251ce2",
+        "sources": "04a4d1a6df374a5d03f1a0ac7048dcfd60be5c4032c42355032117c375b7f647"
       },
-      "version": "4.4.1"
+      "version": "4.4.3"
     },
     "com.lihaoyi:upickle-implicits_3": {
       "shasums": {
-        "jar": "58bea28a70561054701074ca2f7fcc7a4b1abbe2ef7cb5017708e995b61d36ba",
-        "sources": "78e9eeca22e5d62c1cd3062ccb6c956bcb2e3112a7292938f346936d088e56e7"
+        "jar": "3bde97b7d588f42e8074248160e64a816226c70bfb352ec1d834acfa0a1c73ad",
+        "sources": "bb5935ead19788cfef850e96874af1d60a159e61816137bafd2ffbecb07dc304"
       },
-      "version": "4.0.2"
+      "version": "4.4.3"
     },
     "com.lihaoyi:upickle_3": {
       "shasums": {
-        "jar": "b19a95c92c2d104ab2feb8ce68dacca1271adce6dcf90d8a40488af3f03dfdfd",
-        "sources": "75e9d31fe320cbc87b5bd1e86f559a07e10a531f0e2c0e68a118f6e5cd0178c1"
+        "jar": "f68012b4cdf64686c101b1c84ff47e79acf892e0ed50bcec51d02c2807082351",
+        "sources": "85f14fe2c3978f6a8c2f0b71385bf6bcdd62c6aeb1fe31182ecb59555033f161"
       },
-      "version": "4.0.2"
+      "version": "4.4.3"
     },
     "com.michaelpollmeier:scala-repl-pp-shaded-libs_3": {
       "shasums": {
@@ -566,13 +552,6 @@
         "sources": "f9094cc8de53fff130e0f4abf1363a1c53a962451a2fde5f989a2a4942a5c728"
       },
       "version": "0.0.10"
-    },
-    "com.thoughtworks.paranamer:paranamer": {
-      "shasums": {
-        "jar": "688cb118a6021d819138e855208c956031688be4b47a24bb615becc63acedf07",
-        "sources": "8a4bfc21755c36ccdd70f96d7ab891d842d5aebd6afa1b74e0efc6441e3df39c"
-      },
-      "version": "2.8"
     },
     "com.typesafe:config": {
       "shasums": {
@@ -1112,41 +1091,6 @@
       },
       "version": "9.4.15.0"
     },
-    "org.json4s:json4s-ast_3": {
-      "shasums": {
-        "jar": "6140e538e53c2c55db445645a65ffe26f73577d0000f0890076b066ca55f2b25",
-        "sources": "6afdb88eabf6130abef60ccf061f8e5c1b0487cea48f79d87818309b0090bc3b"
-      },
-      "version": "4.0.7"
-    },
-    "org.json4s:json4s-core_3": {
-      "shasums": {
-        "jar": "bdb869db56d60c10a0760a98a3d53ecb632841fa8f1a5001e7c1a0d91877493a",
-        "sources": "c1451c1793bd12e1f57b8844a20c05a71b9ff5e7c443a44f18339ea34ebe5c19"
-      },
-      "version": "4.0.7"
-    },
-    "org.json4s:json4s-native-core_3": {
-      "shasums": {
-        "jar": "d79432d86ab353840807cbcc8a7e9e48160efa67680db1fe26db6765b778362e",
-        "sources": "8e356b77f167e3c4d35fd1be40697f8cbfb5c434a4be896cb2fdcf1f116282ae"
-      },
-      "version": "4.0.7"
-    },
-    "org.json4s:json4s-native_3": {
-      "shasums": {
-        "jar": "bd2222e623f020b6d036f1328b306f983365527d2d93eab7c205db223e5c09bf",
-        "sources": "ec5234fba91239c29473ca28299c9b7aafd377fa370ce97d23c040b2ea542622"
-      },
-      "version": "4.0.7"
-    },
-    "org.json4s:json4s-scalap_3": {
-      "shasums": {
-        "jar": "dc2269e32e3d9cdd296151deb5f61d108d3d4fe99e220de5679dbaf6fb8e140a",
-        "sources": "a1d28f289e861a8ecb356e091861bb6365210428c57926c4ddea242cd8e542e2"
-      },
-      "version": "4.0.7"
-    },
     "org.jspecify:jspecify": {
       "shasums": {
         "jar": "1fad6e6be7557781e4d33729d49ae1cdc8fdda6fe477bb0cc68ce351eafdfbab",
@@ -1542,18 +1486,6 @@
       "org.jline:jline-native",
       "org.jline:jline-terminal"
     ],
-    "org.json4s:json4s-core_3": [
-      "com.thoughtworks.paranamer:paranamer",
-      "org.json4s:json4s-ast_3",
-      "org.json4s:json4s-scalap_3"
-    ],
-    "org.json4s:json4s-native-core_3": [
-      "org.json4s:json4s-ast_3"
-    ],
-    "org.json4s:json4s-native_3": [
-      "org.json4s:json4s-core_3",
-      "org.json4s:json4s-native-core_3"
-    ],
     "org.osgi:org.osgi.service.prefs": [
       "org.osgi:osgi.annotation"
     ],
@@ -1819,9 +1751,6 @@
     "com.squareup.tools.build:maven-archeologist": [
       "com.squareup.tools.maven.resolution",
       "com.squareup.tools.maven.resolution.gradle"
-    ],
-    "com.thoughtworks.paranamer:paranamer": [
-      "com.thoughtworks.paranamer"
     ],
     "com.typesafe:config": [
       "com.typesafe.config",
@@ -4337,25 +4266,6 @@
       "org.jruby.util.time",
       "org.jruby.util.unsafe"
     ],
-    "org.json4s:json4s-ast_3": [
-      "org.json4s",
-      "org.json4s.prefs"
-    ],
-    "org.json4s:json4s-core_3": [
-      "org.json4s",
-      "org.json4s.prefs",
-      "org.json4s.reflect"
-    ],
-    "org.json4s:json4s-native-core_3": [
-      "org.json4s.native"
-    ],
-    "org.json4s:json4s-native_3": [
-      "org.json4s.native"
-    ],
-    "org.json4s:json4s-scalap_3": [
-      "org.json4s.scalap",
-      "org.json4s.scalap.scalasig"
-    ],
     "org.jspecify:jspecify": [
       "org.jspecify.annotations"
     ],
@@ -4575,8 +4485,6 @@
       "com.squareup.okio:okio:jar:sources",
       "com.squareup.tools.build:maven-archeologist",
       "com.squareup.tools.build:maven-archeologist:jar:sources",
-      "com.thoughtworks.paranamer:paranamer",
-      "com.thoughtworks.paranamer:paranamer:jar:sources",
       "com.typesafe:config",
       "com.typesafe:config:jar:sources",
       "commons-codec:commons-codec",
@@ -4730,16 +4638,6 @@
       "org.jline:jline-terminal:jar:sources",
       "org.jline:jline:jar:sources",
       "org.jruby:jruby-complete",
-      "org.json4s:json4s-ast_3",
-      "org.json4s:json4s-ast_3:jar:sources",
-      "org.json4s:json4s-core_3",
-      "org.json4s:json4s-core_3:jar:sources",
-      "org.json4s:json4s-native-core_3",
-      "org.json4s:json4s-native-core_3:jar:sources",
-      "org.json4s:json4s-native_3",
-      "org.json4s:json4s-native_3:jar:sources",
-      "org.json4s:json4s-scalap_3",
-      "org.json4s:json4s-scalap_3:jar:sources",
       "org.jspecify:jspecify",
       "org.jspecify:jspecify:jar:sources",
       "org.msgpack:msgpack-core",
@@ -4845,8 +4743,6 @@
       "com.squareup.okio:okio:jar:sources",
       "com.squareup.tools.build:maven-archeologist",
       "com.squareup.tools.build:maven-archeologist:jar:sources",
-      "com.thoughtworks.paranamer:paranamer",
-      "com.thoughtworks.paranamer:paranamer:jar:sources",
       "com.typesafe:config",
       "com.typesafe:config:jar:sources",
       "commons-codec:commons-codec",
@@ -5000,16 +4896,6 @@
       "org.jline:jline-terminal:jar:sources",
       "org.jline:jline:jar:sources",
       "org.jruby:jruby-complete",
-      "org.json4s:json4s-ast_3",
-      "org.json4s:json4s-ast_3:jar:sources",
-      "org.json4s:json4s-core_3",
-      "org.json4s:json4s-core_3:jar:sources",
-      "org.json4s:json4s-native-core_3",
-      "org.json4s:json4s-native-core_3:jar:sources",
-      "org.json4s:json4s-native_3",
-      "org.json4s:json4s-native_3:jar:sources",
-      "org.json4s:json4s-scalap_3",
-      "org.json4s:json4s-scalap_3:jar:sources",
       "org.jspecify:jspecify",
       "org.jspecify:jspecify:jar:sources",
       "org.msgpack:msgpack-core",

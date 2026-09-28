@@ -11,7 +11,7 @@ dependsOn(
 
 libraryDependencies ++= Seq(
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
-  "com.lihaoyi"   %% "ujson"             % "4.1.0",
+  "com.lihaoyi"   %% "ujson"             % Versions.upickle,
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
 )
 

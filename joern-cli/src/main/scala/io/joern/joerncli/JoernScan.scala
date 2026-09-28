@@ -1,7 +1,7 @@
 package io.joern.joerncli
 
 import io.joern.console.scan.{ScanPass, outputFindings}
-import io.joern.console.{BridgeBase, DefaultArgumentProvider, Query, QueryDatabase}
+import io.joern.console.{BridgeBase, DefaultArgumentProvider, Query, QueryDatabase, QueryJsonSerialization}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.{NoSemantics, Semantics}
 import io.joern.joerncli.JoernScan.getQueriesFromQueryDb
@@ -12,8 +12,6 @@ import io.shiftleft.semanticcpg.language.locationCreator
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
-import org.json4s.native.Serialization
-import org.json4s.{Formats, NoTypeHints}
 import scopt.OptionParser
 
 import java.nio.file.{Files, Path, Paths}
@@ -134,10 +132,9 @@ object JoernScan extends BridgeBase {
 
   private def dumpQueriesAsJson(outFileName: String): Unit = {
     implicit val engineContext: EngineContext = EngineContext(NoSemantics)
-    implicit val formats: AnyRef & Formats    = Serialization.formats(NoTypeHints)
     val queryDb                               = new QueryDatabase(new JoernDefaultArgumentProvider(0))
     val outFile                               = Paths.get(outFileName)
-    Files.writeString(outFile, Serialization.write(queryDb.allQueries))
+    Files.writeString(outFile, QueryJsonSerialization.write(queryDb.allQueries))
     println(s"Queries written to: $outFileName")
   }
 

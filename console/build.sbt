@@ -18,6 +18,7 @@ libraryDependencies ++= Seq(
   "org.zeroturnaround"    % "zt-zip"               % Versions.zeroTurnaround,
   "com.lihaoyi"          %% "os-lib"               % Versions.osLib,
   "com.lihaoyi"          %% "pprint"               % Versions.pPrint,
+  "com.lihaoyi"          %% "upickle"              % Versions.upickle,
   "com.lihaoyi"          %% "cask"                 % Versions.cask,
   "org.apache.commons"    % "commons-lang3"        % Versions.commonsLang,
   "org.scalatest"        %% "scalatest"            % Versions.scalatest % Test

@@ -7,8 +7,6 @@ import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.semanticcpg.utils.FileUtil
-import org.json4s.DefaultFormats
-import org.json4s.native.Serialization.write as jsonWrite
 
 import java.net.URLEncoder
 import java.nio.charset.Charset
@@ -86,16 +84,10 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
 
   /** Write the project's `project.json`, a JSON file that holds meta information.
     */
-  private def writeProjectFile(projectFile: ProjectFile, dirPath: Path): Path = {
-    // TODO proguard and json4s don't play along. We actually want to
-    // serialize the case class ProjectFile here, but it comes out
-    // empty. This code will be moved to `codepropertgraph` at
-    // which point serialization should work.
-    // val content = jsonWrite(projectFile)
-    implicit val formats: DefaultFormats.type = DefaultFormats
-    val PROJECTFILE_NAME                      = "project.json"
-    val content     = jsonWrite(Map("inputPath" -> projectFile.inputPath, "name" -> projectFile.name))
-    val projectPath = dirPath.resolve(PROJECTFILE_NAME)
+  private[workspacehandling] def writeProjectFile(projectFile: ProjectFile, dirPath: Path): Path = {
+    val PROJECTFILE_NAME = "project.json"
+    val content          = upickle.default.write(projectFile)
+    val projectPath      = dirPath.resolve(PROJECTFILE_NAME)
     Files.writeString(projectPath, content)
     projectPath
   }

@@ -6,8 +6,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.testing.MockCpg
 import flatgraph.help.Table.{AvailableWidthProvider, ConstantWidth}
-import org.json4s.*
-import org.json4s.native.JsonMethods.parse
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -117,38 +115,38 @@ class StepsTest extends AnyWordSpec with Matchers {
   "toJson" when {
     "operating on StoredNode" in {
       val json   = cpg.method.nameExact("foo").toJson
-      val parsed = parse(json).children.head // exactly one result for the above query
-      (parsed \ "_label") shouldBe JString("METHOD")
-      (parsed \ "name") shouldBe JString("foo")
+      val parsed = ujson.read(json).arr.head // exactly one result for the above query
+      parsed("_label") shouldBe ujson.Str("METHOD")
+      parsed("name") shouldBe ujson.Str("foo")
 
       // id should be defined, but we don't care what number it is
-      (parsed \ "_id") shouldBe a[JInt]
+      parsed("_id") shouldBe a[ujson.Num]
     }
 
     "operating on NewNode" in {
       val newNode = NewMethod().signature("def methodName: Int").columnNumber(50)
       val json    = Seq(newNode).toJson
 
-      val parsedChildren = parse(json).children
+      val parsedChildren = ujson.read(json).arr
       val parsed         = parsedChildren.head // exactly one result for the above query
-      (parsed \ "signature") shouldBe JString("def methodName: Int")
-      (parsed \ "columnNumber") shouldBe JInt(50)
+      parsed("signature") shouldBe ujson.Str("def methodName: Int")
+      parsed("columnNumber") shouldBe ujson.Num(50)
     }
 
     "operating on Location" in {
       def location = cpg.method.name("foo").location
       location.size shouldBe 1
-      val parsedChildren = parse(location.toJson).children
+      val parsedChildren = ujson.read(location.toJson).arr
       val parsed         = parsedChildren.head // exactly one result for the above query
-      (parsed \ "symbol") shouldBe JString("foo")
-      (parsed \ "className") shouldBe JString("AClass")
-      (parsed \ "filename") shouldBe JString("afile.c")
+      parsed("symbol") shouldBe ujson.Str("foo")
+      parsed("className") shouldBe ujson.Str("AClass")
+      parsed("filename") shouldBe ujson.Str("afile.c")
     }
 
     "operating on primitive" in {
       val json   = cpg.method.name("foo").signature.toJson
-      val parsed = parse(json).children.head // exactly one result for the above query
-      parsed shouldBe JString("asignature")
+      val parsed = ujson.read(json).arr.head // exactly one result for the above query
+      parsed shouldBe ujson.Str("asignature")
     }
 
     "operating on regular stdlib classes" in {

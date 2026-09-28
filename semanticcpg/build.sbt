@@ -5,7 +5,7 @@ dependsOn(Projects.linterRules % ScalafixConfig)
 libraryDependencies ++= Seq(
   "io.shiftleft"           %% "codepropertygraph" % Versions.cpg,
   "com.michaelpollmeier"    % "scala-repl-pp"     % Versions.scalaReplPP cross CrossVersion.full,
-  "org.json4s"             %% "json4s-native"     % Versions.json4s,
+  "com.lihaoyi"            %% "upickle"           % Versions.upickle,
   "org.scala-lang.modules" %% "scala-xml"         % "2.2.0",
   "commons-io"              % "commons-io"        % Versions.commonsIo,
   "org.apache.commons"      % "commons-text"      % Versions.commonsText,
