@@ -32,10 +32,6 @@ jobs:
       - uses: sbt/setup-sbt@1a9b426537af6542b494d3fa96cef6f3e60da4f5 # v1.5.11
       - name: Upgrade all (internal) dependencies
         run: ./updateDependencies.sh --non-interactive
-      # --server --batch: foreground server for one-shot commands; avoids thin-client
-      # cold-start connect failures (https://github.com/sbt/sbt/issues/9417)
-      # stage frontends used by console/joern-cli tests explicitly first (see pr.yml and
-      # https://github.com/sbt/sbt/issues/9816)
       - run: sbt --server --batch "clean ; c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage ; testFull"
       - name: Test distribution
         run: |

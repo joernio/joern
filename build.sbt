@@ -1,6 +1,5 @@
 ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "3.8.3"
-// sbt-native-packager defines ~190 Debian/RPM packaging keys that are unused in a standard build.
 Global / lintUnusedKeysOnLoad := false
 
 val cpgVersion = "1.7.78"
@@ -143,7 +142,7 @@ trapExit := false
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-// publishing info for maven central (SBT 2.x built-in Central Portal publishing)
+// publishing info for maven central
 ThisBuild / publishTo := {
   val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
   if (isSnapshot.value) Some("central-snapshots" at centralSnapshots)

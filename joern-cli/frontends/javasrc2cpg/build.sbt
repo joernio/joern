@@ -55,7 +55,5 @@ packTestCode := Def.uncached {
     jarFile.addFolder(File(testRootPath).toJava)
   }
 }
-// triggeredBy does not fire when `Test / compile` is served from the sbt 2.x task cache,
-// so make test execution depend on the test jars explicitly instead (testLoader is the
-// common choke point of test, testOnly and testQuick in sbt 2.x).
+
 Test / testLoader := Def.uncached((Test / testLoader).dependsOn(packTestCode).value)

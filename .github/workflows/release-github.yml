@@ -63,8 +63,6 @@ jobs:
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
       - name: Build distribution
-        # --server --batch: foreground server for one-shot commands; avoids thin-client
-        # cold-start connect failures (https://github.com/sbt/sbt/issues/9417)
         run: sbt --server --batch "stage ; createDistribution"
       - name: Stage distribution zip
         if: runner.os != 'Windows'

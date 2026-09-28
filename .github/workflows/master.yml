@@ -34,10 +34,6 @@ jobs:
         with:
           toolchain: stable
           components: rust-src
-      # --server --batch: foreground server for one-shot commands; avoids thin-client
-      # cold-start connect failures (https://github.com/sbt/sbt/issues/9417)
-      # stage frontends used by console/joern-cli tests explicitly first (see pr.yml and
-      # https://github.com/sbt/sbt/issues/9816)
       - run: sbt --server --batch "scalafmtCheck ; c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage ; testFull"
       - name: Test distribution
         run: |

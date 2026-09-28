@@ -25,9 +25,3 @@ libraryDependencies ++= Seq(
   "org.apache.commons"    % "commons-lang3"        % Versions.commonsLang,
   "org.scalatest"        %% "scalatest"            % Versions.scalatest % Test
 )
-
-// Note: console tests invoke staged frontend binaries (c2cpg, jssrc2cpg, javasrc2cpg, swiftsrc2cpg
-// under target/universal/stage). We deliberately do NOT wire `stage` into `Test / compile` here:
-// staging pulls in `packagedArtifacts` of the whole dependency cone, whose sbt 2.x task cache
-// content-hashes all test fixtures -- on Windows this fails when a forked test JVM still holds a
-// file lock (https://github.com/sbt/sbt/issues/9816). Stage explicitly before running tests instead.

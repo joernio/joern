@@ -19,7 +19,6 @@ libraryDependencies ++= Seq(
   "org.scalatest"    %% "scalatest"         % Versions.scalatest % Test
 )
 
-// See console/build.sbt for why there is intentionally no `Test / compile` dependsOn `stage` edge.
 Test / fork := false
 
 enablePlugins(JavaAppPackaging, UniversalPlugin)
