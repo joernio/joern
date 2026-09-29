@@ -100,7 +100,9 @@ extractScaladocSources := Def.uncached {
   val semanticcpgSrcRef = (Projects.semanticcpg / Compile / packageSrc).value
   new ZipFile(converter.toPath(semanticcpgSrcRef).toFile).extractAll(inputFilesDir.getAbsolutePath)
 
-  FileUtils.listFilesRecursively(inputFilesDir)
+  sbt.Path
+    .directory(inputFilesDir)
+    .map(_._1)
     .filter(f => f.getName.endsWith(".java") || f.getName.endsWith(".scala"))
 }
 
@@ -121,31 +123,6 @@ Universal / mappings ++= {
   // absolute base: sbt 2 warns about (and mishandles caching of) relative globs
   sbt.Path.directory(baseDirectory.value / "src" / "main" / "resources" / "scripts").map { case (f, name) =>
     conv.toVirtualFile(f.toPath) -> name
-  }
-}
-
-// remove module-info.class from dependency jars - a hacky workaround for a scala3 compiler bug
-// see https://github.com/scala/scala3/issues/20421
-val moduleInfoLocation = "module-info.class"
-Universal / mappings := {
-  val conv      = fileConverter.value
-  val targetDir = target.value
-  val log       = streams.value.log
-  (Universal / mappings).value.map {
-    case (jarRef, location) if location.startsWith("lib") && location.endsWith(".jar") =>
-      val jar = conv.toPath(jarRef).toFile
-      if (FileUtils.jarContainsEntryInRoot(jar, moduleInfoLocation)) {
-        val newJar = targetDir / "without-module-info" / jar.getName
-        IO.copyFile(jar, newJar)
-        FileUtils.removeJarEntryFromRoot(newJar, moduleInfoLocation)
-        log.info(
-          s"workaround for scala completion bug: including a modified version of $jar without the $moduleInfoLocation entry: $newJar"
-        )
-        conv.toVirtualFile(newJar.toPath) -> location
-      } else {
-        jarRef -> location
-      }
-    case other => other
   }
 }
 

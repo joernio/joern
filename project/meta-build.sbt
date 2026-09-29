@@ -1,5 +1,4 @@
-// Require Java 13+ due to FileSystems.newFileSystem(Path) API used in project/FileUtils.scala
-// This method signature was added in JDK13
+// this build requires JDK13+
 initialize := {
   val _ = initialize.value
   val javaVersion = sys.props("java.specification.version").toFloat

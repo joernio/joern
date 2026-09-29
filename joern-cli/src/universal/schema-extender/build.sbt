@@ -1,3 +1,6 @@
+import java.nio.file.Files
+import scala.jdk.CollectionConverters.*
+
 name := "schema-extender"
 
 ThisBuild / scalaVersion := "3.8.3"
@@ -35,20 +38,17 @@ ThisBuild / libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph-domain-classes" % cpgVersion
 )
 
-// Output directory for the generated domain classes. Declared at build level because sbt 2's `toTask`
-// inlines its argument into a separate task definition, which cannot capture task-local vals.
 val codegenOutputRoot = file("target/fg-codegen")
-
 lazy val schema = project
   .in(file("schema"))
   .settings(
-    // sbt 2 derives each project's output directory from its name and rejects overlaps; without an explicit
-    // name the subprojects inherit the build-level `name` above and all three projects collide
     name := "schema",
     generateDomainClasses := Def.uncached {
-      FileUtils.deleteRecursively(codegenOutputRoot)
+      // plain NIO listing on purpose: sbt 2's IO/Path utilities don't reliably observe the files
+      // written by the forked codegen run (virtual io). Also note: we deliberately don't clean
+      // codegenOutputRoot first - deleting the directory has the same visibility problem.
       val invoked = (Compile / runMain).toTask(s" CpgExtCodegen ${codegenOutputRoot.getAbsolutePath}").value
-      FileUtils.listFilesRecursively(codegenOutputRoot)
+      Files.walk(codegenOutputRoot.toPath).iterator.asScala.map(_.toFile).filter(!_.isDirectory).toSeq
     }
   )
 
