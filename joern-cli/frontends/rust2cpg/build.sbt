@@ -1,10 +1,7 @@
 import sbt.BareBuildSyntax.dependsOn
+import sbt.util.CacheImplicits.given
 
-import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.sbt.packager.Keys.stagingDirectory
-
-import scala.sys.process.stringToProcess
-import scala.util.Try
 
 name := "rust2cpg"
 
@@ -14,15 +11,8 @@ dependsOn(
   Projects.linterRules       % ScalafixConfig
 )
 
-lazy val appProperties = settingKey[Config]("App Properties")
-appProperties := {
-  val path            = (Compile / resourceDirectory).value / "application.conf"
-  val applicationConf = ConfigFactory.parseFile(path).resolve()
-  applicationConf
-}
-
 lazy val astGenVersion = settingKey[String]("rust_ast_gen version")
-astGenVersion := appProperties.value.getString("rust2cpg.rust_ast_gen_version")
+astGenVersion := DownloadHelper.appConfigVersion((Compile / resourceDirectory).value, "rust2cpg.rust_ast_gen_version")
 
 libraryDependencies ++= Seq(
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
@@ -42,67 +32,65 @@ lazy val AstgenMacArm   = "rust_ast_gen-macos-arm"
 lazy val astGenDlUrl = settingKey[String]("rust_ast_gen download url")
 astGenDlUrl := s"https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen/v${astGenVersion.value}/"
 
-def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
-  Try("rust_ast_gen --version".!!).toOption.map(_.strip().stripPrefix("rust_ast_gen ")) match {
-    case Some(installedVersion) if installedVersion.nonEmpty =>
-      versionsort.VersionHelper.compare(installedVersion, astGenVersion) >= 0
-    case _ => false
-  }
-}
+/** Probed once per build load (settings are re-evaluated on load/reload), so that the result participates in the
+  * cache key of the cached `astGenDownloadTask` below instead of being a hidden side effect.
+  */
+lazy val compatibleAstGenOnPath = settingKey[Boolean]("compatible rust_ast_gen available on PATH")
+compatibleAstGenOnPath := DownloadHelper.hasCompatibleVersionOnPath(
+  "rust_ast_gen",
+  astGenVersion.value,
+  versionPrefix = "rust_ast_gen "
+)
 
-lazy val astGenBinaryNames = taskKey[Seq[String]]("rust_ast_gen binary names")
+lazy val astGenBinaryNames = settingKey[Seq[String]]("rust_ast_gen binary names")
 astGenBinaryNames := {
-  if (hasCompatibleAstGenVersion(astGenVersion.value)) {
+  if (compatibleAstGenOnPath.value) {
     Seq.empty
   } else {
-    Environment.operatingSystem match {
-      case Environment.OperatingSystemType.Windows =>
-        Environment.architecture match {
-          case Environment.ArchitectureType.X86   => Seq(AstgenWin)
-          case Environment.ArchitectureType.ARMv8 => Seq(AstgenWinArm)
-        }
-      case Environment.OperatingSystemType.Linux =>
-        Environment.architecture match {
-          case Environment.ArchitectureType.X86   => Seq(AstgenLinux)
-          case Environment.ArchitectureType.ARMv8 => Seq(AstgenLinuxArm)
-        }
-      case Environment.OperatingSystemType.Mac =>
-        Environment.architecture match {
-          case Environment.ArchitectureType.X86   => Seq(AstgenMac)
-          case Environment.ArchitectureType.ARMv8 => Seq(AstgenMacArm)
-        }
-      case Environment.OperatingSystemType.Unknown =>
-        Seq(AstgenWin, AstgenWinArm, AstgenLinux, AstgenLinuxArm, AstgenMac, AstgenMacArm)
-    }
+    DownloadHelper.platformBinaries(buildOperatingSystem.value, buildArchitecture.value)(
+      windows = Some(AstgenWin),
+      windowsArm = Some(AstgenWinArm),
+      linux = Some(AstgenLinux),
+      linuxArm = Some(AstgenLinuxArm),
+      mac = Some(AstgenMac),
+      macArm = Some(AstgenMacArm)
+    )
   }
 }
 
-lazy val astGenDlTask = taskKey[Unit](s"Download rust_ast_gen binaries")
-astGenDlTask := Def.uncached {
-  val astGenDir = baseDirectory.value / "bin" / "astgen"
+lazy val astGenDownloadTask = taskKey[Seq[xsbti.HashedVirtualFileRef]]("Download rust_ast_gen binaries")
+astGenDownloadTask := DownloadHelper
+  .downloadArtifacts(target.value / "astgen-download", astGenDlUrl.value, astGenBinaryNames.value, fileConverter.value)
+  .map { vf => Def.declareOutput(vf); vf }
 
-  astGenBinaryNames.value.foreach { fileName =>
-    val file = astGenDir / fileName
-    DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}$fileName", file)
-    // permissions are lost during the download; need to set them manually
-    file.setExecutable(true, false)
-  }
-
-  val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
-  distDir.mkdirs()
-  IO.copyDirectory(astGenDir, distDir, preserveExecutable = true)
+lazy val astGenStageTask = taskKey[Unit]("Stage rust_ast_gen binaries into bin/astgen and the Universal staging directory")
+astGenStageTask := Def.uncached {
+  DownloadHelper.stageArtifacts(
+    astGenDownloadTask.value,
+    fileConverter.value,
+    Seq(baseDirectory.value / "bin" / "astgen", (Universal / stagingDirectory).value / "bin" / "astgen")
+  )
 }
 
-Compile / compile := Def.uncached { ((Compile / compile).dependsOn(astGenDlTask)).value }
+Compile / compile := Def.uncached { ((Compile / compile).dependsOn(astGenStageTask)).value }
 
-lazy val rustNodeSyntaxDlTask = taskKey[Seq[File]]("Download RustNodeSyntax.scala")
-rustNodeSyntaxDlTask := Def.uncached {
-  val file = (Compile / sourceManaged).value / "io" / "joern" / "rust2cpg" / "parser" / "RustNodeSyntax.scala"
-  DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}RustNodeSyntax.scala", file)
-  Seq(file)
+lazy val rustNodeSyntaxDownloadTask = taskKey[Seq[xsbti.HashedVirtualFileRef]]("Download RustNodeSyntax.scala")
+rustNodeSyntaxDownloadTask := DownloadHelper
+  .downloadArtifacts(
+    (Compile / sourceManaged).value / "io" / "joern" / "rust2cpg" / "parser",
+    astGenDlUrl.value,
+    Seq("RustNodeSyntax.scala"),
+    fileConverter.value,
+    executable = false
+  )
+  .map { vf => Def.declareOutput(vf); vf }
+
+lazy val rustNodeSyntaxSourceTask = taskKey[Seq[File]]("RustNodeSyntax.scala as generated source")
+rustNodeSyntaxSourceTask := Def.uncached {
+  rustNodeSyntaxDownloadTask.value.map(ref => fileConverter.value.toPath(ref).toFile)
 }
 
-Compile / sourceGenerators += rustNodeSyntaxDlTask
+Compile / sourceGenerators += rustNodeSyntaxSourceTask
 
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None
