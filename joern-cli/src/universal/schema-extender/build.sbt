@@ -46,9 +46,9 @@ lazy val schema = project
     // name the subprojects inherit the build-level `name` above and all three projects collide
     name := "schema",
     generateDomainClasses := Def.uncached {
-      FileUtils.deleteRecursively(codegenOutputRoot)
+      IO.delete(codegenOutputRoot)
       val invoked = (Compile / runMain).toTask(s" CpgExtCodegen ${codegenOutputRoot.getAbsolutePath}").value
-      FileUtils.listFilesRecursively(codegenOutputRoot)
+      sbt.Path.directory(codegenOutputRoot).map(_._1)
     }
   )
 
