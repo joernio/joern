@@ -206,6 +206,33 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "pattern macro" should {
+    val cpg = code("""
+        |macro_rules! pair { ($a:ident, $b:ident) => { ($a, $b) }; }
+        |fn foo(t: (i32, i32)) {
+        | let pair!(a, b) = t;
+        |}
+        |""".stripMargin)
+
+    "have correct children" in {
+      inside(cpg.method.nameExact("foo").block.astChildren.l) {
+        case (tmp: Local) :: (aLocal: Local) :: (bLocal: Local) :: (tmpAssign: Call) ::
+            (aAssign: Call) :: (bAssign: Call) :: Nil =>
+          tmp.name shouldBe "<tmp>0"
+          tmp.typeFullName shouldBe "(i32, i32)"
+          tmpAssign.code shouldBe "<tmp>0 = t"
+
+          aLocal.name shouldBe "a"
+          aLocal.typeFullName shouldBe "i32"
+          aAssign.code shouldBe "a = <tmp>0.0"
+
+          bLocal.name shouldBe "b"
+          bLocal.typeFullName shouldBe "i32"
+          bAssign.code shouldBe "b = <tmp>0.1"
+      }
+    }
+  }
+
   "a module-level item macro" should {
     val cpg = code("""
         |macro_rules! make_fn { () => { fn generated() -> i32 { 42 } }; }

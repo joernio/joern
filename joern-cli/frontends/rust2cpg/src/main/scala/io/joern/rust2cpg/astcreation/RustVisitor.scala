@@ -362,7 +362,12 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       case pathPat: PathPat               => Nil
       case refPat: RefPat                 => createAssignmentsForRefPattern(refPat, mkSourceAst)
       case orPat: OrPat                   => createAssignmentsForOrPattern(orPat, mkSourceAst)
-      case _                              => notHandledYet(pat) :: Nil
+      case macroPat: MacroPat             =>
+        macroPat.macroCall.macroExpansion match {
+          case Some(pat: Pat) => createAssignmentsForPattern(pat, mkSourceAst, codeOverride)
+          case _              => macroNotExpanded(macroPat.macroCall) :: Nil
+        }
+      case _ => notHandledYet(pat) :: Nil
     }
   }
 
@@ -546,12 +551,16 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         nameBindings ++ patBindings
       }
     case literalPat: LiteralPat => Nil
-    case macroPat: MacroPat     => Nil // TODO: needs to see the macro expansion.
-    case orPat: OrPat           => orPat.pat.headOption.map(collectPatternBindings).getOrElse(Nil)
-    case parenPat: ParenPat     => collectPatternBindings(parenPat.pat)
-    case pathPat: PathPat       => Nil
-    case rangePat: RangePat     => Nil
-    case recordPat: RecordPat   =>
+    case macroPat: MacroPat     =>
+      macroPat.macroCall.macroExpansion match {
+        case Some(pat: Pat) => collectPatternBindings(pat)
+        case _              => Nil
+      }
+    case orPat: OrPat         => orPat.pat.headOption.map(collectPatternBindings).getOrElse(Nil)
+    case parenPat: ParenPat   => collectPatternBindings(parenPat.pat)
+    case pathPat: PathPat     => Nil
+    case rangePat: RangePat   => Nil
+    case recordPat: RecordPat =>
       recordPat.recordPatFieldList.recordPatField.flatMap(field => collectPatternBindings(field.pat))
     case refPat: RefPat                 => collectPatternBindings(refPat.pat)
     case restPat: RestPat               => Nil
