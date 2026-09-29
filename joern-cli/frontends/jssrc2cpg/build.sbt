@@ -1,11 +1,7 @@
 import sbt.BareBuildSyntax.dependsOn
+import sbt.util.CacheImplicits.given
 
-import versionsort.VersionHelper
-import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.sbt.packager.Keys.stagingDirectory
-
-import scala.sys.process.stringToProcess
-import scala.util.Try
 
 name := "jssrc2cpg"
 
@@ -15,15 +11,8 @@ dependsOn(
   Projects.linterRules % ScalafixConfig
 )
 
-lazy val appProperties = settingKey[Config]("App Properties")
-appProperties := {
-  val path            = (Compile / resourceDirectory).value / "application.conf"
-  val applicationConf = ConfigFactory.parseFile(path).resolve()
-  applicationConf
-}
-
 lazy val astGenVersion = settingKey[String]("astgen version")
-astGenVersion := appProperties.value.getString("jssrc2cpg.astgen_version")
+astGenVersion := DownloadHelper.appConfigVersion((Compile / resourceDirectory).value, "jssrc2cpg.astgen_version")
 
 libraryDependencies ++= Seq(
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
@@ -46,48 +35,43 @@ lazy val AstgenMacArmV8   = "astgen-macos-arm"
 lazy val astGenDlUrl = settingKey[String]("astgen download url")
 astGenDlUrl := s"https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen/v${astGenVersion.value}/"
 
-def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
-  Try("astgen --version".!!).toOption.map(_.strip()) match {
-    case Some(installedVersion) if installedVersion != "unknown" =>
-      VersionHelper.compare(installedVersion, astGenVersion) >= 0
-    case _ => false
-  }
-}
+/** Probed once per build load (settings are re-evaluated on load/reload), so that the result participates in the
+  * cache key of the cached `astGenDownloadTask` below instead of being a hidden side effect.
+  */
+lazy val compatibleAstGenOnPath = settingKey[Boolean]("compatible astgen available on PATH")
+compatibleAstGenOnPath := DownloadHelper.hasCompatibleVersionOnPath("astgen", astGenVersion.value)
 
-lazy val astGenBinaryNames = taskKey[Seq[String]]("astgen binary names")
+lazy val astGenBinaryNames = settingKey[Seq[String]]("astgen binary names")
 astGenBinaryNames := {
-  if (hasCompatibleAstGenVersion(astGenVersion.value)) {
+  if (compatibleAstGenOnPath.value) {
     Seq.empty
   } else {
-    (Environment.operatingSystem, Environment.architecture) match {
-      case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.X86)   => Seq(AstgenWinAmd64)
-      case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.ARMv8) => Seq(AstgenWinArmV8)
-      case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.X86)     => Seq(AstgenLinuxAmd64)
-      case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.ARMv8)   => Seq(AstgenLinuxArmV8)
-      case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.X86)       => Seq(AstgenMacAmd64)
-      case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.ARMv8)     => Seq(AstgenMacArmV8)
-      case _ => Seq(AstgenWinAmd64, AstgenWinArmV8, AstgenLinuxAmd64, AstgenLinuxArmV8, AstgenMacAmd64, AstgenMacArmV8)
-    }
+    DownloadHelper.platformBinaries(buildOperatingSystem.value, buildArchitecture.value)(
+      windows = Some(AstgenWinAmd64),
+      windowsArm = Some(AstgenWinArmV8),
+      linux = Some(AstgenLinuxAmd64),
+      linuxArm = Some(AstgenLinuxArmV8),
+      mac = Some(AstgenMacAmd64),
+      macArm = Some(AstgenMacArmV8)
+    )
   }
 }
 
-lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries")
-astGenDlTask := Def.uncached {
-  val astGenDir = baseDirectory.value / "bin" / "astgen"
+lazy val astGenDownloadTask = taskKey[Seq[xsbti.HashedVirtualFileRef]]("Download astgen binaries")
+astGenDownloadTask := DownloadHelper
+  .downloadArtifacts(target.value / "astgen-download", astGenDlUrl.value, astGenBinaryNames.value, fileConverter.value)
+  .map { vf => Def.declareOutput(vf); vf }
 
-  astGenBinaryNames.value.foreach { fileName =>
-    val file = astGenDir / fileName
-    DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}$fileName", file)
-    // permissions are lost during the download; need to set them manually
-    file.setExecutable(true, false)
-  }
-
-  val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
-  distDir.mkdirs()
-  IO.copyDirectory(astGenDir, distDir, preserveExecutable = true)
+lazy val astGenStageTask = taskKey[Unit]("Stage astgen binaries into bin/astgen and the Universal staging directory")
+astGenStageTask := Def.uncached {
+  DownloadHelper.stageArtifacts(
+    astGenDownloadTask.value,
+    fileConverter.value,
+    Seq(baseDirectory.value / "bin" / "astgen", (Universal / stagingDirectory).value / "bin" / "astgen")
+  )
 }
 
-Compile / compile := Def.uncached { ((Compile / compile).dependsOn(astGenDlTask)).value }
+Compile / compile := Def.uncached { ((Compile / compile).dependsOn(astGenStageTask)).value }
 
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None

@@ -1,6 +1,6 @@
 import sbt.BareBuildSyntax.dependsOn
+import sbt.util.CacheImplicits.given
 
-import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.sbt.packager.Keys.stagingDirectory
 
 name := "abap2cpg"
@@ -19,15 +19,8 @@ libraryDependencies ++= Seq(
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
-lazy val appProperties = settingKey[Config]("App Properties")
-appProperties := {
-  val path            = (Compile / resourceDirectory).value / "application.conf"
-  val applicationConf = ConfigFactory.parseFile(path).resolve()
-  applicationConf
-}
-
 lazy val abapgenVersion = settingKey[String]("abapgen version")
-abapgenVersion := appProperties.value.getString("abap2cpg.abapgen_version")
+abapgenVersion := DownloadHelper.appConfigVersion((Compile / resourceDirectory).value, "abap2cpg.abapgen_version")
 
 // Released binary names (produced by the abap-astgen-release.yml workflow in
 // joernio/astgen-monorepo after pkg output is renamed).
@@ -41,36 +34,31 @@ lazy val AbapgenMacArm   = "abapgen-macos-arm"
 lazy val abapgenDlUrl = settingKey[String]("abapgen download url")
 abapgenDlUrl := s"https://github.com/joernio/astgen-monorepo/releases/download/abap-astgen/v${abapgenVersion.value}/"
 
-lazy val abapgenBinaryNames = taskKey[Seq[String]]("abapgen binary names for current platform")
-abapgenBinaryNames := {
-  (Environment.operatingSystem, Environment.architecture) match {
-    case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.X86)   => Seq(AbapgenWinX86)
-    case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.ARMv8) => Seq(AbapgenWinArm)
-    case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.X86)     => Seq(AbapgenLinuxX86)
-    case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.ARMv8)   => Seq(AbapgenLinuxArm)
-    case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.X86)       => Seq(AbapgenMacX86)
-    case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.ARMv8)     => Seq(AbapgenMacArm)
-    case _ => Seq(AbapgenWinX86, AbapgenWinArm, AbapgenLinuxX86, AbapgenLinuxArm, AbapgenMacX86, AbapgenMacArm)
-  }
+lazy val abapgenBinaryNames = settingKey[Seq[String]]("abapgen binary names for current platform")
+abapgenBinaryNames := DownloadHelper.platformBinaries(buildOperatingSystem.value, buildArchitecture.value)(
+  windows = Some(AbapgenWinX86),
+  windowsArm = Some(AbapgenWinArm),
+  linux = Some(AbapgenLinuxX86),
+  linuxArm = Some(AbapgenLinuxArm),
+  mac = Some(AbapgenMacX86),
+  macArm = Some(AbapgenMacArm)
+)
+
+lazy val abapgenDownloadTask = taskKey[Seq[xsbti.HashedVirtualFileRef]]("Download abapgen binaries from joernio/astgen-monorepo release")
+abapgenDownloadTask := DownloadHelper
+  .downloadArtifacts(target.value / "abapgen-download", abapgenDlUrl.value, abapgenBinaryNames.value, fileConverter.value)
+  .map { vf => Def.declareOutput(vf); vf }
+
+lazy val abapgenStageTask = taskKey[Unit]("Stage abapgen binaries into bin/astgen and the Universal staging directory")
+abapgenStageTask := Def.uncached {
+  DownloadHelper.stageArtifacts(
+    abapgenDownloadTask.value,
+    fileConverter.value,
+    Seq(baseDirectory.value / "bin" / "astgen", (Universal / stagingDirectory).value / "bin" / "astgen")
+  )
 }
 
-lazy val abapgenDlTask = taskKey[Unit]("Download abapgen binaries from joernio/astgen-monorepo release")
-abapgenDlTask := Def.uncached {
-  val astGenDir = baseDirectory.value / "bin" / "astgen"
-
-  abapgenBinaryNames.value.foreach { fileName =>
-    val file = astGenDir / fileName
-    DownloadHelper.ensureIsAvailable(s"${abapgenDlUrl.value}$fileName", file)
-    // permissions are lost during the download; need to set them manually
-    file.setExecutable(true, false)
-  }
-
-  val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
-  distDir.mkdirs()
-  IO.copyDirectory(astGenDir, distDir, preserveExecutable = true)
-}
-
-Compile / compile := Def.uncached { ((Compile / compile).dependsOn(abapgenDlTask)).value }
+Compile / compile := Def.uncached { ((Compile / compile).dependsOn(abapgenStageTask)).value }
 
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None
