@@ -80,16 +80,9 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
             init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
             init.typeFullName shouldBe "()"
 
-            // TODO: pending change to remove `&` to <init> calls.
-            inside(init.argument.sortBy(_.argumentIndex).l) { case (addressOf: Call) :: Nil =>
-              addressOf.name shouldBe Operators.addressOf
-              addressOf.code shouldBe "&<tmp>0"
-              addressOf.typeFullName shouldBe "&rust2cpgtest::Color"
-
-              inside(addressOf.argument(1)) { case tmp: Identifier =>
-                tmp.name shouldBe "<tmp>0"
-                tmp.typeFullName shouldBe "rust2cpgtest::Color"
-              }
+            inside(init.argument.sortBy(_.argumentIndex).l) { case (tmp: Identifier) :: Nil =>
+              tmp.name shouldBe "<tmp>0"
+              tmp.typeFullName shouldBe "rust2cpgtest::Color"
             }
 
             ret.name shouldBe "<tmp>0"
@@ -265,8 +258,7 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct field assignments" in {
       inside(cpg.typeDecl.nameExact("Named").method.body.astChildren.isCall.l) { case assign :: Nil =>
-        // TODO: pending change to self.name = name, once we remove `&` to <init> calls.
-        assign.code shouldBe "(*self).name = name"
+        assign.code shouldBe "self.name = name"
       }
     }
 
@@ -274,10 +266,9 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.call.nameExact("<init>").l) { case init :: Nil =>
         init.methodFullName shouldBe "rust2cpgtest::Color::Named::<init>"
 
-        // TODO: pending change to remove `&` to <init> calls.
-        inside(init.argument(0)) { case addressOf: Call =>
-          addressOf.code shouldBe "&<tmp>0"
-          addressOf.typeFullName shouldBe "&rust2cpgtest::Color"
+        inside(init.argument(0)) { case tmp: Identifier =>
+          tmp.name shouldBe "<tmp>0"
+          tmp.typeFullName shouldBe "rust2cpgtest::Color"
         }
 
         inside(init.argument(1)) { case lit: Literal =>
@@ -347,9 +338,8 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
     "have correct field assignments" in {
       inside(cpg.typeDecl.nameExact("Rgb").method.body.astChildren.isCall.isAssignment.l) {
         case assignZero :: assignOne :: Nil =>
-          // TODO: pending change to self.0 = 0, once we remove `&` to <init> calls.
-          assignZero.code shouldBe "(*self).0 = 0"
-          assignOne.code shouldBe "(*self).1 = 1"
+          assignZero.code shouldBe "self.0 = 0"
+          assignOne.code shouldBe "self.1 = 1"
       }
     }
 
@@ -379,13 +369,12 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
         initCall.name shouldBe "<init>"
         initCall.methodFullName shouldBe "rust2cpgtest::Color::Rgb::<init>"
 
-        // TODO: pending change to <init>(tmp0, 0, 1), once we remove `&` to <init> calls.
-        initCall.code shouldBe "Rgb::<init>(&<tmp>0, 0, 1)"
+        initCall.code shouldBe "Rgb::<init>(<tmp>0, 0, 1)"
         inside(initCall.argument.sortBy(_.argumentIndex).l) {
-          case (addressOf: Call) :: (zero: Identifier) :: (one: Identifier) :: Nil =>
-            addressOf.code shouldBe "&<tmp>0"
-            addressOf.argumentIndex shouldBe 0
-            addressOf.typeFullName shouldBe "&rust2cpgtest::Color::Rgb"
+          case (tmp: Identifier) :: (zero: Identifier) :: (one: Identifier) :: Nil =>
+            tmp.name shouldBe "<tmp>0"
+            tmp.argumentIndex shouldBe 0
+            tmp.typeFullName shouldBe "rust2cpgtest::Color::Rgb"
 
             zero.name shouldBe "0"
             zero.typeFullName shouldBe "i32"
@@ -438,10 +427,9 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
         init.methodFullName shouldBe "rust2cpgtest::Foo<T>::Bar::<init>"
         init.code shouldBe "Foo::Bar { x: 1u8 }"
 
-        // TODO: pending change to remove `&` to <init> calls.
-        inside(init.argument(0)) { case addressOf: Call =>
-          addressOf.code shouldBe "&<tmp>0"
-          addressOf.typeFullName shouldBe "&rust2cpgtest::Foo<u8>"
+        inside(init.argument(0)) { case tmp: Identifier =>
+          tmp.name shouldBe "<tmp>0"
+          tmp.typeFullName shouldBe "rust2cpgtest::Foo<u8>"
         }
 
         inside(init.argument(1)) { case lit: Literal =>

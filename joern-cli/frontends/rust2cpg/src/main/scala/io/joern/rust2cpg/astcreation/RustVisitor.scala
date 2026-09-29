@@ -1308,7 +1308,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // BLOCK
   //   LOCAL tmp
   //   tmp = <operator>.alloc
-  //   Foo::<init>(&tmp, x:1, y:2)
+  //   Foo::<init>(tmp, x:1, y:2)
   //   tmp
   private def recordCtorCallAst(recordExpr: RecordExpr): Ast = {
     val structType       = typeFullNameForExpr(recordExpr)
@@ -1326,18 +1326,13 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         Some("()")
       )
 
-      val addressOfTmp = {
-        val addressOf = operatorCallNode(recordExpr, s"&$tmpName", Operators.addressOf, Some(s"&$structType"))
-        callAst(addressOf, Seq(mkTmp(recordExpr)))
-      }
-
       val fieldArgs = recordExpr.recordExprFieldList.recordExprField.map { field =>
         val fieldName = field.nameRef.orElse(viewExprAsNameRef(field.expr)).map(code)
         val argAst    = visitExpr(field.expr)
         argAst.root.foreach { case expr: ExpressionNew => expr.argumentName(fieldName) }
         argAst
       }
-      callAst(initCall, fieldArgs, base = Some(addressOfTmp)) :: Nil
+      callAst(initCall, fieldArgs, base = Some(mkTmp(recordExpr))) :: Nil
     }
   }
 
@@ -1595,7 +1590,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
   // `struct Foo;` becomes:
   // TYPE_DECL Foo
-  //   CONSTRUCTOR <init>(&self: Foo) -> () {}
+  //   CONSTRUCTOR <init>(self: Foo) -> () {}
   private def lowerUnitStruct(struct: Struct): Ast = {
     val implementedTraits = struct.implementedTraits.getOrElse(Nil)
     val structFullName    = typeFullNameForStruct(struct)
@@ -1614,8 +1609,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // TYPE_DECL Foo
   //   MEMBER x: T
   //   ...
-  //   CONSTRUCTOR <init>(&self: Foo, x: T, ...) -> () {
-  //     (*self).x = x
+  //   CONSTRUCTOR <init>(self: Foo, x: T, ...) -> () {
+  //     self.x = x
   //     ...
   //   }
   private def lowerRecordStruct(struct: Struct, recordFieldList: RecordFieldList): Ast = {
@@ -1639,15 +1634,15 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //    MEMBER 0: T1
   //    MEMBER 1: T2
   //    ...
-  //    CONSTRUCTOR <init>(&self: Foo, 0: T1, 1: T2, ...)` -> () {
-  //      (*self).0 = 0
-  //      (*self).1 = 1
+  //    CONSTRUCTOR <init>(self: Foo, 0: T1, 1: T2, ...)` -> () {
+  //      self.0 = 0
+  //      self.1 = 1
   //      ...
   //    }
   //  METHOD Foo(0: T1, 1: T2, ...) -> Foo {
   //    LOCAL tmp
   //    tmp = <operator>.alloc
-  //    Foo::<init>(&tmp, 0, 1)
+  //    Foo::<init>(tmp, 0, 1)
   //    return tmp
   //  }
   // NB: tuple struct literals, e.g. `Foo(1, 2)`, are regular calls, hence the extra method.
@@ -1712,10 +1707,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       callAst(assignmentNode(node, s"$tmpName = ${Operators.alloc}"), Seq(tmpIdentAst, Ast(allocCall)))
     }
 
-    // Foo::<init>(&tmp, 0, 1, ...)
+    // Foo::<init>(tmp, 0, 1, ...)
     val initCallAst = {
       val initName = Defines.ConstructorMethodName
-      val initCode = s"$fnName::$initName(${(s"&$tmpName" +: fields.map(_.name)).mkString(", ")})"
+      val initCode = s"$fnName::$initName(${(tmpName +: fields.map(_.name)).mkString(", ")})"
       val initCall = callNode(
         node = node,
         code = initCode,
@@ -1725,16 +1720,12 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         signature = None,
         typeFullName = Some("()")
       )
-      val addressOfTmp = {
-        val addressOf   = operatorCallNode(node, s"&$tmpName", Operators.addressOf, Some(s"&${typeDecl.fullName}"))
-        val tmpIdentAst = Ast(identifierNode(node, tmpName, tmpName, typeDecl.fullName))
-        callAst(addressOf, Seq(tmpIdentAst))
-      }
-      val fieldArgs = fields.map { fieldData =>
+      val tmpIdentAst = Ast(identifierNode(node, tmpName, tmpName, typeDecl.fullName))
+      val fieldArgs   = fields.map { fieldData =>
         Ast(identifierNode(fieldData.node, fieldData.name, fieldData.name, fieldData.typ))
       }
 
-      callAst(initCall, fieldArgs, base = Some(addressOfTmp))
+      callAst(initCall, fieldArgs, base = Some(tmpIdentAst))
     }
 
     // return tmp
@@ -1789,23 +1780,19 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       )
     }
 
-    // (*self).x = x; etc.
+    // self.x = x; etc.
     val fieldAssignAsts = fields.zip(fieldParams).map { case (fieldData, fieldParam) =>
-      val selfAst   = identifierAst(fieldData.node, selfName, selfName, s"&${typeDecl.fullName}")
-      val derefSelf = callAst(
-        operatorCallNode(fieldData.node, s"*$selfName", Operators.indirection, Some(typeDecl.fullName)),
-        Seq(selfAst)
-      )
-      val lhs = fieldAccessAst(
+      val selfAst = identifierAst(fieldData.node, selfName, selfName, typeDecl.fullName)
+      val lhs     = fieldAccessAst(
         fieldData.node,
         fieldData.node,
-        derefSelf,
-        s"(*$selfName).${fieldData.name}",
+        selfAst,
+        s"$selfName.${fieldData.name}",
         fieldData.name,
         fieldData.typ
       )
       val rhs = identifierAst(fieldData.node, fieldData.name, fieldData.name, fieldData.typ)
-      callAst(assignmentNode(fieldData.node, s"(*$selfName).${fieldData.name} = ${fieldData.name}"), Seq(lhs, rhs))
+      callAst(assignmentNode(fieldData.node, s"$selfName.${fieldData.name} = ${fieldData.name}"), Seq(lhs, rhs))
     }
 
     val paramAsts = (selfParam +: fieldParams).map(Ast(_))
@@ -2147,7 +2134,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // BLOCK
   //   LOCAL tmp
   //   tmp = <operator>.alloc
-  //   Foo::<init>(&tmp)
+  //   Foo::<init>(tmp)
   //   tmp
   private def unitCtorCallAst(pathExpr: PathExpr, ctorTypeFullName: String): Ast = {
     val typeFullName = typeFullNameForExpr(pathExpr)
@@ -2163,11 +2150,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         None,
         Some("()")
       )
-      val addressOfTmp = {
-        val addressOf = operatorCallNode(pathExpr, s"&$tmpName", Operators.addressOf, Some(s"&$typeFullName"))
-        callAst(addressOf, Seq(mkTmp(pathExpr)))
-      }
-      callAst(initCall, Nil, base = Some(addressOfTmp)) :: Nil
+      callAst(initCall, Nil, base = Some(mkTmp(pathExpr))) :: Nil
     }
   }
 }

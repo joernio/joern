@@ -63,16 +63,16 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have one field assignment per parameter" in {
       inside(cpg.typeDecl.nameExact("Foo").method.body.astChildren.isCall.l) { case assignX :: assignY :: Nil =>
-        assignX.code shouldBe "(*self).x = x"
+        assignX.code shouldBe "self.x = x"
         inside(assignX.argument(1)) { case fieldAccess: Call =>
-          fieldAccess.code shouldBe "(*self).x"
+          fieldAccess.code shouldBe "self.x"
           fieldAccess.methodFullName shouldBe Operators.fieldAccess
         }
         inside(assignX.argument(2)) { case ident: Identifier =>
           ident.name shouldBe "x"
           ident.typeFullName shouldBe "i32"
         }
-        assignY.code shouldBe "(*self).y = y"
+        assignY.code shouldBe "self.y = y"
       }
     }
   }
@@ -131,16 +131,16 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have an assignment for each parameter" in {
       inside(cpg.typeDecl.nameExact("Pair").method.body.astChildren.isCall.l) { case assign0 :: assign1 :: Nil =>
-        assign0.code shouldBe "(*self).0 = 0"
+        assign0.code shouldBe "self.0 = 0"
         inside(assign0.argument(1)) { case fieldAccess: Call =>
-          fieldAccess.code shouldBe "(*self).0"
+          fieldAccess.code shouldBe "self.0"
           fieldAccess.methodFullName shouldBe Operators.fieldAccess
         }
         inside(assign0.argument(2)) { case ident: Identifier =>
           ident.name shouldBe "0"
           ident.typeFullName shouldBe "i32"
         }
-        assign1.code shouldBe "(*self).1 = 1"
+        assign1.code shouldBe "self.1 = 1"
       }
     }
 
@@ -171,13 +171,13 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
         allocAssign.code shouldBe s"<tmp>0 = ${Operators.alloc}"
         initCall.name shouldBe "<init>"
         initCall.methodFullName shouldBe "rust2cpgtest::Pair::<init>"
-        initCall.code shouldBe "Pair::<init>(&<tmp>0, 0, 1)"
+        initCall.code shouldBe "Pair::<init>(<tmp>0, 0, 1)"
 
         inside(initCall.argument.sortBy(_.argumentIndex).l) {
-          case (addressOf: Call) :: (arg0: Identifier) :: (arg1: Identifier) :: Nil =>
-            addressOf.code shouldBe "&<tmp>0"
-            addressOf.argumentIndex shouldBe 0
-            addressOf.typeFullName shouldBe "&rust2cpgtest::Pair"
+          case (tmp: Identifier) :: (arg0: Identifier) :: (arg1: Identifier) :: Nil =>
+            tmp.name shouldBe "<tmp>0"
+            tmp.argumentIndex shouldBe 0
+            tmp.typeFullName shouldBe "rust2cpgtest::Pair"
 
             arg0.name shouldBe "0"
             arg0.typeFullName shouldBe "i32"
@@ -316,9 +316,9 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.call.nameExact("<init>").l) { case init :: Nil =>
         init.methodFullName shouldBe "rust2cpgtest::outer::Inner::<init>"
 
-        inside(init.argument(0)) { case addressOf: Call =>
-          addressOf.code shouldBe "&<tmp>0"
-          addressOf.typeFullName shouldBe "&rust2cpgtest::outer::Inner"
+        inside(init.argument(0)) { case tmp: Identifier =>
+          tmp.name shouldBe "<tmp>0"
+          tmp.typeFullName shouldBe "rust2cpgtest::outer::Inner"
         }
 
         inside(init.argument(1)) { case lit: Literal =>
@@ -476,15 +476,9 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         init.typeFullName shouldBe "()"
 
-        inside(init.argument(0)) { case addressOf: Call =>
-          addressOf.name shouldBe Operators.addressOf
-          addressOf.code shouldBe "&<tmp>0"
-          addressOf.typeFullName shouldBe "&rust2cpgtest::Foo"
-
-          inside(addressOf.argument(1)) { case tmp: Identifier =>
-            tmp.name shouldBe "<tmp>0"
-            tmp.typeFullName shouldBe "rust2cpgtest::Foo"
-          }
+        inside(init.argument(0)) { case tmp: Identifier =>
+          tmp.name shouldBe "<tmp>0"
+          tmp.typeFullName shouldBe "rust2cpgtest::Foo"
         }
 
         inside(init.argument(1)) { case lit: Literal =>
@@ -544,10 +538,9 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.call.nameExact("<init>").l) { case init :: Nil =>
         init.methodFullName shouldBe "rust2cpgtest::Bar::<init>"
 
-        inside(init.argument.l.sortBy(_.argumentIndex)) { case (addressOf: Call) :: Nil =>
-          addressOf.name shouldBe Operators.addressOf
-          addressOf.code shouldBe "&<tmp>0"
-          addressOf.typeFullName shouldBe "&rust2cpgtest::Bar"
+        inside(init.argument.l.sortBy(_.argumentIndex)) { case (tmp: Identifier) :: Nil =>
+          tmp.name shouldBe "<tmp>0"
+          tmp.typeFullName shouldBe "rust2cpgtest::Bar"
         }
       }
     }
@@ -614,15 +607,9 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
         init.methodFullName shouldBe "rust2cpgtest::Foo<T>::<init>"
         init.code shouldBe "Foo { x: 1u8 }"
 
-        // TODO: pending change to remove `&` to <init> calls.
-        inside(init.argument(0)) { case addressOf: Call =>
-          addressOf.code shouldBe "&<tmp>0"
-          addressOf.typeFullName shouldBe "&rust2cpgtest::Foo<u8>"
-
-          inside(addressOf.argument(1)) { case tmp: Identifier =>
-            tmp.name shouldBe "<tmp>0"
-            tmp.typeFullName shouldBe "rust2cpgtest::Foo<u8>"
-          }
+        inside(init.argument(0)) { case tmp: Identifier =>
+          tmp.name shouldBe "<tmp>0"
+          tmp.typeFullName shouldBe "rust2cpgtest::Foo<u8>"
         }
 
         inside(init.argument(1)) { case lit: Literal =>
@@ -647,10 +634,9 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
         init.methodFullName shouldBe "rust2cpgtest::Foo::<init>"
         init.code shouldBe "Alias { x: 1 }"
 
-        // TODO: pending change to remove `&` to <init> calls.
-        inside(init.argument(0)) { case addressOf: Call =>
-          addressOf.code shouldBe "&<tmp>0"
-          addressOf.typeFullName shouldBe "&rust2cpgtest::Foo"
+        inside(init.argument(0)) { case tmp: Identifier =>
+          tmp.name shouldBe "<tmp>0"
+          tmp.typeFullName shouldBe "rust2cpgtest::Foo"
         }
 
         inside(init.argument(1)) { case lit: Literal =>
@@ -697,16 +683,9 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
             init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
             init.typeFullName shouldBe "()"
 
-            // TODO: pending change to remove `&` to <init> calls.
-            inside(init.argument.sortBy(_.argumentIndex).l) { case (addressOf: Call) :: Nil =>
-              addressOf.name shouldBe Operators.addressOf
-              addressOf.code shouldBe "&<tmp>0"
-              addressOf.typeFullName shouldBe "&rust2cpgtest::Foo"
-
-              inside(addressOf.argument(1)) { case tmp: Identifier =>
-                tmp.name shouldBe "<tmp>0"
-                tmp.typeFullName shouldBe "rust2cpgtest::Foo"
-              }
+            inside(init.argument.sortBy(_.argumentIndex).l) { case (tmp: Identifier) :: Nil =>
+              tmp.name shouldBe "<tmp>0"
+              tmp.typeFullName shouldBe "rust2cpgtest::Foo"
             }
 
             ret.name shouldBe "<tmp>0"
@@ -753,16 +732,9 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
             init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
             init.typeFullName shouldBe "()"
 
-            // TODO: pending change to remove `&` to <init> calls.
-            inside(init.argument.sortBy(_.argumentIndex).l) { case (addressOf: Call) :: Nil =>
-              addressOf.name shouldBe Operators.addressOf
-              addressOf.code shouldBe "&<tmp>0"
-              addressOf.typeFullName shouldBe "&rust2cpgtest::m::Foo"
-
-              inside(addressOf.argument(1)) { case tmp: Identifier =>
-                tmp.name shouldBe "<tmp>0"
-                tmp.typeFullName shouldBe "rust2cpgtest::m::Foo"
-              }
+            inside(init.argument.sortBy(_.argumentIndex).l) { case (tmp: Identifier) :: Nil =>
+              tmp.name shouldBe "<tmp>0"
+              tmp.typeFullName shouldBe "rust2cpgtest::m::Foo"
             }
 
             ret.name shouldBe "<tmp>0"
@@ -809,16 +781,9 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
             init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
             init.typeFullName shouldBe "()"
 
-            // TODO: pending change to remove `&` to <init> calls.
-            inside(init.argument.sortBy(_.argumentIndex).l) { case (addressOf: Call) :: Nil =>
-              addressOf.name shouldBe Operators.addressOf
-              addressOf.code shouldBe "&<tmp>0"
-              addressOf.typeFullName shouldBe "&rust2cpgtest::Foo<3>"
-
-              inside(addressOf.argument(1)) { case tmp: Identifier =>
-                tmp.name shouldBe "<tmp>0"
-                tmp.typeFullName shouldBe "rust2cpgtest::Foo<3>"
-              }
+            inside(init.argument.sortBy(_.argumentIndex).l) { case (tmp: Identifier) :: Nil =>
+              tmp.name shouldBe "<tmp>0"
+              tmp.typeFullName shouldBe "rust2cpgtest::Foo<3>"
             }
 
             ret.name shouldBe "<tmp>0"
@@ -925,16 +890,9 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
             init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
             init.typeFullName shouldBe "()"
 
-            // TODO: pending change to remove `&` to <init> calls.
-            inside(init.argument.sortBy(_.argumentIndex).l) { case (addressOf: Call) :: Nil =>
-              addressOf.name shouldBe Operators.addressOf
-              addressOf.code shouldBe "&<tmp>0"
-              addressOf.typeFullName shouldBe "&rust2cpgtest::Foo"
-
-              inside(addressOf.argument(1)) { case tmp: Identifier =>
-                tmp.name shouldBe "<tmp>0"
-                tmp.typeFullName shouldBe "rust2cpgtest::Foo"
-              }
+            inside(init.argument.sortBy(_.argumentIndex).l) { case (tmp: Identifier) :: Nil =>
+              tmp.name shouldBe "<tmp>0"
+              tmp.typeFullName shouldBe "rust2cpgtest::Foo"
             }
 
             ret.name shouldBe "<tmp>0"
