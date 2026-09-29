@@ -180,6 +180,22 @@ class AnnotationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "closure with attribute" should {
+    val cpg = code("""
+        |fn foo() {
+        |  let f = #[inline] |x: i32| x;
+        |}
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(cpg.method.nameExact("<lambda>0").annotation.l) { case attr :: Nil =>
+        attr.name shouldBe "inline"
+        attr.fullName shouldBe "inline"
+        attr.code shouldBe "#[inline]"
+      }
+    }
+  }
+
   "inherent method with attribute" should {
     val cpg = code("""
         |struct Foo;
@@ -284,6 +300,23 @@ class AnnotationTests extends Rust2CpgSuite(noSysRoot = true) {
         attr.name shouldBe "must_use"
         attr.fullName shouldBe "must_use"
         attr.code shouldBe "#[must_use]"
+      }
+    }
+  }
+
+  "const in a trait with attribute" should {
+    val cpg = code("""
+        |trait Foo {
+        |  #[doc(hidden)]
+        |  const MAX: usize;
+        |}
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(cpg.typeDecl.nameExact("Foo").member.nameExact("MAX").annotation.l) { case attr :: Nil =>
+        attr.name shouldBe "doc"
+        attr.fullName shouldBe "doc"
+        attr.code shouldBe "#[doc(hidden)]"
       }
     }
   }
