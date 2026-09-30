@@ -5,7 +5,7 @@ bazel_dep(name = "codepropertygraph")
 
 CODEPROPERTYGRAPH_VERSION = "1735c289d7258d4ef02f6c39ce635581cca4f330"
 
-BAZEL_TOOLING_VERSION = "632e1d248861452a984e81a2aebab8bbb53312d4"
+BAZEL_TOOLING_VERSION = "e8b1dd879f1962a2742add5928e24010409419d0"
 
 git_override(
     module_name = "codepropertygraph",
