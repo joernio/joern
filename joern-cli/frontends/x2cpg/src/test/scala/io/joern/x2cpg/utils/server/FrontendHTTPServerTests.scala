@@ -12,6 +12,10 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
 
+  private val WaitSeconds = 60L
+
+  private lazy val httpClient = HttpClient.newHttpClient()
+
   /** Run `body` against a freshly-started server with the given handler, ensuring the server is stopped afterwards. */
   private def withServer[T](handler: Array[String] => Unit)(body: (FrontendHTTPServer, Int) => T): T = {
     val server = new FrontendHTTPServer(FrontendHTTPServer.singleThreadExecutor(), handler)
@@ -33,7 +37,7 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
       case other  => builder.method(other, BodyPublishers.ofString(body)).build()
     }
 
-    HttpClient.newHttpClient().send(req, BodyHandlers.ofString())
+    httpClient.send(req, BodyHandlers.ofString())
   }
 
   "FrontendHTTPServer.startup" should {
@@ -88,7 +92,7 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
           })
         }
         starter.countDown()
-        done.await(10, TimeUnit.SECONDS) shouldBe true
+        done.await(WaitSeconds, TimeUnit.SECONDS) shouldBe true
       } finally pool.shutdownNow()
     }
 
@@ -113,7 +117,7 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
             catch { case _: Throwable => () }
           }
         })
-        handlerEntered.await(10, TimeUnit.SECONDS) shouldBe true
+        handlerEntered.await(WaitSeconds, TimeUnit.SECONDS) shouldBe true
 
         val stopFuture = stopper.submit(new Runnable {
           override def run(): Unit = server.stop()
@@ -122,13 +126,13 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
         // so by the time we observe it the stopper is parked exactly where the would-be deadlock would occur.
         // Releasing the handler now forces it through its `runningRequests -= 1` finally block, which must not be
         // blocked by the monitor stop() would have held in a buggy implementation.
-        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(WaitSeconds)
         while (!executor.isShutdown && System.nanoTime() < deadline) {
           Thread.`yield`()
         }
         executor.isShutdown shouldBe true
         releaseHandler.countDown()
-        stopFuture.get(15, TimeUnit.SECONDS)
+        stopFuture.get(WaitSeconds, TimeUnit.SECONDS)
       } finally {
         releaseHandler.countDown()
         sender.shutdownNow()
@@ -145,13 +149,13 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
       val timer = Executors.newSingleThreadExecutor()
       try {
         val started = System.nanoTime()
-        val f       = timer.submit(new Runnable {
+        val future  = timer.submit(new Runnable {
           override def run(): Unit = server.stopServerAfterTimeout(1)
         })
-        f.get(10, TimeUnit.SECONDS)
+        future.get(WaitSeconds, TimeUnit.SECONDS)
         val elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started)
         // Lower bound is intentionally below the 1s timeout to tolerate scheduler jitter on slow CI runners
-        // (some JVMs may return from wait() a few ms early). The upper bound is enforced by `f.get(10s)`.
+        // (some JVMs may return from wait() a few ms early). The upper bound is enforced by `future.get(WaitSeconds)`.
         elapsedMs should be >= 800L
       } finally timer.shutdownNow()
     }
@@ -161,12 +165,18 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
       server.startup()
       val timer = Executors.newSingleThreadExecutor()
       try {
-        val f = timer.submit(new Runnable {
-          override def run(): Unit = server.stopServerAfterTimeout(60)
+        val entered = new CountDownLatch(1)
+        val future  = timer.submit(new Runnable {
+          override def run(): Unit = {
+            entered.countDown()
+            server.stopServerAfterTimeout(60)
+          }
         })
-        Thread.sleep(200)
+        // Wait until the waiter thread is running, so that `stop()` really has to wake it up. Whether it is already
+        // parked in wait() or not yet, `stop()` must release it promptly: the loop predicate checks liveness first.
+        entered.await(WaitSeconds, TimeUnit.SECONDS) shouldBe true
         server.stop()
-        f.get(5, TimeUnit.SECONDS)
+        future.get(WaitSeconds, TimeUnit.SECONDS)
       } finally timer.shutdownNow()
     }
   }
@@ -198,7 +208,7 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
             }
           })
         }
-        handlerEntered.await(10, TimeUnit.SECONDS) shouldBe true
+        handlerEntered.await(WaitSeconds, TimeUnit.SECONDS) shouldBe true
         inFlight.get() shouldBe 2
         releaseHandler.countDown()
       } finally {
