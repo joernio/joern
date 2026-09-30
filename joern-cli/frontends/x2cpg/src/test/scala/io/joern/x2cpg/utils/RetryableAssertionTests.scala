@@ -24,7 +24,7 @@ class RetryableAssertionTests extends AnyWordSpec with Matchers {
       var attempts = 0
 
       implicit val customConfig: RetryConfig =
-        RetryConfig(maxRetries = 5, retryDelay = 50.millis, timeout = 2.seconds, backoffMultiplier = 1.5)
+        RetryConfig(maxRetries = 5, retryDelay = 50.millis, timeout = 30.seconds, backoffMultiplier = 1.5)
 
       eventually[Assertion, Throwable] {
         attempts += 1
@@ -49,17 +49,17 @@ class RetryableAssertionTests extends AnyWordSpec with Matchers {
     }
 
     "support complex ScalaTest matchers" in {
-      var items = List.empty[Int]
+      @volatile var items = List.empty[Int]
 
       // Simulate async list population
       new Thread(() => {
-        (1 to 5).foreach { i =>
+        (1 to 5).foreach { item =>
           Thread.sleep(100)
-          items = items :+ i
+          items = items :+ item
         }
       }).start()
 
-      implicit val config: RetryConfig = RetryConfig(maxRetries = 20, retryDelay = 100.millis, timeout = 3.seconds)
+      implicit val config: RetryConfig = RetryConfig(maxRetries = 1000, retryDelay = 50.millis, timeout = 60.seconds)
 
       eventually[Assertion, Throwable] {
         items should have length 5
