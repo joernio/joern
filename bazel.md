@@ -27,6 +27,12 @@ included.
   import as Bazel project.
 - To run formatting via scalafmt use `bazel run format`. For format checking use
   `bazel run formatCheck`.
+- To run the scalafix rules (`RestrictedImports`, `SingleLetterIdentifiers`, `UnorderedIteration`)
+  on all Scala files changed compared to `origin/master` use `bazel run scalafix`
+  (equivalent to `scalafix --diff-base origin/master ...`). For checking only, use
+  `bazel run scalafix.check`. Options: `-- --diff-base <ref>`, `-- --all`, `-- --files <path>`.
+  The implementation lives in `@bazel_tooling//scalafix`. The rules themselves are tested with
+  `bazel test //linter-rules:tests` (Scalafix testkit, fixtures in `linter-rules/input`).
 - To build all code belonging to the root project, use `bazel build //...`.
 - To run all tests belonging to the root project, use `bazel test //...`.
 - To build and run a frontend in one step, use `bazel run <frontendName> -- <args>`.

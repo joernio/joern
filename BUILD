@@ -1,3 +1,5 @@
+load("@bazel_tooling//scalafix:defs.bzl", "scalafix")
+
 exports_files([".scalafmt.conf"])
 
 alias(
@@ -48,4 +50,17 @@ alias(
 alias(
     name = "swiftsrc2cpg",
     actual = "//joern-cli/frontends/swiftsrc2cpg:swiftsrc2cpg-bin",
+)
+
+# Bazel equivalent of:
+#   scalafix --diff-base origin/master RestrictedImports SingleLetterIdentifiers UnorderedIteration
+# Run with `bazel run //:scalafix` (fix) or `bazel run //:scalafix.check` (verify only).
+scalafix(
+    name = "scalafix",
+    rules = [
+        "RestrictedImports",
+        "SingleLetterIdentifiers",
+        "UnorderedIteration",
+    ],
+    rules_lib = "//linter-rules",
 )
