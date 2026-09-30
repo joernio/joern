@@ -8,11 +8,12 @@ abstract class FetchDependencies extends DefaultTask {
     outputs.upToDateWhen { false }
   }
 
-  @Input
-  abstract SetProperty<String> getConfigurationNameOverrides()
-
-  @Input
-  abstract SetProperty<String> getProjectNameOverrides()
+  // Populated at configuration time (see the `allprojects` block below) so that no `Project`
+  // reference needs to be captured or accessed from `fetch()`, which runs at execution time.
+  // Task.project access at execution time is unsupported under the configuration cache
+  // (https://docs.gradle.org/current/userguide/configuration_cache.html#config_cache:requirements:use_project_during_execution).
+  @InputFiles
+  abstract ConfigurableFileCollection getArtifactFiles()
 
   @OutputDirectory
   abstract Property<String> getDestinationDirString()
@@ -29,7 +30,7 @@ abstract class FetchDependencies extends DefaultTask {
    * rootVariant parameter as this is not supported in Gradle 7.
    * See https://docs.gradle.org/current/userguide/dependency_graph_resolution.html
    */
-  HashSet<String> getExternalDependencyNames(
+  static HashSet<String> getExternalDependencyNames(
     ResolvedComponentResult rootComponent,
     String configurationName
   ) {
@@ -84,9 +85,7 @@ abstract class FetchDependencies extends DefaultTask {
     return artifactsToFetch
   }
 
-
-
-  String getProjectFullName(Project project) {
+  static String getProjectFullName(Project project) {
     def projectString = project.toString()
     if (projectString.startsWith("root project")) {
       return ""
@@ -100,24 +99,29 @@ abstract class FetchDependencies extends DefaultTask {
    *  - If configuration overrides are set, then the configuration name must appear in the overrides list
    *  - If no overrides are set, the configuration name must start with release or runtime
    */
-  List<Configuration> getValidConfigurations(Project project) {
-    def configurationOverrides = configurationNameOverrides.get()
+  static List<Configuration> getValidConfigurations(Project project, Set<String> configurationNameOverrides) {
     def validConfigurations = []
 
     for (configuration in project.configurations) {
       if (configuration.canBeResolved) {
         def configurationName = configuration.name
-        if (configurationOverrides.isEmpty()) {
+        if (configurationNameOverrides.isEmpty()) {
           if (configurationName.startsWith("release") || configurationName.startsWith("runtime")) {
             validConfigurations << configuration
           }
-        } else if (configurationOverrides.contains(configurationName)) {
+        } else if (configurationNameOverrides.contains(configurationName)) {
           validConfigurations << configuration
         }
       }
     }
 
     return validConfigurations
+  }
+
+  static boolean shouldFetchDependencies(String projectFullName, Set<String> projectNameOverrides) {
+    return projectNameOverrides.isEmpty() ||
+      projectFullName.isEmpty() ||
+      projectNameOverrides.contains(projectFullName)
   }
 
   void linkOrCopyFileToDestination(File artifactFile, Path destinationDir) {
@@ -135,50 +139,12 @@ abstract class FetchDependencies extends DefaultTask {
     }
   }
 
-  // See https://docs.gradle.org/current/userguide/artifact_views.html
-  // See https://docs.gradle.org/current/userguide/artifact_resolution.html#artifact-resolution for more information
-  void fetchArtifactsForConfiguration(Configuration configuration, Path destinationDir) {
-    for (resolvedArtifacts in configuration.incoming.getResolutionResult()) {
-      def artifactsToFetch = getExternalDependencyNames(
-        resolvedArtifacts.rootComponent.get(),
-        configuration.name
-      )
-
-      def filteredArtifacts = configuration.incoming.artifactView {
-        componentFilter {
-          artifactsToFetch.contains(it.toString())
-        }
-      }
-
-      for (artifactFile in filteredArtifacts.files) {
-        linkOrCopyFileToDestination(artifactFile, destinationDir)
-      }
-    }
-  }
-
-  boolean shouldFetchDependencies(String projectFullName) {
-    return projectNameOverrides.get().isEmpty() ||
-      projectFullName.isEmpty() ||
-      projectNameOverrides.get().contains(projectFullName)
-  }
-
   @TaskAction
   void fetch() {
-    // TODO Need to update direct project access for gradle 9:
-    //      See https://docs.gradle.org/8.12.1/userguide/upgrading_version_7.html#task_project
-    def project_ = project
-    def projectFullName = getProjectFullName(project_)
-
-    if (shouldFetchDependencies(projectFullName)) {
-      def validConfigurations = getValidConfigurations(project_)
-
-      if (!validConfigurations.isEmpty()) {
-        def destinationDir =
-          projectFullName.isEmpty() ? Path.of(destinationDirString.get()) : Path.of(destinationDirString.get(), projectFullName.replace(':', '/'))
-        Files.createDirectories(destinationDir)
-
-        validConfigurations.forEach { fetchArtifactsForConfiguration(it, destinationDir) }
-      }
+    def destinationDir = Path.of(destinationDirString.get())
+    Files.createDirectories(destinationDir)
+    for (artifactFile in artifactFiles) {
+      linkOrCopyFileToDestination(artifactFile, destinationDir)
     }
   }
 }
@@ -224,11 +190,33 @@ allprojects { project ->
     }
   }
 
+  // All of the below is evaluated now, at configuration time, while `project` is still safe to
+  // use. None of it is deferred into `FetchDependencies.fetch()` (which runs at execution time
+  // and, under the configuration cache, must not touch `Task.project`).
+  def projectFullName = FetchDependencies.getProjectFullName(project)
+
   // Replace this with tasks.create for debugging with gradle < 5.1
   tasks.register(compileDepsCopyTaskName, FetchDependencies) {
-    projectNameOverrides = projectNameOverrides_
-    configurationNameOverrides = configurationNameOverrides_
-    destinationDirString = destinationDir
+    destinationDirString =
+      projectFullName.isEmpty() ? destinationDir : Path.of(destinationDir, projectFullName.replace(':', '/')).toString()
+
+    if (FetchDependencies.shouldFetchDependencies(projectFullName, projectNameOverrides_)) {
+      for (validConfiguration in FetchDependencies.getValidConfigurations(project, configurationNameOverrides_)) {
+        def configuration = validConfiguration
+        Set<String> artifactsToFetch = null
+        artifactFiles.from(
+          configuration.incoming.artifactView {
+            componentFilter { component ->
+              if (artifactsToFetch == null) {
+                artifactsToFetch =
+                  FetchDependencies.getExternalDependencyNames(configuration.incoming.resolutionResult.rootComponent.get(), configuration.name)
+              }
+              artifactsToFetch.contains(component.toString())
+            }
+          }.files
+        )
+      }
+    }
   }
 
   if (project == project.rootProject) {
