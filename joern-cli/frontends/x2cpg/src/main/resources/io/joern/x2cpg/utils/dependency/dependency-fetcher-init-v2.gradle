@@ -86,17 +86,6 @@ abstract class FetchDependencies extends DefaultTask {
     outputs.upToDateWhen { false }
   }
 
-  @Input
-  abstract SetProperty<String> getConfigurationNameOverrides()
-
-  /**
-   * Selects which AGP variant's compile/runtime classpaths the default
-   * configuration predicate picks up (e.g. "release", "debug"). Ignored when
-   * `configurationNameOverrides` is non-empty.
-   */
-  @Input
-  abstract Property<String> getAndroidVariant()
-
   @OutputDirectory
   abstract Property<String> getDestinationDirString()
 
@@ -122,6 +111,26 @@ abstract class FetchDependencies extends DefaultTask {
    */
   @Input
   abstract SetProperty<String> getExtraSourceDependencies()
+
+  /**
+   * The resolvable configurations to fetch from, as filtered by
+   * `validConfigurations` from `configurationNameOverrides`/`androidVariant`.
+   * Captured at registration time (see the comment above) so `fetch()` never
+   * has to call `project.configurations` itself — that access is what used
+   * to violate the configuration-cache contract.
+   */
+  @Internal
+  abstract ListProperty<Configuration> getResolvedConfigurations()
+
+  /**
+   * Android boot classpath files (see the `androidBootClasspathFiles(Project)`
+   * static helper below), captured at registration time for the same reason
+   * as `resolvedConfigurations`. Left unset for non-Android projects, so
+   * `getOrNull()` distinguishes "not Android" (null) from "Android but SDK
+   * unresolved" (empty list).
+   */
+  @Internal
+  abstract ListProperty<File> getAndroidBootClasspath()
 
   /**
    * Returns the set of external module displayNames declared directly on
@@ -326,12 +335,11 @@ abstract class FetchDependencies extends DefaultTask {
    * (typically `android.jar`). These files carry no Maven coordinates, so all
    * metadata fields are reported as null. No-ops on non-Android projects.
    */
-  static void collectAndroidApis(Project project, List<Map> externalDeps) {
-    def files = androidBootClasspathFiles(project)
+  static void collectAndroidApis(String projectPath, List<File> files, List<Map> externalDeps) {
     if (files == null) return
     if (files.isEmpty()) {
       System.err.println(
-        "collectAndroidApis: ${project.path} is Android but boot classpath is empty — " +
+        "collectAndroidApis: ${projectPath} is Android but boot classpath is empty — " +
         "is ANDROID_HOME / sdk.dir pointing at an SDK with platforms/android-N installed?"
       )
       return
@@ -500,17 +508,11 @@ abstract class FetchDependencies extends DefaultTask {
     def artifactDeps = []
 
     try {
-      // TODO(configuration-cache): touching `this.project` from @TaskAction
-      // violates configuration-cache rules. Capturing Configuration handles at
-      // registration time is a follow-up; for now this matches the existing
-      // pre-redesign behavior.
       def configurations
       try {
-        configurations = validConfigurations(
-          this.project.configurations, configurationNameOverrides.get(), androidVariant.get()
-        )
+        configurations = resolvedConfigurations.get()
       } catch (Throwable t) {
-        System.err.println("Could not enumerate configurations for ${name}: ${t.message}")
+        System.err.println("Could not read resolved configurations for ${name}: ${t.message}")
         configurations = []
       }
 
@@ -543,7 +545,7 @@ abstract class FetchDependencies extends DefaultTask {
       // configuration when one of the Android plugins is applied; it carries
       // no Maven coordinates, so coordinates fields land as null.
       try {
-        collectAndroidApis(this.project, artifactDeps)
+        collectAndroidApis(name, androidBootClasspath.getOrNull(), artifactDeps)
       } catch (Throwable t) {
         System.err.println("collectAndroidApis failed for ${name}: ${t.message}")
       }
@@ -583,12 +585,11 @@ allprojects { project ->
 
   // Replace this with tasks.create for debugging with gradle < 5.1
   def fetchDepsProvider = tasks.register(compileDepsCopyTaskName, FetchDependencies) {
-    configurationNameOverrides = configurationNameOverrides_
-    androidVariant             = androidVariant_
     destinationDirString       = destinationDir
     projectName                = projectName_
     sourceRoots                = []
     extraSourceDependencies    = []
+    resolvedConfigurations     = []
   }
 
   // Source roots can only be read after the project's own build.gradle has
@@ -631,6 +632,13 @@ allprojects { project ->
       def directConfigs = FetchDependencies.validConfigurations(
         reEvaluatedProject.configurations, configurationNameOverrides_, androidVariant_
       )
+      def bootClasspathFiles = FetchDependencies.androidBootClasspathFiles(reEvaluatedProject)
+      fetchDepsProvider.configure { task ->
+        task.resolvedConfigurations = directConfigs
+        if (bootClasspathFiles != null) {
+          task.androidBootClasspath = bootClasspathFiles
+        }
+      }
       directConfigs.each { configuration ->
         configuration.allDependencies.withType(ProjectDependency).each { pd ->
           try {
