@@ -51,6 +51,9 @@ object SwiftTypesProvider {
     *   The fully qualified decl name (if any; not demangled)
     * @param nodeKind
     *   The AST node kind
+    * @param isStaticCall
+    *   Whether this is a call whose implicit receiver is a type (metatype), i.e., a call to a static or class function,
+    *   an enum case, or an initializer via a qualified type name
     */
   case class TypeInfo(
     filename: String,
@@ -58,7 +61,8 @@ object SwiftTypesProvider {
     typeFullname: Option[String],
     declFullname: Option[String],
     inherits: Seq[String],
-    nodeKind: String
+    nodeKind: String,
+    isStaticCall: Boolean = false
   ) {
     override def equals(obj: Any): Boolean = obj match {
       case that: TypeInfo =>
@@ -87,13 +91,18 @@ object SwiftTypesProvider {
     *   A sequence of fully qualified inherited type names (if any; demangled)
     * @param nodeKind
     *   The AST node kind where this information was observed
+    * @param isStaticCall
+    *   Whether this is a call whose implicit receiver is a type (see [[TypeInfo.isStaticCall]]). It is deliberately
+    *   kept in a second parameter list and thereby not part of equals / hashCode: infos for the same range are
+    *   collected in hash sets and [[io.joern.swiftsrc2cpg.utils.FullnameProvider]] picks `headOption` of such a set if
+    *   the node kind does not disambiguate. Changing the hash would change that pick.
     */
   case class ResolvedTypeInfo(
     typeFullname: Option[String],
     declFullname: Option[String],
     inherits: Seq[String],
     nodeKind: String
-  )
+  )(val isStaticCall: Boolean = false)
 
   /**   - [[java.util.concurrent.ConcurrentHashMap]] provides atomic compute and computeIfAbsent operations used here to
     *     create-or-update entries and mutate the inner HashSet safely per key, without extra locks or retry loops.
@@ -791,7 +800,9 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     val demangledTypeFullname = typeInfo.typeFullname.flatMap(calculateTypeFullname)
     val demangledDeclFullname = typeInfo.declFullname.flatMap(calculateDeclFullname)
     val demangledInherits     = typeInfo.inherits.flatMap(calculateTypeFullname)
-    ResolvedTypeInfo(demangledTypeFullname, demangledDeclFullname, demangledInherits, typeInfo.nodeKind)
+    ResolvedTypeInfo(demangledTypeFullname, demangledDeclFullname, demangledInherits, typeInfo.nodeKind)(
+      typeInfo.isStaticCall
+    )
   }
 
   /** Parses Swift compiler JSON output and collects raw type information without demangling.

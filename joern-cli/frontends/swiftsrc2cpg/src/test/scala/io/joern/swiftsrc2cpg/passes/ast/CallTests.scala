@@ -481,7 +481,6 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
     }
 
     "be correct for simple call to static function" in {
-      // TODO: extend the GsonTypeInfoReader to query for information whether the call is a call to a static function
       val testCode =
         """
           |func main() {
@@ -494,6 +493,109 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
       staticFuncCall.methodFullName shouldBe "Foo.staticFunc"
       staticFuncCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       staticFuncCall.argument shouldBe empty
+    }
+
+    "use compiler information to distinguish static from instance calls on uppercase bases with compiler support" in {
+      val testCode =
+        """
+          |class Foo {
+          |  nonisolated(unsafe) static let shared = Foo()
+          |  static func staticFunc() {}
+          |  class func classFunc() {}
+          |  func instFunc() {}
+          |}
+          |func main() {
+          |  Foo.staticFunc()
+          |  Foo.classFunc()
+          |  Foo.shared.instFunc()
+          |}
+          |""".stripMargin
+      val cpg = codeWithSwiftSetup(testCode)
+
+      val List(staticFuncCall) = cpg.call.nameExact("staticFunc").l
+      staticFuncCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      staticFuncCall.methodFullName shouldBe "SwiftTest.Foo.staticFunc:()->()"
+      staticFuncCall.signature shouldBe "()->()"
+
+      val List(classFuncCall) = cpg.call.nameExact("classFunc").l
+      classFuncCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      classFuncCall.methodFullName shouldBe "SwiftTest.Foo.classFunc:()->()"
+      classFuncCall.signature shouldBe "()->()"
+
+      val List(instFuncCall) = cpg.call.nameExact("instFunc").l
+      instFuncCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      instFuncCall.methodFullName shouldBe "SwiftTest.Foo.instFunc:()->()"
+      instFuncCall.signature shouldBe "()->()"
+    }
+
+    "use compiler information for static calls on structs, enums, protocols and Self with compiler support" in {
+      val testCode =
+        """
+          |struct S {
+          |  static func sFunc() {}
+          |  func sInst() {}
+          |  static func viaSelf() { Self.sFunc() }
+          |}
+          |enum E {
+          |  case a
+          |  case withPayload(Int)
+          |  static func eFunc() {}
+          |}
+          |struct Outer {
+          |  struct Inner {}
+          |}
+          |protocol P {
+          |  static func pFunc()
+          |}
+          |extension P {
+          |  static func pExt() {}
+          |}
+          |struct Q: P {
+          |  static func pFunc() {}
+          |}
+          |func main() {
+          |  S.sFunc()
+          |  S().sInst()
+          |  E.eFunc()
+          |  let payload = E.withPayload(1)
+          |  let inner = Outer.Inner()
+          |  Q.pFunc()
+          |  Q.pExt()
+          |}
+          |""".stripMargin
+      val cpg = codeWithSwiftSetup(testCode)
+
+      val List(sFuncCall) = cpg.call.codeExact("S.sFunc()").l
+      sFuncCall.methodFullName shouldBe "SwiftTest.S.sFunc:()->()"
+      sFuncCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      val List(selfFuncCall) = cpg.call.codeExact("Self.sFunc()").l
+      selfFuncCall.methodFullName shouldBe "SwiftTest.S.sFunc:()->()"
+      selfFuncCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      val List(sInstCall) = cpg.call.nameExact("sInst").l
+      sInstCall.methodFullName shouldBe "SwiftTest.S.sInst:()->()"
+      sInstCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+
+      val List(eFuncCall) = cpg.call.nameExact("eFunc").l
+      eFuncCall.methodFullName shouldBe "SwiftTest.E.eFunc:()->()"
+      eFuncCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      val List(withPayloadCall) = cpg.call.nameExact("withPayload").l
+      withPayloadCall.methodFullName shouldBe "SwiftTest.E.withPayload:(SwiftTest.E.Type)->(Swift.Int)->SwiftTest.E"
+      withPayloadCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      val List(innerCall) = cpg.call.codeExact("Outer.Inner()").l
+      innerCall.methodFullName shouldBe "SwiftTest.Outer.Inner.init:()->SwiftTest.Outer.Inner"
+      innerCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      val List(pFuncCall) = cpg.call.nameExact("pFunc").l
+      pFuncCall.methodFullName shouldBe "SwiftTest.Q.pFunc:()->()"
+      pFuncCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      val List(pExtCall) = cpg.call.nameExact("pExt").l
+      pExtCall.methodFullName shouldBe "SwiftTest.P<extension>.pExt:()->()"
+      pExtCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
     "be correct for implicit member expressions in call arguments" in {

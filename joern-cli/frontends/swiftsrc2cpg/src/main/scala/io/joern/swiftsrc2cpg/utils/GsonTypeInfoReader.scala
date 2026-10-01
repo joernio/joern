@@ -33,6 +33,10 @@ object GsonTypeInfoReader {
     val CallExpr               = "call_expr"
     val ReturnStmt             = "return_stmt"
     val DotCallExpr            = "dot_syntax_call_expr"
+    val ConstructorRefCallExpr = "constructor_ref_call_expr"
+    val Argument               = "argument"
+    val ArgumentList           = "argument_list"
+    val TypeExpr               = "type_expr"
   }
 
   /** Minimal mutable node model used while token-streaming JSON with JsonReader.
@@ -66,16 +70,16 @@ object GsonTypeInfoReader {
     var inheritsObj: AstNode                        = null
     var inheritsLegacy: mutable.ArrayBuffer[String] = null
     var conformances: mutable.ArrayBuffer[AstNode]  = null
-
-    var typeValue: String      = null
-    var typeUsr: String        = null
-    var resultValue: String    = null
-    var interfaceType: String  = null
-    var extendedType: String   = null
-    var usr: String            = null
-    var declUsr: String        = null
-    var protocol: String       = null
-    var superclassType: String = null
+    var typeValue: String                           = null
+    var typeUsr: String                             = null
+    var resultValue: String                         = null
+    var interfaceType: String                       = null
+    var extendedType: String                        = null
+    var usr: String                                 = null
+    var declUsr: String                             = null
+    var protocol: String                            = null
+    var superclassType: String                      = null
+    var receiverIsType: Boolean                     = false
 
     def hasTypeOrDeclInfo: Boolean = {
       typeValue != null || typeUsr != null || resultValue != null || interfaceType != null || extendedType != null ||
@@ -143,6 +147,16 @@ object GsonTypeInfoReader {
     }
   }
 
+  /** Follows the `fn` chain of a call to the node that carries the implicit receiver argument. */
+  @tailrec
+  private def isCallOnType(node: AstNode): Boolean = {
+    node.kind match {
+      case NodeKinds.DotCallExpr | NodeKinds.ConstructorRefCallExpr             => node.receiverIsType
+      case other if other != null && other.endsWith("_expr") && node.fn != null => isCallOnType(node.fn)
+      case _                                                                    => false
+    }
+  }
+
   private def resultFromReturnStmt(node: AstNode): AstNode = Option(node.resultObj).getOrElse(node)
 
   private def declFromMemberRefExpr(node: AstNode): AstNode = {
@@ -195,6 +209,25 @@ object GsonTypeInfoReader {
     val jsonReader   = new JsonReader(reader)
     var filename     = ""
     var currentRange = Option.empty[(Int, Int)]
+
+    // The chain of AST nodes currently being parsed (outermost first), used to find the parents of a `type_expr`.
+    val nodeStack = mutable.ArrayBuffer.empty[AstNode]
+
+    /** Marks the call node if the given, completely parsed `type_expr` is its implicit receiver. */
+    def markReceiverIsType(): Unit = {
+      val size = nodeStack.size
+      if (size >= 3) {
+        val argument     = nodeStack(size - 1)
+        val argumentList = nodeStack(size - 2)
+        val call         = nodeStack(size - 3)
+        if (argument.kind == NodeKinds.Argument && argumentList.kind == NodeKinds.ArgumentList) {
+          call.kind match {
+            case NodeKinds.DotCallExpr | NodeKinds.ConstructorRefCallExpr => call.receiverIsType = true
+            case _                                                        =>
+          }
+        }
+      }
+    }
 
     // Configure reader for better performance
     jsonReader.setStrictness(Strictness.LENIENT)
@@ -263,7 +296,18 @@ object GsonTypeInfoReader {
       val superClassTypes = superClassesFromNode(node) ++ superClassesFromNodeLegacy(node)
 
       maybeRange.foreach { range_ =>
-        emit(TypeInfo(filename, range_, typeFullName, declFullName, superClassTypes ++ conformances, nodeKind))
+        val isStaticCall = nodeKind.endsWith(NodeKinds.CallExpr) && isCallOnType(node)
+        emit(
+          TypeInfo(
+            filename,
+            range_,
+            typeFullName,
+            declFullName,
+            superClassTypes ++ conformances,
+            nodeKind,
+            isStaticCall
+          )
+        )
       }
     }
 
@@ -290,7 +334,8 @@ object GsonTypeInfoReader {
     }
 
     def parseObject(): AstNode = {
-      val node        = new AstNode
+      val node = new AstNode
+      nodeStack += node
       var hasKind     = false
       var isFromBuild = false
 
@@ -359,6 +404,9 @@ object GsonTypeInfoReader {
         }
       }
       jsonReader.endObject()
+
+      nodeStack.remove(nodeStack.size - 1)
+      if (node.kind == NodeKinds.TypeExpr) markReceiverIsType()
 
       if (!isFromBuild && node.kind != null) {
         if (qualifies(node)) {

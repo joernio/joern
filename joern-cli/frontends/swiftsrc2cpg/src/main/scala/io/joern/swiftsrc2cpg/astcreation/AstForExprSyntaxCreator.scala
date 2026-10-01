@@ -394,7 +394,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           val selfNode = identifierNode(node, "self", "self", selfTpe)
           scope.addVariableReference("self", selfNode, selfTpe, EvaluationStrategies.BY_REFERENCE)
           handleCallNodeArgs(node, Ast(selfNode), code(m.declName.baseName))
-        case m: MemberAccessExprSyntax if isRefToStaticFunction(calleeCode) =>
+        case m: MemberAccessExprSyntax if isRefToStaticFunction(node, calleeCode) =>
           createBuiltinStaticCall(node, callee, calleeCode)
         case m: MemberAccessExprSyntax =>
           val memberCode = code(m.declName)
@@ -455,9 +455,14 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def isRefToStaticFunction(calleeCode: String): Boolean = {
-    // TODO: extend the GsonTypeInfoReader to query for information whether the call is a call to a static function
-    calleeCode.headOption.exists(_.isUpper) && !calleeCode.contains("(") && !calleeCode.contains(")")
+  private def isRefToStaticFunction(func: FunctionCallExprSyntax, calleeCode: String): Boolean = {
+    val isPlainReference = !calleeCode.contains("(") && !calleeCode.contains(")")
+    fullnameProvider.isStaticCall(func) match {
+      // the compiler told us whether the receiver of the call is a type
+      case Some(isStatic) => isStatic && isPlainReference
+      // no compiler information available: fall back to a naming heuristic (type names start uppercase)
+      case None => calleeCode.headOption.exists(_.isUpper) && isPlainReference
+    }
   }
 
   private def isRefToConstructorCommon(func: FunctionCallExprSyntax, node: ExprSyntax)(
