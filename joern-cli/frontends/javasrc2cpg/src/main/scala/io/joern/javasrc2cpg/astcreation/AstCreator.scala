@@ -146,7 +146,9 @@ class AstCreator(
 
   private val lineOffsetTable = OffsetUtils.getLineOffsetTable(fileContent)
 
-  override protected def isOffsetNeeded: Boolean = fileContent.isDefined
+  override protected val isOffsetNeeded: Boolean = fileContent.isDefined
+
+  override protected lazy val offsetNormalizer: Int => Int = identity
 
   override protected def unadjustedOffset(node: Node): Option[(Int, Int)] = {
     for {

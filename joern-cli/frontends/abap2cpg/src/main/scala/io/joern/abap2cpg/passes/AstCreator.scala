@@ -75,6 +75,12 @@ class AstCreator(val program: ProgramRoot, filename: String)(implicit withSchema
     case _                  => None
   }
 
+  override protected val isOffsetNeeded: Boolean = true
+
+  override protected lazy val offsetNormalizer: Int => Int = identity
+
+  override protected def unadjustedOffset(node: AbapNode): Option[(Int, Int)] = None
+
   /** Main entry point - creates the full CPG for a program */
   override def createAst(): DiffGraphBuilder = {
     val fileNode = NewFile()

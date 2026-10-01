@@ -17,8 +17,8 @@ class OffsetTests extends SwiftSrc2CpgSuite {
 
     "have correct offsets on the literal" in {
       inside(cpg.literal.code("42").l) { case lit :: Nil =>
-        lit.offset shouldBe defined
-        lit.offsetEnd shouldBe defined
+        val fileContent = cpg.file.content.head
+        fileContent.substring(lit.offset.get, lit.offsetEnd.get) shouldBe "42"
       }
     }
   }
