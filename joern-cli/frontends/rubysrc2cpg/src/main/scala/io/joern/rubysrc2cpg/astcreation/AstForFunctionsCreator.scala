@@ -219,10 +219,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         localVar.isEmpty || capturedVar.contains(localVar.get)
       }
       .flatMap(i => scope.lookupCapturedVariable(i.name))
-      .toSet
+      .toList
 
-    val selfLocal     = scope.lookupCapturedVariable(Defines.Self).toSet
-    val capturedNodes = capturedLocalNodes ++ selfLocal
+    val selfLocal     = scope.lookupCapturedVariable(Defines.Self).toList
+    val capturedNodes = (capturedLocalNodes ++ selfLocal).distinct
 
     val capturedIdentifiers = baseStmtBlockAst.nodes.collect {
       case i: NewIdentifier if capturedNodes.map(_.name).contains(i.name) => i
@@ -625,8 +625,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   private def createClosureBindingInformation(
-    capturedNodes: Set[DeclarationNew]
-  ): Set[(DeclarationNew, String, String, Option[String])] = {
+    capturedNodes: List[DeclarationNew]
+  ): List[(DeclarationNew, String, String, Option[String])] = {
     capturedNodes
       .collect {
         case local: NewLocal =>
