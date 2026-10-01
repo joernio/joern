@@ -1684,6 +1684,25 @@ class AstCreationPassTests extends AstC2CpgSuite {
       id.typeFullName shouldBe "A.Foo"
     }
 
+    "be correct for a cast-like binary expression with an unknown type name" in {
+      // `T` is unknown and `U` is a typedef, so CDT resolves `(T)(U)&x` to the binary expression `T(U) & x`.
+      // Its ambiguity resolution leaves both operands without a file location; this must not fail the file.
+      val cpg = code("""
+          |typedef long U;
+          |void foo(int x) {
+          |  (T)(U)&x;
+          |}
+          |""".stripMargin)
+      val List(and) = cpg.method.nameExact("foo").ast.isCall.nameExact(Operators.and).l
+      and.code shouldBe "(T)(U)&x"
+      and.lineNumber shouldBe Some(4)
+      inside(and.argument.l) { case List(call: Call, x: Identifier) =>
+        call.name shouldBe Defines.OperatorPointerCall
+        call.astChildren.isIdentifier.name.l shouldBe List("T", "U")
+        x.name shouldBe "x"
+      }
+    }
+
     "be correct for 'new' array" in {
       val cpg = code(
         """
