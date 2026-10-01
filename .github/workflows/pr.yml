@@ -4,27 +4,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
 jobs:
-  formatting:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 1
-      - name: Set up JDK
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: sbt
-      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
-      - name: Check formatting
-        run: sbt --server --batch "scalafmtCheck ; Test/scalafmtCheck"
-      - run: echo "Previous step failed because code is not formatted. Run 'sbt scalafmt Test/scalafmt'"
-        if: ${{ failure() }}
-      - name: Validate CITATION.cff
-        uses: dieghernan/cff-validator@d8f85828214016ce6976e740b6e0504c0fdc4dbb # v5
-
-  linting:
+  lint-and-format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -39,27 +19,15 @@ jobs:
           java-version: 21
           cache: sbt
       - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
-      - name: Check for lintable changes
-        id: lintable-changes
-        run: |
-          # scalafix bug (https://github.com/scalacenter/scalafix/issues/2505):
-          # with --diff-base, an empty diff (e.g. a PR that only deletes files)
-          # is treated like no diff filter at all, so ALL files get linted instead
-          # of none. Only run scalafix if the PR adds/modifies lintable files.
-          # TODO: remove once fixed upstream
-          if git diff --name-only --diff-filter=ACMR "origin/${{ github.event.pull_request.base.ref }}" | grep -qE '\.(scala|sbt|sc)$'; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Run scalafix linting
-        if: steps.lintable-changes.outputs.changed == 'true'
-        run: sbt --server --batch "scalafix --diff-base origin/${{ github.event.pull_request.base.ref }} RestrictedImports SingleLetterIdentifiers UnorderedIteration"
-      - run: echo "Previous step failed because certain coding quality expectations were violated. Please check the logs."
+      - name: Check formatting and lint
+        run: sbt "scalafmtCheck ; Test/scalafmtCheck ; scalafix --diff-base origin/${{ github.event.pull_request.base.ref }} RestrictedImports SingleLetterIdentifiers UnorderedIteration"
+      - run: echo "Previous step failed because the code is not formatted or violates coding quality expectations. Run 'sbt scalafmt Test/scalafmt' to format, and check the logs for scalafix violations."
         if: ${{ failure() }}
+      - name: Validate CITATION.cff
+        uses: dieghernan/cff-validator@d8f85828214016ce6976e740b6e0504c0fdc4dbb # v5
 
   test:
-    needs: [formatting, linting]
+    needs: [lint-and-format]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -109,10 +77,10 @@ jobs:
           toolchain: stable
           components: rust-src
       - name: Run tests
-        run: sbt --server --batch "clean ; c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage ; testFull"
+        run: sbt "c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage ; testFull"
 
   test-scripts:
-    needs: [formatting, linting]
+    needs: [lint-and-format]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -145,5 +113,5 @@ jobs:
           python -m pip install requests wexpect
       - name: Test distribution
         run: |
-          sbt --server --batch "joerncli/stage ; querydb/createDistribution"
+          sbt "joerncli/stage ; querydb/createDistribution"
           python -u ./testDistro.py
