@@ -63,7 +63,7 @@ jobs:
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
       - name: Build distribution
-        run: sbt --server --batch "stage ; createDistribution"
+        run: sbt "stage ; createDistribution"
       - name: Stage distribution zip
         if: runner.os != 'Windows'
         run: cp target/out/jvm/*/joern/joern-cli-${{ matrix.platform }}.zip target/
@@ -92,7 +92,7 @@ jobs:
           retention-days: 1
       - name: Dump query database
         if: matrix.platform == 'linux-x86_64'
-        run: sbt --server --batch "querydb/runMain io.joern.dumpq.Main"
+        run: sbt "querydb/runMain io.joern.dumpq.Main"
       - name: Prepare querydb artifacts
         if: matrix.platform == 'linux-x86_64'
         run: |
