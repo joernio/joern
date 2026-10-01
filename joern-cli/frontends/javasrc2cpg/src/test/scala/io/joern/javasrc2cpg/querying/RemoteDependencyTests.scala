@@ -1,7 +1,7 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
-import io.joern.x2cpg.testfixtures.RetryableAssertion.eventually
+import io.joern.x2cpg.testfixtures.RetryableAssertion.{eventually, NetworkRetryConfig, RetryConfig}
 import io.joern.x2cpg.testfixtures.NetworkTest
 import io.joern.x2cpg.utils.HttpArtifact
 
@@ -11,6 +11,8 @@ import org.scalatest.Assertion
 import java.io.IOException
 
 class RemoteDependencyTests extends JavaSrcCode2CpgFixture {
+
+  private implicit val retryConfig: RetryConfig = NetworkRetryConfig
 
   "code that relies on a downloaded dependency" should {
     "resolve the type from  the dependency" taggedAs NetworkTest in {
