@@ -65,18 +65,18 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     * This is bounded to avoid excessive work and to guarantee termination.
     */
   @tailrec
-  private def fullName(
+  private def resolvedInfo(
     range: (Int, Int),
     kind: FullnameProvider.Kind,
     nodeKind: String,
     iter: Int = 1
-  ): Option[String] = {
+  ): Option[ResolvedTypeInfo] = {
 
-    def pickFrom(typeInfo: Set[ResolvedTypeInfo]): Option[String] = kind match {
+    def pickFrom(typeInfo: Set[ResolvedTypeInfo]): Option[ResolvedTypeInfo] = kind match {
       case FullnameProvider.Kind.Type =>
-        filterForNodeKind(typeInfo.filter(_.typeFullname.nonEmpty), nodeKind).flatMap(_.typeFullname)
+        filterForNodeKind(typeInfo.filter(_.typeFullname.nonEmpty), nodeKind)
       case FullnameProvider.Kind.Decl =>
-        filterForNodeKind(typeInfo.filter(_.declFullname.nonEmpty), nodeKind).flatMap(_.declFullname)
+        filterForNodeKind(typeInfo.filter(_.declFullname.nonEmpty), nodeKind)
     }
 
     typeMap.get(range) match {
@@ -84,10 +84,10 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
         pickFrom(typeInfo)
       case None if range._1 != range._2 && iter > 0 =>
         // First, consider synthetic AST elements with +-1 offsets.
-        fullName((range._1 - 1, range._2 + 1), kind, nodeKind, 0)
+        resolvedInfo((range._1 - 1, range._2 + 1), kind, nodeKind, 0)
       case None if range._1 != range._2 =>
         // Then, reduce to a point (Swift compiler may produce synthetic nodes).
-        fullName((range._1 + 1, range._1 + 1), kind, nodeKind)
+        resolvedInfo((range._1 + 1, range._1 + 1), kind, nodeKind)
       case _ =>
         // We still found nothing
         None
@@ -99,11 +99,25 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     * is safe and its results are stable. The same node is typically resolved several times per occurrence (e.g. once
     * for the decl name, again for the type, again while building the identifier node).
     */
-  private val fullNameCache = mutable.HashMap.empty[(Int, Int, FullnameProvider.Kind, String), Option[String]]
+  private val resolvedInfoCache =
+    mutable.HashMap.empty[(Int, Int, FullnameProvider.Kind, String), Option[ResolvedTypeInfo]]
 
-  /** Memoized entry point for [[fullName]]. Keyed by the original range plus kind and nodeKind. */
+  /** Memoized entry point for [[resolvedInfo]]. Keyed by the original range plus kind and nodeKind. */
+  private def cachedResolvedInfo(
+    range: (Int, Int),
+    kind: FullnameProvider.Kind,
+    nodeKind: String
+  ): Option[ResolvedTypeInfo] = {
+    resolvedInfoCache.getOrElseUpdate((range._1, range._2, kind, nodeKind), resolvedInfo(range, kind, nodeKind))
+  }
+
   private def cachedFullName(range: (Int, Int), kind: FullnameProvider.Kind, nodeKind: String): Option[String] = {
-    fullNameCache.getOrElseUpdate((range._1, range._2, kind, nodeKind), fullName(range, kind, nodeKind))
+    cachedResolvedInfo(range, kind, nodeKind).flatMap { info =>
+      kind match {
+        case FullnameProvider.Kind.Type => info.typeFullname
+        case FullnameProvider.Kind.Decl => info.declFullname
+      }
+    }
   }
 
   /** Retrieves the type fullName for a given source range and node kind.
@@ -183,6 +197,21 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     (node.startOffset, node.endOffset) match {
       case (Some(start), Some(end)) => declFullname((start, end), node.toString)
       case _                        => None
+    }
+  }
+
+  /** Tells whether the given call node is a call on a type (static or class function, enum case, or initializer via a
+    * qualified type name) according to the compiler's information.
+    *
+    * @return
+    *   `Some(true/false)` if the compiler provided declaration information for the node, `None` otherwise.
+    */
+  def isStaticCall(node: SwiftNode): Option[Boolean] = {
+    if (typeMap.isEmpty) return None
+    (node.startOffset, node.endOffset) match {
+      case (Some(start), Some(end)) =>
+        cachedResolvedInfo((start, end), FullnameProvider.Kind.Decl, node.toString).map(_.isStaticCall)
+      case _ => None
     }
   }
 
