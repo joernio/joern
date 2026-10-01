@@ -17,6 +17,12 @@ class AstForPackageConstructorCreator(val pacakgePath: String, statements: Set[P
 ) extends AstCreatorBase[BaseNodeInfo[?], AstForPackageConstructorCreator](pacakgePath)
     with AstGenNodeBuilder[AstForPackageConstructorCreator] {
 
+  override protected val isOffsetNeeded: Boolean = true
+
+  override protected lazy val offsetNormalizer: Int => Int = identity
+
+  override protected def unadjustedOffset(node: BaseNodeInfo[?]): Option[(Int, Int)] = None
+
   override def createAst(): DiffGraphBuilder = {
     val name       = StringUtils.normalizeSpace(s"$pacakgePath${XDefines.StaticInitMethodName}")
     val node       = ParserNodeInfo(Unknown, Value("{}"), name, Some(0), Some(0), Some(0), Some(0))

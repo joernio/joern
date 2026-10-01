@@ -77,12 +77,13 @@ class OffsetTests extends RubyCode2CpgFixture(disableFileContent = false) {
       "test.erb"
     )
 
-    "produce offsets without throwing an exception" in {
-      // ERB nodes get raw (unconverted) offsets — they may exceed file.content length
-      // but should never crash.
+    "produce raw offsets whose span matches each literal's own code length" in {
+      // We can't substring file.content here (ERB offsets reference the synthetic expanded Ruby,
+      // not the original .erb source)
       cpg.literal.l.foreach { lit =>
-        lit.offset should (be(defined) or be(None))
-        lit.offsetEnd should (be(defined) or be(None))
+        lit.offset shouldBe defined
+        lit.offsetEnd shouldBe defined
+        lit.offsetEnd.get - lit.offset.get shouldBe lit.code.length
       }
     }
   }

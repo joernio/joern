@@ -290,6 +290,12 @@ class AstCreator(
 
   override def code(node: Host): String = node.toString
 
+  override val isOffsetNeeded: Boolean = true
+
+  override lazy val offsetNormalizer: Int => Int = identity
+
+  override def unadjustedOffset(node: Host): Option[(Int, Int)] = None
+
   /** Tracks AST scope.
     */
   protected val stack: mutable.Stack[Ast] = mutable.Stack.empty

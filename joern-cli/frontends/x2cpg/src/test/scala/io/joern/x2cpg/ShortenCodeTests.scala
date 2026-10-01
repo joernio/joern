@@ -15,6 +15,10 @@ class ShortenCodeTests extends AnyFunSuite with Matchers {
     protected def columnEnd(node: Unit): Option[Int] = None
     protected def code(node: Unit): String           = ""
 
+    protected val isOffsetNeeded: Boolean                          = true
+    protected lazy val offsetNormalizer: Int => Int                = identity
+    protected def unadjustedOffset(node: Unit): Option[(Int, Int)] = None
+
     // Expose the protected method for testing
     def runShorten(s: String, maxCodeLength: Int = envMax): String = shortenCode(s, maxCodeLength)
   }

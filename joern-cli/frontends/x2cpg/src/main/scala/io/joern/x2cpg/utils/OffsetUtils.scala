@@ -84,13 +84,17 @@ object OffsetUtils {
     // A multi-unit span is where several source units (bytes/codepoints) collapse to a single UTF-16
     // offset, e.g. the 2-4 UTF-8 bytes of one character all mapping to the same UTF-16 code unit.
     def add(index: Int, offset: Int, isMultiUnitSpan: Boolean): Unit = {
-      indices.addOne(index); offsets.addOne(offset); this.isMultiUnitSpan.addOne(isMultiUnitSpan)
+      indices.addOne(index)
+      offsets.addOne(offset)
+      this.isMultiUnitSpan.addOne(isMultiUnitSpan)
     }
 
     def build(): Int => Int = {
       val indicesArr = indices.result()
-      if (indicesArr.isEmpty) identity
-      else new SparseOffsetConverter(indicesArr, offsets.result(), isMultiUnitSpan.result())
+      if (indicesArr.isEmpty)
+        identity
+      else
+        new SparseOffsetConverter(indicesArr, offsets.result(), isMultiUnitSpan.result())
     }
   }
 

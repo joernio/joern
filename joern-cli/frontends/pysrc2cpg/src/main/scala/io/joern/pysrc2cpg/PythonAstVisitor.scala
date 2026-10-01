@@ -2202,6 +2202,12 @@ class PythonAstVisitor(
   override protected def lineEnd(node: iast): Option[Int]      = None
   override protected def columnEnd(element: iast): Option[Int] = None
   override protected def code(node: iast): String              = node.toString
+
+  override protected val isOffsetNeeded: Boolean = true
+
+  override protected lazy val offsetNormalizer: Int => Int = identity
+
+  override protected def unadjustedOffset(node: iast): Option[(Int, Int)] = None
 }
 
 object PythonAstVisitor {

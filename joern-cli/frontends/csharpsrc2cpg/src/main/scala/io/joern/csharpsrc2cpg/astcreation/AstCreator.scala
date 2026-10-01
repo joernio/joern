@@ -43,6 +43,12 @@ class AstCreator(
 
   protected var parseLevel: AstParseLevel = AstParseLevel.FULL_AST
 
+  override protected val isOffsetNeeded: Boolean = true
+
+  override protected lazy val offsetNormalizer: Int => Int = identity
+
+  override protected def unadjustedOffset(node: BaseNodeInfo[?]): Option[(Int, Int)] = None
+
   override def createAst(): DiffGraphBuilder = {
     val hash = String.format(
       "%032x",

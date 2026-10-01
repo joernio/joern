@@ -236,7 +236,9 @@ class AstCreator(
     column(lastElement)
   }
 
-  override def isOffsetNeeded: Boolean = !disableFileContent
+  override val isOffsetNeeded: Boolean = !disableFileContent
+
+  override lazy val offsetNormalizer: Int => Int = identity
 
   override def unadjustedOffset(element: PsiElement): Option[(Int, Int)] = {
     Option(element).map { someElement =>

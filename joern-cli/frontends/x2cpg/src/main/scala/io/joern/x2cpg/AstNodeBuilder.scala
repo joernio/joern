@@ -55,11 +55,11 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     }
   }
 
-  protected def offsetNormalizer: Int => Int = identity
+  protected def offsetNormalizer: Int => Int
 
-  protected def unadjustedOffset(node: Node): Option[(Int, Int)] = None
+  protected def unadjustedOffset(node: Node): Option[(Int, Int)]
 
-  protected def isOffsetNeeded: Boolean = true
+  protected def isOffsetNeeded: Boolean
 
   protected final def offset(node: Node): Option[(Int, Int)] = {
     Option

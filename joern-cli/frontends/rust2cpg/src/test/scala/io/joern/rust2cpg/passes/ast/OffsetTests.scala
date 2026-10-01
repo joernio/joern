@@ -16,7 +16,10 @@ class OffsetTests extends Rust2CpgSuite(noSysRoot = true, disableFileContent = f
     "have correct offsets on the method" in {
       inside(cpg.method.nameExact("main").l) { case main :: Nil =>
         val fileContent = cpg.file.content.head
-        fileContent.substring(main.offset.get, main.offsetEnd.get) should include("fn main()")
+        fileContent.substring(main.offset.get, main.offsetEnd.get) shouldBe
+          """fn main() {
+            | let x = 42;
+            |}""".stripMargin
       }
     }
 

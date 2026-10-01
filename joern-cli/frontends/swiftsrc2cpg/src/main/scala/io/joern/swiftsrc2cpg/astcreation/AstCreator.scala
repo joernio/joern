@@ -112,7 +112,7 @@ class AstCreator(
   override protected def lineEnd(node: SwiftNode): Option[Int]   = node.endLine
   override protected def columnEnd(node: SwiftNode): Option[Int] = node.endColumn
 
-  override protected def isOffsetNeeded: Boolean = !config.disableFileContent
+  override protected val isOffsetNeeded: Boolean = !config.disableFileContent
 
   override protected lazy val offsetNormalizer: Int => Int =
     OffsetUtils.buildOffsetConverter(

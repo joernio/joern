@@ -48,6 +48,12 @@ class AstCreator(
   protected val fullyQualifiedPackage =
     goMod.getNameSpace(parserResult.fullPath, declaredPackageName)
 
+  override protected val isOffsetNeeded: Boolean = true
+
+  override protected lazy val offsetNormalizer: Int => Int = identity
+
+  override protected def unadjustedOffset(node: BaseNodeInfo[?]): Option[(Int, Int)] = None
+
   override def createAst(): DiffGraphBuilder = {
     val rootNode = createParserNodeInfo(parserResult.json)
     preProcessParserNodeCache(parserResult.json)

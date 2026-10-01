@@ -92,7 +92,7 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
   override protected def lineEnd(node: RustNode): Option[Int]   = None
   override protected def columnEnd(node: RustNode): Option[Int] = None
 
-  override protected def isOffsetNeeded: Boolean = !config.disableFileContent
+  override protected val isOffsetNeeded: Boolean = !config.disableFileContent
 
   override protected lazy val offsetNormalizer: Int => Int =
     OffsetUtils.buildOffsetConverter(
