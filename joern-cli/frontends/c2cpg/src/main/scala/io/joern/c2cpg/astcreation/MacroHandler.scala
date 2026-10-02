@@ -59,8 +59,14 @@ trait MacroHandler { this: AstCreator =>
     * (Some(macroDefinition, arguments)) if a macro definition matches and None otherwise.
     */
   private def extractMatchingMacro(node: IASTNode): Option[(IASTPreprocessorMacroDefinition, List[String])] = {
+    // CDT can hand us nodes without a file location (e.g., operands detached during its ambiguity resolution).
+    // Such a node cannot be matched against the macro expansion offsets.
+    val nodeFileLocation = Option(node.getFileLocation) match {
+      case Some(loc) => loc
+      case None      => return None
+    }
     val expansionLocations = expandedFromMacro(node).filterNot(isExpandedFrom(node.getParent, _))
-    val nodeOffset         = node.getFileLocation.getNodeOffset
+    val nodeOffset         = nodeFileLocation.getNodeOffset
     var matchingMacro      = Option.empty[(IASTPreprocessorMacroDefinition, List[String])]
 
     expansionLocations.foreach { macroLocation =>
@@ -69,7 +75,7 @@ trait MacroHandler { this: AstCreator =>
         val macroExpansionName   = ASTStringUtil.getSimpleName(macroLocation.getExpansion.getMacroDefinition.getName)
         val macroDefinitionName  = ASTStringUtil.getSimpleName(macroDefinition.getName)
         if (macroExpansionName == macroDefinitionName) {
-          val arguments = new MacroArgumentExtractor(cdtAst, node.getFileLocation).getArguments
+          val arguments = new MacroArgumentExtractor(cdtAst, nodeFileLocation).getArguments
           matchingMacro = Option((macroDefinition, arguments))
         }
       }
