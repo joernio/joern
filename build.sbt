@@ -82,6 +82,20 @@ lazy val root = project
     }
   )
 
+// Everything outside joern-cli, so CI can run it as its own shard: `sbt core/testFull`.
+// Not part of `root`'s aggregate (it would only duplicate the tests); never published.
+lazy val core = project
+  .in(file("target/core"))
+  .aggregate(
+    semanticcpg,
+    dataflowengineoss,
+    macros,
+    console,
+    querydb,
+    linterRules
+  )
+  .settings(publish / skip := true)
+
 ThisBuild / libraryDependencies ++= Seq(
   "org.slf4j"                % "slf4j-api"         % Versions.slf4j,
   "org.apache.logging.log4j" % "log4j-slf4j2-impl" % Versions.log4j % Optional,

@@ -26,12 +26,33 @@ jobs:
       - name: Validate CITATION.cff
         uses: dieghernan/cff-validator@d8f85828214016ce6976e740b6e0504c0fdc4dbb # v5
 
-  test:
+  test-shards:
     needs: [lint-and-format]
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        # `core` = everything outside joern-cli (see build.sbt); the rest are the joern-cli projects.
+        # Keep in sync when adding a frontend.
+        project:
+          - core
+          - joerncli
+          - x2cpg
+          - abap2cpg
+          - c2cpg
+          - csharpsrc2cpg
+          - ghidra2cpg
+          - gosrc2cpg
+          - javasrc2cpg
+          - jimple2cpg
+          - jssrc2cpg
+          - kotlin2cpg
+          - php2cpg
+          - pysrc2cpg
+          - rubysrc2cpg
+          - rust2cpg
+          - swiftsrc2cpg
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -76,8 +97,23 @@ jobs:
         with:
           toolchain: stable
           components: rust-src
+      - name: Stage frontends
+        # only console and joern-cli tests invoke the staged frontend binaries
+        if: matrix.project == 'core' || matrix.project == 'joerncli'
+        run: sbt "c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage"
       - name: Run tests
-        run: sbt "c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage ; testFull"
+        run: sbt "${{ matrix.project }}/testFull"
+
+  test:
+    needs: [test-shards]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Check all test shards passed
+        run: test "${{ needs.test-shards.result }}" = "success"
 
   test-scripts:
     needs: [lint-and-format]
