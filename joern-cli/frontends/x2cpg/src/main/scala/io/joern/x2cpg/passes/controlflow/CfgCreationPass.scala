@@ -40,7 +40,7 @@ class CfgCreationPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
       val max = hugeMethods.asScala.max
 
       logger.warn(
-        "{} methods have a huge CFG with over 100 000 nodes. the largest method {} has {} CFG nodes. Analysis may benefit from excluding the containing file(s).",
+        "{} methods have a huge CFG with over 100 000 nodes. the largest method {} has {} CFG edges. Analysis may benefit from excluding the containing file(s).",
         hugeMethods.size,
         max.method,
         max.size
