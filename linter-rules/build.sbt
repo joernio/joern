@@ -8,7 +8,7 @@ libraryDependencies += ("ch.epfl.scala" %% "scalafix-core" % _root_.scalafix.sbt
   .cross(CrossVersion.for3Use2_13)
 
 // The testkit is published per full Scala version, but only for the Scala 3 version current
-// at the scalafix release date (0.14.7 ships 3.3.8 and 3.8.4 — no 3.8.3 exists), so an exact
+// at the scalafix release date (0.14.9 ships 3.8.4 — no 3.8.3 exists), so an exact
 // match with ThisBuild scalaVersion is generally unavailable. A patch mismatch is harmless:
 // patches within a Scala 3 minor are binary/TASTy-compatible both ways, and the SemanticDB
 // under test is produced by the input project's own compiler (3.8.3), not by the testkit

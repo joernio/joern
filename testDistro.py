@@ -364,8 +364,8 @@ class TestRunner:
         env = os.environ.copy()
         env["CPG_VERSION"] = cpg_version
         
-        self.run_command([self.sbt_exe, "--server", "--batch", "clean ; replaceDomainClassesInJoern"],
-                        "Run SBT clean replaceDomainClassesInJoern", 
+        self.run_command([self.sbt_exe, "--server", "--batch", "replaceDomainClassesInJoern"],
+                        "Run SBT replaceDomainClassesInJoern",
                         cwd=schema_extender_dir, env=env)
         
         # Create and run test script

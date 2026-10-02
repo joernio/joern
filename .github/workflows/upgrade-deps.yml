@@ -32,9 +32,9 @@ jobs:
       - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
       - name: Upgrade all (internal) dependencies
         run: ./updateDependencies.sh --non-interactive
-      - run: sbt --server --batch "clean ; c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage ; testFull"
+      - run: sbt "c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage ; testFull"
       - name: Test distribution
         run: |
           python -m pip install requests pexpect
-          sbt --server --batch "joerncli/stage ; querydb/createDistribution"
+          sbt "joerncli/stage ; querydb/createDistribution"
           python -u ./testDistro.py
