@@ -26,12 +26,15 @@ jobs:
       - name: Validate CITATION.cff
         uses: dieghernan/cff-validator@d8f85828214016ce6976e740b6e0504c0fdc4dbb # v5
 
-  test:
+  test-shards:
     needs: [lint-and-format]
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        # aggregate projects defined in build.sbt
+        shard: [core, activeFrontends, communityFrontends]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -44,15 +47,18 @@ jobs:
           cache: sbt
       - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
       - name: Install php
-        if: matrix.os == 'macos-latest'
+        # core: querydb php tests
+        if: matrix.os == 'macos-latest' && matrix.shard != 'communityFrontends'
         run: brew install php
       - name: Set up Go
+        if: matrix.shard == 'communityFrontends'
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           cache: false
           go-version: 1.25
       - name: Set up Swift (macos-latest)
-        if: matrix.os == 'macos-latest'
+        # core: console tests run the staged swiftsrc2cpg
+        if: matrix.os == 'macos-latest' && matrix.shard != 'communityFrontends'
         uses: SwiftyLab/setup-swift@9014d4136569075c696d4151c7810ecde8712907 # v1.14.1
         # macos-latest runner switched to Xcode 26.4.1 as the new default
         # Some swiftsrc2cpg tests use `import Foundation` which can not be
@@ -67,17 +73,33 @@ jobs:
         with:
           swift-version: "6.3"
       - name: Set up Swift
-        if: matrix.os != 'macos-latest'
+        if: matrix.os != 'macos-latest' && matrix.shard != 'communityFrontends'
         uses: SwiftyLab/setup-swift@9014d4136569075c696d4151c7810ecde8712907 # v1.14.1
         with:
           swift-version: "6.1"
       - name: Set up Rust
+        if: matrix.shard == 'activeFrontends'
         uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # v1
         with:
           toolchain: stable
           components: rust-src
+      - name: Stage frontends
+        # only console and joern-cli tests invoke the staged frontend binaries
+        if: matrix.shard == 'core'
+        run: sbt "c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage"
       - name: Run tests
-        run: sbt "c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage ; testFull"
+        run: sbt "${{ matrix.shard }}/testFull"
+
+  test:
+    needs: [test-shards]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Check all test shards passed
+        run: test "${{ needs.test-shards.result }}" = "success"
 
   test-scripts:
     needs: [lint-and-format]

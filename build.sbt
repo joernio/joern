@@ -82,6 +82,24 @@ lazy val root = project
     }
   )
 
+// CI test shards, e.g. `sbt core/testFull`. Each one aggregates a subset of the projects above.
+// Not part of `root`'s aggregate (it would only duplicate the tests); never published.
+// Keep in sync when adding a project: every project must be covered by exactly one shard.
+lazy val core = project
+  .in(file("target/core"))
+  .aggregate(semanticcpg, dataflowengineoss, macros, console, querydb, linterRules, joerncli)
+  .settings(publish / skip := true)
+
+lazy val activeFrontends = project
+  .in(file("target/activeFrontends"))
+  .aggregate(c2cpg, javasrc2cpg, jssrc2cpg, kotlin2cpg, php2cpg, pysrc2cpg, rubysrc2cpg, rust2cpg, swiftsrc2cpg, x2cpg)
+  .settings(publish / skip := true)
+
+lazy val communityFrontends = project
+  .in(file("target/communityFrontends"))
+  .aggregate(abap2cpg, csharpsrc2cpg, ghidra2cpg, gosrc2cpg, jimple2cpg)
+  .settings(publish / skip := true)
+
 ThisBuild / libraryDependencies ++= Seq(
   "org.slf4j"                % "slf4j-api"         % Versions.slf4j,
   "org.apache.logging.log4j" % "log4j-slf4j2-impl" % Versions.log4j % Optional,
