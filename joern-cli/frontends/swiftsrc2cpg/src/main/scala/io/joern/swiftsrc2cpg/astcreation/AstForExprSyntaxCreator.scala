@@ -17,6 +17,43 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private val MaxInitializers = 1000
 
+  /** Type information of a temp holding a de-sugared tuple subject: its own type and the element types by field path.
+    */
+  private case class TupleSubjectTypes(tpe: String, elementTypes: Map[List[String], String])
+
+  /** Subject temps created when de-sugaring tuple matching (switch, if-case, guard-case, tuple declarations, ...).
+    * Keyed by [[tupleSubjectKey]]: the temp names are only unique per enclosing method (see `scopeLocalUniqueName`).
+    */
+  private val tupleSubjects = scala.collection.mutable.HashMap.empty[String, TupleSubjectTypes]
+
+  private def tupleSubjectKey(tmpName: String): String = s"${scope.computeScopePath}.$tmpName"
+
+  /** Records the types of a tuple subject that gets copied into the temp variable `tmpName` during de-sugaring, e.g.
+    * `switch (x, "s") { ... }` becomes `<subject>0 = (x, "s"); switch <subject>0 { ... }`.
+    *
+    * Later field accesses like `<subject>0.1` look up these types via `createFieldAccessChain`.
+    *   - The type of the temp itself is the compiler type of `subject`, or `defaultType` if there is none. It is
+    *     returned.
+    *   - The type of each field (by index path, e.g. `List("2", "0")` for `<subject>0.2.0`) is the compiler type of the
+    *     corresponding element. It is only recorded if `subject` is a tuple literal. For any other subject (e.g. a
+    *     variable or a call) no element types are recorded here; `createFieldAccessChain` then uses the compiler type
+    *     of the matching pattern (literals and bindings only) for the last field, and `Any` for everything else.
+    */
+  protected def registerTupleSubject(tmpName: String, subject: SwiftNode, defaultType: String): String = {
+    val subjectType = fullnameProvider.typeFullname(subject).getOrElse(defaultType)
+    registerType(subjectType)
+    val elementTypes = subject match {
+      case tupleSubject: TupleExprSyntax => tupleElementTypes(tupleSubject, List.empty)
+      case _                             => Map.empty[List[String], String]
+    }
+    tupleSubjects.put(tupleSubjectKey(tmpName), TupleSubjectTypes(subjectType, elementTypes))
+    subjectType
+  }
+
+  /** The type of a registered tuple subject temp, or `Any` if it is not registered. */
+  protected def tupleSubjectType(tmpName: String): String =
+    tupleSubjects.get(tupleSubjectKey(tmpName)).map(_.tpe).getOrElse(Defines.Any)
+
   private def astForEmptyListLikeExpr(node: SwiftNode): Ast = {
     val op  = Operators.arrayInitializer
     val tpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
@@ -786,13 +823,74 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     * identifier/field-identifier nodes so the resulting AST can be safely used as an argument without node-sharing
     * issues.
     */
-  protected def createFieldAccessChain(baseName: String, fields: List[String], node: SwiftNode): Ast = {
-    val baseNode = identifierNode(node, baseName)
-    val baseAst  = Ast(baseNode)
-    scope.addVariableReference(baseName, baseNode, baseNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
-    fields.foldLeft(baseAst) { (accAst, field) =>
-      createFieldAccessCallAst(node, accAst, fieldIdentifierNode(node, field, field))
+  protected def createFieldAccessChain(
+    baseName: String,
+    fields: List[String],
+    node: SwiftNode,
+    leafType: Option[String] = None
+  ): Ast = {
+    tupleSubjects.get(tupleSubjectKey(baseName)).map(_.elementTypes) match {
+      case Some(elementTypes) =>
+        // Base is a de-sugared tuple subject temp: use its declared type and the per-element types of the subject.
+        val baseType = scope.lookupVariable(baseName).map(_._2).getOrElse(Defines.Tuple)
+        registerType(baseType)
+        val baseNode = identifierNode(node, baseName, baseName, baseType)
+        val baseAst  = Ast(baseNode)
+        scope.addVariableReference(baseName, baseNode, baseType, EvaluationStrategies.BY_REFERENCE)
+        val (chainAst, _) = fields.foldLeft((baseAst, List.empty[String])) { case ((accAst, accPath), field) =>
+          val path = accPath :+ field
+          val tpe  = elementTypes.get(path).orElse(if (path == fields) leafType else None).getOrElse(Defines.Any)
+          registerType(tpe)
+          (createFieldAccessCallAst(node, accAst, fieldIdentifierNode(node, field, field), Some(tpe)), path)
+        }
+        chainAst
+      case None =>
+        val baseNode = identifierNode(node, baseName)
+        val baseAst  = Ast(baseNode)
+        scope.addVariableReference(baseName, baseNode, baseNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
+        fields.foldLeft(baseAst) { (accAst, field) =>
+          createFieldAccessCallAst(node, accAst, fieldIdentifierNode(node, field, field))
+        }
     }
+  }
+
+  /** The type of the field access created by [[createFieldAccessChain]]. */
+  private def accessType(accessAst: Ast): String = accessAst.root match {
+    case Some(call: NewCall) => call.typeFullName
+    case _                   => Defines.Any
+  }
+
+  /** The type the compiler reports for a binding pattern element (e.g. `a` in `let (a, b)`). Only a fallback if the
+    * subject is no tuple literal.
+    */
+  private def patternElementType(element: SwiftNode): Option[String] = fullnameProvider.typeFullname(element)
+
+  /** The type the compiler reports for a literal in a matching pattern (e.g. `1` in `case (1, "a")`). Other matching
+    * patterns are not queried: their type is not necessarily the type of the matched element (e.g. `ClosedRange<Int>`
+    * for `2...5`, or any type with a custom `~=`), whereas literals are typed by their context.
+    */
+  private def literalPatternElementType(expr: SwiftNode): Option[String] = expr match {
+    case _: IntegerLiteralExprSyntax | _: FloatLiteralExprSyntax | _: BooleanLiteralExprSyntax |
+        _: StringLiteralExprSyntax | _: NilLiteralExprSyntax =>
+      fullnameProvider.typeFullname(expr)
+    case _ => None
+  }
+
+  /** Collects the types of all elements of a tuple subject expression by path (e.g. `List("0", "1")`). Only elements
+    * for which the compiler reported a type are contained. Nothing is derived by parsing type strings.
+    */
+  private def tupleElementTypes(tupleExpr: TupleExprSyntax, parentPath: List[String]): Map[List[String], String] = {
+    val elements = tupleExpr.elements.children.toList
+    if (elements.size < 2) return Map.empty
+    elements.zipWithIndex.flatMap { case (element, idx) =>
+      val path     = parentPath :+ s"$idx"
+      val own      = fullnameProvider.typeFullname(element.expression).map(path -> _)
+      val children = element.expression match {
+        case inner: TupleExprSyntax => tupleElementTypes(inner, path)
+        case _                      => Map.empty[List[String], String]
+      }
+      own.toList ++ children
+    }.toMap
   }
 
   /** De-sugaring from:
@@ -820,10 +918,11 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           astForExpressionTuplePattern(inner, subjectBase, currentPath, node)
         case _ =>
           val subjectCode = (subjectBase :: currentPath).mkString(".")
-          val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
-          val rhsAst      = astForNode(element)
-          val eqCode      = s"$subjectCode == ${code(element.expression)}"
-          val eqNode      = createStaticCallNode(node, eqCode, Operators.equals, Operators.equals, Defines.Bool)
+          val subjectAst  =
+            createFieldAccessChain(subjectBase, currentPath, node, literalPatternElementType(element.expression))
+          val rhsAst = astForNode(element)
+          val eqCode = s"$subjectCode == ${code(element.expression)}"
+          val eqNode = createStaticCallNode(node, eqCode, Operators.equals, Operators.equals, Defines.Bool)
           callAst(eqNode, List(subjectAst, rhsAst))
       }
     }
@@ -925,12 +1024,14 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     varName: String,
     subjectAst: Ast,
     subjectCode: String,
-    anchorNode: SwiftNode
+    anchorNode: SwiftNode,
+    elementType: String
   ): List[Ast] = {
-    val localNode_ = localNode(anchorNode, varName, varName, Defines.Any).order(0)
+    registerType(elementType)
+    val localNode_ = localNode(anchorNode, varName, varName, elementType).order(0)
     diffGraph.addEdge(localAstParentStack.head, localNode_, EdgeTypes.AST)
-    scope.addVariable(varName, localNode_, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
-    val lhsNode    = identifierNode(anchorNode, varName)
+    scope.addVariable(varName, localNode_, elementType, VariableScopeManager.ScopeType.BlockScope)
+    val lhsNode    = identifierNode(anchorNode, varName, varName, elementType)
     val assignCode = s"$varName = $subjectCode"
     List(createAssignmentCallAst(anchorNode, Ast(lhsNode), subjectAst, assignCode))
   }
@@ -952,21 +1053,25 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
               astsForBindingTuplePattern(inner, subjectBase, currentPath, node)
             case _ =>
               val subjectCode = (subjectBase :: currentPath).mkString(".")
-              val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
-              astForBindingInTupleContext(code(vb.pattern), subjectAst, subjectCode, tuplePat)
+              val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node, patternElementType(vb.pattern))
+              astForBindingInTupleContext(code(vb.pattern), subjectAst, subjectCode, tuplePat, accessType(subjectAst))
           }
         case _: WildcardPatternSyntax =>
           List.empty
         case other =>
           val subjectCode = (subjectBase :: currentPath).mkString(".")
-          val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
+          val leafType    = other match {
+            case ep: ExpressionPatternSyntax => literalPatternElementType(ep.expression)
+            case _                           => None
+          }
+          val subjectAst = createFieldAccessChain(subjectBase, currentPath, node, leafType)
           other match {
             case isType: IsTypePatternSyntax =>
               astForIsTypePatternInTupleContext(isType, subjectAst, subjectCode, node)
             case ep: ExpressionPatternSyntax =>
               astForExpressionPatternInTupleContext(ep, subjectAst, subjectCode, node)
             case _ =>
-              astForBindingInTupleContext(code(other), subjectAst, subjectCode, tuplePat)
+              astForBindingInTupleContext(code(other), subjectAst, subjectCode, tuplePat, accessType(subjectAst))
           }
       }
     }
@@ -1019,10 +1124,17 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           List.empty
         case expr =>
           val subjectCode = (subjectBase :: currentPath).mkString(".")
-          val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
-          if (allBindings || isBindingExpression(expr)) {
+          val isBinding   = allBindings || isBindingExpression(expr)
+          val subjectAst  =
+            createFieldAccessChain(
+              subjectBase,
+              currentPath,
+              node,
+              if (isBinding) patternElementType(expr) else literalPatternElementType(expr)
+            )
+          if (isBinding) {
             val varName = extractBindingName(expr)
-            astForBindingInTupleContext(varName, subjectAst, subjectCode, tupleExpr)
+            astForBindingInTupleContext(varName, subjectAst, subjectCode, tupleExpr, accessType(subjectAst))
           } else {
             expr match {
               case p: PatternExprSyntax =>
@@ -1106,26 +1218,25 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val hasTuplePatterns = cases.exists(hasTuplePattern)
 
     if (hasTuplePatterns) {
-      // TODO: The whole branch here is not yet using types from the subject expression.
-      //  Query the type from the subject expression and use it to set the type of the temp and index access nodes where appropriate.
       val outerBlockNode = blockNode(node)
       scope.pushNewBlockScope(outerBlockNode)
       localAstParentStack.push(outerBlockNode)
 
       // The subject may have side effects - assign it to a temp so it is evaluated only once.
       val subjectTmpName   = scopeLocalUniqueName("subject")
-      val subjectLocalNode = localNode(node, subjectTmpName, subjectTmpName, Defines.Tuple).order(0)
+      val subjectType      = registerTupleSubject(subjectTmpName, node.subject, Defines.Tuple)
+      val subjectLocalNode = localNode(node, subjectTmpName, subjectTmpName, subjectType).order(0)
       diffGraph.addEdge(localAstParentStack.head, subjectLocalNode, EdgeTypes.AST)
-      scope.addVariable(subjectTmpName, subjectLocalNode, Defines.Tuple, VariableScopeManager.ScopeType.BlockScope)
+      scope.addVariable(subjectTmpName, subjectLocalNode, subjectType, VariableScopeManager.ScopeType.BlockScope)
 
       val subjectExprAst   = astForNode(node.subject)
-      val subjectIdentNode = identifierNode(node, subjectTmpName, subjectTmpName, Defines.Tuple)
-      scope.addVariableReference(subjectTmpName, subjectIdentNode, Defines.Tuple, EvaluationStrategies.BY_REFERENCE)
+      val subjectIdentNode = identifierNode(node, subjectTmpName, subjectTmpName, subjectType)
+      scope.addVariableReference(subjectTmpName, subjectIdentNode, subjectType, EvaluationStrategies.BY_REFERENCE)
       val subjectAssignAst =
         createAssignmentCallAst(node, Ast(subjectIdentNode), subjectExprAst, s"$subjectTmpName = ${code(node.subject)}")
 
-      val condIdentNode = identifierNode(node, subjectTmpName, subjectTmpName, Defines.Tuple)
-      scope.addVariableReference(subjectTmpName, condIdentNode, Defines.Tuple, EvaluationStrategies.BY_REFERENCE)
+      val condIdentNode = identifierNode(node, subjectTmpName, subjectTmpName, subjectType)
+      scope.addVariableReference(subjectTmpName, condIdentNode, subjectType, EvaluationStrategies.BY_REFERENCE)
       val condAst = Ast(condIdentNode)
 
       val switchBlockNode = blockNode(node).order(2)

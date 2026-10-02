@@ -1226,12 +1226,13 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           //      b = <tmp>N.1
           //      (wildcards produce no local and no assignment)
           val tmpName      = scopeLocalUniqueName("tmp")
-          val tmpLocalNode = localNode(binding, tmpName, tmpName, Defines.Any).order(0)
+          val tmpType      = registerTupleSubject(tmpName, binding.initializer.get.value, Defines.Any)
+          val tmpLocalNode = localNode(binding, tmpName, tmpName, tmpType).order(0)
           diffGraph.addEdge(localAstParentStack.head, tmpLocalNode, EdgeTypes.AST)
-          scope.addVariable(tmpName, tmpLocalNode, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
+          scope.addVariable(tmpName, tmpLocalNode, tmpType, VariableScopeManager.ScopeType.BlockScope)
 
-          val tmpIdentNode = identifierNode(binding, tmpName, tmpName, Defines.Any)
-          scope.addVariableReference(tmpName, tmpIdentNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+          val tmpIdentNode = identifierNode(binding, tmpName, tmpName, tmpType)
+          scope.addVariableReference(tmpName, tmpIdentNode, tmpType, EvaluationStrategies.BY_REFERENCE)
           val initAst   = astForNode(binding.initializer.get.value)
           val tmpAssign = createAssignmentCallAst(
             binding,
