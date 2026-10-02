@@ -62,6 +62,12 @@ object RetryableAssertion {
     backoffMultiplier: Double = 1.0
   )
 
+  /** Generous configuration for tests hitting the network (e.g. Maven Central), where transient failures last seconds.
+    * Delays: 1s, 2s, 4s, 8s, 16s (~31s total), overall timeout 60s.
+    */
+  val NetworkRetryConfig: RetryConfig =
+    RetryConfig(maxRetries = 5, retryDelay = 1.second, timeout = 60.seconds, backoffMultiplier = 2.0)
+
   /** Repeatedly evaluates the given `assertion` until it succeeds or the configured timeout / retry limit is reached.
     *
     * The method will retry on exceptions of type `E` up to `config.maxRetries` times, waiting `config.retryDelay`

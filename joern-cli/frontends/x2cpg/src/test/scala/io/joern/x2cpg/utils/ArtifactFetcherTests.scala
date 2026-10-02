@@ -2,7 +2,7 @@ package io.joern.x2cpg.utils
 
 import io.joern.x2cpg.testfixtures.NetworkTest
 import io.joern.x2cpg.utils.ArtifactFetcherTests.artifactFetcherTest
-import io.joern.x2cpg.testfixtures.RetryableAssertion.eventually
+import io.joern.x2cpg.testfixtures.RetryableAssertion.{eventually, NetworkRetryConfig, RetryConfig}
 import io.shiftleft.semanticcpg.utils.FileUtil
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -82,6 +82,8 @@ class ArtifactFetcherTests extends AnyWordSpec with Matchers {
 }
 
 object ArtifactFetcherTests {
+  private implicit val retryConfig: RetryConfig = NetworkRetryConfig
+
   def artifactFetcherTest(test: Path => Unit): Unit = {
     eventually[Unit, IOException] {
       FileUtil.usingTemporaryDirectory("artifact-fetcher-test-")(test(_))
