@@ -178,7 +178,9 @@ class RubyAstGenRunner(config: Config, sharedJRubyEnv: Option[JRubyEnvironment] 
     }
   }
 
-  private def executeWithJRuby(script: Path): Try[Seq[String]] = {
+  // The scripting container (and its output/error streams) may be shared between runners, so executions on the same
+  // environment must not interleave.
+  private def executeWithJRuby(script: Path): Try[Seq[String]] = jrubyEnv.synchronized {
     Using.resources(new ByteArrayOutputStream(), new ByteArrayOutputStream()) { (outStream, errStream) =>
       container.setOutput(new PrintStream(outStream))
       container.setError(new PrintStream(errStream))
@@ -242,10 +244,13 @@ object RubyAstGenRunner {
         .getOrElse(prepareExecutionEnvironment("ruby_ast_gen"))
       val cwd        = env.path.toAbsolutePath.toString
       val bundleBase = env.path.resolve("vendor").resolve("bundle").resolve("jruby")
-      val rubyAbi    = Files.list(bundleBase).iterator.asScala.next().getFileName.toString
-      val gemPath    = bundleBase.resolve(rubyAbi).toString
-      val container  = new ScriptingContainer(LocalContextScope.THREADSAFE, LocalVariableBehavior.TRANSIENT)
-      val config     = container.getProvider.getRubyInstanceConfig
+      // Directory listing order is file system dependent, so pick deterministically
+      val rubyAbi = Using.resource(Files.list(bundleBase)) { stream =>
+        stream.iterator.asScala.filter(Files.isDirectory(_)).map(_.getFileName.toString).toList.sorted.head
+      }
+      val gemPath   = bundleBase.resolve(rubyAbi).toString
+      val container = new ScriptingContainer(LocalContextScope.THREADSAFE, LocalVariableBehavior.TRANSIENT)
+      val config    = container.getProvider.getRubyInstanceConfig
       container.setCompileMode(RubyInstanceConfig.CompileMode.OFF)
       container.setNativeEnabled(true)
       container.setObjectSpaceEnabled(true)

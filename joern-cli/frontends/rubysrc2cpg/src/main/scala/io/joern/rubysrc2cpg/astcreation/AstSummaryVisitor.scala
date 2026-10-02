@@ -81,11 +81,11 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
         .getOrElse(m.fullName)
     } else { m.fullName }
 
-    def handleNestedTypes(t: TypeDecl, parentScope: String): Seq[(String, Set[RubyType])] = {
-      val typeFullName     = s"$parentScope.${t.name}"
-      val childrenTypes    = t.astChildren.collectAll[TypeDecl].l
+    def handleNestedTypes(typeDecl: TypeDecl, parentScope: String): Seq[(String, Seq[RubyType])] = {
+      val typeFullName     = s"$parentScope.${typeDecl.name}"
+      val childrenTypes    = typeDecl.astChildren.collectAll[TypeDecl].l
       val typesOnThisLevel = childrenTypes.flatMap(handleNestedTypes(_, typeFullName))
-      Seq(typeFullName -> childrenTypes.whereNot(_.methodBinding).map(toType).toSet) ++ typesOnThisLevel
+      Seq(typeFullName -> childrenTypes.whereNot(_.methodBinding).map(toType).l.distinct) ++ typesOnThisLevel
     }
 
     val mappings =
@@ -97,18 +97,21 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
         val namespaceFullName =
           if (asExternal) gemName else namespace.fullName
 
-        val moduleEntry = (path, namespaceFullName) -> namespace.method.map { module =>
-          val moduleFullName =
-            if (asExternal) gemName else module.fullName
+        val moduleEntry = (path, namespaceFullName) -> namespace.method
+          .map { module =>
+            val moduleFullName =
+              if (asExternal) gemName else module.fullName
 
-          val moduleTypeMap =
-            RubyType(
-              moduleFullName,
-              module.astChildren.collectAll[Method].map(toMethod).l,
-              module.local.map(toModuleVariable).l
-            )
-          moduleTypeMap
-        }.toSet
+            val moduleTypeMap =
+              RubyType(
+                moduleFullName,
+                module.astChildren.collectAll[Method].map(toMethod).l,
+                module.local.map(toModuleVariable).l
+              )
+            moduleTypeMap
+          }
+          .l
+          .distinct
         // Map module types
         val typeEntries = namespace.method.collectFirst {
           case m: Method if m.name == Defines.Main =>
@@ -117,16 +120,18 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
               if (childrenTypes.nonEmpty && asExternal) { buildFullName(childrenTypes.head) }
               else { s"${m.fullName}" }
             val nestedTypes = childrenTypes.flatMap(handleNestedTypes(_, fullName))
-            (path, fullName) -> (childrenTypes.whereNot(_.methodBinding).map(toType).toSet ++ nestedTypes.flatMap(_._2))
+            (path, fullName) -> (childrenTypes.whereNot(_.methodBinding).map(toType).l ++ nestedTypes.flatMap(
+              _._2
+            )).distinct
         }.toSeq
 
         moduleEntry +: typeEntries
       }.toList
 
     val namespaceMappings: mutable.Map[String, mutable.Set[RubyType]] =
-      mutable.Map.from(mappings.map { case (_, ns) -> entry => ns -> mutable.Set.from(entry) })
+      mutable.LinkedHashMap.from(mappings.map { case (_, ns) -> entry => ns -> mutable.LinkedHashSet.from(entry) })
     val pathMappings: mutable.Map[String, mutable.Set[RubyType]] =
-      mutable.Map.from(mappings.map { case (path, _) -> entry => path -> mutable.Set.from(entry) })
+      mutable.LinkedHashMap.from(mappings.map { case (path, _) -> entry => path -> mutable.LinkedHashSet.from(entry) })
 
     RubyProgramSummary(namespaceMappings, pathMappings)
   }

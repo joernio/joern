@@ -28,6 +28,23 @@ class RubyProgramSummary(
   override val namespaceToType: NamespaceToTypeMap = initialNamespaceMap
   val pathToType: NamespaceToTypeMap               = initialPathMap
 
+  /** All known types, ordered by namespace and then type name. The summary is no longer modified once it is used for
+    * AST creation, so this is computed once and shared. The hash-based collections backing this summary have no stable
+    * iteration order, so all lookups that yield multiple types are sorted to keep the results (and anything depending
+    * on their order) reproducible.
+    */
+  lazy val allTypesSorted: List[RubyType] =
+    namespaceToType.toList.sortBy(_._1).flatMap { case (_, types) => types.toList.sortBy(_.name) }
+
+  override def matchingTypes(typeName: String): List[RubyType] = {
+    val suffix = typeName.split('.')
+    allTypesSorted.filter(ty => ty.name.split('.').endsWith(suffix))
+  }
+
+  /** Same as `typesUnderNamespace`, but with a reproducible order. */
+  def typesUnderNamespaceSorted(namespace: String): List[RubyType] =
+    namespaceToType.get(namespace).map(_.toList.sortBy(_.name)).getOrElse(Nil)
+
   @targetName("appendAll")
   def ++=(other: RubyProgramSummary): RubyProgramSummary = {
     RubyProgramSummary(
@@ -57,7 +74,8 @@ object RubyProgramSummary {
                 .filter(file =>
                   Files.isRegularFile(file) && file.fileName.startsWith("rubysrc") && file.extension().contains(".zip")
                 )
-                .toSeq
+                .toList
+                .sortBy(_.toString) // directory walking order is file system dependent
             }
           }
       if (typeStubFiles.isEmpty) {
