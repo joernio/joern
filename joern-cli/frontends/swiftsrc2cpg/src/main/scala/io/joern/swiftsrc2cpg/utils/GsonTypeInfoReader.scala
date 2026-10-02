@@ -80,6 +80,8 @@ object GsonTypeInfoReader {
     var protocol: String                            = null
     var superclassType: String                      = null
     var receiverIsType: Boolean                     = false
+    var baseName: String                            = null
+    var isImplicit: Boolean                         = false
 
     def hasTypeOrDeclInfo: Boolean = {
       typeValue != null || typeUsr != null || resultValue != null || interfaceType != null || extendedType != null ||
@@ -125,6 +127,29 @@ object GsonTypeInfoReader {
 
   private def qualifies(node: AstNode): Boolean = {
     safeRange(node).isDefined && node.hasTypeOrDeclInfo
+  }
+
+  private val MatchOperator = "~="
+
+  /** Checks for a reference to the `~=` operator, possibly wrapped into implicit function conversions. */
+  @tailrec
+  private def isMatchOperatorRef(node: AstNode): Boolean = {
+    if (node == null) false
+    else if (node.kind == NodeKinds.DeclRefExpr) node.decl != null && node.decl.baseName == MatchOperator
+    else if (node.kind == NodeKinds.FunctionConversionExpr) isMatchOperatorRef(node.subExpr)
+    else false
+  }
+
+  /** Checks for nodes the compiler synthesizes to desugar expression patterns, e.g. for `case 1:` it generates the
+    * implicit call `1 ~= $match`. These nodes carry the range of the pattern expression, and thereby shadow its own
+    * type info with the type of the `~=` function, its `Bool` result, and the `$match` placeholder.
+    */
+  private def isSyntheticPatternMatch(node: AstNode): Boolean = node.kind match {
+    case NodeKinds.DeclRefExpr =>
+      node.decl != null && node.decl.baseName == "$match" || node.isImplicit && isMatchOperatorRef(node)
+    case NodeKinds.FunctionConversionExpr => node.isImplicit && isMatchOperatorRef(node)
+    case kind if kind.endsWith("_expr")   => node.isImplicit && isMatchOperatorRef(node.fn)
+    case _                                => false
   }
 
   private def isParameter(node: AstNode): Boolean = {
@@ -392,6 +417,10 @@ object GsonTypeInfoReader {
                   node.protocol = readPrimitiveAsString().orNull
                 case "superclass_type" =>
                   node.superclassType = readPrimitiveAsString().orNull
+                case "base_name" =>
+                  node.baseName = readPrimitiveAsString().orNull
+                case "implicit" =>
+                  node.isImplicit = readPrimitiveAsString().contains("true")
                 case _ =>
                   jsonReader.skipValue()
               }
@@ -409,7 +438,7 @@ object GsonTypeInfoReader {
       if (node.kind == NodeKinds.TypeExpr) markReceiverIsType()
 
       if (!isFromBuild && node.kind != null) {
-        if (qualifies(node)) {
+        if (qualifies(node) && !isSyntheticPatternMatch(node)) {
           extractTypeInfo(node, filename, None)
         } else if (isParameter(node)) {
           extractTypeInfo(node, filename, currentRange)

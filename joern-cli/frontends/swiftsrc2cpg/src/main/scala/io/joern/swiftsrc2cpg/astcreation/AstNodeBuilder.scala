@@ -96,8 +96,13 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     callAst(callNode_, arguments)
   }
 
-  protected def createFieldAccessCallAst(node: SwiftNode, baseAst: Ast, partNode: NewNode): Ast = {
-    val tpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+  protected def createFieldAccessCallAst(
+    node: SwiftNode,
+    baseAst: Ast,
+    partNode: NewNode,
+    explicitType: Option[String] = None
+  ): Ast = {
+    val tpe = explicitType.getOrElse(fullnameProvider.typeFullname(node).getOrElse(Defines.Any))
     registerType(tpe)
     val callNode_ = callNode(
       node,

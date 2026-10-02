@@ -278,7 +278,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         // dependencies through the generated &&- and nil-check chain.
         optionalBindingNames.get(name) match {
           case Some((baseName, fieldPath)) if fieldPath.nonEmpty =>
-            createFieldAccessChain(baseName, fieldPath, node)
+            createFieldAccessChain(baseName, fieldPath, node, fullnameProvider.typeFullname(node))
           case other =>
             val resolvedName = other.map(_.baseName).getOrElse(name)
             val identNode    = identifierNode(node, resolvedName)
@@ -689,6 +689,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         val tmpName = binding.initializer.map(_ => scopeLocalUniqueName("tmp"))
         if (tmpName.isDefined) {
           registerTuplePatternBindings(binding.pattern, tmpName.get)
+          registerTupleSubject(tmpName.get, binding.initializer.get.value, Defines.Any)
         }
         BindingInfo(
           scopeLocalUniqueName("tupleWildcard"),
@@ -790,9 +791,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val conditionAst = if (hasAnyInitializer) {
       bindingInfos.foreach { info =>
         info.tmpName.foreach { tmpName =>
-          val tmpLocalNode = localNode(info.binding, tmpName, tmpName, Defines.Any).order(0)
+          val tmpType      = tupleSubjectType(tmpName)
+          val tmpLocalNode = localNode(info.binding, tmpName, tmpName, tmpType).order(0)
           diffGraph.addEdge(localAstParentStack.head, tmpLocalNode, EdgeTypes.AST)
-          scope.addVariable(tmpName, tmpLocalNode, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
+          scope.addVariable(tmpName, tmpLocalNode, tmpType, VariableScopeManager.ScopeType.BlockScope)
         }
       }
 
@@ -803,8 +805,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       val nilCheckAsts = bindingInfos.map { info =>
         info.tmpName match {
           case Some(tmpName) =>
-            val tmpIdentNode = identifierNode(info.binding, tmpName, tmpName, Defines.Any)
-            scope.addVariableReference(tmpName, tmpIdentNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+            val tmpType      = tupleSubjectType(tmpName)
+            val tmpIdentNode = identifierNode(info.binding, tmpName, tmpName, tmpType)
+            scope.addVariableReference(tmpName, tmpIdentNode, tmpType, EvaluationStrategies.BY_REFERENCE)
             val initAst   = astForNode(info.binding.initializer.get.value)
             val assignAst = createAssignmentCallAst(
               info.binding,

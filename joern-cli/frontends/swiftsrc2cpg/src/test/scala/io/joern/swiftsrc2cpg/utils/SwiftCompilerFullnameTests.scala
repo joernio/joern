@@ -1,6 +1,7 @@
 package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.testfixtures.SwiftCompilerSrc2CpgSuite
+import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -65,6 +66,99 @@ class SwiftCompilerFullnameTests extends SwiftCompilerSrc2CpgSuite {
       cId.typeFullName shouldBe "Swift.Double"
       dId.typeFullName shouldBe "Swift.Int"
       eId.typeFullName shouldBe "Swift.Int"
+    }
+
+    "use subject element types for tuple switch de-sugaring" in {
+      val cpg = codeWithSwiftSetup("""
+          |func f(x: Int) {
+          |  switch (x, "s", (1.5, true)) {
+          |    case let (a, b, (c, d)):
+          |      print(a)
+          |    default:
+          |      break
+          |  }
+          |}
+          |""".stripMargin)
+      val tupleType = "(Swift.Int,Swift.String,(Swift.Double,Swift.Bool))"
+      cpg.local.nameExact("<subject>0").typeFullName.loneElement shouldBe tupleType
+      cpg.identifier.nameExact("<subject>0").typeFullName.dedup.loneElement shouldBe tupleType
+
+      cpg.call.codeExact("a = <subject>0.0").argument(2).isCall.typeFullName.loneElement shouldBe "Swift.Int"
+      cpg.call.codeExact("b = <subject>0.1").argument(2).isCall.typeFullName.loneElement shouldBe "Swift.String"
+      cpg.call.codeExact("c = <subject>0.2.0").argument(2).isCall.typeFullName.loneElement shouldBe "Swift.Double"
+      cpg.call.codeExact("d = <subject>0.2.1").argument(2).isCall.typeFullName.loneElement shouldBe "Swift.Bool"
+      // the intermediate access of the nested tuple
+      val cAccess = cpg.call.codeExact("c = <subject>0.2.0").argument(2).isCall
+      cAccess.argument(1).isCall.typeFullName.loneElement shouldBe "(Swift.Double,Swift.Bool)"
+
+      cpg.local.nameExact("a").typeFullName.loneElement shouldBe "Swift.Int"
+      cpg.local.nameExact("b").typeFullName.loneElement shouldBe "Swift.String"
+      cpg.local.nameExact("c").typeFullName.loneElement shouldBe "Swift.Double"
+      cpg.local.nameExact("d").typeFullName.loneElement shouldBe "Swift.Bool"
+    }
+
+    "use pattern types for tuple switch elements when the subject is not a tuple literal" in {
+      val cpg = codeWithSwiftSetup("""
+          |func f(t: (Int, String)) {
+          |  switch t {
+          |    case (1, "a"):
+          |      print("a")
+          |    case let (a, b):
+          |      print(a)
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.local.nameExact("<subject>0").typeFullName.loneElement shouldBe "(Swift.Int,Swift.String)"
+      // matching patterns: the literals
+      cpg.call.codeExact("<subject>0.0 == 1").argument(1).isCall.typeFullName.loneElement shouldBe "Swift.Int"
+      cpg.call.codeExact("<subject>0.1 == \"a\"").argument(1).isCall.typeFullName.loneElement shouldBe "Swift.String"
+      // binding patterns
+      cpg.call.codeExact("a = <subject>0.0").argument(2).isCall.typeFullName.loneElement shouldBe "Swift.Int"
+      cpg.call.codeExact("b = <subject>0.1").argument(2).isCall.typeFullName.loneElement shouldBe "Swift.String"
+      cpg.local.nameExact("a").typeFullName.loneElement shouldBe "Swift.Int"
+      cpg.local.nameExact("b").typeFullName.loneElement shouldBe "Swift.String"
+    }
+
+    "use subject element types for tuple declarations" in {
+      val cpg = codeWithSwiftSetup("""
+          |func f(x: Int) {
+          |  let (a, b) = (x, "s")
+          |}
+          |""".stripMargin)
+      cpg.local.nameExact("<tmp>0").typeFullName.loneElement shouldBe "(Swift.Int,Swift.String)"
+      cpg.identifier.nameExact("<tmp>0").typeFullName.dedup.loneElement shouldBe "(Swift.Int,Swift.String)"
+      cpg.call.codeExact("a = <tmp>0.0").argument(2).isCall.typeFullName.loneElement shouldBe "Swift.Int"
+      cpg.call.codeExact("b = <tmp>0.1").argument(2).isCall.typeFullName.loneElement shouldBe "Swift.String"
+      cpg.local.nameExact("a").typeFullName.loneElement shouldBe "Swift.Int"
+      cpg.local.nameExact("b").typeFullName.loneElement shouldBe "Swift.String"
+    }
+
+    "use subject element types for tuple if-case" in {
+      val cpg = codeWithSwiftSetup("""
+          |func f(x: Int) {
+          |  if case (let a, let b) = (x, "s") {
+          |    print("x")
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.local.nameExact("<tmp>0").typeFullName.loneElement shouldBe "(Swift.Int,Swift.String)"
+      cpg.call.codeExact("a = <tmp>0.0").argument(2).isCall.typeFullName.loneElement shouldBe "Swift.Int"
+      cpg.call.codeExact("b = <tmp>0.1").argument(2).isCall.typeFullName.loneElement shouldBe "Swift.String"
+      cpg.local.nameExact("a").typeFullName.loneElement shouldBe "Swift.Int"
+      cpg.local.nameExact("b").typeFullName.loneElement shouldBe "Swift.String"
+    }
+
+    "use subject element types for tuple guard-case" in {
+      val cpg = codeWithSwiftSetup("""
+          |func f(x: Int) {
+          |  guard case (let c, let d) = (x, 1.5) else { return }
+          |}
+          |""".stripMargin)
+      cpg.local.nameExact("<tmp>0").typeFullName.loneElement shouldBe "(Swift.Int,Swift.Double)"
+      cpg.call.codeExact("c = <tmp>0.0").argument(2).isCall.typeFullName.loneElement shouldBe "Swift.Int"
+      cpg.call.codeExact("d = <tmp>0.1").argument(2).isCall.typeFullName.loneElement shouldBe "Swift.Double"
+      cpg.local.nameExact("c").typeFullName.loneElement shouldBe "Swift.Int"
+      cpg.local.nameExact("d").typeFullName.loneElement shouldBe "Swift.Double"
     }
 
   }

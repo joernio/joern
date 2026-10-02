@@ -322,12 +322,13 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     localAstParentStack.push(blockNode_)
 
     val tmpName      = scopeLocalUniqueName("tmp")
-    val tmpLocalNode = localNode(node, tmpName, tmpName, Defines.Any).order(0)
+    val tmpType      = registerTupleSubject(tmpName, initValue, Defines.Any)
+    val tmpLocalNode = localNode(node, tmpName, tmpName, tmpType).order(0)
     diffGraph.addEdge(localAstParentStack.head, tmpLocalNode, EdgeTypes.AST)
-    scope.addVariable(tmpName, tmpLocalNode, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
+    scope.addVariable(tmpName, tmpLocalNode, tmpType, VariableScopeManager.ScopeType.BlockScope)
 
-    val tmpIdentNode = identifierNode(node, tmpName, tmpName, Defines.Any)
-    scope.addVariableReference(tmpName, tmpIdentNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+    val tmpIdentNode = identifierNode(node, tmpName, tmpName, tmpType)
+    scope.addVariableReference(tmpName, tmpIdentNode, tmpType, EvaluationStrategies.BY_REFERENCE)
     val initAst   = astForNode(initValue)
     val assignAst = createAssignmentCallAst(node, Ast(tmpIdentNode), initAst, s"$tmpName = ${code(initValue)}")
 
@@ -337,8 +338,8 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     val op               = Defines.createIsTupleOperator(arity)
     val isTupleCode      = s"$op($tmpName)"
     val isTupleNode      = createStaticCallNode(node, isTupleCode, op, op, Defines.Bool)
-    val tmpIdentForCheck = identifierNode(node, tmpName, tmpName, Defines.Any)
-    scope.addVariableReference(tmpName, tmpIdentForCheck, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+    val tmpIdentForCheck = identifierNode(node, tmpName, tmpName, tmpType)
+    scope.addVariableReference(tmpName, tmpIdentForCheck, tmpType, EvaluationStrategies.BY_REFERENCE)
     val isTupleAst = callAst(isTupleNode, List(Ast(tmpIdentForCheck)))
 
     scope.popScope()
