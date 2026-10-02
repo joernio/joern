@@ -8,6 +8,7 @@ import io.joern.swiftsrc2cpg.utils.FullnameProvider
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.SwiftFileLocalTypeMapping
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
+import io.joern.x2cpg.utils.OffsetUtils
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, ModifierTypes, NodeTypes, PropertyDefaults}
@@ -111,6 +112,13 @@ class AstCreator(
   override protected def lineEnd(node: SwiftNode): Option[Int]   = node.endLine
   override protected def columnEnd(node: SwiftNode): Option[Int] = node.endColumn
 
+  override protected def isOffsetNeeded: Boolean = !config.disableFileContent
+
+  override protected lazy val offsetNormalizer: Int => Int =
+    OffsetUtils.buildOffsetConverter(
+      OffsetUtils.OffsetSourceType.Bytes(parserResult.contentBytes, StandardCharsets.UTF_8)
+    )
+
   private def nodeOffsets(node: SwiftNode): Option[(Int, Int)] = {
     for {
       startOffset <- node.startOffset
@@ -118,9 +126,7 @@ class AstCreator(
     } yield (math.max(startOffset, 0), math.min(endOffset, parserResult.contentBytes.length))
   }
 
-  override protected def offset(node: SwiftNode): Option[(Int, Int)] = {
-    Option.when(!config.disableFileContent) { nodeOffsets(node) }.flatten
-  }
+  override protected def unadjustedOffset(node: SwiftNode): Option[(Int, Int)] = nodeOffsets(node)
 
   override protected def code(node: SwiftNode): String = {
     val (start, end) = nodeOffsets(node) match {

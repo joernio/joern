@@ -19,6 +19,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewTypeDecl
 }
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, PropertyDefaults, PropertyNames}
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 
@@ -91,10 +92,15 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
   override protected def lineEnd(node: RustNode): Option[Int]   = None
   override protected def columnEnd(node: RustNode): Option[Int] = None
 
-  // TODO: rust_ast_gen uses utf-8 offsets, whereas file.content is utf-16.
-  override protected def offset(node: RustNode): Option[(Int, Int)] = {
+  override protected def isOffsetNeeded: Boolean = !config.disableFileContent
+
+  override protected lazy val offsetNormalizer: Int => Int =
+    OffsetUtils.buildOffsetConverter(
+      OffsetUtils.OffsetSourceType.Bytes(parseResult.contentBytes, StandardCharsets.UTF_8)
+    )
+
+  override protected def unadjustedOffset(node: RustNode): Option[(Int, Int)] =
     if (node.isMacroExpanded) None else node.startOffset.zip(node.endOffset)
-  }
 
   override protected def code(node: RustNode): String = text(node).map(shortenCode(_)).getOrElse(PropertyDefaults.Code)
 

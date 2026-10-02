@@ -6,6 +6,7 @@ import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.utils.{BlockScope, MethodScope}
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
+import io.joern.x2cpg.utils.OffsetUtils
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes}
@@ -25,14 +26,17 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
 
   protected def code(phpNode: PhpNode): String = "" // Sadly, the Php AST does not carry any code fields
 
-  override protected def offset(phpNode: PhpNode): Option[(Int, Int)] = {
-    Option.when(!disableFileContent) {
-      val startPos =
-        new String(fileContentBytes.slice(0, phpNode.attributes.startFilePos), fileCharset).length
-      val endPos =
-        new String(fileContentBytes.slice(0, phpNode.attributes.endFilePos), fileCharset).length
-      (startPos, endPos)
-    }
+  override protected def isOffsetNeeded: Boolean = !disableFileContent
+
+  override protected lazy val offsetNormalizer: Int => Int =
+    OffsetUtils.buildOffsetConverter(OffsetUtils.OffsetSourceType.Bytes(fileContentBytes, fileCharset))
+
+  // The PHP parser uses -1 to signal it couldn't determine a position (rare parse errors) — treat
+  // that as no offset info at all, rather than normalizing a nonsensical value.
+  override protected def unadjustedOffset(phpNode: PhpNode): Option[(Int, Int)] = {
+    val start = phpNode.attributes.startFilePos
+    val end   = phpNode.attributes.endFilePos
+    Option.when(start >= 0 && end >= 0)((start, end))
   }
 
   protected def getTmpIdentifier(
