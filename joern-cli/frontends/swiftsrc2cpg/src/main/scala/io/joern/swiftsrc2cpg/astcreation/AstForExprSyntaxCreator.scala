@@ -21,8 +21,12 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     */
   private case class TupleSubjectTypes(tpe: String, elementTypes: Map[List[String], String])
 
-  /** Subject temps created when de-sugaring tuple matching (switch, if-case, guard-case, tuple declarations, ...). */
+  /** Subject temps created when de-sugaring tuple matching (switch, if-case, guard-case, tuple declarations, ...).
+    * Keyed by [[tupleSubjectKey]]: the temp names are only unique per enclosing method (see `scopeLocalUniqueName`).
+    */
   private val tupleSubjects = scala.collection.mutable.HashMap.empty[String, TupleSubjectTypes]
+
+  private def tupleSubjectKey(tmpName: String): String = s"${scope.computeScopePath}.$tmpName"
 
   /** Records the types of a tuple subject that gets copied into the temp variable `tmpName` during de-sugaring, e.g.
     * `switch (x, "s") { ... }` becomes `<subject>0 = (x, "s"); switch <subject>0 { ... }`.
@@ -42,13 +46,13 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case tupleSubject: TupleExprSyntax => tupleElementTypes(tupleSubject, List.empty)
       case _                             => Map.empty[List[String], String]
     }
-    tupleSubjects.put(tmpName, TupleSubjectTypes(subjectType, elementTypes))
+    tupleSubjects.put(tupleSubjectKey(tmpName), TupleSubjectTypes(subjectType, elementTypes))
     subjectType
   }
 
   /** The type of a registered tuple subject temp, or `Any` if it is not registered. */
   protected def tupleSubjectType(tmpName: String): String =
-    tupleSubjects.get(tmpName).map(_.tpe).getOrElse(Defines.Any)
+    tupleSubjects.get(tupleSubjectKey(tmpName)).map(_.tpe).getOrElse(Defines.Any)
 
   private def astForEmptyListLikeExpr(node: SwiftNode): Ast = {
     val op  = Operators.arrayInitializer
@@ -825,7 +829,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     node: SwiftNode,
     leafType: Option[String] = None
   ): Ast = {
-    tupleSubjects.get(baseName).map(_.elementTypes) match {
+    tupleSubjects.get(tupleSubjectKey(baseName)).map(_.elementTypes) match {
       case Some(elementTypes) =>
         // Base is a de-sugared tuple subject temp: use its declared type and the per-element types of the subject.
         val baseType = scope.lookupVariable(baseName).map(_._2).getOrElse(Defines.Tuple)

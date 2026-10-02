@@ -161,6 +161,26 @@ class SwiftCompilerFullnameTests extends SwiftCompilerSrc2CpgSuite {
       cpg.local.nameExact("d").typeFullName.loneElement shouldBe "Swift.Double"
     }
 
+    "not mix up subject temps with the same name in nested methods" in {
+      val cpg = codeWithSwiftSetup("""
+          |func f(x: Int) {
+          |  switch (x, "s") {
+          |    case (1, _):
+          |      func g() {
+          |        switch (1.5, true) {
+          |          case let (c, d): print(c, d)
+          |        }
+          |      }
+          |    case let (a, b): print(a, b)
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.call.codeExact("a = <subject>0.0").argument(2).isCall.typeFullName.loneElement shouldBe "Swift.Int"
+      cpg.call.codeExact("b = <subject>0.1").argument(2).isCall.typeFullName.loneElement shouldBe "Swift.String"
+      cpg.call.codeExact("c = <subject>0.0").argument(2).isCall.typeFullName.loneElement shouldBe "Swift.Double"
+      cpg.call.codeExact("d = <subject>0.1").argument(2).isCall.typeFullName.loneElement shouldBe "Swift.Bool"
+    }
+
   }
 
 }
