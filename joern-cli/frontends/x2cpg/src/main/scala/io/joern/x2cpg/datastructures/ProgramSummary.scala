@@ -67,7 +67,11 @@ object ProgramSummary {
         .map { case (namespace, typMap) =>
           val dedupedTypes = mutable.Set.from(
             typMap
-              .map { case (name, ts) => name -> ts.reduce((u, v) => (u + v).asInstanceOf[T]) }
+              .map { case (name, ts) =>
+                // `+` prefers the left-hand side, so fix the order in which duplicates are combined
+                val orderedTs = if (ts.sizeIs > 1) ts.toSeq.sortBy(_.toString) else ts.toSeq
+                name -> orderedTs.reduce((u, v) => (u + v).asInstanceOf[T])
+              }
               .values
               .toSet
           )
