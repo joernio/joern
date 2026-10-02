@@ -1127,6 +1127,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     whileExpr.expr match {
       case letExpr: LetExpr =>
         lowerWhileLet(whileExpr, letExpr)
+      case binExpr: BinExpr if isLetChain(binExpr) =>
+        lowerWhileLetChain(whileExpr, binExpr)
       case condition =>
         val conditionAst = visitExpr(condition)
         val bodyAst      = visitBlockExpr(whileExpr.blockExpr)
@@ -1163,6 +1165,39 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       (tmpLocalAst +: tmpAssignAst +: (localAsts ++ assignments ++ bodyAsts)).toList
     )
     whileAst(whileExpr, Some(conditionAst), Seq(bodyAst))
+  }
+
+  // `while let pat1 = expr1 && let pat2 = expr2 { body }` becomes:
+  // WHILE (true) {
+  //   LOCAL tmp1
+  //   tmp1 = expr1
+  //   <createLocalsForBindings(pat1)>
+  //   <createAssignmentsForPattern(pat1, tmp1)>
+  //
+  //   LOCAL tmp2
+  //   tmp2 = expr2
+  //   <createLocalsForBindings(pat2)>
+  //   <createAssignmentsForPattern(pat2, tmp2)>
+  //
+  //   IF (UNKNOWN(pat1) && UNKNOWN(pat2)) {
+  //    body
+  //   }
+  //   ELSE {
+  //    break
+  //   }
+  // }
+  private def lowerWhileLetChain(whileExpr: WhileExpr, binExpr: BinExpr): Ast = {
+    contextStack.pushBlock()
+    val (bindingAsts, conditionAst) = lowerLetChain(binExpr)
+    val thenAst                     = visitBlockExpr(whileExpr.blockExpr)
+    contextStack.pop()
+
+    val elseAst = blockAst(blockNode(whileExpr), List(breakAst(whileExpr, "break")))
+    val ifAst   = ifThenElseAst(whileExpr, Some(conditionAst), thenAst, Some(elseAst))
+
+    val trueAst = Ast(literalNode(whileExpr.whileKwToken, "true", "bool"))
+    val bodyAst = blockAst(blockNode(whileExpr), (bindingAsts :+ ifAst).toList)
+    whileAst(whileExpr, Some(trueAst), Seq(bodyAst))
   }
 
   // LoopExpr =
