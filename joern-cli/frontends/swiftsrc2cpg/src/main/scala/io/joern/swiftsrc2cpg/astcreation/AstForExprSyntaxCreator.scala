@@ -24,9 +24,16 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   /** Subject temps created when de-sugaring tuple matching (switch, if-case, guard-case, tuple declarations, ...). */
   private val tupleSubjects = scala.collection.mutable.HashMap.empty[String, TupleSubjectTypes]
 
-  /** Registers the temp `tmpName` as holder of a tuple subject and returns its type. The type is taken from the subject
-    * expression (falling back to `defaultType`). Element types are only known if the subject is a tuple literal;
-    * everything else falls back to `Any`.
+  /** Records the types of a tuple subject that gets copied into the temp variable `tmpName` during de-sugaring, e.g.
+    * `switch (x, "s") { ... }` becomes `<subject>0 = (x, "s"); switch <subject>0 { ... }`.
+    *
+    * Later field accesses like `<subject>0.1` look up these types via `createFieldAccessChain`.
+    *   - The type of the temp itself is the compiler type of `subject`, or `defaultType` if there is none. It is
+    *     returned.
+    *   - The type of each field (by index path, e.g. `List("2", "0")` for `<subject>0.2.0`) is the compiler type of the
+    *     corresponding element. It is only recorded if `subject` is a tuple literal. For any other subject (e.g. a
+    *     variable or a call) no element types are recorded here; `createFieldAccessChain` then uses the compiler type
+    *     of the matching pattern (literals and bindings only) for the last field, and `Any` for everything else.
     */
   protected def registerTupleSubject(tmpName: String, subject: SwiftNode, defaultType: String): String = {
     val subjectType = fullnameProvider.typeFullname(subject).getOrElse(defaultType)
