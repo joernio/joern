@@ -27,7 +27,6 @@ jobs:
         uses: dieghernan/cff-validator@d8f85828214016ce6976e740b6e0504c0fdc4dbb # v5
 
   test-shards:
-    needs: [lint-and-format]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -91,8 +90,7 @@ jobs:
         run: sbt "${{ matrix.shard }}/testFull"
 
   test:
-    needs: [test-shards]
-    if: ${{ always() }}
+    needs: [lint-and-format, test-shards]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -102,7 +100,6 @@ jobs:
         run: test "${{ needs.test-shards.result }}" = "success"
 
   test-scripts:
-    needs: [lint-and-format]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
