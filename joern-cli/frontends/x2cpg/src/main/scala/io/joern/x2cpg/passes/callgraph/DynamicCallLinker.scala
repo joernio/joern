@@ -175,8 +175,10 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     * receiver AST (e.g. {@code cond ? f : g} before invocation). Additive only; vtable resolution still runs.
     */
   private def linkMethodsReferencedByReceiver(call: Call, dstGraph: DiffGraphBuilder): Unit = {
+    val methods = call.receiver.ast.isMethodRef.referencedMethod.l
+    if (methods.isEmpty) return
     val linked = call._callOut.cast[Method].fullName.toSetImmutable
-    call.receiver.ast.isMethodRef.referencedMethod.foreach { tgtM =>
+    methods.foreach { tgtM =>
       if (!linked.contains(tgtM.fullName)) {
         dstGraph.addEdge(call, tgtM, EdgeTypes.CALL)
       }

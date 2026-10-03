@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language.*
 
 class TernaryPointerCallTests extends DataFlowCodeToCpgSuite {
 
-  "issue #5583 ternary function designators invoked via pointer call" should {
+  "ternary function designators invoked via pointer call" should {
     val cpg = code("""
         |#include <stdio.h>
         |#include <stdbool.h>
@@ -35,7 +35,31 @@ class TernaryPointerCallTests extends DataFlowCodeToCpgSuite {
     "flow source into printf via either branch callee" in {
       val source = cpg.identifier.name("source")
       val sink   = cpg.call("printf").argument
-      sink.reachableByFlows(source).size should be > 0
+      val flows  = sink.reachableByFlows(source)
+      flows.map(flowToResultPairs).toSetMutable shouldBe Set(
+        List(
+          ("source = \"source\"", 15),
+          ("(cond ? open_file_1 : open_file_2)(source)", 16),
+          ("open_file_1(char *arg)", 5),
+          ("printf(arg)", 6)
+        ),
+        List(
+          ("source = \"source\"", 15),
+          ("(cond ? open_file_1 : open_file_2)(source)", 16),
+          ("open_file_2(char *arg)", 9),
+          ("printf(arg)", 10)
+        ),
+        List(
+          ("(cond ? open_file_1 : open_file_2)(source)", 16),
+          ("open_file_1(char *arg)", 5),
+          ("printf(arg)", 6)
+        ),
+        List(
+          ("(cond ? open_file_1 : open_file_2)(source)", 16),
+          ("open_file_2(char *arg)", 9),
+          ("printf(arg)", 10)
+        )
+      )
     }
 
     "not flow unrelated identifiers into printf" in {
