@@ -171,9 +171,22 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     }
   }
 
+  /** Link dynamic calls (e.g. C {@code <operator>.pointerCall}) to methods named by {@code METHOD_REF} nodes in the
+    * receiver AST (e.g. {@code cond ? f : g} before invocation). Additive only; vtable resolution still runs.
+    */
+  private def linkMethodsReferencedByReceiver(call: Call, dstGraph: DiffGraphBuilder): Unit = {
+    val linked = call._callOut.cast[Method].fullName.toSetImmutable
+    call.receiver.ast.isMethodRef.referencedMethod.foreach { tgtM =>
+      if (!linked.contains(tgtM.fullName)) {
+        dstGraph.addEdge(call, tgtM, EdgeTypes.CALL)
+      }
+    }
+  }
+
   private def linkDynamicCall(call: Call, dstGraph: DiffGraphBuilder): Unit = {
     // This call linker requires a method full name entry
     if (call.methodFullName.equals("<empty>") || call.methodFullName.equals(DynamicCallUnknownFullName)) return
+    linkMethodsReferencedByReceiver(call, dstGraph)
     // Support for overriding
     resolveCallInSuperClasses(call)
 
