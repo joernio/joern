@@ -91,6 +91,7 @@ jobs:
 
   test:
     needs: [lint-and-format, test-shards]
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
