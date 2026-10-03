@@ -49,16 +49,8 @@ class TernaryPointerCallTests extends DataFlowCodeToCpgSuite {
           ("open_file_2(char *arg)", 9),
           ("printf(arg)", 10)
         ),
-        List(
-          ("(cond ? open_file_1 : open_file_2)(source)", 16),
-          ("open_file_1(char *arg)", 5),
-          ("printf(arg)", 6)
-        ),
-        List(
-          ("(cond ? open_file_1 : open_file_2)(source)", 16),
-          ("open_file_2(char *arg)", 9),
-          ("printf(arg)", 10)
-        )
+        List(("(cond ? open_file_1 : open_file_2)(source)", 16), ("open_file_1(char *arg)", 5), ("printf(arg)", 6)),
+        List(("(cond ? open_file_1 : open_file_2)(source)", 16), ("open_file_2(char *arg)", 9), ("printf(arg)", 10))
       )
     }
 
