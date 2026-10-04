@@ -7,7 +7,6 @@ import io.shiftleft.codepropertygraph.generated.{Cpg, ModifierTypes, Properties}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
-import org.slf4j.LoggerFactory
 
 import scala.jdk.OptionConverters.RichOptional
 import io.joern.x2cpg.Defines.UnresolvedNamespace
@@ -23,7 +22,7 @@ class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
     .groupBy(_.name)
 
   private val directParentTypes: Map[String, Set[String]] =
-    cpg.typeDecl.map(t => t.fullName -> t.inheritsFromTypeFullName.toSet).toMap
+    cpg.typeDecl.map(typeDecl => typeDecl.fullName -> typeDecl.inheritsFromTypeFullName.toSet).toMap
 
   private def transitiveAncestors(typeName: String, visited: Set[String] = Set.empty): Set[String] = {
     if (visited.contains(typeName)) Set.empty
@@ -34,9 +33,9 @@ class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
   }
 
   private val ancestorCache: Map[String, Set[String]] =
-    cpg.typeDecl.map { t =>
-      val fromGraph = t.baseTypeDeclTransitive.fullName.toSet
-      t.fullName -> (fromGraph ++ transitiveAncestors(t.fullName))
+    cpg.typeDecl.map { typeDecl =>
+      val fromGraph = typeDecl.baseTypeDeclTransitive.fullName.toSet
+      typeDecl.fullName -> (fromGraph ++ transitiveAncestors(typeDecl.fullName))
     }.toMap
 
   private case class NameParts(typeDecl: Option[String], signature: String)
