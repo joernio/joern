@@ -7,7 +7,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.semanticcpg.accesspath.MatchResult
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.utils.MemberAccess
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
 import scala.collection.{Set, mutable}
@@ -241,14 +240,8 @@ class DdgGenerator(semantics: Semantics) {
       .nameExact(Operators.assignment)
       .flatMap { assign =>
         for {
-          id  <- assign.argumentOption(1).collect { case id: Identifier => id }
-          rhs <- assign
-            .argumentOption(2)
-            .filter {
-              case call: Call => call.name != Operators.addressOf
-              case _          => true
-            }
-            .collect { case cfg: CfgNode => cfg }
+          id   <- assign.argumentOption(1).collect { case id: Identifier => id }
+          rhs  <- assign.argumentOption(2).collect { case call: Call if call.name == Operators.cast => call: CfgNode }
           decl <- id.refsTo.collect { case local: Local => local; case param: MethodParameterIn => param }.headOption
         } yield decl.id -> rhs
       }
@@ -347,13 +340,12 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
   def isUsing(use: CfgNode, inElemNode: CfgNode): Boolean =
     sameVariable(use, inElemNode) || isContainer(use, inElemNode) || isPart(use, inElemNode) || isAlias(use, inElemNode)
 
-  /** Base tracked by a container access (`info` for `info->attrs[1]`). */
-  private def containerTrackedBase(container: Call): Option[CfgNode] =
-    container.argument.headOption.flatMap {
-      case base: Identifier                                                    => Some(base)
-      case nested: Call if MemberAccess.isGenericMemberAccessName(nested.name) =>
-        nested.argument.headOption.collect { case node: CfgNode => node }
-      case _ => None
+  /** Base for container matching; peel `info->attrs` under `info->attrs[i]` only. */
+  private def containerBaseForMatching(container: Call): Option[CfgNode] =
+    (container.name, container.argument.headOption) match {
+      case (Operators.indirectIndexAccess, Some(inner: Call)) if inner.name == Operators.indirectFieldAccess =>
+        inner.argument.headOption.collect { case node: CfgNode => node }
+      case (_, maybeBase) => maybeBase.collect { case node: CfgNode => node }
     }
 
   /** Determine whether the node `use` describes a container for `inElement`, e.g., use = `ptr` while inElement =
@@ -362,7 +354,8 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
   private def isContainer(use: CfgNode, inElement: CfgNode): Boolean = {
     inElement match {
       case call: Call if containerSet.contains(call.name) =>
-        containerTrackedBase(call).exists { base =>
+        // Keep upstream base (e.g. `c->buf` for `c->buf[idx]`) so struct params are not containers for field writes.
+        call.argument.headOption.exists { base =>
           nodeToString(use) == nodeToString(base)
         }
       case _ => false
@@ -376,16 +369,12 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
       case call: Call if containerSet.contains(call.name) =>
         inElement match {
           case param: MethodParameterIn =>
-            containerTrackedBase(call).exists { base =>
+            containerBaseForMatching(call).exists { base =>
               nodeToString(base).contains(param.name)
             }
           case identifier: Identifier =>
-            containerTrackedBase(call).exists { base =>
+            containerBaseForMatching(call).exists { base =>
               nodeToString(base).contains(identifier.name)
-            }
-          case inCall: Call =>
-            containerTrackedBase(call).flatMap(nodeToString).exists { useBase =>
-              containerTrackedBase(inCall).flatMap(nodeToString).contains(useBase)
             }
           case _ => false
         }
