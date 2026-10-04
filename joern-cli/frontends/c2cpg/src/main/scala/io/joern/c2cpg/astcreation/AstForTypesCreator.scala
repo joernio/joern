@@ -265,7 +265,7 @@ trait AstForTypesCreator { this: AstCreator =>
     }
 
     val declAsts = decl match {
-      case sb: ICPPASTStructuredBindingDeclaration => Seq(astForStructuredBindingDeclaration(sb))
+      case sb: ICPPASTStructuredBindingDeclaration => astsForStructuredBindingDeclaration(sb)
       case declStmt: CPPASTSimpleDeclaration if isUnsupportedCoroutineKeyword(declStmt) =>
         Seq(astForUnsupportedCoroutineNode(declStmt))
       case declaration: IASTSimpleDeclaration =>
@@ -405,14 +405,6 @@ trait AstForTypesCreator { this: AstCreator =>
     }
     val normalizedCode = StringUtils.normalizeSpace(s"$specCode $declCode")
     normalizedCode.strip()
-  }
-
-  private def astForStructuredBindingDeclaration(decl: ICPPASTStructuredBindingDeclaration): Ast = {
-    val node = blockNode(decl)
-    scope.pushNewBlockScope(node)
-    val childrenAsts = decl.getNames.toList.map(astForNode)
-    scope.popScope()
-    blockAst(node, childrenAsts)
   }
 
   private def astsForLinkageSpecification(l: ICPPASTLinkageSpecification): Seq[Ast] = {

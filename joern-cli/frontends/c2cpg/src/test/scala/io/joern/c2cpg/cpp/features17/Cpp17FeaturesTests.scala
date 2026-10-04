@@ -570,6 +570,54 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       locals("e") shouldBe "ANY&"
     }
 
+    "not drop the file on a structured binding at namespace scope" in {
+      // Regression test for the ArrayIndexOutOfBoundsException in TypeNameProvider.typeForDeclSpecifier:
+      // ICPPASTStructuredBindingDeclaration extends IASTSimpleDeclaration but carries no declarators,
+      // so the declarator lookup threw and AstCreationPass discarded the whole translation unit.
+      val cpg = code("""
+          |struct Pair { int a; int b; };
+          |Pair gP{1, 2};
+          |auto [gA, gB] = gP;
+          |int boundsCheck(const char* buf, unsigned len, unsigned idx) {
+          |  if (idx >= len) { return -1; }
+          |  return buf[idx];
+          |}
+          |""".stripMargin)
+      cpg.method.nameExact("boundsCheck").nonEmpty shouldBe true
+      cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.IF).code.l shouldBe List(
+        "if (idx >= len) { return -1; }"
+      )
+    }
+
+    "lower a structured binding at namespace scope like one at block scope" in {
+      val cpg = code("""
+          |struct Pair { int a; int b; };
+          |Pair gP{1, 2};
+          |auto [gA, gB] = gP;
+          |""".stripMargin)
+      cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map(
+        "gP"     -> "Pair",
+        "<tmp>0" -> "Pair",
+        "gA"     -> "int",
+        "gB"     -> "int",
+        // CDT does not deduce the type of the initializer here, just as it does not at block scope
+        "<tmp>1" -> "ANY"
+      )
+      // the same set released v4.0.646 already produces for `void f() { Pair gP{1, 2}; auto [gA, gB] = gP; }`
+      cpg.call.code.l should contain theSameElementsAs List(
+        "gP = Pair.Pair(1, 2)",
+        "Pair.Pair(1, 2)",
+        "<tmp>0 = <operator>.alloc",
+        "<operator>.alloc",
+        "&<tmp>0",
+        "<tmp>1 = gP",
+        "gA = <tmp>1.gA",
+        "<tmp>1.gA",
+        "gB = <tmp>1.gB",
+        "<tmp>1.gB"
+      )
+    }
+
     "handle selection statements with initializer" in {
       val cpg = code("""
           |void foo() {
