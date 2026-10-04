@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.semanticcpg.accesspath.MatchResult
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.MemberAccess
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
 import scala.collection.{Set, mutable}
@@ -235,7 +236,27 @@ class DdgGenerator(semantics: Semantics) {
       .collect { case (declId, pairs) if pairs.size == 1 => declId -> pairs.head._2 }
       .toMap
 
-    if (addressOfMap.isEmpty)
+    // ponytail: one RHS per Local/param only; reassigned locals are dropped (same ceiling as addressOfMap).
+    val pointerRhsMap: Map[Long, CfgNode] = method.ast.isCall
+      .nameExact(Operators.assignment)
+      .flatMap { assign =>
+        for {
+          id  <- assign.argumentOption(1).collect { case id: Identifier => id }
+          rhs <- assign
+            .argumentOption(2)
+            .filter {
+              case call: Call => call.name != Operators.addressOf
+              case _          => true
+            }
+            .collect { case cfg: CfgNode => cfg }
+          decl <- id.refsTo.collect { case local: Local => local; case param: MethodParameterIn => param }.headOption
+        } yield decl.id -> rhs
+      }
+      .groupBy(_._1)
+      .collect { case (declId, pairs) if pairs.size == 1 => declId -> pairs.head._2 }
+      .toMap
+
+    if (addressOfMap.isEmpty && pointerRhsMap.isEmpty)
       return
 
     // Only matches `*identifier` where identifier refs a Local or MethodParameterIn.
@@ -245,8 +266,14 @@ class DdgGenerator(semantics: Semantics) {
         id.refsTo
           .collect { case local: Local => local; case param: MethodParameterIn => param }
           .headOption
-          .flatMap(decl => addressOfMap.get(decl.id))
-          .foreach(sourceNode => addEdge(sourceNode, derefCall, nodeToEdgeLabel(sourceNode)))
+          .foreach { decl =>
+            addressOfMap.get(decl.id).foreach { sourceNode =>
+              addEdge(sourceNode, derefCall, nodeToEdgeLabel(sourceNode))
+            }
+            pointerRhsMap.get(decl.id).foreach { sourceNode =>
+              addEdge(sourceNode, derefCall, nodeToEdgeLabel(sourceNode))
+            }
+          }
       }
     }
   }
@@ -320,13 +347,22 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
   def isUsing(use: CfgNode, inElemNode: CfgNode): Boolean =
     sameVariable(use, inElemNode) || isContainer(use, inElemNode) || isPart(use, inElemNode) || isAlias(use, inElemNode)
 
+  /** Base tracked by a container access (`info` for `info->attrs[1]`). */
+  private def containerTrackedBase(container: Call): Option[CfgNode] =
+    container.argument.headOption.flatMap {
+      case base: Identifier                                                    => Some(base)
+      case nested: Call if MemberAccess.isGenericMemberAccessName(nested.name) =>
+        nested.argument.headOption.collect { case node: CfgNode => node }
+      case _ => None
+    }
+
   /** Determine whether the node `use` describes a container for `inElement`, e.g., use = `ptr` while inElement =
     * `ptr->foo`.
     */
   private def isContainer(use: CfgNode, inElement: CfgNode): Boolean = {
     inElement match {
       case call: Call if containerSet.contains(call.name) =>
-        call.argument.headOption.exists { base =>
+        containerTrackedBase(call).exists { base =>
           nodeToString(use) == nodeToString(base)
         }
       case _ => false
@@ -340,12 +376,16 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
       case call: Call if containerSet.contains(call.name) =>
         inElement match {
           case param: MethodParameterIn =>
-            call.argument.headOption.exists { base =>
+            containerTrackedBase(call).exists { base =>
               nodeToString(base).contains(param.name)
             }
           case identifier: Identifier =>
-            call.argument.headOption.exists { base =>
+            containerTrackedBase(call).exists { base =>
               nodeToString(base).contains(identifier.name)
+            }
+          case inCall: Call =>
+            containerTrackedBase(call).flatMap(nodeToString).exists { useBase =>
+              containerTrackedBase(inCall).flatMap(nodeToString).contains(useBase)
             }
           case _ => false
         }
