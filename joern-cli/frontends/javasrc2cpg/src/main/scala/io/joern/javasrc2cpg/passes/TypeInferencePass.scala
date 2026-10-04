@@ -22,6 +22,23 @@ class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
     .filterNot(_.signature.startsWith(Defines.UnresolvedSignature))
     .groupBy(_.name)
 
+  private val directParentTypes: Map[String, Set[String]] =
+    cpg.typeDecl.map(t => t.fullName -> t.inheritsFromTypeFullName.toSet).toMap
+
+  private def transitiveAncestors(typeName: String, visited: Set[String] = Set.empty): Set[String] = {
+    if (visited.contains(typeName)) Set.empty
+    else {
+      val parents = directParentTypes.getOrElse(typeName, Set.empty)
+      parents ++ parents.flatMap(parent => transitiveAncestors(parent, visited + typeName))
+    }
+  }
+
+  private val ancestorCache: Map[String, Set[String]] =
+    cpg.typeDecl.map { t =>
+      val fromGraph = t.baseTypeDeclTransitive.fullName.toSet
+      t.fullName -> (fromGraph ++ transitiveAncestors(t.fullName))
+    }.toMap
+
   private case class NameParts(typeDecl: Option[String], signature: String)
 
   override def generateParts(): Array[Call] = {
@@ -39,30 +56,56 @@ class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
     val parameterSizesMatch =
       (method.parameter.size == (call.argument.size - argSizeMod))
 
-    lazy val argTypesMatch = doArgumentTypesMatch(method: Method, call: Call, skipCallThis = argSizeMod == 1)
+    lazy val argTypesMatch = doArgumentTypesMatch(method, call, skipCallThis = argSizeMod == 1)
 
     lazy val typeDeclMatches = (callNameParts.typeDecl == methodNameParts.typeDecl)
 
     parameterSizesMatch && argTypesMatch && typeDeclMatches
   }
 
-  /** Check if argument types match by comparing exact full names. An argument type of `ANY` always matches.
-    *
-    * TODO: Take inheritance hierarchies into account
+  private def isSubtype(argType: String, paramType: String): Boolean = {
+    argType == paramType || ancestorCache.getOrElse(argType, Set.empty).contains(paramType)
+  }
+
+  private def isAssignableArgumentType(argType: String, paramType: String): Boolean = {
+    argType == TypeConstants.Any ||
+    argType == paramType ||
+    (argType == TypeConstants.Null && !PrimitiveTypes.contains(paramType)) ||
+    isSubtype(argType, paramType) ||
+    (paramType == TypeConstants.Object && !PrimitiveTypes.contains(argType))
+  }
+
+  /** Check if argument types are assignable to method parameter types, including inheritance. An argument type of `ANY`
+    * always matches.
     */
   private def doArgumentTypesMatch(method: Method, call: Call, skipCallThis: Boolean): Boolean = {
     val callArgs = if (skipCallThis) call.argument.toList.tail else call.argument.toList
 
     val hasDifferingArg = method.parameter.zip(callArgs).exists { case (parameter, argument) =>
       val maybeArgumentType = argument.propertyOption(Properties.TypeFullName).getOrElse(TypeConstants.Any)
-      val argMatches        =
-        maybeArgumentType == TypeConstants.Any || maybeArgumentType == parameter.typeFullName || (maybeArgumentType == TypeConstants.Null && !PrimitiveTypes
-          .contains(parameter.typeFullName))
-
-      !argMatches
+      !isAssignableArgumentType(maybeArgumentType, parameter.typeFullName)
     }
 
     !hasDifferingArg
+  }
+
+  private def parameterTypes(method: Method): List[String] =
+    method.parameter.sortBy(_.index).map(_.typeFullName).toList
+
+  private def isAtLeastAsSpecificAs(moreSpecificCandidate: Method, other: Method): Boolean = {
+    parameterTypes(moreSpecificCandidate).zip(parameterTypes(other)).forall { case (specific, general) =>
+      isSubtype(specific, general)
+    }
+  }
+
+  private def isMoreSpecificThan(candidate: Method, other: Method): Boolean =
+    isAtLeastAsSpecificAs(candidate, other) && !isAtLeastAsSpecificAs(other, candidate)
+
+  private def uniqueMostSpecificMethod(applicable: List[Method]): Option[Method] = {
+    val mostSpecific = applicable.filter { candidate =>
+      !applicable.exists(other => other != candidate && isMoreSpecificThan(other, candidate))
+    }
+    Option.when(mostSpecific.size == 1)(mostSpecific.head)
   }
 
   private def getNameParts(name: String, fullName: String): NameParts = {
@@ -81,18 +124,13 @@ class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
     val argTypes = call.argument.property(Properties.TypeFullName).mkString(":")
     val callKey  = s"${call.methodFullName}:$argTypes"
     cache.get(callKey).toScala.getOrElse {
-      val callNameParts = getNameParts(call.name, call.methodFullName)
-      resolvedMethodIndex.get(call.name).flatMap { candidateMethods =>
-        val candidateMethodsIter = candidateMethods.iterator
-        val uniqueMatchingMethod =
-          candidateMethodsIter.find(isMatchingMethod(_, call, callNameParts)).flatMap { method =>
-            val otherMatchingMethod = candidateMethodsIter.find(isMatchingMethod(_, call, callNameParts))
-            // Only return a resulting method if exactly one matching method is found.
-            Option.when(otherMatchingMethod.isEmpty)(method)
-          }
-        cache.put(callKey, uniqueMatchingMethod)
-        uniqueMatchingMethod
+      val callNameParts        = getNameParts(call.name, call.methodFullName)
+      val uniqueMatchingMethod = resolvedMethodIndex.get(call.name).flatMap { candidateMethods =>
+        val applicable = candidateMethods.filter(isMatchingMethod(_, call, callNameParts)).toList
+        uniqueMostSpecificMethod(applicable)
       }
+      cache.put(callKey, uniqueMatchingMethod)
+      uniqueMatchingMethod
     }
   }
 
