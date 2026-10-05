@@ -2,6 +2,7 @@ package io.joern.c2cpg.dataflow
 
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language.*
+import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.semanticcpg.language.*
 
 class TernaryPointerCallTests extends DataFlowCodeToCpgSuite {
@@ -58,6 +59,28 @@ class TernaryPointerCallTests extends DataFlowCodeToCpgSuite {
       val unrelated = cpg.identifier.name("cond")
       val sink      = cpg.call("printf").argument
       sink.reachableByFlows(unrelated).size shouldBe 0
+    }
+  }
+
+  "chained calls after ternary function designator" should {
+    "not link method references from inner receiver expressions in chained calls" in {
+      val cpg = code(
+        """
+          |struct S { void baz(char *arg) {}; };
+          |S foo() { return S(); }
+          |S bar() { return S(); }
+          |int main() {
+          |  bool cond = true;
+          |  char *source = "source";
+          |  (cond ? foo : bar)().baz(source);
+          |}
+        """.stripMargin,
+        "test.cpp"
+      )
+      val bazCall    = cpg.call.nameExact("baz").head
+      val bazTargets = bazCall._callOut.cast[Method].name.toSet
+      bazTargets.shouldNot(contain("foo"))
+      bazTargets.shouldNot(contain("bar"))
     }
   }
 }

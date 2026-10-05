@@ -5,7 +5,8 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, MethodRef}
 import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
@@ -171,11 +172,18 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     }
   }
 
+  private def unpackMethodRefs(node: AstNode): Iterator[MethodRef] = node match {
+    case m: MethodRef => Iterator(m)
+    case c: Call if c.name == Operators.conditional || c.name == Operators.cast || c.name == Operators.addressOf =>
+      c.argument.flatMap(unpackMethodRefs)
+    case _ => Iterator.empty
+  }
+
   /** Link dynamic calls (e.g. C {@code <operator>.pointerCall}) to methods named by {@code METHOD_REF} nodes in the
     * receiver AST (e.g. {@code cond ? f : g} before invocation). Additive only; vtable resolution still runs.
     */
   private def linkMethodsReferencedByReceiver(call: Call, dstGraph: DiffGraphBuilder): Unit = {
-    val methods = call.receiver.ast.isMethodRef.referencedMethod.l
+    val methods = call.receiver.flatMap(unpackMethodRefs).flatMap(_.referencedMethod).toList
     if (methods.isEmpty) return
     val linked = call._callOut.cast[Method].fullName.toSetImmutable
     methods.foreach { tgtM =>
