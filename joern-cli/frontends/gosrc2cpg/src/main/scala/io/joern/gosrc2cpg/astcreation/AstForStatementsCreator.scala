@@ -210,7 +210,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         Seq(Ast(target))
     }
 
-    val caseBodyAst = caseStmt.json(ParserKeys.Body).arr.map(createParserNodeInfo).flatMap(astsForStatement(_)).toList
+    // goastgen writes `"Body": null` for a case with no statements (`case 1:`)
+    val caseBodyAst =
+      caseStmt.json(ParserKeys.Body).arrOpt.toList.flatten.map(createParserNodeInfo).flatMap(astsForStatement(_))
     caseClauseAst ++: caseBodyAst
   }
 
