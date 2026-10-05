@@ -571,9 +571,6 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
     }
 
     "not drop the file on a structured binding at namespace scope" in {
-      // Regression test for the ArrayIndexOutOfBoundsException in TypeNameProvider.typeForDeclSpecifier:
-      // ICPPASTStructuredBindingDeclaration extends IASTSimpleDeclaration but carries no declarators,
-      // so the declarator lookup threw and AstCreationPass discarded the whole translation unit.
       val cpg = code("""
           |struct Pair { int a; int b; };
           |Pair gP{1, 2};
@@ -603,7 +600,6 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         // CDT does not deduce the type of the initializer here, just as it does not at block scope
         "<tmp>1" -> "ANY"
       )
-      // the same set released v4.0.646 already produces for `void f() { Pair gP{1, 2}; auto [gA, gB] = gP; }`
       cpg.call.code.l should contain theSameElementsAs List(
         "gP = Pair.Pair(1, 2)",
         "Pair.Pair(1, 2)",
