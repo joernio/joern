@@ -23,11 +23,17 @@ jobs:
         run: sbt "scalafmtCheck ; Test/scalafmtCheck ; scalafix --diff-base origin/${{ github.event.pull_request.base.ref }} RestrictedImports SingleLetterIdentifiers UnorderedIteration"
       - run: echo "Previous step failed because the code is not formatted or violates coding quality expectations. Run 'sbt scalafmt Test/scalafmt' to format, and check the logs for scalafix violations."
         if: ${{ failure() }}
+
+  validate-citation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
       - name: Validate CITATION.cff
         uses: dieghernan/cff-validator@d8f85828214016ce6976e740b6e0504c0fdc4dbb # v5
 
-  test:
-    needs: [lint-and-format]
+  run-tests:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -80,7 +86,6 @@ jobs:
         run: sbt "c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage ; testFull"
 
   test-scripts:
-    needs: [lint-and-format]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -115,3 +120,23 @@ jobs:
         run: |
           sbt "joerncli/stage ; querydb/createDistribution"
           python -u ./testDistro.py
+
+  test:
+    needs: [validate-citation, lint-and-format, run-tests, test-scripts]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Check results of all required jobs
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          failed=$(echo "$NEEDS" | jq -r 'to_entries[] | select(.value.result != "success") | "\(.key) (\(.value.result))"' | paste -sd, -)
+          if [ -n "$failed" ]; then
+            echo "::error::Required jobs did not succeed: $failed"
+            exit 1
+          fi
+          echo "All required jobs succeeded."
