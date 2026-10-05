@@ -131,12 +131,12 @@ jobs:
     steps:
       - name: Check results of all required jobs
         env:
-          RESULTS: ${{ join(needs.*.result, ' ') }}
+          NEEDS: ${{ toJSON(needs) }}
         run: |
-          echo "Results: $RESULTS"
-          for r in $RESULTS; do
-            if [ "$r" != "success" ]; then
-              echo "At least one required job did not succeed"
-              exit 1
-            fi
-          done
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          failed=$(echo "$NEEDS" | jq -r 'to_entries[] | select(.value.result != "success") | "\(.key) (\(.value.result))"' | paste -sd, -)
+          if [ -n "$failed" ]; then
+            echo "::error::Required jobs did not succeed: $failed"
+            exit 1
+          fi
+          echo "All required jobs succeeded."
