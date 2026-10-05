@@ -160,4 +160,5 @@ ThisBuild / developers := List(
 ThisBuild / Test / packageBin / publishArtifact := true
 
 // trigger an sbt reload when any `application.conf` file changes
-Global / checkBuildSources / fileInputs += (baseDirectory.value.toGlob / ** / "resources" / "application.conf")
+Global / checkBuildSources / fileInputs +=
+  (baseDirectory.value.toGlob / "joern-cli" / "frontends" / * / "src" / "main" / "resources" / "application.conf")
