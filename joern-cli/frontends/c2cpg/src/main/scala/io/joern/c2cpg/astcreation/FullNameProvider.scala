@@ -77,6 +77,31 @@ object FullNameProvider {
     }
   }
 
+  /** Removes the `operator` keyword from the name of a C++ overloaded operator or conversion function.
+    *
+    * Declarations are named without the keyword, so call sites have to use the same spelling for `CALL.methodFullName`
+    * to be able to equal `METHOD.fullName`.
+    *
+    * Examples:
+    * {{{
+    *  replaceOperator("operator ()") == "()"
+    *  replaceOperator("operator []") == "[]"
+    *  replaceOperator("operator Kind") == "Kind"
+    * }}}
+    *
+    * @param input
+    *   The input string that may contain the `operator` keyword
+    * @return
+    *   The string with the `operator` keyword removed
+    */
+  def replaceOperator(input: String): String = {
+    input
+      .replace("operator class ", "")
+      .replace("operator enum ", "")
+      .replace("operator struct ", "")
+      .replace("operator ", "")
+  }
+
   final case class MethodFullNameInfo(name: String, fullName: String, signature: String, returnType: String)
 
   final case class TypeFullNameInfo(name: String, fullName: String)
@@ -270,14 +295,6 @@ trait FullNameProvider { this: AstCreator =>
         }
       case _ => shortName(d.getName)
     }
-  }
-
-  private def replaceOperator(name: String): String = {
-    name
-      .replace("operator class ", "")
-      .replace("operator enum ", "")
-      .replace("operator struct ", "")
-      .replace("operator ", "")
   }
 
   @tailrec

@@ -27,7 +27,7 @@ import scala.util.Try
 
 trait AstForExpressionsCreator { this: AstCreator =>
 
-  import FullNameProvider.stripTemplateTags
+  import FullNameProvider.{replaceOperator, stripTemplateTags}
 
   private val OperatorMap: Map[Int, String] = Map(
     IASTBinaryExpression.op_multiply         -> Operators.multiplication,
@@ -176,7 +176,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         functionNameExpr match {
           case idExpr: CPPASTIdExpression if safeGetBinding(idExpr).exists(_.isInstanceOf[ICPPFunction]) =>
             val function  = idExpr.getName.getBinding.asInstanceOf[ICPPFunction]
-            val name      = idExpr.getName.getLastName.toString
+            val name      = replaceOperator(StringUtils.normalizeSpace(idExpr.getName.getLastName.toString))
             val signature = if (function.isExternC) { "" }
             else {
               function match {
@@ -188,7 +188,8 @@ trait AstForExpressionsCreator { this: AstCreator =>
             val fullName = if (function.isExternC) {
               StringUtils.normalizeSpace(name)
             } else {
-              val fullNameNoSig = stripTemplateTags(StringUtils.normalizeSpace(function.getQualifiedName.mkString(".")))
+              val fullNameNoSig =
+                stripTemplateTags(replaceOperator(StringUtils.normalizeSpace(function.getQualifiedName.mkString("."))))
               s"$fullNameNoSig:$signature"
             }
             val callCpgNode = callNode(
@@ -211,7 +212,8 @@ trait AstForExpressionsCreator { this: AstCreator =>
             val constFlag = if (safeCdtCall(method.getType).exists(isConstType)) { Defines.ConstSuffix }
             else { "" }
             // TODO This wont do if the name is a reference.
-            val name          = stripTemplateTags(fieldRefExpr.getFieldName.toString)
+            val name =
+              stripTemplateTags(replaceOperator(StringUtils.normalizeSpace(fieldRefExpr.getFieldName.toString)))
             val signature     = s"${functionTypeToSignature(functionType)}$constFlag"
             val classFullName = safeGetType(fieldRefExpr.getFieldOwnerType)
             val fullName      = s"$classFullName.$name:$signature"
@@ -261,8 +263,13 @@ trait AstForExpressionsCreator { this: AstCreator =>
             createCallAst(callCpgNode, args, receiver = Some(receiverAst))
           case _ =>
             val classFullName = safeGetType(classType)
-            val fullName      = s"$classFullName.$name:$functionSignature"
-            val dispatchType  = safeCdtCall(evaluation.getOverload) match {
+            // The resolved overload is the very declaration this call must link to; naming it the way
+            // the declaration side does keeps CALL.methodFullName equal to METHOD.fullName.
+            val operatorName = safeCdtCall(evaluation.getOverload)
+              .map(overload => stripTemplateTags(replaceOperator(StringUtils.normalizeSpace(overload.getName))))
+              .getOrElse(name)
+            val fullName     = s"$classFullName.$operatorName:$functionSignature"
+            val dispatchType = safeCdtCall(evaluation.getOverload) match {
               case Some(method: ICPPMethod) =>
                 if (method.isVirtual || method.isPureVirtual) {
                   DispatchTypes.DYNAMIC_DISPATCH
@@ -275,7 +282,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
             val callCpgNode = callNode(
               call,
               code(call),
-              name,
+              operatorName,
               fullName,
               dispatchType,
               Some(functionSignature),

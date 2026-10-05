@@ -400,9 +400,9 @@ class CallTests extends C2CpgSuite {
         "test.cpp"
       )
 
-      val List(call) = cpg.call.nameExact("<operator>()").l
+      val List(call) = cpg.call.nameExact("()").l
       call.signature shouldBe "void(int)"
-      call.methodFullName shouldBe "NNN.Callable.<operator>():void(int)"
+      call.methodFullName shouldBe "NNN.Callable.():void(int)"
       call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       call.typeFullName shouldBe "void"
 
@@ -646,5 +646,119 @@ class CallTests extends C2CpgSuite {
       receiver.code shouldBe "getX()"
       receiver.argumentIndex shouldBe -1
     }
+  }
+
+  "Overloaded operator calls" should {
+
+    "link an implicit operator() call to its declaration" in {
+      val cpg = code(
+        """
+          |struct Fn {
+          |  int operator()(int a) { return a * 2; }
+          |};
+          |int main() {
+          |  Fn f;
+          |  return f(21);
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      val List(method) = cpg.typeDecl.nameExact("Fn").method.l
+      method.name shouldBe "()"
+      method.fullName shouldBe "Fn.():int(int)"
+      method.isExternal shouldBe false
+
+      val List(call) = cpg.call.codeExact("f(21)").l
+      call.name shouldBe method.name
+      call.methodFullName shouldBe method.fullName
+      call.signature shouldBe "int(int)"
+      call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      call.typeFullName shouldBe "int"
+
+      call.callee.l shouldBe List(method)
+      method.callIn.l shouldBe List(call)
+      // no external stub is synthesised for the unmatched spelling any more
+      cpg.method.fullNameExact("Fn.<operator>():int(int)").l shouldBe empty
+    }
+
+    "link an explicitly named operator() call to its declaration" in {
+      val cpg = code(
+        """
+          |struct Fn {
+          |  int operator()(int a) { return a * 2; }
+          |};
+          |int main() {
+          |  Fn f;
+          |  return f.operator()(21);
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      val List(method) = cpg.typeDecl.nameExact("Fn").method.l
+      method.fullName shouldBe "Fn.():int(int)"
+
+      val List(call) = cpg.call.codeExact("f.operator()(21)").l
+      call.name shouldBe "()"
+      call.methodFullName shouldBe method.fullName
+      call.signature shouldBe "int(int)"
+
+      call.callee.l shouldBe List(method)
+      method.callIn.l shouldBe List(call)
+    }
+
+    "link explicitly named operator+ and operator[] calls to their declarations" in {
+      val cpg = code(
+        """
+          |struct Fn {
+          |  int operator+(const Fn& o) const { return 1; }
+          |  int operator[](int i) { return i; }
+          |};
+          |int main() {
+          |  Fn f;
+          |  return f.operator+(f) + f.operator[](3);
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      val List(plus, index) = cpg.typeDecl.nameExact("Fn").method.l
+      plus.fullName shouldBe "Fn.+:int(Fn&)<const>"
+      index.fullName shouldBe "Fn.[]:int(int)"
+
+      val List(plusCall) = cpg.call.codeExact("f.operator+(f)").l
+      plusCall.name shouldBe "+"
+      plusCall.methodFullName shouldBe plus.fullName
+      plusCall.callee.l shouldBe List(plus)
+
+      val List(indexCall) = cpg.call.codeExact("f.operator[](3)").l
+      indexCall.name shouldBe "[]"
+      indexCall.methodFullName shouldBe index.fullName
+      indexCall.callee.l shouldBe List(index)
+    }
+
+    "link an explicitly named free operator call to its declaration" in {
+      val cpg = code(
+        """
+          |struct A {
+          |  int v;
+          |};
+          |int operator+(const A& l, const A& r) { return l.v + r.v; }
+          |int main() {
+          |  A a, b;
+          |  return operator+(a, b);
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      val List(method) = cpg.method.nameExact("+").l
+      method.fullName shouldBe "+:int(A&,A&)"
+      method.isExternal shouldBe false
+
+      val List(call) = cpg.call.codeExact("operator+(a, b)").l
+      call.name shouldBe "+"
+      call.methodFullName shouldBe method.fullName
+      call.callee.l shouldBe List(method)
+      method.callIn.l shouldBe List(call)
+    }
+
   }
 }
