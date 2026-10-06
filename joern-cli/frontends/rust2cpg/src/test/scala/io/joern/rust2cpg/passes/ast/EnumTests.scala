@@ -386,6 +386,27 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "tuple variant as value" should {
+    val cpg = code("""
+        |enum Foo { Bar(i32) }
+        |fn main() {
+        |  let bar = Foo::Bar;
+        |}
+        |""".stripMargin)
+
+    "have correct MethodRef" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("bar")).source.l) { case (metRef: MethodRef) :: Nil =>
+        metRef.code shouldBe "Foo::Bar"
+        metRef.methodFullName shouldBe "rust2cpgtest::Foo::Bar"
+        metRef.typeFullName shouldBe "rust2cpgtest::Foo::Bar"
+      }
+    }
+
+    "have correct REF edges" in {
+      cpg.methodRef.referencedMethod.fullName.l shouldBe List("rust2cpgtest::Foo::Bar")
+    }
+  }
+
   "generic tuple enum" should {
     val cpg = code("""
         |enum Wrapper<T> { One(T) }
