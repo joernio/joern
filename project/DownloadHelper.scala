@@ -13,8 +13,9 @@ import scala.util.Try
   * A task whose body is [[downloadArtifacts]] is cached by sbt: the cache key is derived from the task's inputs
   * (url, file names, version settings, ...), and the downloaded files are declared as outputs via
   * `Def.declareOutput`, so on a cache hit sbt re-materializes them from the disk cache without any network
-  * access. Note that declared outputs must live inside the project output directory (`target.value`); use
-  * [[stageArtifacts]] (from an uncached task) to sync them to their final destinations, e.g. `bin/astgen` in the
+  * access. Note that declared outputs must live inside the project output directory
+  * (`crossTarget.value`; `target.value` is a transient key and must not be used in a cached task);
+  * use [[stageArtifacts]] (from an uncached task) to sync them to their final destinations, e.g. `bin/astgen` in the
   * project base directory (runtime lookup for local runs and tests) and the Universal staging directory (for the
   * distribution).
   */
@@ -76,7 +77,7 @@ object DownloadHelper {
   }
 
   /** Body of a cached download task: downloads `baseUrl + fileName` for each of `fileNames` into `downloadDir`
-    * (which must be inside the project output directory, e.g. `target.value / "astgen-download"`).
+    * (which must be inside the project output directory, e.g. `crossTarget.value / "astgen-download"`).
     *
     * The returned refs still need to be declared as task outputs at the call site, so that sbt caches and
     * re-materializes them on cache hits (`Def.declareOutput` may only be called within a task macro, which is

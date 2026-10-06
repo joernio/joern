@@ -47,7 +47,7 @@ lazy val abap2cpg = (project in file("."))
       macArm = Some(AbapgenMacArm)
     ),
     abapgenDownloadTask := DownloadHelper
-      .downloadArtifacts(target.value / "abapgen-download", abapgenDlUrl.value, abapgenBinaryNames.value, fileConverter.value)
+      .downloadArtifacts(crossTarget.value / "abapgen-download", abapgenDlUrl.value, abapgenBinaryNames.value, fileConverter.value)
       .map { vf => Def.declareOutput(vf); vf },
     abapgenStageTask := Def.uncached {
       DownloadHelper.stageArtifacts(

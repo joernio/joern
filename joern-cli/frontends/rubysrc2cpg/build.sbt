@@ -80,7 +80,7 @@ lazy val rubysrc2cpg = (project in file("."))
     },
     astGenDownloadTask := DownloadHelper
       .downloadArtifacts(
-        target.value / "astgen-download",
+        crossTarget.value / "astgen-download",
         astGenDlUrl.value,
         Seq(s"ruby_ast_gen-${astGenPlatformSuffix.value}_v${astGenVersion.value}.zip"),
         fileConverter.value,
@@ -90,7 +90,7 @@ lazy val rubysrc2cpg = (project in file("."))
     astGenResourceTask := Def.uncached {
       val conv                = fileConverter.value
       val compressGemPath     = astGenDownloadTask.value.map(ref => conv.toPath(ref).toFile).head
-      val unpackedGemFullPath = baseDirectory.value / "src" / "main" / "resources" / "ruby_ast_gen"
+      val unpackedGemFullPath = (Compile / resourceManaged).value / "ruby_ast_gen"
       if (!hasCompatibleAstGenVersion(unpackedGemFullPath, astGenVersion.value)) {
         if (unpackedGemFullPath.exists()) IO.delete(unpackedGemFullPath)
         IO.unzip(compressGemPath, unpackedGemFullPath)
@@ -105,7 +105,7 @@ lazy val rubysrc2cpg = (project in file("."))
       val fileName    = "rubysrc_builtin_types.zip"
       val shaFileName = s"$fileName.sha512"
       val refs = DownloadHelper.downloadArtifacts(
-        target.value / "type-stubs-download",
+        crossTarget.value / "type-stubs-download",
         joernTypeStubsDlUrl.value,
         Seq(fileName, shaFileName),
         conv,

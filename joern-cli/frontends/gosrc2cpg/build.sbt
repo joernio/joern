@@ -55,7 +55,7 @@ lazy val gosrc2cpg = (project in file("."))
       }
     },
     goAstGenDownloadTask := DownloadHelper
-      .downloadArtifacts(target.value / "astgen-download", goAstGenDlUrl.value, goAstGenBinaryNames.value, fileConverter.value)
+      .downloadArtifacts(crossTarget.value / "astgen-download", goAstGenDlUrl.value, goAstGenBinaryNames.value, fileConverter.value)
       .map { vf => Def.declareOutput(vf); vf },
     goAstGenStageTask := Def.uncached {
       DownloadHelper.stageArtifacts(

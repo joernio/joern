@@ -1,6 +1,6 @@
 addSbtPlugin("ai.hearn"        % "sbt-antlr4"           % "1.0.0")
 addSbtPlugin("com.github.sbt"  % "sbt-native-packager"  % "1.12.0")
 addSbtPlugin("org.scalameta"   % "sbt-scalafmt"         % "2.6.2")
-addSbtPlugin("io.shiftleft"    % "sbt-ci-release-early" % "2.1.15")
+addSbtPlugin("io.shiftleft"    % "sbt-ci-release-early" % "2.1.16")
 addSbtPlugin("com.github.sbt"  % "sbt-dynver"           % "5.1.1")
 addSbtPlugin("ch.epfl.scala"   % "sbt-scalafix"         % "0.14.9")
