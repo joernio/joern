@@ -198,6 +198,43 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "match with if-let guard" should {
+    val cpg = code("""
+        |fn foo(x: (i32, i32)) {
+        |  match x {
+        |  (n, _) if let Some(y) = bar(n) => sink(y),
+        |  _ => 0,
+        |  };
+        |}
+        |""".stripMargin)
+
+    "have correct jump target names" in {
+      cpg.jumpTarget.sortBy(_.order).name.l shouldBe List("case (n, _) if let Some(y) = bar(n)", "case _")
+    }
+
+    "have correct locals" in {
+      cpg.local.sortBy(_.order).name.l shouldBe List("n", "<tmp>0", "y")
+    }
+
+    "have correct assignments" in {
+      cpg.assignment.sortBy(_.order).code.l shouldBe List("n = x.0", "<tmp>0 = bar(n)", "y = <tmp>0.0")
+    }
+
+    "have correct if control structure" in {
+      inside(cpg.ifBlock.l) { case ifNode :: Nil =>
+        ifNode.code shouldBe "if let Some(y) = bar(n)"
+        ifNode.condition.code.l shouldBe List("Some(y)")
+        ifNode.whenTrue.code.l shouldBe List("sink(y)")
+        ifNode.whenFalse shouldBe empty
+      }
+    }
+
+    "have correct REF edges" in {
+      cpg.local.nameExact("n").referencingIdentifiers.inCall.code.l shouldBe List("n = x.0", "bar(n)")
+      cpg.local.nameExact("y").referencingIdentifiers.inCall.code.l shouldBe List("y = <tmp>0.0", "sink(y)")
+    }
+  }
+
   "match with an or-pattern case" should {
     val cpg = code("""
         |struct Point { x: i32, y: i32 }
