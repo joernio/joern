@@ -902,4 +902,48 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
   }
+
+  "tuple struct as value" should {
+    val cpg = code("""
+        |struct Foo(i32);
+        |fn main() {
+        |  let foo = Foo;
+        |}
+        |""".stripMargin)
+
+    "have correct MethodRef" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("foo")).source.l) { case (metRef: MethodRef) :: Nil =>
+        metRef.code shouldBe "Foo"
+        metRef.methodFullName shouldBe "rust2cpgtest::Foo"
+        metRef.typeFullName shouldBe "rust2cpgtest::Foo"
+      }
+    }
+
+    "have correct REF edges" in {
+      cpg.methodRef.referencedMethod.fullName.l shouldBe List("rust2cpgtest::Foo")
+    }
+  }
+
+  "tuple struct as Self" should {
+    val cpg = code("""
+        |struct Foo(i32);
+        |impl Foo {
+        |  fn new() {
+        |    let foo = Self;
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct MethodRef" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("foo")).source.l) { case (metRef: MethodRef) :: Nil =>
+        metRef.code shouldBe "Self"
+        metRef.methodFullName shouldBe "rust2cpgtest::Foo"
+        metRef.typeFullName shouldBe "rust2cpgtest::Foo"
+      }
+    }
+
+    "have correct REF edges" in {
+      cpg.methodRef.referencedMethod.fullName.l shouldBe List("rust2cpgtest::Foo")
+    }
+  }
 }
