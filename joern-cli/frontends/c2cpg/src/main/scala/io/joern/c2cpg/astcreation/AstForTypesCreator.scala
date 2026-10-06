@@ -8,7 +8,12 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Modif
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
-import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTAliasDeclaration, CPPASTSimpleDeclaration, CPPClosureType}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.{
+  CPPASTAliasDeclaration,
+  CPPASTQualifiedName,
+  CPPASTSimpleDeclaration,
+  CPPClosureType
+}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 trait AstForTypesCreator { this: AstCreator =>
@@ -125,6 +130,19 @@ trait AstForTypesCreator { this: AstCreator =>
     callAst(assignmentCallNode, args)
   }
 
+  /** The target of the assignment synthesised for a declarator with an initializer.
+    *
+    * For an out-of-class definition of a static data member (`int Foo::bar = 1;`) the declarator name is a qualified
+    * name. It does not declare a new variable, so it must not be lowered through `astForIdentifier` (which `astForNode`
+    * would pick for any `IASTName`): that flattens `Foo::bar` to an unqualified `bar` and registers it as a variable
+    * reference in the enclosing namespace scope. We lower it as a field access instead, exactly as a *use* of
+    * `Foo::bar` is lowered.
+    */
+  private def astForDeclaratorName(declarator: IASTDeclarator): Ast = declarator.getName match {
+    case qualifiedName: CPPASTQualifiedName => astForQualifiedName(qualifiedName)
+    case name                               => astForNode(name)
+  }
+
   protected def astForInitializer(declarator: IASTDeclarator, init: IASTInitializer): Ast = {
     val name = ASTStringUtil.getSimpleName(declarator.getName)
     val tpe  = registerType(
@@ -134,7 +152,7 @@ trait AstForTypesCreator { this: AstCreator =>
     val initCode            = code(init).stripPrefix("{").stripSuffix("}").stripPrefix("(").stripSuffix(")")
     val signature           = s"${Defines.Void}(${initializerSignature(init)})"
     val fullNameWithSig     = s"$tpe.$constructorCallName:$signature"
-    val leftAst             = astForNode(declarator.getName)
+    val leftAst             = astForDeclaratorName(declarator)
 
     init match {
       case i: IASTEqualsInitializer =>
@@ -321,11 +339,13 @@ trait AstForTypesCreator { this: AstCreator =>
       case a: ICPPASTStaticAssertDeclaration                                         => true
       case declaration: IASTSimpleDeclaration if declaration.getDeclarators.nonEmpty =>
         declaration.getDeclarators.exists {
-          // Out-of-class static member definitions (qualified names like `Foo::bar[N]`) must
-          // not be treated as having an initializer. Processing them would create identifier
-          // nodes at namespace scope via astForConstructorCall, polluting the shared scope
-          // chain and causing cross-method REF edges (NONLOCAL_REF validation errors).
-          case d: IASTDeclarator if d.getName.isInstanceOf[ICPPASTQualifiedName]               => false
+          // Out-of-class static member definitions (qualified names like `Foo::bar[N]`) without an
+          // initializer carry no value. Processing them would create identifier nodes at namespace
+          // scope via astForConstructorCall, polluting the shared scope chain and causing
+          // cross-method REF edges (NONLOCAL_REF validation errors). With an initializer they fall
+          // through to the cases below; see astsForDeclarationInit.
+          case d: IASTDeclarator if d.getName.isInstanceOf[ICPPASTQualifiedName] && d.getInitializer == null =>
+            false
           case d: ICPPASTDeclarator if d.getInitializer == null && isCPPClassLike(declaration) => true
           case d: IASTDeclarator if d.getInitializer != null                                   => true
           case arrayDecl: IASTArrayDeclarator                                                  => true
@@ -344,8 +364,8 @@ trait AstForTypesCreator { this: AstCreator =>
       case a: ICPPASTStaticAssertDeclaration                                         => Seq(astForStaticAssert(a))
       case declaration: IASTSimpleDeclaration if declaration.getDeclarators.nonEmpty =>
         declaration.getDeclarators.toList.map {
-          // Skip out-of-class static member definitions; see comment in declHasInit.
-          case d: IASTDeclarator if d.getName.isInstanceOf[ICPPASTQualifiedName] =>
+          // Skip out-of-class static member definitions without an initializer; see comment in declHasInit.
+          case d: IASTDeclarator if d.getName.isInstanceOf[ICPPASTQualifiedName] && d.getInitializer == null =>
             Ast()
           case d: ICPPASTDeclarator if d.getInitializer == null && isCPPClassLike(declaration) =>
             astForConstructorCall(d)
