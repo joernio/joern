@@ -9,6 +9,7 @@ import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import java.util
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.ListHasAsScala
 
 object CfgCreationPass {
@@ -24,26 +25,29 @@ class CfgCreationPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
 
   override def generateParts(): Array[Method] = cpg.method.toArray
 
-  private val hugeMethods = util.Vector[(size: Int, method: String)]() // a synchronized collection
+  private val hugeMethods = mutable.Buffer[(size: Int, method: String, file: String)]()
 
   override def runOnPart(diffGraph: DiffGraphBuilder, method: Method): Unit = {
     val sizeBefore = diffGraph.size
     new CfgCreator(method, diffGraph).run()
     val sizeOfCfg = diffGraph.size - sizeBefore
     if (sizeOfCfg > 100 * 1000) {
-      hugeMethods.add((sizeOfCfg, method.fullName))
+      hugeMethods.synchronized {
+        hugeMethods.append((sizeOfCfg, method.fullName, method.filename))
+      }
     }
   }
 
   override def finish(): Unit = {
-    if (!hugeMethods.isEmpty) {
-      val max = hugeMethods.asScala.max
+    if (hugeMethods.nonEmpty) {
+      val max = hugeMethods.max
 
       logger.warn(
-        "{} methods have a huge CFG with over 100 000 edges. the largest method {} has {} CFG edges. Analysis may benefit from excluding the containing file(s).",
+        "{} methods have a huge CFG with over 100 000 edges. The largest method {} from file {} has {} CFG edges. Analysis may benefit from excluding the containing file(s).",
         hugeMethods.size,
         max.method,
-        max.size
+        max.file,
+        max.size,
       )
     }
   }
