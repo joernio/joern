@@ -36,6 +36,8 @@ class CfgCreationPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
       val thisMethod = (sizeOfCfg, method.fullName, method.filename)
       synchronized {
         hugeMethodInfo = hugeMethodInfo match {
+          // we want the max by size, and some stable criteria to always pick the same method in case there are multiple
+          // with the same size. taking the max of the tuples is one way to do that.
           case Some((count, largestMethod)) => Some((count + 1, Ordering.Tuple3.max(thisMethod, largestMethod)))
           case None                         => Some((1, thisMethod))
         }
