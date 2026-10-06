@@ -40,8 +40,8 @@ class StaticMemberDefinitionTests extends C2CpgSuite {
     }
 
     "not create locals for the qualifier or the member" in {
-      cpg.local.nameExact("limit").l shouldBe empty
-      cpg.local.nameExact("Config").l shouldBe empty
+      cpg.local.nameExact("limit") shouldBe empty
+      cpg.local.nameExact("Config") shouldBe empty
     }
   }
 
@@ -83,7 +83,7 @@ class StaticMemberDefinitionTests extends C2CpgSuite {
       )
       val clinits = cpg.method.fullName(".*T.<clinit>.*").l
       clinits.size shouldBe 3
-      clinits.flatMap(_.local.nameExact("entries").l).size shouldBe 3
+      clinits.local.nameExact("entries").size shouldBe 3
     }
   }
 
@@ -108,7 +108,14 @@ class StaticMemberDefinitionTests extends C2CpgSuite {
           |""".stripMargin,
         "test.hh"
       )
-      cpg.method.fullName(".*init.*").size should be >= 2
+      cpg.method.fullName(".*init.*").fullName.sorted shouldBe List(
+        "Geom.<clinit>:Geom()",
+        "Geom.<clinit>:Geom()<duplicate>0",
+        "Geom.<enum>0.<clinit>:Geom.<enum>0()",
+        "Geom.<enum>1.<clinit>:Geom.<enum>1()",
+        "Geom.init:void()",
+        "Geom.init<duplicate>0:void()"
+      )
     }
   }
 }

@@ -378,8 +378,9 @@ class VariableScopeManager {
         case Some(methodScope: MethodScopeElement) if !methodScope.needsEnclosingScope =>
           val prefix = if (methodScope.methodFullName.startsWith(filename)) "" else s"$filename:"
           val id     = s"$prefix${methodScope.methodFullName}:${origin.variableName}"
-          // Key on the identity of the method scope, not only on its full name: distinct methods can share a full name
-          // (e.g. the <clinit> of several template specializations of the same class), and must not share a local.
+          // Key on the identity of the method scope, not only on its fullName:
+          // With some frontends, method fullnames are not guaranteed unique at this stage; that is only fixed in a later pass
+          // (e.g., in c2cpg the <clinit> of several template specializations of the same class). They must not share a local.
           val capturedKey = (methodScope.scopeNode, origin.variableName)
           capturedLocals.get(capturedKey) match {
             case Some(existing) =>
