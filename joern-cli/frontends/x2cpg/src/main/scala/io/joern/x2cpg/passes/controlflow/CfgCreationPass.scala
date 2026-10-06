@@ -25,29 +25,32 @@ class CfgCreationPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
 
   override def generateParts(): Array[Method] = cpg.method.toArray
 
-  private val hugeMethods = mutable.Buffer[(size: Int, method: String, file: String)]()
+  private var hugeMethodInfo: Option[(methodCount: Int, largestMethod: (size: Int, fullName: String, file: String))] =
+    None
 
   override def runOnPart(diffGraph: DiffGraphBuilder, method: Method): Unit = {
     val sizeBefore = diffGraph.size
     new CfgCreator(method, diffGraph).run()
     val sizeOfCfg = diffGraph.size - sizeBefore
     if (sizeOfCfg > 100 * 1000) {
-      hugeMethods.synchronized {
-        hugeMethods.append((sizeOfCfg, method.fullName, method.filename))
+      val thisMethod = (sizeOfCfg, method.fullName, method.filename)
+      synchronized {
+        hugeMethodInfo = hugeMethodInfo match {
+          case Some((count, largestMethod)) => Some((count + 1, Ordering.Tuple3.max(thisMethod, largestMethod)))
+          case None                         => Some((1, thisMethod))
+        }
       }
     }
   }
 
   override def finish(): Unit = {
-    if (hugeMethods.nonEmpty) {
-      val max = hugeMethods.max
-
+    hugeMethodInfo.foreach { case (methodCount, largestMethod) =>
       logger.warn(
         "{} methods have a huge CFG with over 100 000 edges. The largest method {} from file {} has {} CFG edges. Analysis may benefit from excluding the containing file(s).",
-        hugeMethods.size,
-        max.method,
-        max.file,
-        max.size,
+        methodCount,
+        largestMethod.fullName,
+        largestMethod.file,
+        largestMethod.size,
       )
     }
   }
