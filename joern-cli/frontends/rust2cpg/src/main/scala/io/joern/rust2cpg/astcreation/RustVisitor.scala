@@ -2045,19 +2045,19 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       matchArm.pat,
       mkSourceAst
     )
-    val bodyAst = matchArm.matchGuard match {
+    val bodyAsts = matchArm.matchGuard match {
       case Some(matchGuard) =>
-        val conditionAst = visitExpr(matchGuard.expr)
-        ifThenElseAst(matchGuard, Some(conditionAst), visitExpr(matchArm.expr), None)
+        val (guardBindingAsts, conditionAst) = lowerLetChain(matchGuard.expr)
+        guardBindingAsts :+ ifThenElseAst(matchGuard, Some(conditionAst), visitExpr(matchArm.expr), None)
       case None =>
-        visitExpr(matchArm.expr)
+        visitExpr(matchArm.expr) :: Nil
     }
     contextStack.pop()
     val caseCode = matchArm.matchGuard match {
       case Some(matchGuard) => s"${code(matchArm.pat)} ${code(matchGuard)}"
       case None             => code(matchArm.pat)
     }
-    val matchArmBlock = blockAst(blockNode(matchArm), (bindingAsts :+ bodyAst).toList)
+    val matchArmBlock = blockAst(blockNode(matchArm), (bindingAsts ++ bodyAsts).toList)
     val jumpTargetAst = Ast(jumpTargetNode(matchArm.pat, s"case $caseCode", caseCode))
     Seq(jumpTargetAst, matchArmBlock)
   }
