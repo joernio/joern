@@ -5,7 +5,13 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewMethodRef, 
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, Operators}
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
-import org.eclipse.cdt.core.dom.ast.cpp.{ICPPASTNamespaceDefinition, ICPPConstructor, ICPPFunction}
+import org.eclipse.cdt.core.dom.ast.cpp.{
+  ICPPASTNamespaceDefinition,
+  ICPPClassType,
+  ICPPConstructor,
+  ICPPEnumeration,
+  ICPPFunction
+}
 import org.eclipse.cdt.internal.core.dom.parser.IASTInternalScope
 import org.eclipse.cdt.internal.core.dom.parser.c.{CVariable, ICInternalBinding}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.*
@@ -223,6 +229,23 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     nullSafeAst(arrMod.getConstantExpression)
   }
 
+  private def typeRefForQualifier(qualId: CPPASTQualifiedName): Option[Ast] = {
+    qualId.getQualifier.lastOption.flatMap { lastQualifier =>
+      safeCdtCall(lastQualifier.resolveBinding()).collect {
+        case t: ICPPClassType =>
+          typeRefAst(qualId, lastQualifier, t.getQualifiedName.mkString("."))
+        case t: ICPPEnumeration =>
+          typeRefAst(qualId, lastQualifier, t.getQualifiedName.mkString("."))
+      }
+    }
+  }
+
+  private def typeRefAst(qualId: CPPASTQualifiedName, lastQualifier: IASTNode, qualifiedName: String): Ast = {
+    val fullName = stripTemplateTags(replaceQualifiedNameSeparator(qualifiedName))
+    val codeStr  = qualId.getQualifier.map(code).mkString("::")
+    Ast(typeRefNode(lastQualifier, codeStr, registerType(fullName)))
+  }
+
   protected def astForQualifiedName(qualId: CPPASTQualifiedName): Ast = {
     safeGetBinding(qualId) match {
       case Some(function: ICPPFunction) =>
@@ -254,7 +277,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
             }
             resultAst
         }
-        val qualifier = fieldAccesses(qualId.getQualifier.toIndexedSeq.toList)
+        val qualifier = typeRefForQualifier(qualId).getOrElse(fieldAccesses(qualId.getQualifier.toIndexedSeq.toList))
         val owner     = if (qualifier != Ast()) { qualifier }
         else { Ast(literalNode(qualId.getLastName, "<global>", Defines.Any)) }
         val member = fieldIdentifierNode(

@@ -559,16 +559,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
             outerAccess.methodFullName shouldBe Operators.fieldAccess
             outerAccess.code shouldBe "A::B::C::value"
             outerAccess.arguments(2).isFieldIdentifier.code.loneElement shouldBe "value"
-            inside(outerAccess.arguments(1).l) { case List(midAccess: Call) =>
-              midAccess.methodFullName shouldBe Operators.fieldAccess
-              midAccess.code shouldBe "A::B::C"
-              midAccess.arguments(2).isFieldIdentifier.code.loneElement shouldBe "C"
-              inside(midAccess.arguments(1).l) { case List(innerAccess: Call) =>
-                innerAccess.methodFullName shouldBe Operators.fieldAccess
-                innerAccess.code shouldBe "A::B"
-                innerAccess.argument(1).code shouldBe "A"
-                innerAccess.arguments(2).isFieldIdentifier.code.loneElement shouldBe "B"
-              }
+            inside(outerAccess.arguments(1).l) { case List(owner: TypeRef) =>
+              owner.code shouldBe "A::B::C"
+              owner.typeFullName shouldBe "A.B.C"
             }
           }
       }

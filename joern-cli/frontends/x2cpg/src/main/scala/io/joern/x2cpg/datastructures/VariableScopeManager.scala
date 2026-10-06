@@ -333,7 +333,7 @@ class VariableScopeManager {
     */
   def createVariableReferenceLinks(diffGraph: DiffGraphBuilder, filename: String): Unit = {
     val resolvedReferences = resolve(diffGraph, createLocalForUnresolvedReference)
-    val capturedLocals     = mutable.HashMap.empty[String, NewNode]
+    val capturedLocals     = mutable.HashMap.empty[(NewNode, String), NewNode]
 
     resolvedReferences.foreach { case VariableScopeManager.ResolvedReference(variableNodeId, origin) =>
       var maybeScopeElement: Option[ScopeElement] = origin.stack
@@ -366,7 +366,7 @@ class VariableScopeManager {
   private def nextLinkStep(
     diffGraph: DiffGraphBuilder,
     filename: String,
-    capturedLocals: mutable.HashMap[String, NewNode],
+    capturedLocals: mutable.HashMap[(NewNode, String), NewNode],
     variableNodeId: NewNode,
     origin: PendingReference,
     maybeScopeElement: Option[ScopeElement]
@@ -378,7 +378,10 @@ class VariableScopeManager {
         case Some(methodScope: MethodScopeElement) if !methodScope.needsEnclosingScope =>
           val prefix = if (methodScope.methodFullName.startsWith(filename)) "" else s"$filename:"
           val id     = s"$prefix${methodScope.methodFullName}:${origin.variableName}"
-          capturedLocals.get(id) match {
+          // Key on the identity of the method scope, not only on its full name: distinct methods can share a full name
+          // (e.g. the <clinit> of several template specializations of the same class), and must not share a local.
+          val capturedKey = (methodScope.scopeNode, origin.variableName)
+          capturedLocals.get(capturedKey) match {
             case Some(existing) =>
               LinkStep.Terminate(existing)
             case None =>
@@ -386,7 +389,7 @@ class VariableScopeManager {
               methodScope.capturingRefNode.foreach(diffGraph.addEdge(_, closureBinding, EdgeTypes.CAPTURE))
               val localNode = createLocalForUnresolvedReference(diffGraph, methodScope.scopeNode, origin)
               val captured  = localNode.closureBindingId(id)
-              capturedLocals.update(id, captured)
+              capturedLocals.update(capturedKey, captured)
               LinkStep.Capture(target = captured, next = closureBinding)
           }
         case _ => LinkStep.Skip
