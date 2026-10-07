@@ -134,7 +134,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val memberInitializerSetCalls =
       classDeclarations.collectAll[KtProperty].filter(_.getInitializer != null).map { decl =>
-        val initializerAsts = astsForExpression(decl.getInitializer, None)
+        val initializerAsts = astsForExpression(decl.getInitializer)
         val rhsAst          =
           if (initializerAsts.size == 1) initializerAsts.head
           else Ast(unknownNode(decl, "<empty>"))
@@ -158,7 +158,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       }
 
     val anonymousInitExpressions = ktClass.getAnonymousInitializers.asScala
-    val anonymousInitAsts        = anonymousInitExpressions.flatMap(astsForExpression(_, None))
+    val anonymousInitAsts        = anonymousInitExpressions.flatMap(astsForExpression(_))
 
     val constructorMethodReturn = methodReturnNode(ktClass.getPrimaryConstructor, TypeConstants.Void)
     val constructorAst          = methodAst(
@@ -417,13 +417,13 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       } else {
         expr.getInitializer match {
           case accessExpression: KtArrayAccessExpression =>
-            astForArrayAccess(accessExpression, None, None)
+            astForArrayAccess(accessExpression)
           case expression: KtPostfixExpression =>
-            astForPostfixExpression(expression, None, None)
+            astForPostfixExpression(expression)
           case expression: KtWhenExpression =>
-            astForWhenAsExpression(expression, None, None)
+            astForWhenAsExpression(expression)
           case expression: KtIfExpression =>
-            astForIfAsExpression(expression, None, None)
+            astForIfAsExpression(expression)
           case _ =>
             val assignmentNode =
               operatorCallNode(
@@ -433,7 +433,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
                 None
               )
             val assignmentRhsAst =
-              astsForExpression(rhsCall, None).headOption.getOrElse(Ast(unknownNode(rhsCall, Constants.Empty)))
+              astsForExpression(rhsCall).headOption.getOrElse(Ast(unknownNode(rhsCall, Constants.Empty)))
             callAst(assignmentNode, List(assignmentLhsAst, assignmentRhsAst))
         }
       }
@@ -496,7 +496,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val assignmentsForEntries =
       nonUnderscoreDestructuringEntries(expr).zipWithIndex.map { case (entry, idx) =>
-        val rhsBaseAst = astForNameReference(typedInit.get, Some(1), None)
+        val rhsBaseAst = withArgumentInfo(astForNameReference(typedInit.get), Some(1))
         assignmentAstForDestructuringEntry(entry, rhsBaseAst, idx + 1)
       }
     val localsForEntries = localsForDestructuringEntries(expr)
@@ -625,7 +625,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val ctorMethodBlockAst =
         ctor.getBodyExpression match {
           case b: KtBlockExpression =>
-            astForBlock(b, None, None, preStatements = Option(primaryCtorCallAst))
+            astForBlock(b, preStatements = Option(primaryCtorCallAst))
           case null =>
             val node = NewBlock().code(Constants.Empty).typeFullName(TypeConstants.Any)
             blockAst(node, primaryCtorCallAst)
@@ -647,8 +647,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
   protected def astForObjectLiteralExpr(
     expr: KtObjectLiteralExpression,
-    argIdxMaybe: Option[Int],
-    argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   ): Ast = {
     val parentFn = KtPsiUtil.getTopmostParentOfTypes(expr, classOf[KtNamedFunction])
@@ -698,10 +696,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val refTmpNode = identifierNode(expr, tmpName, shortenCode(tmpName), localForTmp.typeFullName)
     val refTmpAst  = astWithRefEdgeMaybe(refTmpNode.name, refTmpNode)
 
-    val blockNode_ =
-      withArgumentIndex(blockNode(expr, code(expr), TypeConstants.Any), argIdxMaybe)
-        .argumentName(argNameMaybe)
-    blockAst(blockNode_, Seq(typeDeclAst, localAst, assignmentCallAst, initAst, refTmpAst).toList)
+    blockAst(
+      blockNode(expr, code(expr), TypeConstants.Any),
+      Seq(typeDeclAst, localAst, assignmentCallAst, initAst, refTmpAst).toList
+    )
       .withChildren(annotations.map(astForAnnotationEntry))
   }
 
@@ -832,7 +830,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val localAst = Ast(node)
 
       if (expr.getDelegateExpressionOrInitializer != null) {
-        val rhsAsts        = astsForExpression(expr.getDelegateExpressionOrInitializer, Some(2))
+        val rhsAsts = astsForExpression(expr.getDelegateExpressionOrInitializer)
+        rhsAsts.lastOption.foreach(withArgumentInfo(_, Some(2)))
         val identifier     = identifierNode(elem, code(elem), code(elem), typeFullName)
         val identifierAst  = astWithRefEdgeMaybe(identifier.name, identifier)
         val assignmentNode = operatorCallNode(expr, code(expr), Operators.assignment, None)
