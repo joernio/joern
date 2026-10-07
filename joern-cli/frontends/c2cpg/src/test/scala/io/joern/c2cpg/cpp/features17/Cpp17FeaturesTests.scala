@@ -592,7 +592,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |Pair gP{1, 2};
           |auto [gA, gB] = gP;
           |""".stripMargin)
-      cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map(
+      cpg.local.map(loc => (loc.name, loc.typeFullName)).toMap shouldBe Map(
         "gP"     -> "Pair",
         "<tmp>0" -> "Pair",
         "gA"     -> "int",

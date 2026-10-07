@@ -407,8 +407,8 @@ trait AstForTypesCreator { this: AstCreator =>
     normalizedCode.strip()
   }
 
-  private def astsForLinkageSpecification(l: ICPPASTLinkageSpecification): Seq[Ast] = {
-    l.getDeclarations.toIndexedSeq.flatMap(d => astsForDeclaration(d))
+  private def astsForLinkageSpecification(linkage: ICPPASTLinkageSpecification): Seq[Ast] = {
+    linkage.getDeclarations.toIndexedSeq.flatMap(declaration => astsForDeclaration(declaration))
   }
 
   private def filterNameAlias(nameAlias: Option[String], fullName: String): Option[String] = {
