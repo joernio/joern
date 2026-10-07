@@ -3,7 +3,7 @@ package io.joern.console.cpgcreation
 import io.joern.console.FrontendConfig
 import io.joern.x2cpg.frontendspecific.php2cpg
 import io.joern.x2cpg.passes.frontend.{XTypeRecoveryConfig, XTypeStubsParser, XTypeStubsParserConfig}
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.layers.LayerCreator
 import scopt.OParser
 
 import java.nio.file.Path
@@ -33,8 +33,6 @@ case class PhpCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGe
 
   override def isJvmBased = true
 
-  override def applyPostProcessingPasses(cpg: Cpg): Cpg = {
-    php2cpg.postProcessingPasses(cpg, typeRecoveryConfig, setKnownTypesConfig).foreach(_.createAndApply())
-    cpg
-  }
+  override protected def postProcessingLayer: Option[LayerCreator] =
+    Some(new php2cpg.PhpPostProcessing(typeRecoveryConfig, setKnownTypesConfig))
 }

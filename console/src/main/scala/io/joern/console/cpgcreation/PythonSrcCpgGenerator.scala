@@ -4,7 +4,7 @@ import io.joern.console.FrontendConfig
 import io.joern.x2cpg.frontendspecific.pysrc2cpg
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.*
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.layers.LayerCreator
 
 import java.nio.file.Path
 import scala.util.Try
@@ -23,10 +23,8 @@ case class PythonSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends
   override def isAvailable: Boolean =
     command.toFile.exists
 
-  override def applyPostProcessingPasses(cpg: Cpg): Cpg = {
-    pysrc2cpg.postProcessingPasses(cpg, typeRecoveryConfig).foreach(_.createAndApply())
-    cpg
-  }
+  override protected def postProcessingLayer: Option[LayerCreator] =
+    Some(new pysrc2cpg.PythonPostProcessing(typeRecoveryConfig))
 
   override def isJvmBased = true
 }

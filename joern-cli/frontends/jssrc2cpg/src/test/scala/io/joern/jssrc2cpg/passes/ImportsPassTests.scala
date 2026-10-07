@@ -7,6 +7,7 @@ import io.joern.x2cpg.frontendspecific.jssrc2cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, TestCpg}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 @scala.annotation.nowarn("cat=deprecation")
 class ImportsPassTests extends Code2CpgFixture(() => new TestCpgWithoutDataFlow()) {
@@ -68,6 +69,6 @@ class TestCpgWithoutDataFlow extends TestCpg with JsSrc2CpgFrontend {
   override val fileSuffix: String  = ".js"
   override def applyPasses(): Unit = {
     X2Cpg.applyDefaultOverlays(this)
-    jssrc2cpg.postProcessingPasses(this, XTypeRecoveryConfig()).foreach(_.createAndApply())
+    new jssrc2cpg.JavaScriptPostProcessing(XTypeRecoveryConfig()).run(new LayerCreatorContext(this))
   }
 }

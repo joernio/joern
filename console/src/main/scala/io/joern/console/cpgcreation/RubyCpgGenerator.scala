@@ -3,7 +3,7 @@ package io.joern.console.cpgcreation
 import io.joern.console.FrontendConfig
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.layers.LayerCreator
 
 import java.nio.file.Path
 import scala.util.Try
@@ -23,9 +23,7 @@ case class RubyCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
 
   override def isJvmBased = true
 
-  override def applyPostProcessingPasses(cpg: Cpg): Cpg = {
-    rubysrc2cpg.postProcessingPasses(cpg, typeRecoveryConfig).foreach(_.createAndApply())
-    cpg
-  }
+  override protected def postProcessingLayer: Option[LayerCreator] =
+    Some(new rubysrc2cpg.RubyPostProcessing(typeRecoveryConfig))
 
 }

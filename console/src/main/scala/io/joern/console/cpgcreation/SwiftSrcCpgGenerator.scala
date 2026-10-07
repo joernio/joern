@@ -4,7 +4,7 @@ import io.joern.console.FrontendConfig
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.shiftleft.semanticcpg.utils.FileUtil.*
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.layers.LayerCreator
 
 import java.nio.file.{Path, Paths, Files}
 import scala.util.Try
@@ -35,10 +35,8 @@ case class SwiftSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends 
   override def isAvailable: Boolean =
     Files.exists(command)
 
-  override def applyPostProcessingPasses(cpg: Cpg): Cpg = {
-    swiftsrc2cpg.postProcessingPasses(cpg, typeRecoveryConfig).foreach(_.createAndApply())
-    cpg
-  }
+  override protected def postProcessingLayer: Option[LayerCreator] =
+    Some(new swiftsrc2cpg.SwiftPostProcessing(typeRecoveryConfig))
 
   override def isJvmBased = true
 }
