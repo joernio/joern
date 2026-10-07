@@ -163,12 +163,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) exte
       }
     val bodyAst = Option(ktFn.getBodyBlockExpression) match {
       case Some(bodyBlockExpression) =>
-        astForBlock(bodyBlockExpression, None, None, localsForCaptures = localsForCaptured)
+        astForBlock(bodyBlockExpression, localsForCaptures = localsForCaptured)
       case None =>
         Option(ktFn.getBodyExpression)
           .map { expr =>
-            val bodyBlock      = blockNode(expr, code(expr), TypeConstants.Any)
-            val asts           = astsForExpression(expr, Some(1))
+            val bodyBlock = blockNode(expr, code(expr), TypeConstants.Any)
+            val asts      = astsForExpression(expr)
+            asts.lastOption.foreach(withArgumentInfo(_, Some(1)))
             val blockChildAsts =
               if (asts.nonEmpty) {
                 val allStatementsButLast = asts.dropRight(1)
@@ -233,8 +234,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) exte
     val additionalLocals = mutable.ArrayBuffer.empty[Ast]
 
     val initCallAst = if (decl.hasInitializer) {
-      val init    = decl.getInitializer
-      val asts    = astsForExpression(init, Some(2))
+      val init = decl.getInitializer
+      val asts = astsForExpression(init)
+      asts.lastOption.foreach(withArgumentInfo(_, Some(2)))
       val initAst =
         if (asts.size == 1) { asts.head }
         else {
@@ -422,12 +424,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) exte
     }
   }
 
-  def astForAnonymousFunction(
-    fn: KtNamedFunction,
-    argIdxMaybe: Option[Int],
-    argNameMaybe: Option[String],
-    annotations: Seq[KtAnnotationEntry] = Seq()
-  ): Ast = {
+  def astForAnonymousFunction(fn: KtNamedFunction, annotations: Seq[KtAnnotationEntry] = Seq()): Ast = {
     val funcDesc     = bindingUtils.getFunctionDesc(fn)
     val name         = nameRenderer.descName(funcDesc)
     val descFullName = nameRenderer
@@ -480,12 +477,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) exte
       }
     val bodyAst = Option(fn.getBodyBlockExpression) match {
       case Some(bodyBlockExpression) =>
-        astForBlock(bodyBlockExpression, None, None, localsForCaptures = localsForCaptured)
+        astForBlock(bodyBlockExpression, localsForCaptures = localsForCaptured)
       case None =>
         Option(fn.getBodyExpression)
           .map { expr =>
-            val bodyBlock  = blockNode(expr, code(expr), TypeConstants.Any)
-            val returnAst_ = returnAst(returnNode(expr, Constants.RetCode), astsForExpression(expr, Some(1)))
+            val bodyBlock = blockNode(expr, code(expr), TypeConstants.Any)
+            val bodyAsts  = astsForExpression(expr)
+            bodyAsts.lastOption.foreach(withArgumentInfo(_, Some(1)))
+            val returnAst_ = returnAst(returnNode(expr, Constants.RetCode), bodyAsts)
             blockAst(bodyBlock, localsForCaptured.map(Ast(_)) ++ List(returnAst_))
           }
           .getOrElse {
@@ -505,9 +504,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) exte
       modifierNode(fn, ModifierTypes.VIRTUAL) :: modifierNode(fn, ModifierTypes.LAMBDA) :: Nil
     )
 
-    val _methodRefNode =
-      withArgumentIndex(methodRefNode(fn, code(fn), fullName, lambdaTypeDeclFullName), argIdxMaybe)
-        .argumentName(argNameMaybe)
+    val _methodRefNode = methodRefNode(fn, code(fn), fullName, lambdaTypeDeclFullName)
 
     val samInterface = getSamInterface(fn)
 
@@ -534,12 +531,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) exte
       .withChildren(annotations.map(astForAnnotationEntry))
   }
 
-  def astForLambda(
-    expr: KtLambdaExpression,
-    argIdxMaybe: Option[Int],
-    argNameMaybe: Option[String],
-    annotations: Seq[KtAnnotationEntry] = Seq()
-  ): Ast = {
+  def astForLambda(expr: KtLambdaExpression, annotations: Seq[KtAnnotationEntry] = Seq()): Ast = {
     val funcDesc     = bindingUtils.getFunctionDesc(expr.getFunctionLiteral)
     val name         = nameRenderer.descName(funcDesc)
     val descFullName = nameRenderer
@@ -654,8 +646,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) exte
       .map(
         astForBlock(
           _,
-          None,
-          None,
           pushToScope = false,
           localsForCaptured,
           implicitReturnAroundLastStatement = needsReturnExpression,
@@ -676,9 +666,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) exte
       modifierNode(expr, ModifierTypes.VIRTUAL) :: modifierNode(expr, ModifierTypes.LAMBDA) :: Nil
     )
 
-    val _methodRefNode =
-      withArgumentIndex(methodRefNode(expr, code(expr), fullName, lambdaTypeDeclFullName), argIdxMaybe)
-        .argumentName(argNameMaybe)
+    val _methodRefNode = methodRefNode(expr, code(expr), fullName, lambdaTypeDeclFullName)
 
     val samInterface = getSamInterface(expr)
 
@@ -830,7 +818,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) exte
   def astForReturnExpression(expr: KtReturnExpression): Ast = {
     val returnedExpr =
       if (expr.getReturnedExpression != null) {
-        astsForExpression(expr.getReturnedExpression, None)
+        astsForExpression(expr.getReturnedExpression)
       } else {
         Nil
       }
