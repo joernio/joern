@@ -106,7 +106,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     case fieldExpr: FieldExpr           => visitFieldExpr(fieldExpr)
     case forExpr: ForExpr               => visitForExpr(forExpr)
     case formatArgsExpr: FormatArgsExpr => visitFormatArgsExpr(formatArgsExpr)
-    case ifExpr: IfExpr                 => visitIfExpr(ifExpr)
+    case ifExpr: IfExpr                 => visitIfExpr(ifExpr, visitExpr)
     case indexExpr: IndexExpr           => visitIndexExpr(indexExpr)
     case literal: Literal               => visitLiteral(literal)
     case loopExpr: LoopExpr             => visitLoopExpr(loopExpr)
@@ -276,7 +276,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         // If there's only 1 binding, it's a regular variable declaration, so no need hoist.
         // If there are no bindings, e.g. `let _ = foo();`, we still assign the RHS to a tmp variable.
         if (bindings.length == 1) {
-          val rhsAst      = visitExpr(rhsExpr)
+          val rhsAst      = visitRhsExpr(rhsExpr)
           val localAsts   = createLocalsForBindings(bindings)
           val assignments = createAssignmentsForPattern(letStmt.pat, () => rhsAst, Some(code(letStmt)))
           localAsts ++ assignments
@@ -741,9 +741,9 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
   // BlockExpr =
   //  Attr* Label? (TryBlockModifier | 'unsafe' | ('async' 'move'?) | ('gen' 'move'?) | 'const') StmtList
-  private def visitBlockExpr(blockExpr: BlockExpr): Ast = {
+  private def visitBlockExpr(blockExpr: BlockExpr, lowerTail: Expr => Ast = visitExpr): Ast = {
     contextStack.pushBlock()
-    val stmts = visitStmtList(blockExpr.stmtList)
+    val stmts = visitStmtList(blockExpr.stmtList, lowerTail)
     contextStack.pop()
     val block = blockNode(blockExpr)
     Ast(block).withChildren(stmts)
@@ -821,9 +821,9 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //    statements:Stmt*
   //    tail_expr:Expr?
   //  '}'
-  private def visitStmtList(stmtList: StmtList): Seq[Ast] = {
+  private def visitStmtList(stmtList: StmtList, lowerTail: Expr => Ast = visitExpr): Seq[Ast] = {
     val stmtAsts    = stmtList.stmt.flatMap(visitStmt)
-    val tailExprAst = stmtList.expr.map(visitExpr).toList
+    val tailExprAst = stmtList.expr.map(lowerTail).toList
     stmtAsts ++ tailExprAst
   }
 
@@ -990,7 +990,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // IfExpr =
   //  Attr* 'if' condition:Expr then_branch:BlockExpr
   //  ('else' else_branch:(IfExpr | BlockExpr))?
-  private def visitIfExpr(ifExpr: IfExpr): Ast = {
+  private def visitIfExpr(ifExpr: IfExpr, lowerTail: Expr => Ast): Ast = {
     ifExpr.expr match {
       case letExpr: LetExpr =>
         lowerIfLet(ifExpr, letExpr)
@@ -998,10 +998,46 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         lowerIfLetChain(ifExpr, binExpr)
       case condition =>
         val conditionAst = visitExpr(condition)
-        val thenAst      = visitBlockExpr(ifExpr.thenBranch)
-        val elseAst      = ifExpr.elseBranch.map(visitExpr)
+        val thenAst      = visitBlockExpr(ifExpr.thenBranch, lowerTail)
+        val elseAst      = ifExpr.elseBranch.map(lowerElseBranch(_, lowerTail))
         ifThenElseAst(ifExpr, Some(conditionAst), thenAst, elseAst)
     }
+  }
+
+  private def lowerElseBranch(elseBranch: IfExpr | BlockExpr, lowerTail: Expr => Ast): Ast = {
+    elseBranch match {
+      case elseIf: IfExpr       => visitIfExpr(elseIf, lowerTail)
+      case blockExpr: BlockExpr => visitBlockExpr(blockExpr, lowerTail)
+    }
+  }
+
+  private def visitRhsExpr(rhsExpr: Expr): Ast = rhsExpr match {
+    case ifExpr: IfExpr => lowerIfWithResult(ifExpr)
+    case _              => visitExpr(rhsExpr)
+  }
+
+  // `if cond { then-stmts; then-tail } else { else-stmts; else-tail }` becomes:
+  // BLOCK {
+  //   LOCAL tmp
+  //   IF (cond) {
+  //    then-stmts
+  //    tmp = then-tail
+  //   } ELSE {
+  //    else-stmts
+  //    tmp = else-tail
+  //   }
+  //   tmp
+  // }
+  private def lowerIfWithResult(ifExpr: IfExpr): Ast = {
+    val tmpName        = contextStack.nextTmpName()
+    val typeFullName   = typeFullNameForExpr(ifExpr)
+    val tmpLocalAst    = localAst(ifExpr, tmpName, tmpName, typeFullName)
+    val mkTmpIdentAst  = () => identifierAst(ifExpr, tmpName, tmpName, typeFullName)
+    val mkTmpAssignAst = (tailExpr: Expr) =>
+      callAst(assignmentNode(tailExpr, s"$tmpName = ${code(tailExpr)}"), Seq(mkTmpIdentAst(), visitExpr(tailExpr)))
+
+    val ifAst = visitIfExpr(ifExpr, mkTmpAssignAst)
+    blockAst(blockNode(ifExpr), tmpLocalAst :: ifAst :: mkTmpIdentAst() :: Nil)
   }
 
   // `if let pat = expr { body-then } else { body-else }` becomes:
