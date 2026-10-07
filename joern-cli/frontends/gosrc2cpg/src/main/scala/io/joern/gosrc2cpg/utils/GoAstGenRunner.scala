@@ -125,7 +125,16 @@ class GoAstGenRunner(config: Config, includeFileRegex: String = "")
         }
       parsedFiles.foreach(moduleMeta.addParsedFile)
       skippedFiles.foreach(moduleMeta.addSkippedFile)
-      moduleMeta.getOnlyChildren
+      if (moduleMeta.parsedFiles.isEmpty) {
+        moduleMeta.getOnlyChildren
+      } else {
+        // Files under no parsed go.mod: the input root has none, or goastgen failed to parse it. Keep them as a
+        // module without a go.mod instead of dropping them.
+        logger.warn(
+          s"${moduleMeta.parsedFiles.size} file(s) are not under any parsed go.mod; processing them without module information"
+        )
+        moduleMeta.getAllChildren
+      }
     } else {
       parsedFiles.foreach(moduleMeta.addParsedFile)
       skippedFiles.foreach(moduleMeta.addSkippedFile)
