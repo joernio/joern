@@ -36,7 +36,8 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Option(GoGlobal())) extends X
                 GoModHelper(
                   Some(astGenResult.modulePath),
                   astGenResult.parsedModFile
-                    .flatMap(modFile => GoAstJsonParser.readModFile(Paths.get(modFile)).map(x => x))
+                    .flatMap(modFile => GoAstJsonParser.readModFile(Paths.get(modFile))),
+                  Some(config.inputPath)
                 )
               )
               goGlobal.mainModule = goMod.flatMap(modHelper => modHelper.getModMetaData().map(mod => mod.module.name))

@@ -37,6 +37,24 @@ class GoModTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     namespace shouldBe "main"
 
   }
+  "with .mod file in a sub directory of the project and main pkg use case" in {
+    val rootPath   = FileUtil.currentWorkingDirectory.toString
+    val modulePath = (Paths.get(rootPath) / "module1").toString
+    val goMod      = new GoModHelper(
+      Some(modulePath),
+      Some(
+        GoMod(
+          fileFullPath = (Paths.get(modulePath) / "go.mod").toString,
+          module = GoModModule("joern.io/module1"),
+          dependencies = List[GoModDependency]()
+        )
+      ),
+      Some(rootPath)
+    )
+    goMod.getNameSpace((Paths.get(modulePath) / "main.go").toString, "main") shouldBe "module1/main"
+    goMod.getNameSpace((Paths.get(modulePath) / "first" / "main.go").toString, "main") shouldBe "module1/first/main"
+  }
+
   "with .mod file and main pkg 1 use case" in {
     val inputPath = FileUtil.currentWorkingDirectory.toString
     val goMod     = new GoModHelper(

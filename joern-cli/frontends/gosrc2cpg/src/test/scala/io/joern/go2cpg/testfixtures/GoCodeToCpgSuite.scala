@@ -41,7 +41,7 @@ class DefaultTestCpgWithGo(val fileSuffix: String) extends DefaultTestCpg with S
       .getOrElse(Config())
       .withInputPath(sourceCodePath.getAbsolutePath)
     val res = goSrc2Cpg.get.createCpg(config).get
-    new PostFrontendValidator(res, ValidationLevel.V0).run()
+    new PostFrontendValidator(res, ValidationLevel.V3).run()
     res
   }
 

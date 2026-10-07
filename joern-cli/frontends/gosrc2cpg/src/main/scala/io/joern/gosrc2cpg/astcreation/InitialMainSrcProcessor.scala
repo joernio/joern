@@ -4,7 +4,7 @@ import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewNamespaceBlock}
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import ujson.{Arr, Obj, Value}
 
@@ -46,7 +46,8 @@ trait InitialMainSrcProcessor(implicit withSchemaValidation: ValidationMode) { t
       .filename(packageFolderPath)
     val fakePackageTypeDecl =
       typeDeclNode(rootNode, fullyQualifiedPackage, fullyQualifiedPackage, packageFolderPath, fullyQualifiedPackage)
-    Ast(namespaceBlock).withChild(Ast(fakePackageTypeDecl))
+    val fileNode = NewFile().name(relPathFileName).order(0)
+    Ast(fileNode).withChild(Ast(namespaceBlock).withChild(Ast(fakePackageTypeDecl)))
   }
 
   private def identifyUserPackagesFromImports(spec: Value): Unit = {

@@ -3,12 +3,35 @@ package io.joern.gosrc2cpg.model
 import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
 import upickle.default.*
 
+import java.nio.file.Paths
 import java.util
 import java.util.Set
 import java.util.concurrent.ConcurrentSkipListSet
+import scala.util.Try
 import scala.util.control.Breaks.*
 
-class GoModHelper(modulePath: Option[String] = None, meta: Option[GoMod] = None) {
+class GoModHelper(
+  modulePath: Option[String] = None,
+  meta: Option[GoMod] = None,
+  projectRootPath: Option[String] = None
+) {
+
+  /** Directory of the module relative to the project root as path tokens. Empty if the module is the project root (or
+    * the root is unknown).
+    */
+  private lazy val moduleDirTokens: Seq[String] = {
+    (modulePath, projectRootPath) match {
+      case (Some(module), Some(root)) =>
+        val rootPath   = Paths.get(root).toAbsolutePath.normalize
+        val modulePath = Paths.get(module).toAbsolutePath.normalize
+        Try(rootPath.relativize(modulePath)).toOption
+          .map(_.toString)
+          .filterNot(path => path.startsWith("..") || path.isEmpty)
+          .map(_.split(fileSeparateorPattern).toSeq.filterNot(_.trim.isEmpty))
+          .getOrElse(Seq.empty)
+      case _ => Seq.empty
+    }
+  }
 
   def getModMetaData(): Option[GoMod]                                    = meta
   def getNameSpace(compilationUnitFilePath: String, pkg: String): String = {
@@ -26,10 +49,16 @@ class GoModHelper(modulePath: Option[String] = None, meta: Option[GoMod] = None)
       // e.g.
       // 1. if there is go file inside <root project path>/first/second/test.go (package main) => '/first/second/main'
       // 2. <root project path>/test.go (package main) => 'main'
+      //
+      // If the module itself is not located in the project root (e.g. multiple modules in one project) the
+      // module directory is prepended as well, so that the main packages of different modules do not collide.
+      //
+      // e.g. <root project path>/module1/test.go with <root project path>/module1/go.mod => 'module1/main'
 
       val remainingpath = compilationUnitFilePath.stripPrefix(modulePath.get)
       val pathTokens    = remainingpath.split(fileSeparateorPattern)
-      val tokens        = pathTokens.dropRight(1).filterNot(x => x == null || x.trim.isEmpty) :+ pkg
+      val tokens        =
+        moduleDirTokens ++ (pathTokens.dropRight(1).filterNot(token => token == null || token.trim.isEmpty) :+ pkg)
       return tokens.mkString("/")
     }
 
@@ -40,7 +69,7 @@ class GoModHelper(modulePath: Option[String] = None, meta: Option[GoMod] = None)
     val remainingpath = compilationUnitFilePath.stripPrefix(modulePath.get)
     val pathTokens    = remainingpath.split(fileSeparateorPattern)
     // prefixing module name i.e. jorn.io/trial
-    val tokens = meta.get.module.name +: pathTokens.dropRight(1).filterNot(x => x == null || x.trim.isEmpty)
+    val tokens = meta.get.module.name +: pathTokens.dropRight(1).filterNot(token => token == null || token.trim.isEmpty)
     tokens.mkString("/")
   }
 
