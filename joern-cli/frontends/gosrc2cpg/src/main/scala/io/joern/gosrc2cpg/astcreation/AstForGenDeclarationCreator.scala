@@ -156,7 +156,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
     }
   }
 
-  private def astForLocalNode(localParserNode: ParserNodeInfo, typeFullName: Option[String]): Ast = {
+  protected def astForLocalNode(localParserNode: ParserNodeInfo, typeFullName: Option[String]): Ast = {
     val name = localParserNode.json(ParserKeys.Name).str
     if (name != "_") {
       val typeFullNameStr = typeFullName.getOrElse(Defines.anyTypeName)

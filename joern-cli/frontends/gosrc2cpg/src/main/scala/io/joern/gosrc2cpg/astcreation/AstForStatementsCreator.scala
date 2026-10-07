@@ -234,21 +234,95 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   }
 
+  /** Lowers `for k, v := range x { body }` (and the `=`, key-only and keyless forms) to a FOR whose condition is the
+    * per-iteration step `k, v := range x`:
+    *
+    *   - init: a block holding the locals declared by `:=`;
+    *   - condition: one assignment per iteration variable, `k = range x` and `v = range x`, or just `range x` when the
+    *     loop has no iteration variables (`for range x`, `for range 10`);
+    *   - body: the loop body.
+    *
+    * The condition gives the CFG an exit edge, so the code after the loop stays reachable.
+    */
   private def astForRangeStatement(rangeStmt: ParserNodeInfo): Ast = {
-    rangeStmt.json.obj.contains(ParserKeys.Key) match {
-      case true =>
-        val keyParserNode  = createParserNodeInfo(rangeStmt.json(ParserKeys.Key))
-        val declParserNode = createParserNodeInfo(keyParserNode.json(ParserKeys.Obj)(ParserKeys.Decl))
-        val code           = s"for ${declParserNode.code}"
-        val declAst        = astsForStatement(declParserNode)
-        val initAst        = astForNode(rangeStmt.json(ParserKeys.X))
-        val stmtAst        = astsForStatement(rangeStmt.json(ParserKeys.Body))
-        forAst(rangeStmt, Nil, initAst, Nil, declAst, stmtAst, Some(code))
-      case false =>
-        val initAst = astForNode(rangeStmt.json(ParserKeys.X))
-        val code    = s"for range ${createParserNodeInfo(rangeStmt.json(ParserKeys.X)).code}"
-        val stmtAst = astsForStatement(rangeStmt.json(ParserKeys.Body))
-        forAst(rangeStmt, Nil, initAst, Nil, Nil, stmtAst, Some(code))
+    val iterationVarsJson = List(ParserKeys.Key, ParserKeys.Value)
+      .flatMap(key => rangeStmt.json.obj.get(key))
+      .filterNot(_.isNull)
+    // With `:=`, goastgen writes the full nodes for Value and X inside Key's declaration (`Key.Obj.Decl`, the implicit
+    // `k, v := range x`) and only node references at Value and X. Cache them first so that those references resolve.
+    iterationVarsJson.foreach(cacheNestedParserNodes)
+    val xParserNode   = createParserNodeInfo(rangeStmt.json(ParserKeys.X))
+    val iterationVars = iterationVarsJson.map(createParserNodeInfo)
+    val tok           = Try(rangeStmt.json(ParserKeys.Tok).str).getOrElse("")
+    val rangeCode     = s"range ${xParserNode.code}"
+    val headerCode    =
+      if (iterationVars.isEmpty) rangeCode else s"${iterationVars.map(_.code).mkString(", ")} $tok $rangeCode"
+
+    val initBlock = blockNode(rangeStmt, Defines.empty, Defines.voidTypeName)
+    scope.pushNewScope(initBlock)
+
+    def rangeAst(): (Ast, String) = {
+      val xAst         = astForNode(xParserNode)
+      val typeFullName = getTypeFullNameFromAstNode(xAst)
+      val rangeCall    =
+        callNode(
+          rangeStmt,
+          rangeCode,
+          Operators.range,
+          Operators.range,
+          DispatchTypes.STATIC_DISPATCH,
+          None,
+          Some(typeFullName)
+        )
+      (callAst(rangeCall, xAst), typeFullName)
+    }
+
+    val (localAsts, conditionAsts) = iterationVars match {
+      case Nil  => (Nil, Seq(rangeAst()._1))
+      case vars =>
+        vars.zipWithIndex.map { case (varParserNode, index) =>
+          val (rhsAst, collectionType) = rangeAst()
+          val varType                  = rangeIterationVarType(collectionType, isKey = index == 0)
+          val localAst                 =
+            if (tok == ":=" && varParserNode.node == Ident) Some(astForLocalNode(varParserNode, Some(varType)))
+            else None
+          val lhsAst     = astForNode(varParserNode)
+          val assignment = callNode(
+            rangeStmt,
+            headerCode,
+            Operators.assignment,
+            Operators.assignment,
+            DispatchTypes.STATIC_DISPATCH,
+            None,
+            Some(varType)
+          )
+          (localAst, callAst(assignment, lhsAst :+ rhsAst))
+        }.unzip
+    }
+    val initAst  = blockAst(initBlock, localAsts.flatten.filter(_.root.isDefined).toList)
+    val bodyAsts = astsForStatement(createParserNodeInfo(rangeStmt.json(ParserKeys.Body)))
+    scope.popScope()
+
+    forAst(rangeStmt, Nil, Seq(initAst), conditionAsts, Nil, bodyAsts, Some(s"for $headerCode"))
+  }
+
+  private def cacheNestedParserNodes(json: Value): Unit = json match {
+    case obj: ujson.Obj =>
+      if (obj.value.contains(ParserKeys.NodeId) && !obj.value.contains(ParserKeys.NodeReferenceId))
+        createParserNodeInfo(obj)
+      obj.value.values.foreach(cacheNestedParserNodes)
+    case arr: ujson.Arr => arr.value.foreach(cacheNestedParserNodes)
+    case _              =>
+  }
+
+  /** The type of the key (`isKey`) or value of a range over `collectionType`, as far as it is known. */
+  private def rangeIterationVarType(collectionType: String, isKey: Boolean): String = {
+    val sliceOrArray = "^\\[[^\\]]*\\](.+)$".r
+    collectionType.stripPrefix("*") match {
+      case sliceOrArray(elementType) => if (isKey) "int" else elementType
+      case "string"                  => if (isKey) "int" else "int32"
+      case intType if Defines.primitiveTypeMap.contains(intType) && intType.contains("int") => intType
+      case _                                                                                => Defines.anyTypeName
     }
   }
 

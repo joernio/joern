@@ -203,20 +203,31 @@ class LoopsTests extends GoCodeToCpgSuite {
     "check working AST structure is in place" in {
       val List(forStmt) = cpg.method.name("main").controlStructure.l
       forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
-      val List(identifier: Identifier) = forStmt.astChildren.order(1).l: @unchecked
-      identifier.name shouldBe "message"
-    }
+      forStmt.code shouldBe "for index, char := range message"
 
-    "TODO needs correction and non working" ignore {
-      val List(forStmt)           = cpg.method.name("main").controlStructure.l
-      val List(localBlock: Block) = forStmt.astChildren.order(2).l: @unchecked
-      localBlock.astChildren.isLocal.code.l shouldBe List("index", "char")
+      val List(localBlock: Block) = forStmt.astChildren.order(1).l: @unchecked
+      localBlock.astChildren.isLocal.map(local => (local.name, local.typeFullName)).l shouldBe List(
+        ("index", "int"),
+        ("char", "int32")
+      )
 
-      val List(assignCall: Call) = forStmt.astChildren.order(3).l: @unchecked
-      assignCall.code shouldBe "index, char := range message"
+      val List(conditionBlock: Block)   = forStmt.astChildren.order(2).l: @unchecked
+      val List(indexAssign, charAssign) = conditionBlock.astChildren.isCall.l
+      indexAssign.name shouldBe Operators.assignment
+      indexAssign.code shouldBe "index, char := range message"
+      indexAssign.argument.code.l shouldBe List("index", "range message")
+      charAssign.argument.code.l shouldBe List("char", "range message")
+      val List(rangeCall: Call) = indexAssign.argument.order(2).l: @unchecked
+      rangeCall.name shouldBe Operators.range
+      rangeCall.argument.isIdentifier.name.l shouldBe List("message")
 
       val List(body: Block) = forStmt.astChildren.order(4).l: @unchecked
       body.astChildren.isCall.code.l shouldBe List("counter++")
+    }
+
+    "have the iteration variables refer to their locals" in {
+      cpg.identifier.nameExact("index").refsTo.l shouldBe cpg.local.nameExact("index").l
+      cpg.identifier.nameExact("char").refsTo.l shouldBe cpg.local.nameExact("char").l
     }
   }
 
@@ -242,8 +253,57 @@ class LoopsTests extends GoCodeToCpgSuite {
     "check working AST structure is in place" in {
       val List(forStmt) = cpg.method.name("main").controlStructure.l
       forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
-      val List(identifier: Identifier) = forStmt.astChildren.order(1).l: @unchecked
+      forStmt.code shouldBe "for range servers"
+      val List(rangeCall: Call) = forStmt.astChildren.order(2).l: @unchecked
+      rangeCall.name shouldBe Operators.range
+      rangeCall.code shouldBe "range servers"
+      val List(identifier: Identifier) = rangeCall.argument.l: @unchecked
       identifier.name shouldBe "servers"
+    }
+  }
+
+  "range loops over other collections" should {
+    val cpg = code("""
+        |package main
+        |
+        |func main() {
+        |	m := map[string]int{"a": 1}
+        |	for k, v := range m {
+        |		_ = k
+        |		_ = v
+        |	}
+        |
+        |	var xs []float64
+        |	for i := range xs {
+        |		_ = i
+        |	}
+        |
+        |	var j int
+        |	for j = range xs {
+        |	}
+        |
+        |	for range 3 {
+        |	}
+        |}
+        |""".stripMargin)
+
+    "declare one local per iteration variable" in {
+      cpg.local.nameExact("k").size shouldBe 1
+      cpg.local.nameExact("v").size shouldBe 1
+      cpg.local.nameExact("i").typeFullName.l shouldBe List("int")
+    }
+
+    "not declare a new local for `=`" in {
+      cpg.local.nameExact("j").size shouldBe 1
+      val List(assign) = cpg.call.nameExact(Operators.assignment).code("j = range xs").l
+      assign.argument.isIdentifier.refsTo.l shouldBe cpg.local.nameExact("j").l
+    }
+
+    "lower a range over an integer" in {
+      val List(forStmt)         = cpg.controlStructure.code("for range 3").l
+      val List(rangeCall: Call) = forStmt.astChildren.order(2).l: @unchecked
+      rangeCall.name shouldBe Operators.range
+      rangeCall.argument.isLiteral.code.l shouldBe List("3")
     }
   }
 }
