@@ -181,8 +181,9 @@ class AstCreator(
         code = getImportCode(importStmt),
         importedEntity = typeFullName,
         importedAs = name,
-        include = importStmt
-      ).isModuleImport(importStmt.isModule)
+        include = importStmt,
+        isModuleImport = importStmt.isModule
+      )
 
       if (!importStmt.isStatic && !importStmt.isModule) {
         scope.addTopLevelType(name, typeFullName)
@@ -194,9 +195,13 @@ class AstCreator(
       case imp :: Nil =>
         val name         = NameConstants.WildcardImportName
         val typeFullName = imp.getNameAsString
-        val importNode   =
-          newImportNode(code = getImportCode(imp), importedEntity = typeFullName, importedAs = name, include = imp)
-            .isWildcard(true)
+        val importNode   = newImportNode(
+          code = getImportCode(imp),
+          importedEntity = typeFullName,
+          importedAs = name,
+          include = imp,
+          isWildcard = true
+        )
         scope.addWildcardImport(typeFullName)
         Seq(importNode)
       case _ => // Only try to guess a wildcard import if exactly one is defined

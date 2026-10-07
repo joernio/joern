@@ -122,11 +122,22 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     setOffset(node, node_)
   }
 
-  protected def newImportNode(code: String, importedEntity: String, importedAs: String, include: Node): NewImport = {
+  protected def newImportNode(
+    code: String,
+    importedEntity: String,
+    importedAs: String,
+    include: Node,
+    isWildcard: Boolean = false,
+    isExplicit: Boolean = false,
+    isModuleImport: Boolean = false
+  ): NewImport = {
     val node_ = NewImport()
       .code(code)
       .importedEntity(importedEntity)
       .importedAs(importedAs)
+      .isWildcard(isWildcard)
+      .isExplicit(isExplicit)
+      .isModuleImport(isModuleImport)
       .lineNumber(line(include))
       .columnNumber(column(include))
     setOffset(include, node_)
