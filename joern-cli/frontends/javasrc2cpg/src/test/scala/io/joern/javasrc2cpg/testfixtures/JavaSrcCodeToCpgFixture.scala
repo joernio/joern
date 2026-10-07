@@ -12,6 +12,7 @@ import io.joern.x2cpg.utils.{ArtifactFetcher, HttpArtifact}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Literal}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.validation.{PostFrontendValidator, ValidationLevel}
 
@@ -50,7 +51,8 @@ class JavaSrcTestCpg(enableTypeRecovery: Boolean = false)
   override protected def applyPasses(): Unit = {
     super.applyPasses()
     if (enableTypeRecovery)
-      javasrc2cpg.typeRecoveryPasses(this, XTypeRecoveryConfig(enabledDummyTypes = true)).foreach(_.createAndApply())
+      new javasrc2cpg.JavaPostProcessing(XTypeRecoveryConfig(enabledDummyTypes = true))
+        .run(new LayerCreatorContext(this))
     applyOssDataFlow()
   }
 

@@ -6,6 +6,7 @@ import io.joern.x2cpg.frontendspecific.jssrc2cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.utils.ProjectRoot
 
@@ -36,7 +37,8 @@ trait AbstractJoernCliTest {
     val cpg = DefaultOverlays.create(cpgOutFileName)
     language match {
       case Languages.JSSRC | Languages.JAVASCRIPT =>
-        jssrc2cpg.postProcessingPasses(cpg, XTypeRecoveryConfig(enabledDummyTypes = false)).foreach(_.createAndApply())
+        new jssrc2cpg.JavaScriptPostProcessing(XTypeRecoveryConfig(enabledDummyTypes = false))
+          .run(new LayerCreatorContext(cpg))
       case _ =>
     }
     (cpg, cpgOutFileName)

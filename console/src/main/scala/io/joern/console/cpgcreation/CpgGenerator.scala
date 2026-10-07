@@ -2,6 +2,8 @@ package io.joern.console.cpgcreation
 
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.Overlays
+import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 
 import java.nio.file.{Files, Paths}
 import scala.util.Try
@@ -54,7 +56,16 @@ abstract class CpgGenerator() {
   }
 
   /** override in specific cpg generators to make them apply post processing passes */
-  def applyPostProcessingPasses(cpg: Cpg): Cpg =
+  protected def postProcessingLayer: Option[LayerCreator] = None
+
+  /** Applies the frontend-specific post processing layer, unless the CPG already has it. A CPG made by `joern-parse`
+    * has it, so this is checked up front instead of letting the layer log a warning for the usual case.
+    */
+  def applyPostProcessingPasses(cpg: Cpg): Cpg = {
+    postProcessingLayer
+      .filterNot(layer => Overlays.appliedOverlays(cpg).contains(layer.overlayName))
+      .foreach(_.run(new LayerCreatorContext(cpg)))
     cpg
+  }
 
 }

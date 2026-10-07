@@ -8,6 +8,7 @@ import io.joern.x2cpg.frontendspecific.php2cpg
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.semanticcpg.validation.{PostFrontendValidator, ValidationLevel}
 
 import java.io.File
@@ -33,7 +34,7 @@ class PhpTestCpg extends DefaultTestCpg with PhpFrontend with SemanticTestCpg {
   }
 
   override protected def applyPostProcessingPasses(): Unit =
-    php2cpg.postProcessingPasses(this).foreach(_.createAndApply())
+    new php2cpg.PhpPostProcessing().run(new LayerCreatorContext(this))
 
 }
 

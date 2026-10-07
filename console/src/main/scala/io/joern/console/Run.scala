@@ -46,6 +46,8 @@ object Run {
       .asScala
       .filterNot(t => t.isAnonymousClass || t.isLocalClass || t.isMemberClass || t.isSynthetic)
       .filterNot(t => t.getName.startsWith("io.joern.console.Run"))
+      // a frontend's post-processing layer is applied by its CpgGenerator and takes a type recovery config, not options
+      .filterNot(creator => creator.getName.startsWith("io.joern.x2cpg.frontendspecific"))
       .toList
       .map(t => (t.getSimpleName.toLowerCase, s"_root_.${t.getName}"))
       .filter(t => !exclude.contains(t._2))
