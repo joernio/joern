@@ -30,7 +30,8 @@ object ParserConfig {
     // User defines take precedence over the MSVC integer types but not over the calling conventions (as before).
     val definedSymbols = DefaultDefines.MSVC_INTEGER_TYPES ++ config.defines.map { define =>
       if (define.contains("=")) {
-        val split = define.split("=")
+        // Only the first `=` separates name from value: a value may itself contain `=`, or be empty.
+        val split = define.split("=", 2)
         split.head -> split(1)
       } else {
         define -> ""
