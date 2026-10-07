@@ -89,7 +89,10 @@ class FileTests extends GoCodeToCpgSuite {
 
     "traversal from file to typedecl should work" in {
       cpg.file(".*fpkg.*").size shouldBe 2
-      cpg.file(".*fpkg.*").typeDecl.fullName.l shouldBe List("joern.io/sample/fpkg", "joern.io/sample/fpkg.Person")
+      cpg.file(".*fpkg.*").typeDecl.fullName.toSetMutable shouldBe Set(
+        "joern.io/sample/fpkg",
+        "joern.io/sample/fpkg.Person"
+      )
     }
 
     "traversal from file to method should work" in {
