@@ -287,6 +287,63 @@ class ControlStructureTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "if-else in assignment" should {
+    val cpg = code("""
+        |fn main(c: bool) {
+        | let mut x = 0;
+        | x = if c { 1 } else { 2 };
+        |}
+        |""".stripMargin)
+
+    "have correct if wrapped in a block" in {
+      inside(cpg.assignment.lineNumber(4).where(_.target.isIdentifier.nameExact("x")).source.l) {
+        case (block: Block) :: Nil =>
+          inside(block.astChildren.l) {
+            case (tmpLocal: Local) :: (ifNode: ControlStructure) :: (tmpIdent: Identifier) :: Nil =>
+              tmpLocal.name shouldBe "<tmp>0"
+              ifNode.controlStructureType shouldBe ControlStructureTypes.IF
+              tmpIdent.name shouldBe "<tmp>0"
+          }
+      }
+    }
+
+    "have correct then-branch" in {
+      cpg.ifBlock.whenTrue.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>0 = 1")
+    }
+
+    "have correct else-branch" in {
+      cpg.ifBlock.whenFalse.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>0 = 2")
+    }
+  }
+
+  "if-else in += assignment" should {
+    val cpg = code("""
+        |fn main(c: bool) {
+        | let mut x = 0;
+        | x += if c { 1 } else { 2 };
+        |}
+        |""".stripMargin)
+
+    "have correct result block" in {
+      inside(cpg.call.nameExact(Operators.assignmentPlus).isAssignment.source.l) { case (block: Block) :: Nil =>
+        inside(block.astChildren.l) {
+          case (tmpLocal: Local) :: (ifNode: ControlStructure) :: (tmpIdent: Identifier) :: Nil =>
+            tmpLocal.name shouldBe "<tmp>0"
+            ifNode.controlStructureType shouldBe ControlStructureTypes.IF
+            tmpIdent.name shouldBe "<tmp>0"
+        }
+      }
+    }
+
+    "have correct then-branch" in {
+      cpg.ifBlock.whenTrue.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>0 = 1")
+    }
+
+    "have correct else-branch" in {
+      cpg.ifBlock.whenFalse.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>0 = 2")
+    }
+  }
+
   "if-let tail expression" should {
     val cpg = code("""
         |fn main() {

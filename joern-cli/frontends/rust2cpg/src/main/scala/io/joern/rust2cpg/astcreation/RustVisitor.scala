@@ -15,6 +15,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewTypeDecl
 }
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, ModifierTypes, Operators}
+import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
 import io.joern.rust2cpg.parser.RustNodeSyntaxExtensions.*
 
 import scala.annotation.tailrec
@@ -957,10 +958,12 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   private def visitBinExpr(binExpr: BinExpr): Ast = {
     operatorNameFor(binExpr) match {
       case Some(opName) =>
-        val typeFullName = typeFullNameForExpr(binExpr)
-        val callNode     = operatorCallNode(binExpr, code(binExpr), opName, Some(typeFullName))
-        val lhsRhs       = binExpr.expr.map(visitExpr)
-        callAst(callNode, lhsRhs)
+        val typeFullName  = typeFullNameForExpr(binExpr)
+        val callNode      = operatorCallNode(binExpr, code(binExpr), opName, Some(typeFullName))
+        val Seq(lhs, rhs) = binExpr.expr
+        val lhsAst        = visitExpr(lhs)
+        val rhsAst        = if (allAssignmentTypes.contains(opName)) visitRhsExpr(rhs) else visitExpr(rhs)
+        callAst(callNode, Seq(lhsAst, rhsAst))
       case None => notHandledYet(binExpr)
     }
   }
