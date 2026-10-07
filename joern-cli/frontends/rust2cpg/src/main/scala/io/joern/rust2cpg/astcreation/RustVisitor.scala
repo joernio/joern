@@ -1012,8 +1012,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   private def visitRhsExpr(rhsExpr: Expr): Ast = rhsExpr match {
-    case ifExpr: IfExpr => lowerIfWithResult(ifExpr)
-    case _              => visitExpr(rhsExpr)
+    case ifExpr: IfExpr if ifExpr.elseBranch.isDefined => lowerIfWithResult(ifExpr)
+    case _                                             => visitExpr(rhsExpr)
   }
 
   // `if cond { then-stmts; then-tail } else { else-stmts; else-tail }` becomes:
@@ -1034,7 +1034,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val tmpLocalAst    = localAst(ifExpr, tmpName, tmpName, typeFullName)
     val mkTmpIdentAst  = () => identifierAst(ifExpr, tmpName, tmpName, typeFullName)
     val mkTmpAssignAst = (tailExpr: Expr) =>
-      callAst(assignmentNode(tailExpr, s"$tmpName = ${code(tailExpr)}"), Seq(mkTmpIdentAst(), visitExpr(tailExpr)))
+      callAst(assignmentNode(tailExpr, s"$tmpName = ${code(tailExpr)}"), Seq(mkTmpIdentAst(), visitRhsExpr(tailExpr)))
 
     val ifAst = visitIfExpr(ifExpr, mkTmpAssignAst)
     blockAst(blockNode(ifExpr), tmpLocalAst :: ifAst :: mkTmpIdentAst() :: Nil)
