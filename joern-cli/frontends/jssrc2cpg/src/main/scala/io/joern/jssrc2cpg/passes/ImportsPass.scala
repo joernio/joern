@@ -20,11 +20,13 @@ class ImportsPass(cpg: Cpg) extends XImportsPass(cpg) {
   override protected val importCallName: String = "require"
 
   @scala.annotation.nowarn("cat=deprecation")
-  override protected def importCallToPart(call: Call): Iterator[(Call, Assignment)] =
-    call.inAssignment
-      .codeNot("var .*")
-      .filter(_ => call.argument.argumentIndex(1).nonEmpty)
-      .map(assignment => (call, assignment))
+  override protected def importCallToPart(call: Call): Iterator[(Call, Assignment)] = {
+    if (call.arguments(1).nonEmpty) {
+      call.inAssignment.codeNot("var .*").map(assignment => (call, assignment))
+    } else {
+      Iterator.empty
+    }
+  }
 
   override protected def importedEntityFromCall(call: Call): String = X2Cpg.stripQuotes(call.argument(1).code)
 
