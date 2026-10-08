@@ -496,6 +496,108 @@ class ControlStructureTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "if-let-else in let" should {
+    val cpg = code("""
+        |fn main(t: (i32, i32)) {
+        | let x = if let (0, y) = t { y } else { 0 };
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.local.sortBy(_.name).l) { case tmp0Local :: tmp1Local :: xLocal :: yLocal :: Nil =>
+        tmp0Local.name shouldBe "<tmp>0"
+        tmp0Local.typeFullName shouldBe "i32"
+
+        tmp1Local.name shouldBe "<tmp>1"
+        tmp1Local.typeFullName shouldBe "(i32, i32)"
+
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "i32"
+
+        yLocal.name shouldBe "y"
+        yLocal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct if wrapped in a block" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) { case (block: Block) :: Nil =>
+        inside(block.astChildren.l) { case (tmpLocal: Local) :: (ifBlock: Block) :: (tmpIdent: Identifier) :: Nil =>
+          tmpLocal.name shouldBe "<tmp>0"
+          ifBlock.astChildren.isControlStructure.controlStructureType.l shouldBe List(ControlStructureTypes.IF)
+          tmpIdent.name shouldBe "<tmp>0"
+        }
+      }
+    }
+
+    "have correct assignments" in {
+      cpg.assignment.where(_.target.isIdentifier.nameExact("x")).code.l shouldBe List(
+        "let x = if let (0, y) = t { y } else { 0 };"
+      )
+      cpg.assignment.where(_.target.isIdentifier.nameExact("<tmp>1")).code.l shouldBe List("<tmp>1 = t")
+      cpg.assignment.where(_.target.isIdentifier.nameExact("y")).code.l shouldBe List("y = <tmp>1.1")
+      cpg.assignment.where(_.target.isIdentifier.nameExact("<tmp>0")).code.l shouldBe List("<tmp>0 = y", "<tmp>0 = 0")
+    }
+
+    "have correct then-branch" in {
+      cpg.ifBlock.whenTrue.isBlock.astChildren.isCall.code.l shouldBe List("y = <tmp>1.1", "<tmp>0 = y")
+    }
+
+    "have correct else-branch" in {
+      cpg.ifBlock.whenFalse.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>0 = 0")
+    }
+  }
+
+  "if-let chain in let" should {
+    val cpg = code("""
+        |fn main(t: (i32, i32)) {
+        | let x = if let (0, y) = t && y > 0 { y } else { 0 };
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.local.sortBy(_.name).l) { case tmp0Local :: tmp1Local :: xLocal :: yLocal :: Nil =>
+        tmp0Local.name shouldBe "<tmp>0"
+        tmp0Local.typeFullName shouldBe "i32"
+
+        tmp1Local.name shouldBe "<tmp>1"
+        tmp1Local.typeFullName shouldBe "(i32, i32)"
+
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "i32"
+
+        yLocal.name shouldBe "y"
+        yLocal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct if wrapped in a block" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) { case (block: Block) :: Nil =>
+        inside(block.astChildren.l) { case (tmpLocal: Local) :: (ifBlock: Block) :: (tmpIdent: Identifier) :: Nil =>
+          tmpLocal.name shouldBe "<tmp>0"
+          ifBlock.astChildren.isControlStructure.controlStructureType.l shouldBe List(ControlStructureTypes.IF)
+          tmpIdent.name shouldBe "<tmp>0"
+        }
+      }
+    }
+
+    "have correct assignments" in {
+      cpg.assignment.where(_.target.isIdentifier.nameExact("x")).code.l shouldBe List(
+        "let x = if let (0, y) = t && y > 0 { y } else { 0 };"
+      )
+      cpg.assignment.where(_.target.isIdentifier.nameExact("<tmp>1")).code.l shouldBe List("<tmp>1 = t")
+      cpg.assignment.where(_.target.isIdentifier.nameExact("y")).code.l shouldBe List("y = <tmp>1.1")
+      cpg.assignment.where(_.target.isIdentifier.nameExact("<tmp>0")).code.l shouldBe List("<tmp>0 = y", "<tmp>0 = 0")
+    }
+
+    "have correct then-branch" in {
+      cpg.ifBlock.whenTrue.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>0 = y")
+    }
+
+    "have correct else-branch" in {
+      cpg.ifBlock.whenFalse.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>0 = 0")
+    }
+  }
+
   "if-let tail expression" should {
     val cpg = code("""
         |fn main() {
