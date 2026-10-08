@@ -514,11 +514,14 @@ trait TypeNameProvider { this: AstCreator =>
 
   private def typeForCPPAstNamedTypeSpecifier(s: ICPPASTNamedTypeSpecifier): String = {
     safeGetBinding(s) match {
-      case Some(spec: ICPPSpecialization) => spec.toString
-      case Some(n: ICPPBinding)           => n.getQualifiedName.mkString(".")
-      case Some(other: IBinding)          => other.toString
-      case _ if s.getName != null         => ASTStringUtil.getQualifiedName(s.getName)
-      case _                              => s.getRawSignature
+      // An alias template instance is an ICPPSpecialization, but unlike the other specializations
+      // its toString is the debug rendering `Alias -> aliasedType` rather than a type name.
+      case Some(alias: ICPPAliasTemplateInstance) => safeGetType(alias.getType)
+      case Some(spec: ICPPSpecialization)         => spec.toString
+      case Some(n: ICPPBinding)                   => n.getQualifiedName.mkString(".")
+      case Some(other: IBinding)                  => other.toString
+      case _ if s.getName != null                 => ASTStringUtil.getQualifiedName(s.getName)
+      case _                                      => s.getRawSignature
     }
   }
 
