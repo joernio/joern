@@ -392,7 +392,9 @@ trait AstForTypesCreator { this: AstCreator =>
     case _                                   => false
   }
 
-  private def isTypeDef(decl: IASTSimpleDeclaration): Boolean = decl.getRawSignature.startsWith("typedef")
+  private def isTypeDef(decl: IASTSimpleDeclaration): Boolean = {
+    Option(decl.getDeclSpecifier).exists(_.getStorageClass == IASTDeclSpecifier.sc_typedef)
+  }
 
   private def astForNamespaceDefinition(namespaceDefinition: ICPPASTNamespaceDefinition): Ast = {
     val TypeFullNameInfo(name, fullName) = typeFullNameInfo(namespaceDefinition)

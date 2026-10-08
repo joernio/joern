@@ -232,23 +232,26 @@ trait AstForFunctionsCreator { this: AstCreator =>
     Ast.storeInDiffGraph(functionBindAst, diffGraph)
   }
 
-  private def modifierFromString(node: IASTNode, image: String): List[NewModifier] = {
-    image match {
-      case "static" => List(modifierNode(node, ModifierTypes.STATIC))
-      case _        => Nil
-    }
+  private def staticModifierFor(node: IASTNode, declSpecifier: IASTDeclSpecifier): List[NewModifier] = {
+    if (Option(declSpecifier).exists(_.getStorageClass == IASTDeclSpecifier.sc_static)) {
+      List(modifierNode(node, ModifierTypes.STATIC))
+    } else Nil
   }
 
   private def modifierFor(funcDef: IASTFunctionDefinition): List[NewModifier] = {
     val constructorModifier = if (bindsToConstructor(funcDef)) {
       List(modifierNode(funcDef, ModifierTypes.CONSTRUCTOR), modifierNode(funcDef, ModifierTypes.PUBLIC))
     } else Nil
-    val visibilityModifier = Try(modifierFromString(funcDef, funcDef.getSyntax.getImage)).getOrElse(Nil)
-    constructorModifier ++ visibilityModifier
+    val staticModifier = Try(staticModifierFor(funcDef, funcDef.getDeclSpecifier)).getOrElse(Nil)
+    constructorModifier ++ staticModifier
   }
 
   private def modifierFor(funcDecl: IASTFunctionDeclarator): List[NewModifier] = {
-    Try(modifierFromString(funcDecl, funcDecl.getParent.getSyntax.getImage)).getOrElse(Nil)
+    Try(funcDecl.getParent match {
+      case declaration: IASTSimpleDeclaration => staticModifierFor(funcDecl, declaration.getDeclSpecifier)
+      case definition: IASTFunctionDefinition => staticModifierFor(funcDecl, definition.getDeclSpecifier)
+      case _                                  => Nil
+    }).getOrElse(Nil)
   }
 
   private def syntheticThisAccess(ident: IASTName, identifierName: String): Ast = {
