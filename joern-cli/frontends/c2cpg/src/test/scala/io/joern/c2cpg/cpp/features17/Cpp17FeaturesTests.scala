@@ -5,6 +5,7 @@ import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.AstC2CpgSuite
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.operatorextension.*
 import org.apache.commons.lang3.StringUtils
 
 class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt) {
@@ -548,6 +549,46 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           "value"  -> "int"
         )
       }
+    }
+
+    "emit ARGUMENT edges on the assignments synthesized for structured bindings" in {
+      val cpg = code("""
+          |struct Point { int x; int y; };
+          |Point make();
+          |void foo() {
+          |  auto [a, b] = make();
+          |}
+          |void bar() {
+          |  int arr[2] = {1, 2};
+          |  for (const auto& [c, d] : arr) {};
+          |}
+          |""".stripMargin)
+
+      // the holder assignment and the two per-binding assignments all carry two arguments
+      cpg.call
+        .nameExact(Operators.assignment)
+        .map(c => (c.code, c.argument.size, c.argument.argumentIndex.l))
+        .l should contain allElementsOf List(
+        ("<tmp>0 = make()", 2, List(1, 2)),
+        ("a = <tmp>0.a", 2, List(1, 2)),
+        ("b = <tmp>0.b", 2, List(1, 2)),
+        ("<tmp>0 = arr", 2, List(1, 2)),
+        ("c = <tmp>0[0]", 2, List(1, 2)),
+        ("d = <tmp>0[1]", 2, List(1, 2))
+      )
+
+      inside(cpg.call.codeExact("a = <tmp>0.a").l) { case List(assignment) =>
+        assignment.argument(1).code shouldBe "a"
+        assignment.argument(2).code shouldBe "<tmp>0.a"
+      }
+      inside(cpg.call.codeExact("c = <tmp>0[0]").l) { case List(assignment) =>
+        assignment.argument(1).code shouldBe "c"
+        assignment.argument(2).code shouldBe "<tmp>0[0]"
+      }
+
+      // the stock traversal steps no longer throw NoSuchElementException
+      cpg.assignment.target.code.l should contain allElementsOf List("a", "b", "c", "d")
+      cpg.assignment.source.code.l should contain allElementsOf List("<tmp>0.a", "<tmp>0.b", "<tmp>0[0]", "<tmp>0[1]")
     }
 
     "not crash on nested range-based for loops over structured bindings with unresolved types" in {

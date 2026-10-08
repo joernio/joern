@@ -124,7 +124,7 @@ trait AstForStatementsCreator { this: AstCreator =>
         val idNode             = identifierNode(astName, tmpName, tmpName, tpe)
         val indexNode          = literalNode(astName, index.toString, registerType("int"))
         val arrayIndexCallAst  = callAst(arrayIndexCallNode, List(Ast(idNode), Ast(indexNode)))
-        Seq(Ast(localNode), Ast(assignmentCallNode).withChildren(List(lhsAst, arrayIndexCallAst)))
+        Seq(Ast(localNode), callAst(assignmentCallNode, List(lhsAst, arrayIndexCallAst)))
       }
     } else {
       struct.getNames.flatMap { astName =>
@@ -137,7 +137,7 @@ trait AstForStatementsCreator { this: AstCreator =>
         val idNode               = identifierNode(astName, tmpName, tmpName, tpe)
         val fieldIdNode          = fieldIdentifierNode(astName, localName, localName)
         val memberAccessCallAst  = callAst(memberAccessCallNode, List(Ast(idNode), Ast(fieldIdNode)))
-        Seq(Ast(localNode), Ast(assignmentCallNode).withChildren(List(lhsAst, memberAccessCallAst)))
+        Seq(Ast(localNode), callAst(assignmentCallNode, List(lhsAst, memberAccessCallAst)))
       }
     }
 
