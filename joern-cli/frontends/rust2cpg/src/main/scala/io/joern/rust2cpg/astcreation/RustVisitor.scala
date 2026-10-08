@@ -996,9 +996,9 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   private def visitIfExpr(ifExpr: IfExpr, lowerTail: Expr => Ast): Ast = {
     ifExpr.expr match {
       case letExpr: LetExpr =>
-        lowerIfLet(ifExpr, letExpr)
+        lowerIfLet(ifExpr, letExpr, lowerTail)
       case binExpr: BinExpr if isLetChain(binExpr) =>
-        lowerIfLetChain(ifExpr, binExpr)
+        lowerIfLetChain(ifExpr, binExpr, lowerTail)
       case condition =>
         val conditionAst = visitExpr(condition)
         val thenAst      = visitBlockExpr(ifExpr.thenBranch, lowerTail)
@@ -1056,7 +1056,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //     body-else
   //   }
   // }
-  private def lowerIfLet(ifExpr: IfExpr, letExpr: LetExpr): Ast = {
+  private def lowerIfLet(ifExpr: IfExpr, letExpr: LetExpr, lowerTail: Expr => Ast): Ast = {
     val tmpName       = contextStack.nextTmpName()
     val exprAst       = visitExpr(letExpr.expr)
     val typeFullName  = exprAst.rootType.getOrElse(Defines.Any)
@@ -1068,12 +1068,12 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     contextStack.pushBlock()
     val localAsts   = createLocalsForBindings(collectPatternBindings(letExpr.pat))
     val assignments = createAssignmentsForPattern(letExpr.pat, mkTmpIdentAst)
-    val bodyAsts    = visitStmtList(ifExpr.thenBranch.stmtList)
+    val bodyAsts    = visitStmtList(ifExpr.thenBranch.stmtList, lowerTail)
     contextStack.pop()
 
     val conditionAst = Ast(unknownNode(letExpr.pat, code(letExpr.pat)))
     val thenAst      = blockAst(blockNode(ifExpr.thenBranch), (localAsts ++ assignments ++ bodyAsts).toList)
-    val elseAst      = ifExpr.elseBranch.map(visitExpr)
+    val elseAst      = ifExpr.elseBranch.map(lowerElseBranch(_, lowerTail))
     val ifAst        = ifThenElseAst(ifExpr, Some(conditionAst), thenAst, elseAst)
 
     blockAst(blockNode(ifExpr), List(tmpLocalAst, tmpAssignAst, ifAst))
@@ -1098,13 +1098,13 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //    else
   //   }
   // }
-  private def lowerIfLetChain(ifExpr: IfExpr, binExpr: BinExpr): Ast = {
+  private def lowerIfLetChain(ifExpr: IfExpr, binExpr: BinExpr, lowerTail: Expr => Ast): Ast = {
     contextStack.pushBlock()
     val (bindingAsts, conditionAst) = lowerLetChain(binExpr)
-    val thenAst                     = visitBlockExpr(ifExpr.thenBranch)
+    val thenAst                     = visitBlockExpr(ifExpr.thenBranch, lowerTail)
     contextStack.pop()
 
-    val elseAst = ifExpr.elseBranch.map(visitExpr)
+    val elseAst = ifExpr.elseBranch.map(lowerElseBranch(_, lowerTail))
     val ifAst   = ifThenElseAst(ifExpr, Some(conditionAst), thenAst, elseAst)
 
     blockAst(blockNode(ifExpr), (bindingAsts :+ ifAst).toList)
