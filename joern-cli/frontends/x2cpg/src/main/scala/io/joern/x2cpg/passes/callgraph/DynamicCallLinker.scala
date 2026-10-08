@@ -173,8 +173,12 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   }
 
   private def unpackMethodRefs(node: AstNode): Iterator[MethodRef] = node match {
-    case m: MethodRef => Iterator(m)
-    case c: Call if c.name == Operators.conditional || c.name == Operators.cast || c.name == Operators.addressOf =>
+    case m: MethodRef                               => Iterator(m)
+    case c: Call if c.name == Operators.conditional =>
+      (c.argumentOption(2).iterator ++ c.argumentOption(3).iterator).flatMap(unpackMethodRefs)
+    case c: Call if c.name == Operators.cast =>
+      c.argumentOption(2).iterator.flatMap(unpackMethodRefs)
+    case c: Call if c.name == Operators.addressOf =>
       c.argument.flatMap(unpackMethodRefs)
     case _ => Iterator.empty
   }
@@ -183,7 +187,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     * receiver AST (e.g. {@code cond ? f : g} before invocation). Additive only; vtable resolution still runs.
     */
   private def linkMethodsReferencedByReceiver(call: Call, dstGraph: DiffGraphBuilder): Unit = {
-    val methods = call.receiver.flatMap(unpackMethodRefs).flatMap(_.referencedMethod).toList
+    val methods = call.receiver.flatMap(unpackMethodRefs).referencedMethod.toList
     if (methods.isEmpty) return
     val linked = call._callOut.cast[Method].fullName.toSetImmutable
     methods.foreach { tgtM =>
@@ -194,9 +198,9 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   }
 
   private def linkDynamicCall(call: Call, dstGraph: DiffGraphBuilder): Unit = {
+    linkMethodsReferencedByReceiver(call, dstGraph)
     // This call linker requires a method full name entry
     if (call.methodFullName.equals("<empty>") || call.methodFullName.equals(DynamicCallUnknownFullName)) return
-    linkMethodsReferencedByReceiver(call, dstGraph)
     // Support for overriding
     resolveCallInSuperClasses(call)
 
