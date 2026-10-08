@@ -200,4 +200,19 @@ class TsAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
     barCall.name shouldBe "bar"
   }
 
+  "not fail on array destructuring with holes in for-of loops" in {
+    val cpg = code("""
+        |for (const [, value] of entries) { foo(value); }
+        |""".stripMargin)
+    cpg.call.nameExact("foo").size shouldBe 1
+  }
+
+  "not fail on require calls without arguments" in {
+    val cpg = code("""
+        |x = require();
+        |foo();
+        |""".stripMargin)
+    cpg.call.nameExact("foo").size shouldBe 1
+  }
+
 }

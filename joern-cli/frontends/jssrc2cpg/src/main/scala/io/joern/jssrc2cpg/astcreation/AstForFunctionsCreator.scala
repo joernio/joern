@@ -226,7 +226,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           var typeFullName = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
           val possibleType = nodeInfo.json.obj
             .get("typeAnnotation")
-            .flatMap(_.obj.get("typeAnnotation"))
+            .flatMap(_.objOpt)
+            .flatMap(_.get("typeAnnotation"))
+            .filter(!_.isNull)
             .map(createBabelNodeInfo)
             .map(x =>
               x.node match {

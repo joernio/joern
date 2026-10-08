@@ -691,7 +691,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.addVariableReference(resultName, resultNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
     // loop variable:
-    val loopVariableNames = idNodeInfo.json("elements").arr.map(code).toList
+    val loopVariableNames = idNodeInfo.json("elements").arr.filterNot(_.isNull).map(code).toList
 
     val loopVariableLocalNodes = loopVariableNames.map(varName => localNode(forInOfStmt, varName, varName, Defines.Any))
     val loopVariableNodes      = loopVariableNames.map(identifierNode(forInOfStmt, _))
