@@ -112,7 +112,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     case literal: Literal               => visitLiteral(literal)
     case loopExpr: LoopExpr             => visitLoopExpr(loopExpr)
     case macroExpr: MacroExpr           => visitMacroExpr(macroExpr)
-    case matchExpr: MatchExpr           => visitMatchExpr(matchExpr)
+    case matchExpr: MatchExpr           => visitMatchExpr(matchExpr, visitExpr)
     case methodCallExpr: MethodCallExpr => visitMethodCallExpr(methodCallExpr)
     case x: OffsetOfExpr                => notHandledYet(x)
     case expr: ParenExpr                => visitExpr(expr.expr)
@@ -1016,6 +1016,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
   private def visitRhsExpr(rhsExpr: Expr): Ast = rhsExpr match {
     case ifExpr: IfExpr if ifExpr.elseBranch.isDefined => lowerIfWithResult(ifExpr)
+    case matchExpr: MatchExpr                          => lowerMatchWithResult(matchExpr)
     case _                                             => visitExpr(rhsExpr)
   }
 
@@ -1041,6 +1042,27 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
     val ifAst = visitIfExpr(ifExpr, mkTmpAssignAst)
     blockAst(blockNode(ifExpr, code(ifExpr), typeFullName), tmpLocalAst :: ifAst :: mkTmpIdentAst() :: Nil)
+  }
+
+  // `match e { pat => { stmts; tail }, ... }` becomes:
+  // BLOCK {
+  //   LOCAL tmp
+  //   <visitMatchExpr(match e {...}, tmp = tail)>
+  //   tmp
+  // }
+  private def lowerMatchWithResult(matchExpr: MatchExpr): Ast = {
+    val tmpName        = contextStack.nextTmpName()
+    val typeFullName   = typeFullNameForExpr(matchExpr)
+    val tmpLocalAst    = localAst(matchExpr, tmpName, tmpName, typeFullName)
+    val mkTmpIdentAst  = () => identifierAst(matchExpr, tmpName, tmpName, typeFullName)
+    val mkTmpAssignAst = (tailExpr: Expr) =>
+      callAst(assignmentNode(tailExpr, s"$tmpName = ${code(tailExpr)}"), Seq(mkTmpIdentAst(), visitRhsExpr(tailExpr)))
+
+    val matchBlockAst = visitMatchExpr(matchExpr, mkTmpAssignAst)
+    blockAst(
+      blockNode(matchExpr, code(matchExpr), typeFullName),
+      tmpLocalAst :: matchBlockAst :: mkTmpIdentAst() :: Nil
+    )
   }
 
   // `if let pat = expr { body-then } else { body-else }` becomes:
@@ -2049,11 +2071,11 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //    ...
   //  }
   // }
-  private def visitMatchExpr(matchExpr: MatchExpr): Ast = {
+  private def visitMatchExpr(matchExpr: MatchExpr, lowerTail: Expr => Ast): Ast = {
     val mkSourceAst = () => visitExpr(matchExpr.expr)
     // When it's already an identifier, we don't need to assign it a fresh tmp.
     if (isIdentifierWithoutAdjustments(matchExpr.expr)) {
-      val armAsts      = matchExpr.matchArmList.matchArm.flatMap(lowerMatchArm(_, mkSourceAst))
+      val armAsts      = matchExpr.matchArmList.matchArm.flatMap(lowerMatchArm(_, mkSourceAst, lowerTail))
       val matchBodyAst = blockAst(blockNode(matchExpr.matchArmList), armAsts.toList)
       val matchExprAst = matchAst(matchExpr, Some(mkSourceAst()), Seq(matchBodyAst))
       Ast(blockNode(matchExpr)).withChild(matchExprAst)
@@ -2066,7 +2088,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         assignmentNode(matchExpr.expr, s"$tmpName = ${code(matchExpr.expr)}"),
         Seq(mkTmpIdentAst(), mkSourceAst())
       )
-      val armAsts      = matchExpr.matchArmList.matchArm.flatMap(lowerMatchArm(_, mkTmpIdentAst))
+      val armAsts      = matchExpr.matchArmList.matchArm.flatMap(lowerMatchArm(_, mkTmpIdentAst, lowerTail))
       val matchBodyAst = blockAst(blockNode(matchExpr.matchArmList), armAsts.toList)
       val matchExprAst = matchAst(matchExpr, Some(mkTmpIdentAst()), Seq(matchBodyAst))
       Ast(blockNode(matchExpr)).withChildren(Seq(tmpLocalAst, tmpAssignAst, matchExprAst))
@@ -2078,18 +2100,23 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     case _                  => false
   }
 
-  private def lowerMatchArm(matchArm: MatchArm, mkSourceAst: () => Ast): Seq[Ast] = {
+  private def lowerMatchArm(matchArm: MatchArm, mkSourceAst: () => Ast, lowerTail: Expr => Ast): Seq[Ast] = {
     contextStack.pushBlock()
     val bindingAsts = createLocalsForBindings(collectPatternBindings(matchArm.pat)) ++ createAssignmentsForPattern(
       matchArm.pat,
       mkSourceAst
     )
+    val mkArmBodyAst = () =>
+      matchArm.expr match {
+        case blockExpr: BlockExpr => visitBlockExpr(blockExpr, lowerTail)
+        case expr: Expr           => lowerTail(expr)
+      }
     val bodyAsts = matchArm.matchGuard match {
       case Some(matchGuard) =>
         val (guardBindingAsts, conditionAst) = lowerLetChain(matchGuard.expr)
-        guardBindingAsts :+ ifThenElseAst(matchGuard, Some(conditionAst), visitExpr(matchArm.expr), None)
+        guardBindingAsts :+ ifThenElseAst(matchGuard, Some(conditionAst), mkArmBodyAst(), None)
       case None =>
-        visitExpr(matchArm.expr) :: Nil
+        mkArmBodyAst() :: Nil
     }
     contextStack.pop()
     val caseCode = matchArm.matchGuard match {

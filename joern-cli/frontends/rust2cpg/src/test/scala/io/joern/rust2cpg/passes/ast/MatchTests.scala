@@ -67,10 +67,14 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
         |}
         |""".stripMargin)
 
-    "assign the match block to the LHS" in {
+    "have correct match wrapped in a block" in {
       inside(cpg.assignment.where(_.target.isIdentifier.nameExact("y")).source.l) { case (block: Block) :: Nil =>
-        inside(block.astChildren.l) { case (matchNode: ControlStructure) :: Nil =>
-          matchNode.controlStructureType shouldBe ControlStructureTypes.MATCH
+        inside(block.astChildren.l) { case (tmpLocal: Local) :: (matchBlock: Block) :: (tmpIdent: Identifier) :: Nil =>
+          tmpLocal.name shouldBe "<tmp>0"
+          tmpLocal.typeFullName shouldBe "i32"
+          matchBlock.astChildren.isControlStructure.controlStructureType.l shouldBe List(ControlStructureTypes.MATCH)
+          tmpIdent.name shouldBe "<tmp>0"
+          tmpIdent.typeFullName shouldBe "i32"
         }
       }
     }
@@ -90,16 +94,134 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
               bLocal.typeFullName shouldBe "i32"
               bAssign.code shouldBe "b = p.1"
 
-              body.code shouldBe "a + b"
-              body.methodFullName shouldBe Operators.addition
+              body.code shouldBe "<tmp>0 = a + b"
+              body.methodFullName shouldBe Operators.assignment
           }
 
           case2.name shouldBe "case _"
           case2.code shouldBe "_"
           inside(arm2.astChildren.l) { case (body: Call) :: Nil =>
-            body.name shouldBe "bar"
-            body.code shouldBe "bar()"
+            body.code shouldBe "<tmp>0 = bar()"
+            body.methodFullName shouldBe Operators.assignment
           }
+      }
+    }
+  }
+
+  "match with guards in let" should {
+    val cpg = code("""
+        |fn main(n: i32) {
+        | let x = match n { m if m > 0 => 1, _ => 2 };
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.local.sortBy(_.name).l) { case tmpLocal :: mLocal :: xLocal :: Nil =>
+        tmpLocal.name shouldBe "<tmp>0"
+        tmpLocal.typeFullName shouldBe "i32"
+
+        mLocal.name shouldBe "m"
+        mLocal.typeFullName shouldBe "i32"
+
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct match wrapped in a block" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) { case (block: Block) :: Nil =>
+        inside(block.astChildren.l) { case (tmpLocal: Local) :: (matchBlock: Block) :: (tmpIdent: Identifier) :: Nil =>
+          tmpLocal.name shouldBe "<tmp>0"
+          matchBlock.astChildren.isControlStructure.controlStructureType.l shouldBe List(ControlStructureTypes.MATCH)
+          tmpIdent.name shouldBe "<tmp>0"
+        }
+      }
+    }
+
+    "have correct assignments" in {
+      cpg.assignment.where(_.target.isIdentifier.nameExact("m")).code.l shouldBe List("m = n")
+      cpg.assignment.where(_.target.isIdentifier.nameExact("<tmp>0")).code.l shouldBe List("<tmp>0 = 1", "<tmp>0 = 2")
+    }
+  }
+
+  "nested match in let" should {
+    val cpg = code("""
+        |fn main(n: i32, m: i32) {
+        | let x = match n { 0 => match m { 0 => 1, _ => 2 }, _ => 3 };
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.local.sortBy(_.name).l) { case tmp0Local :: tmp1Local :: xLocal :: Nil =>
+        tmp0Local.name shouldBe "<tmp>0"
+        tmp0Local.typeFullName shouldBe "i32"
+
+        tmp1Local.name shouldBe "<tmp>1"
+        tmp1Local.typeFullName shouldBe "i32"
+
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct assignments" in {
+      cpg.assignment.where(_.target.isIdentifier.nameExact("<tmp>0")).code.l shouldBe List(
+        "<tmp>0 = match m { 0 => 1, _ => 2 }",
+        "<tmp>0 = 3"
+      )
+      cpg.assignment.where(_.target.isIdentifier.nameExact("<tmp>1")).code.l shouldBe List("<tmp>1 = 1", "<tmp>1 = 2")
+    }
+
+    "have correct inner match wrapped in a block" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("<tmp>0")).source.isBlock.l) { case rhsBlock :: Nil =>
+        inside(rhsBlock.astChildren.l) {
+          case (tmpLocal: Local) :: (matchBlock: Block) :: (tmpIdent: Identifier) :: Nil =>
+            tmpLocal.name shouldBe "<tmp>1"
+            matchBlock.astChildren.isControlStructure.controlStructureType.l shouldBe List(ControlStructureTypes.MATCH)
+            tmpIdent.name shouldBe "<tmp>1"
+        }
+      }
+    }
+  }
+
+  "match with block arms in let" should {
+    val cpg = code("""
+        |fn foo() {}
+        |fn main(n: i32) {
+        | let x = match n { 0 => { foo(); 1 }, _ => 2 };
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.method.nameExact("main").local.sortBy(_.name).l) { case tmpLocal :: xLocal :: Nil =>
+        tmpLocal.name shouldBe "<tmp>0"
+        tmpLocal.typeFullName shouldBe "i32"
+
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct match wrapped in a block" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) { case (block: Block) :: Nil =>
+        inside(block.astChildren.l) { case (tmpLocal: Local) :: (matchBlock: Block) :: (tmpIdent: Identifier) :: Nil =>
+          tmpLocal.name shouldBe "<tmp>0"
+          matchBlock.astChildren.isControlStructure.controlStructureType.l shouldBe List(ControlStructureTypes.MATCH)
+          tmpIdent.name shouldBe "<tmp>0"
+        }
+      }
+    }
+
+    "have jump targets for each match arm" in {
+      inside(cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.MATCH).whenTrue.astChildren.l) {
+        case (case1: JumpTarget) :: (body1: Block) :: (case2: JumpTarget) :: (body2: Block) :: Nil =>
+          case1.name shouldBe "case 0"
+          inside(body1.astChildren.l) { case (block: Block) :: Nil =>
+            block.astChildren.isCall.code.l shouldBe List("foo()", "<tmp>0 = 1")
+          }
+
+          case2.name shouldBe "case _"
+          body2.astChildren.isCall.code.l shouldBe List("<tmp>0 = 2")
       }
     }
   }
