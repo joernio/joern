@@ -239,11 +239,11 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     (const.name.flatMap(_.identToken), const.underscoreToken, const.expr) match {
       case (Some(identToken), None, Some(rhsExpr)) =>
         val typeFullName = typeFullNameForType(const.typ)
-        lowerIdentifierDecl(identToken, code(identToken), visitExpr(rhsExpr), typeFullName, code(const))
+        lowerIdentifierDecl(identToken, code(identToken), visitRhsExpr(rhsExpr), typeFullName, code(const))
       case (None, Some(underscoreToken), Some(rhsExpr)) =>
         val tmpName      = contextStack.nextTmpName()
         val typeFullName = typeFullNameForType(const.typ)
-        lowerIdentifierDecl(underscoreToken, tmpName, visitExpr(rhsExpr), typeFullName, code(const))
+        lowerIdentifierDecl(underscoreToken, tmpName, visitRhsExpr(rhsExpr), typeFullName, code(const))
       case _ => notHandledYet(const) :: Nil
     }
   }
@@ -256,7 +256,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     (static.name.identToken, static.expr) match {
       case (Some(identToken), Some(rhsExpr)) =>
         val typeFullName = typeFullNameForType(static.typ)
-        lowerIdentifierDecl(identToken, code(identToken), visitExpr(rhsExpr), typeFullName, code(static))
+        lowerIdentifierDecl(identToken, code(identToken), visitRhsExpr(rhsExpr), typeFullName, code(static))
       case _ => notHandledYet(static) :: Nil
     }
   }
@@ -283,7 +283,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
           localAsts ++ assignments
         } else {
           val tmpName       = contextStack.nextTmpName()
-          val rhsAst        = visitExpr(rhsExpr)
+          val rhsAst        = visitRhsExpr(rhsExpr)
           val typeFullName  = letStmt.typ.map(typeFullNameForType).orElse(rhsAst.rootType).getOrElse(Defines.Any)
           val tmpLocalAst   = localAst(letStmt, tmpName, tmpName, typeFullName)
           val mkTmpIdentAst = () => identifierAst(letStmt, tmpName, tmpName, typeFullName)
@@ -315,7 +315,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     bindings: Seq[(IdentToken, String)]
   ): Seq[Ast] = {
     val tmpName       = contextStack.nextTmpName()
-    val rhsAst        = visitExpr(rhsExpr)
+    val rhsAst        = visitRhsExpr(rhsExpr)
     val typeFullName  = letStmt.typ.map(typeFullNameForType).orElse(rhsAst.rootType).getOrElse(Defines.Any)
     val tmpLocalAst   = localAst(letStmt, tmpName, tmpName, typeFullName)
     val mkTmpIdentAst = () => identifierAst(letStmt, tmpName, tmpName, typeFullName)
@@ -1040,7 +1040,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       callAst(assignmentNode(tailExpr, s"$tmpName = ${code(tailExpr)}"), Seq(mkTmpIdentAst(), visitRhsExpr(tailExpr)))
 
     val ifAst = visitIfExpr(ifExpr, mkTmpAssignAst)
-    blockAst(blockNode(ifExpr), tmpLocalAst :: ifAst :: mkTmpIdentAst() :: Nil)
+    blockAst(blockNode(ifExpr, code(ifExpr), typeFullName), tmpLocalAst :: ifAst :: mkTmpIdentAst() :: Nil)
   }
 
   // `if let pat = expr { body-then } else { body-else }` becomes:
