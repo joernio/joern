@@ -82,7 +82,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     UnsupportedCoroutineKeywords.exists(k => code.startsWith(s"$k ") || code == k)
   }
 
-  private def astsForStructuredBindingDeclaration(
+  protected def astsForStructuredBindingDeclaration(
     struct: ICPPASTStructuredBindingDeclaration,
     init: Option[IASTInitializerClause] = None
   ): Seq[Ast] = {
