@@ -629,4 +629,112 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       }
     }
   }
+
+  "a lambda with a C++14 init-capture" should {
+    val cpg = code("""
+        |void sink(int);
+        |int source();
+        |void foo() {
+        |  int len = source();
+        |  auto f = [&n = len]() { sink(n); };
+        |  f();
+        |}
+        |""".stripMargin)
+
+    "declare the init-capture as a local of the lambda method" in {
+      def lambdaLocals = cpg.method.name(".*lambda.*").local
+      inside(lambdaLocals.nameExact("n").l) { case List(n) =>
+        n.typeFullName shouldBe "int"
+        n.code shouldBe "&n = len"
+        n.closureBindingId shouldBe None
+      }
+      cpg.identifier.nameExact("n").refsTo.dedup.l shouldBe lambdaLocals.nameExact("n").l
+    }
+
+    "assign the initializer to it before the body" in {
+      val List(lambda)     = cpg.method.name(".*lambda.*").l
+      val List(assignment) = lambda.body.astChildren.isCall.nameExact(Operators.assignment).l
+      val List(sinkCall)   = lambda.body.astChildren.isCall.nameExact("sink").l
+      assignment.code shouldBe "n = len"
+      assignment.order should be < sinkCall.order
+      inside(assignment.argument.l) { case List(target: Identifier, source: Identifier) =>
+        target.name shouldBe "n"
+        source.name shouldBe "len"
+      }
+    }
+
+    "capture the variable the initializer reads" in {
+      inside(cpg.closureBinding.l) { case List(len) =>
+        len.closureBindingId shouldBe Some("Test0.cpp:<global>.foo.<lambda>0:void():len")
+        len.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+        len._localViaRefOut.get.name shouldBe "len"
+        len._captureIn.collectFirst { case x: MethodRef => x.methodFullName }.head shouldBe
+          "Test0.cpp:<global>.foo.<lambda>0:void()"
+      }
+      cpg.method.name(".*lambda.*").local.nameExact("len").closureBindingId.l shouldBe
+        List("Test0.cpp:<global>.foo.<lambda>0:void():len")
+    }
+  }
+
+  "a lambda with an init-capture by value" should {
+    val cpg = code("""
+        |int source();
+        |void foo() {
+        |  int len = source();
+        |  auto f = [n = len + 1]() { return n; };
+        |}
+        |""".stripMargin)
+
+    "capture the variable the initializer reads by value" in {
+      inside(cpg.closureBinding.l) { case List(len) =>
+        len.closureBindingId shouldBe Some("Test0.cpp:<global>.foo.<lambda>0:int():len")
+        len.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
+        len._localViaRefOut.get.name shouldBe "len"
+      }
+    }
+  }
+
+  "a lambda whose init-capture name collides with an enclosing variable" should {
+    val cpg = code("""
+        |void sink(int);
+        |int a();
+        |int b();
+        |void foo() {
+        |  int n   = a();
+        |  int len = b();
+        |  auto f = [&n = len]() { sink(n); };
+        |  f();
+        |}
+        |""".stripMargin)
+
+    "bind the new name to the lambda's own local, not to the enclosing variable" in {
+      val List(lambda) = cpg.method.name(".*lambda.*").l
+      lambda.ast.isIdentifier.nameExact("n").refsTo.dedup.l shouldBe
+        cpg.method.name(".*lambda.*").local.nameExact("n").l
+      inside(cpg.closureBinding.l) { case List(len) =>
+        len.closureBindingId shouldBe Some("Test0.cpp:<global>.foo.<lambda>0:void():len")
+        len._localViaRefOut.get.name shouldBe "len"
+      }
+    }
+  }
+
+  "lambdas capturing this by pointer and by value" should {
+    val cpg = code("""
+        |struct Box {
+        |  int n;
+        |  auto byPtr()   { return [this]()  { return this->n; }; }
+        |  auto byValue() { return [*this]() { return this->n; }; }
+        |};
+        |""".stripMargin)
+
+    "distinguish [this] from [*this]" in {
+      inside(cpg.closureBinding.l.sortBy(_.closureBindingId)) { case List(byPtr, byValue) =>
+        byPtr.closureBindingId shouldBe Some("Test0.cpp:<global>.Box.byPtr.<lambda>0:int():this")
+        byPtr.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+
+        byValue.closureBindingId shouldBe Some("Test0.cpp:<global>.Box.byValue.<lambda>1:int():this")
+        byValue.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
+      }
+    }
+  }
 }
