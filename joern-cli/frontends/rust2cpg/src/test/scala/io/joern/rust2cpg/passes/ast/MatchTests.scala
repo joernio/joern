@@ -226,6 +226,54 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "match in tail position" should {
+    val cpg = code("""
+        |fn main(n: i32) -> i32 {
+        | match n { 0 => 1, _ => 2 }
+        |}
+        |""".stripMargin)
+
+    "have correct match wrapped in a block" in {
+      inside(cpg.method.nameExact("main").ast.isReturn.astChildren.l) { case (block: Block) :: Nil =>
+        inside(block.astChildren.l) { case (tmpLocal: Local) :: (matchBlock: Block) :: (tmpIdent: Identifier) :: Nil =>
+          tmpLocal.name shouldBe "<tmp>0"
+          tmpLocal.typeFullName shouldBe "i32"
+          matchBlock.astChildren.isControlStructure.controlStructureType.l shouldBe List(ControlStructureTypes.MATCH)
+          tmpIdent.name shouldBe "<tmp>0"
+          tmpIdent.typeFullName shouldBe "i32"
+        }
+      }
+    }
+
+    "have correct assignments" in {
+      cpg.assignment.where(_.target.isIdentifier.nameExact("<tmp>0")).code.l shouldBe List("<tmp>0 = 1", "<tmp>0 = 2")
+    }
+  }
+
+  "match in return" should {
+    val cpg = code("""
+        |fn main(n: i32) -> i32 {
+        | return match n { 0 => 1, _ => 2 };
+        |}
+        |""".stripMargin)
+
+    "have correct match wrapped in a block" in {
+      inside(cpg.method.nameExact("main").ast.isReturn.astChildren.l) { case (block: Block) :: Nil =>
+        inside(block.astChildren.l) { case (tmpLocal: Local) :: (matchBlock: Block) :: (tmpIdent: Identifier) :: Nil =>
+          tmpLocal.name shouldBe "<tmp>0"
+          tmpLocal.typeFullName shouldBe "i32"
+          matchBlock.astChildren.isControlStructure.controlStructureType.l shouldBe List(ControlStructureTypes.MATCH)
+          tmpIdent.name shouldBe "<tmp>0"
+          tmpIdent.typeFullName shouldBe "i32"
+        }
+      }
+    }
+
+    "have correct assignments" in {
+      cpg.assignment.where(_.target.isIdentifier.nameExact("<tmp>0")).code.l shouldBe List("<tmp>0 = 1", "<tmp>0 = 2")
+    }
+  }
+
   "match on a call" should {
     val cpg = code("""
         |fn baz() -> i32 { 1 }
@@ -410,7 +458,10 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
         |""".stripMargin)
 
     "have correct locals" in {
-      inside(cpg.method.nameExact("foo").local.l) { case xLocal :: Nil =>
+      inside(cpg.method.nameExact("foo").local.sortBy(_.name).l) { case tmpLocal :: xLocal :: Nil =>
+        tmpLocal.name shouldBe "<tmp>0"
+        tmpLocal.typeFullName shouldBe "i32"
+
         xLocal.name shouldBe "x"
         xLocal.typeFullName shouldBe "i32"
       }
@@ -418,7 +469,7 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct assignments" in {
       cpg.method.nameExact("foo").call.isAssignment.code.l shouldBe
-        List("x = (e as rust2cpgtest::E::A).0")
+        List("x = (e as rust2cpgtest::E::A).0", "<tmp>0 = x", "<tmp>0 = 0")
     }
   }
 
@@ -435,14 +486,17 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
         |""".stripMargin)
 
     "have correct locals" in {
-      inside(cpg.method.nameExact("foo").local.l) { case yLocal :: Nil =>
+      inside(cpg.method.nameExact("foo").local.sortBy(_.name).l) { case tmpLocal :: yLocal :: Nil =>
+        tmpLocal.name shouldBe "<tmp>0"
+        tmpLocal.typeFullName shouldBe "i32"
+
         yLocal.name shouldBe "y"
         yLocal.typeFullName shouldBe "i32"
       }
     }
 
     "have correct assignments" in {
-      cpg.method.nameExact("foo").call.isAssignment.code.l shouldBe List("y = n")
+      cpg.method.nameExact("foo").call.isAssignment.code.l shouldBe List("<tmp>0 = 1", "y = n", "<tmp>0 = y")
     }
   }
 
@@ -457,14 +511,21 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
         |""".stripMargin)
 
     "have correct locals" in {
-      inside(cpg.method.nameExact("foo").local.l) { case first :: Nil =>
+      inside(cpg.method.nameExact("foo").local.sortBy(_.name).l) { case tmpLocal :: first :: Nil =>
+        tmpLocal.name shouldBe "<tmp>0"
+        tmpLocal.typeFullName shouldBe "i32"
+
         first.name shouldBe "first"
         first.typeFullName shouldBe "&i32"
       }
     }
 
     "have correct assignments" in {
-      cpg.method.nameExact("foo").call.isAssignment.code.l shouldBe List("first = s[0]")
+      cpg.method.nameExact("foo").call.isAssignment.code.l shouldBe List(
+        "<tmp>0 = 0",
+        "first = s[0]",
+        "<tmp>0 = *first"
+      )
     }
   }
 
@@ -483,19 +544,17 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
         case (case1: JumpTarget) :: (block1: Block) :: (case2: JumpTarget) :: (block2: Block) :: Nil =>
           case1.name shouldBe "case 1..=5"
           case1.code shouldBe "1..=5"
-          inside(block1.astChildren.l) { case (lit: Literal) :: Nil =>
-            lit.typeFullName shouldBe "i32"
-            lit.code shouldBe "1"
+          inside(block1.astChildren.l) { case (tmpAssignment: Call) :: Nil =>
+            tmpAssignment.code shouldBe "<tmp>0 = 1"
           }
 
           case2.name shouldBe "case y"
           case2.code shouldBe "y"
-          inside(block2.astChildren.l) { case (yLocal: Local) :: (assignment: Call) :: (yIdent: Identifier) :: Nil =>
+          inside(block2.astChildren.l) { case (yLocal: Local) :: (assignment: Call) :: (tmpAssignment: Call) :: Nil =>
             yLocal.name shouldBe "y"
             yLocal.typeFullName shouldBe "i32"
             assignment.code shouldBe "y = n"
-            yIdent.name shouldBe "y"
-            yIdent.typeFullName shouldBe "i32"
+            tmpAssignment.code shouldBe "<tmp>0 = y"
           }
       }
     }
