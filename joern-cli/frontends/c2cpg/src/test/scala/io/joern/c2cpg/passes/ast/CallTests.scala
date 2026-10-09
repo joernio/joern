@@ -5,6 +5,7 @@ import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.joern.x2cpg.Defines as X2CpgDefines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language.*
 
@@ -414,6 +415,62 @@ class CallTests extends C2CpgSuite {
 
       val List(receiver) = call.receiver.l
       receiver shouldBe instArg
+    }
+
+    "have correct call for call on a cv-qualified callable object" in {
+      val cpg = code(
+        """
+          |struct Cmp {
+          |  bool operator()(int a, int b) const { return a < b; }
+          |};
+          |bool viaValue(Cmp c) { return c(1, 2); }
+          |bool viaConstValue(const Cmp c) { return c(1, 2); }
+          |bool viaConstRef(const Cmp &c) { return c(1, 2); }
+          |bool viaConstPtr(const Cmp *c) { return (*c)(1, 2); }
+          |""".stripMargin,
+        "test.cpp"
+      )
+
+      val calls = cpg.call.nameExact("()").l
+      calls.size shouldBe 4
+      calls.map(_.methodFullName).distinct shouldBe List("Cmp.():bool(int,int)")
+      calls.map(_.signature).distinct shouldBe List("bool(int,int)")
+      calls.map(_.dispatchType).distinct shouldBe List(DispatchTypes.STATIC_DISPATCH)
+      calls.map(_.typeFullName).distinct shouldBe List("bool")
+
+      calls.foreach { call =>
+        inside(call.argument.l) { case List(instArg, arg1, arg2) =>
+          instArg.argumentIndex shouldBe 0
+          arg1.code shouldBe "1"
+          arg2.code shouldBe "2"
+          call.receiver.l shouldBe List(instArg)
+        }
+      }
+      calls.argument.argumentIndex(0).code.l.sorted shouldBe List("*c", "c", "c", "c")
+    }
+
+    "have correct call for call on a const lambda" in {
+      val cpg = code(
+        """
+          |void foo() {
+          |  const auto x = [](int n) -> int { return n; };
+          |  x(10);
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+
+      inside(cpg.call.nameExact("<operator>()").l) { case List(call) =>
+        call.methodFullName shouldBe "<operator>():int(int)"
+        call.signature shouldBe "int(int)"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        inside(call.receiver.l) { case List(receiver: Identifier) =>
+          receiver.code shouldBe "x"
+        }
+        inside(call.argument.l) { case List(lit: Literal) =>
+          lit.code shouldBe "10"
+        }
+      }
     }
 
     "have correct call for call on function pointer (C)" in {
