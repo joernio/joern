@@ -598,6 +598,104 @@ class ControlStructureTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "if-let over if-else" should {
+    val cpg = code("""
+        |fn main(c: bool, a: (i32, i32), b: (i32, i32)) {
+        | if let (0, y) = if c { a } else { b } {
+        |  sink(y);
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.local.sortBy(_.name).l) { case tmp0Local :: tmp1Local :: yLocal :: Nil =>
+        tmp0Local.name shouldBe "<tmp>0"
+        tmp0Local.typeFullName shouldBe "(i32, i32)"
+
+        tmp1Local.name shouldBe "<tmp>1"
+        tmp1Local.typeFullName shouldBe "(i32, i32)"
+
+        yLocal.name shouldBe "y"
+        yLocal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct if wrapped in a block" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("<tmp>0")).l) { case assignment :: Nil =>
+        assignment.code shouldBe "<tmp>0 = if c { a } else { b }"
+        inside(assignment.source) { case block: Block =>
+          inside(block.astChildren.l) {
+            case (tmpLocal: Local) :: (ifNode: ControlStructure) :: (tmpIdent: Identifier) :: Nil =>
+              tmpLocal.name shouldBe "<tmp>1"
+              ifNode.code shouldBe "if c { a } else { b }"
+              tmpIdent.name shouldBe "<tmp>1"
+          }
+        }
+      }
+    }
+
+    "have correct then-branch" in {
+      cpg.ifBlock.condition("c").whenTrue.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>1 = a")
+    }
+
+    "have correct else-branch" in {
+      cpg.ifBlock.condition("c").whenFalse.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>1 = b")
+    }
+
+    "have correct assignments" in {
+      cpg.assignment.where(_.target.isIdentifier.nameExact("y")).code.l shouldBe List("y = <tmp>0.1")
+    }
+  }
+
+  "if-let chain over if-else" should {
+    val cpg = code("""
+        |fn main(c: bool, a: (i32, i32), b: (i32, i32)) {
+        | if let (0, y) = if c { a } else { b } && y > 0 {
+        |  sink(y);
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.local.sortBy(_.name).l) { case tmp0Local :: tmp1Local :: yLocal :: Nil =>
+        tmp0Local.name shouldBe "<tmp>0"
+        tmp0Local.typeFullName shouldBe "(i32, i32)"
+
+        tmp1Local.name shouldBe "<tmp>1"
+        tmp1Local.typeFullName shouldBe "(i32, i32)"
+
+        yLocal.name shouldBe "y"
+        yLocal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct if wrapped in a block" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("<tmp>0")).l) { case assignment :: Nil =>
+        assignment.code shouldBe "<tmp>0 = if c { a } else { b }"
+        inside(assignment.source) { case block: Block =>
+          inside(block.astChildren.l) {
+            case (tmpLocal: Local) :: (ifNode: ControlStructure) :: (tmpIdent: Identifier) :: Nil =>
+              tmpLocal.name shouldBe "<tmp>1"
+              ifNode.code shouldBe "if c { a } else { b }"
+              tmpIdent.name shouldBe "<tmp>1"
+          }
+        }
+      }
+    }
+
+    "have correct then-branch" in {
+      cpg.ifBlock.condition("c").whenTrue.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>1 = a")
+    }
+
+    "have correct else-branch" in {
+      cpg.ifBlock.condition("c").whenFalse.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>1 = b")
+    }
+
+    "have correct assignments" in {
+      cpg.assignment.where(_.target.isIdentifier.nameExact("y")).code.l shouldBe List("y = <tmp>0.1")
+    }
+  }
+
   "if-let tail expression" should {
     val cpg = code("""
         |fn main() {
@@ -908,6 +1006,55 @@ class ControlStructureTests extends Rust2CpgSuite(noSysRoot = true) {
           yAssign.code shouldBe "y = <tmp>0.y"
           body.code shouldBe "baz(x, y)"
       }
+    }
+  }
+
+  "while let over if-else" should {
+    val cpg = code("""
+        |fn main(c: bool, a: (i32, i32), b: (i32, i32)) {
+        | while let (0, y) = if c { a } else { b } {
+        |  sink(y);
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.local.sortBy(_.name).l) { case tmp0Local :: tmp1Local :: yLocal :: Nil =>
+        tmp0Local.name shouldBe "<tmp>0"
+        tmp0Local.typeFullName shouldBe "(i32, i32)"
+
+        tmp1Local.name shouldBe "<tmp>1"
+        tmp1Local.typeFullName shouldBe "(i32, i32)"
+
+        yLocal.name shouldBe "y"
+        yLocal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct if wrapped in a block" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("<tmp>0")).l) { case assignment :: Nil =>
+        assignment.code shouldBe "<tmp>0 = if c { a } else { b }"
+        inside(assignment.source) { case block: Block =>
+          inside(block.astChildren.l) {
+            case (tmpLocal: Local) :: (ifNode: ControlStructure) :: (tmpIdent: Identifier) :: Nil =>
+              tmpLocal.name shouldBe "<tmp>1"
+              ifNode.code shouldBe "if c { a } else { b }"
+              tmpIdent.name shouldBe "<tmp>1"
+          }
+        }
+      }
+    }
+
+    "have correct then-branch" in {
+      cpg.ifBlock.condition("c").whenTrue.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>1 = a")
+    }
+
+    "have correct else-branch" in {
+      cpg.ifBlock.condition("c").whenFalse.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>1 = b")
+    }
+
+    "have correct assignments" in {
+      cpg.assignment.where(_.target.isIdentifier.nameExact("y")).code.l shouldBe List("y = <tmp>0.1")
     }
   }
 

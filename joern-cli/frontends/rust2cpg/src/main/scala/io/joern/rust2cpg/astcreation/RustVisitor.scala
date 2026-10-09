@@ -1080,7 +1080,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // }
   private def lowerIfLet(ifExpr: IfExpr, letExpr: LetExpr, lowerTail: Expr => Ast): Ast = {
     val tmpName       = contextStack.nextTmpName()
-    val exprAst       = visitExpr(letExpr.expr)
+    val exprAst       = visitRhsExpr(letExpr.expr)
     val typeFullName  = exprAst.rootType.getOrElse(Defines.Any)
     val tmpLocalAst   = localAst(letExpr, tmpName, tmpName, typeFullName)
     val mkTmpIdentAst = () => identifierAst(letExpr, tmpName, tmpName, typeFullName)
@@ -1144,7 +1144,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     expr match {
       case letExpr: LetExpr =>
         val tmpName      = contextStack.nextTmpName()
-        val rhsAst       = visitExpr(letExpr.expr)
+        val rhsAst       = visitRhsExpr(letExpr.expr)
         val typeFullName = rhsAst.rootType.getOrElse(Defines.Any)
         val tmpLocalAst  = localAst(letExpr, tmpName, tmpName, typeFullName)
         val mkTmpAst     = () => identifierAst(letExpr, tmpName, tmpName, typeFullName)
@@ -1208,7 +1208,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   private def lowerWhileLet(whileExpr: WhileExpr, letExpr: LetExpr): Ast = {
     contextStack.pushBlock()
     val tmpName       = contextStack.nextTmpName()
-    val exprAst       = visitExpr(letExpr.expr)
+    val exprAst       = visitRhsExpr(letExpr.expr)
     val typeFullName  = exprAst.rootType.getOrElse(Defines.Any)
     val tmpLocalAst   = localAst(letExpr, tmpName, tmpName, typeFullName)
     val mkTmpIdentAst = () => identifierAst(letExpr, tmpName, tmpName, typeFullName)
