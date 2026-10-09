@@ -4,6 +4,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, NamespaceScope, RubyProgramSummary, RubyScope}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
+import io.joern.x2cpg.utils.OffsetUtils
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, EvaluationStrategies, ModifierTypes}
@@ -39,7 +40,18 @@ class AstCreator(
 
   protected var parseLevel: AstParseLevel = AstParseLevel.FULL_AST
 
-  override protected def offset(node: RubyExpression): Option[(Int, Int)] = node.offset
+  private val isErbFile = fileName.endsWith(".erb")
+
+  // The SIGNATURES pass discards its AST after summarizing, so offsets are never used there
+  override protected def isOffsetNeeded: Boolean =
+    enableFileContents && parseLevel != AstParseLevel.SIGNATURES
+
+  // ERB parser offsets reference synthetic (expanded) Ruby, not the original .erb in file.content, so
+  // no meaningful conversion is possible for those — fall back to identity (raw offsets as-is).
+  override protected lazy val offsetNormalizer: Int => Int =
+    if (isErbFile) identity else OffsetUtils.buildOffsetConverter(OffsetUtils.OffsetSourceType.Codepoints(fileContent))
+
+  override protected def unadjustedOffset(node: RubyExpression): Option[(Int, Int)] = node.offset
 
   protected val relativeFileName: String =
     projectRoot

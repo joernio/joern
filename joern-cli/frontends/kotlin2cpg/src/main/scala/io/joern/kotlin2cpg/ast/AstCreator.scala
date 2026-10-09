@@ -236,15 +236,15 @@ class AstCreator(
     column(lastElement)
   }
 
-  override def offset(element: PsiElement): Option[(Int, Int)] = {
-    Option
-      .unless(disableFileContent) {
-        Option(element).map { someElement =>
-          val textRange = someElement.getTextRange
-          (textRange.getStartOffset, textRange.getEndOffset)
-        }
-      }
-      .flatten
+  override val isOffsetNeeded: Boolean = !disableFileContent
+
+  override lazy val offsetNormalizer: Int => Int = identity
+
+  override def unadjustedOffset(element: PsiElement): Option[(Int, Int)] = {
+    Option(element).map { someElement =>
+      val textRange = someElement.getTextRange
+      (textRange.getStartOffset, textRange.getEndOffset)
+    }
   }
 
   protected def getName(node: NewImport): String = {

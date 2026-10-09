@@ -119,8 +119,10 @@ class AstCreator(
     }
   }
 
-  override protected def offset(node: IASTNode): Option[(Int, Int)] = {
-    Option.when(!config.disableFileContent) { nodeOffsets(node) }.flatten
-  }
+  override protected val isOffsetNeeded: Boolean = !config.disableFileContent
+
+  override protected lazy val offsetNormalizer: Int => Int = identity
+
+  override protected def unadjustedOffset(node: IASTNode): Option[(Int, Int)] = nodeOffsets(node)
 
 }

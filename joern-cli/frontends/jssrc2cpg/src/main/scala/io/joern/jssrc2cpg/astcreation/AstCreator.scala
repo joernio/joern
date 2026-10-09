@@ -245,13 +245,11 @@ class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val
   protected def columnEnd(node: BabelNodeInfo): Option[Int] = node.columnNumberEnd
   protected def code(node: BabelNodeInfo): String           = node.code
 
-  override protected def offset(node: BabelNodeInfo): Option[(Int, Int)] = {
-    Option
-      .when(!config.disableFileContent) {
-        nodeOffsets(node.json)
-      }
-      .flatten
-  }
+  override protected val isOffsetNeeded: Boolean = !config.disableFileContent
+
+  override protected lazy val offsetNormalizer: Int => Int = identity
+
+  override protected def unadjustedOffset(node: BabelNodeInfo): Option[(Int, Int)] = nodeOffsets(node.json)
 
   protected def nodeOffsets(node: Value): Option[(Int, Int)] = {
     for {
