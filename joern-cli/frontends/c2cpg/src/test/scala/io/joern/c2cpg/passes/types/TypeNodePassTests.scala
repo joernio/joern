@@ -158,7 +158,7 @@ class TypeNodePassTests extends C2CpgSuite {
           tpe.fullName shouldBe "test*"
           tpe.name shouldBe "test*"
         }
-        inside(cpg.local.l) { case List(ptr, kernel, test) =>
+        inside(cpg.local.l) { case List(ptr, kernel) =>
           ptr.name shouldBe "ptr"
           ptr.typeFullName shouldBe "test*"
           ptr.code shouldBe "struct test *ptr"
@@ -166,10 +166,12 @@ class TypeNodePassTests extends C2CpgSuite {
           kernel.name shouldBe "GFP_KERNEL"
           kernel.typeFullName shouldBe "ANY"
           kernel.code shouldBe s"${Defines.UnknownTag} GFP_KERNEL"
-
-          test.name shouldBe "test"
-          test.typeFullName shouldBe "test"
-          test.code shouldBe "struct test"
+        }
+        // the operand of sizeof(struct test) is a type, so it is a TYPE_REF and not a LOCAL
+        inside(cpg.call.nameExact(Operators.sizeOf).l) { case List(sizeOfCall) =>
+          val List(typeRef) = sizeOfCall.argument(1).isTypeRef.l
+          typeRef.code shouldBe "struct test"
+          typeRef.typeFullName shouldBe "test"
         }
         inside(cpg.local.nameExact("ptr").typ.referencedTypeDecl.l) { case List(tpe) =>
           tpe.name shouldBe "test*"
@@ -257,13 +259,16 @@ class TypeNodePassTests extends C2CpgSuite {
           |  struct flex *ptr = malloc(sizeof(struct flex));
           |  struct flex value = {0};
           |}""".stripMargin)
-      val List(value, flex) = cpg.typeDecl.fullNameExact("flex").referencingType.fullNameExact("flex").localOfType.l
+      val List(value) = cpg.typeDecl.fullNameExact("flex").referencingType.fullNameExact("flex").localOfType.l
       value.name shouldBe "value"
       value.typeFullName shouldBe "flex"
       value.code shouldBe "struct flex value"
-      flex.name shouldBe "flex" // from the argument to sizeof in sizeof(struct flex)
-      flex.typeFullName shouldBe "flex"
-      flex.code shouldBe "struct flex"
+      // sizeof(struct flex) contributes a TYPE_REF, not a second local of type flex
+      inside(cpg.call.nameExact(Operators.sizeOf).l) { case List(sizeOfCall) =>
+        val List(typeRef) = sizeOfCall.argument(1).isTypeRef.l
+        typeRef.code shouldBe "struct flex"
+        typeRef.typeFullName shouldBe "flex"
+      }
     }
   }
 

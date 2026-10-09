@@ -1070,16 +1070,73 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |}""".stripMargin,
         "file.cpp"
       )
-      cpg.method
-        .nameExact("method")
-        .ast
-        .isCall
-        .nameExact(Operators.sizeOf)
-        .argument(1)
-        .isIdentifier
-        .nameExact("int")
-        .argumentIndex(1)
-        .size shouldBe 1
+      inside(cpg.method.nameExact("method").ast.isCall.nameExact(Operators.sizeOf).l) { case List(call) =>
+        val List(typeRef) = call.argument(1).isTypeRef.l
+        typeRef.code shouldBe "int"
+        typeRef.typeFullName shouldBe "int"
+        typeRef.argumentIndex shouldBe 1
+      }
+      cpg.method.nameExact("method").local.size shouldBe 0
+    }
+
+    "not fabricate a local for a type-id operand of sizeof" in {
+      val cpg = code(
+        """
+        |struct Widget { int a; double b; };
+        |unsigned long probe() {
+        |  unsigned long s1 = sizeof(Widget);
+        |  unsigned long s2 = alignof(Widget);
+        |  return s1 + s2;
+        |}""".stripMargin,
+        "file.cpp"
+      )
+      cpg.method.nameExact("probe").local.name.l.sorted shouldBe List("s1", "s2")
+      cpg.identifier.nameExact("Widget").size shouldBe 0
+      inside(cpg.call.nameExact(Operators.sizeOf).l) { case List(sizeOfCall, alignOfCall) =>
+        val List(sizeOfTypeRef) = sizeOfCall.argument(1).isTypeRef.l
+        sizeOfTypeRef.code shouldBe "Widget"
+        sizeOfTypeRef.typeFullName shouldBe "Widget"
+        val List(alignOfTypeRef) = alignOfCall.argument(1).isTypeRef.l
+        alignOfTypeRef.code shouldBe "Widget"
+        alignOfTypeRef.typeFullName shouldBe "Widget"
+      }
+    }
+
+    "not fabricate a local for a type-id operand that is not a plain identifier" in {
+      val cpg = code(
+        """
+        |int probe() {
+        |  int a = 1;
+        |  unsigned long s1 = sizeof(const char*);
+        |  unsigned long s2 = sizeof(int[8]);
+        |  unsigned long s3 = sizeof(decltype(a));
+        |  return (int)(s1 + s2 + s3);
+        |}""".stripMargin,
+        "file.cpp"
+      )
+      cpg.method.nameExact("probe").local.name.l.sorted shouldBe List("a", "s1", "s2", "s3")
+      inside(cpg.call.nameExact(Operators.sizeOf).l) { case List(c1, c2, c3) =>
+        c1.argument(1).isTypeRef.code.l shouldBe List("const char*")
+        c2.argument(1).isTypeRef.code.l shouldBe List("int[8]")
+        c3.argument(1).isTypeRef.code.l shouldBe List("decltype(a)")
+      }
+    }
+
+    "keep lowering an expression operand of sizeof as an identifier" in {
+      val cpg = code(
+        """
+        |struct Widget { int a; double b; };
+        |unsigned long probe() {
+        |  Widget w{};
+        |  return sizeof w + sizeof(w);
+        |}""".stripMargin,
+        "file.cpp"
+      )
+      inside(cpg.call.nameExact(Operators.sizeOf).l) { case List(withoutBrackets, withBrackets) =>
+        withoutBrackets.argument(1).start.isIdentifier.nameExact("w").size shouldBe 1
+        withBrackets.argument(1).start.isIdentifier.nameExact("w").size shouldBe 1
+      }
+      cpg.method.nameExact("probe").local.nameExact("w").size shouldBe 1
     }
   }
 
@@ -1629,9 +1686,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |  return sizeof(int);
         |}
         |""".stripMargin)
-      inside(cpg.call.nameExact(Operators.sizeOf).argument(1).l) { case List(i: Identifier) =>
-        i.code shouldBe "int"
-        i.name shouldBe "int"
+      inside(cpg.call.nameExact(Operators.sizeOf).argument(1).l) { case List(t: TypeRef) =>
+        t.code shouldBe "int"
+        t.typeFullName shouldBe "int"
       }
     }
 
