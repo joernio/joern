@@ -14,7 +14,7 @@ class UseTests extends Rust2CpgSuite(noSysRoot = true) {
         use.code shouldBe "use std::collections::HashMap;"
         use.importedEntity shouldBe Some("std::collections::HashMap")
         use.importedAs shouldBe Some("HashMap")
-        use.isWildcard shouldBe None
+        use.isWildcard shouldBe Some(false)
       }
     }
   }
@@ -145,7 +145,7 @@ class UseTests extends Rust2CpgSuite(noSysRoot = true) {
         externCrate.code shouldBe "extern crate alloc;"
         externCrate.importedEntity shouldBe Some("alloc")
         externCrate.importedAs shouldBe Some("alloc")
-        externCrate.isWildcard shouldBe None
+        externCrate.isWildcard shouldBe Some(false)
       }
     }
   }
@@ -158,7 +158,7 @@ class UseTests extends Rust2CpgSuite(noSysRoot = true) {
         externCrate.code shouldBe "extern crate alloc as heap;"
         externCrate.importedEntity shouldBe Some("alloc")
         externCrate.importedAs shouldBe Some("heap")
-        externCrate.isWildcard shouldBe None
+        externCrate.isWildcard shouldBe Some(false)
       }
     }
   }
@@ -171,7 +171,7 @@ class UseTests extends Rust2CpgSuite(noSysRoot = true) {
         externCrate.code shouldBe "extern crate alloc as _;"
         externCrate.importedEntity shouldBe Some("alloc")
         externCrate.importedAs shouldBe Some("_")
-        externCrate.isWildcard shouldBe None
+        externCrate.isWildcard shouldBe Some(false)
       }
     }
   }
@@ -187,7 +187,7 @@ class UseTests extends Rust2CpgSuite(noSysRoot = true) {
         externCrate.code shouldBe "#[macro_use]\nextern crate alloc;"
         externCrate.importedEntity shouldBe Some("alloc")
         externCrate.importedAs shouldBe Some("alloc")
-        externCrate.isWildcard shouldBe None
+        externCrate.isWildcard shouldBe Some(false)
       }
     }
   }

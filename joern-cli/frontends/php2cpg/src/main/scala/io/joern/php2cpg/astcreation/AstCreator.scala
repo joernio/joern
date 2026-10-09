@@ -237,8 +237,9 @@ class AstCreator(
       code = code,
       importedEntity = originalName,
       importedAs = stmt.alias.map(_.name).getOrElse(defaultAlias),
-      include = stmt
-    ).isExplicit(true)
+      include = stmt,
+      isExplicit = true
+    )
 
     Ast(importNode)
   }

@@ -227,9 +227,10 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
       code = s"${Constants.ImportKeyword} ${directive.getImportPath.getPathStr}",
       importedEntity = directive.getImportPath.getPathStr,
       importedAs = importedAs.getOrElse(Constants.WildcardImportName),
-      include = directive
-    ).isWildcard(isWildcard)
-      .isExplicit(true)
+      include = directive,
+      isWildcard = isWildcard,
+      isExplicit = true
+    )
     Ast(node)
   }
 

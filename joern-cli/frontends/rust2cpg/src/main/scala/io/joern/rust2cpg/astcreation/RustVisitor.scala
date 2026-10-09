@@ -2186,7 +2186,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     if (prefix.isEmpty) {
       None
     } else {
-      Some(mkImport(use, prefix, "*").isWildcard(true))
+      Some(mkImport(use, prefix, "*", isWildcard = true))
     }
   }
 
@@ -2202,8 +2202,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     }
   }
 
-  private def mkImport(use: Use, path: Seq[Path], importedAs: String): NewImport = {
-    newImportNode(code(use), path.map(code).mkString(PathSep), importedAs, use)
+  private def mkImport(use: Use, path: Seq[Path], importedAs: String, isWildcard: Boolean = false): NewImport = {
+    newImportNode(code(use), path.map(code).mkString(PathSep), importedAs, use, isWildcard = isWildcard)
   }
 
   // ExternCrate =
