@@ -406,7 +406,7 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "Create assignments to method refs for methods on singleton object" in {
-      inside(cpg.method.isModule.call.isAssignment.l) { case _ :: _ :: _ :: barkAssignment :: legsAssignment :: Nil =>
+      inside(cpg.method.isModule.call.isAssignment.l) { case _ :: _ :: barkAssignment :: legsAssignment :: _ :: Nil =>
         inside(barkAssignment.argument.l) { case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
           val List(identifier, fieldIdentifier) = lhs.argument.l: @unchecked
           identifier.code shouldBe "animal"
