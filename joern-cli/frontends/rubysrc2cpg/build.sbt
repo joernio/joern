@@ -45,6 +45,12 @@ astGenPlatformSuffix := {
 def hasCompatibleAstGenVersion(astGenBaseDir: File, astGenVersion: String): Boolean = {
   val versionFile = astGenBaseDir / "lib" / "ruby_ast_gen" / "version.rb"
   if (!versionFile.exists) return false
+  // A partial or stale unpack may contain the version file but lack the vendored gems
+  val bundleBase = astGenBaseDir / "vendor" / "bundle" / "jruby"
+  val hasGems = Option(bundleBase.listFiles()).getOrElse(Array.empty[File]).exists { abiDir =>
+    Option((abiDir / "gems").listFiles()).getOrElse(Array.empty[File]).exists(_.getName.startsWith("ast-"))
+  }
+  if (!hasGems) return false
   val versionPattern = "VERSION = \"([0-9]+\\.[0-9]+\\.[0-9]+)\"".r
   versionPattern.findFirstIn(IO.read(versionFile)) match {
     case Some(versionString) =>
