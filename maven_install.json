@@ -21,7 +21,7 @@
     "com.squareup.tools.build:maven-archeologist": 943047605,
     "com.typesafe:config": 324143406,
     "commons-io:commons-io": 1305681826,
-    "io.joern:eclipse-cdt-core": -500108536,
+    "io.joern:eclipse-cdt-core": 2059325106,
     "io.joern:flatgraph-core_3": 1060140408,
     "io.joern:flatgraph-domain-classes-generator_3": -1894114436,
     "io.joern:flatgraph-help_3": -138228966,
@@ -130,8 +130,8 @@
     "commons-io:commons-io:jar:sources": -238571367,
     "io.get-coursier:interface": 1635041630,
     "io.get-coursier:interface:jar:sources": -37171318,
-    "io.joern:eclipse-cdt-core": 956507630,
-    "io.joern:eclipse-cdt-core:jar:sources": -1789927640,
+    "io.joern:eclipse-cdt-core": 1545946443,
+    "io.joern:eclipse-cdt-core:jar:sources": -1948217109,
     "io.joern:flatgraph-core_3": 1182992137,
     "io.joern:flatgraph-core_3:jar:sources": 575284637,
     "io.joern:flatgraph-domain-classes-generator_3": 170340065,
@@ -583,10 +583,10 @@
     },
     "io.joern:eclipse-cdt-core": {
       "shasums": {
-        "jar": "14f94a408d2e780378e7d4c9c431dd44f408d56704fd58a216c620abd5aed250",
-        "sources": "2f9b87236cf33300282f54482fb4f19991204809a88f10523c962b3ff3a01dbd"
+        "jar": "f63998328ccb1f1a761a87ef3fef036560e914066083363c3b17dff1e43abb5e",
+        "sources": "7a1a79a87bb05ea4228eb8619732fe3358f304a89bd3cc27fca9d5d353642cd4"
       },
-      "version": "9.2.100.202507101054+1"
+      "version": "9.3.200.202607131546+1"
     },
     "io.joern:flatgraph-core_3": {
       "shasums": {
