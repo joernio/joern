@@ -486,12 +486,13 @@ trait AstForFunctionsCreator { this: AstCreator =>
   private def astForMethodBody(
     body: Option[IASTStatement],
     blockNode: NewBlock,
-    chainInits: Seq[ICPPASTConstructorChainInitializer]
+    chainInits: Seq[ICPPASTConstructorChainInitializer],
+    leadingAsts: Seq[Ast] = Seq.empty
   ): Ast = body match {
     case Some(b: IASTCompoundStatement) =>
       methodAstParentStack.push(blockNode)
       val chainInitAsts = chainInits.map(astForICPPASTConstructorChainInitializer)
-      val ast           = astForBlockStatement(b, blockNode, chainInitAsts)
+      val ast           = astForBlockStatement(b, blockNode, chainInitAsts, leadingAsts)
       methodAstParentStack.pop()
       ast
     case Some(b) =>
@@ -501,9 +502,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
       val childAst      = astForNode(b)
       methodAstParentStack.pop()
       scope.popScope()
-      blockAst(blockNode).withChild(childAst).withChildren(chainInitAsts)
+      blockAst(blockNode).withChildren(leadingAsts).withChild(childAst).withChildren(chainInitAsts)
     case None =>
-      blockAst(blockNode)
+      blockAst(blockNode).withChildren(leadingAsts)
   }
 
   private def setEvaluationStrategyForCaptures(lambdaExpression: ICPPASTLambdaExpression, bodyAst: Ast): Unit = {
@@ -521,18 +522,55 @@ trait AstForFunctionsCreator { this: AstCreator =>
           case _ => // do nothing
         }
       case other =>
-        val validCaptures  = other.filter(_.getIdentifier != null)
-        val capturesByName = validCaptures.map(capture => code(capture.getIdentifier) -> capture).toMap
+        // A capture without an identifier is a capture of `this` (ICPPASTCapture.capturesThisPointer).
+        // GNUCPPSourceParser.capture records `[this]` with isByReference set and `[*this]` without it;
+        // that bit is the only thing in CDT's AST that tells the two apart, so it must not be dropped.
+        val capturesByName = other.map {
+          case capture if capture.capturesThisPointer() => Defines.This                -> capture
+          case capture                                  => code(capture.getIdentifier) -> capture
+        }.toMap
         bodyAst.nodes.foreach {
           case identifier: NewIdentifier if !scope.variableIsInMethodScope(identifier.name) =>
             val strategy = capturesByName.get(identifier.name) match {
-              case Some(capture) if capture.isByReference => EvaluationStrategies.BY_REFERENCE
-              case _                                      => strategyMapping
+              case Some(capture) if capture.isByReference         => EvaluationStrategies.BY_REFERENCE
+              case Some(capture) if capture.capturesThisPointer() => EvaluationStrategies.BY_VALUE
+              case _                                              => strategyMapping
             }
             scope.updateVariableReference(identifier, strategy)
           case _ => // do nothing
         }
     }
+  }
+
+  /** Lowers the C++14 init-captures of `lambdaExpression` (`[n = expr]`, `[&n = expr]`).
+    *
+    * An init-capture declares a new variable that exists only inside the closure, initialized from an expression
+    * evaluated in the enclosing scope. It is modelled as a local of the lambda method plus an assignment from the
+    * initializer, placed before the lambda body so that the assignment dominates every use of the new name. The
+    * identifiers the initializer reads are not in the lambda's method scope, so the ordinary capturing machinery
+    * captures them - by reference exactly when the init-capture itself is a reference.
+    *
+    * Must be called with the lambda's method scope pushed and before the body is created, so that uses of the new name
+    * in the body resolve to the local created here.
+    */
+  private def astsForInitCaptures(
+    lambdaExpression: ICPPASTLambdaExpression
+  ): (Seq[Ast], Seq[(NewIdentifier, String)]) = {
+    val results = lambdaExpression.getCaptures.toIndexedSeq.collect { case initCapture: ICPPASTInitCapture =>
+      val declarator = initCapture.getDeclarator
+      val name       = shortName(declarator)
+      val tpe        = registerType(typeFor(declarator))
+      val local      = localNode(declarator, name, code(initCapture), tpe)
+      scope.addVariable(name, local, tpe, VariableScopeManager.ScopeType.MethodScope)
+      val strategy =
+        if (initCapture.isByReference) EvaluationStrategies.BY_REFERENCE else EvaluationStrategies.BY_VALUE
+      val initAst    = Option(declarator.getInitializer).map(init => astForInitializer(declarator, init))
+      val strategies = initAst.toSeq.flatMap(_.nodes).collect {
+        case identifier: NewIdentifier if !scope.variableIsInMethodScope(identifier.name) => identifier -> strategy
+      }
+      (Ast(local) +: initAst.toSeq, strategies)
+    }
+    (results.flatMap(_._1), results.flatMap(_._2))
   }
 
   private def createAndPushLambdaMethod(lambdaExpression: ICPPASTLambdaExpression): (NewMethod, NewMethodRef) = {
@@ -561,9 +599,17 @@ trait AstForFunctionsCreator { this: AstCreator =>
         )
     }
 
-    val parameterAsts = (parameterNodes ++ variadicParams).map(Ast(_))
-    val lambdaBodyAst = astForMethodBody(Option(lambdaExpression.getBody), lambdaMethodBlockNode, Seq.empty)
+    val parameterAsts                            = (parameterNodes ++ variadicParams).map(Ast(_))
+    val (initCaptureAsts, initCaptureStrategies) = astsForInitCaptures(lambdaExpression)
+    val lambdaBodyAst                            =
+      astForMethodBody(Option(lambdaExpression.getBody), lambdaMethodBlockNode, Seq.empty, initCaptureAsts)
     setEvaluationStrategyForCaptures(lambdaExpression, lambdaBodyAst)
+    // The asts above are part of the body now, so setEvaluationStrategyForCaptures has just given the
+    // identifiers an init-capture initializer reads the lambda's capture default. They are captured by
+    // the init-capture, not by the capture default, so re-apply its own strategy here.
+    initCaptureStrategies.foreach { case (identifier, strategy) =>
+      scope.updateVariableReference(identifier, strategy)
+    }
 
     scope.popScope()
     methodAstParentStack.pop()
