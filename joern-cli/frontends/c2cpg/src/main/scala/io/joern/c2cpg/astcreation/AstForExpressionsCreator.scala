@@ -168,9 +168,23 @@ trait AstForExpressionsCreator { this: AstCreator =>
     }
   }
 
+  /** Strips the cv-qualifiers CDT wraps around the type of a cv-qualified expression.
+    *
+    * `IQualifierType` is a type container, not a type: for `const T x` the expression `x` has type
+    * `IQualifierType(const, T)`, which is neither an `ICPPClassType` nor an `IPointerType`. Matching on it directly
+    * would miss every callable whose receiver is cv-qualified.
+    */
+  @tailrec
+  private def stripCvQualifiers(tpe: IType): IType = {
+    tpe match {
+      case qualified: IQualifierType => stripCvQualifiers(qualified.getType)
+      case unqualified               => unqualified
+    }
+  }
+
   private def astForCppCallExpression(call: ICPPASTFunctionCallExpression): Ast = {
     val functionNameExpr = call.getFunctionNameExpression
-    safeCdtCall(functionNameExpr.getExpressionType) match {
+    safeCdtCall(stripCvQualifiers(functionNameExpr.getExpressionType)) match {
       case Some(_: IPointerType)                => createPointerCallAst(call, safeGetExpressionType(call))
       case Some(functionType: ICPPFunctionType) =>
         functionNameExpr match {
