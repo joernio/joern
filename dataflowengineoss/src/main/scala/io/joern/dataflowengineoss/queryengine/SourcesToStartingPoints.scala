@@ -336,8 +336,8 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
     typeDecl.method.flatMap(methods).l
   }
 
-  protected def notLeftHandOfAssignment(x: Expression): Boolean = {
-    !(x.argumentIndex == 1 && x.inCall.exists(y => allAssignmentTypes.contains(y.name)))
+  protected def notLeftHandOfAssignment(expr: Expression): Boolean = {
+    expr.argumentIndex != 1 || expr.inCall.isAssignment.isEmpty
   }
 
   private def targetsToClassIdentifierPair(targets: List[AstNode], src: StoredNode): List[UsageInput] = {
