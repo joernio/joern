@@ -496,6 +496,70 @@ class ControlStructureTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "if-else in tail position" should {
+    val cpg = code("""
+        |fn main(c: bool) -> i32 {
+        | if c { 1 } else { 2 }
+        |}
+        |""".stripMargin)
+
+    "have correct if wrapped in a block" in {
+      inside(cpg.method.nameExact("main").ast.isReturn.astChildren.l) { case (block: Block) :: Nil =>
+        inside(block.astChildren.l) {
+          case (tmpLocal: Local) :: (ifNode: ControlStructure) :: (tmpIdent: Identifier) :: Nil =>
+            tmpLocal.name shouldBe "<tmp>0"
+            tmpLocal.typeFullName shouldBe "i32"
+
+            ifNode.controlStructureType shouldBe ControlStructureTypes.IF
+            ifNode.code shouldBe "if c { 1 } else { 2 }"
+
+            tmpIdent.name shouldBe "<tmp>0"
+            tmpIdent.typeFullName shouldBe "i32"
+        }
+      }
+    }
+
+    "have correct then-branch" in {
+      cpg.ifBlock.whenTrue.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>0 = 1")
+    }
+
+    "have correct else-branch" in {
+      cpg.ifBlock.whenFalse.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>0 = 2")
+    }
+  }
+
+  "if-else in return" should {
+    val cpg = code("""
+        |fn main(c: bool) -> i32 {
+        | return if c { 1 } else { 2 };
+        |}
+        |""".stripMargin)
+
+    "have correct if wrapped in a block" in {
+      inside(cpg.method.nameExact("main").ast.isReturn.astChildren.l) { case (block: Block) :: Nil =>
+        inside(block.astChildren.l) {
+          case (tmpLocal: Local) :: (ifNode: ControlStructure) :: (tmpIdent: Identifier) :: Nil =>
+            tmpLocal.name shouldBe "<tmp>0"
+            tmpLocal.typeFullName shouldBe "i32"
+
+            ifNode.controlStructureType shouldBe ControlStructureTypes.IF
+            ifNode.code shouldBe "if c { 1 } else { 2 }"
+
+            tmpIdent.name shouldBe "<tmp>0"
+            tmpIdent.typeFullName shouldBe "i32"
+        }
+      }
+    }
+
+    "have correct then-branch" in {
+      cpg.ifBlock.whenTrue.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>0 = 1")
+    }
+
+    "have correct else-branch" in {
+      cpg.ifBlock.whenFalse.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>0 = 2")
+    }
+  }
+
   "if-let-else in let" should {
     val cpg = code("""
         |fn main(t: (i32, i32)) {
@@ -750,7 +814,7 @@ class ControlStructureTests extends Rust2CpgSuite(noSysRoot = true) {
         |""".stripMargin)
 
     "have correct then-branch" in {
-      cpg.ifBlock.whenTrue.isBlock.astChildren.isCall.code.l shouldBe List("x = <tmp>0.0", "sink(x)")
+      cpg.ifBlock.whenTrue.isBlock.astChildren.isCall.code.l shouldBe List("x = <tmp>1.0", "sink(x)")
     }
 
     "have correct else-branch" in {

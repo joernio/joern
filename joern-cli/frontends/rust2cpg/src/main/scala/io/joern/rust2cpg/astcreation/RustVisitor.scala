@@ -648,7 +648,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // Creates:
   // RETURN expr
   private def lowerReturnExpr(expr: Expr): Ast = {
-    val exprAst = visitExpr(expr)
+    val exprAst = visitRhsExpr(expr)
     val ret     = returnNode(expr, code(expr))
     returnAst(ret, Seq(exprAst))
   }
@@ -754,7 +754,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  Attr* 'return' Expr?
   private def visitReturnExpr(returnExpr: ReturnExpr): Ast = {
     val ret     = returnNode(returnExpr, code(returnExpr))
-    val exprAst = returnExpr.expr.map(visitExpr)
+    val exprAst = returnExpr.expr.map(visitRhsExpr)
     returnAst(ret, exprAst.toList)
   }
 
