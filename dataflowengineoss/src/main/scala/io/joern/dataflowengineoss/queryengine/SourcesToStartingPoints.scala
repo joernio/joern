@@ -2,7 +2,7 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.globalFromLiteral
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
@@ -144,10 +144,9 @@ class SourceToStartingPointsInMethod(
     resultQueue.put(ResultSummary(result, List()))
   }
 
-  @scala.annotation.nowarn("cat=deprecation")
   private def usageInOtherClasses(method: Method, usageInputs: List[UsageInput]): List[StartingPointWithSource] = {
     usageInputs.flatMap { case UsageInput(src, typeDecl, astNode) =>
-      method.fieldAccess
+      method.call.isFieldAccess
         .or(
           _.argument(1).isIdentifier.typeFullNameExact(typeDecl.fullName),
           _.argument(1).isTypeRef.typeFullNameExact(typeDecl.fullName)
@@ -268,7 +267,6 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
 
   /** For given method, determine the first usage of the given expression.
     */
-  @scala.annotation.nowarn("cat=deprecation")
   private def firstUsagesOf(astNode: AstNode, method: Method, typeDecl: TypeDecl): List[Expression] = {
     astNode match {
       case member: Member =>
@@ -279,8 +277,9 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
         val fieldIdentifiers = method.ast.isFieldIdentifier.sortBy(field => (field.lineNumber, field.columnNumber)).l
         fieldIdentifiers
           .canonicalNameExact(fieldIdentifier.canonicalName)
-          .inFieldAccess
-          // TODO `isIdentifier` seems to limit us here
+          .inCall
+          .isFieldAccess
+          // TODO `isIdentifier` seems to limit us here, e.g it does not deal with nested field accesses
           .where(_.argument(1).isIdentifier.or(_.nameExact("this", "self"), _.typeFullNameExact(typeDecl.fullName)))
           .takeWhile(notLeftHandOfAssignment)
           .l
@@ -288,15 +287,16 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
     }
   }
 
-  @scala.annotation.nowarn("cat=deprecation")
   private def firstUsagesForName(name: String, method: Method): List[Expression] = {
-    val identifiers       = method._identifierViaContainsOut.l
-    val identifierUsages  = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
-    val fieldIdentifiers  = method.fieldAccess.fieldIdentifier.sortBy(field => (field.lineNumber, field.columnNumber)).l
+    val identifiers      = method._identifierViaContainsOut.l
+    val identifierUsages = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
+    val fieldIdentifiers =
+      method.call.isFieldAccess.fieldIdentifier.sortBy(field => (field.lineNumber, field.columnNumber)).l
     val thisRefs          = Seq("this", "self") ++ method.typeDecl.name.headOption.toList
     val fieldAccessUsages = fieldIdentifiers.isFieldIdentifier
       .canonicalNameExact(name)
-      .inFieldAccess
+      .inCall
+      .isFieldAccess
       .where(_.argument(1).codeExact(thisRefs*))
       .takeWhile(notLeftHandOfAssignment)
       .l
@@ -306,9 +306,8 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
   /** For a literal, determine if it is used in the initialization of any member variables. Return list of initialized
     * members. An initialized member is either an identifier or a field-identifier.
     */
-  @scala.annotation.nowarn("cat=deprecation")
   private def literalToInitializedMembers(lit: Literal): List[CfgNode] =
-    lit.inAssignment
+    lit.inCall.isAssignment
       .or(
         _.method.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName, "__init__"),
         // in language such as Python, where assignments for members can be directly under a type decl
@@ -337,13 +336,8 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
     typeDecl.method.flatMap(methods).l
   }
 
-  @scala.annotation.nowarn("cat=deprecation")
-  private def isTargetInAssignment(identifier: Identifier): List[Identifier] = {
-    identifier.start.argumentIndex(1).where(_.inAssignment).l
-  }
-
-  protected def notLeftHandOfAssignment(x: Expression): Boolean = {
-    !(x.argumentIndex == 1 && x.inCall.exists(y => allAssignmentTypes.contains(y.name)))
+  protected def notLeftHandOfAssignment(expr: Expression): Boolean = {
+    expr.argumentIndex != 1 || expr.inCall.isAssignment.isEmpty
   }
 
   private def targetsToClassIdentifierPair(targets: List[AstNode], src: StoredNode): List[UsageInput] = {

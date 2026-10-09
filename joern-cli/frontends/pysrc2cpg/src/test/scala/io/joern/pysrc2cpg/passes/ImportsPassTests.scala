@@ -4,7 +4,6 @@ import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
-@scala.annotation.nowarn("cat=deprecation")
 class ImportsPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   "For a simple import statement, there" should {
@@ -17,7 +16,7 @@ class ImportsPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       what.code shouldBe "foo"
     }
     "create an assignment with the import on the right-hand-side" in {
-      val List(assignment) = cpg.call(Operators.importCall).inAssignment.l
+      val List(assignment) = cpg.call(Operators.importCall).inCall.isAssignment.l
       assignment.target.code shouldBe "foo"
       assignment.source.code shouldBe "import foo"
     }
@@ -70,7 +69,7 @@ class ImportsPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
 
     "create an assignment with the import on the right-hand-side" in {
-      val List(assignment) = cpg.call(Operators.importCall).inAssignment.l
+      val List(assignment) = cpg.call(Operators.importCall).inCall.isAssignment.l
       assignment.target.code shouldBe "Bar"
       assignment.source.code shouldBe "from foo import Bar"
     }
@@ -95,7 +94,7 @@ class ImportsPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
 
     "create an assignment with the import on the right-hand-side" in {
-      val List(assignment) = cpg.call(Operators.importCall).inAssignment.l
+      val List(assignment) = cpg.call(Operators.importCall).inCall.isAssignment.l
       assignment.target.code shouldBe "bar"
       assignment.source.code shouldBe "import foo as bar"
     }
@@ -120,7 +119,7 @@ class ImportsPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
 
     "create an assignment with the import on the right-hand-side" in {
-      val List(assignment) = cpg.call(Operators.importCall).inAssignment.l
+      val List(assignment) = cpg.call(Operators.importCall).inCall.isAssignment.l
       assignment.target.code shouldBe "Woo"
       assignment.source.code shouldBe "from foo import Bar as Woo"
     }

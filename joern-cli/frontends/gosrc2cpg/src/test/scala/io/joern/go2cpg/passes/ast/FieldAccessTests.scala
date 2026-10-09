@@ -6,7 +6,6 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal, MethodParameterIn}
 import io.shiftleft.semanticcpg.language.*
 
-@scala.annotation.nowarn("cat=deprecation")
 class FieldAccessTests extends GoCodeToCpgSuite {
 
   "simple field access test" should {
@@ -31,7 +30,7 @@ class FieldAccessTests extends GoCodeToCpgSuite {
         |""".stripMargin)
 
     "External Field access test" in {
-      val List(fieldAccessCall) = cpg.method("main").astChildren.fieldAccess.l
+      val List(fieldAccessCall) = cpg.method("main").call.isFieldAccess.l
       fieldAccessCall.name shouldBe Operators.fieldAccess
       fieldAccessCall.typeFullName shouldBe "string"
 
@@ -41,7 +40,7 @@ class FieldAccessTests extends GoCodeToCpgSuite {
     }
 
     "Field access test for internal function of struct" in {
-      val List(facFname, facLname) = cpg.method("fullName").astChildren.fieldAccess.l
+      val List(facFname, facLname) = cpg.method("fullName").call.isFieldAccess.l
       facFname.name shouldBe Operators.fieldAccess
       facLname.name shouldBe Operators.fieldAccess
     }

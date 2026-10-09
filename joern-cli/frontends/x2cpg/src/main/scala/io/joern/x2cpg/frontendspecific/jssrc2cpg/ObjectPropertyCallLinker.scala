@@ -29,8 +29,10 @@ class ObjectPropertyCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       .groupBy(_._1)
       .map { case (k, vs) => k -> vs.map(_._2) }
     cpg.assignment
-      .and(_.source.isMethodRef, _.target.isCall.fieldAccess)
-      .map { a => a.target.asInstanceOf[Call] -> a.source.asInstanceOf[MethodRef].referencedMethod.fullName }
+      .and(_.source.isMethodRef, _.target.isCall.isFieldAccess)
+      .map { assignment =>
+        assignment.target.asInstanceOf[Call] -> assignment.source.asInstanceOf[MethodRef].referencedMethod.fullName
+      }
       .foreach { (functionTarget, calleeFn) =>
         propertyAccessToCalls
           .filter { case (propertyAccess, _) => functionTarget.code.endsWith(propertyAccess) }
@@ -39,7 +41,7 @@ class ObjectPropertyCallLinker(cpg: Cpg) extends CpgPass(cpg) {
               builder.setNodeProperty(c, PropertyNames.MethodFullName, calleeFn)
             }
           }
-      }: @scala.annotation.nowarn("cat=deprecation")
+      }
   }
 
 }

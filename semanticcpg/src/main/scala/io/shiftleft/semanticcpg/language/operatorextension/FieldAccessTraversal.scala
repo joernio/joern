@@ -8,10 +8,6 @@ import io.shiftleft.codepropertygraph.generated.help.Doc
 @Traversal(elementType = classOf[Call])
 class FieldAccessTraversal(val traversal: Iterator[OpNodes.FieldAccess]) extends AnyVal {
 
-  @Doc(info = "Attempts to resolve the type declaration for this field access")
-  def typeDecl: Iterator[TypeDecl] =
-    traversal.flatMap(_.typeDecl)
-
   // TODO there are cases for the C++ frontend where argument(2) is a CALL or IDENTIFIER,
   // and we are not handling them at the moment
 

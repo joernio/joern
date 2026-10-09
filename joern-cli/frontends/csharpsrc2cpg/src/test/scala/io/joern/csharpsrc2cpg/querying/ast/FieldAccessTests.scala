@@ -4,7 +4,6 @@ import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
-@scala.annotation.nowarn("cat=deprecation")
 class FieldAccessTests extends CSharpCode2CpgFixture {
 
   "Console.WriteLine call while importing System" should {
@@ -56,7 +55,7 @@ class FieldAccessTests extends CSharpCode2CpgFixture {
     }
 
     "have System.Console correctly set" in {
-      inside(cpg.call.nameExact("WriteLine").argument(0).fieldAccess.l) { case sysConsole :: Nil =>
+      inside(cpg.call.nameExact("WriteLine").argument(0).isCall.isFieldAccess.l) { case sysConsole :: Nil =>
         sysConsole.typeFullName shouldBe "System.Console"
         sysConsole.code shouldBe "System.Console"
         sysConsole.fieldIdentifier.code.l shouldBe List("Console")
@@ -85,7 +84,7 @@ class FieldAccessTests extends CSharpCode2CpgFixture {
     }
 
     "have System.Console correctly set" in {
-      inside(cpg.call.nameExact("WriteLine").argument(0).fieldAccess.l) { case sysConsole :: Nil =>
+      inside(cpg.call.nameExact("WriteLine").argument(0).isCall.isFieldAccess.l) { case sysConsole :: Nil =>
         sysConsole.typeFullName shouldBe "System.Console"
         sysConsole.code shouldBe "System.Console"
         sysConsole.fieldIdentifier.code.l shouldBe List("Console")
@@ -106,7 +105,7 @@ class FieldAccessTests extends CSharpCode2CpgFixture {
         |  }
         |}""".stripMargin)
     "have correct type for `this.x`" in {
-      inside(cpg.call("WriteLine").argument(1).fieldAccess.l) { case fieldAccess :: Nil =>
+      inside(cpg.call("WriteLine").argument(1).isCall.isFieldAccess.l) { case fieldAccess :: Nil =>
         fieldAccess.code shouldBe "this.x"
         fieldAccess.typeFullName shouldBe "System.Int32"
         fieldAccess.methodFullName shouldBe Operators.fieldAccess

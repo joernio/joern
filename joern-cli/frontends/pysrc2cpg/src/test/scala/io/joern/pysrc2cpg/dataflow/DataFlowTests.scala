@@ -12,7 +12,6 @@ import io.shiftleft.semanticcpg.language.*
 import java.io.File
 import scala.collection.immutable.List
 
-@scala.annotation.nowarn("cat=deprecation")
 class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
 
   "intra-procedural" in {
@@ -512,7 +511,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         "models.py"
       )
 
-    val List(method: Method) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.l
+    val List(method: Method) = cpg.identifier.name("foo").inCall.isAssignment.source.isCall.callee.l
     method.fullName shouldBe "models.py:<module>.Foo.__init__"
     val List(typeDeclFullName) = method.typeDecl.fullName.l
     typeDeclFullName shouldBe "models.py:<module>.Foo"
@@ -531,7 +530,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         "models.py"
       )
 
-    val List(method: Method) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.l
+    val List(method: Method) = cpg.identifier.name("foo").inCall.isAssignment.source.isCall.callee.l
     method.fullName shouldBe "models.py:<module>.Foo.__init__"
     val List(typeDeclFullName) = method.typeDecl.fullName.l
     typeDeclFullName shouldBe "models.py:<module>.Foo"

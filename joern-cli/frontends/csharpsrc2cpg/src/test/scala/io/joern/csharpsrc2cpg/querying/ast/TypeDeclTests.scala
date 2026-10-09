@@ -7,7 +7,6 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language.*
 
-@scala.annotation.nowarn("cat=deprecation")
 class TypeDeclTests extends CSharpCode2CpgFixture {
 
   "a basic class declaration" should {
@@ -192,7 +191,7 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
     "initialize the members in a <clinit> class" ignore {
       inside(cpg.typeDecl.nameExact("ErrorCode").method.nameExact(Defines.StaticInitMethodName).l) { case m :: Nil =>
         m.fullName shouldBe s"ErrorCode.${Defines.StaticInitMethodName}"
-        inside(m.assignment.l) { case none :: unknown :: connectionLost :: outlierReading :: Nil =>
+        inside(m.call.isAssignment.l) { case none :: unknown :: connectionLost :: outlierReading :: Nil =>
           none.code shouldBe "None = 0"
           unknown.code shouldBe "Unknown = 1"
           connectionLost.code shouldBe "ConnectionLost = 100"

@@ -6,7 +6,6 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, O
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language.*
 
-@scala.annotation.nowarn("cat=deprecation")
 class MemberTests extends CSharpCode2CpgFixture {
 
   "class with static and non-static members" should {
@@ -63,7 +62,7 @@ class MemberTests extends CSharpCode2CpgFixture {
     }
 
     "have the static member initialization inside the static constructor" in {
-      inside(cpg.method.fullNameExact(s"Car.${Defines.StaticInitMethodName}:System.Void()").body.assignment.l) {
+      inside(cpg.method.fullNameExact(s"Car.${Defines.StaticInitMethodName}:System.Void()").call.isAssignment.l) {
         case assignment :: Nil =>
           assignment.target.code shouldBe "nonInitMaxSpeed"
           assignment.source.code shouldBe "200"
@@ -96,7 +95,7 @@ class MemberTests extends CSharpCode2CpgFixture {
     }
 
     "have the member initialization inside the constructor" in {
-      inside(cpg.method.fullNameExact(s"Car.${Defines.ConstructorMethodName}:System.Void()").body.assignment.l) {
+      inside(cpg.method.fullNameExact(s"Car.${Defines.ConstructorMethodName}:System.Void()").call.isAssignment.l) {
         case assignment :: Nil =>
           assignment.target.code shouldBe "color"
           assignment.source.code shouldBe "\"red\""
@@ -131,7 +130,7 @@ class MemberTests extends CSharpCode2CpgFixture {
         | }
         |}""".stripMargin)
     "have static member initialization inside static constructor" in {
-      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.StaticInitMethodName).body.assignment.l) {
+      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.StaticInitMethodName).call.isAssignment.l) {
         case assignment :: Nil =>
           assignment.code shouldBe "maxSpeed = 200"
           assignment.source.code shouldBe "200"
@@ -154,14 +153,15 @@ class MemberTests extends CSharpCode2CpgFixture {
         |}
         |""".stripMargin)
     "have static constructor with two assignments for initializing the members" in {
-      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.StaticInitMethodName).assignment.sortBy(_.code).l) {
-        case maxSpeedAssignment :: nonInitMaxSpeedAssignment :: Nil =>
-          maxSpeedAssignment.code shouldBe "maxSpeed = 200"
-          nonInitMaxSpeedAssignment.code shouldBe "nonInitMaxSpeed = 300"
+      inside(
+        cpg.typeDecl.nameExact("Car").method.nameExact(Defines.StaticInitMethodName).call.isAssignment.sortBy(_.code).l
+      ) { case maxSpeedAssignment :: nonInitMaxSpeedAssignment :: Nil =>
+        maxSpeedAssignment.code shouldBe "maxSpeed = 200"
+        nonInitMaxSpeedAssignment.code shouldBe "nonInitMaxSpeed = 300"
 
-          // TODO: They should have the same representation
-          maxSpeedAssignment.target.code shouldBe "maxSpeed"
-          nonInitMaxSpeedAssignment.target.code shouldBe "Car.nonInitMaxSpeed"
+        // TODO: They should have the same representation
+        maxSpeedAssignment.target.code shouldBe "maxSpeed"
+        nonInitMaxSpeedAssignment.target.code shouldBe "Car.nonInitMaxSpeed"
       }
     }
   }
@@ -184,7 +184,7 @@ class MemberTests extends CSharpCode2CpgFixture {
     }
 
     "have the member initialization inside the constructor" in {
-      inside(cpg.method.fullNameExact(s"Car.${Defines.ConstructorMethodName}:System.Void()").body.assignment.l) {
+      inside(cpg.method.fullNameExact(s"Car.${Defines.ConstructorMethodName}:System.Void()").call.isAssignment.l) {
         case assignment :: Nil =>
           // TODO: test LHS: shouldn't it resemble `this.color`?
           assignment.target.code shouldBe "color"
@@ -222,7 +222,7 @@ class MemberTests extends CSharpCode2CpgFixture {
         m.modifier.modifierType.l shouldBe ModifierTypes.PUBLIC :: ModifierTypes.CONSTRUCTOR :: Nil
         m.methodReturn.typeFullName shouldBe "System.Void"
 
-        inside(m.assignment.l) { case color :: initMaxSpeed :: Nil =>
+        inside(m.call.isAssignment.l) { case color :: initMaxSpeed :: Nil =>
           color.code shouldBe "color = \"abc\""
           initMaxSpeed.code shouldBe "initMaxSpeed = 220"
         }
@@ -259,7 +259,7 @@ class MemberTests extends CSharpCode2CpgFixture {
         m.modifier.modifierType.l shouldBe ModifierTypes.PUBLIC :: ModifierTypes.CONSTRUCTOR :: Nil
         m.methodReturn.typeFullName shouldBe "System.Void"
 
-        inside(m.assignment.l) { case color :: initMaxSpeed :: Nil =>
+        inside(m.call.isAssignment.l) { case color :: initMaxSpeed :: Nil =>
           color.code shouldBe "color = \"abc\""
           initMaxSpeed.code shouldBe "initMaxSpeed = 220"
         }
@@ -304,7 +304,7 @@ class MemberTests extends CSharpCode2CpgFixture {
           staticExplicit.methodFullName shouldBe Operators.assignment
           staticExplicit.code shouldBe "nonInitMaxSpeed = 2000"
 
-          inside(staticExplicit.argument.fieldAccess.l) { case fieldAccess :: Nil =>
+          inside(staticExplicit.argument.isCall.isFieldAccess.l) { case fieldAccess :: Nil =>
             fieldAccess.methodFullName shouldBe Operators.fieldAccess
             fieldAccess.code shouldBe "Car.nonInitMaxSpeed"
             fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
@@ -332,21 +332,21 @@ class MemberTests extends CSharpCode2CpgFixture {
             implicitFieldAccessUnary.methodFullName shouldBe Operators.postIncrement
             implicitFieldAccessUnary.code shouldBe "b++"
 
-            inside(explicitFieldAccess.argument.fieldAccess.l) { case fieldAccessNode :: Nil =>
+            inside(explicitFieldAccess.argument.isCall.isFieldAccess.l) { case fieldAccessNode :: Nil =>
               fieldAccessNode.methodFullName shouldBe Operators.fieldAccess
               fieldAccessNode.code shouldBe "this.color"
               fieldAccessNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
               fieldAccessNode.typeFullName shouldBe "System.String"
             }
 
-            inside(implicitFieldAccessAssignment.argument.fieldAccess.l) { case fieldAccessNode :: Nil =>
+            inside(implicitFieldAccessAssignment.argument.isCall.isFieldAccess.l) { case fieldAccessNode :: Nil =>
               fieldAccessNode.methodFullName shouldBe Operators.fieldAccess
               fieldAccessNode.code shouldBe "this.b"
               fieldAccessNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
               fieldAccessNode.typeFullName shouldBe "System.Int32"
             }
 
-            inside(implicitFieldAccessUnary.argument.fieldAccess.l) { case fieldAccessNode :: Nil =>
+            inside(implicitFieldAccessUnary.argument.isCall.isFieldAccess.l) { case fieldAccessNode :: Nil =>
               fieldAccessNode.methodFullName shouldBe Operators.fieldAccess
               fieldAccessNode.code shouldBe "this.b"
               fieldAccessNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
@@ -373,9 +373,9 @@ class MemberTests extends CSharpCode2CpgFixture {
     "create a non field access node" in {
       inside(cpg.typeDecl.nameExact("Foo").method.nameExact(Defines.ConstructorMethodName).l) {
         case fooConstructor :: Nil =>
-          inside(fooConstructor.body.astChildren.isCall.assignment.l) { case localCall :: thisCall :: Nil =>
-            localCall.target.fieldAccess.size shouldBe 0
-            thisCall.target.fieldAccess.size shouldBe 1
+          inside(fooConstructor.body.astChildren.isCall.isAssignment.l) { case localCall :: thisCall :: Nil =>
+            localCall.start.target.isCall.isFieldAccess.size shouldBe 0
+            thisCall.start.target.isCall.isFieldAccess.size shouldBe 1
 
           }
       }

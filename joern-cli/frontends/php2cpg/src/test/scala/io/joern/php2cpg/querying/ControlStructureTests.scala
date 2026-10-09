@@ -19,7 +19,6 @@ import io.joern.x2cpg.Defines
 
 import scala.util.Try
 
-@scala.annotation.nowarn("cat=deprecation")
 class ControlStructureTests extends PhpCode2CpgFixture {
   "switch statements" should {
     "work without a default case" in {
@@ -1348,7 +1347,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       }
     }
 
-    inside(initAsts.assignment.l) { case List(_: Call, keyInit: Call, valInit: Call) =>
+    inside(initAsts.ast.isCall.isAssignment.l) { case List(_: Call, keyInit: Call, valInit: Call) =>
       keyInit.name shouldBe Operators.assignment
       keyInit.code shouldBe "$key = $foo@iter_tmp-0->key()"
       inside(keyInit.argument.l) { case List(target: Identifier, keyCall: Call) =>
@@ -1378,7 +1377,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     inside(updateAsts.astChildren.l) { case List(_: Call, updateBlock: Block) =>
       val tmp = updateBlock.astChildren.l
-      inside(updateBlock.assignment.l) { case List(keyInit: Call, valInit: Call) =>
+      inside(updateBlock.astChildren.isCall.isAssignment.l) { case List(keyInit: Call, valInit: Call) =>
         keyInit.code shouldBe "$key = $foo@iter_tmp-0->key()"
         valInit.code shouldBe "$val = $foo@iter_tmp-0->current()"
       }
@@ -1417,18 +1416,20 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         (initAsts, updateAsts, body)
     }
 
-    inside(initAsts.assignment.l) { case List(_: Call, keyInit: Call, tmpInit: Call, aInit: Call, bInit: Call) =>
-      keyInit.code shouldBe "$key = $foo@iter_tmp-0->key()"
-      tmpInit.code shouldBe "$foo@tmp-1 = $foo@iter_tmp-0->current()"
-      aInit.code shouldBe "$a = $foo@tmp-1[0]"
-      bInit.code shouldBe "$b = $foo@tmp-1[1]"
+    inside(initAsts.ast.isCall.isAssignment.l) {
+      case List(_: Call, keyInit: Call, tmpInit: Call, aInit: Call, bInit: Call) =>
+        keyInit.code shouldBe "$key = $foo@iter_tmp-0->key()"
+        tmpInit.code shouldBe "$foo@tmp-1 = $foo@iter_tmp-0->current()"
+        aInit.code shouldBe "$a = $foo@tmp-1[0]"
+        bInit.code shouldBe "$b = $foo@tmp-1[1]"
     }
 
-    inside(updateAsts.assignment.l) { case List(keyInit: Call, tmpAssign: Call, aAssign: Call, bAssign: Call) =>
-      keyInit.code shouldBe "$key = $foo@iter_tmp-0->key()"
-      tmpAssign.code shouldBe "$foo@tmp-1 = $foo@iter_tmp-0->current()"
-      aAssign.code shouldBe "$a = $foo@tmp-1[0]"
-      bAssign.code shouldBe "$b = $foo@tmp-1[1]"
+    inside(updateAsts.ast.isCall.isAssignment.l) {
+      case List(keyInit: Call, tmpAssign: Call, aAssign: Call, bAssign: Call) =>
+        keyInit.code shouldBe "$key = $foo@iter_tmp-0->key()"
+        tmpAssign.code shouldBe "$foo@tmp-1 = $foo@iter_tmp-0->current()"
+        aAssign.code shouldBe "$a = $foo@tmp-1[0]"
+        bAssign.code shouldBe "$b = $foo@tmp-1[1]"
     }
 
     inside(body.astChildren.l) { case List(echoKey: Call, echoA: Call, echoB: Call) =>

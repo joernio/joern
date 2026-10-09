@@ -6,7 +6,6 @@ import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language.*
 
-@scala.annotation.nowarn("cat=deprecation")
 class TsClassesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
 
   "AST generation for TS classes" should {
@@ -33,7 +32,7 @@ class TsClassesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
       z.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
       val List(constructor) = cpg.typeDecl.nameExact("Params").method.isConstructor.l
       constructor.parameter.name.l shouldBe List("this", "x", "y", "z")
-      constructor.block.assignment.code.l shouldBe List("this.x = x", "this.y = y", "this.z = z")
+      constructor.block.astChildren.isCall.isAssignment.code.l shouldBe List("this.x = x", "this.y = y", "this.z = z")
     }
 
     "have correct structure for constructor parameter assignment" in {
@@ -409,7 +408,7 @@ class TsClassesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
       cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
       cpg.identifier.whereNot(_.refsTo).size shouldBe 0
       // should not produce assignment calls directly under typedecls
-      cpg.call.assignment.astParent.isTypeDecl shouldBe empty
+      cpg.call.astParent.isTypeDecl shouldBe empty
     }
 
     "AST generation for destructured type in a parameter" in {
@@ -429,7 +428,7 @@ class TsClassesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
       cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
       cpg.identifier.whereNot(_.refsTo).size shouldBe 0
       // should not produce assignment calls directly under typedecls
-      cpg.call.assignment.astParent.isTypeDecl shouldBe empty
+      cpg.call.astParent.isTypeDecl shouldBe empty
     }
 
     "have stable order for globally defined JS/TS types" in {
