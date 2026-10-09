@@ -6,7 +6,6 @@ import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-@scala.annotation.nowarn("cat=deprecation")
 class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
 
   "ClosureWithCompilerTests" should {
@@ -220,7 +219,7 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
 
       val List(fooConstructor)    = cpg.method.isConstructor.fullNameExact("SwiftTest.Foo.init:()->SwiftTest.Foo").l
       val List(compareAssignment) = fooConstructor.ast.isCall.isAssignment.l
-      val List(compareTarget)     = compareAssignment.target.fieldAccess.l
+      val List(compareTarget)     = compareAssignment.target.start.isCall.isFieldAccess.l
       compareTarget.code shouldBe "self.compare"
       compareTarget.typeFullName shouldBe "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>"
       inside(compareTarget.argument.l) { case List(selfId: Identifier, fieldId: FieldIdentifier) =>
@@ -249,7 +248,7 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       compareClosureCall.signature shouldBe Defines.ErasedSignature
       compareClosureCall.methodFullName shouldBe "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>.single_apply:(Swift.String,Swift.String)->Swift.Bool"
 
-      val List(compareClosureCallReceiver) = compareClosureCall.receiver.fieldAccess.l
+      val List(compareClosureCallReceiver) = compareClosureCall.receiver.isCall.isFieldAccess.l
       compareClosureCallReceiver.code shouldBe "self.compare"
       compareClosureCallReceiver.typeFullName shouldBe "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>"
       inside(compareClosureCallReceiver.argument.l) { case List(selfId: Identifier, fieldId: FieldIdentifier) =>

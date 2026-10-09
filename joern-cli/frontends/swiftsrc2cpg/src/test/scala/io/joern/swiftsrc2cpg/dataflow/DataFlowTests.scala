@@ -7,7 +7,6 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language.*
 
-@scala.annotation.nowarn("cat=deprecation")
 class DataFlowTests extends DataFlowCodeToCpgSuite {
 
   "DataFlowTest1" should {
@@ -1028,7 +1027,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       |}""".stripMargin)
 
     "not find a flow from 'a' at 'foo' to 'sink'" in {
-      val src  = cpg.call("foo").inAssignment.target.head
+      val src  = cpg.call("foo").inCall.isAssignment.target.head
       val sink = cpg.method("sink").parameter
       sink.reachableByFlows(src).size shouldBe 0
     }

@@ -8,7 +8,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
-@scala.annotation.nowarn("cat=deprecation")
 class ClassTests extends RubyCode2CpgFixture {
 
   "`class C ; end` is represented by an empty TYPE_DECL node" in {
@@ -167,7 +166,7 @@ class ClassTests extends RubyCode2CpgFixture {
 
     // TODO: there's probably a better way for testing this
     val List(_, param)                   = methodA.parameter.l
-    val List(assignment)                 = methodA.assignment.l
+    val List(assignment)                 = methodA.call.isAssignment.l
     val List(lhs: Call, rhs: Identifier) = assignment.argument.l: @unchecked
 
     param.name shouldBe rhs.name
@@ -378,7 +377,7 @@ class ClassTests extends RubyCode2CpgFixture {
     }
 
     "generate an assignment to the variable `a` with the source being a constructor invocation of the class" in {
-      inside(cpg.method.isModule.assignment.l) { case aAssignment :: tmpAssign :: Nil =>
+      inside(cpg.method.isModule.call.isAssignment.l) { case aAssignment :: tmpAssign :: Nil =>
         aAssignment.target.code shouldBe "a"
         aAssignment.source.code shouldBe s"(<tmp-0> = Class.new Test0.rb:$Main.<anon-class-0> (...)).new"
 
@@ -407,7 +406,7 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "Create assignments to method refs for methods on singleton object" in {
-      inside(cpg.method.isModule.block.assignment.l) { case _ :: _ :: _ :: barkAssignment :: legsAssignment :: Nil =>
+      inside(cpg.method.isModule.call.isAssignment.l) { case _ :: _ :: _ :: barkAssignment :: legsAssignment :: Nil =>
         inside(barkAssignment.argument.l) { case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
           val List(identifier, fieldIdentifier) = lhs.argument.l: @unchecked
           identifier.code shouldBe "animal"

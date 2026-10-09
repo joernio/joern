@@ -12,7 +12,7 @@ class FieldAccessMethods(val arrayAccess: OpNodes.FieldAccess) extends AnyVal {
     expr match {
       case x: Identifier => x.typ.referencedTypeDecl
       case x: Literal    => x.typ.referencedTypeDecl
-      case x: Call       => x.fieldAccess.member.typ.referencedTypeDecl: @scala.annotation.nowarn("cat=deprecation")
+      case x: Call       => x.isFieldAccess.iterator.member.typ.referencedTypeDecl
       case _             => Iterator.empty
     }
   }

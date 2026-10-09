@@ -14,7 +14,6 @@ object NullTermination extends QueryBundle {
   implicit val resolver: ICallResolver      = NoResolve
 
   @q
-  @scala.annotation.nowarn("cat=deprecation")
   def strncpyNoNullTerm(): Query =
     Query.make(
       name = "strncpy-no-null-term",
@@ -39,8 +38,8 @@ object NullTermination extends QueryBundle {
           }
           .filter { case (method, dst, size) =>
             dst.reachableBy(allocations).codeExact(size.code).nonEmpty &&
-            method.assignment
-              .where(_.target.arrayAccess.code(s"${dst.code}.*\\[.*"))
+            method.call.isAssignment
+              .where(_.target.isCall.isArrayAccess.code(s"${dst.code}.*\\[.*"))
               .source
               .isLiteral
               .code(".*0.*")

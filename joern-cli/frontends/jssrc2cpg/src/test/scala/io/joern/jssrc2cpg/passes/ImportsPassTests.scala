@@ -9,7 +9,6 @@ import io.joern.x2cpg.testfixtures.{Code2CpgFixture, TestCpg}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
-@scala.annotation.nowarn("cat=deprecation")
 class ImportsPassTests extends Code2CpgFixture(() => new TestCpgWithoutDataFlow()) {
 
   "ImportsPass" should {
@@ -22,7 +21,7 @@ class ImportsPassTests extends Code2CpgFixture(() => new TestCpgWithoutDataFlow(
       x.importedAs shouldBe Option("barOrBaz")
       val List(call) = x.call.l
       call.code shouldBe "require('./bar.js')"
-      val List(assignment) = call.inAssignment.l
+      val List(assignment) = call.inCall.isAssignment.l
       assignment.code shouldBe "var barOrBaz = require('./bar.js')"
       assignment.target.code shouldBe "barOrBaz"
       val source = assignment.source
@@ -38,7 +37,7 @@ class ImportsPassTests extends Code2CpgFixture(() => new TestCpgWithoutDataFlow(
       x.importedAs shouldBe Option("barOrBaz")
       val List(call) = x.call.l
       call.code shouldBe "require('./bar.js')"
-      val List(assignment) = call.inAssignment.l
+      val List(assignment) = call.inCall.isAssignment.l
       assignment.code shouldBe "barOrBaz = require('./bar.js')"
       assignment.target.code shouldBe "barOrBaz"
       val source = assignment.source

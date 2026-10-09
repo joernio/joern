@@ -11,7 +11,7 @@ class ImportsPass(cpg: Cpg) extends XImportsPass(cpg) {
   override protected val importCallName: String = Operators.importCall
 
   override protected def importCallToPart(call: Call): Iterator[(Call, Assignment)] =
-    call.inAssignment.map(assignment => (call, assignment)): @scala.annotation.nowarn("cat=deprecation")
+    call.inCall.isAssignment.map(assignment => (call, assignment))
 
   override def importedEntityFromCall(call: Call): String = {
     call.argument.code.l match {

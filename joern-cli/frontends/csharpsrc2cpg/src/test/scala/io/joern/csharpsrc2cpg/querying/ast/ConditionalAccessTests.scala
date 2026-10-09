@@ -5,7 +5,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
-@scala.annotation.nowarn("cat=deprecation")
 class ConditionalAccessTests extends CSharpCode2CpgFixture {
 
   "`this?.Bar` assigned to a variable" should {
@@ -58,7 +57,7 @@ class ConditionalAccessTests extends CSharpCode2CpgFixture {
         bazFieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         bazFieldAccess.referencedMember.l shouldBe cpg.member("Baz").l
 
-        inside(bazFieldAccess.start.argument(1).fieldAccess.l) { case barFieldAccess :: Nil =>
+        inside(bazFieldAccess.arguments(1).isCall.isFieldAccess.l) { case barFieldAccess :: Nil =>
           barFieldAccess.methodFullName shouldBe Operators.fieldAccess
           barFieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
           barFieldAccess.referencedMember.l shouldBe cpg.member("Bar").l
@@ -67,7 +66,7 @@ class ConditionalAccessTests extends CSharpCode2CpgFixture {
     }
 
     "assigned variable has correct properties" in {
-      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).l) { case assign :: Nil =>
+      inside(cpg.identifier.nameExact("x").argumentIndex(1).inCall.isAssignment.l) { case assign :: Nil =>
         assign.code shouldBe "x = this?.Bar?.Baz"
         assign.typeFullName shouldBe "Foo"
         assign.target.start.isIdentifier.typeFullName.headOption shouldBe Some("Foo")
@@ -142,7 +141,7 @@ class ConditionalAccessTests extends CSharpCode2CpgFixture {
         bazFieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         bazFieldAccess.referencedMember.l shouldBe cpg.member("Baz").l
 
-        inside(bazFieldAccess.start.argument(1).fieldAccess.l) { case barFieldAccess :: Nil =>
+        inside(bazFieldAccess.arguments(1).isCall.isFieldAccess.l) { case barFieldAccess :: Nil =>
           barFieldAccess.methodFullName shouldBe Operators.fieldAccess
           barFieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
           barFieldAccess.referencedMember.l shouldBe cpg.member("Bar").l

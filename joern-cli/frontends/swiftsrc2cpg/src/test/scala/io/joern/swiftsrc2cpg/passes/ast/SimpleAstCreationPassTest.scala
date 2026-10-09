@@ -6,7 +6,6 @@ import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-@scala.annotation.nowarn("cat=deprecation")
 class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
 
   "AST generation for simple fragments" should {
@@ -48,7 +47,7 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
         |var y: String = "2"
         |""".stripMargin)
       val List(method)           = cpg.method.nameExact("<global>").l
-      val List(assignX, assignY) = method.assignment.l
+      val List(assignX, assignY) = method.call.isAssignment.l
       assignX.code shouldBe "let x = 1"
       assignY.code shouldBe """var y: String = "2""""
     }
@@ -185,7 +184,7 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
           |""".stripMargin)
       cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
       cpg.typeDecl.nameExact("Bar").member.name.l shouldBe List("b")
-      val List(bAccess) = cpg.call.nameExact("handleB").argument.fieldAccess.l
+      val List(bAccess) = cpg.call.nameExact("handleB").argument.isCall.isFieldAccess.l
       bAccess.code shouldBe "self.b"
       inside(bAccess.argument.l) { case List(id: Identifier, fieldName: FieldIdentifier) =>
         id.name shouldBe "self"
@@ -399,7 +398,7 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
           |}
           |""".stripMargin)
       cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
-      val List(bAccess) = cpg.call.nameExact("handleF").argument.fieldAccess.l
+      val List(bAccess) = cpg.call.nameExact("handleF").argument.isCall.isFieldAccess.l
       bAccess.code shouldBe "self.f"
       inside(bAccess.argument.l) { case List(id: Identifier, fieldName: FieldIdentifier) =>
         id.name shouldBe "self"
@@ -422,7 +421,7 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
           |}
           |""".stripMargin)
       cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
-      val List(bAccess) = cpg.call.nameExact("handleF").argument.fieldAccess.l
+      val List(bAccess) = cpg.call.nameExact("handleF").argument.isCall.isFieldAccess.l
       bAccess.code shouldBe "self.f"
       inside(bAccess.argument.l) { case List(id: Identifier, fieldName: FieldIdentifier) =>
         id.name shouldBe "self"
@@ -499,7 +498,7 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
           |""".stripMargin)
       cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
       cpg.typeDecl.nameExact("Bar").member.name.l shouldBe List("b")
-      val List(bAccess) = cpg.call.nameExact("handleB").argument.fieldAccess.l
+      val List(bAccess) = cpg.call.nameExact("handleB").argument.isCall.isFieldAccess.l
       bAccess.code shouldBe "self.b"
       inside(bAccess.argument.l) { case List(id: Identifier, fieldName: FieldIdentifier) =>
         id.name shouldBe "self"
@@ -545,7 +544,7 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
           |""".stripMargin)
       cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
       cpg.typeDecl.nameExact("Bar").member.name.l shouldBe List("b")
-      val List(bAccess) = cpg.call.nameExact("handleB").argument.fieldAccess.l
+      val List(bAccess) = cpg.call.nameExact("handleB").argument.isCall.isFieldAccess.l
       bAccess.code shouldBe "self.b"
       inside(bAccess.argument.l) { case List(id: Identifier, fieldName: FieldIdentifier) =>
         id.name shouldBe "self"
@@ -580,7 +579,7 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
           |""".stripMargin)
       cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
       cpg.typeDecl.nameExact("Bar").member.name.l shouldBe List("b")
-      val List(bAccess) = cpg.call.nameExact("handleB").argument.fieldAccess.l
+      val List(bAccess) = cpg.call.nameExact("handleB").argument.isCall.isFieldAccess.l
       bAccess.code shouldBe "self.b"
       inside(bAccess.argument.l) { case List(id: Identifier, fieldName: FieldIdentifier) =>
         id.name shouldBe "self"

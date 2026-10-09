@@ -13,7 +13,6 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-@scala.annotation.nowarn("cat=deprecation")
 class AstCreationPassTests extends AstC2CpgSuite {
 
   "Method AST layout" should {
@@ -596,7 +595,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
           |  int local = x;
           |}""".stripMargin)
       cpg.local.nameExact("local").order.l shouldBe List(1)
-      inside(cpg.method("method").block.astChildren.assignment.source.l) { case List(identifier: Identifier) =>
+      inside(cpg.method("method").block.astChildren.isCall.isAssignment.source.l) { case List(identifier: Identifier) =>
         identifier.code shouldBe "x"
         identifier.typeFullName shouldBe "int"
         identifier.order shouldBe 2
@@ -708,7 +707,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
           inside(controlStruct.condition.l) { case List(cndNode) =>
             cndNode.code shouldBe "x < 1"
           }
-          controlStruct.whenTrue.assignment.code.l shouldBe List("x += 1")
+          controlStruct.whenTrue.isBlock.expressionDown.isCall.isAssignment.code.l shouldBe List("x += 1")
           controlStruct.lineNumber shouldBe Option(3)
           controlStruct.columnNumber shouldBe Option(3)
       }
@@ -728,7 +727,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
           cndNode.code shouldBe "x > 0"
 
         }
-        controlStruct.whenTrue.assignment.code.l shouldBe List("y = 0")
+        controlStruct.whenTrue.isBlock.expressionDown.isCall.isAssignment.code.l shouldBe List("y = 0")
       }
     }
 
@@ -747,10 +746,10 @@ class AstCreationPassTests extends AstC2CpgSuite {
           cndNode.code shouldBe "x > 0"
         }
 
-        ifStmt.whenTrue.assignment
+        ifStmt.whenTrue.isBlock.expressionDown.isCall.isAssignment
           .map(x => (x.target.code, x.source.code))
           .headOption shouldBe Option(("y", "0"))
-        ifStmt.whenFalse.assignment
+        ifStmt.whenFalse.isBlock.expressionDown.isCall.isAssignment
           .map(x => (x.target.code, x.source.code))
           .headOption shouldBe Option(("y", "1"))
       }
@@ -871,8 +870,10 @@ class AstCreationPassTests extends AstC2CpgSuite {
     }
 
     def childContainsAssignments(node: AstNode, i: Int, list: List[String]) = {
-      inside(node.astChildren.order(i).l) { case List(child) =>
-        child.assignment.code.l shouldBe list
+      inside(node.astChildren.order(i).l) {
+        case List(child: Call) =>
+          child.start.isCall.isAssignment.code.l shouldBe list
+        case List(child: Block) => child.astChildren.isCall.isAssignment.code.l shouldBe list
       }
     }
 
@@ -2004,23 +2005,24 @@ class AstCreationPassTests extends AstC2CpgSuite {
         | .b = methodB,
         |};""".stripMargin)
       val List(methodA, methodB) = cpg.method.nameNot("<global>").l
-      inside(cpg.call.nameExact(Operators.arrayInitializer).assignment.l) { case List(callA: Call, callB: Call) =>
-        val argsAIdent = callA.argument(1).asInstanceOf[Identifier]
-        val argARef    = callA.argument(2).asInstanceOf[MethodRef]
-        argsAIdent.order shouldBe 1
-        argsAIdent.name shouldBe "a"
-        argsAIdent.code shouldBe "a"
-        argARef.order shouldBe 2
-        argARef.methodFullName shouldBe methodA.fullName
-        argARef.typeFullName shouldBe methodA.methodReturn.typeFullName
-        val argsBIdent = callB.argument(1).asInstanceOf[Identifier]
-        val argBRef    = callB.argument(2).asInstanceOf[MethodRef]
-        argsBIdent.order shouldBe 1
-        argsBIdent.code shouldBe "b"
-        argsBIdent.name shouldBe "b"
-        argBRef.order shouldBe 2
-        argBRef.methodFullName shouldBe methodB.fullName
-        argBRef.typeFullName shouldBe methodB.methodReturn.typeFullName
+      inside(cpg.call.nameExact(Operators.arrayInitializer).argument.isBlock.astChildren.l) {
+        case List(callA: Call, callB: Call) =>
+          val argsAIdent = callA.argument(1).asInstanceOf[Identifier]
+          val argARef    = callA.argument(2).asInstanceOf[MethodRef]
+          argsAIdent.order shouldBe 1
+          argsAIdent.name shouldBe "a"
+          argsAIdent.code shouldBe "a"
+          argARef.order shouldBe 2
+          argARef.methodFullName shouldBe methodA.fullName
+          argARef.typeFullName shouldBe methodA.methodReturn.typeFullName
+          val argsBIdent = callB.argument(1).asInstanceOf[Identifier]
+          val argBRef    = callB.argument(2).asInstanceOf[MethodRef]
+          argsBIdent.order shouldBe 1
+          argsBIdent.code shouldBe "b"
+          argsBIdent.name shouldBe "b"
+          argBRef.order shouldBe 2
+          argBRef.methodFullName shouldBe methodB.fullName
+          argBRef.typeFullName shouldBe methodB.methodReturn.typeFullName
       }
     }
 
@@ -2447,7 +2449,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
         | }
       """.stripMargin)
       cpg.method.nameExact("method").lineNumber.l shouldBe List(6)
-      cpg.method.nameExact("method").block.assignment.lineNumber.l shouldBe List(8)
+      cpg.method.nameExact("method").body.expressionDown.isCall.lineNumber.l shouldBe List(8)
     }
 
     // for https://github.com/ShiftLeftSecurity/codepropertygraph/issues/1321
