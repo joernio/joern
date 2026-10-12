@@ -425,8 +425,8 @@ trait AstForExpressionsCreator { this: AstCreator =>
             None,
             Some(Defines.Any)
           )
-        // The operand of a type-id expression is a type, not a variable. Lowering it through
-        // astForIdentifier would register a variable reference for the type name, and
+        val tpe = registerType(typeFor(typeId.getTypeId.getDeclSpecifier))
+        val arg = Ast(typeRefNode(typeId.getTypeId, code(typeId.getTypeId), tpe))
         callAst(call, List(arg))
       case _ => notHandledYet(typeId)
     }
