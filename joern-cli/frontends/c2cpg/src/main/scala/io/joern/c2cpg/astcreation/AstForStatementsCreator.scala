@@ -19,7 +19,8 @@ trait AstForStatementsCreator { this: AstCreator =>
   protected def astForBlockStatement(
     blockStmt: IASTCompoundStatement,
     blockNode: NewBlock,
-    additionalChildrenAsts: Seq[Ast] = Seq.empty
+    additionalChildrenAsts: Seq[Ast] = Seq.empty,
+    leadingChildrenAsts: Seq[Ast] = Seq.empty
   ): Ast = {
     val codeString  = code(blockStmt)
     val blockLine   = line(blockStmt)
@@ -30,7 +31,8 @@ trait AstForStatementsCreator { this: AstCreator =>
       .columnNumber(blockColumn)
       .typeFullName(registerType(Defines.Void))
     scope.pushNewBlockScope(node)
-    val childAsts = blockStmt.getStatements.flatMap(astsForStatement).toList ++ additionalChildrenAsts
+    val childAsts =
+      leadingChildrenAsts.toList ++ blockStmt.getStatements.flatMap(astsForStatement).toList ++ additionalChildrenAsts
     scope.popScope()
     blockAst(node, childAsts)
   }
