@@ -148,6 +148,78 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "module-qualified const" should {
+    val cpg = code("""
+        |mod m { pub const K: u32 = 1; }
+        |fn main() {
+        |  let v = m::K;
+        |}
+        |""".stripMargin)
+
+    "have correct fieldAccess" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "m::K"
+        fieldAccess.typeFullName shouldBe "u32"
+
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case (module: TypeRef) :: (field: FieldIdentifier) :: Nil =>
+            module.code shouldBe "m"
+            module.typeFullName shouldBe "rust2cpgtest::m"
+            field.canonicalName shouldBe "K"
+        }
+      }
+    }
+  }
+
+  "crate-qualified const in a nested module" should {
+    val cpg = code("""
+        |mod m { pub mod n { pub const K: u32 = 1; } }
+        |fn main() {
+        |  let v = crate::m::n::K;
+        |}
+        |""".stripMargin)
+
+    "have correct fieldAccess" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "crate::m::n::K"
+        fieldAccess.typeFullName shouldBe "u32"
+
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case (module: TypeRef) :: (field: FieldIdentifier) :: Nil =>
+            module.code shouldBe "crate::m::n"
+            module.typeFullName shouldBe "rust2cpgtest::m::n"
+            field.canonicalName shouldBe "K"
+        }
+      }
+    }
+  }
+
+  "module-qualified static" should {
+    val cpg = code("""
+        |mod m { pub static mut S: u32 = 0; }
+        |fn main() {
+        |  unsafe { m::S = 1; }
+        |}
+        |""".stripMargin)
+
+    "have correct fieldAccess" in {
+      inside(cpg.method.nameExact("main").ast.isCall.isAssignment.target.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "m::S"
+        fieldAccess.typeFullName shouldBe "u32"
+
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case (module: TypeRef) :: (field: FieldIdentifier) :: Nil =>
+            module.code shouldBe "m"
+            module.typeFullName shouldBe "rust2cpgtest::m"
+            field.canonicalName shouldBe "S"
+        }
+      }
+    }
+  }
+
   "an untyped let bound to an integer literal" should {
     val cpg = code("""
         |fn main() {
@@ -1342,7 +1414,21 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.local.nameExact("entry").referencingIdentifiers.inCall.isAssignment.code.l shouldBe List("let entry = 1;")
     }
 
-    // TODO: qualified path lowering.
+    "have correct fieldAccess" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("kind")).source.l) {
+        case (fieldAccess: Call) :: Nil =>
+          fieldAccess.methodFullName shouldBe Operators.fieldAccess
+          fieldAccess.code shouldBe "entry::KIND"
+          fieldAccess.typeFullName shouldBe "i32"
+
+          inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+            case (module: TypeRef) :: (field: FieldIdentifier) :: Nil =>
+              module.code shouldBe "entry"
+              module.typeFullName shouldBe "rust2cpgtest::entry"
+              field.canonicalName shouldBe "KIND"
+          }
+      }
+    }
   }
 
   "let with an or-pattern" should {
