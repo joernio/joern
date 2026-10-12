@@ -16,6 +16,7 @@ object Defines {
   val OperatorPointerCall: String            = "<operator>.pointerCall"
   val OperatorConstructorInitializer: String = "<operator>.constructorInitializer"
   val OperatorTypeOf: String                 = "<operator>.typeOf"
+  val OperatorAlignOf: String                = "<operator>.alignOf"
   val OperatorMax: String                    = "<operator>.max"
   val OperatorMin: String                    = "<operator>.min"
   val OperatorEllipses: String               = "<operator>.op_ellipses"

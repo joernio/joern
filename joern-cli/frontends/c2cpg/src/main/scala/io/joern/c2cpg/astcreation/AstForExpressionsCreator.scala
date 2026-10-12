@@ -421,28 +421,21 @@ trait AstForExpressionsCreator { this: AstCreator =>
     }
   }
 
+  private def operatorForTypeIdExpression(operator: Int): Option[String] = operator match {
+    case IASTTypeIdExpression.op_sizeof | IASTTypeIdExpression.op_sizeofParameterPack => Some(Operators.sizeOf)
+    case IASTTypeIdExpression.op_alignof                                              => Some(Defines.OperatorAlignOf)
+    case IASTTypeIdExpression.op_typeid | IASTTypeIdExpression.op_typeof              => Some(Defines.OperatorTypeOf)
+    case _                                                                            => None
+  }
+
   private def astForTypeIdExpression(typeId: IASTTypeIdExpression): Ast = {
-    typeId.getOperator match {
-      case op
-          if op == IASTTypeIdExpression.op_sizeof ||
-            op == IASTTypeIdExpression.op_sizeofParameterPack ||
-            op == IASTTypeIdExpression.op_typeid ||
-            op == IASTTypeIdExpression.op_alignof ||
-            op == IASTTypeIdExpression.op_typeof =>
-        val call =
-          callNode(
-            typeId,
-            code(typeId),
-            Operators.sizeOf,
-            Operators.sizeOf,
-            DispatchTypes.STATIC_DISPATCH,
-            None,
-            Some(Defines.Any)
-          )
-        val tpe = registerType(typeFor(typeId.getTypeId.getDeclSpecifier))
-        val arg = Ast(typeRefNode(typeId.getTypeId, code(typeId.getTypeId), tpe))
+    operatorForTypeIdExpression(typeId.getOperator) match {
+      case Some(name) =>
+        val call = callNode(typeId, code(typeId), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+        val tpe  = registerType(typeFor(typeId.getTypeId.getDeclSpecifier))
+        val arg  = Ast(typeRefNode(typeId.getTypeId, code(typeId.getTypeId), tpe))
         callAst(call, List(arg))
-      case _ => notHandledYet(typeId)
+      case None => notHandledYet(typeId)
     }
   }
 

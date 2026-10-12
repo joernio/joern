@@ -281,4 +281,14 @@ trait AstCreatorHelper { this: AstCreator =>
        |  """.stripMargin
   }
 
+  /** Asks the declaration specifier for its storage class. CDT may hand out no decl specifier at all (e.g. for
+    * ambiguous or problem nodes where parsing failed); only in that case the (less precise) `fallback` on the
+    * declaration's source text is used. Currently used for `typedef` and `static`.
+    */
+  protected def hasStorageClass(declSpecifier: IASTDeclSpecifier, storageClass: Int, fallback: => Boolean): Boolean =
+    Option(declSpecifier) match {
+      case Some(spec) => spec.getStorageClass == storageClass
+      case None       => Try(fallback).getOrElse(false)
+    }
+
 }

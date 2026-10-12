@@ -393,7 +393,7 @@ trait AstForTypesCreator { this: AstCreator =>
   }
 
   private def isTypeDef(decl: IASTSimpleDeclaration): Boolean = {
-    Option(decl.getDeclSpecifier).exists(_.getStorageClass == IASTDeclSpecifier.sc_typedef)
+    hasStorageClass(decl.getDeclSpecifier, IASTDeclSpecifier.sc_typedef, decl.getRawSignature.startsWith("typedef"))
   }
 
   private def astForNamespaceDefinition(namespaceDefinition: ICPPASTNamespaceDefinition): Ast = {
