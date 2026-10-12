@@ -12,15 +12,19 @@ jobs:
       - name: Check if release exists
         id: check
         run: |
-          if gh release view "${{ github.ref_name }}" > /dev/null 2>&1; then
+          if err=$(gh release view "${{ github.ref_name }}" 2>&1 > /dev/null); then
             echo "exists=true" >> $GITHUB_OUTPUT
             echo "Release ${{ github.ref_name }} already exists, skipping"
-          else
+          elif echo "$err" | grep -qi "release not found"; then
             echo "exists=false" >> $GITHUB_OUTPUT
             echo "Release ${{ github.ref_name }} does not exist, will create it"
+          else
+            echo "Unable to determine whether release exists: $err"
+            exit 1
           fi
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
 
   build-distribution:
     needs: check-release
@@ -111,7 +115,7 @@ jobs:
 
   release-github:
     needs: build-distribution
-    concurrency: release
+    concurrency: release-github-${{ github.ref_name }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -129,7 +133,23 @@ jobs:
         with:
           name: querydb
           path: querydb-artifacts
+      - name: Abort if release was created in the meantime
+        id: recheck
+        run: |
+          if err=$(gh release view "${{ github.ref_name }}" 2>&1 > /dev/null); then
+            echo "Release ${{ github.ref_name }} already exists, not publishing again"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          elif echo "$err" | grep -qi "release not found"; then
+            echo "exists=false" >> $GITHUB_OUTPUT
+          else
+            echo "Unable to determine whether release exists: $err"
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
       - name: Create Release and Upload Assets
+        if: steps.recheck.outputs.exists == 'false'
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ github.ref_name }}
