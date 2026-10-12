@@ -167,7 +167,6 @@ class TypeNodePassTests extends C2CpgSuite {
           kernel.typeFullName shouldBe "ANY"
           kernel.code shouldBe s"${Defines.UnknownTag} GFP_KERNEL"
         }
-        // the operand of sizeof(struct test) is a type, so it is a TYPE_REF and not a LOCAL
         inside(cpg.call.nameExact(Operators.sizeOf).l) { case List(sizeOfCall) =>
           val List(typeRef) = sizeOfCall.argument(1).isTypeRef.l
           typeRef.code shouldBe "struct test"
@@ -263,7 +262,6 @@ class TypeNodePassTests extends C2CpgSuite {
       value.name shouldBe "value"
       value.typeFullName shouldBe "flex"
       value.code shouldBe "struct flex value"
-      // sizeof(struct flex) contributes a TYPE_REF, not a second local of type flex
       inside(cpg.call.nameExact(Operators.sizeOf).l) { case List(sizeOfCall) =>
         val List(typeRef) = sizeOfCall.argument(1).isTypeRef.l
         typeRef.code shouldBe "struct flex"
