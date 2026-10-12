@@ -218,7 +218,6 @@ TOKEN: {
 | <CLASS: "class">
 | <WHILE: "while">
 | <IMPORT: "import">
-| <LAZY: "lazy">
 | <FROM: "from">
 | <AS: "as">
 | <RAISE: "raise">
@@ -1334,6 +1333,10 @@ ArrayList<istmt> simpleStatement(): {
         TypeAlias typeAlias = typeAlias(name);
         stmts.add(typeAlias);
         return stmts;
+      } else if (name.id().equals("lazy")) {
+        istmt importStmt = importStatement();
+        stmts.add(importStmt);
+        return stmts;
       }
     } catch (ParseException printException) {
       // If something goes wrong trying to parse as python2 or match
@@ -1926,7 +1929,7 @@ Import importName(): {
   ArrayList<Alias> names;
   Token startToken;
 } {
-  (<LAZY>)? <IMPORT> { startToken = token; } names = dottedAsNames()
+  <IMPORT> { startToken = token; } names = dottedAsNames()
   { return new Import(names, attributes(startToken, token)); }
 }
 
@@ -1961,7 +1964,6 @@ ImportFrom importFrom(): {
   ArrayList<Alias> names;
   Token startToken;
 } {
-  (<LAZY>)?
   <FROM> { startToken = token; }
   (<DOT> { level += 1; } | <ELLIPSIS> { level += 3; })*
   (module = dottedName())?
