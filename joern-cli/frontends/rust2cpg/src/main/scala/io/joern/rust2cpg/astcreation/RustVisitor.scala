@@ -896,24 +896,24 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     (pathExpr.methodFullName, pathExpr.ctorTypeFullName) match {
       case (Some(methodFullName), _)   => Ast(methodRefNode(pathExpr, code(pathExpr), methodFullName, methodFullName))
       case (_, Some(ctorTypeFullName)) => unitCtorCallAst(pathExpr, ctorTypeFullName)
-      case _                           => visitPath(pathExpr.path)
+      case _                           => visitPath(pathExpr.path, pathExpr.ownerFullName)
     }
   }
 
   // Path =
   //  (qualifier:Path '::')? segment:PathSegment
-  private def visitPath(path: Path): Ast = {
+  private def visitPath(path: Path, ownerFullName: Option[String]): Ast = {
     path.path match {
       case None            => visitPathSegment(path.pathSegment)
-      case Some(qualifier) => lowerQualifiedPath(path, qualifier)
+      case Some(qualifier) => lowerQualifiedPath(path, qualifier, ownerFullName)
     }
   }
 
   // TODO: `<Foo as Bar>::baz`, etc.
-  private def lowerQualifiedPath(path: Path, qualifier: Path): Ast = {
-    qualifier.pathSegment.nameRef.flatMap(_.typeFullName) match {
-      case Some(qualifierTypeFullName) =>
-        val typeRefAst = Ast(typeRefNode(qualifier, code(qualifier), qualifierTypeFullName))
+  private def lowerQualifiedPath(path: Path, qualifier: Path, ownerFullName: Option[String]): Ast = {
+    ownerFullName.orElse(qualifier.pathSegment.nameRef.flatMap(_.typeFullName)) match {
+      case Some(qualifierFullName) =>
+        val typeRefAst = Ast(typeRefNode(qualifier, code(qualifier), qualifierFullName))
         val fieldName  = code(path.pathSegment)
         fieldAccessAst(path, path.pathSegment, typeRefAst, code(path), fieldName, typeFullNameForPath(path))
       case None => notHandledYet(path)
