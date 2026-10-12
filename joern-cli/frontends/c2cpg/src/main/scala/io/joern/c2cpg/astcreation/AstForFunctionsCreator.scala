@@ -238,9 +238,12 @@ trait AstForFunctionsCreator { this: AstCreator =>
     syntaxNode: IASTNode
   ): List[NewModifier] = {
     // getSyntax is only the first token of the node, so an equality check is exact here
-    // (startsWith would wrongly match identifiers such as `static_foo`).
     val isStatic =
-      hasStorageClass(declSpecifier, IASTDeclSpecifier.sc_static, syntaxNode.getSyntax.getImage == "static")
+      hasStorageClass(
+        declSpecifier,
+        IASTDeclSpecifier.sc_static,
+        Try(syntaxNode.getSyntax.getImage == "static").getOrElse(false)
+      )
     if (isStatic) {
       List(modifierNode(node, ModifierTypes.STATIC))
     } else Nil

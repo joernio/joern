@@ -16,6 +16,8 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.{
 }
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
+import scala.util.Try
+
 trait AstForTypesCreator { this: AstCreator =>
 
   import FullNameProvider.*
@@ -393,7 +395,11 @@ trait AstForTypesCreator { this: AstCreator =>
   }
 
   private def isTypeDef(decl: IASTSimpleDeclaration): Boolean = {
-    hasStorageClass(decl.getDeclSpecifier, IASTDeclSpecifier.sc_typedef, decl.getRawSignature.startsWith("typedef"))
+    hasStorageClass(
+      decl.getDeclSpecifier,
+      IASTDeclSpecifier.sc_typedef,
+      Try(decl.getRawSignature.startsWith("typedef")).getOrElse(false)
+    )
   }
 
   private def astForNamespaceDefinition(namespaceDefinition: ICPPASTNamespaceDefinition): Ast = {

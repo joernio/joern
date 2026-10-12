@@ -288,7 +288,7 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def hasStorageClass(declSpecifier: IASTDeclSpecifier, storageClass: Int, fallback: => Boolean): Boolean =
     Option(declSpecifier) match {
       case Some(spec) => spec.getStorageClass == storageClass
-      case None       => Try(fallback).getOrElse(false)
+      case None       => fallback
     }
 
 }

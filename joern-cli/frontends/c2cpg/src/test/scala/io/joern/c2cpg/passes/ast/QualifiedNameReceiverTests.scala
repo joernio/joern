@@ -4,6 +4,7 @@ import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, TypeRef}
 import io.shiftleft.semanticcpg.language.*
+import org.scalactic.source.Position
 
 class QualifiedNameReceiverTests extends C2CpgSuite {
 
@@ -32,7 +33,7 @@ class QualifiedNameReceiverTests extends C2CpgSuite {
       "test.cpp"
     )
 
-    def receiver(codeStr: String): TypeRef = {
+    def receiver(codeStr: String)(implicit pos: Position): TypeRef = {
       inside(cpg.call.nameExact(Operators.fieldAccess).codeExact(codeStr).l) { case List(fa) =>
         inside(fa.argument.l) { case List(owner: TypeRef, _: FieldIdentifier) => owner }
       }
