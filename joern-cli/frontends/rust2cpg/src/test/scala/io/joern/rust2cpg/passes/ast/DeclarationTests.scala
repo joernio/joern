@@ -220,6 +220,112 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "unqualified const" should {
+    val cpg = code("""
+        |const K: u32 = 1;
+        |fn main() {
+        |  let v = K;
+        |}
+        |""".stripMargin)
+
+    "have correct fieldAccess" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "K"
+        fieldAccess.typeFullName shouldBe "u32"
+
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case (module: TypeRef) :: (field: FieldIdentifier) :: Nil =>
+            module.code shouldBe "rust2cpgtest"
+            module.typeFullName shouldBe "rust2cpgtest"
+            field.canonicalName shouldBe "K"
+        }
+      }
+    }
+  }
+
+  "imported const" should {
+    val cpg = code("""
+        |mod m { pub const K: u32 = 1; }
+        |use m::K;
+        |fn main() {
+        |  let v = K;
+        |}
+        |""".stripMargin)
+
+    "have correct fieldAccess" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "K"
+        fieldAccess.typeFullName shouldBe "u32"
+
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case (module: TypeRef) :: (field: FieldIdentifier) :: Nil =>
+            module.code shouldBe "rust2cpgtest::m"
+            module.typeFullName shouldBe "rust2cpgtest::m"
+            field.canonicalName shouldBe "K"
+        }
+      }
+    }
+  }
+
+  "unqualified mutable static" should {
+    val cpg = code("""
+        |static mut S: u32 = 0;
+        |fn set() {
+        |  unsafe { S = 1; }
+        |}
+        |fn get() -> u32 {
+        |  unsafe { S }
+        |}
+        |""".stripMargin)
+
+    "have correct set fieldAccess" in {
+      inside(cpg.method.nameExact("set").ast.isCall.isAssignment.target.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "S"
+        fieldAccess.typeFullName shouldBe "u32"
+
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case (module: TypeRef) :: (field: FieldIdentifier) :: Nil =>
+            module.code shouldBe "rust2cpgtest"
+            module.typeFullName shouldBe "rust2cpgtest"
+            field.canonicalName shouldBe "S"
+        }
+      }
+    }
+
+    "have correct get fieldAccess" in {
+      inside(cpg.method.nameExact("get").ast.isCall.nameExact(Operators.fieldAccess).l) { case fieldAccess :: Nil =>
+        fieldAccess.code shouldBe "S"
+        fieldAccess.typeFullName shouldBe "u32"
+
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case (module: TypeRef) :: (field: FieldIdentifier) :: Nil =>
+            module.code shouldBe "rust2cpgtest"
+            module.typeFullName shouldBe "rust2cpgtest"
+            field.canonicalName shouldBe "S"
+        }
+      }
+    }
+  }
+
+  "unqualified const inside fn" should {
+    val cpg = code("""
+        |fn main() {
+        |  const K: u32 = 1;
+        |  let v = K;
+        |}
+        |""".stripMargin)
+
+    "have correct identifier" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.l) { case (ident: Identifier) :: Nil =>
+        ident.name shouldBe "K"
+        ident.typeFullName shouldBe "u32"
+      }
+    }
+  }
+
   "an untyped let bound to an integer literal" should {
     val cpg = code("""
         |fn main() {
@@ -1706,4 +1812,55 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.typeDecl.nameExact("Inner").fullName.sorted.l shouldBe List("rust2cpgtest::Inner#1", "rust2cpgtest::Inner#2")
     }
   }
+}
+
+class DeclarationTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
+
+  "std-qualified const" should {
+    val cpg = code("""
+        |fn main() {
+        |  let v = std::f64::consts::PI;
+        |}
+        |""".stripMargin)
+
+    "have correct fieldAccess" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "std::f64::consts::PI"
+        fieldAccess.typeFullName shouldBe "f64"
+
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case (module: TypeRef) :: (field: FieldIdentifier) :: Nil =>
+            module.code shouldBe "std::f64::consts"
+            module.typeFullName shouldBe "core::f64::consts"
+            field.canonicalName shouldBe "PI"
+        }
+      }
+    }
+  }
+
+  "imported std const" should {
+    val cpg = code("""
+        |use std::f64::consts::PI;
+        |fn main() {
+        |  let v = PI;
+        |}
+        |""".stripMargin)
+
+    "have correct fieldAccess" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "PI"
+        fieldAccess.typeFullName shouldBe "f64"
+
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case (module: TypeRef) :: (field: FieldIdentifier) :: Nil =>
+            module.code shouldBe "core::f64::consts"
+            module.typeFullName shouldBe "core::f64::consts"
+            field.canonicalName shouldBe "PI"
+        }
+      }
+    }
+  }
+
 }
