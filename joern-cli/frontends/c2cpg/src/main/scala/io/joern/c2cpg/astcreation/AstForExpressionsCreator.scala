@@ -439,7 +439,8 @@ trait AstForExpressionsCreator { this: AstCreator =>
             None,
             Some(Defines.Any)
           )
-        val arg = astForNode(typeId.getTypeId.getDeclSpecifier)
+        val tpe = registerType(typeFor(typeId.getTypeId.getDeclSpecifier))
+        val arg = Ast(typeRefNode(typeId.getTypeId, code(typeId.getTypeId), tpe))
         callAst(call, List(arg))
       case _ => notHandledYet(typeId)
     }
