@@ -24,6 +24,26 @@ class NamespaceBlockTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "bin crate alongside lib" should {
+    val libPath  = (Paths.get("src") / "lib.rs").toString
+    val mainPath = (Paths.get("src") / "main.rs").toString
+    val cpg      = code("", libPath).moreCode("fn main() {}", mainPath)
+
+    "have correct bin namespace block" in {
+      inside(cpg.namespaceBlock.filenameExact(mainPath).l) { case bin :: Nil =>
+        bin.name shouldBe "rust2cpgtest_bin"
+        bin.fullName shouldBe s"$mainPath:rust2cpgtest_bin"
+      }
+    }
+
+    "have correct lib namespace block" in {
+      inside(cpg.namespaceBlock.filenameExact(libPath).l) { case lib :: Nil =>
+        lib.name shouldBe "rust2cpgtest"
+        lib.fullName shouldBe s"$libPath:rust2cpgtest"
+      }
+    }
+  }
+
   "a submodule's namespace block" should {
     val libPath = (Paths.get("src") / "lib.rs").toString
     val fooPath = (Paths.get("src") / "foo.rs").toString

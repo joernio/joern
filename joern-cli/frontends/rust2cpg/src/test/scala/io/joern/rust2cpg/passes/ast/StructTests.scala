@@ -946,4 +946,20 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.methodRef.referencedMethod.fullName.l shouldBe List("rust2cpgtest::Foo")
     }
   }
+
+  "same-named structs in lib and bin" should {
+    val libPath  = (Paths.get("src") / "lib.rs").toString
+    val mainPath = (Paths.get("src") / "main.rs").toString
+    val cpg      = code("pub struct Foo;", libPath).moreCode("struct Foo;\nfn main() {}", mainPath)
+
+    "have correct typeDecls" in {
+      cpg.typeDecl.nameExact("Foo").fullName.sorted.l shouldBe List("rust2cpgtest::Foo", "rust2cpgtest_bin::Foo")
+    }
+
+    "have correct constructors" in {
+      cpg.typeDecl.nameExact("Foo").method.nameExact("<init>").fullName.sorted.l shouldBe
+        List("rust2cpgtest::Foo::<init>", "rust2cpgtest_bin::Foo::<init>")
+    }
+  }
+
 }
