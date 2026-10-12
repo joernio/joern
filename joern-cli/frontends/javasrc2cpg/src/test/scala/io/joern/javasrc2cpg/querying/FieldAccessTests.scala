@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, TypeRef}
 import io.shiftleft.semanticcpg.language.*
 
@@ -104,6 +105,87 @@ class FieldAccessTests extends JavaSrcCode2CpgFixture {
     val fieldAccess      = assignment.argument(2).asInstanceOf[Call]
     val typeRef          = fieldAccess.argument(1).asInstanceOf[TypeRef]
     typeRef.typeFullName shouldBe "Bar"
+  }
+
+  "unresolved static imports" should {
+    "create a field access on the imported type for a specific static import" in {
+      val cpg = code("""
+          |import static foo.Foo.FOO;
+          |public class Foo {
+          |  public int foo() {
+          |    return FOO;
+          |  }
+          |}
+          |""".stripMargin)
+
+      inside(cpg.method.name("foo").call.nameExact(Operators.fieldAccess).l) { case List(fieldAccess) =>
+        fieldAccess.code shouldBe "Foo.FOO"
+        inside(fieldAccess.argument.l) { case List(typeRef: TypeRef, field: FieldIdentifier) =>
+          typeRef.typeFullName shouldBe "foo.Foo"
+          field.canonicalName shouldBe "FOO"
+        }
+      }
+    }
+
+    "create a field access on the imported type for a single static wildcard import" in {
+      val cpg = code("""
+          |import static foo.Foo.*;
+          |public class Foo {
+          |  public int foo() {
+          |    return FOO;
+          |  }
+          |}
+          |""".stripMargin)
+
+      inside(cpg.method.name("foo").call.nameExact(Operators.fieldAccess).argument.l) {
+        case List(typeRef: TypeRef, field: FieldIdentifier) =>
+          typeRef.typeFullName shouldBe "foo.Foo"
+          field.canonicalName shouldBe "FOO"
+      }
+    }
+
+    "not guess the type if there are multiple static wildcard imports" in {
+      val cpg = code("""
+          |import static foo.Foo.*;
+          |import static bar.Bar.*;
+          |public class Foo {
+          |  public int foo() {
+          |    return FOO;
+          |  }
+          |}
+          |""".stripMargin)
+
+      cpg.method.name("foo").call.nameExact(Operators.fieldAccess).isEmpty shouldBe true
+      cpg.method.name("foo").ast.isIdentifier.name("FOO").size shouldBe 1
+    }
+
+    "prefer fields and parameters over static imports" in {
+      val cpg = code("""
+          |import static foo.Foo.FOO;
+          |public class Foo {
+          |  int FOO = 1;
+          |  public int foo() { return FOO; }
+          |  public int bar(int FOO) { return FOO; }
+          |}
+          |""".stripMargin)
+
+      inside(cpg.method.name("foo").call.nameExact(Operators.fieldAccess).argument.l) {
+        case List(base: Identifier, _: FieldIdentifier) => base.name shouldBe "this"
+      }
+      cpg.method.name("bar").call.nameExact(Operators.fieldAccess).isEmpty shouldBe true
+    }
+
+    "leave names that match no static import as identifiers" in {
+      val cpg = code("""
+          |import static foo.Foo.FOO;
+          |public class Foo {
+          |  public int foo() { return BAR; }
+          |}
+          |""".stripMargin)
+
+      cpg.method.name("foo").call.nameExact(Operators.fieldAccess).isEmpty shouldBe true
+      cpg.method.name("foo").ast.isIdentifier.name("BAR").size shouldBe 1
+    }
   }
 
 }

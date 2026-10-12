@@ -135,6 +135,18 @@ class Scope(implicit withSchemaValidation: ValidationMode, disableTypeFallback: 
     scopeStack.head.addWildcardImport(prefix)
   }
 
+  def addStaticImport(memberName: String, declaringTypeFullName: String): Unit = {
+    enclosingNamespace.foreach(_.addStaticImport(memberName, declaringTypeFullName))
+  }
+
+  def addStaticWildcardImport(declaringTypeFullName: String): Unit = {
+    enclosingNamespace.foreach(_.addStaticWildcardImport(declaringTypeFullName))
+  }
+
+  def lookupStaticImport(memberName: String): Option[String] = {
+    enclosingNamespace.flatMap(_.lookupStaticImport(memberName))
+  }
+
   def addDeclBinding(name: String, declBindingInfo: JavaparserBindingDeclType): Unit = {
     scopeStack.collectFirst { case declContainer: TypeDeclContainer =>
       declContainer.addDeclBinding(name, declBindingInfo)

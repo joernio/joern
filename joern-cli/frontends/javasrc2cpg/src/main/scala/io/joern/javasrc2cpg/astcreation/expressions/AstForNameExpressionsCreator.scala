@@ -82,7 +82,6 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
   private def astForStaticImportOrUnknown(nameExpr: NameExpr, name: String, typeFullName: Option[String]): Ast = {
     tryWithSafeStackOverflow(nameExpr.resolve()) match {
       case Success(value: ResolvedFieldDeclaration) =>
-        // TODO using the enclosingTypeDecl is wrong if the field was imported via a static import.
         createImplicitBaseFieldAccess(
           value.asField().isStatic,
           typeInfoCalc.name(value.declaringType()).getOrElse(defaultTypeFallback()),
@@ -93,7 +92,20 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
         )
 
       case _ =>
-        Ast(identifierNode(nameExpr, name, name, typeFullName.getOrElse(defaultTypeFallback())))
+        scope.lookupStaticImport(name) match {
+          case Some(declaringTypeFullName) =>
+            createImplicitBaseFieldAccess(
+              isStatic = true,
+              declaringTypeFullName.split('.').last,
+              declaringTypeFullName,
+              nameExpr,
+              name,
+              typeFullName.getOrElse(defaultTypeFallback())
+            )
+
+          case None =>
+            Ast(identifierNode(nameExpr, name, name, typeFullName.getOrElse(defaultTypeFallback())))
+        }
     }
   }
 
