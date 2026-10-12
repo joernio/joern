@@ -62,6 +62,8 @@ object DefaultSemantics {
     F(Operators.preDecrement, List((1, 1), (1, -1))),
     F(Operators.preIncrement, List((1, 1), (1, -1))),
     F(Operators.sizeOf, List.empty[(Int, Int)]),
+    F("<operator>.alignOf", List.empty[(Int, Int)]),
+    F("<operator>.typeOf", List.empty[(Int, Int)]),
 
     // Language specific operators
     PTF("<operator>.tupleLiteral"),

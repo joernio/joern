@@ -7,10 +7,14 @@ import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.{
   ICPPASTNamespaceDefinition,
+  ICPPBinding,
   ICPPClassType,
   ICPPConstructor,
   ICPPEnumeration,
-  ICPPFunction
+  ICPPFunction,
+  ICPPNamespace,
+  ICPPNamespaceAlias,
+  ICPPTemplateTypeParameter
 }
 import org.eclipse.cdt.internal.core.dom.parser.IASTInternalScope
 import org.eclipse.cdt.internal.core.dom.parser.c.{CVariable, ICInternalBinding}
@@ -229,14 +233,41 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     nullSafeAst(arrMod.getConstantExpression)
   }
 
+  private def qualifiedNameOf(binding: ICPPBinding): Option[String] =
+    safeCdtCall(binding.getQualifiedName.mkString("."))
+
+  /** Allowlist of binding kinds that may appear as a qualifier and be turned into a TYPE_REF. */
+  private def qualifiedNameForBinding(binding: IBinding): Option[String] = binding match {
+    case _: IProblemBinding           => None
+    case t: ICPPClassType             => qualifiedNameOf(t)
+    case t: ICPPEnumeration           => qualifiedNameOf(t)
+    case t: (ITypedef & ICPPBinding)  => qualifiedNameOf(t)
+    case t: ICPPTemplateTypeParameter => safeCdtCall(t.getName)
+    case alias: ICPPNamespaceAlias    => resolveNamespaceAlias(alias).flatMap(qualifiedNameOf)
+    case ns: ICPPNamespace            => qualifiedNameOf(ns)
+    case _                            => None
+  }
+
+  /** CDT's `getBinding` only resolves one hop, so alias chains (`namespace fs2 = fs;`) are followed here. */
+  @tailrec
+  private def resolveNamespaceAlias(
+    alias: ICPPNamespaceAlias,
+    seen: Set[ICPPNamespaceAlias] = Set.empty
+  ): Option[ICPPNamespace] = {
+    if (seen.contains(alias)) None
+    else
+      safeCdtCall(alias.getBinding) match {
+        case Some(target: ICPPNamespaceAlias) => resolveNamespaceAlias(target, seen + alias)
+        case Some(target: ICPPNamespace)      => Some(target)
+        case _                                => None
+      }
+  }
+
   private def typeRefForQualifier(qualId: CPPASTQualifiedName): Option[Ast] = {
     qualId.getQualifier.lastOption.flatMap { lastQualifier =>
-      safeCdtCall(lastQualifier.resolveBinding()).collect {
-        case t: ICPPClassType =>
-          typeRefAst(qualId, lastQualifier, t.getQualifiedName.mkString("."))
-        case t: ICPPEnumeration =>
-          typeRefAst(qualId, lastQualifier, t.getQualifiedName.mkString("."))
-      }
+      safeCdtCall(lastQualifier.resolveBinding())
+        .flatMap(qualifiedNameForBinding)
+        .map(typeRefAst(qualId, lastQualifier, _))
     }
   }
 

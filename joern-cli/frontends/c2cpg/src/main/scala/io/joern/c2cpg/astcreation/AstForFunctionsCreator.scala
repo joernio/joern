@@ -232,8 +232,19 @@ trait AstForFunctionsCreator { this: AstCreator =>
     Ast.storeInDiffGraph(functionBindAst, diffGraph)
   }
 
-  private def staticModifierFor(node: IASTNode, declSpecifier: IASTDeclSpecifier): List[NewModifier] = {
-    if (Option(declSpecifier).exists(_.getStorageClass == IASTDeclSpecifier.sc_static)) {
+  private def staticModifierFor(
+    node: IASTNode,
+    declSpecifier: IASTDeclSpecifier,
+    syntaxNode: IASTNode
+  ): List[NewModifier] = {
+    // getSyntax is only the first token of the node, so an equality check is exact here
+    val isStatic =
+      hasStorageClass(
+        declSpecifier,
+        IASTDeclSpecifier.sc_static,
+        Try(syntaxNode.getSyntax.getImage == "static").getOrElse(false)
+      )
+    if (isStatic) {
       List(modifierNode(node, ModifierTypes.STATIC))
     } else Nil
   }
@@ -242,14 +253,14 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val constructorModifier = if (bindsToConstructor(funcDef)) {
       List(modifierNode(funcDef, ModifierTypes.CONSTRUCTOR), modifierNode(funcDef, ModifierTypes.PUBLIC))
     } else Nil
-    val staticModifier = Try(staticModifierFor(funcDef, funcDef.getDeclSpecifier)).getOrElse(Nil)
+    val staticModifier = Try(staticModifierFor(funcDef, funcDef.getDeclSpecifier, funcDef)).getOrElse(Nil)
     constructorModifier ++ staticModifier
   }
 
   private def modifierFor(funcDecl: IASTFunctionDeclarator): List[NewModifier] = {
     Try(funcDecl.getParent match {
-      case declaration: IASTSimpleDeclaration => staticModifierFor(funcDecl, declaration.getDeclSpecifier)
-      case definition: IASTFunctionDefinition => staticModifierFor(funcDecl, definition.getDeclSpecifier)
+      case declaration: IASTSimpleDeclaration => staticModifierFor(funcDecl, declaration.getDeclSpecifier, declaration)
+      case definition: IASTFunctionDefinition => staticModifierFor(funcDecl, definition.getDeclSpecifier, definition)
       case _                                  => Nil
     }).getOrElse(Nil)
   }

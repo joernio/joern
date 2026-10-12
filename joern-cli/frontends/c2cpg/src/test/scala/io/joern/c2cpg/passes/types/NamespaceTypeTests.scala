@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.nodes.FieldIdentifier
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.shiftleft.codepropertygraph.generated.nodes.TypeRef
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
@@ -273,10 +274,11 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         c1.code shouldBe "x = fbz::qux"
         c2.code shouldBe "fbz::qux"
         c3.code shouldBe "qux = 42"
-        inside(c2.ast.l) { case List(call: Call, x: Identifier, fieldId: FieldIdentifier) =>
+        inside(c2.ast.l) { case List(call: Call, ns: TypeRef, fieldId: FieldIdentifier) =>
           call.name shouldBe Operators.fieldAccess
-          x.order shouldBe 1
-          x.name shouldBe "fbz"
+          ns.order shouldBe 1
+          ns.code shouldBe "fbz"
+          ns.typeFullName shouldBe "foo.bar.baz"
           fieldId.order shouldBe 2
           fieldId.code shouldBe "qux"
         }

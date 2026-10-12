@@ -1093,14 +1093,38 @@ class AstCreationPassTests extends AstC2CpgSuite {
       )
       cpg.method.nameExact("probe").local.name.l.sorted shouldBe List("s1", "s2")
       cpg.identifier.nameExact("Widget").size shouldBe 0
-      inside(cpg.call.nameExact(Operators.sizeOf).l) { case List(sizeOfCall, alignOfCall) =>
+      inside(cpg.call.nameExact(Operators.sizeOf).l) { case List(sizeOfCall) =>
         val List(sizeOfTypeRef) = sizeOfCall.argument(1).isTypeRef.l
         sizeOfTypeRef.code shouldBe "Widget"
         sizeOfTypeRef.typeFullName shouldBe "Widget"
+      }
+      inside(cpg.call.nameExact(Defines.OperatorAlignOf).l) { case List(alignOfCall) =>
         val List(alignOfTypeRef) = alignOfCall.argument(1).isTypeRef.l
         alignOfTypeRef.code shouldBe "Widget"
         alignOfTypeRef.typeFullName shouldBe "Widget"
       }
+    }
+
+    "tell sizeof, alignof and typeid apart by operator name" in {
+      val cpg = code(
+        """
+        |struct Widget { int a; };
+        |void probe() {
+        |  auto s = sizeof(Widget);
+        |  auto a = alignof(Widget);
+        |  auto t = typeid(Widget);
+        |  Widget w{};
+        |  auto te = typeid(w);
+        |}""".stripMargin,
+        "file.cpp"
+      )
+      cpg.call.codeExact("sizeof(Widget)").name.l shouldBe List(Operators.sizeOf)
+      cpg.call.codeExact("alignof(Widget)").name.l shouldBe List(Defines.OperatorAlignOf)
+      cpg.call.codeExact("alignof(Widget)").methodFullName.l shouldBe List(Defines.OperatorAlignOf)
+      cpg.call.codeExact("typeid(Widget)").name.l shouldBe List(Defines.OperatorTypeOf)
+      cpg.call.codeExact("typeid(w)").name.l shouldBe List(Defines.OperatorTypeOf)
+      cpg.call.codeExact("typeid(Widget)").argument(1).isTypeRef.size shouldBe 1
+      cpg.method.nameExact("probe").local.name.l.sorted shouldBe List("<tmp>0", "a", "s", "t", "te", "w")
     }
 
     "not fabricate a local for a type-id operand that is not a plain identifier" in {
