@@ -604,9 +604,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val lambdaBodyAst                            =
       astForMethodBody(Option(lambdaExpression.getBody), lambdaMethodBlockNode, Seq.empty, initCaptureAsts)
     setEvaluationStrategyForCaptures(lambdaExpression, lambdaBodyAst)
-    // The asts above are part of the body now, so setEvaluationStrategyForCaptures has just given the
-    // identifiers an init-capture initializer reads the lambda's capture default. They are captured by
-    // the init-capture, not by the capture default, so re-apply its own strategy here.
+    // Identifiers read by an init-capture initializer must use the init-capture's own evaluation strategy,
+    // not the lambda's capture default that setEvaluationStrategyForCaptures applies to the whole body.
     initCaptureStrategies.foreach { case (identifier, strategy) =>
       scope.updateVariableReference(identifier, strategy)
     }

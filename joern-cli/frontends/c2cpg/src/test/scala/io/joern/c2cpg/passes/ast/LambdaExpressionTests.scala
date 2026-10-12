@@ -647,8 +647,11 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
         n.typeFullName shouldBe "int"
         n.code shouldBe "&n = len"
         n.closureBindingId shouldBe None
+        // the assignment target and the use in the body, each with exactly one REF edge to the local
+        val List(target, use) = cpg.identifier.nameExact("n").l
+        target._refOut.l shouldBe List(n)
+        use._refOut.l shouldBe List(n)
       }
-      cpg.identifier.nameExact("n").refsTo.dedup.l shouldBe lambdaLocals.nameExact("n").l
     }
 
     "assign the initializer to it before the body" in {
@@ -708,9 +711,11 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
         |""".stripMargin)
 
     "bind the new name to the lambda's own local, not to the enclosing variable" in {
-      val List(lambda) = cpg.method.name(".*lambda.*").l
-      lambda.ast.isIdentifier.nameExact("n").refsTo.dedup.l shouldBe
-        cpg.method.name(".*lambda.*").local.nameExact("n").l
+      val List(lambda)      = cpg.method.name(".*lambda.*").l
+      val List(lambdaN)     = cpg.method.name(".*lambda.*").local.nameExact("n").l
+      val List(target, use) = lambda.ast.isIdentifier.nameExact("n").l
+      target._refOut.l shouldBe List(lambdaN)
+      use._refOut.l shouldBe List(lambdaN)
       inside(cpg.closureBinding.l) { case List(len) =>
         len.closureBindingId shouldBe Some("Test0.cpp:<global>.foo.<lambda>0:void():len")
         len._localViaRefOut.get.name shouldBe "len"
