@@ -197,6 +197,21 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     )
   }
 
+  protected def moduleTypeDeclNode(node: RustNode): NewTypeDecl = {
+    val fullName = contextStack.rustParentFullName
+    val name     = RustFullNames.shortName(fullName)
+    typeDeclNode(
+      node = node,
+      name = name,
+      fullName = fullName,
+      filename = parseResult.filename,
+      code = name,
+      astParentType = contextStack.astParentType,
+      astParentFullName = contextStack.astParentFullName,
+      inherits = Nil
+    )
+  }
+
   protected def typeDeclForEnum(enum_ : RustNodeSyntax.Enum, inheritsFrom: Seq[String]): NewTypeDecl = {
     typeDeclNode(
       node = enum_,

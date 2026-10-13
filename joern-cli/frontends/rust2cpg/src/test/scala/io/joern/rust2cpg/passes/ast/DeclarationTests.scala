@@ -38,6 +38,18 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
         rhs.typeFullName shouldBe "usize"
       }
     }
+
+    "have correct member" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest").l) { case typeDecl :: Nil =>
+        typeDecl.name shouldBe "rust2cpgtest"
+        typeDecl.code shouldBe "rust2cpgtest"
+        inside(typeDecl.member.l) { case member :: Nil =>
+          member.name shouldBe "MAX_SIZE"
+          member.code shouldBe "const MAX_SIZE: usize = 1024;"
+          member.typeFullName shouldBe "usize"
+        }
+      }
+    }
   }
 
   "a const inside a function body" should {
@@ -107,6 +119,18 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
         rhs.typeFullName shouldBe "usize"
       }
     }
+
+    "have correct member" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest").l) { case typeDecl :: Nil =>
+        typeDecl.name shouldBe "rust2cpgtest"
+        typeDecl.code shouldBe "rust2cpgtest"
+        inside(typeDecl.member.l) { case member :: Nil =>
+          member.name shouldBe "BAR"
+          member.code shouldBe "static BAR: usize = 42;"
+          member.typeFullName shouldBe "usize"
+        }
+      }
+    }
   }
 
   "a static inside a function body" should {
@@ -146,6 +170,18 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
         assignment.code shouldBe "static mut BAZ: u32 = 0;"
       }
     }
+
+    "have correct member" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest").l) { case typeDecl :: Nil =>
+        typeDecl.name shouldBe "rust2cpgtest"
+        typeDecl.code shouldBe "rust2cpgtest"
+        inside(typeDecl.member.l) { case member :: Nil =>
+          member.name shouldBe "BAZ"
+          member.code shouldBe "static mut BAZ: u32 = 0;"
+          member.typeFullName shouldBe "u32"
+        }
+      }
+    }
   }
 
   "module-qualified const" should {
@@ -168,6 +204,14 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
             module.typeFullName shouldBe "rust2cpgtest::m"
             field.canonicalName shouldBe "K"
         }
+      }
+    }
+
+    "have correct referencedMember" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.isCall.referencedMember.l) {
+        case member :: Nil =>
+          member.name shouldBe "K"
+          member.typeDecl.fullName shouldBe "rust2cpgtest::m"
       }
     }
   }
@@ -240,6 +284,14 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
             module.typeFullName shouldBe "rust2cpgtest"
             field.canonicalName shouldBe "K"
         }
+      }
+    }
+
+    "have correct referencedMember" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.isCall.referencedMember.l) {
+        case member :: Nil =>
+          member.name shouldBe "K"
+          member.typeDecl.fullName shouldBe "rust2cpgtest"
       }
     }
   }
