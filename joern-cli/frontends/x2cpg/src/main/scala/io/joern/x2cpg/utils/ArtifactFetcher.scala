@@ -8,7 +8,7 @@ import java.net.URI
 import java.net.http.{HttpClient, HttpRequest, HttpResponse}
 import java.nio.file.{Files, Path, StandardCopyOption}
 import java.util.Base64
-import java.util.concurrent.{CompletableFuture, ConcurrentHashMap, TimeUnit}
+import java.util.concurrent.{CompletableFuture, ConcurrentHashMap, ExecutionException, TimeUnit, TimeoutException}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try, Using}
 
@@ -119,8 +119,23 @@ class ArtifactFetcher(val cacheDir: Path) {
               val encoded = Base64.getEncoder.encodeToString(s"${cred.user}:${cred.password}".getBytes("UTF-8"))
               requestBuilder.header("Authorization", s"Basic $encoded")
             }
-            val request  = requestBuilder.build()
-            val response = httpClient.send(request, HttpResponse.BodyHandlers.ofFile(tmpFile))
+            val request = requestBuilder.build()
+            // Bound the whole exchange (headers + body): HttpRequest.timeout only covers the response headers, and
+            // a stalled transfer would otherwise block for minutes and exhaust any caller-side retry budget.
+            val responseFuture = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofFile(tmpFile))
+            val response       =
+              try {
+                responseFuture.get(RequestTimeoutSeconds, TimeUnit.SECONDS)
+              } catch {
+                case e: ExecutionException =>
+                  e.getCause match {
+                    case io: IOException => throw io
+                    case other           => throw new IOException(other.getMessage, other)
+                  }
+                case e: TimeoutException =>
+                  responseFuture.cancel(true)
+                  throw new IOException(s"Download timed out after ${RequestTimeoutSeconds}s", e)
+              }
 
             val status = response.statusCode()
             if (status != 200) {
@@ -160,9 +175,15 @@ object ArtifactFetcher {
   private val logger                 = LoggerFactory.getLogger(getClass)
   private val DownloadTimeoutMinutes = 10
   private val RetryableStatusCodes   = Set(408, 429, 500, 502, 503, 504)
+  private val ConnectTimeoutSeconds  = 10
+  private val RequestTimeoutSeconds  = 20L
 
   private lazy val httpClient: HttpClient =
-    HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build()
+    HttpClient
+      .newBuilder()
+      .connectTimeout(java.time.Duration.ofSeconds(ConnectTimeoutSeconds))
+      .followRedirects(HttpClient.Redirect.NORMAL)
+      .build()
 
   private def defaultCacheDir: Path = {
     val dir = sys.env
