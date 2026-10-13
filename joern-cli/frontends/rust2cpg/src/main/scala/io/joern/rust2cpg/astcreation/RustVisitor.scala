@@ -399,7 +399,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   private def createAssignmentsForTuplePattern(tuplePat: TuplePat, mkSourceAst: () => Ast): Seq[Ast] = {
-    createAssignmentsForTupleElements(tuplePat, tuplePat.pat, mkSourceAst)
+    createAssignmentsForTupleElements(tuplePat, tuplePat.pat, tuplePat.totalElements, mkSourceAst)
   }
 
   private def createAssignmentsForTupleStructPattern(
@@ -409,6 +409,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     createAssignmentsForTupleElements(
       tupleStructPat,
       tupleStructPat.pat,
+      totalElements = None,
       () => castIfNecessary(tupleStructPat.path, mkSourceAst())
     )
   }
@@ -428,10 +429,20 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     }
   }
 
-  // TODO(rust_ast_gen): how many elements the tuple has, so we know how many elements to skip after RestPat.
-  private def createAssignmentsForTupleElements(pat: Pat, elements: Seq[Pat], mkSourceAst: () => Ast): Seq[Ast] = {
+  private def createAssignmentsForTupleElements(
+    pat: Pat,
+    elements: Seq[Pat],
+    totalElements: Option[Int],
+    mkSourceAst: () => Ast
+  ): Seq[Ast] = {
     val (prefix, fromRest) = elements.span(!_.isInstanceOf[RestPat])
-    val assignments        = prefix.zipWithIndex.flatMap { case (element, index) =>
+    val suffix             = fromRest.drop(1)
+    val suffixWithIndex    = totalElements match {
+      case Some(total) =>
+        suffix.zipWithIndex.map { case (element, offset) => (element, total - suffix.length + offset) }
+      case None => Nil
+    }
+    val assignments = (prefix.zipWithIndex ++ suffixWithIndex).flatMap { case (element, index) =>
       val fieldName            = index.toString
       val fieldType            = typeFullNameForPat(element)
       def mkFieldAccess(): Ast = {
@@ -441,10 +452,11 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       }
       createAssignmentsForPattern(element, mkFieldAccess)
     }
-    val bindingsAfterRest = fromRest.drop(1).flatMap(collectPatternBindings)
-    if (bindingsAfterRest.isEmpty) {
+    val bindingsAfterRest = suffix.flatMap(collectPatternBindings)
+    if (bindingsAfterRest.isEmpty || suffixWithIndex.nonEmpty) {
       assignments
     } else {
+      // warn if at least 1 pattern didn't get an assignment.
       assignments :+ notHandledYet(pat)
     }
   }
