@@ -19,6 +19,9 @@ jobs:
           java-version: 21
           cache: sbt
       - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
+      - uses: ./.github/actions/sbt-ci-setup
+        with:
+          cache-name: lint
       - name: Check formatting and lint
         run: sbt "scalafmtCheck ; Test/scalafmtCheck ; scalafix --diff-base origin/${{ github.event.pull_request.base.ref }} RestrictedImports SingleLetterIdentifiers UnorderedIteration"
       - run: echo "Previous step failed because the code is not formatted or violates coding quality expectations. Run 'sbt scalafmt Test/scalafmt' to format, and check the logs for scalafix violations."
@@ -34,10 +37,39 @@ jobs:
         uses: dieghernan/cff-validator@d8f85828214016ce6976e740b6e0504c0fdc4dbb # v5
 
   run-tests:
+    name: run-tests (${{ matrix.os }}, ${{ matrix.shard.name }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        # Test shards run in parallel as separate jobs. `stage` lists projects that must be staged first
+        # (console/joerncli tests invoke the staged frontends), `projects` lists what to test.
+        shard:
+          - name: core
+            projects: "macros semanticcpg dataflowengineoss x2cpg linterRules"
+          - name: console
+            stage: "c2cpg jssrc2cpg javasrc2cpg swiftsrc2cpg"
+            projects: "console joerncli querydb"
+          - name: c2cpg
+            projects: "c2cpg"
+          - name: javasrc2cpg
+            projects: "javasrc2cpg"
+          - name: jssrc2cpg
+            projects: "jssrc2cpg"
+          - name: jvm-frontends
+            projects: "kotlin2cpg jimple2cpg ghidra2cpg"
+          - name: scripting-frontends
+            projects: "pysrc2cpg php2cpg rubysrc2cpg"
+          - name: go-csharp-abap
+            projects: "gosrc2cpg csharpsrc2cpg abap2cpg"
+            go: true
+          - name: swift
+            projects: "swiftsrc2cpg"
+            swift: true
+          - name: rust
+            projects: "rust2cpg"
+            rust: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -49,16 +81,20 @@ jobs:
           java-version: 21
           cache: sbt
       - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
+      - uses: ./.github/actions/sbt-ci-setup
+        with:
+          cache-name: ${{ matrix.shard.name }}
       - name: Install php
-        if: matrix.os == 'macos-latest'
+        if: matrix.os == 'macos-latest' && matrix.shard.name == 'scripting-frontends'
         run: brew install php
       - name: Set up Go
+        if: matrix.shard.go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           cache: false
           go-version: 1.25
       - name: Set up Swift (macos-latest)
-        if: matrix.os == 'macos-latest'
+        if: matrix.shard.swift && matrix.os == 'macos-latest'
         uses: SwiftyLab/setup-swift@9014d4136569075c696d4151c7810ecde8712907 # v1.14.1
         # macos-latest runner switched to Xcode 26.4.1 as the new default
         # Some swiftsrc2cpg tests use `import Foundation` which can not be
@@ -73,17 +109,27 @@ jobs:
         with:
           swift-version: "6.3"
       - name: Set up Swift
-        if: matrix.os != 'macos-latest'
+        if: matrix.shard.swift && matrix.os != 'macos-latest'
         uses: SwiftyLab/setup-swift@9014d4136569075c696d4151c7810ecde8712907 # v1.14.1
         with:
           swift-version: "6.1"
       - name: Set up Rust
+        if: matrix.shard.rust
         uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # v1
         with:
           toolchain: stable
           components: rust-src
       - name: Run tests
-        run: sbt "c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage ; testFull"
+        shell: bash
+        env:
+          STAGE: ${{ matrix.shard.stage }}
+          PROJECTS: ${{ matrix.shard.projects }}
+        run: |
+          cmd=""
+          for p in $STAGE; do cmd="$cmd$p/stage ; "; done
+          tests=""
+          for p in $PROJECTS; do tests="$tests $p/testFull"; done
+          sbt "${cmd}all$tests"
 
   test-scripts:
     runs-on: ${{ matrix.os }}
@@ -101,6 +147,9 @@ jobs:
           java-version: 21
           cache: sbt
       - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
+      - uses: ./.github/actions/sbt-ci-setup
+        with:
+          cache-name: test-scripts
       - name: Install coreutils
         if: matrix.os == 'macos-latest'
         run: brew install coreutils

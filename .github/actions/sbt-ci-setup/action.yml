@@ -1,0 +1,38 @@
+name: sbt-ci-setup
+description: >
+  Tunes sbt for CI (heap, GC, quiet output) and persists the sbt 2 content-addressed task cache
+  (compile results etc.) across runs. Must run after checkout and before the first sbt invocation.
+inputs:
+  cache-name:
+    description: Distinguishes cache entries of different jobs/shards
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Configure sbt
+      shell: bash
+      env:
+        RUNNER_OS_NAME: ${{ runner.os }}
+      run: |
+        # forward slashes also on Windows, so the path survives .sbtopts parsing
+        cache_dir="${RUNNER_TEMP//\\//}/sbt-local-cache"
+        echo "SBT_LOCAL_CACHE=$cache_dir" >> "$GITHUB_ENV"
+        # macOS runners only have 7GB RAM
+        if [ "$RUNNER_OS_NAME" = "macOS" ]; then xmx=4G; else xmx=6G; fi
+        cat > .sbtopts <<OPTS
+        -J-Xms1G
+        -J-Xmx$xmx
+        -J-XX:+UseParallelGC
+        -Dsbt.global.localcache=$cache_dir
+        -Dsbt.supershell=false
+        -Dsbt.color=false
+        OPTS
+    - name: Restore sbt task cache
+      uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+      with:
+        path: ${{ runner.temp }}/sbt-local-cache
+        # unique key per commit so that every run saves; restore-keys pick the most recent entry
+        key: sbt-cache-${{ runner.os }}-${{ inputs.cache-name }}-${{ hashFiles('build.sbt', 'project/**/*.scala', 'project/**/*.sbt', 'project/build.properties') }}-${{ github.sha }}
+        restore-keys: |
+          sbt-cache-${{ runner.os }}-${{ inputs.cache-name }}-${{ hashFiles('build.sbt', 'project/**/*.scala', 'project/**/*.sbt', 'project/build.properties') }}-
+          sbt-cache-${{ runner.os }}-${{ inputs.cache-name }}-
