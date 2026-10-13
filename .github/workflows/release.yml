@@ -24,7 +24,7 @@ jobs:
         env:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
       - name: Set up Ruby
-        uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8 # v1.327.0
+        uses: ruby/setup-ruby@e81a8fa391b11a595c1b7ed84177cc0fe02faf83 # v1.328.0
         with:
           ruby-version: 2.7
       - name: Set up Swift
@@ -34,7 +34,7 @@ jobs:
       - name: Install Bundler
         run: gem install bundler -v 2.4.22
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # v1
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # v1
         with:
           toolchain: stable
           components: rust-src
