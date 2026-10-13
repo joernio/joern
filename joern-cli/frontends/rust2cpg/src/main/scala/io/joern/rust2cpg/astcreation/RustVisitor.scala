@@ -903,10 +903,17 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // Path =
   //  (qualifier:Path '::')? segment:PathSegment
   private def visitPath(path: Path, ownerFullName: Option[String]): Ast = {
-    path.path match {
-      case None            => visitPathSegment(path.pathSegment)
-      case Some(qualifier) => lowerQualifiedPath(path, qualifier, ownerFullName)
+    (path.path, ownerFullName) match {
+      case (Some(qualifier), _)        => lowerQualifiedPath(path, qualifier, ownerFullName)
+      case (None, Some(ownerFullName)) => lowerUnqualifiedPath(path, ownerFullName)
+      case (None, None)                => visitPathSegment(path.pathSegment)
     }
+  }
+
+  private def lowerUnqualifiedPath(path: Path, ownerFullName: String): Ast = {
+    val typeRefAst = Ast(typeRefNode(path, ownerFullName, ownerFullName))
+    val fieldName  = code(path.pathSegment)
+    fieldAccessAst(path, path.pathSegment, typeRefAst, code(path), fieldName, typeFullNameForPath(path))
   }
 
   // TODO: `<Foo as Bar>::baz`, etc.
