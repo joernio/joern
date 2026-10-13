@@ -42,7 +42,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
     contextStack.pushNamespace(namespaceBlockNode)
     contextStack.pushGlobalMethod(method)
-    val itemAsts = sourceFile.item.flatMap(visitItem)
+    val itemAsts = visitModuleItems(sourceFile, sourceFile.item)
     contextStack.pop()
     contextStack.pop()
 
@@ -223,10 +223,36 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         // So we don't need to disambiguate its occurrence like in other languages.
         val namespaceBlock = moduleNamespaceBlockNode(module)
         contextStack.pushNamespace(namespaceBlock)
-        val itemAsts = itemList.item.flatMap(visitItem)
+        val itemAsts = visitModuleItems(module, itemList.item)
         contextStack.pop()
         Ast(namespaceBlock).withChildren(itemAsts) :: Nil
     }
+  }
+
+  // Besides visiting items, if there are module-level consts/statics, declare them in synthetic
+  // typeDecl (same fullName as the module) so that their usages have a def site.
+  private def visitModuleItems(node: RustNode, items: Seq[Item]): Seq[Ast] = {
+    val itemAsts   = items.flatMap(visitItem)
+    val memberAsts = items.flatMap {
+      case const: Const   => memberForConst(const)
+      case static: Static => memberForStatic(static) :: Nil
+      case _              => Nil
+    }
+    if (memberAsts.isEmpty) {
+      itemAsts
+    } else {
+      itemAsts :+ Ast(moduleTypeDeclNode(node)).withChildren(memberAsts)
+    }
+  }
+
+  private def memberForConst(const: Const): Option[Ast] = {
+    const.name.flatMap(_.identToken).map { identToken =>
+      Ast(memberNode(const, code(identToken), code(const), typeFullNameForType(const.typ)))
+    }
+  }
+
+  private def memberForStatic(static: Static): Ast = {
+    Ast(memberNode(static, code(static.name), code(static), typeFullNameForType(static.typ)))
   }
 
   // Const =
