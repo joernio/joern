@@ -26,10 +26,8 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
 
   protected def code(phpNode: PhpNode): String = "" // Sadly, the Php AST does not carry any code fields
 
-  override protected val isOffsetNeeded: Boolean = !disableFileContent
-
-  override protected lazy val offsetNormalizer: Int => Int =
-    OffsetUtils.buildOffsetConverter(OffsetUtils.OffsetSourceType.Bytes(fileContentBytes, fileCharset))
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] =
+    Option.unless(disableFileContent)(OffsetUtils.OffsetSourceType.Bytes(fileContentBytes, fileCharset))
 
   // The PHP parser uses -1 to signal it couldn't determine a position (rare parse errors) — treat
   // that as no offset info at all, rather than normalizing a nonsensical value.

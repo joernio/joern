@@ -7,6 +7,7 @@ import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.utils.Utils.*
 import io.joern.x2cpg.astgen.{AstGenNodeBuilder, BaseNodeInfo, ParserResult}
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, ModifierTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
@@ -43,9 +44,7 @@ class AstCreator(
 
   protected var parseLevel: AstParseLevel = AstParseLevel.FULL_AST
 
-  override protected val isOffsetNeeded: Boolean = true
-
-  override protected lazy val offsetNormalizer: Int => Int = identity
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] = None
 
   override protected def unadjustedOffset(node: BaseNodeInfo[?]): Option[(Int, Int)] = None
 

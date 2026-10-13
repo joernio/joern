@@ -8,6 +8,7 @@ import io.joern.abap2cpg.parser.AbapIntermediateAst
 import io.joern.abap2cpg.parser.AbapIntermediateAst.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -75,9 +76,7 @@ class AstCreator(val program: ProgramRoot, filename: String)(implicit withSchema
     case _                  => None
   }
 
-  override protected val isOffsetNeeded: Boolean = true
-
-  override protected lazy val offsetNormalizer: Int => Int = identity
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] = None
 
   override protected def unadjustedOffset(node: AbapNode): Option[(Int, Int)] = None
 

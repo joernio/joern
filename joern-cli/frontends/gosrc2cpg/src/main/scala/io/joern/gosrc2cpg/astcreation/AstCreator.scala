@@ -8,6 +8,7 @@ import io.joern.x2cpg.astgen.{AstGenNodeBuilder, BaseNodeInfo}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import org.slf4j.{Logger, LoggerFactory}
@@ -48,9 +49,8 @@ class AstCreator(
   protected val fullyQualifiedPackage =
     goMod.getNameSpace(parserResult.fullPath, declaredPackageName)
 
-  override protected val isOffsetNeeded: Boolean = true
-
-  override protected lazy val offsetNormalizer: Int => Int = identity
+  // Keep in sync with the offset overrides in AstForPackageConstructorCreator.
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] = None
 
   override protected def unadjustedOffset(node: BaseNodeInfo[?]): Option[(Int, Int)] = None
 

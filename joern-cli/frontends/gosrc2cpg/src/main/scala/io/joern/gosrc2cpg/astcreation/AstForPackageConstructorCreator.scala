@@ -5,6 +5,7 @@ import io.joern.gosrc2cpg.parser.ParserAst.Unknown
 import io.joern.gosrc2cpg.parser.ParserNodeInfo
 import io.joern.x2cpg.astgen.{AstGenNodeBuilder, BaseNodeInfo}
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, Defines as XDefines}
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import org.apache.commons.lang3.StringUtils
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
@@ -17,9 +18,8 @@ class AstForPackageConstructorCreator(val pacakgePath: String, statements: Set[P
 ) extends AstCreatorBase[BaseNodeInfo[?], AstForPackageConstructorCreator](pacakgePath)
     with AstGenNodeBuilder[AstForPackageConstructorCreator] {
 
-  override protected val isOffsetNeeded: Boolean = true
-
-  override protected lazy val offsetNormalizer: Int => Int = identity
+  // Keep in sync with the offset overrides in AstCreator.
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] = None
 
   override protected def unadjustedOffset(node: BaseNodeInfo[?]): Option[(Int, Int)] = None
 

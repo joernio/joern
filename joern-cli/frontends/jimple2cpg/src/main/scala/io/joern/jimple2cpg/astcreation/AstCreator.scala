@@ -6,6 +6,7 @@ import io.joern.jimple2cpg.astcreation.statements.AstForStatementsCreator
 import io.joern.jimple2cpg.passes.AstCreationPass
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.*
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.objectweb.asm.Type
@@ -290,9 +291,7 @@ class AstCreator(
 
   override def code(node: Host): String = node.toString
 
-  override val isOffsetNeeded: Boolean = true
-
-  override lazy val offsetNormalizer: Int => Int = identity
+  override def offsetSource: Option[OffsetUtils.OffsetSourceType] = None
 
   override def unadjustedOffset(node: Host): Option[(Int, Int)] = None
 

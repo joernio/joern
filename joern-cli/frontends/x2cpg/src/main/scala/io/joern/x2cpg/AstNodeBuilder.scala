@@ -1,6 +1,7 @@
 package io.joern.x2cpg
 
 import io.joern.x2cpg.AstNodeBuilder.methodReturnNodeWithExplicitPositionInfo
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, PropertyDefaults}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.apache.commons.lang3.StringUtils
@@ -55,15 +56,16 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     }
   }
 
-  protected def offsetNormalizer: Int => Int
+  protected def offsetSource: Option[OffsetUtils.OffsetSourceType]
+
+  protected final lazy val offsetNormalizer: Int => Int =
+    offsetSource.fold(identity[Int])(OffsetUtils.buildOffsetConverter)
 
   protected def unadjustedOffset(node: Node): Option[(Int, Int)]
 
-  protected def isOffsetNeeded: Boolean
-
   protected final def offset(node: Node): Option[(Int, Int)] = {
     Option
-      .when(isOffsetNeeded) {
+      .when(offsetSource.isDefined) {
         unadjustedOffset(node).map { case (start, end) => (offsetNormalizer(start), offsetNormalizer(end)) }
       }
       .flatten

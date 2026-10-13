@@ -112,24 +112,20 @@ class AstCreator(
   override protected def lineEnd(node: SwiftNode): Option[Int]   = node.endLine
   override protected def columnEnd(node: SwiftNode): Option[Int] = node.endColumn
 
-  override protected val isOffsetNeeded: Boolean = !config.disableFileContent
-
-  override protected lazy val offsetNormalizer: Int => Int =
-    OffsetUtils.buildOffsetConverter(
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] =
+    Option.unless(config.disableFileContent) {
       OffsetUtils.OffsetSourceType.Bytes(parserResult.contentBytes, StandardCharsets.UTF_8)
-    )
+    }
 
-  private def nodeOffsets(node: SwiftNode): Option[(Int, Int)] = {
+  override protected def unadjustedOffset(node: SwiftNode): Option[(Int, Int)] = {
     for {
       startOffset <- node.startOffset
       endOffset   <- node.endOffset
     } yield (math.max(startOffset, 0), math.min(endOffset, parserResult.contentBytes.length))
   }
 
-  override protected def unadjustedOffset(node: SwiftNode): Option[(Int, Int)] = nodeOffsets(node)
-
   override protected def code(node: SwiftNode): String = {
-    val (start, end) = nodeOffsets(node) match {
+    val (start, end) = unadjustedOffset(node) match {
       case Some(startOffset, endOffset) if endOffset >= startOffset => (startOffset, endOffset)
       case _                                                        => return PropertyDefaults.Code
     }

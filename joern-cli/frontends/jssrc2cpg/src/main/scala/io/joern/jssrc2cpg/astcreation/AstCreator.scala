@@ -8,6 +8,7 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstCreatorBase
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.utils.OffsetUtils
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
@@ -245,16 +246,13 @@ class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val
   protected def columnEnd(node: BabelNodeInfo): Option[Int] = node.columnNumberEnd
   protected def code(node: BabelNodeInfo): String           = node.code
 
-  override protected val isOffsetNeeded: Boolean = !config.disableFileContent
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] =
+    Option.unless(config.disableFileContent)(OffsetUtils.OffsetSourceType.Utf_16)
 
-  override protected lazy val offsetNormalizer: Int => Int = identity
-
-  override protected def unadjustedOffset(node: BabelNodeInfo): Option[(Int, Int)] = nodeOffsets(node.json)
-
-  protected def nodeOffsets(node: Value): Option[(Int, Int)] = {
+  override protected def unadjustedOffset(node: BabelNodeInfo): Option[(Int, Int)] = {
     for {
-      startOffset <- start(node)
-      endOffset   <- end(node)
+      startOffset <- start(node.json)
+      endOffset   <- end(node.json)
     } yield clampOffsets(startOffset, endOffset)
   }
 }

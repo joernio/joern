@@ -62,12 +62,7 @@ class OffsetTests extends RubyCode2CpgFixture(disableFileContent = false) {
     }
   }
 
-  "ERB files skip offset conversion and return raw parser offsets" should {
-    // ERB files are preprocessed: the original .erb content (HTML + Ruby tags) is transformed
-    // into synthetic pure Ruby (with joernBufferAppend wrappers etc.) before parsing.
-    // The Ruby parser reports codepoint offsets into this *expanded* synthetic code, not the
-    // original .erb file stored in file.content. Since these offsets reference a different
-    // string, we detect ERB by filename and return raw offsets without conversion.
+  "ERB files" should {
     val cpg = code(
       """<h1>Hello, <%= ENV['APP_NAME'] %>!</h1>
         |<% if ENV['SHOW_VERSION'] == 'true' %>
@@ -77,13 +72,11 @@ class OffsetTests extends RubyCode2CpgFixture(disableFileContent = false) {
       "test.erb"
     )
 
-    "produce raw offsets whose span matches each literal's own code length" in {
-      // We can't substring file.content here (ERB offsets reference the synthetic expanded Ruby,
-      // not the original .erb source)
+    "not have offsets" in {
+      cpg.literal.l should not be empty
       cpg.literal.l.foreach { lit =>
-        lit.offset shouldBe defined
-        lit.offsetEnd shouldBe defined
-        lit.offsetEnd.get - lit.offset.get shouldBe lit.code.length
+        lit.offset shouldBe None
+        lit.offsetEnd shouldBe None
       }
     }
   }

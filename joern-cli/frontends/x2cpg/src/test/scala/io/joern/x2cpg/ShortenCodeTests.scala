@@ -1,5 +1,6 @@
 package io.joern.x2cpg
 
+import io.joern.x2cpg.utils.OffsetUtils
 import org.scalatest.funsuite.AnyFunSuite
 import org.apache.commons.lang3.StringUtils
 import org.scalatest.matchers.should.Matchers
@@ -15,9 +16,8 @@ class ShortenCodeTests extends AnyFunSuite with Matchers {
     protected def columnEnd(node: Unit): Option[Int] = None
     protected def code(node: Unit): String           = ""
 
-    protected val isOffsetNeeded: Boolean                          = true
-    protected lazy val offsetNormalizer: Int => Int                = identity
-    protected def unadjustedOffset(node: Unit): Option[(Int, Int)] = None
+    protected def offsetSource: Option[OffsetUtils.OffsetSourceType] = Some(OffsetUtils.OffsetSourceType.Utf_16)
+    protected def unadjustedOffset(node: Unit): Option[(Int, Int)]   = None
 
     // Expose the protected method for testing
     def runShorten(s: String, maxCodeLength: Int = envMax): String = shortenCode(s, maxCodeLength)

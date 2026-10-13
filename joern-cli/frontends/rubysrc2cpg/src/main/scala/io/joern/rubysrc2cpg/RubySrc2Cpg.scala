@@ -16,7 +16,7 @@ import io.shiftleft.semanticcpg.utils.FileUtil
 import org.slf4j.LoggerFactory
 import upickle.default.*
 
-import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try, Using}
@@ -97,7 +97,7 @@ object RubySrc2Cpg {
       val parserResult   = RubyJsonParser.readFile(Paths.get(fileName))
       val rubyProgram    = new RubyJsonToNodeCreator(fileName = fileName).visitProgram(parserResult.json)
       val sourceFileName = parserResult.fullPath
-      val fileContent    = new String(Files.readAllBytes(Paths.get(sourceFileName)), Charset.defaultCharset())
+      val fileContent    = new String(Files.readAllBytes(Paths.get(sourceFileName)), StandardCharsets.UTF_8)
       new AstCreator(
         sourceFileName,
         projectRoot,

@@ -42,14 +42,11 @@ class AstCreator(
 
   private val isErbFile = fileName.endsWith(".erb")
 
-  // The SIGNATURES pass discards its AST after summarizing, so offsets are never used there
-  override protected def isOffsetNeeded: Boolean =
-    enableFileContents && parseLevel != AstParseLevel.SIGNATURES
-
-  // ERB parser offsets reference synthetic (expanded) Ruby, not the original .erb in file.content, so
-  // no meaningful conversion is possible for those — fall back to identity (raw offsets as-is).
-  override protected lazy val offsetNormalizer: Int => Int =
-    if (isErbFile) identity else OffsetUtils.buildOffsetConverter(OffsetUtils.OffsetSourceType.Codepoints(fileContent))
+  // SIGNATURES discards its AST, and ERB offsets point into synthetic Ruby rather than file.content
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] =
+    Option.when(enableFileContents && parseLevel != AstParseLevel.SIGNATURES && !isErbFile) {
+      OffsetUtils.OffsetSourceType.Codepoints(fileContent)
+    }
 
   override protected def unadjustedOffset(node: RubyExpression): Option[(Int, Int)] = node.offset
 

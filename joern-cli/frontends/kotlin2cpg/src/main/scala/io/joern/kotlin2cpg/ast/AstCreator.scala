@@ -5,7 +5,7 @@ import io.joern.kotlin2cpg.datastructures.Scope
 import io.joern.kotlin2cpg.types.{NameRenderer, TypeConstants, TypeInfoProvider}
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.utils.IntervalKeyPool
+import io.joern.x2cpg.utils.{IntervalKeyPool, OffsetUtils}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
@@ -236,9 +236,9 @@ class AstCreator(
     column(lastElement)
   }
 
-  override val isOffsetNeeded: Boolean = !disableFileContent
-
-  override lazy val offsetNormalizer: Int => Int = identity
+  // Keep in sync with the offset overrides in SamTypeDeclPass.
+  override def offsetSource: Option[OffsetUtils.OffsetSourceType] =
+    Option.unless(disableFileContent)(OffsetUtils.OffsetSourceType.Utf_16)
 
   override def unadjustedOffset(element: PsiElement): Option[(Int, Int)] = {
     Option(element).map { someElement =>

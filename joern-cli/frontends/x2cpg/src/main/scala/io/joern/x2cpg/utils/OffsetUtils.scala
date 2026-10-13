@@ -12,6 +12,9 @@ object OffsetUtils {
   sealed trait OffsetSourceType
   object OffsetSourceType {
 
+    /** Parser offsets are already UTF-16 offsets, so no conversion is needed. */
+    case object Utf_16 extends OffsetSourceType
+
     /** Parser offsets are byte offsets into `bytes`, encoded using `charset`. */
     final case class Bytes(bytes: Array[Byte], charset: Charset) extends OffsetSourceType
 
@@ -45,6 +48,8 @@ object OffsetUtils {
   }
 
   def buildOffsetConverter(source: OffsetSourceType): Int => Int = source match {
+    case OffsetSourceType.Utf_16 =>
+      identity
     case OffsetSourceType.Bytes(bytes, charset) if charset == StandardCharsets.UTF_8 =>
       buildUtf8ToUtf16Converter(bytes)
     case OffsetSourceType.Bytes(_, charset) if charset == StandardCharsets.ISO_8859_1 =>

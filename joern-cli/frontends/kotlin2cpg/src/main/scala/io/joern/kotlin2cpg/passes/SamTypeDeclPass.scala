@@ -6,6 +6,7 @@ import io.joern.kotlin2cpg.ast.AstCreator.{BoundSamInfo, SamImplInfo, UnboundSam
 import io.joern.kotlin2cpg.types.TypeConstants
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.joern.x2cpg.AstNodeBuilder.bindingNode
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewBinding, NewNode, NewTypeDecl}
 import io.shiftleft.passes.CpgPass
@@ -62,9 +63,8 @@ private class SamTypeDeclAstBuilder()(implicit withSchemaValidation: ValidationM
 
   override def columnEnd(element: PsiElement): Option[Int] = column(element)
 
-  override val isOffsetNeeded: Boolean = true
-
-  override lazy val offsetNormalizer: Int => Int = identity
+  // Keep in sync with the offset overrides in AstCreator.
+  override def offsetSource: Option[OffsetUtils.OffsetSourceType] = Some(OffsetUtils.OffsetSourceType.Utf_16)
 
   override def unadjustedOffset(element: PsiElement): Option[(Int, Int)] = {
     Option(element).map { someElement =>
