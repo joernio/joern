@@ -7,13 +7,16 @@ import scopt.OParser
 final case class Config(
   override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
   noSysRoot: Boolean = false,
-  noResolveCfg: Boolean = false
+  noResolveCfg: Boolean = false,
+  noProcMacro: Boolean = false
 ) extends X2CpgConfig[Config] {
   override def withGenericConfig(value: X2CpgConfig.GenericConfig): Config = copy(genericConfig = value)
 
   def withNoSysRoot(value: Boolean): Config = copy(noSysRoot = value)
 
   def withNoResolveCfg(value: Boolean): Config = copy(noResolveCfg = value)
+
+  def withNoProcMacro(value: Boolean): Config = copy(noProcMacro = value)
 }
 
 private object Frontend {
@@ -27,7 +30,10 @@ private object Frontend {
         .text("Skip sysroot loading. Faster but will not resolve std symbols"),
       opt[Unit]("no-resolve-cfg")
         .action((_, config) => config.withNoResolveCfg(true))
-        .text("Do not resolve #[cfg(...)] attributes")
+        .text("Do not resolve #[cfg(...)] attributes"),
+      opt[Unit]("no-proc-macro")
+        .action((_, config) => config.withNoProcMacro(true))
+        .text("Skip proc-macro expansion. Faster but will not resolve proc-macro-generated items")
     )
   }
 }

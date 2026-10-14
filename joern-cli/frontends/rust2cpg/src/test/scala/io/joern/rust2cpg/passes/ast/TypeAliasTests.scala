@@ -78,4 +78,30 @@ class TypeAliasTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "same-named aliases in block-local modules" should {
+    val cpg = code("""
+        |fn outer() {
+        |  {
+        |    mod util { pub type Mask = u8; }
+        |    let first_mask: util::Mask = 1;
+        |  }
+        |  {
+        |    mod util { pub type Mask = u16; }
+        |    let second_mask: util::Mask = 2;
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct fullNames" in {
+      pendingUntilFixed {
+        inside(cpg.typeDecl.nameExact("Mask").sortBy(_.lineNumber).l) { case firstMask :: secondMask :: Nil =>
+          firstMask.fullName shouldBe "rust2cpgtest::outer::util#1::Mask"
+          firstMask.aliasTypeFullName shouldBe Some("u8")
+          secondMask.fullName shouldBe "rust2cpgtest::outer::util#2::Mask"
+          secondMask.aliasTypeFullName shouldBe Some("u16")
+        }
+      }
+    }
+  }
 }

@@ -36,7 +36,7 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
 
   // When visiting macro-expanded nodes, we store the outermost macro call expression
   // in order to give macro-expanded nodes line/column information.
-  private var outermostMacroCall: Option[RustNodeSyntax.MacroCall] = None
+  private var outermostMacroCall: Option[RustNode] = None
 
   override def createAst(): DiffGraphBuilder = {
     val sourceFile = parseResult.ast.asInstanceOf[RustNodeSyntax.SourceFile]
@@ -60,7 +60,7 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     }
   }
 
-  protected def withMacroCall[T](macroCall: RustNodeSyntax.MacroCall)(body: => T): T = {
+  protected def withMacroCall[T](macroCall: RustNode)(body: => T): T = {
     if (outermostMacroCall.isDefined) {
       body
     } else {

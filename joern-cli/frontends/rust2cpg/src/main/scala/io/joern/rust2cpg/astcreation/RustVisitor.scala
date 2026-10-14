@@ -52,24 +52,34 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     methodAst(method, parameters = Nil, body = Ast(block).withChildren(itemAsts), methodReturn, modifiers)
   }
 
-  private def visitItem(item: Item): Seq[Ast] = item match {
-    case const: Const             => visitConst(const)
-    case enum_ : Enum             => visitEnum(enum_) :: Nil
-    case x: ExternBlock           => notHandledYet(x) :: Nil
-    case externCrate: ExternCrate => visitExternCrate(externCrate) :: Nil
-    case fn: Fn                   => visitFn(fn) :: Nil
-    case impl: Impl               => visitImpl(impl)
-    case macroCall: MacroCall     => visitMacroCall(macroCall)
-    case macroRules: MacroRules   => visitMacroRules(macroRules)
-    case macroDef: MacroDef       => visitMacroDef(macroDef)
-    case module: Module           => visitModule(module)
-    case static: Static           => visitStatic(static)
-    case struct: Struct           => visitStruct(struct)
-    case trait_ : Trait           => visitTrait(trait_) :: Nil
-    case typeAlias: TypeAlias     => visitTypeAlias(typeAlias) :: Nil
-    case x: Union                 => notHandledYet(x) :: Nil
-    case use: Use                 => visitUse(use)
-    case x: AsmExpr               => notHandledYet(x) :: Nil
+  private def visitItem(item: Item): Seq[Ast] = {
+    // macro-annotated items that were macro-expanded no longer have their original ast (because the proc-macro
+    // expansion replaces it). Only their `macroExpansion` sub-ast is then valid.
+    item.macroExpansion match {
+      case Some(macroItems: MacroItems) => withMacroCall(item) { visitMacroItems(macroItems) }
+      // TODO: shouldn't happen.
+      case Some(other) => notHandledYet(other) :: Nil
+      case None        =>
+        item match {
+          case const: Const             => visitConst(const)
+          case enum_ : Enum             => visitEnum(enum_) :: Nil
+          case x: ExternBlock           => notHandledYet(x) :: Nil
+          case externCrate: ExternCrate => visitExternCrate(externCrate) :: Nil
+          case fn: Fn                   => visitFn(fn) :: Nil
+          case impl: Impl               => visitImpl(impl)
+          case macroCall: MacroCall     => visitMacroCall(macroCall)
+          case macroRules: MacroRules   => visitMacroRules(macroRules)
+          case macroDef: MacroDef       => visitMacroDef(macroDef)
+          case module: Module           => visitModule(module)
+          case static: Static           => visitStatic(static)
+          case struct: Struct           => visitStruct(struct)
+          case trait_ : Trait           => visitTrait(trait_) :: Nil
+          case typeAlias: TypeAlias     => visitTypeAlias(typeAlias) :: Nil
+          case x: Union                 => notHandledYet(x) :: Nil
+          case use: Use                 => visitUse(use)
+          case x: AsmExpr               => notHandledYet(x) :: Nil
+        }
+    }
   }
 
   private def visitStmt(stmt: Stmt): Seq[Ast] = stmt match {
@@ -716,8 +726,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       case implTrait :: implType :: Nil =>
         val typeDecl = typeDeclForTraitImpl(impl, implTrait, implType)
         contextStack.pushTypeDecl(typeDecl)
-        val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn =>
-          visitFn(fn).withChild(Ast(NewModifier().modifierType(ModifierTypes.VIRTUAL)))
+        val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn => fn }.flatMap(visitAssocFn).map {
+          _.withChild(Ast(NewModifier().modifierType(ModifierTypes.VIRTUAL)))
         }
         val constMemberAsts = impl.assocItemList.assocItem.collect {
           case const: Const if const.name.isDefined =>
@@ -737,12 +747,24 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   private def lowerInherentImplAsDetachedAst(impl: Impl): Unit = {
     contextStack.pushTypeDecl(typeDeclForImpl(impl))
     val itemAsts = impl.assocItemList.assocItem.collect {
-      case fn: Fn                               => visitFn(fn)
+      case fn: Fn                               => visitAssocFn(fn)
       case const: Const if const.name.isDefined =>
-        Ast(memberForAssocConst(const)).withChildren(const.attr.map(visitAttr))
+        Ast(memberForAssocConst(const)).withChildren(const.attr.map(visitAttr)) :: Nil
     }
     contextStack.pop()
-    itemAsts.foreach(addDetachedAst)
+    itemAsts.flatten.foreach(addDetachedAst)
+  }
+
+  private def visitAssocFn(fn: Fn): Seq[Ast] = {
+    fn.macroExpansion match {
+      case Some(macroItems: MacroItems) =>
+        withMacroCall(fn) {
+          macroItems.item.collect { case fn: Fn => fn }.flatMap(visitAssocFn)
+        }
+      // TODO: shouldn't happen.
+      case Some(other) => notHandledYet(other) :: Nil
+      case None        => visitFn(fn) :: Nil
+    }
   }
 
   // Trait =
@@ -765,9 +787,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       genericSignature = Some(fullName)
     )
     contextStack.pushTypeDecl(typeDecl)
-    val methodAsts = trait_.assocItemList.toSeq.flatMap(_.assocItem).collect { case fn: Fn =>
-      visitFn(fn).withChild(Ast(NewModifier().modifierType(ModifierTypes.VIRTUAL)))
-    }
+    val methodAsts =
+      trait_.assocItemList.toSeq.flatMap(_.assocItem).collect { case fn: Fn => fn }.flatMap(visitAssocFn).map {
+        _.withChild(Ast(NewModifier().modifierType(ModifierTypes.VIRTUAL)))
+      }
     val constMemberAsts = trait_.assocItemList.toSeq.flatMap(_.assocItem).collect {
       case const: Const if const.name.isDefined =>
         Ast(memberForAssocConst(const)).withChildren(const.attr.map(visitAttr))
