@@ -1701,7 +1701,7 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     "have correct children" in {
       inside(cpg.method.nameExact("foo").block.astChildren.l) {
         case (tmp: Local) :: (aLocal: Local) :: (bLocal: Local) :: (tmpAssign: Call) ::
-            (aAssign: Call) :: (bAssign: Unknown) :: Nil =>
+            (aAssign: Call) :: (bAssign: Call) :: Nil =>
           tmp.name shouldBe "<tmp>0"
           tmpAssign.code shouldBe "<tmp>0 = t"
 
@@ -1709,10 +1709,38 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
           aLocal.typeFullName shouldBe "i32"
           aAssign.code shouldBe "a = <tmp>0.0"
 
-          // TODO: update once we lower elements after `..`.
           bLocal.name shouldBe "b"
           bLocal.typeFullName shouldBe "&str"
-          bAssign.code shouldBe "(a, .., b)"
+          bAssign.code shouldBe "b = <tmp>0.2"
+      }
+    }
+  }
+
+  "let with recursive tuple pattern with rest" should {
+    val cpg = code("""
+        |fn foo(t: (i32, bool, bool, (u8, &str))) {
+        | let (a, .., (c, d)) = t;
+        |}
+        |""".stripMargin)
+
+    "have correct children" in {
+      inside(cpg.method.nameExact("foo").block.astChildren.l) {
+        case (tmp: Local) :: (aLocal: Local) :: (cLocal: Local) :: (dLocal: Local) :: (tmpAssign: Call) ::
+            (aAssign: Call) :: (cAssign: Call) :: (dAssign: Call) :: Nil =>
+          tmp.name shouldBe "<tmp>0"
+          tmpAssign.code shouldBe "<tmp>0 = t"
+
+          aLocal.name shouldBe "a"
+          aLocal.typeFullName shouldBe "i32"
+          aAssign.code shouldBe "a = <tmp>0.0"
+
+          cLocal.name shouldBe "c"
+          cLocal.typeFullName shouldBe "u8"
+          cAssign.code shouldBe "c = <tmp>0.3.0"
+
+          dLocal.name shouldBe "d"
+          dLocal.typeFullName shouldBe "&str"
+          dAssign.code shouldBe "d = <tmp>0.3.1"
       }
     }
   }
