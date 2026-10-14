@@ -1,4 +1,4 @@
-package io.joern.joerncli
+package io.joern.integrationtests
 
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.FileUtil
@@ -9,21 +9,15 @@ import java.nio.file.{Files, Path}
 
 class ConsoleTests extends AnyWordSpec with Matchers {
 
-  if (scala.util.Properties.isWin) {
-    info(
-      "console tests don't work on windows - not sure why... running the console manually works though: try the `run` and `help.cpg` commands in joern"
-    )
-  } else {
-    "run" should {
-      "provide a human readable overview of overlay creators" in withTestCode { codeDir =>
-        RunScriptTests.exec("general/run.sc", codeDir.toString)
-      }
+  "run" should {
+    "provide a human readable overview of overlay creators" in withTestCode { codeDir =>
+      RunScriptTests.exec("general/run.sc", codeDir.toString)
     }
+  }
 
-    "help" should {
-      "allow getting long description via help object" in withTestCode { codeDir =>
-        RunScriptTests.exec("general/help.sc", codeDir.toString)
-      }
+  "help" should {
+    "allow getting long description via help object" in withTestCode { codeDir =>
+      RunScriptTests.exec("general/help.sc", codeDir.toString)
     }
   }
 

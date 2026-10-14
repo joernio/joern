@@ -20,7 +20,7 @@ jobs:
           cache: sbt
       - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
       - name: Check formatting and lint
-        run: sbt "scalafmtCheck ; Test/scalafmtCheck ; scalafix --diff-base origin/${{ github.event.pull_request.base.ref }} RestrictedImports SingleLetterIdentifiers UnorderedIteration"
+        run: sbt "scalafmtCheck ; Test/scalafmtCheck ; integrationTests/scalafmtCheck ; integrationTests/Test/scalafmtCheck ; scalafix --diff-base origin/${{ github.event.pull_request.base.ref }} RestrictedImports SingleLetterIdentifiers UnorderedIteration"
       - run: echo "Previous step failed because the code is not formatted or violates coding quality expectations. Run 'sbt scalafmt Test/scalafmt' to format, and check the logs for scalafix violations."
         if: ${{ failure() }}
 
@@ -83,7 +83,26 @@ jobs:
           toolchain: stable
           components: rust-src
       - name: Run tests
-        run: sbt "c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage ; testFull"
+        run: sbt "testFull"
+
+  integration-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+      - name: Set up JDK
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: sbt
+      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
+      - name: Run integration tests
+        run: sbt "c2cpg/stage ; integrationTests/test"
 
   test-scripts:
     runs-on: ${{ matrix.os }}
@@ -122,7 +141,7 @@ jobs:
           python -u ./testDistro.py
 
   test:
-    needs: [validate-citation, lint-and-format, run-tests, test-scripts]
+    needs: [validate-citation, lint-and-format, run-tests, integration-tests, test-scripts]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     strategy:

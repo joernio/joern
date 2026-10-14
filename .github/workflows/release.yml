@@ -38,11 +38,13 @@ jobs:
         with:
           toolchain: stable
           components: rust-src
-      - run: sbt --server --batch "scalafmtCheck ; c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage ; testFull"
+      - run: sbt --server --batch "scalafmtCheck ; testFull"
+      - name: Integration tests
+        run: sbt --server --batch "c2cpg/stage ; integrationTests/test"
       - name: Test distribution
         run: |
           python -m pip install requests pexpect
-          sbt "joerncli/stage ; querydb/createDistribution"
+          sbt --server --batch "joerncli/stage ; querydb/createDistribution"
           python -u ./testDistro.py
       - run: sbt --server --batch "ciReleaseSkipIfAlreadyReleased ; ciReleaseTagNextVersion ; ciReleaseSonatype"
         env:
