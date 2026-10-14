@@ -1394,6 +1394,35 @@ class MixedAstCreationPassTests extends JsSrc2CpgSuite {
       val List(imp2) = dep.imports.l
       imp shouldBe imp2
     }
+
+    "have the base object as argument 0 for optional chaining calls" in {
+      val cpg            = code("username?.substring(2, 3)")
+      val List(call)     = cpg.call.nameExact("substring").l
+      val List(receiver) = call.receiver.isCall.l
+      receiver.name shouldBe Operators.fieldAccess
+      receiver.code shouldBe "username?.substring"
+      val List(base) = call.arguments(0).isIdentifier.l
+      base.name shouldBe "username"
+      base.code shouldBe "username"
+    }
+
+    "have correct code for optional index access" in {
+      val cpg         = code("a?.[0]; a?.b.c")
+      val List(index) = cpg.call.codeExact("a?.[0]").l
+      index.name shouldBe Operators.indexAccess
+      index.argument(1).code shouldBe "a"
+      index.argument(2).code shouldBe "0"
+      cpg.call.nameExact(Operators.fieldAccess).code.sorted shouldBe Seq("a?.b", "a?.b.c")
+
+      val callCpg        = code("a?.[0](1)")
+      val List(call)     = callCpg.call.codeExact("a?.[0](1)").l
+      val List(receiver) = call.receiver.isCall.l
+      receiver.name shouldBe Operators.indexAccess
+      receiver.code shouldBe "a?.[0]"
+      val List(base) = call.arguments(0).isIdentifier.l
+      base.name shouldBe "a"
+      base.code shouldBe "a"
+    }
   }
 
 }

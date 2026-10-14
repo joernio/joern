@@ -33,11 +33,18 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     jumpTargetNode(switchCase, switchName, switchCode, Some(parserTypeName))
   }
 
-  protected def createIndexAccessCallAst(baseAst: Ast, partAst: Ast, line: Option[Int], column: Option[Int]): Ast = {
+  protected def createIndexAccessCallAst(
+    baseAst: Ast,
+    partAst: Ast,
+    line: Option[Int],
+    column: Option[Int],
+    optional: Boolean = false
+  ): Ast = {
     val baseCode  = codeOf(baseAst.nodes.head)
     val partCode  = codeOf(partAst.nodes.head)
+    val accessOp  = if (optional) "?." else ""
     val callNode_ =
-      callNode(s"$baseCode[$partCode]", Operators.indexAccess, DispatchTypes.STATIC_DISPATCH, line, column)
+      callNode(s"$baseCode$accessOp[$partCode]", Operators.indexAccess, DispatchTypes.STATIC_DISPATCH, line, column)
     val arguments = List(baseAst, partAst)
     callAst(callNode_, arguments)
   }
@@ -59,11 +66,14 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     baseAst: Ast,
     partNode: NewNode,
     line: Option[Int],
-    column: Option[Int]
+    column: Option[Int],
+    optional: Boolean = false
   ): Ast = {
     val baseCode  = codeOf(baseAst.nodes.head)
     val partCode  = codeOf(partNode)
-    val callNode_ = callNode(s"$baseCode.$partCode", Operators.fieldAccess, DispatchTypes.STATIC_DISPATCH, line, column)
+    val accessOp  = if (optional) "?." else "."
+    val callNode_ =
+      callNode(s"$baseCode$accessOp$partCode", Operators.fieldAccess, DispatchTypes.STATIC_DISPATCH, line, column)
     val arguments = List(baseAst, Ast(partNode))
     callAst(callNode_, arguments)
   }
