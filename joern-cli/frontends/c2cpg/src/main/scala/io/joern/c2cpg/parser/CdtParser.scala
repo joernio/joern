@@ -35,12 +35,15 @@ object CdtParser {
     * in some graphs and not in others. Expanding each one here, when a parser is created and before any file is parsed
     * in parallel, leaves them filled. Once filled, a later call does not change them; it costs two parses of a two-line
     * snippet.
+    *
+    * @return
+    *   the names of the macros the two parses expanded
     */
-  private def expandBuiltinMacros(): Unit = {
+  def expandBuiltinMacros(): Set[String] = {
     val code = "#if __STDC_VERSION__ + __STDC_HOSTED__ + __CDT_PARSER__ + __cplusplus\n#endif\n".toCharArray
-    Seq(GCCLanguage.getDefault, GPPLanguage.getDefault).foreach { lang =>
+    Seq(GCCLanguage.getDefault, GPPLanguage.getDefault).flatMap { lang =>
       try {
-        lang.getASTTranslationUnit(
+        val translationUnit = lang.getASTTranslationUnit(
           FileContent.create("<builtin-macros>", true, code),
           new ScannerInfo(),
           IncludeFileContentProvider.getEmptyFilesProvider,
@@ -48,10 +51,13 @@ object CdtParser {
           0,
           new DefaultLogService
         )
+        translationUnit.getMacroExpansions.toSeq.map(_.getMacroReference.toString)
       } catch {
-        case NonFatal(e) => logger.debug("Expanding CDT's built-in macros failed", e)
+        case NonFatal(e) =>
+          logger.debug("Expanding CDT's built-in macros failed", e)
+          Seq.empty
       }
-    }
+    }.toSet
   }
 
   private def readFileAsFileContent(file: Path, lines: Option[Array[Char]] = None): FileContent = {
