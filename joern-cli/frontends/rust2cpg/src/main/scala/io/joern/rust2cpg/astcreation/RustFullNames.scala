@@ -43,6 +43,18 @@ trait RustFullNames { this: AstCreator =>
     enum_.typeFullName.getOrElse(composeRustFullName(code(enum_.name)))
   }
 
+  protected def typeFullNameForTypeAlias(typeAlias: RustNodeSyntax.TypeAlias): String = {
+    typeAlias.typeFullName.getOrElse(composeRustFullName(code(typeAlias.name)))
+  }
+
+  protected def typeFullNameForTrait(trait_ : RustNodeSyntax.Trait): String = {
+    trait_.typeFullName.getOrElse(composeRustFullName(code(trait_.name)))
+  }
+
+  protected def typeFullNameForModule(module: RustNodeSyntax.Module): String = {
+    module.typeFullName.getOrElse(composeRustFullName(code(module.name)))
+  }
+
   protected def typeFullNameForImpl(impl: RustNodeSyntax.Impl): String = {
     impl.typeFullName.getOrElse(typeFullNameForType(impl.typ.last))
   }
