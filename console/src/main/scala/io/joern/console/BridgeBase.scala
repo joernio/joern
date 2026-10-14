@@ -342,7 +342,15 @@ trait ScriptExecution { this: BridgeBase =>
           params = config.params,
           verbose = config.verbose,
           classpathConfig = replpp.Config
-            .ForClasspath(inheritClasspath = true, dependencies = config.dependencies, resolvers = config.resolvers),
+            .ForClasspath(
+              inheritClasspath = true,
+              // when running via `sbt test` the sbt launcher jar is part of `java.class.path`. It bundles older
+              // scala library classes, which - depending on the (sorted) classpath order, e.g. on Windows - shadow
+              // the real scala library in the forked script runner JVM (-> NoSuchMethodError)
+              inheritClasspathExcludes = Seq("sbt-launch.*\\.jar"),
+              dependencies = config.dependencies,
+              resolvers = config.resolvers
+            ),
           scalacOptions = config.scalacOptions
         )
       )

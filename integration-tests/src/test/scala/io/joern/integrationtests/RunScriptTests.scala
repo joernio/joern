@@ -150,7 +150,7 @@ object RunScriptTests {
   def exec(scriptFileName: String, codePathAbsolute: String): Unit = {
     ReplBridge
       .runScript(
-        Config(scriptFile = Some(scriptsRoot.resolve(scriptFileName)), params = Map("inputPath" -> codePathAbsolute), verbose = true)
+        Config(scriptFile = Some(scriptsRoot.resolve(scriptFileName)), params = Map("inputPath" -> codePathAbsolute))
       )
       .get
   }
