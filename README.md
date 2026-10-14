@@ -64,8 +64,6 @@ If the installation script fails for any reason, try
 ## Run unit and integration tests locally
 Unit tests:
 ```bash
-# console/joern-cli tests invoke staged frontend binaries; stage them once per clean checkout:
-sbt "c2cpg/stage" "jssrc2cpg/stage" "javasrc2cpg/stage" "swiftsrc2cpg/stage"
 sbt test
 ```
 (sbt 2.x runs tests incrementally, skipping ones that already passed on unchanged inputs;

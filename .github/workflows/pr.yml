@@ -83,7 +83,7 @@ jobs:
           toolchain: stable
           components: rust-src
       - name: Run tests
-        run: sbt "c2cpg/stage ; jssrc2cpg/stage ; javasrc2cpg/stage ; swiftsrc2cpg/stage ; testFull"
+        run: sbt "testFull"
 
   test-scripts:
     runs-on: ${{ matrix.os }}

@@ -7,8 +7,11 @@ enablePlugins(JavaAppPackaging)
 dependsOn(
   Projects.semanticcpg,
   Projects.macros,
-  Projects.x2cpg              % "compile->compile;test->test",
-  Projects.linterRules % ScalafixConfig
+  Projects.x2cpg        % "compile->compile;test->test",
+  Projects.c2cpg        % "test->compile",
+  Projects.jssrc2cpg    % "test->compile",
+  Projects.swiftsrc2cpg % "test->compile",
+  Projects.linterRules  % ScalafixConfig
 )
 
 libraryDependencies ++= Seq(
