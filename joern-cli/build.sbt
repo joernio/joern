@@ -21,6 +21,13 @@ libraryDependencies ++= Seq(
 
 Test / fork := false
 
+// RunScriptTests / JoernParseTests drive the real console, which launches the staged c2cpg launcher script
+// (hooked into `Test / fullClasspath` so that it also applies to `testOnly`/`testQuick`)
+Test / fullClasspath := Def.uncached {
+  (Projects.c2cpg / stage).value
+  (Test / fullClasspath).value
+}
+
 enablePlugins(JavaAppPackaging, UniversalPlugin)
 
 //wildcard import from staged `lib` dir, for simplicity and also to avoid `line too long` error on windows
