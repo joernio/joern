@@ -169,13 +169,19 @@ class AstCreator(
     importDeclaration.toString.trim.stripSuffix(";")
   }
 
-  // TODO: Handle static imports correctly.
   private def addImportsToScope(compilationUnit: CompilationUnit): Seq[NewImport] = {
     val (asteriskImports, specificImports) = compilationUnit.getImports.asScala.toList.partition(_.isAsterisk)
     val specificImportNodes                = specificImports.map { importStmt =>
       val name         = importStmt.getName.getIdentifier
       val typeFullName = importStmt.getNameAsString // fully qualified name
-      typeInfoCalc.registerType(typeFullName)
+      if (importStmt.isStatic) {
+        importStmt.getName.getQualifier.toScala.foreach { declaringType =>
+          typeInfoCalc.registerType(declaringType.asString)
+          scope.addStaticImport(name, declaringType.asString)
+        }
+      } else {
+        typeInfoCalc.registerType(typeFullName)
+      }
 
       val importNode = newImportNode(
         code = getImportCode(importStmt),
@@ -190,6 +196,8 @@ class AstCreator(
       }
       importNode
     }
+
+    asteriskImports.filter(_.isStatic).foreach(imp => scope.addStaticWildcardImport(imp.getNameAsString))
 
     val asteriskImportNodes = asteriskImports match {
       case imp :: Nil =>

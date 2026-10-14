@@ -116,6 +116,30 @@ object JavaScopeElement {
       extends JavaScopeElement(disableTypeFallback)
       with TypeDeclContainer {
     val isStatic = false
+
+    private val staticImports                          = mutable.Map[String, String]()
+    private var staticWildcardImports: WildcardImports = NoWildcard
+
+    def addStaticImport(memberName: String, declaringTypeFullName: String): Unit = {
+      staticImports.put(memberName, declaringTypeFullName)
+    }
+
+    def addStaticWildcardImport(declaringTypeFullName: String): Unit = {
+      staticWildcardImports match {
+        case NoWildcard        => staticWildcardImports = SingleWildcard(declaringTypeFullName)
+        case SingleWildcard(_) => staticWildcardImports = MultipleWildcards
+        case MultipleWildcards => // Already MultipleWildcards, so change nothing
+      }
+    }
+
+    def lookupStaticImport(memberName: String): Option[String] = {
+      staticImports.get(memberName).orElse {
+        staticWildcardImports match {
+          case SingleWildcard(declaringTypeFullName) => Some(declaringTypeFullName)
+          case _                                     => None
+        }
+      }
+    }
   }
 
   class BlockScope(implicit disableTypeFallback: Boolean) extends JavaScopeElement(disableTypeFallback) {
