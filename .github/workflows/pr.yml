@@ -102,7 +102,7 @@ jobs:
           cache: sbt
       - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
       - name: Run integration tests
-        run: sbt "c2cpg/stage ; integrationTests/test"
+        run: sbt "c2cpg/stage ; integrationTests/testFull"
 
   test-scripts:
     runs-on: ${{ matrix.os }}
