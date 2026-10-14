@@ -53,7 +53,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private def callExpressionInfoForCallLikeExpr(callLike: BabelNodeInfo): CallExpressionInfo = {
     callLike.node match {
-      case MemberExpression =>
+      case MemberExpression | OptionalMemberExpression =>
         val base   = createBabelNodeInfo(callLike.json("object"))
         val member = createBabelNodeInfo(callLike.json("property"))
         base.node match {
@@ -156,14 +156,21 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForMemberExpression(memberExpr: BabelNodeInfo): Ast = {
     val baseAst          = astForNodeWithFunctionReference(memberExpr.json("object"))
     val memberIsComputed = memberExpr.json("computed").bool
-    val memberNodeInfo   = createBabelNodeInfo(memberExpr.json("property"))
+    val isOptional = memberExpr.node == OptionalMemberExpression && memberExpr.json("optional").boolOpt.getOrElse(false)
+    val memberNodeInfo = createBabelNodeInfo(memberExpr.json("property"))
     if (memberIsComputed) {
       val memberAst = astForNode(memberNodeInfo.json)
-      createIndexAccessCallAst(baseAst, memberAst, memberExpr.lineNumber, memberExpr.columnNumber)
+      createIndexAccessCallAst(baseAst, memberAst, memberExpr.lineNumber, memberExpr.columnNumber, isOptional)
     } else {
       val fieldName = stripQuotes(memberNodeInfo.code)
       val memberAst = Ast(fieldIdentifierNode(memberNodeInfo, fieldName, fieldName))
-      createFieldAccessCallAst(baseAst, memberAst.nodes.head, memberExpr.lineNumber, memberExpr.columnNumber)
+      createFieldAccessCallAst(
+        baseAst,
+        memberAst.nodes.head,
+        memberExpr.lineNumber,
+        memberExpr.columnNumber,
+        isOptional
+      )
     }
   }
 
