@@ -48,7 +48,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val outAst       =
       if (expr.hasInterpolation) {
-        val args = expr.getEntries.filter(_.getExpression != null).zipWithIndex.map { case (entry, idx) =>
+        val args = expr.getEntries.filter(_.getExpression != null).map { entry =>
           val entryTypeFullName = registerType(exprTypeFullName(entry.getExpression).getOrElse(TypeConstants.Any))
           val valueCallNode     = operatorCallNode(
             entry.getExpression,
@@ -56,9 +56,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
             Operators.formattedValue,
             Option(entryTypeFullName)
           )
-          val valueArgs = astsForExpression(entry.getExpression)
-          valueArgs.lastOption.foreach(withArgumentInfo(_, Some(idx + 1)))
-          callAst(valueCallNode, valueArgs.toList)
+          callAst(valueCallNode, astsForExpression(entry.getExpression).toList)
         }
         val node =
           operatorCallNode(expr, code(expr), Operators.formatString, Option(typeFullName))

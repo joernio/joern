@@ -167,9 +167,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) exte
       case None =>
         Option(ktFn.getBodyExpression)
           .map { expr =>
-            val bodyBlock = blockNode(expr, code(expr), TypeConstants.Any)
-            val asts      = astsForExpression(expr)
-            asts.lastOption.foreach(withArgumentInfo(_, Some(1)))
+            val bodyBlock      = blockNode(expr, code(expr), TypeConstants.Any)
+            val asts           = astsForExpression(expr)
             val blockChildAsts =
               if (asts.nonEmpty) {
                 val allStatementsButLast = asts.dropRight(1)
@@ -236,7 +235,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) exte
     val initCallAst = if (decl.hasInitializer) {
       val init = decl.getInitializer
       val asts = astsForExpression(init)
-      asts.lastOption.foreach(withArgumentInfo(_, Some(2)))
+      setArgumentIndices(asts.lastOption.toList, start = 2)
       val initAst =
         if (asts.size == 1) { asts.head }
         else {
@@ -481,9 +480,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) exte
       case None =>
         Option(fn.getBodyExpression)
           .map { expr =>
-            val bodyBlock = blockNode(expr, code(expr), TypeConstants.Any)
-            val bodyAsts  = astsForExpression(expr)
-            bodyAsts.lastOption.foreach(withArgumentInfo(_, Some(1)))
+            val bodyBlock  = blockNode(expr, code(expr), TypeConstants.Any)
+            val bodyAsts   = astsForExpression(expr)
             val returnAst_ = returnAst(returnNode(expr, Constants.RetCode), bodyAsts)
             blockAst(bodyBlock, localsForCaptured.map(Ast(_)) ++ List(returnAst_))
           }

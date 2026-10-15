@@ -256,7 +256,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       callAst(loopParameterNextAssignment, List(Ast(loopParameterIdentifier), iteratorNextCallAst))
 
     val stmtAsts = astsForExpression(expr.getBody)
-    stmtAsts.lastOption.foreach(withArgumentInfo(_, Some(3)))
+    setArgumentIndices(stmtAsts.lastOption.toList, start = 3)
     val controlStructureBody    = blockNode(expr.getBody, "", "")
     val controlStructureBodyAst =
       blockAst(controlStructureBody, List(loopParameterAst, loopParameterNextAssignmentAst) ++ stmtAsts)
@@ -323,7 +323,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
             val block = blockNode(p, "", "").argumentIndex(1)
             blockAst(block, subjectAsts.headOption.toList)
           case _ =>
-            subjectAsts.headOption.map(withArgumentInfo(_, Some(1))).getOrElse(Ast())
+            setArgumentIndices(subjectAsts.take(1))
+            subjectAsts.headOption.getOrElse(Ast())
         }
       case _ =>
         logger.warn(s"Subject Expression empty in this file '$relativizedPath'.")
@@ -435,9 +436,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       else s"${Constants.CaseNodePrefix}$argIdx"
     val jumpNode = jumpTargetNode(entry, name, code(entry), Some(Constants.CaseNodeParserTypeName))
       .argumentIndex(argIdx)
-    val exprNode = astsForExpression(entry.getExpression).headOption
-      .map(withArgumentInfo(_, Some(argIdx + 1)))
-      .getOrElse(Ast())
+    val exprAsts = astsForExpression(entry.getExpression).take(1)
+    setArgumentIndices(exprAsts, start = argIdx + 1)
+    val exprNode = exprAsts.headOption.getOrElse(Ast())
     Seq(Ast(jumpNode), exprNode)
   }
 
@@ -522,7 +523,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       if (implicitReturnAroundLastStatement && statements.nonEmpty) {
         val _returnNode          = returnNode(statements.last, Constants.RetCode)
         val astsForLastStatement = astsForExpression(statements.last)
-        astsForLastStatement.lastOption.foreach(withArgumentInfo(_, Some(1)))
         if (astsForLastStatement.isEmpty)
           (Seq(), None)
         else

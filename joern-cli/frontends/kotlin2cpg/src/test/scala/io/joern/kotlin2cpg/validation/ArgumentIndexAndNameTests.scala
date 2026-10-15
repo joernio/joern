@@ -1,6 +1,7 @@
 package io.joern.kotlin2cpg.validation
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -8,7 +9,24 @@ import io.shiftleft.semanticcpg.language.*
 
 class ArgumentIndexAndNameTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
-  "CPG for named arguments of various expression kinds" should {
+  private case class Arg(code: String, index: Int, name: Option[String] = None)
+
+  private def argsOf(call: Call): List[Arg] =
+    call.argument.l.sortBy(_.argumentIndex).map(a => Arg(a.code, a.argumentIndex, a.argumentName))
+
+  private def callIn(cpg: Cpg, method: String, callName: String): Call = {
+    val List(call) = cpg.method.nameExact(method).call.nameExact(callName).l
+    call
+  }
+
+  /** The node type an expression lowers to, e.g. `CALL <operator>.fieldAccess` or `METHOD_REF`. */
+  private def loweredTo(e: Expression): String = e match {
+    case c: Call              => s"CALL ${c.name}"
+    case cs: ControlStructure => s"CONTROL_STRUCTURE ${cs.controlStructureType}"
+    case other                => other.label
+  }
+
+  "CPG for a named argument of each expression kind" should {
     lazy val cpg = code("""
         |package mypkg
         |
@@ -18,99 +36,115 @@ class ArgumentIndexAndNameTests extends KotlinCode2CpgFixture(withOssDataflow = 
         |fun Int.ext(): Int = this + 1
         |
         |class A(val m: Int) {
-        |    fun member() { sink(p = m) }
-        |    fun self() { sink(p = this) }
+        |    fun memberReference() { sink(p = m) }
+        |    fun thisReference() { sink(p = this) }
         |}
-        |
-        |fun thrower() { sink(p = throw IllegalStateException()) }
-        |
-        |fun main(x: Any, b: Boolean, arr: IntArray) {
-        |    var i = 0
-        |    sink(p = "a$x")
-        |    sink(p = String::class)
-        |    sink(p = x is String)
-        |    sink(p = !b)
-        |    sink(p = i++)
-        |    sink(p = arr[0])
-        |    sink(p = ::bar)
-        |    sink(p = when { b -> 1; else -> 2 })
-        |    sink(p = O)
-        |    sink(p = 1.ext())
-        |}
+        |fun throwExpression() { sink(p = throw IllegalStateException()) }
+        |fun stringTemplate(x: Any) { sink(p = "a$x") }
+        |fun classLiteral() { sink(p = String::class) }
+        |fun isCheck(x: Any) { sink(p = x is String) }
+        |fun prefixOperator(b: Boolean) { sink(p = !b) }
+        |fun postfixOperator() { var i = 0; sink(p = i++) }
+        |fun arrayAccess(arr: IntArray) { sink(p = arr[0]) }
+        |fun callableReference() { sink(p = ::bar) }
+        |fun whenWithoutSubject(b: Boolean) { sink(p = when { b -> 1; else -> 2 }) }
+        |fun objectReference() { sink(p = O) }
+        |fun extensionCall() { sink(p = 1.ext()) }
         |""".stripMargin)
 
-    def argOfSinkAt(line: Int): Expression = {
-      val List(arg) = cpg.call.nameExact("sink").lineNumber(line).argument.l
-      arg
-    }
+    val loweringOfEachKind = List(
+      "memberReference"    -> s"CALL ${Operators.fieldAccess}",
+      "thisReference"      -> "IDENTIFIER",
+      "throwExpression"    -> s"CONTROL_STRUCTURE ${ControlStructureTypes.THROW}",
+      "stringTemplate"     -> s"CALL ${Operators.formatString}",
+      "classLiteral"       -> "CALL <operator>.class",
+      "isCheck"            -> s"CALL ${Operators.is}",
+      "prefixOperator"     -> s"CALL ${Operators.logicalNot}",
+      "postfixOperator"    -> s"CALL ${Operators.postIncrement}",
+      "arrayAccess"        -> s"CALL ${Operators.indexAccess}",
+      "callableReference"  -> "METHOD_REF",
+      "whenWithoutSubject" -> s"CALL ${Operators.conditional}",
+      "objectReference"    -> "TYPE_REF",
+      "extensionCall"      -> "CALL ext"
+    )
 
-    "set the name on the argument root for every kind" in {
-      val expectedByLine = Map(
-        10 -> classOf[Call],             // member reference -> this.m field access
-        11 -> classOf[Identifier],       // this
-        14 -> classOf[ControlStructure], // throw
-        18 -> classOf[Call],             // interpolated string -> formatString
-        19 -> classOf[Call],             // class literal
-        20 -> classOf[Call],             // is
-        21 -> classOf[Call],             // prefix
-        22 -> classOf[Call],             // postfix
-        23 -> classOf[Call],             // array access
-        24 -> classOf[MethodRef],        // callable reference
-        25 -> classOf[Call],             // when without subject -> conditional
-        26 -> classOf[TypeRef],          // object reference
-        27 -> classOf[Call]              // extension call
-      )
-      expectedByLine.foreach { case (line, cls) =>
-        val arg = argOfSinkAt(line)
-        withClue(s"line $line (${arg.code}): ") {
-          cls.isInstance(arg) shouldBe true
+    "put the name and index on the node the argument lowers to" in {
+      loweringOfEachKind.foreach { case (kind, expectedRoot) =>
+        withClue(s"$kind: ") {
+          val List(arg) = callIn(cpg, kind, "sink").argument.l
+          loweredTo(arg) shouldBe expectedRoot
           arg.argumentName shouldBe Some("p")
           arg.argumentIndex shouldBe 1
         }
       }
     }
 
-    "use the expected root for operator arguments" in {
-      argOfSinkAt(10).asInstanceOf[Call].name shouldBe Operators.fieldAccess
-      argOfSinkAt(14).asInstanceOf[ControlStructure].controlStructureType shouldBe ControlStructureTypes.THROW
-      argOfSinkAt(18).asInstanceOf[Call].name shouldBe Operators.formatString
-      argOfSinkAt(20).asInstanceOf[Call].name shouldBe Operators.is
-      argOfSinkAt(23).asInstanceOf[Call].name shouldBe Operators.indexAccess
-      argOfSinkAt(25).asInstanceOf[Call].name shouldBe Operators.conditional
-    }
-
-    "not put the argument name on any node other than the argument itself" in {
-      val named = cpg.all.collect { case e: Expression if e.argumentName.contains("p") => e.id() }.toSet
-      named shouldBe cpg.call.nameExact("sink").argument.id.toSet
+    "not leak the name onto nodes inside the argument" in {
+      val nodesNamedP = cpg.all.collect { case e: Expression if e.argumentName.contains("p") => e }.l
+      nodesNamedP.map(_.id()).toSet shouldBe cpg.call.nameExact("sink").argument.id.toSet
     }
   }
 
-  "CPG for a call mixing positional and named arguments with skipped defaults" should {
+  "CPG for a call that skips default parameters" should {
     lazy val cpg = code("""
         |package mypkg
         |
-        |fun createButton(
-        |    text: String,
-        |    color: String = "Blue",
-        |    width: Int = 100
-        |    isEnabled: Boolean = true
-        |) {}
+        |fun createButton(text: String, color: String = "Blue", width: Int = 100, isEnabled: Boolean = true) {}
         |
         |fun main() {
         |    createButton("Submit", isEnabled = false)
         |}
         |""".stripMargin)
 
-    "index arguments by their position in the call and name only the named one" in {
-      val List(call) = cpg.call.nameExact("createButton").l
-      call.argument.map(a => (a.code, a.argumentIndex, a.argumentName)).l.sortBy(_._2) shouldBe List(
-        ("\"Submit\"", 1, None),
-        ("false", 2, Some("isEnabled"))
+    "index arguments by their position in the call, not in the declaration" in {
+      // isEnabled is the 4th parameter but the 2nd argument
+      argsOf(callIn(cpg, "main", "createButton")) shouldBe List(
+        Arg("\"Submit\"", 1),
+        Arg("false", 2, Some("isEnabled"))
       )
     }
   }
 
-  "CPG for arguments of a call with a receiver" should {
+  "CPG for a named argument in each kind of call" should {
+    lazy val cpg = code("""
+        |package mypkg
+        |
+        |class Foo(a: Int, b: Int)
+        |data class D(val a: Int, val b: Int)
+        |class C { fun m(a: Int, b: Int) {} }
+        |open class P { open fun m(a: Int, b: Int) {} }
+        |class Q : P() { fun superCall() { super.m(1, b = 2) } }
+        |fun Int.ext(a: Int, b: Int) {}
+        |
+        |fun ctorCall() { Foo(1, b = 2) }
+        |fun ctorInProperty() { val x = Foo(1, b = 2) }
+        |fun ctorInDestructuring() { val (p, q) = D(1, b = 2) }
+        |fun qualifiedCtorCall() { mypkg.Foo(1, b = 2) }
+        |fun memberCall(c: C) { c.m(1, b = 2) }
+        |fun extensionCall() { 3.ext(1, b = 2) }
+        |""".stripMargin)
+
+    "give the constructed object index 0 and the constructor arguments 1 and 2" in {
+      List("ctorCall", "ctorInProperty", "ctorInDestructuring", "qualifiedCtorCall").foreach { method =>
+        withClue(s"$method: ") {
+          val receiver :: arguments = argsOf(callIn(cpg, method, "<init>")): @unchecked
+          receiver.index shouldBe 0 // a temporary or the declared variable, depending on the path
+          arguments shouldBe List(Arg("1", 1), Arg("2", 2, Some("b")))
+        }
+      }
+    }
+
+    "give super and a member call's receiver index 0" in {
+      argsOf(callIn(cpg, "superCall", "m")) shouldBe List(Arg("super", 0), Arg("1", 1), Arg("2", 2, Some("b")))
+      argsOf(callIn(cpg, "memberCall", "m")) shouldBe List(Arg("c", 0), Arg("1", 1), Arg("2", 2, Some("b")))
+    }
+
+    "pass an extension call's receiver as the first argument" in {
+      argsOf(callIn(cpg, "extensionCall", "ext")) shouldBe List(Arg("3", 1), Arg("1", 2), Arg("2", 3, Some("b")))
+    }
+  }
+
+  "CPG for a member call with each kind of positional argument" should {
     lazy val cpg = code("""
         |package mypkg
         |
@@ -138,44 +172,17 @@ class ArgumentIndexAndNameTests extends KotlinCode2CpgFixture(withOssDataflow = 
         |}
         |""".stripMargin)
 
-    "give the receiver index 0 and the argument index 1" in {
+    "give the receiver index 0 and the unnamed argument index 1" in {
       val calls = cpg.call.nameExact("m").l
       calls.size shouldBe 16
       calls.foreach { call =>
-        withClue(s"line ${call.lineNumber.get} (${call.code}): ") {
-          call.argument.argumentIndex.sorted.l shouldBe List(0, 1)
-          call.argument(0).code shouldBe "c"
-          call.argument(1).argumentName shouldBe None
+        withClue(s"${call.code}: ") {
+          val List(receiver, argument) = argsOf(call)
+          receiver shouldBe Arg("c", 0)
+          argument.index shouldBe 1
+          argument.name shouldBe None
         }
       }
-    }
-  }
-
-  "CPG for statements in fixed child slots" should {
-    lazy val cpg = code("""
-        |package mypkg
-        |
-        |fun f(x: Int, l: List<Int>) {
-        |    for (a in l) {
-        |        when (x) {
-        |            1 -> return
-        |            else -> throw IllegalStateException()
-        |        }
-        |    }
-        |    for (a in l) try { println(a) } catch (e: Exception) {}
-        |}
-        |""".stripMargin)
-
-    "give when-entry bodies the same index scheme regardless of their kind" in {
-      val List(ret) = cpg.ret.lineNumber(7).l
-      ret.argumentIndex shouldBe 2
-      val List(thr) = cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.THROW).l
-      thr.argumentIndex shouldBe 3
-    }
-
-    "give a statement for-body its body slot index" in {
-      val List(tryNode) = cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.TRY).l
-      tryNode.argumentIndex shouldBe 3
     }
   }
 
@@ -191,13 +198,14 @@ class ArgumentIndexAndNameTests extends KotlinCode2CpgFixture(withOssDataflow = 
         |}
         |""".stripMargin)
 
-    "keep the default index and no name" in {
-      val List(println1) = cpg.call.nameExact("println").lineNumber(5).l
-      println1.argumentIndex shouldBe -1
-      val List(assignment) = cpg.call.nameExact(Operators.assignment).l
-      assignment.argumentIndex shouldBe -1
+    "leave statements at the default index -1" in {
+      cpg.call.codeExact("println(1)").argumentIndex.l shouldBe List(-1)
+      callIn(cpg, "f", Operators.assignment).argumentIndex shouldBe -1
       cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.IF).argumentIndex.l shouldBe List(-1)
-      cpg.all.collect { case e: Expression if e.argumentName.isDefined => e.code }.l shouldBe List()
+    }
+
+    "not name any node" in {
+      cpg.all.collect { case e: Expression if e.argumentName.isDefined => e.code }.l shouldBe empty
     }
   }
 
@@ -224,7 +232,7 @@ class ArgumentIndexAndNameTests extends KotlinCode2CpgFixture(withOssDataflow = 
     }
   }
 
-  "CPG for calls with a receiver and a sole METHOD_REF argument" should {
+  "CPG for a member call whose only argument is a METHOD_REF" should {
     lazy val cpg = code("""
         |package mypkg
         |

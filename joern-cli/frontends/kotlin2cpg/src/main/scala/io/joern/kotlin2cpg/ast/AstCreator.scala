@@ -315,11 +315,6 @@ class AstCreator(
     partialStackTrace.mkString("\n\t", "\n\t", "")
   }
 
-  protected def withArgumentInfo(ast: Ast, argIdx: Option[Int], argName: Option[String] = None): Ast = {
-    ast.root.collect { case node: ExpressionNew => withArgumentName(withArgumentIndex(node, argIdx), argName) }
-    ast
-  }
-
   @tailrec
   final def astsForExpression(
     expr: KtExpression,
@@ -549,7 +544,7 @@ class AstCreator(
     (astDerivedMethodFullName, astDerivedSignature)
   }
 
-  protected def astsForKtCallExpressionArguments(callExpr: KtCallExpression, startIndex: Int = 1): List[Ast] = {
+  protected def astsForKtCallExpressionArguments(callExpr: KtCallExpression): List[(Ast, Option[String])] = {
     val calledFuncDesc = bindingUtils.getCalledFunctionDesc(callExpr.getCalleeExpression)
 
     withIndex(callExpr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
@@ -565,14 +560,13 @@ class AstCreator(
         }
 
       val argAsts = astsForExpression(arg.getArgumentExpression, argTypeFallback = argumentTypeMaybe)
-      argAsts.lastOption.foreach(withArgumentInfo(_, Some(startIndex + idx - 1), argumentNameMaybe))
-      argAsts
+      argAsts.dropRight(1).map((_, None)) ++ argAsts.lastOption.map((_, argumentNameMaybe))
     }.flatten.toList
   }
 
-  protected def selectorExpressionArgAsts(expr: KtQualifiedExpression, startIndex: Int = 1): List[Ast] = {
+  protected def selectorExpressionArgAsts(expr: KtQualifiedExpression): List[(Ast, Option[String])] = {
     val callExpr = expr.getSelectorExpression.asInstanceOf[KtCallExpression]
-    astsForKtCallExpressionArguments(callExpr, startIndex)
+    astsForKtCallExpressionArguments(callExpr)
   }
 
   protected def modifierTypeForVisibility(visibility: DescriptorVisibility): String = {
