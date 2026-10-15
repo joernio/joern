@@ -100,7 +100,8 @@ object JSONCompilationDatabaseParser {
     private def nameValuePairFromDefine(define: String): (String, String) = {
       val s = define.stripPrefix("-D")
       if (s.contains("=")) {
-        val split = s.split("=")
+        // Only the first `=` separates name from value: a value may itself contain `=`, or be empty.
+        val split = s.split("=", 2)
         (split.head, split(1))
       } else {
         (s, "")

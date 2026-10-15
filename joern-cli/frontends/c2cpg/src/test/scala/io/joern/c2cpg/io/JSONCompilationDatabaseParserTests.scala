@@ -121,6 +121,25 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
     }
   }
 
+  "Parsing defines whose value contains '=' or is empty" should {
+    "split each define at its first '=' only" in {
+      val content =
+        """
+          |[
+          |  { "directory": "/home/user/build",
+          |    "arguments": ["/usr/bin/cc", "-DPROMPT=\"=> \"", "-DPAIR=a=b", "-DEMPTY=", "-c", "file.c"],
+          |    "file": "file.c" }
+          |]""".stripMargin
+
+      FileUtil.usingTemporaryFile("compile_commands.json") { commandJsonFile =>
+        Files.writeString(commandJsonFile, content)
+
+        val commandObjects = JSONCompilationDatabaseParser.parse(commandJsonFile.toString).get.commands
+        commandObjects.flatMap(_.defines()) shouldBe Set(("PROMPT", "\"=> \""), ("PAIR", "a=b"), ("EMPTY", ""))
+      }
+    }
+  }
+
   "Using a simple compile_commands.json" should {
     "respect the files listed" in {
       newProjectUnderTest { projectUnderTest =>
