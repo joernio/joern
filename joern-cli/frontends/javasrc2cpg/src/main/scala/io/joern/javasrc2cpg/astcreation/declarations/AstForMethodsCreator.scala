@@ -306,18 +306,18 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     }.toList
   }
 
-  def clinitAstFromStaticInits(node: Node, staticInits: Seq[Ast]): Option[Ast] = {
-    Option.when(staticInits.nonEmpty) {
+  def clinitAstFromStaticInits(node: Node, staticInitAsts: Seq[Ast]): Option[Ast] = {
+    Option.when(staticInitAsts.nonEmpty) {
       val signature         = composeMethodLikeSignature(TypeConstants.Void, Nil)
       val enclosingDeclName = scope.enclosingTypeDecl.fullName.getOrElse(Defines.UnresolvedNamespace)
       val fullName          = composeMethodFullName(enclosingDeclName, Defines.StaticInitMethodName, signature)
-      staticInitMethodAst(node, staticInits.toList, fullName, Some(signature), TypeConstants.Void)
+      staticInitMethodAst(node, staticInitAsts.toList, fullName, Some(signature), TypeConstants.Void)
     }
   }
 
-  private def astsForFieldInitializers(fieldDeclarations: List[FieldOrInitBlock]): List[Ast] = {
+  private def astsForFieldOrInitBlocks(fieldOrInitBlocks: List[FieldOrInitBlock]): List[Ast] = {
     scope.pushBlockScope()
-    val fieldInitializerAsts = fieldDeclarations.flatMap {
+    val fieldOrInitBlockAsts = fieldOrInitBlocks.flatMap {
       case fieldDeclaration: FieldDeclaration =>
         fieldDeclaration.getVariables.asScala.filter(_.getInitializer.isPresent).toList.flatMap { variableDeclaration =>
           scope.pushFieldDeclScope(fieldDeclaration.isStatic, variableDeclaration.getNameAsString)
@@ -331,10 +331,10 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         astForBlockStatement(initializerDeclaration.getBody, code(initializerDeclaration)) :: Nil
     }
     scope.popBlockScope()
-    fieldInitializerAsts
+    fieldOrInitBlockAsts
   }
 
-  def astForDefaultConstructor(originNode: Node, instanceInitializerDeclarations: List[FieldOrInitBlock]): Ast = {
+  def astForDefaultConstructor(originNode: Node, instanceFieldOrInitBlocks: List[FieldOrInitBlock]): Ast = {
     val parameters       = scope.enclosingTypeDecl.get.recordParameters
     val genericSignature = binarySignatureCalculator.defaultConstructorSignature(parameters)
     val constructorNode  = NewMethod()
@@ -371,7 +371,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       .zipWithIndex
       .map((paramNode, idx) => astForEponymousFieldAssignment(parameters(idx), thisNode, paramNode))
     val bodyStatementAsts =
-      astsForFieldInitializers(instanceInitializerDeclarations) ++ recordParameterAssignments
+      astsForFieldOrInitBlocks(instanceFieldOrInitBlocks) ++ recordParameterAssignments
     val patternLocalAsts = scope.enclosingMethod.map(_.getAndClearUnaddedPatternLocals()).getOrElse(Nil).map(Ast(_))
 
     val returnNode = methodReturnNode(originNode, TypeConstants.Void)
@@ -537,7 +537,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
   private def partialConstructorAsts(
     constructorDeclarations: List[ConstructorDeclaration | CompactConstructorDeclaration],
-    instanceInitializerDeclarations: List[FieldOrInitBlock]
+    instanceFieldOrInitBlocks: List[FieldOrInitBlock]
   ): List[PartialConstructorDeclaration] = {
     constructorDeclarations.map { constructorDeclaration =>
       val maybeResolved = Option
@@ -614,8 +614,8 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         if (bodyContainsThis)
           Nil
         else
-          scope.enclosingMethod.get.getAndClearUnaddedPatternLocals().map(Ast(_)) ++ astsForFieldInitializers(
-            instanceInitializerDeclarations
+          scope.enclosingMethod.get.getAndClearUnaddedPatternLocals().map(Ast(_)) ++ astsForFieldOrInitBlocks(
+            instanceFieldOrInitBlocks
           )
 
       // The this(...) call must always be the first statement in the body, but adding the fieldAssignmentsAndTempLocals
@@ -721,9 +721,9 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
   def astsForConstructors(
     constructorDeclarations: List[ConstructorDeclaration | CompactConstructorDeclaration],
-    instanceInitializerDeclarations: List[FieldOrInitBlock]
+    instanceFieldOrInitBlocks: List[FieldOrInitBlock]
   ): Map[Node, Ast] = {
-    val partialConstructors = partialConstructorAsts(constructorDeclarations, instanceInitializerDeclarations)
+    val partialConstructors = partialConstructorAsts(constructorDeclarations, instanceFieldOrInitBlocks)
     partialConstructors.map { partialConstructor =>
       partialConstructor.originNode -> completePartialConstructor(partialConstructor)
     }.toMap

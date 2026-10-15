@@ -385,7 +385,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       scope.addInnerType(name, fullName, fullName)
     }
 
-    val initializerDeclarations: List[FieldOrInitBlock] = members.collect { case fieldOrInitBlock: FieldOrInitBlock =>
+    val fieldOrInitBlocks: List[FieldOrInitBlock] = members.collect { case fieldOrInitBlock: FieldOrInitBlock =>
       fieldOrInitBlock
     }
 
@@ -398,14 +398,14 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       result
     }.toMap
 
-    val (staticInits, instanceInits) =
-      initializerDeclarations.partition {
+    val (staticFieldOrInitBlocks, instanceFieldOrInitBlocks) =
+      fieldOrInitBlocks.partition {
         case fieldDeclaration: FieldDeclaration             => fieldDeclaration.isStatic
         case initializerDeclaration: InitializerDeclaration => initializerDeclaration.isStatic
       }
-    val staticInitializers = getStaticInitializers(staticInits)
+    val staticInitAsts = astsForStaticFieldOrInitBlocks(staticFieldOrInitBlocks)
 
-    val clinitAst = clinitAstFromStaticInits(originNode, staticInitializers)
+    val clinitAst = clinitAstFromStaticInits(originNode, staticInitAsts)
 
     val membersAstPairs: List[(Node, List[Ast])] = members.map { member =>
       val memberAsts = member match {
@@ -444,7 +444,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
         case constructor: ConstructorDeclaration        => constructor
         case constructor: CompactConstructorDeclaration => constructor
       },
-      instanceInits
+      instanceFieldOrInitBlocks
     )
 
     val membersAsts = membersAstPairs.flatMap {
@@ -469,7 +469,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
         }.nonEmpty
     }
     val defaultConstructorAst = Option.when(!(isInterface || hasCanonicalConstructor)) {
-      astForDefaultConstructor(originNode, instanceInits)
+      astForDefaultConstructor(originNode, instanceFieldOrInitBlocks)
     }
 
     (defaultConstructorAst.toList ++ constructorAstMap.values)
@@ -569,10 +569,10 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     }
   }
 
-  private def getStaticInitializers(staticFields: List[FieldOrInitBlock]): List[Ast] = {
+  private def astsForStaticFieldOrInitBlocks(staticFieldOrInitBlocks: List[FieldOrInitBlock]): List[Ast] = {
     scope.pushMethodScope(NewMethod(), ExpectedType.empty, isStatic = true)
     scope.pushBlockScope()
-    val initialzerAsts = staticFields.flatMap {
+    val fieldOrInitBlockAsts = staticFieldOrInitBlocks.flatMap {
       case field: FieldDeclaration =>
         field.getVariables.asScala.toList.flatMap { variable =>
           scope.pushFieldDeclScope(isStatic = true, name = variable.getNameAsString)
@@ -586,7 +586,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     }
     scope.popBlockScope()
     val methodScope = scope.popMethodScope()
-    methodScope.getAndClearUnaddedPatternLocals().map(Ast(_)) ++ initialzerAsts
+    methodScope.getAndClearUnaddedPatternLocals().map(Ast(_)) ++ fieldOrInitBlockAsts
   }
 
   private[declarations] def astForAnnotationExpr(annotationExpr: AnnotationExpr): Ast = {
