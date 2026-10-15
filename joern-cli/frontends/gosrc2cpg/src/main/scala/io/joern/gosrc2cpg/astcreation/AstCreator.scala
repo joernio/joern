@@ -49,10 +49,9 @@ class AstCreator(
   protected val fullyQualifiedPackage =
     goMod.getNameSpace(parserResult.fullPath, declaredPackageName)
 
-  // Keep in sync with the offset overrides in AstForPackageConstructorCreator.
-  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] = None
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] = AstCreator.offsetSource
 
-  override protected def unadjustedOffset(node: BaseNodeInfo[?]): Option[(Int, Int)] = None
+  override protected def unadjustedOffset(node: BaseNodeInfo[?]): Option[(Int, Int)] = AstCreator.unadjustedOffset(node)
 
   override def createAst(): DiffGraphBuilder = {
     val rootNode = createParserNodeInfo(parserResult.json)
@@ -113,4 +112,11 @@ class AstCreator(
   protected def astForNode(json: Value): Seq[Ast] = {
     astForNode(createParserNodeInfo(json))
   }
+}
+
+object AstCreator {
+
+  val offsetSource: Option[OffsetUtils.OffsetSourceType] = None
+
+  def unadjustedOffset(node: BaseNodeInfo[?]): Option[(Int, Int)] = None
 }

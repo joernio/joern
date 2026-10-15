@@ -18,10 +18,9 @@ class AstForPackageConstructorCreator(val pacakgePath: String, statements: Set[P
 ) extends AstCreatorBase[BaseNodeInfo[?], AstForPackageConstructorCreator](pacakgePath)
     with AstGenNodeBuilder[AstForPackageConstructorCreator] {
 
-  // Keep in sync with the offset overrides in AstCreator.
-  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] = None
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] = AstCreator.offsetSource
 
-  override protected def unadjustedOffset(node: BaseNodeInfo[?]): Option[(Int, Int)] = None
+  override protected def unadjustedOffset(node: BaseNodeInfo[?]): Option[(Int, Int)] = AstCreator.unadjustedOffset(node)
 
   override def createAst(): DiffGraphBuilder = {
     val name       = StringUtils.normalizeSpace(s"$pacakgePath${XDefines.StaticInitMethodName}")

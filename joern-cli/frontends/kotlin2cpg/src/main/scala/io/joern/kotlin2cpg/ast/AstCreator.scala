@@ -84,6 +84,15 @@ object AstCreator {
     samMethodParams: List[(String, String)],
     expr: KtCallableReferenceExpression
   ) extends SamImplInfo
+
+  def offsetSource(disableFileContent: Boolean): Option[OffsetUtils.OffsetSourceType] =
+    Option.unless(disableFileContent)(OffsetUtils.OffsetSourceType.Utf_16)
+
+  def psiOffsets(element: PsiElement): Option[(Int, Int)] =
+    Option(element).map { someElement =>
+      val textRange = someElement.getTextRange
+      (textRange.getStartOffset, textRange.getEndOffset)
+    }
 }
 
 class AstCreator(
@@ -236,16 +245,9 @@ class AstCreator(
     column(lastElement)
   }
 
-  // Keep in sync with the offset overrides in SamTypeDeclPass.
-  override def offsetSource: Option[OffsetUtils.OffsetSourceType] =
-    Option.unless(disableFileContent)(OffsetUtils.OffsetSourceType.Utf_16)
+  override def offsetSource: Option[OffsetUtils.OffsetSourceType] = AstCreator.offsetSource(disableFileContent)
 
-  override def unadjustedOffset(element: PsiElement): Option[(Int, Int)] = {
-    Option(element).map { someElement =>
-      val textRange = someElement.getTextRange
-      (textRange.getStartOffset, textRange.getEndOffset)
-    }
-  }
+  override def unadjustedOffset(element: PsiElement): Option[(Int, Int)] = AstCreator.psiOffsets(element)
 
   protected def getName(node: NewImport): String = {
     val isWildcard = node.isWildcard.getOrElse(false)

@@ -63,15 +63,10 @@ private class SamTypeDeclAstBuilder()(implicit withSchemaValidation: ValidationM
 
   override def columnEnd(element: PsiElement): Option[Int] = column(element)
 
-  // Keep in sync with the offset overrides in AstCreator.
-  override def offsetSource: Option[OffsetUtils.OffsetSourceType] = Some(OffsetUtils.OffsetSourceType.Utf_16)
+  override def offsetSource: Option[OffsetUtils.OffsetSourceType] =
+    AstCreator.offsetSource(disableFileContent = false)
 
-  override def unadjustedOffset(element: PsiElement): Option[(Int, Int)] = {
-    Option(element).map { someElement =>
-      val textRange = someElement.getTextRange
-      (textRange.getStartOffset, textRange.getEndOffset)
-    }
-  }
+  override def unadjustedOffset(element: PsiElement): Option[(Int, Int)] = AstCreator.psiOffsets(element)
 
   def createTypeDeclAst(samInfo: SamImplInfo): SamTypeDeclBuild = {
     samInfo match {
