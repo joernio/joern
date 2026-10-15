@@ -13,6 +13,7 @@ import com.github.javaparser.resolution.types.ResolvedType
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserParameterDeclaration
 import io.joern.javasrc2cpg.astcreation.declarations.AstForMethodsCreator.PartialConstructorDeclaration
+import io.joern.javasrc2cpg.astcreation.declarations.AstForTypeDeclsCreator.FieldOrInitBlock
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.scope.JavaScopeElement.fullName
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
@@ -314,22 +315,26 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     }
   }
 
-  private def astsForFieldInitializers(fieldDeclarations: List[FieldDeclaration]): List[Ast] = {
+  private def astsForFieldInitializers(fieldDeclarations: List[FieldOrInitBlock]): List[Ast] = {
     scope.pushBlockScope()
-    val fieldInitializerAsts = fieldDeclarations.flatMap { fieldDeclaration =>
-      fieldDeclaration.getVariables.asScala.filter(_.getInitializer.isPresent).toList.flatMap { variableDeclaration =>
-        scope.pushFieldDeclScope(fieldDeclaration.isStatic, variableDeclaration.getNameAsString)
-        val assignmentAsts = astsForVariableDeclarator(variableDeclaration, fieldDeclaration)
-        val patternAsts    = scope.enclosingMethod.get.getAndClearUnaddedPatternLocals().map(Ast(_))
-        scope.popFieldDeclScope()
-        patternAsts ++ assignmentAsts
-      }
+    val fieldInitializerAsts = fieldDeclarations.flatMap {
+      case fieldDeclaration: FieldDeclaration =>
+        fieldDeclaration.getVariables.asScala.filter(_.getInitializer.isPresent).toList.flatMap { variableDeclaration =>
+          scope.pushFieldDeclScope(fieldDeclaration.isStatic, variableDeclaration.getNameAsString)
+          val assignmentAsts = astsForVariableDeclarator(variableDeclaration, fieldDeclaration)
+          val patternAsts    = scope.enclosingMethod.get.getAndClearUnaddedPatternLocals().map(Ast(_))
+          scope.popFieldDeclScope()
+          patternAsts ++ assignmentAsts
+        }
+
+      case initializerDeclaration: InitializerDeclaration =>
+        astForBlockStatement(initializerDeclaration.getBody, code(initializerDeclaration)) :: Nil
     }
     scope.popBlockScope()
     fieldInitializerAsts
   }
 
-  def astForDefaultConstructor(originNode: Node, instanceFieldDeclarations: List[FieldDeclaration]): Ast = {
+  def astForDefaultConstructor(originNode: Node, instanceInitializerDeclarations: List[FieldOrInitBlock]): Ast = {
     val parameters       = scope.enclosingTypeDecl.get.recordParameters
     val genericSignature = binarySignatureCalculator.defaultConstructorSignature(parameters)
     val constructorNode  = NewMethod()
@@ -366,7 +371,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       .zipWithIndex
       .map((paramNode, idx) => astForEponymousFieldAssignment(parameters(idx), thisNode, paramNode))
     val bodyStatementAsts =
-      astsForFieldInitializers(instanceFieldDeclarations) ++ recordParameterAssignments
+      astsForFieldInitializers(instanceInitializerDeclarations) ++ recordParameterAssignments
     val patternLocalAsts = scope.enclosingMethod.map(_.getAndClearUnaddedPatternLocals()).getOrElse(Nil).map(Ast(_))
 
     val returnNode = methodReturnNode(originNode, TypeConstants.Void)
@@ -532,7 +537,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
   private def partialConstructorAsts(
     constructorDeclarations: List[ConstructorDeclaration | CompactConstructorDeclaration],
-    instanceFieldDeclarations: List[FieldDeclaration]
+    instanceInitializerDeclarations: List[FieldOrInitBlock]
   ): List[PartialConstructorDeclaration] = {
     constructorDeclarations.map { constructorDeclaration =>
       val maybeResolved = Option
@@ -610,7 +615,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
           Nil
         else
           scope.enclosingMethod.get.getAndClearUnaddedPatternLocals().map(Ast(_)) ++ astsForFieldInitializers(
-            instanceFieldDeclarations
+            instanceInitializerDeclarations
           )
 
       // The this(...) call must always be the first statement in the body, but adding the fieldAssignmentsAndTempLocals
@@ -716,9 +721,9 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
   def astsForConstructors(
     constructorDeclarations: List[ConstructorDeclaration | CompactConstructorDeclaration],
-    instanceFieldDeclarations: List[FieldDeclaration]
+    instanceInitializerDeclarations: List[FieldOrInitBlock]
   ): Map[Node, Ast] = {
-    val partialConstructors = partialConstructorAsts(constructorDeclarations, instanceFieldDeclarations)
+    val partialConstructors = partialConstructorAsts(constructorDeclarations, instanceInitializerDeclarations)
     partialConstructors.map { partialConstructor =>
       partialConstructor.originNode -> completePartialConstructor(partialConstructor)
     }.toMap
