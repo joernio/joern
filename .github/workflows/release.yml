@@ -43,7 +43,7 @@ jobs:
         run: sbt --server --batch "c2cpg/stage ; integrationTests/testFull"
       - name: Test distribution
         run: |
-          python -m pip install requests pexpect
+          python -m pip install pexpect
           sbt --server --batch "joerncli/stage ; querydb/createDistribution"
           python -u ./testDistro.py
       - run: sbt --server --batch "ciReleaseSkipIfAlreadyReleased ; ciReleaseTagNextVersion ; ciReleaseSonatype"

@@ -8,7 +8,6 @@ import sys
 import os
 import shutil
 import tempfile
-import requests
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
@@ -324,27 +323,15 @@ class TestRunner:
             self._validate_sarif_file(out_file)
 
     def _validate_sarif_file(self, sarif_file: Path):
-        """Validate SARIF file using external service"""
-        try:
-            with open(sarif_file, "rb") as f:
-                files = {"postedFiles": ("test.sarif", f, "application/octet-stream")}
-                response = requests.post(
-                    "https://sarifweb.azurewebsites.net/Validation/ValidateFiles",
-                    files=files,
-                    timeout=30
-                )
-            
-            response.raise_for_status()
-            result = response.json()
-            exit_code = int(result.get("exitCode", 1))
-            
-            logger.info(f"SARIF Validation Exit Code: {exit_code}")
-            if exit_code != 0:
-                raise RuntimeError("SARIF file validation failed")
-                
-        except requests.RequestException as e:
-            logger.error(f"SARIF validation request failed: {e}")
-            raise
+        """Validate SARIF file using the Microsoft SARIF Multitool (npm)"""
+        # shutil.which resolves npx.cmd on Windows
+        npx = shutil.which("npx")
+        if npx is None:
+            raise RuntimeError("npx not found; Node.js/npm is required for SARIF validation")
+
+        # Non-zero exit code if validation errors are found
+        self.run_command([npx, "--yes", "@microsoft/sarif-multitool@5.8.0", "validate", str(sarif_file)],
+                         "Validate SARIF file with @microsoft/sarif-multitool")
 
     @stage
     def schema_extender_test(self):

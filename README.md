@@ -76,7 +76,7 @@ sbt "c2cpg/stage ; integrationTests/test"
 
 # distribution tests:
 sbt joerncli/stage querydb/createDistribution
-python -m pip install requests pexpect # wexpect on Windows
+python -m pip install pexpect # wexpect on Windows
 python -u ./testDistro.py
 ```
 
