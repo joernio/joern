@@ -401,8 +401,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     val membersAstPairs: List[(Node, List[Ast])] = members.map { member =>
       val memberAsts = member match {
         case annotationMember: AnnotationMemberDeclaration =>
-          // TODO: Add support for this
-          Nil
+          astForAnnotationMemberDeclaration(annotationMember) :: Nil
 
         case constructor: ConstructorDeclaration =>
           // Added later to create params for captures
