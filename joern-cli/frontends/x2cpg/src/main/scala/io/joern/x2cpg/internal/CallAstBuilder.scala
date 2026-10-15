@@ -61,6 +61,19 @@ private[x2cpg] trait CallAstBuilder[Node, NodeProcessor] {
       .withReceiverEdges(callNode, receiverRoot)
   }
 
+  /** Like [[callAst]], but also sets the argument name on each argument root that has one. Argument indices are still
+    * assigned positionally by [[callAst]].
+    */
+  def callWithNamedArgsAst(
+    callNode: NewCall,
+    arguments: Seq[(Ast, Option[String])],
+    base: Option[Ast] = None,
+    receiver: Option[Ast] = None
+  ): Ast = {
+    setArgumentNames(arguments)
+    callAst(callNode, arguments.map(_._1), base, receiver)
+  }
+
   /** Creates an AST for a field-access expression (`base.fieldName`).
     *
     * Emits a [[io.shiftleft.codepropertygraph.generated.Operators.fieldAccess]] call node with `base` as the first

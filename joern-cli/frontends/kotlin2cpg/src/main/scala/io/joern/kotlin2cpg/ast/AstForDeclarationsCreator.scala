@@ -459,7 +459,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
           Some(signature),
           Some(TypeConstants.Void)
         )
-        Seq(callAst(initCallNode, argAsts, Some(initReceiverAst), None))
+        Seq(callWithNamedArgsAst(initCallNode, argAsts, Some(initReceiverAst), None))
       case _ => Seq()
     }
 
@@ -496,7 +496,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val assignmentsForEntries =
       nonUnderscoreDestructuringEntries(expr).zipWithIndex.map { case (entry, idx) =>
-        val rhsBaseAst = withArgumentInfo(astForNameReference(typedInit.get), Some(1))
+        val rhsBaseAst = astForNameReference(typedInit.get)
         assignmentAstForDestructuringEntry(entry, rhsBaseAst, idx + 1)
       }
     val localsForEntries = localsForDestructuringEntries(expr)
@@ -771,7 +771,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val argAsts         = astsForKtCallExpressionArguments(callExpr)
 
       val initAst =
-        callAst(initCallNode, argAsts, Option(initReceiverAst))
+        callWithNamedArgsAst(initCallNode, argAsts, Option(initReceiverAst))
           .withChildren(annotations.map(astForAnnotationEntry))
       Seq(localAst, assignmentCallAst, initAst)
     } else if (hasRHSObjectLiteral) {
@@ -830,8 +830,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val localAst = Ast(node)
 
       if (expr.getDelegateExpressionOrInitializer != null) {
-        val rhsAsts = astsForExpression(expr.getDelegateExpressionOrInitializer)
-        rhsAsts.lastOption.foreach(withArgumentInfo(_, Some(2)))
+        val rhsAsts        = astsForExpression(expr.getDelegateExpressionOrInitializer)
         val identifier     = identifierNode(elem, code(elem), code(elem), typeFullName)
         val identifierAst  = astWithRefEdgeMaybe(identifier.name, identifier)
         val assignmentNode = operatorCallNode(expr, code(expr), Operators.assignment, None)

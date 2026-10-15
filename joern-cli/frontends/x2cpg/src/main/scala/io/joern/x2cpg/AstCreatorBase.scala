@@ -107,6 +107,23 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit va
     }
   }
 
+  /** Sets the `argumentName` of each argument AST root to the name it is paired with.
+    *
+    * Only AST roots that implement `ExpressionNew` are updated; other roots are silently skipped. A [[None]] name
+    * clears any previously set name.
+    *
+    * @param arguments
+    *   argument ASTs paired with their named-argument labels
+    */
+  def setArgumentNames(arguments: Seq[(Ast, Option[String])]): Unit = {
+    arguments.foreach { case (ast, name) =>
+      ast.root match {
+        case Some(x: ExpressionNew) => x.argumentName = name
+        case _                      => // do nothing
+      }
+    }
+  }
+
   /** Maps over an indexed sequence, passing 1-based indices to the transform function.
     *
     * @param nodes
