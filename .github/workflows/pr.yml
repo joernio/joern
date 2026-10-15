@@ -6,6 +6,7 @@ concurrency:
 jobs:
   lint-and-format:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -26,6 +27,7 @@ jobs:
 
   validate-citation:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -35,7 +37,9 @@ jobs:
 
   run-tests:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
@@ -87,7 +91,9 @@ jobs:
 
   integration-tests:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
@@ -106,7 +112,9 @@ jobs:
 
   test-scripts:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
@@ -141,6 +149,7 @@ jobs:
           python -u ./testDistro.py
 
   test:
+    timeout-minutes: 60
     needs: [validate-citation, lint-and-format, run-tests, integration-tests, test-scripts]
     if: ${{ always() }}
     runs-on: ubuntu-latest

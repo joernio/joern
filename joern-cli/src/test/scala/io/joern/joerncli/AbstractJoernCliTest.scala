@@ -23,7 +23,7 @@ trait AbstractJoernCliTest {
     FileUtil.delete(tmpFile)
 
     val cpgGenerator = language match {
-      case Languages.C | Languages.CSHARP         => InProcessCpgGenerator.c()
+      case Languages.C                            => InProcessCpgGenerator.c()
       case Languages.JSSRC | Languages.JAVASCRIPT => InProcessCpgGenerator.jssrc()
     }
     cpgGenerator.generate(inputPath = file.toString, outputPath = cpgOutFileName) match {
