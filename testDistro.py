@@ -3,6 +3,7 @@
 # Prerequisite:
 # > sbt joerncli/stage querydb/createDistribution
 
+import json
 import subprocess
 import sys
 import os
@@ -329,9 +330,22 @@ class TestRunner:
         if npx is None:
             raise RuntimeError("npx not found; Node.js/npm is required for SARIF validation")
 
-        # Non-zero exit code if validation errors are found
-        self.run_command([npx, "--yes", "@microsoft/sarif-multitool@5.8.0", "validate", str(sarif_file)],
+        # The multitool exits with 0 even if it finds problems, so we have to
+        # inspect the results it writes to the output file.
+        result_file = sarif_file.parent / f"{sarif_file.stem}.validation.sarif"
+        self.run_command([npx, "--yes", "@microsoft/sarif-multitool@5.8.0", "validate",
+                          str(sarif_file), "--output", str(result_file)],
                          "Validate SARIF file with @microsoft/sarif-multitool")
+
+        if not result_file.exists():
+            raise RuntimeError("SARIF validation produced no output file")
+
+        results = json.loads(result_file.read_text())["runs"][0].get("results", [])
+        errors = [r for r in results if r.get("level") == "error"]
+        for r in results:
+            logger.info(f"SARIF validation {r.get('level')}: {r.get('ruleId')} {r.get('message', {}).get('text')}")
+        if errors:
+            raise RuntimeError(f"SARIF file validation failed with {len(errors)} error(s)")
 
     @stage
     def schema_extender_test(self):
