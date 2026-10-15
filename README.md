@@ -64,8 +64,6 @@ If the installation script fails for any reason, try
 ## Run unit and integration tests locally
 Unit tests:
 ```bash
-# console/joern-cli tests invoke staged frontend binaries; stage them once per clean checkout:
-sbt "c2cpg/stage" "jssrc2cpg/stage" "javasrc2cpg/stage" "swiftsrc2cpg/stage"
 sbt test
 ```
 (sbt 2.x runs tests incrementally, skipping ones that already passed on unchanged inputs;
@@ -73,6 +71,10 @@ use `sbt testFull` to force a full run, e.g. to reproduce CI behavior.)
 
 Integration tests:
 ```bash
+# script/console tests that drive the real launchers (not part of `sbt test`; they need a staged c2cpg):
+sbt "c2cpg/stage ; integrationTests/test"
+
+# distribution tests:
 sbt joerncli/stage querydb/createDistribution
 python -m pip install requests pexpect # wexpect on Windows
 python -u ./testDistro.py

@@ -61,7 +61,7 @@ final case class Config(
   }
 }
 
-private object Frontend {
+object Frontend {
   implicit val defaultConfig: Config = Config()
 
   val cmdLineParser: OParser[Unit, Config] = {

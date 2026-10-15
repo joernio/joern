@@ -25,6 +25,7 @@ lazy val swiftsrc2cpg      = Projects.swiftsrc2cpg
 lazy val csharpsrc2cpg     = Projects.csharpsrc2cpg
 lazy val abap2cpg          = Projects.abap2cpg
 lazy val rust2cpg          = Projects.rust2cpg
+lazy val integrationTests  = Projects.integrationTests
 lazy val linterRules       = Projects.linterRules
 lazy val linterRulesInput  = Projects.linterRulesInput
 
@@ -57,6 +58,7 @@ lazy val root = project
     linterRules
     // linterRulesInput is intentionally NOT aggregated: it holds scalafix-testkit fixtures only
     // and must never be released (ciReleaseSonatype publishes root + aggregated projects)
+    // integrationTests is intentionally NOT aggregated either: it needs staged frontends and is run separately in CI
   )
   .dependsOn(linterRules % ScalafixConfig)
   .settings(
