@@ -10,7 +10,7 @@ import org.eclipse.cdt.core.dom.ast.gnu.c.GCCLanguage
 import org.eclipse.cdt.core.dom.ast.gnu.cpp.GPPLanguage
 import org.eclipse.cdt.core.dom.ast.{IASTPreprocessorStatement, IASTTranslationUnit}
 import org.eclipse.cdt.core.model.ILanguage
-import org.eclipse.cdt.core.parser.{DefaultLogService, FileContent, ScannerInfo}
+import org.eclipse.cdt.core.parser.{DefaultLogService, FileContent, IncludeFileContentProvider, ScannerInfo}
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Path, Paths}
@@ -24,6 +24,40 @@ object CdtParser {
 
   enum HeaderFileParserLanguage {
     case Unknown, C, Cpp, Both
+  }
+
+  /** CDT's preprocessor keeps its built-in macros (`__STDC_VERSION__`, `__STDC_HOSTED__`, `__cplusplus`,
+    * `__CDT_PARSER__`) as static `ObjectStyleMacro`s shared by every parser in the JVM. `ObjectStyleMacro.getTokens`
+    * stores a new, empty token list in the shared object and then lexes the value into whatever list the object holds.
+    * When parsers on several threads expand a macro for the first time together, one can be handed the empty list, two
+    * can lex into the same list and leave the value doubled for the rest of the run, or one can fail with a
+    * NullPointerException. An `#if` on the macro then evaluates differently from run to run, and the code it guards is
+    * in some graphs and not in others. Expanding each one here, when a parser is created and before any file is parsed
+    * in parallel, leaves them filled. Once filled, a later call does not change them; it costs two parses of a two-line
+    * snippet.
+    *
+    * @return
+    *   the names of the macros the two parses expanded
+    */
+  def expandBuiltinMacros(): Set[String] = {
+    val code = "#if __STDC_VERSION__ + __STDC_HOSTED__ + __CDT_PARSER__ + __cplusplus\n#endif\n".toCharArray
+    Seq(GCCLanguage.getDefault, GPPLanguage.getDefault).flatMap { lang =>
+      try {
+        val translationUnit = lang.getASTTranslationUnit(
+          FileContent.create("<builtin-macros>", true, code),
+          new ScannerInfo(),
+          IncludeFileContentProvider.getEmptyFilesProvider,
+          null,
+          0,
+          new DefaultLogService
+        )
+        translationUnit.getMacroExpansions.toSeq.map(_.getMacroReference.toString)
+      } catch {
+        case NonFatal(e) =>
+          logger.debug("Expanding CDT's built-in macros failed", e)
+          Seq.empty
+      }
+    }.toSet
   }
 
   private def readFileAsFileContent(file: Path, lines: Option[Array[Char]] = None): FileContent = {
@@ -98,6 +132,9 @@ class CdtParser(config: Config, headerFileFinder: HeaderFileFinder, compilationD
     with PreprocessorStatementsLogger {
 
   import io.joern.c2cpg.parser.CdtParser.*
+
+  // Parsers are created before the parallel parse starts; see `expandBuiltinMacros`.
+  expandBuiltinMacros()
 
   private val parserConfig = ParserConfig.fromConfig(config, compilationDatabase)
   private val log          = new DefaultLogService
