@@ -13,6 +13,7 @@ import com.github.javaparser.ast.`type`.{
 }
 import com.github.javaparser.ast.body.{
   AnnotationDeclaration,
+  AnnotationMemberDeclaration,
   CallableDeclaration,
   ClassOrInterfaceDeclaration,
   ConstructorDeclaration,
@@ -104,6 +105,15 @@ class BinarySignatureCalculator(scope: Scope) {
 
     writer.visitReturnType()
     addType(writer, parameter.getType)
+
+    writer.toString
+  }
+
+  def annotationMemberBinarySignature(member: AnnotationMemberDeclaration): String = {
+    val writer = SignatureWriter()
+
+    writer.visitReturnType()
+    addType(writer, member.getType)
 
     writer.toString
   }

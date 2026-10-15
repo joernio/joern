@@ -5,6 +5,57 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 class AnnotationTests extends JavaSrcCode2CpgFixture {
+  "an annotation declaration with members" should {
+    val cpg = code("""
+        |public @interface Test {
+        |    String message() default "x";
+        |
+        |    Class<?>[] groups() default {};
+        |
+        |    int value();
+        |}
+        |""".stripMargin)
+
+    "have a method returning x for the string member" in {
+      val method = cpg.typeDecl.name("Test").method.name("message").head
+      method.fullName shouldBe "Test.message:java.lang.String()"
+      inside(method.parameter.l) { case List(thisParam) =>
+        thisParam.name shouldBe "this"
+        thisParam.typeFullName shouldBe "Test"
+      }
+      inside(method.ast.isReturn.l) { case List(returnStmt: Return) =>
+        inside(returnStmt.astChildren.isLiteral.l) { case List(literal) =>
+          literal.code shouldBe "\"x\""
+        }
+      }
+    }
+
+    "have a method returning an empty array for the array member" in {
+      val method = cpg.typeDecl.name("Test").method.name("groups").head
+      method.fullName shouldBe "Test.groups:java.lang.Class[]()"
+      inside(method.parameter.l) { case List(thisParam) =>
+        thisParam.name shouldBe "this"
+        thisParam.typeFullName shouldBe "Test"
+      }
+      inside(method.ast.isReturn.l) { case List(returnStmt: Return) =>
+        inside(returnStmt.astChildren.isCall.l) { case List(arrayInit) =>
+          arrayInit.code shouldBe "{}"
+          arrayInit.argument.l shouldBe Nil
+        }
+      }
+    }
+
+    "have a method with an empty body for the member without a default" in {
+      val method = cpg.typeDecl.name("Test").method.name("value").head
+      method.fullName shouldBe "Test.value:int()"
+      inside(method.parameter.l) { case List(thisParam) =>
+        thisParam.name shouldBe "this"
+        thisParam.typeFullName shouldBe "Test"
+      }
+      method.ast.isReturn.l shouldBe Nil
+    }
+  }
+
   "annotations that cannot be resolved from imports" should {
     val cpg = code("""
         |package foo;
