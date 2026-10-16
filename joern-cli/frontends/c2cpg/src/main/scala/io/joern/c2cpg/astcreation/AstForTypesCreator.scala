@@ -75,9 +75,19 @@ trait AstForTypesCreator { this: AstCreator =>
         // would pollute the enclosing scope and cause cross-method REF edges.
         Ast()
       case _ =>
-        val tpe  = typeForIASTDeclarator(declaration, declarator, index)
-        val code = codeForDeclarator(declaration, declarator)
-        val node = localNode(declarator, name, code, tpe)
+        val tpe          = typeForIASTDeclarator(declaration, declarator, index)
+        val code         = codeForDeclarator(declaration, declarator)
+        val node         = localNode(declarator, name, code, tpe)
+        val storageClass = declaration.getDeclSpecifier.getStorageClass match {
+          case IASTDeclSpecifier.sc_static => Some("static")
+          case IASTDeclSpecifier.sc_extern => Some("extern")
+          case _                           => None
+        }
+        storageClass.foreach { value =>
+          val tag = NewTag().name("STORAGE_CLASS").value(value)
+          diffGraph.addNode(tag)
+          diffGraph.addEdge(node, tag, EdgeTypes.TAGGED_BY)
+        }
         scope.addVariable(name, node, tpe, VariableScopeManager.ScopeType.BlockScope)
         Ast(node)
     }
