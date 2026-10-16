@@ -3,12 +3,12 @@
 # Prerequisite:
 # > sbt joerncli/stage querydb/createDistribution
 
+import json
 import subprocess
 import sys
 import os
 import shutil
 import tempfile
-import requests
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
@@ -324,27 +324,28 @@ class TestRunner:
             self._validate_sarif_file(out_file)
 
     def _validate_sarif_file(self, sarif_file: Path):
-        """Validate SARIF file using external service"""
-        try:
-            with open(sarif_file, "rb") as f:
-                files = {"postedFiles": ("test.sarif", f, "application/octet-stream")}
-                response = requests.post(
-                    "https://sarifweb.azurewebsites.net/Validation/ValidateFiles",
-                    files=files,
-                    timeout=30
-                )
-            
-            response.raise_for_status()
-            result = response.json()
-            exit_code = int(result.get("exitCode", 1))
-            
-            logger.info(f"SARIF Validation Exit Code: {exit_code}")
-            if exit_code != 0:
-                raise RuntimeError("SARIF file validation failed")
-                
-        except requests.RequestException as e:
-            logger.error(f"SARIF validation request failed: {e}")
-            raise
+        """Validate SARIF file using the Microsoft SARIF Multitool (npm)"""
+        # shutil.which resolves npx.cmd on Windows
+        npx = shutil.which("npx")
+        if npx is None:
+            raise RuntimeError("npx not found; Node.js/npm is required for SARIF validation")
+
+        # The multitool exits with 0 even if it finds problems, so we have to
+        # inspect the results it writes to the output file.
+        result_file = sarif_file.parent / f"{sarif_file.stem}.validation.sarif"
+        self.run_command([npx, "--yes", "@microsoft/sarif-multitool@5.8.0", "validate",
+                          str(sarif_file), "--output", str(result_file)],
+                         "Validate SARIF file with @microsoft/sarif-multitool")
+
+        if not result_file.exists():
+            raise RuntimeError("SARIF validation produced no output file")
+
+        results = json.loads(result_file.read_text())["runs"][0].get("results", [])
+        errors = [r for r in results if r.get("level") == "error"]
+        for r in results:
+            logger.info(f"SARIF validation {r.get('level')}: {r.get('ruleId')} {r.get('message', {}).get('text')}")
+        if errors:
+            raise RuntimeError(f"SARIF file validation failed with {len(errors)} error(s)")
 
     @stage
     def schema_extender_test(self):
