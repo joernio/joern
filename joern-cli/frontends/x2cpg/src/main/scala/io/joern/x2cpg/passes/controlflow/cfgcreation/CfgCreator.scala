@@ -40,7 +40,9 @@ import java.util.concurrent.ConcurrentHashMap
   * not yet know where it should lead. We refer to the set of nodes of the control flow graph with outgoing edges for
   * which the destination node is yet to be determined as the "fringe" of the control flow graph.
   */
-class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
+class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder, forExecution: Boolean) {
+
+  def this(entryNode: Method, diffGraph: DiffGraphBuilder) = this(entryNode, diffGraph, false)
 
   import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.*
   import io.joern.x2cpg.passes.controlflow.cfgcreation.CfgCreator.*
@@ -59,12 +61,14 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     * then resolving gotos.
     */
   def run(): Unit = {
-    cfgForMethod(entryNode).withResolvedJumpToLabel().edges.foreach { edge =>
+    build().edges.foreach { edge =>
       // TODO: we are ignoring edge.edgeType because the
       //  CFG spec doesn't define an edge type at the moment
       diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.CFG)
     }
   }
+
+  def build(): Cfg = cfgForMethod(entryNode).withResolvedJumpToLabel()
 
   /** Conversion of a method to a CFG, showing the decomposition of the control flow graph generation problem into that
     * of translating sub trees according to the node type. In the particular case of a method, the CFG is obtained by
@@ -338,7 +342,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       .copy(
         entryNode = leftCfg.entryNode,
         edges = diffGraphs,
-        fringe = leftCfg.fringe ++ rightCfg.fringe
+        fringe = leftCfg.fringe.withEdgeType(FalseEdge) ++ rightCfg.fringe.withEdgeType(AlwaysEdge)
       ) ++ cfgForSingleNode(call)
   }
 
@@ -353,7 +357,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       .copy(
         entryNode = leftCfg.entryNode,
         edges = diffGraphs,
-        fringe = leftCfg.fringe ++ rightCfg.fringe
+        fringe = leftCfg.fringe.withEdgeType(TrueEdge) ++ rightCfg.fringe.withEdgeType(AlwaysEdge)
       ) ++ cfgForSingleNode(call)
   }
 
@@ -394,10 +398,14 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     * reference as well as queries that reference the inline code to be chosen as sources/sinks in data flow queries.
     */
   def cfgForInlinedCall(call: Call): Cfg = {
-    val cfgForMacroCall = call.argument.l
-      .map(cfgFor)
-      .reduceOption((accumCfg, nextCfg) => accumCfg ++ nextCfg)
-      .getOrElse(Cfg.empty) ++ cfgForSingleNode(call)
+    val cfgForMacroCall =
+      if (forExecution) cfgForSingleNode(call)
+      else {
+        call.argument.l
+          .map(cfgFor)
+          .reduceOption((accumCfg, nextCfg) => accumCfg ++ nextCfg)
+          .getOrElse(Cfg.empty) ++ cfgForSingleNode(call)
+      }
     val cfgForExpansion = call.astChildren.lastOption.map(cfgFor).getOrElse(Cfg.empty)
     val cfg             = Cfg
       .from(cfgForMacroCall, cfgForExpansion)
@@ -405,7 +413,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         entryNode = cfgForMacroCall.entryNode,
         edges = cfgForMacroCall.edges ++ cfgForExpansion.edges ++ cfgForExpansion.entryNode.toList
           .flatMap(expansionEntryNode => singleEdge(call, expansionEntryNode)),
-        fringe = cfgForMacroCall.fringe ++ cfgForExpansion.fringe
+        fringe =
+          if (forExecution && cfgForExpansion.entryNode.nonEmpty) cfgForExpansion.fringe
+          else cfgForMacroCall.fringe ++ cfgForExpansion.fringe
       )
     cfg
   }
@@ -466,6 +476,10 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val innerCfg      = bodyCfg ++ loopExprCfg
     val loopEntryNode = conditionCfg.entryNode.orElse(innerCfg.entryNode)
     val entryNode     = initExprCfg.entryNode.orElse(loopEntryNode)
+
+    if (forExecution && loopEntryNode.isEmpty) {
+      return initExprCfg ++ Cfg(entryNode = Some(node), edges = singleEdge(node, node))
+    }
 
     val newEdges = edgesFromFringeTo(initExprCfg, loopEntryNode) ++
       edgesFromFringeTo(innerCfg, loopEntryNode) ++
@@ -531,8 +545,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val trueCfg      = node.whenTrue.headOption.map(cfgFor).getOrElse(Cfg.empty)
     val falseCfg     = node.whenFalse.headOption.map(cfgFor).getOrElse(Cfg.empty)
 
-    val diffGraphs = edgesFromFringeTo(conditionCfg, trueCfg.entryNode) ++
-      edgesFromFringeTo(trueCfg, falseCfg.entryNode) ++
+    val diffGraphs = edgesFromFringeTo(conditionCfg, trueCfg.entryNode.orElse(conditionCfg.entryNode), TrueEdge) ++
+      edgesFromFringeTo(conditionCfg, falseCfg.entryNode, FalseEdge) ++
       edgesFromFringeTo(trueCfg, conditionCfg.entryNode) ++
       edges(takeCurrentLevel(trueCfg.continues), conditionCfg.entryNode)
 
@@ -541,8 +555,10 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       .copy(
         entryNode = conditionCfg.entryNode,
         edges = diffGraphs ++ conditionCfg.edges ++ trueCfg.edges ++ falseCfg.edges,
-        fringe = conditionCfg.fringe.withEdgeType(FalseEdge) ++ takeCurrentLevel(trueCfg.breaks)
-          .map((_, AlwaysEdge)) ++ falseCfg.fringe,
+        fringe = {
+          if (falseCfg.entryNode.isEmpty) conditionCfg.fringe.withEdgeType(FalseEdge)
+          else Nil
+        } ++ takeCurrentLevel(trueCfg.breaks).map((_, AlwaysEdge)) ++ falseCfg.fringe,
         breaks = reduceAndFilterLevel(trueCfg.breaks),
         continues = reduceAndFilterLevel(trueCfg.continues)
       )
@@ -564,8 +580,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val trueCfg      = node.whenTrue.headOption.map(cfgFor).getOrElse(Cfg.empty)
     val falseCfg     = node.whenFalse.headOption.map(cfgFor).getOrElse(Cfg.empty)
 
-    val diffGraphs = edgesFromFringeTo(conditionCfg, trueCfg.entryNode) ++
-      edgesFromFringeTo(conditionCfg, falseCfg.entryNode)
+    val diffGraphs = edgesFromFringeTo(conditionCfg, trueCfg.entryNode, TrueEdge) ++
+      edgesFromFringeTo(conditionCfg, falseCfg.entryNode, FalseEdge)
 
     val ifStatementFringe =
       if (trueCfg.entryNode.isEmpty && falseCfg.entryNode.isEmpty) {
