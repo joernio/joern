@@ -1,6 +1,7 @@
 package io.joern.pysrc2cpg.io
 
 import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.semanticcpg.language.*
@@ -9,7 +10,6 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.collection.parallel.CollectionConverters.RangeIsParallelizable
 import scala.util.Failure
 import scala.util.Success
 
@@ -62,7 +62,7 @@ class PySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
     }
 
     "build CPGs correctly (multi-threaded test)" in {
-      (0 until 10).par.foreach { index =>
+      ConcurrentTaskUtil.parForeach(0 until 10) { index =>
         FileUtil.usingTemporaryFile("pysrc2cpg", ".bin") { cpgOutFile =>
           newProjectUnderTest(Some(index)) { projectUnderTest =>
             val input  = projectUnderTest.toAbsolutePath.toString

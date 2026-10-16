@@ -29,8 +29,6 @@ object Versions {
   val pPrint                 = "0.8.1"
   val reflection             = "0.10.2"
   val requests               = "0.8.0"
-  val scalaParallel          = "1.0.4"
-  val scalaParserCombinators = "2.4.0"
   val scalaReplPP            = "0.6.4"
   val scalatest              = "3.2.18"
   val scopt                  = "4.1.0"
@@ -49,8 +47,6 @@ object Versions {
   val osLib          = "0.10.1"
   val typeSafeConfig = "1.4.3"
   val versionSort    = "1.0.11"
-  val zip4j          = "2.11.5"
-
   private def parseVersion(key: String): String = {
     val versionRegexp = s""".*val $key[ ]+=[ ]?"(.*?)"""".r
     val versions: List[String] = scala.io.Source

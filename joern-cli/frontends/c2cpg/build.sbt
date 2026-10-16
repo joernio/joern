@@ -9,7 +9,6 @@ lazy val c2cpg = (project in file("."))
     name := "c2cpg",
 
     libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %% "scala-parallel-collections" % Versions.scalaParallel,
       "org.eclipse.platform"    % "org.eclipse.core.resources" % Versions.eclipseCore,
       "org.eclipse.platform"    % "org.eclipse.text"           % Versions.eclipseText,
       // see note in readme re self-publishing cdt-core

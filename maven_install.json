@@ -27,7 +27,6 @@
     "io.joern:flatgraph-help_3": -138228966,
     "io.joern:flatgraph-odb-convert_3": 1959782918,
     "net.java.dev.javacc:javacc": -1966826500,
-    "net.lingala.zip4j:zip4j": 967189992,
     "net.sf.trove4j:core": 1808260229,
     "org.antlr:antlr4": 1718243761,
     "org.antlr:antlr4-runtime": 1843802748,
@@ -48,8 +47,6 @@
     "org.jruby:jruby-complete": -26341225,
     "org.ow2.asm:asm": 1206815935,
     "org.projectlombok:lombok": -1238622139,
-    "org.scala-lang.modules:scala-parallel-collections_3": -115965401,
-    "org.scala-lang.modules:scala-parser-combinators_3": -1229494994,
     "org.scala-lang.modules:scala-xml_3": -2041798718,
     "org.scala-lang:scala-library": 1230160761,
     "org.scala-lang:scala3-library_3": 1771369610,
@@ -67,7 +64,7 @@
     "com.github.luben:zstd-jni:jar:sources": -1190847340,
     "com.github.scopt:scopt_3": 148843063,
     "com.github.scopt:scopt_3:jar:sources": 776003799,
-    "com.github.sh4869:semver-parser-scala_3": -1402857073,
+    "com.github.sh4869:semver-parser-scala_3": 62308371,
     "com.github.sh4869:semver-parser-scala_3:jar:sources": 1515822071,
     "com.google.code.findbugs:jsr305": 870839855,
     "com.google.code.findbugs:jsr305:jar:sources": -935881202,
@@ -152,8 +149,6 @@
     "net.java.dev.jna:jna-platform": 1799484530,
     "net.java.dev.jna:jna-platform:jar:sources": -1395985158,
     "net.java.dev.jna:jna:jar:sources": -709166988,
-    "net.lingala.zip4j:zip4j": 795169078,
-    "net.lingala.zip4j:zip4j:jar:sources": 1552174381,
     "net.oneandone.reflections8:reflections8": -182915410,
     "net.oneandone.reflections8:reflections8:jar:sources": 510005338,
     "net.sf.trove4j:core": 1052714240,
@@ -289,10 +284,8 @@
     "org.projectlombok:lombok:jar:sources": -1275591244,
     "org.scala-lang.modules:scala-asm": 1549099613,
     "org.scala-lang.modules:scala-asm:jar:sources": -297752178,
-    "org.scala-lang.modules:scala-parallel-collections_3": 614781201,
-    "org.scala-lang.modules:scala-parallel-collections_3:jar:sources": 1784693268,
-    "org.scala-lang.modules:scala-parser-combinators_3": 420193852,
-    "org.scala-lang.modules:scala-parser-combinators_3:jar:sources": -1426101912,
+    "org.scala-lang.modules:scala-parser-combinators_3": -342168038,
+    "org.scala-lang.modules:scala-parser-combinators_3:jar:sources": -1912333222,
     "org.scala-lang.modules:scala-xml_3": -623661362,
     "org.scala-lang.modules:scala-xml_3:jar:sources": 80523494,
     "org.scala-lang:scala3-compiler_3": -1701485851,
@@ -657,13 +650,6 @@
         "sources": "63f67968e5714f854e8de84330aa371a33221871f8b110917769f15e517a6a24"
       },
       "version": "5.17.0"
-    },
-    "net.lingala.zip4j:zip4j": {
-      "shasums": {
-        "jar": "fee9a941f286166d4a19719d818f20e9f3addb3cbd7291c08b67f0e0ce75a9fd",
-        "sources": "dd8a5f08c3df15963f12fa7236ad21a2cd7f3cfea0ae0fca077a61bedb57f0a2"
-      },
-      "version": "2.11.5"
     },
     "net.oneandone.reflections8:reflections8": {
       "shasums": {
@@ -1140,19 +1126,12 @@
       },
       "version": "9.8.0-scala-1"
     },
-    "org.scala-lang.modules:scala-parallel-collections_3": {
-      "shasums": {
-        "jar": "c3bf0d4d057942a78389fa9675823db5e3179f1b503f2df212b74e784da57050",
-        "sources": "7f190cd21b0a2de3e0509920b5d548174c2c4a791108b854673ea40f3ea331d2"
-      },
-      "version": "1.0.4"
-    },
     "org.scala-lang.modules:scala-parser-combinators_3": {
       "shasums": {
-        "jar": "50f1b3dcf8f14975702dc6da287797e391fc5d4834e4d3e7e9f9125efdb2de9a",
-        "sources": "d400578b2eae8bcd251ff2fe3236fe7cf091cb38ec013982fc101ff102d6d8ee"
+        "jar": "9c89c87206aab894492fcb94e380cb7db47ba32aa4977238484bff633d4d6172",
+        "sources": "70b54a851ab3f1b2ec5e7ecb84b91aa0852c0c1e93d4e31576bbdfa61c5a81a0"
       },
-      "version": "2.4.0"
+      "version": "2.1.0"
     },
     "org.scala-lang.modules:scala-xml_3": {
       "shasums": {
@@ -2190,21 +2169,6 @@
       "com.sun.jna.platform.win32.COM.util",
       "com.sun.jna.platform.win32.COM.util.annotation",
       "com.sun.jna.platform.wince"
-    ],
-    "net.lingala.zip4j:zip4j": [
-      "net.lingala.zip4j",
-      "net.lingala.zip4j.crypto",
-      "net.lingala.zip4j.crypto.PBKDF2",
-      "net.lingala.zip4j.crypto.engine",
-      "net.lingala.zip4j.exception",
-      "net.lingala.zip4j.headers",
-      "net.lingala.zip4j.io.inputstream",
-      "net.lingala.zip4j.io.outputstream",
-      "net.lingala.zip4j.model",
-      "net.lingala.zip4j.model.enums",
-      "net.lingala.zip4j.progress",
-      "net.lingala.zip4j.tasks",
-      "net.lingala.zip4j.util"
     ],
     "net.oneandone.reflections8:reflections8": [
       "org.reflections8",
@@ -4309,15 +4273,6 @@
       "scala.tools.asm.tree.analysis",
       "scala.tools.asm.util"
     ],
-    "org.scala-lang.modules:scala-parallel-collections_3": [
-      "scala.collection",
-      "scala.collection.generic",
-      "scala.collection.immutable",
-      "scala.collection.mutable",
-      "scala.collection.parallel",
-      "scala.collection.parallel.immutable",
-      "scala.collection.parallel.mutable"
-    ],
     "org.scala-lang.modules:scala-parser-combinators_3": [
       "scala.util.parsing.combinator",
       "scala.util.parsing.combinator.lexical",
@@ -4515,8 +4470,6 @@
       "net.java.dev.jna:jna-platform",
       "net.java.dev.jna:jna-platform:jar:sources",
       "net.java.dev.jna:jna:jar:sources",
-      "net.lingala.zip4j:zip4j",
-      "net.lingala.zip4j:zip4j:jar:sources",
       "net.oneandone.reflections8:reflections8",
       "net.oneandone.reflections8:reflections8:jar:sources",
       "net.sf.trove4j:core",
@@ -4652,8 +4605,6 @@
       "org.projectlombok:lombok:jar:sources",
       "org.scala-lang.modules:scala-asm",
       "org.scala-lang.modules:scala-asm:jar:sources",
-      "org.scala-lang.modules:scala-parallel-collections_3",
-      "org.scala-lang.modules:scala-parallel-collections_3:jar:sources",
       "org.scala-lang.modules:scala-parser-combinators_3",
       "org.scala-lang.modules:scala-parser-combinators_3:jar:sources",
       "org.scala-lang.modules:scala-xml_3",
@@ -4773,8 +4724,6 @@
       "net.java.dev.jna:jna-platform",
       "net.java.dev.jna:jna-platform:jar:sources",
       "net.java.dev.jna:jna:jar:sources",
-      "net.lingala.zip4j:zip4j",
-      "net.lingala.zip4j:zip4j:jar:sources",
       "net.oneandone.reflections8:reflections8",
       "net.oneandone.reflections8:reflections8:jar:sources",
       "net.sf.trove4j:core",
@@ -4910,8 +4859,6 @@
       "org.projectlombok:lombok:jar:sources",
       "org.scala-lang.modules:scala-asm",
       "org.scala-lang.modules:scala-asm:jar:sources",
-      "org.scala-lang.modules:scala-parallel-collections_3",
-      "org.scala-lang.modules:scala-parallel-collections_3:jar:sources",
       "org.scala-lang.modules:scala-parser-combinators_3",
       "org.scala-lang.modules:scala-parser-combinators_3:jar:sources",
       "org.scala-lang.modules:scala-xml_3",

@@ -2,6 +2,7 @@ package io.joern.jimple2cpg.io
 
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
+import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
@@ -11,7 +12,6 @@ import org.scalatest.BeforeAndAfterAll
 
 import java.nio.file.{Files, Path}
 
-import scala.collection.parallel.CollectionConverters.RangeIsParallelizable
 import scala.util.Failure
 import scala.util.Success
 
@@ -66,7 +66,7 @@ class Jimple2CpgHTTPServerTests extends JimpleCode2CpgFixture with BeforeAndAfte
     }
 
     "build CPGs correctly (multi-threaded test)" in {
-      (0 until 10).par.foreach { index =>
+      ConcurrentTaskUtil.parForeach(0 until 10) { index =>
         FileUtil.usingTemporaryFile("jimple2cpg", ".bin") { cpgOutFile =>
           newProjectUnderTest(Some(index)) { projectUnderTest =>
             val input  = projectUnderTest.toAbsolutePath.toString

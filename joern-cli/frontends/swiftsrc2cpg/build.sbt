@@ -40,8 +40,7 @@ lazy val swiftsrc2cpg = (project in file("."))
       "com.google.code.gson" % "gson" % Versions.gson,
       // to handle property list files of various formats (i.e., binary and plain XML)
       "com.googlecode.plist" % "dd-plist"  % "1.28",
-      "org.scalatest"       %% "scalatest" % Versions.scalatest % Test,
-      "org.scala-lang.modules" %% "scala-parallel-collections" % Versions.scalaParallel
+      "org.scalatest"       %% "scalatest" % Versions.scalatest % Test
     ),
 
     Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value),

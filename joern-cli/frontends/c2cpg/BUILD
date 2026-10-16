@@ -41,7 +41,6 @@ scala_test(
         "//dataflowengineoss/src/test/scala/io/joern/dataflowengineoss/testfixtures",
         "//semanticcpg",
         "@maven//:com_github_scopt_scopt_3",
-        "@maven//:org_scala_lang_modules_scala_parallel_collections_3",
     ],
 )
 

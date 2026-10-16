@@ -49,7 +49,6 @@ scala_test(
         "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
         "//dataflowengineoss/src/test/scala/io/joern/dataflowengineoss/testfixtures",
         "//semanticcpg",
-        "@maven//:org_scala_lang_modules_scala_parallel_collections_3",
     ],
 )
 

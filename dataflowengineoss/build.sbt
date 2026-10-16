@@ -13,8 +13,7 @@ lazy val dataflowengineoss = (project in file("."))
       "org.antlr"               % "antlr4-runtime"             % Versions.antlr,
       "com.lihaoyi"            %% "upickle"                    % Versions.upickle,
       "com.lihaoyi"            %% "ujson"                      % Versions.upickle,
-      "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test,
-      "org.scala-lang.modules" %% "scala-parallel-collections" % Versions.scalaParallel
+      "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test
     ),
 
     Antlr4 / antlr4Package := Some("io.joern.dataflowengineoss"),
