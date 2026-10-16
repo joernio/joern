@@ -2,7 +2,7 @@ package io.joern.c2cpg.astcreation
 
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewMethodRef, NewTypeDecl}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, Operators}
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.{
@@ -84,7 +84,15 @@ trait AstForPrimitivesCreator { this: AstCreator =>
             val tpe       = registerType(identifierTypeName)
             val globalTag = globalTagFromDefinition(ident)
             val node      = identifierNode(ident, identifierName, s"$globalTag${code(ident)}", tpe)
-            scope.addVariableReference(identifierName, node, tpe, EvaluationStrategies.BY_REFERENCE)
+            val binding   = ident match {
+              case id: IASTIdExpression => safeGetBinding(id)
+              case id: IASTName         => safeGetBinding(id)
+              case _                    => None
+            }
+            binding.flatMap(enumMembers.get) match {
+              case Some(member) => diffGraph.addEdge(node, member, EdgeTypes.REF)
+              case None => scope.addVariableReference(identifierName, node, tpe, EvaluationStrategies.BY_REFERENCE)
+            }
             Ast(node)
           case ast: Ast => ast
         }

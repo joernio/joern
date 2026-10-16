@@ -16,11 +16,14 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.{
 }
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
+import scala.collection.mutable
 import scala.util.Try
 
 trait AstForTypesCreator { this: AstCreator =>
 
   import FullNameProvider.*
+
+  protected val enumMembers: mutable.Map[IBinding, NewMember] = mutable.HashMap.empty
 
   protected def astForDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier): Ast = {
     val op       = Defines.OperatorTypeOf
@@ -520,7 +523,10 @@ trait AstForTypesCreator { this: AstCreator =>
         enumeration.getBaseType.toString
       case _ => typeFor(enumerator)
     }
-    Ast(memberNode(enumerator, ASTStringUtil.getSimpleName(enumerator.getName), code(enumerator), registerType(tpe)))
+    val member =
+      memberNode(enumerator, ASTStringUtil.getSimpleName(enumerator.getName), code(enumerator), registerType(tpe))
+    safeGetBinding(enumerator.getName).foreach(binding => enumMembers.update(binding, member))
+    Ast(member).withChild(Ast(NewModifier().modifierType(ModifierTypes.FINAL)))
   }
 
   protected def astForEnumeratorWithInit(enumerator: IASTEnumerationSpecifier.IASTEnumerator): Ast = {
