@@ -1,19 +1,19 @@
-import sbt.BareBuildSyntax.dependsOn
+lazy val semanticcpg = (project in file("."))
+  .dependsOn(Projects.linterRules % ScalafixConfig)
+  .settings(
+    name := "semanticcpg",
 
-name := "semanticcpg"
+    libraryDependencies ++= Seq(
+      "io.shiftleft"           %% "codepropertygraph" % Versions.cpg,
+      ("com.michaelpollmeier"   % "scala-repl-pp"     % Versions.scalaReplPP).cross(CrossVersion.full),
+      "com.lihaoyi"            %% "upickle"           % Versions.upickle,
+      "org.scala-lang.modules" %% "scala-xml"         % "2.2.0",
+      "commons-io"              % "commons-io"        % Versions.commonsIo,
+      "org.apache.commons"      % "commons-text"      % Versions.commonsText,
+      "org.scalatest"          %% "scalatest"         % Versions.scalatest % Test
+    ),
 
-dependsOn(Projects.linterRules % ScalafixConfig)
+    scalacOptions += "-language:implicitConversions",
 
-libraryDependencies ++= Seq(
-  "io.shiftleft"           %% "codepropertygraph" % Versions.cpg,
-  ("com.michaelpollmeier"   % "scala-repl-pp"     % Versions.scalaReplPP).cross(CrossVersion.full),
-  "com.lihaoyi"            %% "upickle"           % Versions.upickle,
-  "org.scala-lang.modules" %% "scala-xml"         % "2.2.0",
-  "commons-io"              % "commons-io"        % Versions.commonsIo,
-  "org.apache.commons"      % "commons-text"      % Versions.commonsText,
-  "org.scalatest"          %% "scalatest"         % Versions.scalatest % Test
-)
-
-scalacOptions += "-language:implicitConversions"
-
-Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
+    Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
+  )
