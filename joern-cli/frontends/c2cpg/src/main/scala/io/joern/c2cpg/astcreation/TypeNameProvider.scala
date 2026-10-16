@@ -306,10 +306,10 @@ trait TypeNameProvider { this: AstCreator =>
       case Some(v: IVariable) =>
         v.getType match {
           case f: IFunctionType =>
-            f.getReturnType.toString
+            safeGetType(f.getReturnType)
           case c: ICPPBinding =>
             c.getQualifiedName.mkString(".")
-          case other => other.toString
+          case other => safeGetType(other)
         }
       case _ => safeGetNodeType(name)
     }

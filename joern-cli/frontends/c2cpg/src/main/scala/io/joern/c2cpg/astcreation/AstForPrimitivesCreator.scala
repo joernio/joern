@@ -158,8 +158,8 @@ trait AstForPrimitivesCreator { this: AstCreator =>
         idBinding match {
           case Some(v: IVariable) =>
             safeCdtCall(v.getType) match {
-              case Some(f: IFunctionType) => cleanType(f.getReturnType.toString)
-              case Some(other)            => cleanType(other.toString)
+              case Some(f: IFunctionType) => cleanType(safeGetType(f.getReturnType))
+              case Some(other)            => cleanType(safeGetType(other))
               case None                   => Defines.Any
             }
           case Some(other) => cleanType(other.getName)

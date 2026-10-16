@@ -379,6 +379,32 @@ class MacroHandlingTests extends C2CpgSuite {
       cpg.method.nameExact("FOO").size shouldBe 1
     }
   }
+
+  "MacroHandlingTests12" should {
+    val cpg = code("""
+        |struct s { int x; };
+        |const int A = 8;
+        |const char B = ',';
+        |volatile unsigned int C = 0;
+        |const long D = 1;
+        |const volatile short E = 2;
+        |const struct s F = {1};
+        |#define MA A
+        |#define MB B
+        |#define MC C
+        |#define MD D
+        |#define ME E
+        |#define MF F
+        |int use(void) { return MA + MB + MC + MD + ME + MF.x; }
+        |""".stripMargin)
+
+    "not type macros naming qualified variables with Java object names" in {
+      val macroCalls = cpg.call.nameExact("MA", "MB", "MC", "MD", "ME", "MF").l
+      macroCalls.size shouldBe 6
+      macroCalls.map(_.typeFullName).filter(_.contains("@")) shouldBe empty
+      cpg.typ.fullName.filter(_.contains("@")).l shouldBe empty
+    }
+  }
 }
 
 class CfgMacroTests extends DataFlowCodeToCpgSuite {
