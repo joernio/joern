@@ -27,7 +27,6 @@
     "io.joern:flatgraph-help_3": -138228966,
     "io.joern:flatgraph-odb-convert_3": 1959782918,
     "net.java.dev.javacc:javacc": -1966826500,
-    "net.lingala.zip4j:zip4j": 967189992,
     "net.sf.trove4j:core": 1808260229,
     "org.antlr:antlr4": 1718243761,
     "org.antlr:antlr4-runtime": 1843802748,
@@ -150,8 +149,6 @@
     "net.java.dev.jna:jna-platform": 1799484530,
     "net.java.dev.jna:jna-platform:jar:sources": -1395985158,
     "net.java.dev.jna:jna:jar:sources": -709166988,
-    "net.lingala.zip4j:zip4j": 795169078,
-    "net.lingala.zip4j:zip4j:jar:sources": 1552174381,
     "net.oneandone.reflections8:reflections8": -182915410,
     "net.oneandone.reflections8:reflections8:jar:sources": 510005338,
     "net.sf.trove4j:core": 1052714240,
@@ -653,13 +650,6 @@
         "sources": "63f67968e5714f854e8de84330aa371a33221871f8b110917769f15e517a6a24"
       },
       "version": "5.17.0"
-    },
-    "net.lingala.zip4j:zip4j": {
-      "shasums": {
-        "jar": "fee9a941f286166d4a19719d818f20e9f3addb3cbd7291c08b67f0e0ce75a9fd",
-        "sources": "dd8a5f08c3df15963f12fa7236ad21a2cd7f3cfea0ae0fca077a61bedb57f0a2"
-      },
-      "version": "2.11.5"
     },
     "net.oneandone.reflections8:reflections8": {
       "shasums": {
@@ -2179,21 +2169,6 @@
       "com.sun.jna.platform.win32.COM.util",
       "com.sun.jna.platform.win32.COM.util.annotation",
       "com.sun.jna.platform.wince"
-    ],
-    "net.lingala.zip4j:zip4j": [
-      "net.lingala.zip4j",
-      "net.lingala.zip4j.crypto",
-      "net.lingala.zip4j.crypto.PBKDF2",
-      "net.lingala.zip4j.crypto.engine",
-      "net.lingala.zip4j.exception",
-      "net.lingala.zip4j.headers",
-      "net.lingala.zip4j.io.inputstream",
-      "net.lingala.zip4j.io.outputstream",
-      "net.lingala.zip4j.model",
-      "net.lingala.zip4j.model.enums",
-      "net.lingala.zip4j.progress",
-      "net.lingala.zip4j.tasks",
-      "net.lingala.zip4j.util"
     ],
     "net.oneandone.reflections8:reflections8": [
       "org.reflections8",
@@ -4495,8 +4470,6 @@
       "net.java.dev.jna:jna-platform",
       "net.java.dev.jna:jna-platform:jar:sources",
       "net.java.dev.jna:jna:jar:sources",
-      "net.lingala.zip4j:zip4j",
-      "net.lingala.zip4j:zip4j:jar:sources",
       "net.oneandone.reflections8:reflections8",
       "net.oneandone.reflections8:reflections8:jar:sources",
       "net.sf.trove4j:core",
@@ -4751,8 +4724,6 @@
       "net.java.dev.jna:jna-platform",
       "net.java.dev.jna:jna-platform:jar:sources",
       "net.java.dev.jna:jna:jar:sources",
-      "net.lingala.zip4j:zip4j",
-      "net.lingala.zip4j:zip4j:jar:sources",
       "net.oneandone.reflections8:reflections8",
       "net.oneandone.reflections8:reflections8:jar:sources",
       "net.sf.trove4j:core",

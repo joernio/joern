@@ -47,7 +47,6 @@ maven.install(
         "com.github.javaparser:javaparser-symbol-solver-core:3.28.0",
         "org.ow2.asm:asm:9.9.1",
         "org.projectlombok:lombok:1.18.42",
-        "net.lingala.zip4j:zip4j:2.11.5",
         "org.gradle:gradle-tooling-api:8.3",
         "com.lihaoyi:ujson_3:4.4.3",
         "com.lihaoyi:upickle_3:4.4.3",

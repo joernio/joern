@@ -14,7 +14,6 @@ lazy val javasrc2cpg = (project in file("."))
       "org.gradle"              % "gradle-tooling-api"            % Versions.gradleTooling,
       "org.scalatest"          %% "scalatest"                     % Versions.scalatest % Test,
       "org.projectlombok"       % "lombok"                        % Versions.lombok,
-      "net.lingala.zip4j"       % "zip4j"                         % Versions.zip4j,
       "org.ow2.asm"             % "asm"                           % Versions.asm
     )
   )

@@ -47,8 +47,6 @@ object Versions {
   val osLib          = "0.10.1"
   val typeSafeConfig = "1.4.3"
   val versionSort    = "1.0.11"
-  val zip4j          = "2.11.5"
-
   private def parseVersion(key: String): String = {
     val versionRegexp = s""".*val $key[ ]+=[ ]?"(.*?)"""".r
     val versions: List[String] = scala.io.Source
