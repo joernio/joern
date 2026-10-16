@@ -3,12 +3,13 @@ package io.joern.c2cpg.astcreation
 import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.eclipse.cdt.core.dom.ast.{
   IASTBinaryExpression,
   IASTMacroExpansionLocation,
   IASTNode,
+  IASTPreprocessorFunctionStyleMacroDefinition,
   IASTPreprocessorMacroDefinition
 }
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
@@ -110,6 +111,10 @@ trait MacroHandler { this: AstCreator =>
 
     val callNode_ =
       callNode(node, code, macroDefName, macroDefFullName, DispatchTypes.INLINED, Some(signature), Some(typeFullName))
+    val macroStyle = if (macroDef.isInstanceOf[IASTPreprocessorFunctionStyleMacroDefinition]) "function" else "object"
+    val styleTag   = NewTag().name("MACRO_STYLE").value(macroStyle)
+    diffGraph.addNode(styleTag)
+    diffGraph.addEdge(callNode_, styleTag, EdgeTypes.TAGGED_BY)
 
     // we stub the corresponding method manually because we want different line/column information
     // (call information from the actual AST node but the method gets the IASTPreprocessorMacroDefinition information)
