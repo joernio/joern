@@ -33,7 +33,6 @@ scala_library(
         "//joern-cli/frontends/x2cpg",
         "//semanticcpg",
         "@maven//:org_antlr_antlr4_runtime",
-        "@maven//:org_scala_lang_modules_scala_parallel_collections_3",
     ],
 )
 

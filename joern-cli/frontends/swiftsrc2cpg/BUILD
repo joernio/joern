@@ -32,7 +32,6 @@ scala_library(
         "@maven//:com_google_code_gson_gson",
         "@maven//:com_googlecode_plist_dd_plist",
         "@maven//:org_apache_commons_commons_lang3",
-        "@maven//:org_scala_lang_modules_scala_parallel_collections_3",
     ],
 )
 

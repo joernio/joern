@@ -14,7 +14,6 @@ scala_library(
         "@maven//:org_gradle_gradle_tooling_api",
         "@maven//:org_ow2_asm_asm",
         "@maven//:org_projectlombok_lombok",
-        "@maven//:org_scala_lang_modules_scala_parallel_collections_3",
         "@maven//:org_scala_lang_modules_scala_parser_combinators_3",
         "@maven//:org_slf4j_slf4j_api",
     ],

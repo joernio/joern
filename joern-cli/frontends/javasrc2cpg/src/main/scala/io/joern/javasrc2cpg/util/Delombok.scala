@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.util
 
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode.*
+import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.LoggerFactory
@@ -10,7 +11,6 @@ import java.nio.file.{Files, Path, Paths}
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-import scala.collection.parallel.CollectionConverters.*
 
 object Delombok {
 
@@ -203,7 +203,7 @@ object Delombok {
         FileUtil.deleteOnExit(tempDir)
         val packageRoots         = PackageRootFinder.packageRootsFromFiles(inputPath, fileInfo).distinct
         val absolutePackageRoots = packageRoots.map(_.toAbsolutePath)
-        packageRoots.par.foreach { case relativeRoot =>
+        ConcurrentTaskUtil.parForeach(packageRoots) { relativeRoot =>
           val absoluteRoot      = relativeRoot.toAbsolutePath
           val absolutePeerRoots = absolutePackageRoots.filterNot(_ == absoluteRoot)
           delombokPackageRoot(

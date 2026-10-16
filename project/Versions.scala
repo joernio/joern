@@ -29,7 +29,6 @@ object Versions {
   val pPrint                 = "0.8.1"
   val reflection             = "0.10.2"
   val requests               = "0.8.0"
-  val scalaParallel          = "1.0.4"
   val scalaParserCombinators = "2.4.0"
   val scalaReplPP            = "0.6.4"
   val scalatest              = "3.2.18"

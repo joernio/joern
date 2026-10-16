@@ -11,9 +11,8 @@ lazy val pysrc2cpg = (project in file("."))
     name := "pysrc2cpg",
 
     libraryDependencies ++= Seq(
-      "io.shiftleft"           %% "codepropertygraph"          % Versions.cpg,
-      "org.scala-lang.modules" %% "scala-parallel-collections" % Versions.scalaParallel,
-      "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test
+      "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
+      "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
     ),
     javaCCTask := Def.uncached {
       import org.javacc.parser.{Main => JavaCCMain}

@@ -26,9 +26,6 @@ import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
 import scala.collection.mutable
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
 
 class CSharpSrc2Cpg extends X2CpgFrontend {
@@ -75,23 +72,15 @@ object CSharpSrc2Cpg {
   /** Parses the generated AST Gen files in parallel and produces AstCreators from each.
     */
   def processAstGenRunnerResults(astFiles: List[String], config: Config): Seq[AstCreator] = {
-    Await.result(
-      Future.sequence(
-        astFiles
-          .map(file =>
-            Future {
-              val parserResult     = DotNetJsonParser.readFile(Paths.get(file))
-              val relativeFileName = if (Environment.operatingSystem == Environment.OperatingSystemType.Windows) {
-                handleWinUserTemp(parserResult.fullPath, config.inputPath)
-              } else {
-                SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
-              }
-              new AstCreator(relativeFileName, parserResult)(config.schemaValidation)
-            }
-          )
-      ),
-      Duration.Inf
-    )
+    ConcurrentTaskUtil.parMap(astFiles) { file =>
+      val parserResult     = DotNetJsonParser.readFile(Paths.get(file))
+      val relativeFileName = if (Environment.operatingSystem == Environment.OperatingSystemType.Windows) {
+        handleWinUserTemp(parserResult.fullPath, config.inputPath)
+      } else {
+        SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
+      }
+      new AstCreator(relativeFileName, parserResult)(config.schemaValidation)
+    }
   }
 
   def findBuildFiles(config: Config): List[String] = {

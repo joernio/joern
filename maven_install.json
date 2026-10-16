@@ -48,7 +48,6 @@
     "org.jruby:jruby-complete": -26341225,
     "org.ow2.asm:asm": 1206815935,
     "org.projectlombok:lombok": -1238622139,
-    "org.scala-lang.modules:scala-parallel-collections_3": -115965401,
     "org.scala-lang.modules:scala-parser-combinators_3": -1229494994,
     "org.scala-lang.modules:scala-xml_3": -2041798718,
     "org.scala-lang:scala-library": 1230160761,
@@ -289,8 +288,6 @@
     "org.projectlombok:lombok:jar:sources": -1275591244,
     "org.scala-lang.modules:scala-asm": 1549099613,
     "org.scala-lang.modules:scala-asm:jar:sources": -297752178,
-    "org.scala-lang.modules:scala-parallel-collections_3": 614781201,
-    "org.scala-lang.modules:scala-parallel-collections_3:jar:sources": 1784693268,
     "org.scala-lang.modules:scala-parser-combinators_3": 420193852,
     "org.scala-lang.modules:scala-parser-combinators_3:jar:sources": -1426101912,
     "org.scala-lang.modules:scala-xml_3": -623661362,
@@ -1139,13 +1136,6 @@
         "sources": "78543ab8bafec0e7d09227872db06f4c725f5e0743f1f3eab1f60ef6876588e9"
       },
       "version": "9.8.0-scala-1"
-    },
-    "org.scala-lang.modules:scala-parallel-collections_3": {
-      "shasums": {
-        "jar": "c3bf0d4d057942a78389fa9675823db5e3179f1b503f2df212b74e784da57050",
-        "sources": "7f190cd21b0a2de3e0509920b5d548174c2c4a791108b854673ea40f3ea331d2"
-      },
-      "version": "1.0.4"
     },
     "org.scala-lang.modules:scala-parser-combinators_3": {
       "shasums": {
@@ -4309,15 +4299,6 @@
       "scala.tools.asm.tree.analysis",
       "scala.tools.asm.util"
     ],
-    "org.scala-lang.modules:scala-parallel-collections_3": [
-      "scala.collection",
-      "scala.collection.generic",
-      "scala.collection.immutable",
-      "scala.collection.mutable",
-      "scala.collection.parallel",
-      "scala.collection.parallel.immutable",
-      "scala.collection.parallel.mutable"
-    ],
     "org.scala-lang.modules:scala-parser-combinators_3": [
       "scala.util.parsing.combinator",
       "scala.util.parsing.combinator.lexical",
@@ -4652,8 +4633,6 @@
       "org.projectlombok:lombok:jar:sources",
       "org.scala-lang.modules:scala-asm",
       "org.scala-lang.modules:scala-asm:jar:sources",
-      "org.scala-lang.modules:scala-parallel-collections_3",
-      "org.scala-lang.modules:scala-parallel-collections_3:jar:sources",
       "org.scala-lang.modules:scala-parser-combinators_3",
       "org.scala-lang.modules:scala-parser-combinators_3:jar:sources",
       "org.scala-lang.modules:scala-xml_3",
@@ -4910,8 +4889,6 @@
       "org.projectlombok:lombok:jar:sources",
       "org.scala-lang.modules:scala-asm",
       "org.scala-lang.modules:scala-asm:jar:sources",
-      "org.scala-lang.modules:scala-parallel-collections_3",
-      "org.scala-lang.modules:scala-parallel-collections_3:jar:sources",
       "org.scala-lang.modules:scala-parser-combinators_3",
       "org.scala-lang.modules:scala-parser-combinators_3:jar:sources",
       "org.scala-lang.modules:scala-xml_3",

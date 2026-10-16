@@ -4,11 +4,11 @@ import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.queryengine.*
 import io.joern.dataflowengineoss.queryengine.SourcesToStartingPoints.sourceTravsToStartingPoints
 import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 import scala.collection.mutable
-import scala.collection.parallel.CollectionConverters.*
 
 /** Base class for nodes that can occur in data flows
   */
@@ -42,8 +42,8 @@ class ExtendedCfgNode(val traversal: Iterator[CfgNode]) extends AnyVal {
   ): Iterator[Path] = {
     val sources        = sourceTravsToStartingPoints(sourceTrav +: sourceTravs*)
     val startingPoints = sources.map(_.startingPoint)
-    val paths          = reachableByInternal(sources).par
-      .map { result =>
+    val paths          = ConcurrentTaskUtil
+      .parMap(reachableByInternal(sources)) { result =>
         // We can get back results that start in nodes that are invisible
         // according to the semantic, e.g., arguments that are only used
         // but not defined. We filter these results here prior to returning
@@ -85,15 +85,14 @@ class ExtendedCfgNode(val traversal: Iterator[CfgNode]) extends AnyVal {
     val startingPointToSource = startingPointsWithSources.map { entry =>
       entry.startingPoint.asInstanceOf[AstNode] -> entry.source
     }.toMap
-    val res = result.par.map { r =>
-      val startingPoint = r.path.head.node
+    ConcurrentTaskUtil.parMap(result) { entry =>
+      val startingPoint = entry.path.head.node
       if (sources.contains(startingPoint) || !startingPointToSource(startingPoint).isInstanceOf[AstNode]) {
-        r
+        entry
       } else {
-        r.copy(path = PathElement(startingPointToSource(startingPoint).asInstanceOf[AstNode]) +: r.path)
+        entry.copy(path = PathElement(startingPointToSource(startingPoint).asInstanceOf[AstNode]) +: entry.path)
       }
     }
-    res.toVector
   }
 
 }
