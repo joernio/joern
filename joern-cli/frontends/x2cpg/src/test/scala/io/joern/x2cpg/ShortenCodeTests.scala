@@ -16,7 +16,7 @@ class ShortenCodeTests extends AnyFunSuite with Matchers {
     protected def columnEnd(node: Unit): Option[Int] = None
     protected def code(node: Unit): String           = ""
 
-    protected def offsetSource: Option[OffsetUtils.OffsetSourceType] = Some(OffsetUtils.OffsetSourceType.Utf_16)
+    protected def offsetSource: Option[OffsetUtils.OffsetSourceType] = None
     protected def unadjustedOffset(node: Unit): Option[(Int, Int)]   = None
 
     // Expose the protected method for testing

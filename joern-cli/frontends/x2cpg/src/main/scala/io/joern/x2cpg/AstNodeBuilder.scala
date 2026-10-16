@@ -58,7 +58,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
 
   protected def offsetSource: Option[OffsetUtils.OffsetSourceType]
 
-  protected final lazy val offsetNormalizer: Int => Int =
+  private lazy val offsetNormalizer: Int => Int =
     offsetSource.fold(identity[Int])(OffsetUtils.buildOffsetConverter)
 
   protected def unadjustedOffset(node: Node): Option[(Int, Int)]
