@@ -6,6 +6,7 @@ import io.joern.kotlin2cpg.ast.AstCreator.{BoundSamInfo, SamImplInfo, UnboundSam
 import io.joern.kotlin2cpg.types.TypeConstants
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.joern.x2cpg.AstNodeBuilder.bindingNode
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewBinding, NewNode, NewTypeDecl}
 import io.shiftleft.passes.CpgPass
@@ -62,12 +63,10 @@ private class SamTypeDeclAstBuilder()(implicit withSchemaValidation: ValidationM
 
   override def columnEnd(element: PsiElement): Option[Int] = column(element)
 
-  override def offset(element: PsiElement): Option[(Int, Int)] = {
-    Option(element).map { someElement =>
-      val textRange = someElement.getTextRange
-      (textRange.getStartOffset, textRange.getEndOffset)
-    }
-  }
+  override def offsetSource: Option[OffsetUtils.OffsetSourceType] =
+    AstCreator.offsetSource(disableFileContent = false)
+
+  override def unadjustedOffset(element: PsiElement): Option[(Int, Int)] = AstCreator.psiOffsets(element)
 
   def createTypeDeclAst(samInfo: SamImplInfo): SamTypeDeclBuild = {
     samInfo match {

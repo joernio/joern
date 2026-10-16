@@ -8,6 +8,7 @@ import io.joern.pythonparser.{AstPrinter, ast}
 import io.joern.pythonparser.ast.{Arguments, AsyncFunctionDef, FunctionDef, MatchAs, iast, iexpr, istmt}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
 import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier, NewNode, NewTypeDecl}
 import org.slf4j.LoggerFactory
@@ -2202,6 +2203,10 @@ class PythonAstVisitor(
   override protected def lineEnd(node: iast): Option[Int]      = None
   override protected def columnEnd(element: iast): Option[Int] = None
   override protected def code(node: iast): String              = node.toString
+
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] = None
+
+  override protected def unadjustedOffset(node: iast): Option[(Int, Int)] = None
 }
 
 object PythonAstVisitor {

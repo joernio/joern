@@ -5,7 +5,7 @@ import io.joern.kotlin2cpg.datastructures.Scope
 import io.joern.kotlin2cpg.types.{NameRenderer, TypeConstants, TypeInfoProvider}
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.utils.IntervalKeyPool
+import io.joern.x2cpg.utils.{IntervalKeyPool, OffsetUtils}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
@@ -84,6 +84,15 @@ object AstCreator {
     samMethodParams: List[(String, String)],
     expr: KtCallableReferenceExpression
   ) extends SamImplInfo
+
+  def offsetSource(disableFileContent: Boolean): Option[OffsetUtils.OffsetSourceType] =
+    Option.unless(disableFileContent)(OffsetUtils.OffsetSourceType.Utf_16)
+
+  def psiOffsets(element: PsiElement): Option[(Int, Int)] =
+    Option(element).map { someElement =>
+      val textRange = someElement.getTextRange
+      (textRange.getStartOffset, textRange.getEndOffset)
+    }
 }
 
 class AstCreator(
@@ -236,16 +245,9 @@ class AstCreator(
     column(lastElement)
   }
 
-  override def offset(element: PsiElement): Option[(Int, Int)] = {
-    Option
-      .unless(disableFileContent) {
-        Option(element).map { someElement =>
-          val textRange = someElement.getTextRange
-          (textRange.getStartOffset, textRange.getEndOffset)
-        }
-      }
-      .flatten
-  }
+  override def offsetSource: Option[OffsetUtils.OffsetSourceType] = AstCreator.offsetSource(disableFileContent)
+
+  override def unadjustedOffset(element: PsiElement): Option[(Int, Int)] = AstCreator.psiOffsets(element)
 
   protected def getName(node: NewImport): String = {
     val isWildcard = node.isWildcard.getOrElse(false)

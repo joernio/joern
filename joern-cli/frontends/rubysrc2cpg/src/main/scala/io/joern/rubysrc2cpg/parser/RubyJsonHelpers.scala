@@ -41,10 +41,11 @@ object RubyJsonHelpers {
         if (o.obj.contains(ParserKeys.MetaData)) read[MetaData](o(ParserKeys.MetaData))
         else read[MetaData](o)
 
-      val offset = Option(metaData.offsetStart) -> Option(metaData.offsetEnd) match {
-        case (Some(start), Some(end)) => Option(start -> end)
-        case _                        => None
-      }
+      val offset =
+        (Option(metaData.offsetStart).filterNot(_ == -1), Option(metaData.offsetEnd).filterNot(_ == -1)) match {
+          case (Some(start), Some(end)) => Option(start -> end)
+          case _                        => None
+        }
 
       TextSpan(
         line = Option(metaData.lineNumber).filterNot(_ == -1),

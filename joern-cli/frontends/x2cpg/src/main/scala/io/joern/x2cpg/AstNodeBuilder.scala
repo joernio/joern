@@ -1,6 +1,7 @@
 package io.joern.x2cpg
 
 import io.joern.x2cpg.AstNodeBuilder.methodReturnNodeWithExplicitPositionInfo
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, PropertyDefaults}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.apache.commons.lang3.StringUtils
@@ -55,7 +56,20 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     }
   }
 
-  protected def offset(node: Node): Option[(Int, Int)] = None
+  protected def offsetSource: Option[OffsetUtils.OffsetSourceType]
+
+  private lazy val offsetNormalizer: Int => Int =
+    offsetSource.fold(identity[Int])(OffsetUtils.buildOffsetConverter)
+
+  protected def unadjustedOffset(node: Node): Option[(Int, Int)]
+
+  protected final def offset(node: Node): Option[(Int, Int)] = {
+    Option
+      .when(offsetSource.isDefined) {
+        unadjustedOffset(node).map { case (start, end) => (offsetNormalizer(start), offsetNormalizer(end)) }
+      }
+      .flatten
+  }
 
   protected def unknownNode(node: Node, code: String): NewUnknown = {
     val node_ = NewUnknown()

@@ -8,6 +8,7 @@ import io.joern.abap2cpg.parser.AbapIntermediateAst
 import io.joern.abap2cpg.parser.AbapIntermediateAst.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -74,6 +75,10 @@ class AstCreator(val program: ProgramRoot, filename: String)(implicit withSchema
     case n: FieldAccessExpr => n.span.end.map(_.col)
     case _                  => None
   }
+
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] = None
+
+  override protected def unadjustedOffset(node: AbapNode): Option[(Int, Int)] = None
 
   /** Main entry point - creates the full CPG for a program */
   override def createAst(): DiffGraphBuilder = {

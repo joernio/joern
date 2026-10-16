@@ -6,6 +6,7 @@ import io.joern.c2cpg.passes.AstCreationPass
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, NodeTypes}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -104,23 +105,22 @@ class AstCreator(
   }
 
   protected def column(node: IASTNode): Option[Int] = {
-    nodeOffsets(node).map { case (startOffset, _) =>
+    unadjustedOffset(node).map { case (startOffset, _) =>
       offsetToColumn(startOffset)
     }
   }
 
-  private def nodeOffsets(node: IASTNode): Option[(Int, Int)] = {
-    nullSafeFileLocation(node).map(loc => (loc.getNodeOffset, loc.getNodeOffset + loc.getNodeLength))
-  }
-
   protected def columnEnd(node: IASTNode): Option[Int] = {
-    nodeOffsets(node).map { case (_, endOffset) =>
+    unadjustedOffset(node).map { case (_, endOffset) =>
       offsetToColumn(endOffset - 1)
     }
   }
 
-  override protected def offset(node: IASTNode): Option[(Int, Int)] = {
-    Option.when(!config.disableFileContent) { nodeOffsets(node) }.flatten
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] =
+    Option.unless(config.disableFileContent)(OffsetUtils.OffsetSourceType.Utf_16)
+
+  override protected def unadjustedOffset(node: IASTNode): Option[(Int, Int)] = {
+    nullSafeFileLocation(node).map(loc => (loc.getNodeOffset, loc.getNodeOffset + loc.getNodeLength))
   }
 
 }
