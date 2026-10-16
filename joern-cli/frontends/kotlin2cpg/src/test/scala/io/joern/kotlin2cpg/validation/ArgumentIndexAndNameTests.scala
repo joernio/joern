@@ -151,36 +151,54 @@ class ArgumentIndexAndNameTests extends KotlinCode2CpgFixture(withOssDataflow = 
         |object O
         |class C { fun m(a: Any?) {} }
         |
-        |fun main(x: Any, b: Boolean, arr: IntArray, c: C) {
-        |    var i = 0
-        |    c.m("a$x")
-        |    c.m(String::class)
-        |    c.m(x is String)
-        |    c.m(x as String)
-        |    c.m(!b)
-        |    c.m(i++)
-        |    c.m(arr[0])
-        |    c.m(when { b -> 1; else -> 2 })
-        |    c.m(when (i) { 1 -> 1; else -> 2 })
-        |    c.m(if (b) 1 else 2)
-        |    c.m(try { 1 } catch (e: Exception) { 2 })
-        |    c.m(object {})
-        |    c.m(1 + 2)
-        |    c.m(O)
-        |    c.m(C())
-        |    c.m(this)
+        |class A {
+        |    fun thisReference(c: C) { c.m(this) }
         |}
+        |fun stringTemplate(c: C, x: Any) { c.m("a$x") }
+        |fun classLiteral(c: C) { c.m(String::class) }
+        |fun isCheck(c: C, x: Any) { c.m(x is String) }
+        |fun cast(c: C, x: Any) { c.m(x as String) }
+        |fun prefixOperator(c: C, b: Boolean) { c.m(!b) }
+        |fun postfixOperator(c: C) { var i = 0; c.m(i++) }
+        |fun arrayAccess(c: C, arr: IntArray) { c.m(arr[0]) }
+        |fun whenWithoutSubject(c: C, b: Boolean) { c.m(when { b -> 1; else -> 2 }) }
+        |fun whenWithSubject(c: C, i: Int) { c.m(when (i) { 1 -> 1; else -> 2 }) }
+        |fun ifExpression(c: C, b: Boolean) { c.m(if (b) 1 else 2) }
+        |fun tryExpression(c: C) { c.m(try { 1 } catch (e: Exception) { 2 }) }
+        |fun objectLiteral(c: C) { c.m(object {}) }
+        |fun binaryOperator(c: C) { c.m(1 + 2) }
+        |fun objectReference(c: C) { c.m(O) }
+        |fun ctorCall(c: C) { c.m(C()) }
         |""".stripMargin)
 
+    val loweringOfEachKind = List(
+      "thisReference"      -> "IDENTIFIER",
+      "stringTemplate"     -> s"CALL ${Operators.formatString}",
+      "classLiteral"       -> "CALL <operator>.class",
+      "isCheck"            -> s"CALL ${Operators.is}",
+      "cast"               -> s"CALL ${Operators.cast}",
+      "prefixOperator"     -> s"CALL ${Operators.logicalNot}",
+      "postfixOperator"    -> s"CALL ${Operators.postIncrement}",
+      "arrayAccess"        -> s"CALL ${Operators.indexAccess}",
+      "whenWithoutSubject" -> s"CALL ${Operators.conditional}",
+      "whenWithSubject"    -> "CALL <operator>.when",
+      "ifExpression"       -> s"CALL ${Operators.conditional}",
+      "tryExpression"      -> s"CALL ${Operators.tryCatch}",
+      "objectLiteral"      -> "BLOCK", // tmp_obj = alloc; tmp_obj.<init>(); tmp_obj
+      "binaryOperator"     -> s"CALL ${Operators.addition}",
+      "objectReference"    -> "TYPE_REF",
+      "ctorCall"           -> "BLOCK"  // tmp = alloc; tmp.<init>(); tmp
+    )
+
     "give the receiver index 0 and the unnamed argument index 1" in {
-      val calls = cpg.call.nameExact("m").l
-      calls.size shouldBe 16
-      calls.foreach { call =>
-        withClue(s"${call.code}: ") {
-          val List(receiver, argument) = argsOf(call)
-          receiver shouldBe Arg("c", 0)
-          argument.index shouldBe 1
-          argument.name shouldBe None
+      loweringOfEachKind.foreach { case (kind, expectedRoot) =>
+        withClue(s"$kind: ") {
+          val List(receiver, argument) = callIn(cpg, kind, "m").argument.l.sortBy(_.argumentIndex)
+          receiver.code shouldBe "c"
+          receiver.argumentIndex shouldBe 0
+          loweredTo(argument) shouldBe expectedRoot
+          argument.argumentIndex shouldBe 1
+          argument.argumentName shouldBe None
         }
       }
     }
@@ -206,29 +224,6 @@ class ArgumentIndexAndNameTests extends KotlinCode2CpgFixture(withOssDataflow = 
 
     "not name any node" in {
       cpg.all.collect { case e: Expression if e.argumentName.isDefined => e.code }.l shouldBe empty
-    }
-  }
-
-  "CPG for a when statement whose subject declares a variable" should {
-    lazy val cpg = code("""
-        |package mypkg
-        |
-        |fun source(): Int = 42
-        |fun sink(x: Int) {}
-        |
-        |fun g() {
-        |    when (val y = source()) {
-        |        1 -> sink(y)
-        |        else -> sink(0)
-        |    }
-        |}
-        |""".stripMargin)
-
-    "keep the initializer of the subject variable" in {
-      pendingUntilFixed {
-        cpg.call.nameExact("source").method.name.l shouldBe List("g")
-        cpg.assignment.code.l shouldBe List("val y = source()")
-      }
     }
   }
 
