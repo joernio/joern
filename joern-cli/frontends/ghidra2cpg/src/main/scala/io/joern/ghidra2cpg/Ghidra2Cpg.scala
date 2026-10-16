@@ -25,7 +25,7 @@ import io.shiftleft.semanticcpg.utils.FileUtil
 import org.apache.logging.log4j.LogManager
 
 import java.io.File
-import scala.collection.mutable
+import java.util.concurrent.ConcurrentSkipListSet
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
 import scala.util.control.NonFatal
@@ -145,7 +145,7 @@ class Ghidra2Cpg extends X2CpgFrontend {
         new ReturnEdgesPass(cpg).createAndApply()
     }
 
-    TypeNodePass.withRegisteredTypes(Types.types.toSet, cpg).createAndApply()
+    TypeNodePass.withRegisteredTypes(Types.types.asScala.toSet, cpg).createAndApply()
     new JumpPass(cpg).createAndApply()
     new LiteralPass(cpg, flatProgramAPI).createAndApply()
   }
@@ -156,10 +156,12 @@ object Types {
 
   // Types will be added to the CPG as soon as everything
   // else is done
-  val types: mutable.SortedSet[String]       = mutable.SortedSet[String]()
+  // Must be thread-safe: the function passes run in parallel, and concurrent inserts into a plain TreeSet can
+  // corrupt the tree and spin forever.
+  val types: ConcurrentSkipListSet[String]   = new ConcurrentSkipListSet[String]()
   def registerType(typeName: String): String = {
     try {
-      types += typeName
+      types.add(typeName)
     } catch {
       case NonFatal(_) => logger.warn(s"Error adding type: $typeName")
     }
