@@ -178,7 +178,9 @@ class PostFrontendValidator(cpg: Cpg, fatalValidationLevel: ValidationLevel) ext
     refOut: List[nodes.StoredNode],
     enclosingMethod: Option[nodes.Method]
   ): Unit = {
-    val dstMethod = refOut.headOption.flatMap(findEnclosingMethod)
+    val dstMethod = refOut.headOption
+      .collect { case declaration: (nodes.Local | nodes.MethodParameterIn) => declaration }
+      .flatMap(findEnclosingMethod)
     (enclosingMethod, dstMethod) match {
       case (Some(src), Some(dst)) if src != dst =>
         registerViolation(

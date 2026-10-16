@@ -188,6 +188,8 @@ trait AstForStatementsCreator { this: AstCreator =>
       case struct: ICPPASTStructuredBindingDeclaration => astsForStructuredBindingDeclaration(struct)
       case declStmt: CPPASTSimpleDeclaration if isUnsupportedCoroutineKeyword(declStmt) =>
         Seq(astForUnsupportedCoroutineNode(declStmt))
+      case simpleDecl: IASTSimpleDeclaration if simpleDecl.getDeclSpecifier.isInstanceOf[IASTEnumerationSpecifier] =>
+        astsForDeclaration(simpleDecl)
       case simpleDecl: IASTSimpleDeclaration                     => astsForIASTSimpleDeclaration(simpleDecl)
       case s: ICPPASTStaticAssertDeclaration                     => Seq(astForStaticAssert(s))
       case alias: ICPPASTAliasDeclaration                        => Seq(astForAliasDeclaration(alias))
