@@ -48,7 +48,6 @@
     "org.jruby:jruby-complete": -26341225,
     "org.ow2.asm:asm": 1206815935,
     "org.projectlombok:lombok": -1238622139,
-    "org.scala-lang.modules:scala-parser-combinators_3": -1229494994,
     "org.scala-lang.modules:scala-xml_3": -2041798718,
     "org.scala-lang:scala-library": 1230160761,
     "org.scala-lang:scala3-library_3": 1771369610,
@@ -66,7 +65,7 @@
     "com.github.luben:zstd-jni:jar:sources": -1190847340,
     "com.github.scopt:scopt_3": 148843063,
     "com.github.scopt:scopt_3:jar:sources": 776003799,
-    "com.github.sh4869:semver-parser-scala_3": -1402857073,
+    "com.github.sh4869:semver-parser-scala_3": 62308371,
     "com.github.sh4869:semver-parser-scala_3:jar:sources": 1515822071,
     "com.google.code.findbugs:jsr305": 870839855,
     "com.google.code.findbugs:jsr305:jar:sources": -935881202,
@@ -288,8 +287,8 @@
     "org.projectlombok:lombok:jar:sources": -1275591244,
     "org.scala-lang.modules:scala-asm": 1549099613,
     "org.scala-lang.modules:scala-asm:jar:sources": -297752178,
-    "org.scala-lang.modules:scala-parser-combinators_3": 420193852,
-    "org.scala-lang.modules:scala-parser-combinators_3:jar:sources": -1426101912,
+    "org.scala-lang.modules:scala-parser-combinators_3": -342168038,
+    "org.scala-lang.modules:scala-parser-combinators_3:jar:sources": -1912333222,
     "org.scala-lang.modules:scala-xml_3": -623661362,
     "org.scala-lang.modules:scala-xml_3:jar:sources": 80523494,
     "org.scala-lang:scala3-compiler_3": -1701485851,
@@ -1139,10 +1138,10 @@
     },
     "org.scala-lang.modules:scala-parser-combinators_3": {
       "shasums": {
-        "jar": "50f1b3dcf8f14975702dc6da287797e391fc5d4834e4d3e7e9f9125efdb2de9a",
-        "sources": "d400578b2eae8bcd251ff2fe3236fe7cf091cb38ec013982fc101ff102d6d8ee"
+        "jar": "9c89c87206aab894492fcb94e380cb7db47ba32aa4977238484bff633d4d6172",
+        "sources": "70b54a851ab3f1b2ec5e7ecb84b91aa0852c0c1e93d4e31576bbdfa61c5a81a0"
       },
-      "version": "2.4.0"
+      "version": "2.1.0"
     },
     "org.scala-lang.modules:scala-xml_3": {
       "shasums": {

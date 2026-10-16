@@ -3,7 +3,7 @@ package io.joern.javasrc2cpg.astcreation.expressions
 import com.github.javaparser.ast.Node
 import com.github.javaparser.ast.expr.{ComponentPatternExpr, PatternExpr, RecordPatternExpr, TypePatternExpr}
 import io.joern.javasrc2cpg.astcreation.AstCreator
-import io.joern.javasrc2cpg.jartypereader.model.Model.TypeConstants
+import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.scope.Scope.NewVariableNode
 import io.joern.javasrc2cpg.util.Util
 import io.joern.x2cpg.{Ast, Defines}

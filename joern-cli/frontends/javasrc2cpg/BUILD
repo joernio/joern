@@ -14,7 +14,6 @@ scala_library(
         "@maven//:org_gradle_gradle_tooling_api",
         "@maven//:org_ow2_asm_asm",
         "@maven//:org_projectlombok_lombok",
-        "@maven//:org_scala_lang_modules_scala_parser_combinators_3",
         "@maven//:org_slf4j_slf4j_api",
     ],
 )
@@ -22,16 +21,7 @@ scala_library(
 scala_test(
     name = "tests",
     srcs = glob(["src/test/scala/**/*.scala"]),
-    data = glob(["src/test/resources/**/*"]) + [
-        "//joern-cli/frontends/javasrc2cpg/src/test/java/io/joern/javasrc2cpg/jartypereader/testcode/genericclasses",
-        "//joern-cli/frontends/javasrc2cpg/src/test/java/io/joern/javasrc2cpg/jartypereader/testcode/genericmethods",
-        "//joern-cli/frontends/javasrc2cpg/src/test/java/io/joern/javasrc2cpg/jartypereader/testcode/nongenericinterface",
-        "//joern-cli/frontends/javasrc2cpg/src/test/java/io/joern/javasrc2cpg/jartypereader/testcode/nongenericwithsuperclass",
-        "//joern-cli/frontends/javasrc2cpg/src/test/java/io/joern/javasrc2cpg/jartypereader/testcode/overloadedmethods",
-        "//joern-cli/frontends/javasrc2cpg/src/test/java/io/joern/javasrc2cpg/jartypereader/testcode/simplegeneric",
-        "//joern-cli/frontends/javasrc2cpg/src/test/java/io/joern/javasrc2cpg/jartypereader/testcode/simplenongeneric",
-        "//joern-cli/frontends/javasrc2cpg/src/test/java/io/joern/javasrc2cpg/jartypereader/testcode/wildcards",
-    ],
+    data = glob(["src/test/resources/**/*"]),
     env = {
         "JAVA_HOME": "$(JAVABASE_ROOTPATH)",
     },

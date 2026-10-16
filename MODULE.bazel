@@ -60,7 +60,6 @@ maven.install(
         "org.scala-lang.modules:scala-xml_3:2.2.0",
         "com.typesafe:config:1.4.3",
         "com.michaelpollmeier:versionsort:1.0.11",
-        "org.scala-lang.modules:scala-parser-combinators_3:2.4.0",
         "net.java.dev.javacc:javacc:7.0.12",
         "org.antlr:antlr4:4.7.2",
         "org.antlr:antlr4-runtime:4.7.2",
