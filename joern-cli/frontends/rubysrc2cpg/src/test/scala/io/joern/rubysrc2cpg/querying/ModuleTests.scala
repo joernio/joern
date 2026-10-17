@@ -100,8 +100,9 @@ class ModuleTests extends RubyCode2CpgFixture {
         |""".stripMargin)
     "Generate private modifier on method" in {
       inside(cpg.method.name("locale_name_for_sorting")._modifierViaAstOut.l) {
-        case virtualModifier :: privateModifier :: Nil =>
+        case virtualModifier :: staticModifier :: privateModifier :: Nil =>
           virtualModifier.modifierType shouldBe ModifierTypes.VIRTUAL
+          staticModifier.modifierType shouldBe ModifierTypes.STATIC
           privateModifier.modifierType shouldBe ModifierTypes.PRIVATE
       }
     }

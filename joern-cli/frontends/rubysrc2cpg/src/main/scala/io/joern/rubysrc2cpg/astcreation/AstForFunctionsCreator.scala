@@ -481,7 +481,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             parameterAsts ++ anonProcParam,
             stmtBlockAst,
             methodReturnNode(node, Defines.Any),
-            modifierNode(node, ModifierTypes.VIRTUAL) :: modifierNode(
+            modifierNode(node, ModifierTypes.VIRTUAL) :: modifierNode(node, ModifierTypes.STATIC) :: modifierNode(
               node,
               scope.visibilityForMethod(node.methodName).getOrElse(currentAccessModifier)
             ) :: Nil
