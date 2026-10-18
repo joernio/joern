@@ -14,6 +14,8 @@ object Defines {
   val QualifiedNameSeparator: String         = "::"
   val Auto: String                           = "auto"
   val OperatorPointerCall: String            = "<operator>.pointerCall"
+  val OperatorMemberPointerDot: String       = "<operator>.memberPointerAccess"
+  val OperatorMemberPointerArrow: String     = "<operator>.indirectMemberPointerAccess"
   val OperatorConstructorInitializer: String = "<operator>.constructorInitializer"
   val OperatorTypeOf: String                 = "<operator>.typeOf"
   val OperatorAlignOf: String                = "<operator>.alignOf"
