@@ -28,4 +28,6 @@ object Defines {
   val ConstSuffix                            = "<const>"
   val GlobalTag                              = "<global>"
   val UnknownTag                             = "<unknown>"
+  val ModifierDeleted                        = "DELETED"
+  val ModifierDefaulted                      = "DEFAULTED"
 }
