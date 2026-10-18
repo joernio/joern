@@ -59,8 +59,8 @@ trait AstForExpressionsCreator { this: AstCreator =>
     IASTBinaryExpression.op_binaryOrAssign   -> Operators.assignmentOr,
     IASTBinaryExpression.op_equals           -> Operators.equals,
     IASTBinaryExpression.op_notequals        -> Operators.notEquals,
-    IASTBinaryExpression.op_pmdot            -> Operators.indirectFieldAccess,
-    IASTBinaryExpression.op_pmarrow          -> Operators.indirectFieldAccess,
+    IASTBinaryExpression.op_pmdot            -> Defines.OperatorMemberPointerDot,
+    IASTBinaryExpression.op_pmarrow          -> Defines.OperatorMemberPointerArrow,
     IASTBinaryExpression.op_max              -> Defines.OperatorMax,
     IASTBinaryExpression.op_min              -> Defines.OperatorMin,
     IASTBinaryExpression.op_ellipses         -> Defines.OperatorEllipses
@@ -182,6 +182,19 @@ trait AstForExpressionsCreator { this: AstCreator =>
     }
   }
 
+  /** True for `obj.*pm` and `obj->*pm`, also when wrapped in the parentheses such a call requires. */
+  @tailrec
+  private def isMemberPointerAccess(expr: IASTExpression): Boolean = {
+    expr match {
+      case unary: IASTUnaryExpression if unary.getOperator == IASTUnaryExpression.op_bracketedPrimary =>
+        isMemberPointerAccess(unary.getOperand)
+      case binary: IASTBinaryExpression =>
+        binary.getOperator == IASTBinaryExpression.op_pmdot ||
+        binary.getOperator == IASTBinaryExpression.op_pmarrow
+      case _ => false
+    }
+  }
+
   private def astForCppCallExpression(call: ICPPASTFunctionCallExpression): Ast = {
     val functionNameExpr = call.getFunctionNameExpression
     safeCdtCall(stripCvQualifiers(functionNameExpr.getExpressionType)) match {
@@ -217,6 +230,10 @@ trait AstForExpressionsCreator { this: AstCreator =>
             )
             val args = call.getArguments.toList.map(a => astForNode(a))
             createCallAst(callCpgNode, args)
+      case memberPointerExpr if isMemberPointerAccess(memberPointerExpr) =>
+        // A pointer to member access always yields the member itself, never a class object with an
+        // operator(), so this is a call through a pointer no matter what CDT could resolve.
+        createPointerCallAst(call, safeGetExpressionType(call))
           case fieldRefExpr: ICPPASTFieldReference
               if safeGetBinding(fieldRefExpr.getFieldName).exists(_.isInstanceOf[ICPPMethod]) =>
             val instanceAst = astForExpression(fieldRefExpr.getFieldOwner)
