@@ -230,10 +230,6 @@ trait AstForExpressionsCreator { this: AstCreator =>
             )
             val args = call.getArguments.toList.map(a => astForNode(a))
             createCallAst(callCpgNode, args)
-      case memberPointerExpr if isMemberPointerAccess(memberPointerExpr) =>
-        // A pointer to member access always yields the member itself, never a class object with an
-        // operator(), so this is a call through a pointer no matter what CDT could resolve.
-        createPointerCallAst(call, safeGetExpressionType(call))
           case fieldRefExpr: ICPPASTFieldReference
               if safeGetBinding(fieldRefExpr.getFieldName).exists(_.isInstanceOf[ICPPMethod]) =>
             val instanceAst = astForExpression(fieldRefExpr.getFieldOwner)
@@ -346,6 +342,10 @@ trait AstForExpressionsCreator { this: AstCreator =>
         val callCpgNode =
           callNode(call, code(call), name, fullName, DispatchTypes.STATIC_DISPATCH, Some(signature), Some(Defines.Any))
         createCallAst(callCpgNode, args)
+      case memberPointerExpr if isMemberPointerAccess(memberPointerExpr) =>
+        // A pointer to member access always yields the member itself, never a class object with an
+        // operator(), so this is a call through a pointer no matter what CDT could resolve.
+        createPointerCallAst(call, safeGetExpressionType(call))
       case otherExpr =>
         // This could either be a pointer or an operator() call we do not know at this point
         // but since it is CPP we opt for the latter.
