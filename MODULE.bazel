@@ -1,11 +1,11 @@
 module(name = "joern")
 
-bazel_dep(name = "rules_scala", version = "7.2.5")
+bazel_dep(name = "rules_scala", version = "7.3.0")
 bazel_dep(name = "codepropertygraph")
 
-CODEPROPERTYGRAPH_VERSION = "1735c289d7258d4ef02f6c39ce635581cca4f330"
+CODEPROPERTYGRAPH_VERSION = "301c4010d28ecdac05bc2ed44310f56446459465"
 
-BAZEL_TOOLING_VERSION = "cc3fb393b4f2ea2a46d23143f3984d49010293f8"
+BAZEL_TOOLING_VERSION = "86bbf2be26dc7a2517a56c90e12fd9a6ed20dd25"
 
 git_override(
     module_name = "codepropertygraph",
@@ -25,7 +25,7 @@ scala_config = use_extension(
     "scala_config",
 )
 scala_config.settings(
-    scala_version = "3.8.3",
+    scala_version = "3.9.0",
 )
 
 scala_deps = use_extension(
@@ -50,7 +50,7 @@ maven.install(
         "org.gradle:gradle-tooling-api:8.3",
         "com.lihaoyi:ujson_3:4.4.3",
         "com.lihaoyi:upickle_3:4.4.3",
-        "com.michaelpollmeier:scala-repl-pp_3.3.6:0.6.3",
+        "com.michaelpollmeier:scala-repl-pp_3.9.0:0.6.5",
         "commons-io:commons-io:2.22.0",
         "org.apache.commons:commons-lang3:3.14.0",
         "org.apache.commons:commons-text:1.12.0",

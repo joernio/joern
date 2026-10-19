@@ -153,7 +153,7 @@ object UsageSlicing {
       else Option(x.methodFullName)
 
       // Handle the case where a call is an invocation of a field member (lambda) or function/method call
-      val (callName, resolvedMethod): (Option[String], Option[String]) =
+      val callNameAndResolvedMethod: (Option[String], Option[String]) =
         if (isMemberInvocation)
           baseCall.argumentOut
             .flatMap {
@@ -172,6 +172,7 @@ object UsageSlicing {
           Option(typeName) -> typeMap.get(typeName)
         } else
           Option(baseCall.name) -> getResolvedMethod(baseCall)
+      val (callName, resolvedMethod) = callNameAndResolvedMethod
 
       if (callName.isEmpty) return None
 
