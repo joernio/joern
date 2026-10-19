@@ -3,7 +3,7 @@ import scala.jdk.CollectionConverters.*
 
 name := "schema-extender"
 
-ThisBuild / scalaVersion := "3.8.3"
+ThisBuild / scalaVersion := "3.9.0"
 
 val cpgVersion = IO.read(file("cpg-version"))
 

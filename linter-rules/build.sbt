@@ -9,14 +9,14 @@ lazy val linterRules = (project in file("."))
     libraryDependencies += ("ch.epfl.scala" %% "scalafix-core" % _root_.scalafix.sbt.BuildInfo.scalafixVersion)
       .cross(CrossVersion.for3Use2_13),
 
-    // The testkit is published per full Scala version, but only for the Scala 3 version current
-    // at the scalafix release date (0.14.9 ships 3.8.4 — no 3.8.3 exists), so an exact
-    // match with ThisBuild scalaVersion is generally unavailable. A patch mismatch is harmless:
+    // The testkit is published per full Scala version, but only for the Scala 3 versions current
+    // at the scalafix release date (0.14.9 ships 3.3.8, 3.8.4 and 3.9.0), so an exact
+    // match with ThisBuild scalaVersion is not guaranteed. A patch mismatch is harmless:
     // patches within a Scala 3 minor are binary/TASTy-compatible both ways, and the SemanticDB
-    // under test is produced by the input project's own compiler (3.8.3), not by the testkit
+    // under test is produced by the input project's own compiler (3.9.0), not by the testkit
     // artifact — the testkit only provides the harness classes.
     // TODO: Revisit on a new Scala 3 minor.
-    libraryDependencies += "ch.epfl.scala" % "scalafix-testkit_3.8.4" % _root_.scalafix.sbt.BuildInfo.scalafixVersion % Test,
+    libraryDependencies += "ch.epfl.scala" % "scalafix-testkit_3.9.0" % _root_.scalafix.sbt.BuildInfo.scalafixVersion % Test,
 
     Test / resourceGenerators += Def.task {
       val inputClasspath =

@@ -1,4 +1,4 @@
-val cpgVersion = "1.7.78"
+val cpgVersion = "1.7.79"
 
 lazy val joerncli          = Projects.joerncli
 lazy val querydb           = Projects.querydb
@@ -47,7 +47,7 @@ def publishingSettings: Seq[Setting[?]] = Def.settings(
 
 /** Scala/Java compiler configuration, and the semanticdb output that scalafix needs. */
 def compilerSettings: Seq[Setting[?]] = Def.settings(
-  ThisBuild / scalaVersion := "3.8.3",
+  ThisBuild / scalaVersion := "3.9.0",
   ThisBuild / compile / javacOptions ++= Seq(
     "-g", // debug symbols
     "-Xlint",
