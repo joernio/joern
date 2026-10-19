@@ -253,16 +253,27 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val constructorModifier = if (bindsToConstructor(funcDef)) {
       List(modifierNode(funcDef, ModifierTypes.CONSTRUCTOR), modifierNode(funcDef, ModifierTypes.PUBLIC))
     } else Nil
+    val definitionModifier = funcDef match {
+      case cppFuncDef: ICPPASTFunctionDefinition if cppFuncDef.isDeleted =>
+        List(modifierNode(funcDef, Defines.ModifierDeleted))
+      case cppFuncDef: ICPPASTFunctionDefinition if cppFuncDef.isDefaulted =>
+        List(modifierNode(funcDef, Defines.ModifierDefaulted))
+      case _ => Nil
+    }
     val staticModifier = Try(staticModifierFor(funcDef, funcDef.getDeclSpecifier, funcDef)).getOrElse(Nil)
-    constructorModifier ++ staticModifier
+    constructorModifier ++ definitionModifier ++ staticModifier
   }
 
   private def modifierFor(funcDecl: IASTFunctionDeclarator): List[NewModifier] = {
-    Try(funcDecl.getParent match {
+    val constructorModifier = if (bindsToConstructor(funcDecl)) {
+      List(modifierNode(funcDecl, ModifierTypes.CONSTRUCTOR))
+    } else Nil
+    val staticModifier = Try(funcDecl.getParent match {
       case declaration: IASTSimpleDeclaration => staticModifierFor(funcDecl, declaration.getDeclSpecifier, declaration)
       case definition: IASTFunctionDefinition => staticModifierFor(funcDecl, definition.getDeclSpecifier, definition)
       case _                                  => Nil
     }).getOrElse(Nil)
+    constructorModifier ++ staticModifier
   }
 
   private def syntheticThisAccess(ident: IASTName, identifierName: String): Ast = {

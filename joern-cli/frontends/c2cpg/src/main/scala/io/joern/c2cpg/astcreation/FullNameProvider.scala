@@ -315,6 +315,13 @@ trait FullNameProvider { this: AstCreator =>
 
   }
 
+  protected def bindsToConstructor(funcDecl: IASTFunctionDeclarator): Boolean = {
+    safeGetBinding(funcDecl.getName) match {
+      case Some(_: ICPPConstructor) => true
+      case _                        => bindsToConstructor(funcDecl.getName)
+    }
+  }
+
   protected def bindsToConstructor(name: IASTName): Boolean = {
     val fullName_ = ASTStringUtil.getQualifiedName(name)
     val name_     = ASTStringUtil.getSimpleName(name)
