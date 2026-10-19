@@ -14,12 +14,12 @@ jobs:
       - name: Fetch base branch with depth 1
         run: git fetch --depth=1 origin ${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}
       - name: Set up JDK
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
+      - uses: sbt/setup-sbt@ecad189dd245444b9ae0a0cd5922fd938b88906f # v1.5.12
       - name: Check formatting and lint
         run: sbt "scalafmtCheck ; Test/scalafmtCheck ; integrationTests/scalafmtCheck ; integrationTests/Test/scalafmtCheck ; scalafix --diff-base origin/${{ github.event.pull_request.base.ref }} RestrictedImports SingleLetterIdentifiers UnorderedIteration"
       - run: echo "Previous step failed because the code is not formatted or violates coding quality expectations. Run 'sbt scalafmt Test/scalafmt' to format, and check the logs for scalafix violations."
@@ -47,12 +47,12 @@ jobs:
         with:
           fetch-depth: 1
       - name: Set up JDK
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
+      - uses: sbt/setup-sbt@ecad189dd245444b9ae0a0cd5922fd938b88906f # v1.5.12
       - name: Install php
         if: matrix.os == 'macos-latest'
         run: brew install php
@@ -63,7 +63,7 @@ jobs:
           go-version: 1.25
       - name: Set up Swift (macos-latest)
         if: matrix.os == 'macos-latest'
-        uses: SwiftyLab/setup-swift@9014d4136569075c696d4151c7810ecde8712907 # v1.14.1
+        uses: SwiftyLab/setup-swift@d60245579ea3836a3f2fa65ebbe1e8891d577c76 # v1.14.2
         # macos-latest runner switched to Xcode 26.4.1 as the new default
         # Some swiftsrc2cpg tests use `import Foundation` which can not be
         # compiled with an incompatible toolchain/SDK combination.
@@ -78,11 +78,11 @@ jobs:
           swift-version: "6.3"
       - name: Set up Swift
         if: matrix.os != 'macos-latest'
-        uses: SwiftyLab/setup-swift@9014d4136569075c696d4151c7810ecde8712907 # v1.14.1
+        uses: SwiftyLab/setup-swift@d60245579ea3836a3f2fa65ebbe1e8891d577c76 # v1.14.2
         with:
           swift-version: "6.1"
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # v1
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
         with:
           toolchain: stable
           components: rust-src
@@ -101,12 +101,12 @@ jobs:
         with:
           fetch-depth: 1
       - name: Set up JDK
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
+      - uses: sbt/setup-sbt@ecad189dd245444b9ae0a0cd5922fd938b88906f # v1.5.12
       - name: Run integration tests
         run: sbt "c2cpg/stage ; integrationTests/testFull"
 
@@ -122,12 +122,12 @@ jobs:
         with:
           fetch-depth: 1
       - name: Set up JDK
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
+      - uses: sbt/setup-sbt@ecad189dd245444b9ae0a0cd5922fd938b88906f # v1.5.12
       - name: Install coreutils
         if: matrix.os == 'macos-latest'
         run: brew install coreutils
