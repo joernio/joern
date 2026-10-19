@@ -3,6 +3,7 @@ package io.joern.c2cpg.passes.ast
 import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
@@ -313,16 +314,24 @@ class MethodTests extends C2CpgSuite {
         "test.cpp"
       )
       val List(deleted) = cpg.method.fullNameExact("Deleted.Deleted:void(Deleted&)").l
-      deleted.modifier.modifierType.sorted.l shouldBe List("CONSTRUCTOR", Defines.ModifierDeleted, "PUBLIC").sorted
+      deleted.modifier.modifierType.sorted.l shouldBe List(
+        ModifierTypes.CONSTRUCTOR,
+        Defines.ModifierDeleted,
+        ModifierTypes.PUBLIC
+      ).sorted
 
       val List(defaulted) = cpg.method.fullNameExact("Defaulted.Defaulted:void(Defaulted&)").l
-      defaulted.modifier.modifierType.sorted.l shouldBe List("CONSTRUCTOR", Defines.ModifierDefaulted, "PUBLIC").sorted
+      defaulted.modifier.modifierType.sorted.l shouldBe List(
+        ModifierTypes.CONSTRUCTOR,
+        Defines.ModifierDefaulted,
+        ModifierTypes.PUBLIC
+      ).sorted
 
       val List(declaredOnly) = cpg.method.fullNameExact("DeclaredOnly.DeclaredOnly:void(DeclaredOnly&)").l
-      declaredOnly.modifier.modifierType.sorted.l shouldBe List("CONSTRUCTOR")
+      declaredOnly.modifier.modifierType.sorted.l shouldBe List(ModifierTypes.CONSTRUCTOR)
 
       val List(userBody) = cpg.method.fullNameExact("UserBody.UserBody:void(UserBody&)").l
-      userBody.modifier.modifierType.sorted.l shouldBe List("CONSTRUCTOR", "PUBLIC")
+      userBody.modifier.modifierType.sorted.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PUBLIC)
 
       cpg.typeDecl
         .filter(_.method.isConstructor.modifier.modifierTypeExact(Defines.ModifierDeleted).nonEmpty)
@@ -359,7 +368,7 @@ class MethodTests extends C2CpgSuite {
       // code is only the macro invocation here, so the modifier is the only witness
       cpg.method.fullNameExact("M.M:void(M&)").code.l shouldBe List("DISALLOW_COPY(M)")
       cpg.method.fullNameExact("M.M:void(M&)").modifier.modifierType.sorted.l shouldBe
-        List("CONSTRUCTOR", Defines.ModifierDeleted, "PUBLIC").sorted
+        List(ModifierTypes.CONSTRUCTOR, Defines.ModifierDeleted, ModifierTypes.PUBLIC).sorted
       cpg.method.fullNameExact("M.=:M&(M&)").modifier.modifierType.l shouldBe List(Defines.ModifierDeleted)
     }
 
@@ -377,9 +386,12 @@ class MethodTests extends C2CpgSuite {
           |""".stripMargin,
         "test.c"
       )
-      cpg.method.fullNameExact("C.C:void()").modifier.modifierType.sorted.l shouldBe List("CONSTRUCTOR", "PUBLIC")
+      cpg.method.fullNameExact("C.C:void()").modifier.modifierType.sorted.l shouldBe List(
+        ModifierTypes.CONSTRUCTOR,
+        ModifierTypes.PUBLIC
+      )
       cpg.method.fullNameExact("C.C:void(C&)").modifier.modifierType.sorted.l shouldBe
-        List("CONSTRUCTOR", Defines.ModifierDefaulted, "PUBLIC").sorted
+        List(ModifierTypes.CONSTRUCTOR, Defines.ModifierDefaulted, ModifierTypes.PUBLIC).sorted
       cpg.method.nameExact("foo", "bar").modifier.modifierType.l shouldBe List.empty
     }
   }
