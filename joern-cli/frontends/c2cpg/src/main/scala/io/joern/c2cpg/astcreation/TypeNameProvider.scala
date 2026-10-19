@@ -133,7 +133,10 @@ trait TypeNameProvider { this: AstCreator =>
       case tpe if tpe.contains("#")                                                     => Defines.Any
       case tpe if tpe.contains("::{") || tpe.contains("}::")                            => Defines.Any
       case tpe if (tpe.contains("{") || tpe.contains("}")) && !isThisLambdaCapture(tpe) => Defines.Any
-      case tpe if tpe.contains("org.eclipse.cdt.internal.core.dom.parser.ProblemType")  => Defines.Any
+      case tpe if tpe.contains("org.eclipse.cdt")                                       => Defines.Any
+      // A C++ type name cannot begin with a digit; a leading digit means this is CDT's
+      // serialised evaluation signature, not a type.
+      case tpe if tpe.headOption.exists(_.isDigit) => Defines.Any
       // Special patterns with specific handling
       case tpe if tpe.startsWith("[") && tpe.endsWith("]")       => Defines.Array
       case tpe if isThisLambdaCapture(tpe) || tpe.contains("->") => Defines.Function
