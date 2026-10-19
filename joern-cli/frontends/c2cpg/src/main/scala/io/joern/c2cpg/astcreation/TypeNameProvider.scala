@@ -134,15 +134,9 @@ trait TypeNameProvider { this: AstCreator =>
       case tpe if tpe.contains("::{") || tpe.contains("}::")                            => Defines.Any
       case tpe if (tpe.contains("{") || tpe.contains("}")) && !isThisLambdaCapture(tpe) => Defines.Any
       case tpe if tpe.contains("org.eclipse.cdt")                                       => Defines.Any
-      // No C++ type name can begin with a digit, so a leading digit means this is not a type
-      // name at all but CDT's serialised evaluation signature. Measured on a fold over
-      // non-constant expressions, `(opaque(xs) + ...)`: the inner call `opaque(xs)` received
-      // typeFullName `82731opaque035fold_non_constant000` -- digit runs glued to the names of
-      // two functions in the translation unit -- and that string also fabricated an external
-      // TYPE_DECL and a TYPE node of the same name, so a consumer enumerating type
-      // declarations saw a phantom type. The fold expression itself was already ANY; it is the
-      // call's type that leaked.
-      case tpe if tpe.nonEmpty && tpe.head.isDigit => Defines.Any
+      // A C++ type name cannot begin with a digit; a leading digit means this is CDT's
+      // serialised evaluation signature, not a type.
+      case tpe if tpe.headOption.exists(_.isDigit) => Defines.Any
       // Special patterns with specific handling
       case tpe if tpe.startsWith("[") && tpe.endsWith("]")       => Defines.Array
       case tpe if isThisLambdaCapture(tpe) || tpe.contains("->") => Defines.Function
