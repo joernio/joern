@@ -5,8 +5,8 @@ load("//bazel:scala.bzl", "scala_library", "scala_test")
 scala_library(
     name = "linter-rules",
     srcs = glob(["src/main/scala/**/*.scala"]),
-    resources = glob(["src/main/resources/**"]),
     resource_strip_prefix = "linter-rules/src/main/resources",
+    resources = glob(["src/main/resources/**"]),
     visibility = ["//visibility:public"],
     deps = [
         "@bazel_tooling//scalafix:scalafix_core",
