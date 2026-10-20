@@ -15,21 +15,21 @@ jobs:
         with:
           fetch-depth: 1
       - name: Set up JDK
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 21
           cache: sbt
       - name: Set up Swift
-        uses: SwiftyLab/setup-swift@9014d4136569075c696d4151c7810ecde8712907 # v1.14.1
+        uses: SwiftyLab/setup-swift@d60245579ea3836a3f2fa65ebbe1e8891d577c76 # v1.14.2
         with:
           swift-version: "6.1"
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # v1
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
         with:
           toolchain: stable
           components: rust-src
-      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
+      - uses: sbt/setup-sbt@ecad189dd245444b9ae0a0cd5922fd938b88906f # v1.5.12
       - name: Upgrade all (internal) dependencies
         run: ./updateDependencies.sh --non-interactive
       - run: sbt "testFull"
