@@ -116,7 +116,7 @@ Each release publishes platform-specific distribution zips:
 
 ### Contribution Guidelines
 
-Thank you for taking time to contribute to Joern! Here are a few guidelines to ensure your pull request will get merged as soon as possible:
+Thank you for taking time to contribute to Joern! The [Contributor's guide](contributing-docs/README.md) covers the architecture, development environment, coding style, tests and pull requests in detail. AI coding agents should start with [AGENTS.md](AGENTS.md). Here are a few guidelines to ensure your pull request will get merged as soon as possible:
 
 * Try to make use of the templates as far as possible, however they may not suit all needs. The minimum we would like to see is:
     - A title that briefly describes the change and purpose of the PR, preferably with the affected module in square brackets, e.g. `[javasrc2cpg] Addition Operator Fix`.
