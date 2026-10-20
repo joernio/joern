@@ -54,11 +54,8 @@ class TypeAliasTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
 
-    // TODO(rust_ast_gen): keep generics.
     "have correct fullName" in {
-      pendingUntilFixed {
-        cpg.typeDecl.nameExact("Foo").fullName.l shouldBe List("rust2cpgtest::Foo<T>")
-      }
+      cpg.typeDecl.nameExact("Foo").fullName.l shouldBe List("rust2cpgtest::Foo<T>")
     }
   }
 
@@ -75,6 +72,31 @@ class TypeAliasTests extends Rust2CpgSuite(noSysRoot = true) {
         baz.fullName shouldBe "rust2cpgtest::bar::Baz"
         baz.aliasTypeFullName shouldBe Some("rust2cpgtest::Foo")
         baz.canonicalType.fullName.l shouldBe List("rust2cpgtest::Foo")
+      }
+    }
+  }
+
+  "same-named aliases in block-local modules" should {
+    val cpg = code("""
+        |fn outer() {
+        |  {
+        |    mod util { pub type Mask = u8; }
+        |    let first_mask: util::Mask = 1;
+        |  }
+        |  {
+        |    mod util { pub type Mask = u16; }
+        |    let second_mask: util::Mask = 2;
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct fullNames" in {
+      inside(cpg.typeDecl.nameExact("Mask").sortBy(_.lineNumber).l) { case masku8 :: masku16 :: Nil =>
+        masku8.fullName shouldBe "rust2cpgtest::outer::util#1::Mask"
+        masku8.aliasTypeFullName shouldBe Some("u8")
+
+        masku16.fullName shouldBe "rust2cpgtest::outer::util#2::Mask"
+        masku16.aliasTypeFullName shouldBe Some("u16")
       }
     }
   }

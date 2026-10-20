@@ -142,4 +142,29 @@ class TraitTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.typeDecl.nameExact("Empty").method shouldBe empty
     }
   }
+
+  "same-named traits in anonymous consts" should {
+    val cpg = code("""
+        |const _: () = {
+        |  trait Must {}
+        |  impl Must for i32 {}
+        |};
+        |const _: () = {
+        |  trait Must {}
+        |  impl Must for i64 {}
+        |};
+        |""".stripMargin)
+
+    "have correct fullNames" in {
+      cpg.typeDecl.nameExact("Must").sortBy(_.lineNumber).fullName.l shouldBe List(
+        "rust2cpgtest::Must#1",
+        "rust2cpgtest::Must#2"
+      )
+    }
+
+    "have correct impl fullNames" in {
+      cpg.typeDecl.name("i32").fullName.l shouldBe List("<i32 as rust2cpgtest::Must#1>")
+      cpg.typeDecl.name("i64").fullName.l shouldBe List("<i64 as rust2cpgtest::Must#2>")
+    }
+  }
 }

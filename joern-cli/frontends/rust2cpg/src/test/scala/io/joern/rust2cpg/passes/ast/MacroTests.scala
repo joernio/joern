@@ -1,6 +1,6 @@
 package io.joern.rust2cpg.passes.ast
 
-import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
+import io.joern.rust2cpg.testfixtures.{Rust2CpgSuite, RustDefaultTestCpg}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
@@ -272,19 +272,12 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+}
 
-  "identity proc-macro call" should {
-    val cpg = code("""
-        |use proc_macro::TokenStream;
-        |
-        |#[proc_macro]
-        |pub fn foo(item: TokenStream) -> TokenStream { item }
-        |
-        |pub fn bar() {
-        |    let baz = foo![Qux];
-        |    foo![Qux]
-        |}
-        |""".stripMargin)
+class MacroTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
+
+  private def withProcMacroCrate(testCpg: RustDefaultTestCpg): RustDefaultTestCpg = {
+    testCpg
       .moreCode(
         """
           |[package]
@@ -292,46 +285,47 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
           |version = "0.1.0"
           |edition = "2021"
           |
-          |[lib]
-          |proc-macro = true
+          |[dependencies]
+          |pm = { path = "pm" }
           |""".stripMargin,
         fileName = "Cargo.toml"
       )
-
-    "have correct assignment" in {
-      cpg.method.fullNameExact("rust2cpgtest::bar").block.astChildren.isCall.isAssignment.code.l shouldBe List(
-        "let baz = foo![Qux];"
+      .moreCode(
+        """
+          |[package]
+          |name = "pm"
+          |version = "0.1.0"
+          |edition = "2021"
+          |
+          |[lib]
+          |proc-macro = true
+          |""".stripMargin,
+        fileName = (Paths.get("pm") / "Cargo.toml").toString
       )
-
-      // TODO(rust_ast_gen): expand proc-macros.
-      inside(cpg.method.fullNameExact("rust2cpgtest::bar").block.astChildren.isCall.isAssignment.source.l) {
-        case (qux: Unknown) :: Nil =>
-          qux.code shouldBe "foo![Qux]"
-          qux.lineNumber shouldBe Some(8)
-      }
-      pendingUntilFixed {
-        inside(cpg.method.fullNameExact("rust2cpgtest::bar").block.astChildren.isCall.isAssignment.source.l) {
-          case (qux: Identifier) :: Nil =>
-            qux.name shouldBe "Qux"
-            qux.code shouldBe "Qux"
-        }
-      }
-    }
-
-    // TODO: update once proc-macros are supported.
-    "have correct return" in {
-      inside(cpg.method.nameExact("bar").block.astChildren.isReturn.l) { case ret :: Nil =>
-        ret.code shouldBe "foo![Qux]"
-        inside(ret.astChildren.l) { case (qux: Unknown) :: Nil =>
-          qux.code shouldBe "foo![Qux]"
-          qux.lineNumber shouldBe Some(9)
-        }
-      }
-    }
+      .moreCode(
+        """
+          |use proc_macro::TokenStream;
+          |
+          |#[proc_macro]
+          |pub fn emit_f(_input: TokenStream) -> TokenStream {
+          |    "fn f() {}".parse().unwrap()
+          |}
+          |
+          |#[proc_macro]
+          |pub fn foo(input: TokenStream) -> TokenStream {
+          |    input
+          |}
+          |
+          |#[proc_macro_attribute]
+          |pub fn prepend_g(_attr: TokenStream, item: TokenStream) -> TokenStream {
+          |    let mut output: TokenStream = "fn g() {}".parse().unwrap();
+          |    output.extend(item);
+          |    output
+          |}
+          |""".stripMargin,
+        fileName = (Paths.get("pm") / "src" / "lib.rs").toString
+      )
   }
-}
-
-class MacroTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
 
   "a `vec!` macro resolved against the sysroot" should {
     val cpg = code("""
@@ -545,6 +539,143 @@ class MacroTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
     "have correct fullNames" in {
       cpg.method.nameExact("foo").fullName.sorted.l shouldBe List("rust2cpgtest::bar::foo", "rust2cpgtest::foo")
       cpg.call.nameExact("foo").methodFullName.sorted.l shouldBe List("rust2cpgtest::bar::foo", "rust2cpgtest::foo")
+    }
+  }
+
+  "proc-macro in item" should {
+    val cpg = withProcMacroCrate(code("""
+        |pm::emit_f!();
+        |
+        |fn k() {
+        | f();
+        |}
+        |""".stripMargin))
+
+    "have correct method" in {
+      inside(cpg.method.nameExact("f").l) { case method :: Nil =>
+        method.fullName shouldBe "rust2cpgtest::f"
+        method.lineNumber shouldBe Some(2)
+        method.code shouldBe "f"
+      }
+    }
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("f").l) { case call :: Nil =>
+        call.methodFullName shouldBe "rust2cpgtest::f"
+        call.lineNumber shouldBe Some(5)
+        call.code shouldBe "f()"
+      }
+    }
+  }
+
+  "proc-macro in expression" should {
+    val cpg = withProcMacroCrate(code("""
+        |fn bar() -> i32 {
+        | let baz = pm::foo![42];
+        | pm::foo![baz]
+        |}
+        |""".stripMargin))
+
+    "have correct children" in {
+      inside(cpg.method.nameExact("bar").block.astChildren.l) {
+        case (local: Local) :: (assign: Call) :: (ret: Return) :: Nil =>
+          local.name shouldBe "baz"
+          local.typeFullName shouldBe "i32"
+
+          assign.code shouldBe "let baz = pm::foo![42];"
+          assign.lineNumber shouldBe Some(3)
+          inside(assign.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Literal) :: Nil =>
+            lhs.name shouldBe "baz"
+            lhs.typeFullName shouldBe "i32"
+
+            rhs.code shouldBe "42"
+            rhs.typeFullName shouldBe "i32"
+            rhs.lineNumber shouldBe Some(3)
+          }
+
+          ret.code shouldBe "pm::foo![baz]"
+          inside(ret.astChildren.l) { case (ident: Identifier) :: Nil =>
+            ident.name shouldBe "baz"
+            ident.typeFullName shouldBe "i32"
+            ident.lineNumber shouldBe Some(4)
+          }
+      }
+    }
+  }
+
+  "proc-macro in impl fn attribute" should {
+    val cpg = withProcMacroCrate(code("""
+        |struct S;
+        |
+        |impl S {
+        |  #[pm::prepend_g]
+        |  fn h(&self) -> i32 {
+        |    pm::foo![42]
+        |  }
+        |}
+        |
+        |fn k() {
+        |  S.h();
+        |}
+        |""".stripMargin))
+
+    "have correct methods" in {
+      inside(cpg.method.nameExact("g").l) { case method :: Nil =>
+        method.fullName shouldBe "rust2cpgtest::S::g"
+        method.lineNumber shouldBe Some(5)
+      }
+      inside(cpg.method.nameExact("h").l) { case method :: Nil =>
+        method.fullName shouldBe "rust2cpgtest::S::h"
+        method.lineNumber shouldBe Some(5)
+      }
+    }
+
+    "have correct return" in {
+      inside(cpg.method.nameExact("h").block.astChildren.isReturn.astChildren.l) { case (literal: Literal) :: Nil =>
+        literal.code shouldBe "42"
+        literal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("h").l) { case call :: Nil =>
+        call.methodFullName shouldBe "rust2cpgtest::S::h"
+        call.lineNumber shouldBe Some(12)
+      }
+    }
+  }
+
+  "proc-macro in fn attribute" should {
+    val cpg = withProcMacroCrate(code("""
+        |#[pm::prepend_g]
+        |fn h() {}
+        |
+        |fn k() {
+        | g();
+        | h();
+        |}
+        |""".stripMargin))
+
+    "have correct methods" in {
+      inside(cpg.method.nameExact("g").l) { case method :: Nil =>
+        method.fullName shouldBe "rust2cpgtest::g"
+        method.lineNumber shouldBe Some(2)
+      }
+      inside(cpg.method.nameExact("h").l) { case method :: Nil =>
+        method.fullName shouldBe "rust2cpgtest::h"
+        method.lineNumber shouldBe Some(2)
+      }
+    }
+
+    "have correct calls" in {
+      inside(cpg.call.nameExact("g").l) { case call :: Nil =>
+        call.methodFullName shouldBe "rust2cpgtest::g"
+        call.lineNumber shouldBe Some(6)
+      }
+      inside(cpg.call.nameExact("h").l) { case call :: Nil =>
+        call.methodFullName shouldBe "rust2cpgtest::h"
+        call.lineNumber shouldBe Some(7)
+      }
     }
   }
 }

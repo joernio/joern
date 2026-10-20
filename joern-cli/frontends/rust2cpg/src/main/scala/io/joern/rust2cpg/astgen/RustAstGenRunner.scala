@@ -26,7 +26,8 @@ class RustAstGenRunner(config: Config) extends AstGenRunner(RustAstGenRunner.ast
     val baseArgs       = Seq(astGenCommand, "-i", in, "-o", out.toString)
     val sysRootArgs    = if (config.noSysRoot) Seq("--no-sysroot") else Seq.empty[String]
     val resolveCfgArgs = if (config.noResolveCfg) Seq.empty[String] else Seq("--resolve-cfg")
-    val args           = baseArgs ++ sysRootArgs ++ resolveCfgArgs
+    val procMacroArgs  = if (config.expandProcMacros) Seq("--expand-proc-macros") else Seq.empty[String]
+    val args           = baseArgs ++ sysRootArgs ++ resolveCfgArgs ++ procMacroArgs
     val result         = ExternalCommand.run(args).logIfFailed()
     if (result.successful) {
       result.stdErr.foreach(RustAstGenRunner.logger.info)

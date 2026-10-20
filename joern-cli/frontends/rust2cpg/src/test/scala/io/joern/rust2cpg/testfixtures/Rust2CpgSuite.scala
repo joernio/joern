@@ -10,7 +10,8 @@ class Rust2CpgSuite(
   withPostProcessing: Boolean = false,
   noSysRoot: Boolean = false,
   noResolveCfg: Boolean = false,
-  disableFileContent: Boolean = true
+  disableFileContent: Boolean = true,
+  expandProcMacros: Boolean = true
 ) extends Code2CpgFixture(() =>
       RustDefaultTestCpg()
         .withConfig(
@@ -18,6 +19,7 @@ class Rust2CpgSuite(
             .withNoSysRoot(noSysRoot)
             .withNoResolveCfg(noResolveCfg)
             .withDisableFileContent(disableFileContent)
+            .withExpandProcMacros(expandProcMacros)
         )
         .withPostProcessingPasses(withPostProcessing)
     ) {
