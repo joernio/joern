@@ -112,3 +112,11 @@ bazel-*
 ##############
 __pycache__/
 *.pyc
+
+##############
+# AI agents  #
+##############
+# Shared guidance lives in AGENTS.md (CLAUDE.md is a symlink to it). Personal files stay local.
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/worktrees/
