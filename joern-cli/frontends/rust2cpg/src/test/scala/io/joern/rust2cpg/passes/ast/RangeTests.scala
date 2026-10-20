@@ -1,7 +1,7 @@
 package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -258,6 +258,95 @@ class RangeTests extends Rust2CpgSuite {
           lit.code shouldBe "2"
           lit.typeFullName shouldBe "i32"
       }
+    }
+  }
+
+  "`a..b` with if-else start" should {
+    val cpg = code("""
+        |fn main(c: bool) {
+        | let r = if c { 1 } else { 0 }..3;
+        |}
+        |""".stripMargin)
+
+    "have correct if wrapped in a block" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("r")).source.l) { case (rangeBlock: Block) :: Nil =>
+        inside(rangeBlock.astChildren.l) {
+          case (tmp0Local: Local) :: (allocAssign: Call) :: (startAssign: Call) :: (endAssign: Call) :: (tmp0Ident: Identifier) :: Nil =>
+            tmp0Local.name shouldBe "<tmp>0"
+            tmp0Local.typeFullName shouldBe "core::ops::range::Range<i32>"
+
+            allocAssign.methodFullName shouldBe Operators.assignment
+            allocAssign.code shouldBe s"<tmp>0 = ${Operators.alloc}"
+
+            startAssign.methodFullName shouldBe Operators.assignment
+            startAssign.code shouldBe "<tmp>0.start = if c { 1 } else { 0 }"
+
+            endAssign.methodFullName shouldBe Operators.assignment
+            endAssign.code shouldBe "<tmp>0.end = 3"
+
+            tmp0Ident.name shouldBe "<tmp>0"
+            tmp0Ident.typeFullName shouldBe "core::ops::range::Range<i32>"
+
+            inside(startAssign.argument(2)) { case ifBlock: Block =>
+              inside(ifBlock.astChildren.l) {
+                case (tmpLocal: Local) :: (ifNode: ControlStructure) :: (tmpIdent: Identifier) :: Nil =>
+                  tmpLocal.name shouldBe "<tmp>1"
+                  tmpLocal.typeFullName shouldBe "i32"
+
+                  ifNode.controlStructureType shouldBe ControlStructureTypes.IF
+                  ifNode.code shouldBe "if c { 1 } else { 0 }"
+
+                  tmpIdent.name shouldBe "<tmp>1"
+                  tmpIdent.typeFullName shouldBe "i32"
+              }
+            }
+        }
+      }
+    }
+
+    "have correct then-branch" in {
+      cpg.ifBlock.whenTrue.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>1 = 1")
+    }
+
+    "have correct else-branch" in {
+      cpg.ifBlock.whenFalse.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>1 = 0")
+    }
+  }
+
+  "`a..=b` with if-else end" should {
+    val cpg = code("""
+        |fn main(c: bool) {
+        | let r = 0..=if c { 2 } else { 3 };
+        |}
+        |""".stripMargin)
+
+    "have correct if wrapped in a block" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("r")).source.l) { case (rangeCall: Call) :: Nil =>
+        rangeCall.methodFullName shouldBe "core::ops::range::RangeInclusive<Idx>::new"
+        rangeCall.code shouldBe "0..=if c { 2 } else { 3 }"
+
+        inside(rangeCall.argument(2)) { case ifBlock: Block =>
+          inside(ifBlock.astChildren.l) {
+            case (tmpLocal: Local) :: (ifNode: ControlStructure) :: (tmpIdent: Identifier) :: Nil =>
+              tmpLocal.name shouldBe "<tmp>0"
+              tmpLocal.typeFullName shouldBe "i32"
+
+              ifNode.controlStructureType shouldBe ControlStructureTypes.IF
+              ifNode.code shouldBe "if c { 2 } else { 3 }"
+
+              tmpIdent.name shouldBe "<tmp>0"
+              tmpIdent.typeFullName shouldBe "i32"
+          }
+        }
+      }
+    }
+
+    "have correct then-branch" in {
+      cpg.ifBlock.whenTrue.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>0 = 2")
+    }
+
+    "have correct else-branch" in {
+      cpg.ifBlock.whenFalse.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>0 = 3")
     }
   }
 }
