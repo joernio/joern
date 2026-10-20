@@ -2102,7 +2102,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
           None,
           Some(typeFullNameForExpr(rangeExpr))
         )
-        callAst(call, Seq(visitExpr(start), visitExpr(end)))
+        callAst(call, Seq(visitRhsExpr(start), visitRhsExpr(end)))
       case (start, end, _) =>
         val rangeType = typeFullNameForExpr(rangeExpr)
         val tmpName   = contextStack.nextTmpName()
@@ -2110,7 +2110,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
           def mkAssign(fieldName: String, expr: Expr): Ast = {
             val fieldType = typeFullNameForExpr(expr)
             val lhs       = fieldAccessAst(expr, expr, mktmpIdent(expr), s"$tmpName.$fieldName", fieldName, fieldType)
-            callAst(assignmentNode(expr, s"$tmpName.$fieldName = ${code(expr)}"), Seq(lhs, visitExpr(expr)))
+            callAst(assignmentNode(expr, s"$tmpName.$fieldName = ${code(expr)}"), Seq(lhs, visitRhsExpr(expr)))
           }
           (start.map(mkAssign("start", _)) ++ end.map(mkAssign("end", _))).toSeq
         }
