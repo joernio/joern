@@ -1869,14 +1869,13 @@ class PythonAstVisitor(
   }
 
   @tailrec
-  private def mayHaveSideEffects(expr: ast.iexpr): Boolean = {
+  private def assumeHasNoSideEffects(expr: ast.iexpr): Boolean = {
     expr match {
       case attr: ast.Attribute =>
-        mayHaveSideEffects(attr.value)
-      case attr: ast.Name =>
-        false
-      case _ =>
-        true
+        // technically field access can have arbitrary side effects, but we pretend that's not the case
+        assumeHasNoSideEffects(attr.value)
+      case _: ast.Name => true
+      case _           => false
     }
   }
 
@@ -1907,7 +1906,7 @@ class PythonAstVisitor(
         createXDotYCall(
           () => convert(attribute.value),
           attribute.attr,
-          xMayHaveSideEffects = mayHaveSideEffects(attribute.value),
+          xMayHaveSideEffects = !assumeHasNoSideEffects(attribute.value),
           lineAndColOf(call),
           argumentNodes,
           keywordArgNodes,
