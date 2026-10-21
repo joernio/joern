@@ -46,11 +46,6 @@ trait TypeNameProvider { this: AstCreator =>
 
   private val ReservedKeywordsAtTypesSet: Set[String] = ReservedKeywordsAtTypes.toSet
 
-  private val KeywordsAtTypesToKeep: List[String] = List("unsigned", "volatile")
-
-  private val KeywordsAtTypesToKeepPatterns: List[(String, String)] =
-    KeywordsAtTypesToKeep.map(keyword => (s"$keyword ", s" $keyword "))
-
   /** The declarator at `index` of `declaration`, if there is one.
     *
     * `ICPPASTStructuredBindingDeclaration` extends `IASTSimpleDeclaration` but carries no declarators at all; the bound
@@ -73,7 +68,10 @@ trait TypeNameProvider { this: AstCreator =>
         pointersAsString(s, parentDecl)
       case s: IASTSimpleDeclSpecifier if s.getParent.isInstanceOf[IASTFunctionDefinition] =>
         val parentDecl = s.getParent.asInstanceOf[IASTFunctionDefinition].getDeclarator
-        ASTStringUtil.getReturnTypeString(s, parentDecl)
+        BasicTypeNames
+          .forSimpleDeclSpecifier(s)
+          .map(name => name + pointerAndArraySuffix(parentDecl))
+          .getOrElse(ASTStringUtil.getReturnTypeString(s, parentDecl))
       case s: IASTSimpleDeclaration if s.getParent.isInstanceOf[ICASTKnRFunctionDeclarator] =>
         declaratorAt(s, index) match {
           case Some(decl) => pointersAsString(s.getDeclSpecifier, decl)
@@ -118,7 +116,7 @@ trait TypeNameProvider { this: AstCreator =>
 
   protected def cleanType(rawType: String): String = {
     if (rawType == Defines.Any) return rawType
-    val normalizedTpe = StringUtils.normalizeSpace(rawType.stripSuffix(" ()"))
+    val normalizedTpe = BasicTypeNames.normalize(StringUtils.normalizeSpace(rawType.stripSuffix(" ()")))
     val tpe           =
       if (!ReservedKeywordsAtTypesSet.exists(normalizedTpe.contains)) normalizedTpe
       else
@@ -158,12 +156,9 @@ trait TypeNameProvider { this: AstCreator =>
 
   private def safeGetTypeInternal(tpe: IType): String = {
     val tpeString = tpe match {
-      case _: CPPClosureType                                      => Defines.Function
-      case cppBasicType: ICPPBasicType if cppBasicType.isLong     => Defines.Long
-      case cppBasicType: ICPPBasicType if cppBasicType.isLongLong => Defines.LongLong
-      case cppBasicType: ICPPBasicType if cppBasicType.isShort    => Defines.Short
-      case templateType: ICPPTemplateTypeParameter                => templateType.getName
-      case cppPackType: ICPPParameterPackType                     =>
+      case _: CPPClosureType                       => Defines.Function
+      case templateType: ICPPTemplateTypeParameter => templateType.getName
+      case cppPackType: ICPPParameterPackType      =>
         cppPackType.getType match {
           case templateType: ICPPTemplateTypeParameter                 => templateType.getName
           case refType: ICPPReferenceType if refType.isRValueReference => safeGetType(refType.getType) + "&&"
@@ -172,9 +167,16 @@ trait TypeNameProvider { this: AstCreator =>
         }
       case _ =>
         // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
-        Try(ASTTypeUtil.getType(tpe)).getOrElse(Defines.Any)
+        Try(renderedTypeName(tpe)).getOrElse(Defines.Any)
     }
     cleanType(tpeString)
+  }
+
+  /** The name of `tpe` from its kind and modifiers where possible, else the string CDT renders for it. */
+  private def renderedTypeName(tpe: IType): String = {
+    BasicTypeNames.renderBasic(tpe).getOrElse {
+      ASTTypeUtil.getType(tpe)
+    }
   }
 
   protected def variadicStringForFunction(
@@ -304,15 +306,14 @@ trait TypeNameProvider { this: AstCreator =>
   }
 
   private def typeForIASTName(name: IASTName): String = {
-    val x = safeGetNodeType(name)
     safeGetBinding(name) match {
       case Some(v: IVariable) =>
         v.getType match {
           case f: IFunctionType =>
-            f.getReturnType.toString
+            safeGetType(f.getReturnType)
           case c: ICPPBinding =>
             c.getQualifiedName.mkString(".")
-          case other => other.toString
+          case other => safeGetType(other)
         }
       case _ => safeGetNodeType(name)
     }
@@ -370,25 +371,17 @@ trait TypeNameProvider { this: AstCreator =>
     }
   }
 
+  /** Removes the whitespace of a type name, except where it is part of a valid C type name: `unsigned int`,
+    * `long long`, `volatile long`.
+    */
   private def replaceWhitespaceAfterKeyword(tpe: String): String = {
-    if (
-      KeywordsAtTypesToKeepPatterns.exists { case (prefix, infix) => tpe.startsWith(prefix) || tpe.contains(infix) }
-    ) {
-      KeywordsAtTypesToKeepPatterns.foldLeft(tpe) { case (cur, (prefix, infix)) =>
-        if (cur.startsWith(prefix)) {
-          prefix + replaceWhitespaceAfterKeyword(cur.substring(prefix.length))
-        } else if (cur.contains(infix)) {
-          val idx   = cur.indexOf(infix)
-          val front = cur.substring(0, idx)
-          val back  = cur.substring(idx + infix.length)
-          s"${replaceWhitespaceAfterKeyword(front)}$infix${replaceWhitespaceAfterKeyword(back)}"
-        } else {
-          cur
-        }
+    val tokens = tpe.split(' ').filter(_.nonEmpty)
+    tokens.indices
+      .foldLeft(new StringBuilder) { (name, i) =>
+        if (i > 0 && BasicTypeNames.keepsWhitespaceBetween(tokens(i - 1), tokens(i))) name.append(' ')
+        name.append(tokens(i))
       }
-    } else {
-      tpe.replace(" ", "")
-    }
+      .toString
   }
 
   private def isThisLambdaCapture(tpe: String): Boolean = {
@@ -396,30 +389,33 @@ trait TypeNameProvider { this: AstCreator =>
   }
 
   private def pointersAsString(spec: IASTDeclSpecifier, parentDecl: IASTDeclarator): String = {
-    val tpe = typeFor(spec) match {
-      case Defines.Auto  => typeFor(parentDecl)
-      case "longlongint" => Defines.LongLong
-      case "longint"     => Defines.Long
-      case "shortint"    => Defines.Short
-      case t             => t
+    val tpe = (spec match {
+      case simple: IASTSimpleDeclSpecifier => BasicTypeNames.forSimpleDeclSpecifier(simple)
+      case _                               => None
+    }).getOrElse(typeFor(spec)) match {
+      case Defines.Auto => typeFor(parentDecl)
+      case other        => other
     }
-    val pointers = parentDecl.getPointerOperators
-    val arr      = parentDecl match {
+    if (parentDecl.getPointerOperators.isEmpty) {
+      s"$tpe${pointerAndArraySuffix(parentDecl)}"
+    } else {
+      s"$tpe${pointerAndArraySuffix(parentDecl)}".strip()
+    }
+  }
+
+  private def pointerAndArraySuffix(declarator: IASTDeclarator): String = {
+    val arr = declarator match {
       case p: IASTArrayDeclarator => p.getArrayModifiers.iterator.map(_.getRawSignature).mkString
       case _                      => ""
     }
-    if (pointers.isEmpty) {
-      s"$tpe$arr"
-    } else {
-      val refs = pointers
-        .map {
-          case r: ICPPASTReferenceOperator if r.isRValueReference => "&&"
-          case _: ICPPASTReferenceOperator                        => "&"
-          case _: IASTPointer                                     => "*"
-        }
-        .mkString("")
-      s"$tpe$arr$refs".strip()
-    }
+    val refs = declarator.getPointerOperators
+      .map {
+        case r: ICPPASTReferenceOperator if r.isRValueReference => "&&"
+        case _: ICPPASTReferenceOperator                        => "&"
+        case _: IASTPointer                                     => "*"
+      }
+      .mkString("")
+    s"$arr$refs"
   }
 
   private def safeGetNodeType(node: IASTNode): String = {

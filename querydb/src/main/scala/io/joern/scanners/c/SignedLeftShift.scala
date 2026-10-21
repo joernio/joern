@@ -40,6 +40,10 @@ object SignedLeftShift extends QueryBundle {
           |void bad3(int val) {
           |  val << val;
           |}
+          |
+          |void bad4(signed long val) {
+          |  val << val;
+          |}
           |""".stripMargin),
         List("""
           |
