@@ -29,6 +29,8 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
             barReceiver.name shouldBe "b"
             barReceiver.typeFullName shouldBe "Foo$Bar"
 
+            outerClass.code shouldBe "new Foo()"
+
             inside(outerClass.astChildren.l) {
               case List(tmpLocal: Local, tmpAssign: Call, tmpInit: Call, tmpRet: Identifier) =>
                 tmpLocal.name shouldBe "$obj0"
@@ -333,6 +335,8 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
       val consBlock                                                     = idCall.argument(1).asInstanceOf[Block]
       val List(local: Local, assign: Call, init: Call, ret: Identifier) = consBlock.astChildren.l: @unchecked
 
+      consBlock.code shouldBe "new Bar(42)"
+
       local.name shouldBe "$obj0"
       local.typeFullName shouldBe "Bar"
       local.code shouldBe "$obj0"
@@ -378,6 +382,8 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
       val assignCall = method.call.nameExact("<operator>.assignment").head
       val consBlock  = assignCall.argument(2).asInstanceOf[Block]
       val List(local: Local, assign: Call, init: Call, ret: Identifier) = consBlock.astChildren.l: @unchecked
+
+      consBlock.code shouldBe "new Bar(42)"
 
       local.name shouldBe "$obj1"
       local.typeFullName shouldBe "Bar"
