@@ -165,21 +165,18 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     }
   }
 
-  override protected def associateInterproceduralTypes(
-    i: Identifier,
+  override protected def getInterproceduralTypes(
     fieldFullName: String,
     fieldName: String,
     globalTypes: Set[String],
     baseTypes: Set[String]
   ): Set[String] = {
     if (symbolTable.contains(LocalVar(fieldName))) {
-      val fieldTypes = symbolTable.get(LocalVar(fieldName))
-      symbolTable.append(i, fieldTypes)
+      symbolTable.get(LocalVar(fieldName))
     } else if (symbolTable.contains(CallAlias(fieldName, Option("this")))) {
       symbolTable.get(CallAlias(fieldName, Option("this")))
     } else {
-      super.associateInterproceduralTypes(
-        i: Identifier,
+      super.getInterproceduralTypes(
         fieldFullName: String,
         fieldName: String,
         globalTypes: Set[String],

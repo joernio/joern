@@ -605,21 +605,19 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     symbolTable.append(symbol, types)
   }
 
-  /** Similar to associateTypes but used in the case where there is some kind of field load.
+  /** Similar to getInterproceduralTypes but used in the case where there is some kind of field load.
     */
-  protected def associateInterproceduralTypes(
-    i: Identifier,
+  protected def getInterproceduralTypes(
     base: Identifier,
     fi: FieldIdentifier,
     fieldName: String,
     baseTypes: Set[String]
   ): Set[String] = {
     val globalTypes = getFieldBaseType(base, fi)
-    associateInterproceduralTypes(i, fieldName, fi.canonicalName, globalTypes, baseTypes)
+    getInterproceduralTypes(fieldName, fi.canonicalName, globalTypes, baseTypes)
   }
 
-  protected def associateInterproceduralTypes(
-    i: Identifier,
+  protected def getInterproceduralTypes(
     fieldFullName: String,
     fieldName: String,
     globalTypes: Set[String],
@@ -627,23 +625,20 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   ): Set[String] = {
     if (globalTypes.nonEmpty) {
       // We have been able to resolve the type inter-procedurally
-      associateTypes(i, globalTypes)
+      globalTypes
     } else if (baseTypes.nonEmpty) {
       lazy val existingMembers = cpg.typeDecl.fullNameExact(baseTypes.toSeq*).member.nameExact(fieldName)
       if (baseTypes.equals(symbolTable.get(LocalVar(fieldFullName)))) {
-        associateTypes(i, baseTypes)
+        baseTypes
       } else if (existingMembers.isEmpty) {
         // If not available, use a dummy variable that can be useful for call matching
-        associateTypes(i, baseTypes.map(t => XTypeRecovery.dummyMemberType(t, fieldName, pathSep)))
+        baseTypes.map(t => XTypeRecovery.dummyMemberType(t, fieldName, pathSep))
       } else {
         Set.empty
       }
     } else {
       // Assign dummy
-      val dummyTypes = Set(
-        XTypeRecovery.dummyMemberType(fieldFullName.stripSuffix(s"$pathSep$fieldName"), fieldName, pathSep)
-      )
-      associateTypes(i, dummyTypes)
+      Set(XTypeRecovery.dummyMemberType(fieldFullName.stripSuffix(s"$pathSep$fieldName"), fieldName, pathSep))
     }
   }
 
@@ -899,18 +894,31 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Will handle an identifier being assigned to a field value.
     */
   protected def visitIdentifierAssignedToFieldLoad(i: Identifier, fa: FieldAccess): Set[String] = {
+    fa.argumentOut.l match {
+      case ::(call: Call, ::(fi: FieldIdentifier, _)) if !call.name.equals(Operators.fieldAccess) =>
+        assignTypesToCall(
+          call,
+          Set(getFieldName(fa).stripSuffix(s"${XTypeRecovery.DummyMemberLoad}$pathSep${fi.canonicalName}"))
+        )
+      case _ => associateTypes(i, getFieldLoadTypes(fa))
+    }
+  }
+
+  /** Determines the types of the value loaded by a field access. Does not store them in the symbol table.
+    */
+  protected def getFieldLoadTypes(fa: FieldAccess): Set[String] = {
     val fieldName = getFieldName(fa)
     fa.argumentOut.l match {
       case ::(base: Identifier, ::(fi: FieldIdentifier, _)) if symbolTable.contains(LocalVar(base.name)) =>
         // Get field from global table if referenced as a variable
         val localTypes = symbolTable.get(LocalVar(base.name))
-        associateInterproceduralTypes(i, base, fi, fieldName, localTypes)
+        getInterproceduralTypes(base, fi, fieldName, localTypes)
       case ::(base: Identifier, ::(fi: FieldIdentifier, _)) if symbolTable.contains(LocalVar(fieldName)) =>
         val localTypes = symbolTable.get(LocalVar(fieldName))
-        associateInterproceduralTypes(i, base, fi, fieldName, localTypes)
+        getInterproceduralTypes(base, fi, fieldName, localTypes)
       case ::(base: Identifier, ::(fi: FieldIdentifier, _)) =>
         val dummyTypes = Set(s"$fieldName$pathSep${XTypeRecovery.DummyReturnType}")
-        associateInterproceduralTypes(i, base, fi, fieldName, dummyTypes)
+        getInterproceduralTypes(base, fi, fieldName, dummyTypes)
       case ::(c: Call, ::(fi: FieldIdentifier, _)) if c.name.equals(Operators.fieldAccess) =>
         val baseName = getFieldName(c.asInstanceOf[FieldAccess])
         // Build type regardless of length
@@ -933,14 +941,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
             }
           }
         }
-        associateTypes(i, buf.toSet)
-      case ::(call: Call, ::(fi: FieldIdentifier, _)) =>
-        assignTypesToCall(
-          call,
-          Set(fieldName.stripSuffix(s"${XTypeRecovery.DummyMemberLoad}$pathSep${fi.canonicalName}"))
-        )
+        buf.toSet
       case _ =>
-        logger.warn(s"Unable to assign identifier '${i.name}' to field load '$fieldName' @ ${debugLocation(i)}")
+        logger.warn(s"Unable to determine the type of field load '$fieldName' @ ${debugLocation(fa)}")
         Set.empty
     }
   }
@@ -1044,6 +1047,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.l)
         case x: Call if x.argument.headOption.exists(symbolTable.contains) =>
           setTypeInformationForRecCall(x, Option(x), x.argument.l)
+        case x: Call if x.name == Operators.fieldAccess =>
+          setTypeInformationForFieldAccessReceiver(x)
         case _ =>
       }
     // Set types in an atomic way
@@ -1052,6 +1057,44 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   protected def createCallFromIdentifierTypeFullName(typeFullName: String, callName: String): String =
     s"$typeFullName$pathSep$callName"
+
+  /** Unpacks a chain of field accesses `base.f1.f2...fn` into the innermost field access `base.f1` and the remaining
+    * field names `f2` to `fn`. Returns [[None]] if the chain is not based on an identifier.
+    */
+  @tailrec
+  private def unpackFieldAccessChain(fa: Call, fieldNames: List[String] = Nil): Option[(FieldAccess, List[String])] =
+    fa.argumentOut.l match {
+      case ::(_: Identifier, ::(_: FieldIdentifier, _)) =>
+        Option((fa.asInstanceOf[FieldAccess], fieldNames))
+      case ::(base: Call, ::(fi: FieldIdentifier, _)) if base.name == Operators.fieldAccess =>
+        unpackFieldAccessChain(base, fi.canonicalName :: fieldNames)
+      case _ => None
+    }
+
+  /** Sets the type of a call whose receiver is a field access chain `a.b.c.d` that is not based on a temporary
+    * variable. The types of `a.b` are determined as for a field load and then followed along the field name `c`.
+    */
+  private def setTypeInformationForFieldAccessReceiver(receiver: Call): Unit = {
+    for {
+      call                      <- receiver.receivedCall
+      (firstAccess, fieldNames) <- unpackFieldAccessChain(receiver) if fieldNames.nonEmpty
+    } {
+      val instanceTypes = fieldNames.init.foldLeft(getFieldLoadTypes(firstAccess)) { (types, field) =>
+        types.flatMap { t =>
+          val memberTypes = typeDeclIterator(t).member
+            .nameExact(field)
+            .flatMap(m => m.typeFullName +: (m.dynamicTypeHintFullName ++ m.possibleTypes))
+            .filterNot(_ == "ANY")
+            .toSet
+          lazy val knownTypes = symbolTable.get(LocalVar(s"$t$pathSep$field"))
+          if (memberTypes.nonEmpty) memberTypes
+          else if (knownTypes.nonEmpty) knownTypes
+          else Set(XTypeRecovery.dummyMemberType(t, field, pathSep))
+        }
+      }
+      persistType(call, instanceTypes.map(createCallFromIdentifierTypeFullName(_, fieldNames.last)))
+    }
+  }
 
   /** Sets type information for a receiver/call pattern.
     */

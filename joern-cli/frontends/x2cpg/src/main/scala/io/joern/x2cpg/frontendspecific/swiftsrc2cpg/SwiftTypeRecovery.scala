@@ -141,21 +141,18 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
     }
   }
 
-  override protected def associateInterproceduralTypes(
-    i: Identifier,
+  override protected def getInterproceduralTypes(
     fieldFullName: String,
     fieldName: String,
     globalTypes: Set[String],
     baseTypes: Set[String]
   ): Set[String] = {
     if (symbolTable.contains(LocalVar(fieldName))) {
-      val fieldTypes = symbolTable.get(LocalVar(fieldName))
-      symbolTable.append(i, fieldTypes)
+      symbolTable.get(LocalVar(fieldName))
     } else if (symbolTable.contains(CallAlias(fieldName, Option("self")))) {
       symbolTable.get(CallAlias(fieldName, Option("self")))
     } else {
-      super.associateInterproceduralTypes(
-        i: Identifier,
+      super.getInterproceduralTypes(
         fieldFullName: String,
         fieldName: String,
         globalTypes: Set[String],
