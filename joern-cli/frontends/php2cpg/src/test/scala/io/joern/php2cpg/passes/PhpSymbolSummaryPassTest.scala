@@ -151,18 +151,21 @@ object PhpSymbolSummaryPassTest {
         FileUtil.writeBytes(tmpFilePath, content.getBytes)
       }
       val config = Config().withInputPath(tmpDirPath.toString)
-      PhpParser.getParser(config) match {
-        case Some(parser) =>
-          var buffer = Option.empty[Map[String, Seq[SymbolSummary]]]
-          new SymbolSummaryPass(config, Cpg.empty, parser, summary => buffer = Option(summary)).createAndApply()
-          buffer.map(_.valuesIterator.flatten.toSeq.sortBy(_.name)).foreach { x =>
-            try {
-              assertion(x)
-            } catch {
-              case _: Exception => fail(s"Unexpected summary: $x")
+      PhpParser.withParser(config) { parserOption =>
+        parserOption match {
+          case Some(parser) =>
+            var buffer = Option.empty[Map[String, Seq[SymbolSummary]]]
+            new SymbolSummaryPass(config, Cpg.empty, parser, summary => buffer = Option(summary)).createAndApply()
+            buffer.map(_.valuesIterator.flatten.toSeq.sortBy(_.name)).foreach { x =>
+              try {
+                assertion(x)
+              } catch {
+                case _: Exception => fail(s"Unexpected summary: $x")
+              }
             }
-          }
-        case None => Matchers.fail(s"Unable to create a PHP parser! See logs for details.")
+          case None =>
+            Matchers.fail(s"Unable to create a PHP parser! See logs for details.")
+        }
       }
     }
   }

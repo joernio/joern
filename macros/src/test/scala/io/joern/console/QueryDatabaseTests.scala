@@ -42,7 +42,7 @@ class QueryDatabaseTests extends AnyWordSpec with should.Matchers {
     }
 
     "contain `foo` query" in {
-      val qdb = new QueryDatabase(namespace = "io.joern.console")
+      val qdb         = new QueryDatabase(namespace = "io.joern.console")
       val testBundles = qdb.allBundles.filter { bundle =>
         bundle.getName.endsWith("TestBundle$")
       }
@@ -67,7 +67,7 @@ class QueryDatabaseTests extends AnyWordSpec with should.Matchers {
     }
 
     "throw exception when trying to fetch queries from invalid bundle" in {
-      val qdb = new QueryDatabase(namespace = "io.joern.console")
+      val qdb         = new QueryDatabase(namespace = "io.joern.console")
       val testBundles = qdb.allBundles.filter { bundle =>
         bundle.getName.endsWith("InvalidBundle$")
       }

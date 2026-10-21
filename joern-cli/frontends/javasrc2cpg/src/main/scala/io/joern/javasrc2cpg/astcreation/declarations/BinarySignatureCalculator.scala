@@ -13,6 +13,7 @@ import com.github.javaparser.ast.`type`.{
 }
 import com.github.javaparser.ast.body.{
   AnnotationDeclaration,
+  AnnotationMemberDeclaration,
   CallableDeclaration,
   ClassOrInterfaceDeclaration,
   ConstructorDeclaration,
@@ -108,6 +109,15 @@ class BinarySignatureCalculator(scope: Scope) {
     writer.toString
   }
 
+  def annotationMemberBinarySignature(member: AnnotationMemberDeclaration): String = {
+    val writer = SignatureWriter()
+
+    writer.visitReturnType()
+    addType(writer, member.getType)
+
+    writer.toString
+  }
+
   def enumEntryBinarySignature(enumEntry: EnumConstantDeclaration): String = {
     val writer = SignatureWriter()
 
@@ -140,7 +150,7 @@ class BinarySignatureCalculator(scope: Scope) {
       case decl: RecordDeclaration           => recordDeclBinarySignature(decl)
       case decl: ClassOrInterfaceDeclaration => classDeclBinarySignature(decl)
       case decl: EnumDeclaration             => enumDeclBinarySignature(decl)
-      case decl =>
+      case decl                              =>
         throw new IllegalArgumentException(
           s"Attempting to get binary signature for unhandled type declaration $typeDeclaration"
         )
@@ -232,7 +242,7 @@ class BinarySignatureCalculator(scope: Scope) {
 
     writer.visitReturnType()
     callableDecl match {
-      case methodDeclaration: MethodDeclaration => addType(writer, methodDeclaration.getType)
+      case methodDeclaration: MethodDeclaration           => addType(writer, methodDeclaration.getType)
       case constructorDeclaration: ConstructorDeclaration =>
         BaseTypeMap.get(TypeConstants.Void).foreach(writer.visitBaseType(_))
     }
@@ -268,7 +278,7 @@ class BinarySignatureCalculator(scope: Scope) {
       writer.visitClassType(javaObjectName)
       writer.visitEnd()
     } else {
-      addType(writer, typeBoundIt.next)
+      addType(writer, typeBoundIt.next())
     }
     typeBoundIt.foreach { typeBound =>
       writer.visitInterfaceBound()

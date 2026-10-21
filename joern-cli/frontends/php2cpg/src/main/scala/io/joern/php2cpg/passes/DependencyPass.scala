@@ -11,6 +11,8 @@ import java.nio.file.{Files, Path, Paths}
 import scala.annotation.targetName
 import scala.util.{Failure, Success, Try, Using}
 
+import PsrStringOrArray.*
+
 /** Parses the `composer.json` file for all `require` dependencies.
   */
 class DependencyPass(cpg: Cpg, composerPaths: List[String]) extends ForkJoinParallelCpgPass[Path](cpg) {
@@ -45,34 +47,32 @@ class DependencyPass(cpg: Cpg, composerPaths: List[String]) extends ForkJoinPara
 
 }
 
-sealed trait PsrStringOrArray {
-  def obj: String | Array[String]
+enum PsrStringOrArray {
+  case PsrString(obj: String)
+  case PsrArray(obj: Array[String])
 }
 
-case class PsrString(obj: String) extends PsrStringOrArray
-
-case class PsrArray(obj: Array[String]) extends PsrStringOrArray
-
-object PsrStringOrArray:
+object PsrStringOrArray {
   given ReadWriter[PsrStringOrArray] = {
     val logger = LoggerFactory.getLogger(getClass)
 
     readwriter[ujson.Value]
       .bimap[PsrStringOrArray](
         x =>
-          x.obj match {
-            case o: String        => ujson.Str(o)
-            case o: Array[String] => ujson.Arr(o.map(ujson.Str.apply)*)
+          x match {
+            case PsrString(o) => ujson.Str(o)
+            case PsrArray(o)  => ujson.Arr(o.map(ujson.Str.apply)*)
           },
         {
           case json @ (j: ujson.Str) => PsrString(json.str)
           case json @ (j: ujson.Arr) => PsrArray(json.arr.map(_.str).toArray)
-          case x =>
-            logger.warn(s"Unexpected value type for `autoload.psr-4`: ${x.getClass}")
+          case other                 =>
+            logger.warn(s"Unexpected value type for `autoload.psr-4`: ${other.getClass}")
             PsrString("<unknown>")
         }
       )
   }
+}
 
 case class Autoload(
   @targetName("psr0") `psr-0`: Map[String, PsrStringOrArray] = Map.empty,

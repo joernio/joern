@@ -1,7 +1,8 @@
 package io.joern.dataflowengineoss.queryengine
 
+import io.joern.x2cpg.utils.ConcurrentTaskUtil
+
 import scala.collection.mutable
-import scala.collection.parallel.CollectionConverters.*
 
 /** Complete held tasks using the result table. The result table is modified in the process.
   *
@@ -48,16 +49,13 @@ class HeldTaskCompletion(
     var changed: Map[TaskFingerprint, Boolean] = allChanged
 
     while (changed.values.toList.contains(true)) {
-      val taskResultsPairs = toProcess
-        .filter(t => changed(t.fingerprint))
-        .par
-        .map { t =>
-          val resultsForTask = resultsForHeldTask(t).toSet
-          val newResults     = resultsForTask -- resultsProducedByTask.getOrElse(t, Set())
-          (t, resultsForTask, newResults)
+      val taskResultsPairs = ConcurrentTaskUtil
+        .parMap(toProcess.filter(task => changed(task.fingerprint))) { task =>
+          val resultsForTask = resultsForHeldTask(task).toSet
+          val newResults     = resultsForTask -- resultsProducedByTask.getOrElse(task, Set())
+          (task, resultsForTask, newResults)
         }
         .filter { case (_, _, newResults) => newResults.nonEmpty }
-        .seq
 
       changed = noneChanged
       taskResultsPairs.foreach { case (t, resultsForTask, newResults) =>
@@ -150,7 +148,7 @@ class HeldTaskCompletion(
       }
       .map { case (_, list) =>
         val lenIdPathPairs = list.map(x => (x.path.length, x))
-        val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
+        val withMaxLength  = (lenIdPathPairs.sortBy(_._1).reverse match {
           case Nil    => Nil
           case h :: t => h :: t.takeWhile(y => y._1 == h._1)
         }).map(_._2)

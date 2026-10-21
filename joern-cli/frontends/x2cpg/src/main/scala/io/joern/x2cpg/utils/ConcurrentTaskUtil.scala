@@ -62,4 +62,33 @@ object ConcurrentTaskUtil {
       .asInstanceOf[scala.collection.immutable.ArraySeq[Try[V]]]
   }
 
+  /** Applies `transform` to every element in parallel (on `ForkJoinPool.commonPool()`) and returns the results in the
+    * order of the input.
+    *
+    * In contrast to [[runUsingSpliterator]], failures are not captured: all tasks are run to completion and afterwards
+    * the exception of the first (in input order) failed task is rethrown.
+    *
+    * @param elements
+    *   the elements to process.
+    * @param transform
+    *   the function to apply to each element.
+    * @return
+    *   the results of `transform`, in the order of `elements`.
+    */
+  def parMap[A, B](elements: IterableOnce[A])(transform: A => B): Vector[B] =
+    runUsingSpliterator(elements.iterator.map(element => () => transform(element))).map(_.get).toVector
+
+  /** Runs `action` on every element in parallel and waits for all of them to finish. If any invocation fails, the
+    * exception of the first (in input order) failed one is rethrown after all tasks completed.
+    *
+    * @param elements
+    *   the elements to process.
+    * @param action
+    *   the function to run for each element.
+    */
+  def parForeach[A](elements: IterableOnce[A])(action: A => Unit): Unit = {
+    parMap(elements)(action)
+    ()
+  }
+
 }

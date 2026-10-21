@@ -5,7 +5,17 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewMethodRef, 
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, Operators}
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
-import org.eclipse.cdt.core.dom.ast.cpp.{ICPPASTNamespaceDefinition, ICPPConstructor, ICPPFunction}
+import org.eclipse.cdt.core.dom.ast.cpp.{
+  ICPPASTNamespaceDefinition,
+  ICPPBinding,
+  ICPPClassType,
+  ICPPConstructor,
+  ICPPEnumeration,
+  ICPPFunction,
+  ICPPNamespace,
+  ICPPNamespaceAlias,
+  ICPPTemplateTypeParameter
+}
 import org.eclipse.cdt.internal.core.dom.parser.IASTInternalScope
 import org.eclipse.cdt.internal.core.dom.parser.c.{CVariable, ICInternalBinding}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.*
@@ -13,7 +23,6 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.{CPPVisitor, EvalM
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.tailrec
-import scala.util.Try
 
 trait AstForPrimitivesCreator { this: AstCreator =>
 
@@ -47,7 +56,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
       case id: IASTIdExpression =>
         safeGetBinding(id.getName) match {
           case Some(binding: (CPPVariable | CVariable)) =>
-            Try(binding.getScope).toOption
+            safeCdtCall(binding.getScope)
               .collect {
                 case n: IASTInternalScope if isGlobal(n.getPhysicalNode) => s"${Defines.GlobalTag} "
               }
@@ -68,7 +77,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   protected def astForIdentifier(ident: IASTNode): Ast = {
     maybeMethodRefForIdentifier(ident) match {
       case Some(ref) => Ast(ref)
-      case None =>
+      case None      =>
         val identifierName = nameForIdentifier(ident)
         typeNameForIdentifier(ident, identifierName) match {
           case identifierTypeName: String =>
@@ -132,7 +141,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
       case id: IASTElaboratedTypeSpecifier => shortName(id)
       case id: IASTNamedTypeSpecifier      => shortName(id)
       case id: IASTIdExpression            => shortName(id)
-      case id: IASTName =>
+      case id: IASTName                    =>
         val name = stripTemplateTags(ASTStringUtil.getSimpleName(id))
         if (name.isEmpty) safeGetBinding(id).map(_.getName).getOrElse(scopeLocalUniqueName(""))
         else name
@@ -144,15 +153,17 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     val variableOption = scope.lookupVariable(identifierName)
     variableOption match {
       case Some((_, variableTypeName)) => variableTypeName
-      case None if ident.isInstanceOf[IASTName] && ident.asInstanceOf[IASTName].getBinding != null =>
-        val id = ident.asInstanceOf[IASTName]
-        id.getBinding match {
-          case v: IVariable =>
-            v.getType match {
-              case f: IFunctionType => cleanType(f.getReturnType.toString)
-              case other            => cleanType(other.toString)
+      case None if ident.isInstanceOf[IASTName] && safeCdtCall(ident.asInstanceOf[IASTName].getBinding).isDefined =>
+        val idBinding = safeCdtCall(ident.asInstanceOf[IASTName].getBinding)
+        idBinding match {
+          case Some(v: IVariable) =>
+            safeCdtCall(v.getType) match {
+              case Some(f: IFunctionType) => cleanType(f.getReturnType.toString)
+              case Some(other)            => cleanType(other.toString)
+              case None                   => Defines.Any
             }
-          case other => cleanType(other.getName)
+          case Some(other) => cleanType(other.getName)
+          case None        => Defines.Any
         }
       case None if ident.isInstanceOf[IASTName] =>
         typeFor(ident.getParent)
@@ -163,16 +174,15 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   }
 
   private def syntheticThisAccess(ident: CPPASTIdExpression, identifierName: String): String | Ast = {
-    val tpe = ident.getName.getBinding match {
-      case f: CPPField => safeGetType(f.getType)
-      case _           => typeFor(ident)
+    val tpe = safeGetBinding(ident.getName) match {
+      case Some(f: CPPField) => safeCdtCall(safeGetType(f.getType)).getOrElse(Defines.Any)
+      case _                 => typeFor(ident)
     }
-    Try(ident.getEvaluation).toOption match {
+    safeCdtCall(ident.getEvaluation) match {
       case Some(e: EvalMemberAccess) =>
         val ownerTypeRaw = safeGetType(e.getOwnerType)
-        val deref = if (e.isPointerDeref) { "*" }
-        else { "" }
-        val ownerType = registerType(s"$ownerTypeRaw$deref")
+        val deref        = if (e.isPointerDeref) "*" else ""
+        val ownerType    = registerType(s"$ownerTypeRaw$deref")
         if (isInCurrentScope(ident, ownerTypeRaw)) {
           scope.lookupVariable(Defines.This) match {
             case Some(_) =>
@@ -196,9 +206,9 @@ trait AstForPrimitivesCreator { this: AstCreator =>
 
   private def isInCurrentScope(ident: CPPASTIdExpression, owner: String): Boolean = {
     val ownerWithOutTemplateTags = owner.takeWhile(_ != '<')
-    val isInMethodScope =
-      Try(CPPVisitor.getContainingScope(ident).getScopeName.toString).toOption.exists(s =>
-        s.startsWith(s"$ownerWithOutTemplateTags::") || s.contains(s"::$ownerWithOutTemplateTags::")
+    val isInMethodScope          =
+      safeCdtCall(CPPVisitor.getContainingScope(ident).getScopeName.toString).exists(scopeName =>
+        scopeName.startsWith(s"$ownerWithOutTemplateTags::") || scopeName.contains(s"::$ownerWithOutTemplateTags::")
       )
     isInMethodScope || methodAstParentStack.collectFirst {
       case typeDecl: NewTypeDecl if typeDecl.fullName == ownerWithOutTemplateTags    => typeDecl
@@ -208,13 +218,14 @@ trait AstForPrimitivesCreator { this: AstCreator =>
 
   protected def astForFieldReference(fieldRef: IASTFieldReference): Ast = {
     val isInConstructor =
-      Try(CPPVisitor.findEnclosingFunctionOrClass(fieldRef)).toOption.exists(_.isInstanceOf[ICPPConstructor])
-    val op = if (fieldRef.isPointerDereference && !isInConstructor) { Operators.indirectFieldAccess }
-    else { Operators.fieldAccess }
-    val ma =
-      callNode(fieldRef, code(fieldRef), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
-    val owner  = astForExpression(fieldRef.getFieldOwner)
-    val member = fieldIdentifierNode(fieldRef, fieldRef.getFieldName.toString, fieldRef.getFieldName.toString)
+      safeCdtCall(CPPVisitor.findEnclosingFunctionOrClass(fieldRef)).exists(_.isInstanceOf[ICPPConstructor])
+    val dispatchType = DispatchTypes.STATIC_DISPATCH
+    val isDeref      = fieldRef.isPointerDereference && !isInConstructor
+    val op           = if (isDeref) Operators.indirectFieldAccess else Operators.fieldAccess
+    val ma           = callNode(fieldRef, code(fieldRef), op, op, dispatchType, None, Some(Defines.Any))
+    val owner        = astForExpression(fieldRef.getFieldOwner)
+    val memberName   = fieldRef.getFieldName.toString
+    val member       = fieldIdentifierNode(fieldRef, memberName, memberName)
     callAst(ma, List(owner, Ast(member)))
   }
 
@@ -222,43 +233,84 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     nullSafeAst(arrMod.getConstantExpression)
   }
 
+  private def qualifiedNameOf(binding: ICPPBinding): Option[String] =
+    safeCdtCall(binding.getQualifiedName.mkString("."))
+
+  /** Allowlist of binding kinds that may appear as a qualifier and be turned into a TYPE_REF. */
+  private def qualifiedNameForBinding(binding: IBinding): Option[String] = binding match {
+    case _: IProblemBinding           => None
+    case t: ICPPClassType             => qualifiedNameOf(t)
+    case t: ICPPEnumeration           => qualifiedNameOf(t)
+    case t: (ITypedef & ICPPBinding)  => qualifiedNameOf(t)
+    case t: ICPPTemplateTypeParameter => safeCdtCall(t.getName)
+    case alias: ICPPNamespaceAlias    => resolveNamespaceAlias(alias).flatMap(qualifiedNameOf)
+    case ns: ICPPNamespace            => qualifiedNameOf(ns)
+    case _                            => None
+  }
+
+  /** CDT's `getBinding` only resolves one hop, so alias chains (`namespace fs2 = fs;`) are followed here. */
+  @tailrec
+  private def resolveNamespaceAlias(
+    alias: ICPPNamespaceAlias,
+    seen: Set[ICPPNamespaceAlias] = Set.empty
+  ): Option[ICPPNamespace] = {
+    if (seen.contains(alias)) None
+    else
+      safeCdtCall(alias.getBinding) match {
+        case Some(target: ICPPNamespaceAlias) => resolveNamespaceAlias(target, seen + alias)
+        case Some(target: ICPPNamespace)      => Some(target)
+        case _                                => None
+      }
+  }
+
+  private def typeRefForQualifier(qualId: CPPASTQualifiedName): Option[Ast] = {
+    qualId.getQualifier.lastOption.flatMap { lastQualifier =>
+      safeCdtCall(lastQualifier.resolveBinding())
+        .flatMap(qualifiedNameForBinding)
+        .map(typeRefAst(qualId, lastQualifier, _))
+    }
+  }
+
+  private def typeRefAst(qualId: CPPASTQualifiedName, lastQualifier: IASTNode, qualifiedName: String): Ast = {
+    val fullName = stripTemplateTags(replaceQualifiedNameSeparator(qualifiedName))
+    val codeStr  = qualId.getQualifier.map(code).mkString("::")
+    Ast(typeRefNode(lastQualifier, codeStr, registerType(fullName)))
+  }
+
   protected def astForQualifiedName(qualId: CPPASTQualifiedName): Ast = {
     safeGetBinding(qualId) match {
       case Some(function: ICPPFunction) =>
         val name      = qualId.getLastName.toString
-        val signature = if function.isExternC then "" else functionTypeToSignature(function.getType)
-        val fullName = if (function.isExternC) {
+        val signature = if (function.isExternC) "" else functionTypeToSignature(function.getType)
+        val fullName  = if (function.isExternC) {
           StringUtils.normalizeSpace(name)
         } else {
           val fullNameNoSig = StringUtils.normalizeSpace(function.getQualifiedName.mkString("."))
           s"$fullNameNoSig:$signature"
         }
-        Ast(methodRefNode(qualId, name, fullName, registerType(function.getType.toString)))
+        val functionType = cleanType(safeGetType(function.getType))
+        Ast(methodRefNode(qualId, name, fullName, registerType(functionType)))
       case _ =>
-        val op = Operators.fieldAccess
-        val ma =
-          callNode(qualId, code(qualId), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
+        val op           = Operators.fieldAccess
+        val dispatchType = DispatchTypes.STATIC_DISPATCH
+        val ma           = callNode(qualId, code(qualId), op, op, dispatchType, None, Some(Defines.Any))
 
-        def fieldAccesses(names: List[IASTNode], argIndex: Int = -1): Ast = names match {
-          case Nil => Ast()
-          case head :: Nil =>
-            astForNode(head)
+        def fieldAccesses(names: List[IASTNode]): Ast = names match {
+          case Nil          => Ast()
+          case head :: Nil  => astForNode(head)
           case head :: tail =>
-            val codeString = s"${code(head)}::${tail.map(code).mkString("::")}"
-            val callNode_ =
-              callNode(head, code(head), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
-                .argumentIndex(argIndex)
-            callNode_.code = codeString
-            val arg1 = astForNode(head)
-            val arg2 = fieldAccesses(tail)
-            callAst(callNode_, List(arg1, arg2))
+            val (resultAst, _) = tail.foldLeft((astForNode(head), code(head))) { case ((accAst, accCode), nameNode) =>
+              val nameCode  = code(nameNode)
+              val newCode   = s"$accCode::$nameCode"
+              val callNode_ = callNode(names.head, newCode, op, op, dispatchType, None, Some(Defines.Any))
+              val arg2      = Ast(fieldIdentifierNode(nameNode, nameCode, nameCode))
+              (callAst(callNode_, List(accAst, arg2)), newCode)
+            }
+            resultAst
         }
-        val qualifier = fieldAccesses(qualId.getQualifier.toIndexedSeq.toList)
-        val owner = if (qualifier != Ast()) {
-          qualifier
-        } else {
-          Ast(literalNode(qualId.getLastName, "<global>", Defines.Any))
-        }
+        val qualifier = typeRefForQualifier(qualId).getOrElse(fieldAccesses(qualId.getQualifier.toIndexedSeq.toList))
+        val owner     = if (qualifier != Ast()) { qualifier }
+        else { Ast(literalNode(qualId.getLastName, "<global>", Defines.Any)) }
         val member = fieldIdentifierNode(
           qualId.getLastName,
           replaceQualifiedNameSeparator(qualId.getLastName.toString),

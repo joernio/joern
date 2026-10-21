@@ -39,7 +39,7 @@ class ConstClosurePass(cpg: Cpg) extends CpgPass(cpg) {
   private def handleClosuresDefinedAtExport(diffGraph: DiffGraphBuilder): Unit =
     for {
       assignment <- cpg.assignment
-      name <- assignment
+      name       <- assignment
         .filter(_.code.startsWith("@_exported"))
         .target
         .isCall

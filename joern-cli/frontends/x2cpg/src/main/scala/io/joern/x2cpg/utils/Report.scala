@@ -54,7 +54,9 @@ class Report {
   }
 
   def print(): Unit = {
-    val rows = reports.toSeq
+    // reports is a concurrent TrieMap: rows are sorted by unique file name below and the LOC
+    // total sums Longs, so neither result depends on encounter order.
+    val rows = reports.toSeq // scalafix:ok UnorderedIteration
       .sortBy(_._1)
       .zipWithIndex
       .view
@@ -64,11 +66,11 @@ class Report {
       .toSeq
     val numOfReports = reports.size
     val header       = Seq(Seq("#", "File", "LOC", "Parsed", "Got a CPG", "Duration"))
-    val footer = Seq(
+    val footer       = Seq(
       Seq(
         "Total",
         "",
-        s"${reports.filter(_._2.loc >= 0).map(_._2.loc).sum}",
+        s"${reports.filter(_._2.loc >= 0).map(_._2.loc).sum}", // scalafix:ok UnorderedIteration
         s"${reports.count(_._2.parsed)}/$numOfReports",
         s"${reports.count(_._2.cpgGen)}/$numOfReports",
         ""
@@ -87,6 +89,10 @@ class Report {
   ): Unit = reports(fileName) = ReportEntry(loc, parsed, cpgGen, duration)
 
   def updateReport(fileName: FileName, cpg: Boolean, duration: Long): Unit =
-    reports.updateWith(fileName)(_.map(_.copy(cpgGen = cpg, duration = duration)))
+    reports.updateWith(fileName) {
+      case Some(existing) => Some(existing.copy(cpgGen = cpg, duration = duration))
+      // files whose parse result could not be read never got an addReportInfo call; still record them
+      case None => Some(ReportEntry(loc = -1, parsed = false, cpgGen = cpg, duration = duration))
+    }
 
 }

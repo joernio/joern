@@ -7,8 +7,8 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstCreatorBase
 import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.utils.OffsetUtils
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
@@ -26,7 +26,7 @@ import ujson.Value
 
 import scala.collection.mutable
 
-class AstCreator(val config: Config, val global: Global, val parserResult: ParseResult)(implicit
+class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val parserResult: ParseResult)(implicit
   withSchemaValidation: ValidationMode
 ) extends AstCreatorBase[BabelNodeInfo, AstCreator](parserResult.filename)
     with AstForExpressionsCreator
@@ -47,20 +47,22 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
   // TypeDecls with their bindings (with their refs) for lambdas and methods are not put in the AST
   // where the respective nodes are defined. Instead, we put them under the parent TYPE_DECL in which they are defined.
   // To achieve this we need this extra stack.
-  protected val methodAstParentStack          = new Stack[NewNode]()
-  protected val typeRefIdStack                = new Stack[NewTypeRef]
-  protected val dynamicInstanceTypeStack      = new Stack[String]
-  protected val localAstParentStack           = new Stack[NewBlock]()
-  protected val rootTypeDecl                  = new Stack[NewTypeDecl]()
-  protected val functionNodeToNameAndFullName = mutable.HashMap.empty[BabelNodeInfo, (String, String)]
+  protected val methodAstParentStack     = new Stack[NewNode]()
+  protected val typeRefIdStack           = new Stack[NewTypeRef]
+  protected val dynamicInstanceTypeStack = new Stack[String]
+  protected val localAstParentStack      = new Stack[NewBlock]()
+  protected val rootTypeDecl             = new Stack[NewTypeDecl]()
+  // Keyed by the function node's source range (start:end): a BabelNodeInfo key would hash its ujson.Value structurally,
+  // recursing over the entire function subtree on every lookup.
+  protected val functionNodeToNameAndFullName = mutable.HashMap.empty[String, (String, String)]
   protected val usedVariableNames             = mutable.HashMap.empty[String, Int]
-  protected val seenAliasTypes                = mutable.HashSet.empty[NewTypeDecl]
+  protected val seenAliasTypes                = mutable.HashMap.empty[String, NewTypeDecl]
   protected val functionFullNames             = mutable.HashSet.empty[String]
 
   // we track line and column numbers manually because astgen / @babel-parser sometimes
   // fails to deliver them at all -  strange, but this even happens with its latest version
-  protected val (positionToLineNumberMapping, positionToFirstPositionInLineMapping) =
-    positionLookupTables(parserResult.fileContent)
+  protected val (lineEndPositions, lineStartPositions) =
+    buildPositionArrays(parserResult.fileContent)
 
   override def createAst(): DiffGraphBuilder = {
     val fileContent = if (!config.disableFileContent) Option(parserResult.fileContent) else None
@@ -94,15 +96,11 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     scope.pushNewMethodScope(fullName, name, blockNode, None)
     localAstParentStack.push(blockNode)
 
-    val thisParam =
-      parameterInNode(astNodeInfo, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
-        .dynamicTypeHintFullName(typeHintForThisExpression())
+    val thisParam = parameterInNode(astNodeInfo, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
+      .dynamicTypeHintFullName(typeHintForThisExpression())
     scope.addVariable("this", thisParam, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
 
     val methodChildren = astsForFile(astNodeInfo)
-    setArgumentIndices(methodChildren)
-
-    val methodReturn = methodReturnNode(astNodeInfo, Defines.Any)
 
     localAstParentStack.pop()
     scope.popScope()
@@ -113,7 +111,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
         programMethod,
         Ast(thisParam) :: Nil,
         blockAst(blockNode, methodChildren),
-        methodReturn,
+        methodReturnNode(astNodeInfo, Defines.Any),
         modifierNode(astNodeInfo, ModifierTypes.MODULE) :: Nil
       )
     )
@@ -140,6 +138,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
       case ClassExpression           => astForClass(nodeInfo)
       case TSInterfaceDeclaration    => astForInterface(nodeInfo)
       case TSModuleDeclaration       => astForModule(nodeInfo)
+      case Decorator                 => astForDecorator(nodeInfo)
       case TSExportAssignment        => astForExportAssignment(nodeInfo)
       case ExportNamedDeclaration    => astForExportNamedDeclaration(nodeInfo)
       case ExportDefaultDeclaration  => astForExportDefaultDeclaration(nodeInfo)
@@ -230,7 +229,8 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     }
   }
 
-  protected def astForNodes(jsons: List[Value]): List[Ast] = jsons.map(astForNodeWithFunctionReference)
+  protected def astForNodes(jsons: collection.Seq[Value]): List[Ast] =
+    jsons.iterator.map(astForNodeWithFunctionReference).toList
 
   protected def astForNodeWithFunctionReference(json: Value): Ast = {
     val nodeInfo = createBabelNodeInfo(json)
@@ -246,18 +246,13 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
   protected def columnEnd(node: BabelNodeInfo): Option[Int] = node.columnNumberEnd
   protected def code(node: BabelNodeInfo): String           = node.code
 
-  override protected def offset(node: BabelNodeInfo): Option[(Int, Int)] = {
-    Option
-      .when(!config.disableFileContent) {
-        nodeOffsets(node.json)
-      }
-      .flatten
-  }
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] =
+    Option.unless(config.disableFileContent)(OffsetUtils.OffsetSourceType.Utf_16)
 
-  protected def nodeOffsets(node: Value): Option[(Int, Int)] = {
+  override protected def unadjustedOffset(node: BabelNodeInfo): Option[(Int, Int)] = {
     for {
-      startOffset <- start(node)
-      endOffset   <- end(node)
-    } yield (math.max(startOffset, 0), math.min(endOffset, parserResult.fileContent.length))
+      startOffset <- start(node.json)
+      endOffset   <- end(node.json)
+    } yield clampOffsets(startOffset, endOffset)
   }
 }

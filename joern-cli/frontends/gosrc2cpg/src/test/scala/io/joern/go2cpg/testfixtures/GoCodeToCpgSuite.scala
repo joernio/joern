@@ -10,13 +10,13 @@ import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.shiftleft.semanticcpg.utils.FileUtil
-import io.shiftleft.semanticcpg.validation.PostFrontendValidator
+import io.shiftleft.semanticcpg.validation.{PostFrontendValidator, ValidationLevel}
 import org.scalatest.Inside
 class DefaultTestCpgWithGo(val fileSuffix: String) extends DefaultTestCpg with SemanticTestCpg {
   override type ConfigType = Config
 
-  private var goGlobal: Option[GoGlobal]   = None
-  private var goSrc2Cpg: Option[GoSrc2Cpg] = None
+  private var goGlobal: Option[GoGlobal]     = None
+  private var goSrc2Cpg: Option[GoSrc2Cpg]   = None
   override protected def applyPasses(): Unit = {
     super.applyPasses()
     applyOssDataFlow()
@@ -35,16 +35,13 @@ class DefaultTestCpgWithGo(val fileSuffix: String) extends DefaultTestCpg with S
   }
 
   def execute(sourceCodePath: java.io.File): Cpg = {
-    val cpgOutFile = FileUtil.newTemporaryFile("go2cpg.bin")
-    FileUtil.deleteOnExit(cpgOutFile)
     goSrc2Cpg = Some(new GoSrc2Cpg(this.goGlobal))
     val config = getConfig()
       .collectFirst { case x: Config => x }
       .getOrElse(Config())
       .withInputPath(sourceCodePath.getAbsolutePath)
-      .withOutputPath(cpgOutFile.toString)
     val res = goSrc2Cpg.get.createCpg(config).get
-    new PostFrontendValidator(res, false).run()
+    new PostFrontendValidator(res, ValidationLevel.V3).run()
     res
   }
 

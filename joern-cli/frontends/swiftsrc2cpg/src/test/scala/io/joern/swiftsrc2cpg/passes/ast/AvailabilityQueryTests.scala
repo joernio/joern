@@ -2,19 +2,19 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-class AvailabilityQueryTests extends AstSwiftSrc2CpgSuite {
+@scala.annotation.nowarn("cat=deprecation")
+class AvailabilityQueryTests extends SwiftSrc2CpgSuite {
 
   "AvailabilityQueryTests" should {
 
     "testAvailabilityQuery1" in {
       val cpg                      = code("if #available(OSX 10.51, *) {}")
       val List(ifControlStructure) = cpg.controlStructure.isIf.l
-      ifControlStructure.whenTrue shouldBe empty
+      ifControlStructure.whenTrue.astChildren shouldBe empty
       val List(condition) = ifControlStructure.condition.isCall.l
       condition.code shouldBe "#available(OSX 10.51, *)"
       val List(arg1, arg2) = condition.argument.isLiteral.l
@@ -28,7 +28,7 @@ class AvailabilityQueryTests extends AstSwiftSrc2CpgSuite {
     "testAvailabilityQuery2" in {
       val cpg                      = code("if #unavailable(OSX 10.51, *) {}")
       val List(ifControlStructure) = cpg.controlStructure.isIf.l
-      ifControlStructure.whenTrue shouldBe empty
+      ifControlStructure.whenTrue.astChildren shouldBe empty
       val List(condition) = ifControlStructure.condition.isCall.l
       condition.code shouldBe "#unavailable(OSX 10.51, *)"
       val List(arg1, arg2) = condition.argument.isLiteral.l
@@ -40,21 +40,35 @@ class AvailabilityQueryTests extends AstSwiftSrc2CpgSuite {
     }
 
     "testAvailabilityQuery5b" in {
-      val cpg                      = code("if let _ = Optional(5), #unavailable(OSX 10.52, *) {}")
+      val cpg               = code("if let _ = Optional(5), #unavailable(OSX 10.52, *) {}")
+      val List(methodBlock) = cpg.method.nameExact("<global>").block.l
+      // After desugaring: <tmp>0 in global method block
+      val List(tmpLocal) = methodBlock.local.l
+      val tmpName        = tmpLocal.name
+      tmpName shouldBe "<tmp>0"
+
       val List(ifControlStructure) = cpg.controlStructure.isIf.l
-      ifControlStructure.whenTrue shouldBe empty
-      val List(assignment, unavailable) = ifControlStructure.condition.astChildren.isCall.l
-      assignment.code shouldBe "let _ = Optional(5)"
-      assignment.name shouldBe Operators.assignment
+      ifControlStructure.whenTrue.astChildren shouldBe empty
+
+      // Condition is desugared: { (<tmp>0 = Optional(5)) != nil && #unavailable(...) }
+      val List(condBlock)             = ifControlStructure.condition.isBlock.l
+      val List(andCheck)              = condBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
+      val List(nilCheck, unavailable) = andCheck.argument.isCall.l
+      nilCheck.name shouldBe Operators.notEquals
+      nilCheck.code shouldBe s"($tmpName = Optional(5)) != nil"
       unavailable.code shouldBe "#unavailable(OSX 10.52, *)"
       unavailable.name shouldBe "#unavailable"
+
+      val List(assignment) = nilCheck.argument.assignment.l
+      assignment.code shouldBe s"$tmpName = Optional(5)"
+
       ifControlStructure.whenFalse shouldBe empty
     }
 
     "testAvailabilityQuery6" in {
       val cpg                      = code("if #available(OSX 10.51, *), #available(OSX 10.52, *) {}")
       val List(ifControlStructure) = cpg.controlStructure.isIf.l
-      ifControlStructure.whenTrue shouldBe empty
+      ifControlStructure.whenTrue.astChildren shouldBe empty
       val List(available1, available2) = ifControlStructure.condition.astChildren.isCall.l
       available1.code shouldBe "#available(OSX 10.51, *)"
       available1.name shouldBe "#available"
@@ -66,7 +80,7 @@ class AvailabilityQueryTests extends AstSwiftSrc2CpgSuite {
     "testAvailabilityQuery10" in {
       val cpg                      = code("if #available(OSX) {}")
       val List(ifControlStructure) = cpg.controlStructure.isIf.l
-      ifControlStructure.whenTrue shouldBe empty
+      ifControlStructure.whenTrue.astChildren shouldBe empty
       val List(condition) = ifControlStructure.condition.isCall.l
       condition.code shouldBe "#available(OSX)"
       val List(arg1) = condition.argument.isLiteral.l
@@ -78,7 +92,7 @@ class AvailabilityQueryTests extends AstSwiftSrc2CpgSuite {
     "testAvailabilityQuery12" in {
       val cpg                      = code("if #available(OSX 10.51) {}")
       val List(ifControlStructure) = cpg.controlStructure.isIf.l
-      ifControlStructure.whenTrue shouldBe empty
+      ifControlStructure.whenTrue.astChildren shouldBe empty
       val List(condition) = ifControlStructure.condition.isCall.l
       condition.code shouldBe "#available(OSX 10.51)"
       val List(arg1) = condition.argument.isLiteral.l
@@ -90,7 +104,7 @@ class AvailabilityQueryTests extends AstSwiftSrc2CpgSuite {
     "testAvailabilityQuery13" in {
       val cpg                      = code("if #available(iDishwasherOS 10.51) {}")
       val List(ifControlStructure) = cpg.controlStructure.isIf.l
-      ifControlStructure.whenTrue shouldBe empty
+      ifControlStructure.whenTrue.astChildren shouldBe empty
       val List(condition) = ifControlStructure.condition.isCall.l
       condition.code shouldBe "#available(iDishwasherOS 10.51)"
       val List(arg1) = condition.argument.isLiteral.l
@@ -102,7 +116,7 @@ class AvailabilityQueryTests extends AstSwiftSrc2CpgSuite {
     "testAvailabilityQuery14" in {
       val cpg                      = code(" if #available(iDishwasherOS 10.51, *) {}")
       val List(ifControlStructure) = cpg.controlStructure.isIf.l
-      ifControlStructure.whenTrue shouldBe empty
+      ifControlStructure.whenTrue.astChildren shouldBe empty
       val List(condition) = ifControlStructure.condition.isCall.l
       condition.code shouldBe "#available(iDishwasherOS 10.51, *)"
       val List(arg1, arg2) = condition.argument.isLiteral.l
@@ -116,7 +130,7 @@ class AvailabilityQueryTests extends AstSwiftSrc2CpgSuite {
     "testAvailabilityQuery19" in {
       val cpg                      = code("if #available(OSX 10.51, OSX 10.52, *) {}")
       val List(ifControlStructure) = cpg.controlStructure.isIf.l
-      ifControlStructure.whenTrue shouldBe empty
+      ifControlStructure.whenTrue.astChildren shouldBe empty
       val List(condition) = ifControlStructure.condition.isCall.l
       condition.code shouldBe "#available(OSX 10.51, OSX 10.52, *)"
       val List(arg1, arg2, arg3) = condition.argument.isLiteral.l
@@ -132,7 +146,7 @@ class AvailabilityQueryTests extends AstSwiftSrc2CpgSuite {
     "testAvailabilityQuery24" in {
       val cpg                      = code("if #available(*) {}")
       val List(ifControlStructure) = cpg.controlStructure.isIf.l
-      ifControlStructure.whenTrue shouldBe empty
+      ifControlStructure.whenTrue.astChildren shouldBe empty
       val List(condition) = ifControlStructure.condition.isCall.l
       condition.code shouldBe "#available(*)"
       val List(arg1) = condition.argument.isLiteral.l
@@ -144,7 +158,7 @@ class AvailabilityQueryTests extends AstSwiftSrc2CpgSuite {
     "testAvailabilityQuery35" in {
       val cpg                      = code("if 1 != 2, #available(iOS 8.0, *) {}")
       val List(ifControlStructure) = cpg.controlStructure.isIf.l
-      ifControlStructure.whenTrue shouldBe empty
+      ifControlStructure.whenTrue.astChildren shouldBe empty
       val List(notEquals, available) = ifControlStructure.condition.astChildren.isCall.l
       notEquals.code shouldBe "1 != 2"
       notEquals.name shouldBe Operators.notEquals
@@ -156,7 +170,7 @@ class AvailabilityQueryTests extends AstSwiftSrc2CpgSuite {
     "testAvailabilityQuery36" in {
       val cpg                      = code("if case 42 = 42, #available(iOS 8.0, *) {}")
       val List(ifControlStructure) = cpg.controlStructure.isIf.l
-      ifControlStructure.whenTrue shouldBe empty
+      ifControlStructure.whenTrue.astChildren shouldBe empty
       val List(notEquals, available) = ifControlStructure.condition.astChildren.isCall.l
       notEquals.code shouldBe "case 42 = 42"
       notEquals.name shouldBe Operators.equals

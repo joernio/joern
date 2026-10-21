@@ -21,7 +21,7 @@ class JoernScanResultToSarifConverter extends ScanResultToSarifConverter {
   override def convertFindingToResult(finding: Finding): SarifSchema.Result = {
     val locations        = finding.evidence.lastOption.map(nodeToLocation).toList
     val relatedLocations = finding.evidence.headOption.map(nodeToLocation).toList
-    val codeFlows = evidenceToCodeFlow(finding) match {
+    val codeFlows        = evidenceToCodeFlow(finding) match {
       case codeFlow if codeFlow.threadFlows.isEmpty => Nil
       case codeFlow                                 => codeFlow :: Nil
     }

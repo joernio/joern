@@ -4,6 +4,8 @@ import io.joern.gosrc2cpg.parser.ParserKeys
 import io.joern.x2cpg.ValidationMode
 import ujson.{Arr, Obj, Value}
 
+import scala.util.control.NonFatal
+
 trait DependencySrcProcessor(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   def buildCacheFromDepSrc(): Unit = {
@@ -13,7 +15,7 @@ trait DependencySrcProcessor(implicit withSchemaValidation: ValidationMode) { th
       // NOTE: For dependencies we are just caching the global variables Types.
       processPackageLevelGlobalVariablesAndConstants(parserResult.json)
     } catch {
-      case ex: Exception =>
+      case NonFatal(ex) =>
         logger.warn(s"Error: While processing dependency source- ${parserResult.fullPath}", ex)
     }
   }

@@ -2,8 +2,8 @@ package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.eclipse.cdt.core.dom.ast.{
   IASTBinaryExpression,
@@ -59,8 +59,14 @@ trait MacroHandler { this: AstCreator =>
     * (Some(macroDefinition, arguments)) if a macro definition matches and None otherwise.
     */
   private def extractMatchingMacro(node: IASTNode): Option[(IASTPreprocessorMacroDefinition, List[String])] = {
+    // CDT can hand us nodes without a file location (e.g., operands detached during its ambiguity resolution).
+    // Such a node cannot be matched against the macro expansion offsets.
+    val nodeFileLocation = Option(node.getFileLocation) match {
+      case Some(loc) => loc
+      case None      => return None
+    }
     val expansionLocations = expandedFromMacro(node).filterNot(isExpandedFrom(node.getParent, _))
-    val nodeOffset         = node.getFileLocation.getNodeOffset
+    val nodeOffset         = nodeFileLocation.getNodeOffset
     var matchingMacro      = Option.empty[(IASTPreprocessorMacroDefinition, List[String])]
 
     expansionLocations.foreach { macroLocation =>
@@ -69,7 +75,7 @@ trait MacroHandler { this: AstCreator =>
         val macroExpansionName   = ASTStringUtil.getSimpleName(macroLocation.getExpansion.getMacroDefinition.getName)
         val macroDefinitionName  = ASTStringUtil.getSimpleName(macroDefinition.getName)
         if (macroExpansionName == macroDefinitionName) {
-          val arguments = new MacroArgumentExtractor(cdtAst, node.getFileLocation).getArguments
+          val arguments = new MacroArgumentExtractor(cdtAst, nodeFileLocation).getArguments
           matchingMacro = Option((macroDefinition, arguments))
         }
       }
@@ -81,7 +87,7 @@ trait MacroHandler { this: AstCreator =>
   /** Determine whether `node` is expanded from the macro expansion at `loc`.
     */
   private def isExpandedFrom(node: IASTNode, loc: IASTMacroExpansionLocation): Boolean = {
-    expandedFromMacro(node).map(_.getExpansion.getMacroDefinition).contains(loc.getExpansion.getMacroDefinition)
+    expandedFromMacro(node).exists(_.getExpansion.getMacroDefinition == loc.getExpansion.getMacroDefinition)
   }
 
   /** Create an AST that represents a macro expansion as a call. The AST is rooted in a CALL node and contains subtrees
@@ -145,7 +151,7 @@ trait MacroHandler { this: AstCreator =>
         evaluationStrategy = EvaluationStrategies.BY_VALUE,
         lineNumber = lineNumber,
         columnNumber = columnNumber,
-        typeFullName = registerType(Defines.Any)
+        typeFullName = Defines.Any
       )
     }
 
@@ -170,27 +176,26 @@ trait MacroHandler { this: AstCreator =>
   }
 
   private def argumentTrees(arguments: List[String], ast: Ast): List[Option[Ast]] = {
-    arguments.zipWithIndex.map { case (arg, i) =>
+    arguments.zipWithIndex.map { case (arg, argIndex) =>
       val rootNode = argForCode(arg, ast)
-      rootNode.map(x => ast.subTreeCopy(x.asInstanceOf[AstNodeNew], i + 1))
+      rootNode.map(node => ast.subTreeCopy(node.asInstanceOf[AstNodeNew], argIndex + 1))
     }
   }
 
   private def argForCode(code: String, ast: Ast): Option[NewNode] = {
     val normalizedCode = code.replace(" ", "")
-    if (normalizedCode == "") {
-      None
-    } else {
-      ast.nodes.collectFirst {
-        case x: ExpressionNew if !x.isInstanceOf[NewFieldIdentifier] && x.code == normalizedCode => x
-      }
+    if (normalizedCode.isEmpty) return None
+    ast.nodes.collectFirst {
+      case expr: ExpressionNew if !expr.isInstanceOf[NewFieldIdentifier] && expr.code == normalizedCode => expr
     }
   }
 
   private def isExpandedFromMacro(node: IASTNode): Boolean = expandedFromMacro(node).nonEmpty
 
   private def expandedFromMacro(node: IASTNode): Option[IASTMacroExpansionLocation] = {
-    val locations = node.getNodeLocations.toList
+    val rawLocations = node.getNodeLocations
+    if (rawLocations == null || rawLocations.isEmpty) return None
+    val locations       = rawLocations.toList
     val locationsSorted = node match {
       // For binary expressions the expansion locations may occur in any order.
       // We manually sort them here to ignore this.

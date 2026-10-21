@@ -1,6 +1,6 @@
 package io.joern.dataflowengineoss.queryengine
 
-import io.joern.dataflowengineoss.queryengine.QueryEngineStatistics.{PATH_CACHE_HITS, PATH_CACHE_MISSES}
+import io.joern.dataflowengineoss.queryengine.QueryEngineStatistic.{PATH_CACHE_HITS, PATH_CACHE_MISSES}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
@@ -95,7 +95,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
         }
         .map { case (_, list) =>
           val lenIdPathPairs = list.map(x => (x.path.length, x)).toList
-          val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
+          val withMaxLength  = (lenIdPathPairs.sortBy(_._1).reverse match {
             case Nil    => Nil
             case h :: t => h :: t.takeWhile(y => y._1 == h._1)
           }).map(_._2)

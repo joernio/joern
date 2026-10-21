@@ -179,4 +179,27 @@ class SwitchTests extends GoCodeToCpgSuite {
     }
   }
 
+  "AST Creation for switch with an empty case" should {
+    "not drop the file, and keep the cases that follow" in {
+      val cpg = code("""
+          |package main
+          |func classify(x int) string {
+          |  switch x {
+          |  case 1:
+          |  case 2:
+          |    return "two"
+          |  }
+          |  return "other"
+          |}
+          |""".stripMargin)
+      inside(cpg.method.name("classify").controlStructure.l) { case List(controlStruct: ControlStructure) =>
+        controlStruct.controlStructureType shouldBe ControlStructureTypes.SWITCH
+        inside(controlStruct.astChildren.l) { case List(cond: Identifier, switchBlock: Block) =>
+          cond.code shouldBe "x"
+          switchBlock.astChildren.code.l shouldBe List("case 1", "1", "case 2", "2", "return \"two\"")
+        }
+      }
+    }
+  }
+
 }

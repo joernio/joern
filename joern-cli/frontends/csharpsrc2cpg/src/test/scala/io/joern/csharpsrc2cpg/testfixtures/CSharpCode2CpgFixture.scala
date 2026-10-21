@@ -11,7 +11,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import io.shiftleft.semanticcpg.validation.PostFrontendValidator
+import io.shiftleft.semanticcpg.validation.{PostFrontendValidator, ValidationLevel}
 import org.scalatest.Inside
 
 import java.io.File
@@ -85,13 +85,10 @@ trait CSharpFrontend extends LanguageFrontend {
       .getOrElse(Config().withSchemaValidation(ValidationMode.Enabled))
 
   override def execute(sourceCodeFile: File): Cpg = {
-    val cpgOutFile = FileUtil.newTemporaryFile(suffix = "cpg.bin")
-    FileUtil.deleteOnExit(cpgOutFile)
-    val config = defaultConfig.withInputPath(sourceCodeFile.getAbsolutePath).withOutputPath(cpgOutFile.toString)
+    val config = defaultConfig.withInputPath(sourceCodeFile.getAbsolutePath)
     val tmp    = new CSharpSrc2Cpg().createCpg(config).get
-    new PostFrontendValidator(tmp, false).createAndApply()
+    new PostFrontendValidator(tmp, ValidationLevel.V0).createAndApply()
     tmp
-
   }
 
 }

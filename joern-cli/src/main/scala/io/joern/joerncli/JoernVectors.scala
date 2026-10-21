@@ -5,8 +5,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Method}
 import io.shiftleft.semanticcpg.language.*
-import org.json4s.DefaultFormats
-import org.json4s.native.Serialization
+import io.shiftleft.semanticcpg.utils.JsonRenderer
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
@@ -14,11 +13,11 @@ import scala.util.Using
 import scala.util.hashing.MurmurHash3
 
 class BagOfPropertiesForNodes extends EmbeddingGenerator[AstNode, (String, String)] {
-  override def structureToString(pair: (String, String)): String = pair._1 + ":" + pair._2
-  override def extractObjects(cpg: Cpg): Iterator[AstNode]       = cpg.astNode
+  override def structureToString(pair: (String, String)): String            = pair._1 + ":" + pair._2
+  override def extractObjects(cpg: Cpg): Iterator[AstNode]                  = cpg.astNode
   override def enumerateSubStructures(obj: AstNode): List[(String, String)] = {
     val relevantFieldTypes = Set(PropertyNames.Name, PropertyNames.FullName, PropertyNames.Code)
-    val relevantFields = obj.propertiesMap
+    val relevantFields     = obj.propertiesMap
       .entrySet()
       .asScala
       .toList
@@ -119,17 +118,16 @@ trait EmbeddingGenerator[T, S] {
 
   def objectToString(t: T): String
 
-  implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
-
   def vectorToString(vector: Map[S, Double]): String = defaultToString(vector)
 
-  def defaultToString[M](v: M): String = Serialization.write(v)
+  def defaultToString[M](value: M): String = ujson.write(JoernVectors.jsonRenderer.render(value))
 
 }
 
 object JoernVectors {
 
-  implicit val formats: DefaultFormats.type = org.json4s.DefaultFormats
+  private[joerncli] val jsonRenderer = new JsonRenderer()
+
   case class Config(cpgFileName: String = "cpg.bin", outDir: String = "out", dimToFeature: Boolean = false)
 
   def main(args: Array[String]) = {
@@ -143,7 +141,7 @@ object JoernVectors {
         traversalToJson(embedding.objects, generator.defaultToString)
         if (config.dimToFeature) {
           println(",\"dimToFeature\": ")
-          println(Serialization.write(embedding.dimToStructure))
+          println(generator.defaultToString(embedding.dimToStructure))
         }
         println(",\"vectors\":")
         traversalToJson(embedding.vectors, generator.vectorToString)

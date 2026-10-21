@@ -29,7 +29,7 @@ object NullTermination extends QueryBundle {
         |""".stripMargin,
       score = 4,
       withStrRep({ cpg =>
-        val allocations = cpg.method(".*malloc$").callIn.argument(1)
+        val allocations = cpg.method(".*malloc$").callIn.argument(1).l
         cpg
           .method("(?i)strncpy")
           .callIn
@@ -38,8 +38,8 @@ object NullTermination extends QueryBundle {
           }
           .filter { case (method, dst, size) =>
             dst.reachableBy(allocations).codeExact(size.code).nonEmpty &&
-            method.assignment
-              .where(_.target.arrayAccess.code(s"${dst.code}.*\\[.*"))
+            method.call.isAssignment
+              .where(_.target.isCall.isArrayAccess.code(s"${dst.code}.*\\[.*"))
               .source
               .isLiteral
               .code(".*0.*")

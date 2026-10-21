@@ -2,6 +2,7 @@ package io.joern.pysrc2cpg.passes
 
 import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 import io.joern.x2cpg.passes.frontend.XTypeHintCallLinker
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.*
@@ -9,6 +10,7 @@ import io.shiftleft.semanticcpg.language.importresolver.*
 import java.io.File
 import scala.collection.immutable.Seq
 
+@scala.annotation.nowarn("cat=deprecation")
 class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   "literals declared from built-in types" should {
@@ -623,7 +625,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     "recover the method full name related" in {
       val Some(methodRef) = cpg.methodRef.code("views.add_student").headOption: @unchecked
       methodRef.methodFullName shouldBe Seq("student", "views.py:<module>.add_student").mkString(File.separator)
-      methodRef.typeFullName shouldBe "<empty>"
+      methodRef.typeFullName shouldBe "ANY"
     }
   }
 
@@ -1325,7 +1327,8 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .l
       val appIncludeRouterCalls = variables.invokingCalls.nameExact("include_router")
       val includedRouters       = appIncludeRouterCalls.argument.argumentIndexGte(1).moduleVariables
-      val definitionsOfRouters  = includedRouters.definitions.whereNot(_.source.isCall.nameExact("import"))
+      val definitionsOfRouters  =
+        includedRouters.definitions.whereNot(_.source.isCall.nameExact(Operators.importCall))
       val List(adminRouter, normalRouter, itemsRouter) =
         definitionsOfRouters.map(x => (x.code, x.method.fullName)).sortBy(_._1).l: @unchecked
 

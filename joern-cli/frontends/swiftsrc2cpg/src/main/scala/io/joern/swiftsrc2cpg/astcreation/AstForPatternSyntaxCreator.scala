@@ -35,6 +35,9 @@ trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) 
 
   private def astForMissingPatternSyntax(@unused node: MissingPatternSyntax): Ast = Ast()
 
+  // Tuple patterns in switch-case and if-case/guard-case conditions are handled via
+  // astsForBindingTuplePattern / astForExpressionTuplePattern in AstForExprSyntaxCreator.
+  // This handler covers remaining contexts (e.g. bare pattern matching) which are not yet implemented.
   private def astForTuplePatternSyntax(node: TuplePatternSyntax): Ast = notHandledYet(node)
 
   private def localForValueBindingPatternSyntax(
@@ -42,7 +45,7 @@ trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) 
     name: String,
     typeFullName: String
   ): Ast = {
-    val kind = code(node.bindingSpecifier)
+    val kind      = code(node.bindingSpecifier)
     val scopeType = if (kind == "let") { VariableScopeManager.ScopeType.BlockScope }
     else { VariableScopeManager.ScopeType.MethodScope }
     val nLocalNode = localNode(node, name, name, typeFullName).order(0)
@@ -70,7 +73,7 @@ trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) 
         localForValueBindingPatternSyntax(node, code(ident.identifier), tpeFromTypeMap.getOrElse(Defines.Any))
       case isType: IsTypePatternSyntax =>
         astForNode(isType)
-      case _: MissingPatternSyntax => Ast()
+      case _: MissingPatternSyntax   => Ast()
       case tuple: TuplePatternSyntax =>
         astForNode(tuple)
       case valueBinding: ValueBindingPatternSyntax =>

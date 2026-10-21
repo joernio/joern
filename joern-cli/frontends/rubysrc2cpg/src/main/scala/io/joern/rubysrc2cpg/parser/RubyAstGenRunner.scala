@@ -1,10 +1,11 @@
 package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.Config
-import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.{ExecutionEnvironment, astGenMetaData}
+import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.{ExecutionEnvironment, JRubyEnvironment, astGenMetaData}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult, DefaultAstGenRunnerResult}
 import io.joern.x2cpg.astgen.AstGenRunner
+import io.joern.x2cpg.utils.{Environment, JoernRunfilesLocator}
 import org.jruby.RubyInstanceConfig
 import org.jruby.embed.{LocalContextScope, LocalVariableBehavior, PathType, ScriptingContainer}
 import org.slf4j.LoggerFactory
@@ -16,46 +17,26 @@ import java.util
 import java.util.jar.JarFile
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try, Using}
 
 /** Creates a JRuby scripting environment using `ruby_ast_gen` within a temporary directory allowing for re-usable
   * execution.
   */
-class RubyAstGenRunner(config: Config)
+class RubyAstGenRunner(config: Config, sharedJRubyEnv: Option[JRubyEnvironment] = None)
     extends AstGenRunner(RubyAstGenRunner.astGenMetaData, config)
     with AutoCloseable {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  private val env: ExecutionEnvironment = RubyAstGenRunner.prepareExecutionEnvironment("ruby_ast_gen")
-  // The scripting container is re-used as it persists any previously imported definitions. The cost to import and
-  // construct class and method definitions is quite expensive, so it makes sense to persist and create the container
-  // on-demand.
-  private val container: ScriptingContainer = {
-    val cwd       = env.path.toAbsolutePath.toString
-    val gemPath   = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
-    val container = new ScriptingContainer(LocalContextScope.THREADSAFE, LocalVariableBehavior.TRANSIENT)
-    val config    = container.getProvider.getRubyInstanceConfig
-    container.setCompileMode(RubyInstanceConfig.CompileMode.OFF)
-    container.setNativeEnabled(false)
-    container.setObjectSpaceEnabled(true)
-    container.setCurrentDirectory(cwd)
-    config.setLoadGemfile(true)
-    container.setEnvironment(Map("GEM_PATH" -> gemPath, "GEM_FILE" -> gemPath).asJava)
-    config.setHasShebangLine(true)
-    config.setHardExit(false)
-
-    container
-  }
+  private val ownsEnvironment            = sharedJRubyEnv.isEmpty
+  private val jrubyEnv: JRubyEnvironment = sharedJRubyEnv.getOrElse(JRubyEnvironment())
+  private val env                        = jrubyEnv.env
+  private val container                  = jrubyEnv.container
 
   override def close(): Unit = {
-    val closeContainer = Try(container.terminate())
-    if (closeContainer.isFailure) {
-      logger.error("Error occurred while terminating JRuby scripting container!", closeContainer.failed.get)
-    }
-    val closeEnv = Try(env.close())
-    if (closeEnv.isFailure) {
-      logger.error("Error occurred while cleaning up JRuby execution directory!", closeEnv.failed.get)
+    if (ownsEnvironment) {
+      jrubyEnv.close()
     }
   }
 
@@ -84,8 +65,8 @@ class RubyAstGenRunner(config: Config)
     }
 
     astGenOut.map(_.strip()).foreach {
-      case s"[WARN] $reason - $fileName"  => addReason(reason, Option(fileName))
-      case s"[ERR] '$fileName' - $reason" => addReason(reason, Option(fileName))
+      case s"[WARN] $reason - $fileName"               => addReason(reason, Option(fileName))
+      case s"[ERR] '$fileName' - $reason"              => addReason(reason, Option(fileName))
       case s"[ERR] Failed to parse $fileName: $reason" =>
         addReason(s"Failed to parse: $reason", Option(fileName))
       case s"[INFO] Processed: $fileName -> $_" => diagnosticMap.put(fileName, Nil)
@@ -113,7 +94,7 @@ class RubyAstGenRunner(config: Config)
     try {
       // We use the URI format as this is the best in terms of language agnostic importing
       val requireFile = env.path.resolve("lib").resolve("ruby_ast_gen.rb").toUri.toString
-      val mainScript =
+      val mainScript  =
         s"""
           |options = {
           |  input: nil,
@@ -124,9 +105,12 @@ class RubyAstGenRunner(config: Config)
           |
           |options[:input] = "${in.replace("\\", "\\\\")}"
           |options[:output] = "${out.toString.replace("\\", "\\\\")}"
-          |${if exclude.isEmpty then "" else s"options[:exclude] = /${exclude.replace("/", "\\/")}/"}
+          |${
+            if (exclude.isEmpty) { "" }
+            else { s"options[:exclude] = /${exclude.replace("/", "\\/")}/" }
+          }
           |
-          |if defined?(RubyAstGen) != 'constant' || defined?(RubyAstGen::parse) != 'method' then
+          |if (defined?(RubyAstGen) != 'constant' || defined?(RubyAstGen::parse) != 'method')
           |  require "$requireFile"
           |end
           |RubyAstGen::parse(options)
@@ -138,7 +122,7 @@ class RubyAstGenRunner(config: Config)
       Files.writeString(scriptTarget, mainScript, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)
       executeWithJRuby(scriptTarget)
     } catch {
-      case tempPathException: Exception => Failure(tempPathException)
+      case NonFatal(tempPathException) => Failure(tempPathException)
     } finally {
       scriptTarget.toFile.delete()
     }
@@ -194,7 +178,9 @@ class RubyAstGenRunner(config: Config)
     }
   }
 
-  private def executeWithJRuby(script: Path): Try[Seq[String]] = {
+  // The scripting container (and its output/error streams) may be shared between runners, so executions on the same
+  // environment must not interleave.
+  private def executeWithJRuby(script: Path): Try[Seq[String]] = jrubyEnv.synchronized {
     Using.resources(new ByteArrayOutputStream(), new ByteArrayOutputStream()) { (outStream, errStream) =>
       container.setOutput(new PrintStream(outStream))
       container.setError(new PrintStream(errStream))
@@ -210,7 +196,72 @@ class RubyAstGenRunner(config: Config)
 object RubyAstGenRunner {
 
   private object astGenMetaData
-      extends AstGenProgramMetaData(name = "ruby_ast_gen", configPrefix = "rubysrc2cpg", multiArchitectureBuilds = true)
+      extends AstGenProgramMetaData(
+        name = "ruby_ast_gen",
+        configPrefix = "rubysrc2cpg",
+        multiArchitectureBuilds = false
+      )
+
+  /** Encapsulates the expensive JRuby runtime setup (execution environment and scripting container). Can be shared
+    * across multiple RubyAstGenRunner instances to avoid repeated JRuby initialization.
+    */
+  class JRubyEnvironment(val env: ExecutionEnvironment, val container: ScriptingContainer) extends AutoCloseable {
+    private val logger = LoggerFactory.getLogger(getClass)
+
+    override def close(): Unit = {
+      val closeContainer = Try(container.terminate())
+      if (closeContainer.isFailure) {
+        logger.error("Error terminating JRuby scripting container!", closeContainer.failed.get)
+      }
+      val closeEnv = Try(env.close())
+      if (closeEnv.isFailure) {
+        logger.error("Error cleaning up JRuby execution directory!", closeEnv.failed.get)
+      }
+    }
+  }
+
+  object JRubyEnvironment {
+    private val logger = LoggerFactory.getLogger(getClass)
+
+    private def platformSuffix: String = {
+      (Environment.operatingSystem, Environment.architecture) match {
+        case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.X86)     => "linux_x86"
+        case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.ARMv8)   => "linux_arm"
+        case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.X86)       => "macos_x86"
+        case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.ARMv8)     => "macos_arm"
+        case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.X86)   => "win_x86"
+        case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.ARMv8) => "win_arm"
+        case _                                                                             =>
+          logger.warn("Could not detect OS version! Defaulting to 'Linux'.")
+          "linux_x86"
+      }
+    }
+
+    def apply(): JRubyEnvironment = {
+      val env = JoernRunfilesLocator
+        .resolve(s"rubysrc2cpg_astgen_$platformSuffix/")
+        .map(path => LocalDir(Path.of(path)))
+        .getOrElse(prepareExecutionEnvironment("ruby_ast_gen"))
+      val cwd        = env.path.toAbsolutePath.toString
+      val bundleBase = env.path.resolve("vendor").resolve("bundle").resolve("jruby")
+      // Directory listing order is file system dependent, so pick deterministically
+      val rubyAbi = Using.resource(Files.list(bundleBase)) { stream =>
+        stream.iterator.asScala.filter(Files.isDirectory(_)).map(_.getFileName.toString).toList.sorted.head
+      }
+      val gemPath   = bundleBase.resolve(rubyAbi).toString
+      val container = new ScriptingContainer(LocalContextScope.THREADSAFE, LocalVariableBehavior.TRANSIENT)
+      val config    = container.getProvider.getRubyInstanceConfig
+      container.setCompileMode(RubyInstanceConfig.CompileMode.OFF)
+      container.setNativeEnabled(true)
+      container.setObjectSpaceEnabled(true)
+      container.setCurrentDirectory(cwd)
+      config.setLoadGemfile(false)
+      container.setEnvironment(Map("GEM_PATH" -> gemPath).asJava)
+      config.setHasShebangLine(true)
+      config.setHardExit(false)
+      new JRubyEnvironment(env, container)
+    }
+  }
 
   sealed trait ExecutionEnvironment extends AutoCloseable {
     def path: Path
@@ -257,7 +308,7 @@ object RubyAstGenRunner {
             val inputStream: InputStream = jarFile.getInputStream(entry)
             try {
               Files.copy(inputStream, entryPath, StandardCopyOption.REPLACE_EXISTING)
-              if entryPath.endsWith("ruby_ast_gen") then entryPath.toFile.setExecutable(true, true)
+              if (entryPath.endsWith("ruby_ast_gen")) { entryPath.toFile.setExecutable(true, true) }
             } finally {
               inputStream.close()
             }

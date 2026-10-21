@@ -10,7 +10,6 @@ import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.NewJumpLabel
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import ujson.Obj
 import ujson.Value
@@ -28,23 +27,17 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def sortBlockStatements(blockStatements: List[BabelNodeInfo]): List[BabelNodeInfo] =
     blockStatements.sortBy { nodeInfo =>
       nodeInfo.node match {
-        case ImportDeclaration                                    => 0
-        case FunctionDeclaration                                  => 1
-        case DeclareTypeAlias if isPlainTypeAlias(nodeInfo)       => 4
-        case TypeAlias if isPlainTypeAlias(nodeInfo)              => 4
-        case TSTypeAliasDeclaration if isPlainTypeAlias(nodeInfo) => 4
-        case DeclareTypeAlias                                     => 3
-        case TypeAlias                                            => 3
-        case TSTypeAliasDeclaration                               => 3
-        case _                                                    => 2
+        case ImportDeclaration                                     => 0
+        case FunctionDeclaration                                   => 1
+        case DeclareTypeAlias | TypeAlias | TSTypeAliasDeclaration =>
+          if (isPlainTypeAlias(nodeInfo)) 4 else 3
+        case _ => 2
       }
     }
 
   protected def createBlockStatementAsts(json: Value): List[Ast] = {
-    val blockStmts = sortBlockStatements(json.arr.map(createBabelNodeInfo).toList)
-    val blockAsts  = blockStmts.map(stmt => astForNodeWithFunctionReferenceAndCall(stmt.json))
-    setArgumentIndices(blockAsts)
-    blockAsts
+    val blockStmts = sortBlockStatements(json.arr.iterator.map(createBabelNodeInfo).toList)
+    blockStmts.map(stmt => astForNodeWithFunctionReferenceAndCall(stmt.json))
   }
 
   protected def astForWithStatement(withStatement: BabelNodeInfo): Ast = {
@@ -53,12 +46,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     localAstParentStack.push(blockNode_)
     val objectAst    = astForNodeWithFunctionReferenceAndCall(withStatement.json("object"))
     val bodyNodeInfo = createBabelNodeInfo(withStatement.json("body"))
-    val bodyAsts = bodyNodeInfo.node match {
+    val bodyAsts     = bodyNodeInfo.node match {
       case BlockStatement => createBlockStatementAsts(bodyNodeInfo.json("body"))
       case _              => List(astForNodeWithFunctionReferenceAndCall(bodyNodeInfo.json))
     }
     val blockStatementAsts = objectAst +: bodyAsts
-    setArgumentIndices(blockStatementAsts)
     localAstParentStack.pop()
     scope.popScope()
     blockAst(blockNode_, blockStatementAsts)
@@ -69,7 +61,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
     val blockStatementAsts = createBlockStatementAsts(block.json("body"))
-    setArgumentIndices(blockStatementAsts)
     localAstParentStack.pop()
     scope.popScope()
     blockAst(blockNode_, blockStatementAsts)
@@ -95,15 +86,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       .getOrElse(Ast())
     val bodyAsts           = createBlockStatementAsts(catchClause.json("body")("body"))
     val blockStatementAsts = paramAst +: bodyAsts
-    setArgumentIndices(blockStatementAsts)
     localAstParentStack.pop()
     scope.popScope()
     blockAst(blockNode_, blockStatementAsts)
   }
 
   protected def astForTryStatement(tryStmt: BabelNodeInfo): Ast = {
-    val tryNode = controlStructureNode(tryStmt, ControlStructureTypes.TRY, code(tryStmt))
-    val bodyAst = astForNodeWithFunctionReference(tryStmt.json("block"))
+    val bodyAst  = astForNodeWithFunctionReference(tryStmt.json("block"))
     val catchAst = safeObj(tryStmt.json, "handler").toList
       .map { handler =>
         val catchNodeInfo = createBabelNodeInfo(Obj(handler))
@@ -118,81 +107,52 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         val finalAst      = astForNodeWithFunctionReference(finalNodeInfo.json)
         Ast(finalNode).withChild(finalAst)
       }
-    tryCatchAst(tryNode, bodyAst, catchAst, finalizerAst)
+    tryCatchAst(tryStmt, bodyAst, catchAst, finalizerAst)
+  }
+
+  private def handleEmptyStatement(json: Value): Ast = {
+    val nodeInfo = createBabelNodeInfo(json)
+    nodeInfo.node match {
+      case EmptyStatement => Ast(blockNode(nodeInfo))
+      case _              => astForNodeWithFunctionReference(nodeInfo.json)
+    }
   }
 
   def astForIfStatement(ifStmt: BabelNodeInfo): Ast = {
-    val ifNode        = controlStructureNode(ifStmt, ControlStructureTypes.IF, code(ifStmt))
-    val testAst       = astForNodeWithFunctionReference(ifStmt.json("test"))
-    val consequentAst = astForNodeWithFunctionReference(ifStmt.json("consequent"))
-    val alternateAst = safeObj(ifStmt.json, "alternate")
-      .map { alternate => astForNodeWithFunctionReference(Obj(alternate)) }
-      .getOrElse(Ast())
-    // The semantics of if statement children is partially defined by their order value.
-    // The consequentAst must have order == 2 and alternateAst must have order == 3.
-    // Only to avoid collision we set testAst to 1
-    // because the semantics of it is already indicated via the condition edge.
-    setOrderExplicitly(testAst, 1)
-    setOrderExplicitly(consequentAst, 2)
-    setOrderExplicitly(alternateAst, 3)
-    Ast(ifNode)
-      .withChild(testAst)
-      .withConditionEdge(ifNode, testAst.nodes.head)
-      .withChild(consequentAst)
-      .withChild(alternateAst)
+    val conditionAst = handleEmptyStatement(ifStmt.json("test"))
+    val thenAst      = handleEmptyStatement(ifStmt.json("consequent"))
+    val elseAst      = safeObj(ifStmt.json, "alternate").map(alternate => handleEmptyStatement(Obj(alternate)))
+    ifThenElseAst(ifStmt, Some(conditionAst), thenAst, elseAst)
   }
 
   protected def astForDoWhileStatement(doWhileStmt: BabelNodeInfo): Ast = {
-    val whileNode = controlStructureNode(doWhileStmt, ControlStructureTypes.DO, code(doWhileStmt))
-    val testAst   = astForNodeWithFunctionReference(doWhileStmt.json("test"))
-    val bodyAst   = astForNodeWithFunctionReference(doWhileStmt.json("body"))
-    // The semantics of do-while statement children is partially defined by their order value.
-    // The bodyAst must have order == 1. Only to avoid collision we set testAst to 2
-    // because the semantics of it is already indicated via the condition edge.
-    setOrderExplicitly(bodyAst, 1)
-    setOrderExplicitly(testAst, 2)
-    Ast(whileNode).withChild(bodyAst).withChild(testAst).withConditionEdge(whileNode, testAst.nodes.head)
+    val testAst = handleEmptyStatement(doWhileStmt.json("test"))
+    val bodyAst = handleEmptyStatement(doWhileStmt.json("body"))
+    doWhileAst(doWhileStmt, Some(testAst), Seq(bodyAst))
   }
 
   protected def astForWhileStatement(whileStmt: BabelNodeInfo): Ast = {
-    val whileNode = controlStructureNode(whileStmt, ControlStructureTypes.WHILE, code(whileStmt))
-    val testAst   = astForNodeWithFunctionReference(whileStmt.json("test"))
-    val bodyAst   = astForNodeWithFunctionReference(whileStmt.json("body"))
-    // The semantics of while statement children is partially defined by their order value.
-    // The bodyAst must have order == 2. Only to avoid collision we set testAst to 1
-    // because the semantics of it is already indicated via the condition edge.
-    setOrderExplicitly(testAst, 1)
-    setOrderExplicitly(bodyAst, 2)
-    Ast(whileNode).withChild(testAst).withConditionEdge(whileNode, testAst.nodes.head).withChild(bodyAst)
+    val testAst = handleEmptyStatement(whileStmt.json("test"))
+    val bodyAst = handleEmptyStatement(whileStmt.json("body"))
+    whileAst(whileStmt, Some(testAst), Seq(bodyAst))
   }
 
   protected def astForForStatement(forStmt: BabelNodeInfo): Ast = {
-    val forNode = controlStructureNode(forStmt, ControlStructureTypes.FOR, code(forStmt))
-    val initAst = safeObj(forStmt.json, "init")
-      .map { init =>
-        astForNodeWithFunctionReference(Obj(init))
-      }
-      .getOrElse(Ast())
-    val testAst = safeObj(forStmt.json, "test")
-      .map { test =>
-        astForNodeWithFunctionReference(Obj(test))
-      }
-      .getOrElse(Ast(literalNode(forStmt, "true", Option(Defines.Boolean))))
-    val updateAst = safeObj(forStmt.json, "update")
-      .map { update =>
-        astForNodeWithFunctionReference(Obj(update))
-      }
-      .getOrElse(Ast())
+    val initAsts = safeObj(forStmt.json, "init")
+      .map { init => Seq(astForNodeWithFunctionReference(Obj(init))) }
+      .getOrElse(Seq.empty)
+
+    val testAsts = safeObj(forStmt.json, "test")
+      .map { test => Seq(astForNodeWithFunctionReference(Obj(test))) }
+      .getOrElse(Seq(Ast(literalNode(forStmt, "true", Option(Defines.Boolean)))))
+
+    val updateAsts = safeObj(forStmt.json, "update")
+      .map { update => Seq(astForNodeWithFunctionReference(Obj(update))) }
+      .getOrElse(Seq.empty)
+
     val bodyAst = astForNodeWithFunctionReference(forStmt.json("body"))
 
-    // The semantics of for statement children is defined by their order value.
-    // Thus we set the here explicitly and do not rely on the usual consecutive
-    // ordering.
-    setOrderExplicitly(initAst, 1)
-    setOrderExplicitly(testAst, 2)
-    setOrderExplicitly(updateAst, 3)
-    setOrderExplicitly(bodyAst, 4)
-    Ast(forNode).withChild(initAst).withChild(testAst).withChild(updateAst).withChild(bodyAst)
+    forAst(forStmt, Seq.empty, initAsts, testAsts, updateAsts, Seq(bodyAst))
   }
 
   protected def astForLabeledStatement(labelStmt: BabelNodeInfo): Ast = {
@@ -207,63 +167,31 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     localAstParentStack.pop()
 
     val labelAsts = List(Ast(labeledNode), bodyAst)
-    setArgumentIndices(labelAsts)
     blockAst(blockNode_, labelAsts)
   }
 
   protected def astForBreakStatement(breakStmt: BabelNodeInfo): Ast = {
-    val labelAst = safeObj(breakStmt.json, "label").toList.map { label =>
-      val labelNode = Obj(label)
-      val labelCode = code(labelNode)
-      Ast(
-        NewJumpLabel()
-          .parserTypeName(breakStmt.node.toString)
-          .name(labelCode)
-          .code(labelCode)
-          .lineNumber(breakStmt.lineNumber)
-          .columnNumber(breakStmt.columnNumber)
-          .order(1)
-      )
-    }
-    Ast(controlStructureNode(breakStmt, ControlStructureTypes.BREAK, code(breakStmt))).withChildren(labelAst)
+    val labelName = safeObj(breakStmt.json, "label").map(label => code(Obj(label)))
+    breakAst(breakStmt, code(breakStmt), labelName)
   }
 
   protected def astForContinueStatement(continueStmt: BabelNodeInfo): Ast = {
-    val labelAst = safeObj(continueStmt.json, "label").toList
-      .map { label =>
-        val labelNode = Obj(label)
-        val labelCode = code(labelNode)
-        Ast(
-          NewJumpLabel()
-            .parserTypeName(continueStmt.node.toString)
-            .name(labelCode)
-            .code(labelCode)
-            .lineNumber(continueStmt.lineNumber)
-            .columnNumber(continueStmt.columnNumber)
-            .order(1)
-        )
-      }
-    Ast(controlStructureNode(continueStmt, ControlStructureTypes.CONTINUE, code(continueStmt))).withChildren(labelAst)
+    val labelName = safeObj(continueStmt.json, "label").map(label => code(Obj(label)))
+    continueAst(continueStmt, code(continueStmt), labelName)
   }
 
   protected def astForThrowStatement(throwStmt: BabelNodeInfo): Ast = {
-    val argumentAst = astForNodeWithFunctionReference(throwStmt.json("argument"))
-    val throwCallNode =
-      callNode(throwStmt, throwStmt.code, "<operator>.throw", DispatchTypes.STATIC_DISPATCH)
-    val argAsts = List(argumentAst)
-    callAst(throwCallNode, argAsts)
+    throwAst(throwStmt, List(astForNodeWithFunctionReference(throwStmt.json("argument"))))
   }
 
   private def astsForSwitchCase(switchCase: BabelNodeInfo): List[Ast] = {
     val labelAst       = Ast(jumpTargetNode(switchCase))
     val testAsts       = safeObj(switchCase.json, "test").map(t => astForNodeWithFunctionReference(Obj(t))).toList
-    val consequentAsts = astForNodes(switchCase.json("consequent").arr.toList)
+    val consequentAsts = astForNodes(switchCase.json("consequent").arr)
     labelAst +: (testAsts ++ consequentAsts)
   }
 
   protected def astForSwitchStatement(switchStmt: BabelNodeInfo): Ast = {
-    val switchNode = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, code(switchStmt))
-
     // The semantics of switch statement children is partially defined by their order value.
     // The blockAst must have order == 2. Only to avoid collision we set switchExpressionAst to 1
     // because the semantics of it is already indicated via the condition edge.
@@ -274,14 +202,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
     val casesAsts = switchStmt.json("cases").arr.flatMap(c => astsForSwitchCase(createBabelNodeInfo(c)))
-    setArgumentIndices(casesAsts.toList)
     scope.popScope()
     localAstParentStack.pop()
 
-    Ast(switchNode)
-      .withChild(switchExpressionAst)
-      .withConditionEdge(switchNode, switchExpressionAst.nodes.head)
-      .withChild(blockAst(blockNode_, casesAsts.toList))
+    val switchBlockAst = blockAst(blockNode_, casesAsts.toList)
+    switchAst(switchStmt, Some(switchExpressionAst), Seq(switchBlockAst))
   }
 
   /** De-sugaring from:
@@ -348,8 +273,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.addVariableReference(loopVariableName, loopVariableNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
     // while loop:
-    val whileLoopNode = controlStructureNode(forInOfStmt, ControlStructureTypes.WHILE, code(forInOfStmt))
-
     // while loop test:
     val testCallNode =
       callNode(forInOfStmt, s"!($resultName = $iteratorName.next()).done", Operators.not, DispatchTypes.STATIC_DISPATCH)
@@ -390,8 +313,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val testCallArgs = List(testNode)
     val testCallAst  = callAst(testCallNode, testCallArgs)
 
-    val whileLoopAst = Ast(whileLoopNode).withChild(testCallAst).withConditionEdge(whileLoopNode, testCallNode)
-
     // while loop variable assignment:
     val whileLoopVariableNode = identifierNode(forInOfStmt, loopVariableName)
 
@@ -419,8 +340,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val bodyAst = astForNodeWithFunctionReference(forInOfStmt.json("body"))
 
     val whileLoopBlockChildren = List(loopVariableAssignmentAst, bodyAst)
-    setArgumentIndices(whileLoopBlockChildren)
-    val whileLoopBlockAst = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
+    val whileLoopBlockAst      = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
 
     scope.popScope()
     localAstParentStack.pop()
@@ -429,9 +349,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.popScope()
     localAstParentStack.pop()
 
-    val blockChildren =
-      List(iteratorAssignmentAst, Ast(resultNode), Ast(loopVariableNode), whileLoopAst.withChild(whileLoopBlockAst))
-    setArgumentIndices(blockChildren)
+    val whileLoopAst  = whileAst(forInOfStmt, Some(testCallAst), List(whileLoopBlockAst))
+    val blockChildren = List(iteratorAssignmentAst, Ast(resultNode), Ast(loopVariableNode), whileLoopAst)
     blockAst(blockNode_, blockChildren)
   }
 
@@ -491,8 +410,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.addVariableReference(resultName, resultNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
     // while loop:
-    val whileLoopNode = controlStructureNode(forInOfStmt, ControlStructureTypes.WHILE, code(forInOfStmt))
-
     // while loop test:
     val testCallNode =
       callNode(forInOfStmt, s"!($resultName = $iteratorName.next()).done", Operators.not, DispatchTypes.STATIC_DISPATCH)
@@ -533,8 +450,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val testCallArgs = List(testNode)
     val testCallAst  = callAst(testCallNode, testCallArgs)
 
-    val whileLoopAst = Ast(whileLoopNode).withChild(testCallAst).withConditionEdge(whileLoopNode, testCallNode)
-
     // while loop variable assignment:
     val whileLoopVariableNode = astForNode(idNodeInfo.json)
 
@@ -562,8 +477,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val bodyAst = astForNodeWithFunctionReference(forInOfStmt.json("body"))
 
     val whileLoopBlockChildren = List(loopVariableAssignmentAst, bodyAst)
-    setArgumentIndices(whileLoopBlockChildren)
-    val whileLoopBlockAst = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
+    val whileLoopBlockAst      = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
 
     scope.popScope()
     localAstParentStack.pop()
@@ -572,8 +486,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.popScope()
     localAstParentStack.pop()
 
-    val blockChildren = List(iteratorAssignmentAst, Ast(resultNode), whileLoopAst.withChild(whileLoopBlockAst))
-    setArgumentIndices(blockChildren)
+    val whileLoopAst  = whileAst(forInOfStmt, Some(testCallAst), List(whileLoopBlockAst))
+    val blockChildren = List(iteratorAssignmentAst, Ast(resultNode), whileLoopAst)
     blockAst(blockNode_, blockChildren)
   }
 
@@ -632,7 +546,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.addVariableReference(resultName, resultNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
     // loop variable:
-    val loopVariableNames = idNodeInfo.json("properties").arr.toList.map(p => stripQuotes(code(p)))
+    val loopVariableNames = idNodeInfo.json("properties").arr.map(p => stripQuotes(code(p))).toList
 
     val loopVariableLocalNodes = loopVariableNames.map(varName => localNode(forInOfStmt, varName, varName, Defines.Any))
     val loopVariableNodes      = loopVariableNames.map(identifierNode(forInOfStmt, _))
@@ -642,8 +556,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
 
     // while loop:
-    val whileLoopNode = controlStructureNode(forInOfStmt, ControlStructureTypes.WHILE, code(forInOfStmt))
-
     // while loop test:
     val testCallNode =
       callNode(forInOfStmt, s"!($resultName = $iteratorName.next()).done", Operators.not, DispatchTypes.STATIC_DISPATCH)
@@ -683,8 +595,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val testCallArgs = List(testNode)
     val testCallAst  = callAst(testCallNode, testCallArgs)
 
-    val whileLoopAst = Ast(whileLoopNode).withChild(testCallAst).withConditionEdge(whileLoopNode, testCallNode)
-
     // while loop variable assignment:
     val loopVariableAssignmentAsts = loopVariableNames.map { loopVariableName =>
       val whileLoopVariableNode = identifierNode(forInOfStmt, loopVariableName)
@@ -692,7 +602,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       val memberNode            = fieldIdentifierNode(forInOfStmt, "value", "value")
       val accessAst = createFieldAccessCallAst(baseNode, memberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val variableMemberNode = fieldIdentifierNode(forInOfStmt, loopVariableName, loopVariableName)
-      val variableAccessAst =
+      val variableAccessAst  =
         createFieldAccessCallAst(accessAst, variableMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val loopVariableAssignmentNode = callNode(
         forInOfStmt,
@@ -712,8 +622,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val bodyAst = astForNodeWithFunctionReference(forInOfStmt.json("body"))
 
     val whileLoopBlockChildren = loopVariableAssignmentAsts :+ bodyAst
-    setArgumentIndices(whileLoopBlockChildren)
-    val whileLoopBlockAst = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
+    val whileLoopBlockAst      = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
 
     scope.popScope()
     localAstParentStack.pop()
@@ -722,11 +631,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.popScope()
     localAstParentStack.pop()
 
+    val whileLoopAst      = whileAst(forInOfStmt, Some(testCallAst), List(whileLoopBlockAst))
     val blockNodeChildren =
-      List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst.withChild(
-        whileLoopBlockAst
-      )
-    setArgumentIndices(blockNodeChildren)
+      List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst
     blockAst(blockNode_, blockNodeChildren)
   }
 
@@ -784,7 +691,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.addVariableReference(resultName, resultNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
     // loop variable:
-    val loopVariableNames = idNodeInfo.json("elements").arr.toList.map(code)
+    val loopVariableNames = idNodeInfo.json("elements").arr.filterNot(_.isNull).map(code).toList
 
     val loopVariableLocalNodes = loopVariableNames.map(varName => localNode(forInOfStmt, varName, varName, Defines.Any))
     val loopVariableNodes      = loopVariableNames.map(identifierNode(forInOfStmt, _))
@@ -794,8 +701,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
 
     // while loop:
-    val whileLoopNode = controlStructureNode(forInOfStmt, ControlStructureTypes.WHILE, code(forInOfStmt))
-
     // while loop test:
     val testCallNode =
       callNode(forInOfStmt, s"!($resultName = $iteratorName.next()).done", Operators.not, DispatchTypes.STATIC_DISPATCH)
@@ -835,8 +740,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val testCallArgs = List(testNode)
     val testCallAst  = callAst(testCallNode, testCallArgs)
 
-    val whileLoopAst = Ast(whileLoopNode).withChild(testCallAst).withConditionEdge(whileLoopNode, testCallNode)
-
     // while loop variable assignment:
     val loopVariableAssignmentAsts = loopVariableNames.zipWithIndex.map { case (loopVariableName, index) =>
       val whileLoopVariableNode = identifierNode(forInOfStmt, loopVariableName)
@@ -844,7 +747,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       val memberNode            = fieldIdentifierNode(forInOfStmt, "value", "value")
       val accessAst = createFieldAccessCallAst(baseNode, memberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val variableMemberNode = literalNode(forInOfStmt, index.toString, dynamicTypeOption = Some(Defines.Number))
-      val variableAccessAst =
+      val variableAccessAst  =
         createIndexAccessCallAst(accessAst, Ast(variableMemberNode), forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val loopVariableAssignmentNode = callNode(
         forInOfStmt,
@@ -864,8 +767,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val bodyAst = astForNodeWithFunctionReference(forInOfStmt.json("body"))
 
     val whileLoopBlockChildren = loopVariableAssignmentAsts :+ bodyAst
-    setArgumentIndices(whileLoopBlockChildren)
-    val whileLoopBlockAst = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
+    val whileLoopBlockAst      = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
 
     scope.popScope()
     localAstParentStack.pop()
@@ -874,11 +776,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.popScope()
     localAstParentStack.pop()
 
+    val whileLoopAst      = whileAst(forInOfStmt, Some(testCallAst), List(whileLoopBlockAst))
     val blockNodeChildren =
-      List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst.withChild(
-        whileLoopBlockAst
-      )
-    setArgumentIndices(blockNodeChildren)
+      List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst
     blockAst(blockNode_, blockNodeChildren)
   }
 

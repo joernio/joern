@@ -16,7 +16,7 @@ import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{PrimitiveTypes, Type
 
 class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
 
-  private val cache = new GuavaCache(CacheBuilder.newBuilder().build[String, Option[Method]]())
+  private val cache               = new GuavaCache(CacheBuilder.newBuilder().build[String, Option[Method]]())
   private val resolvedMethodIndex = cpg.method
     .filterNot(_.fullName.startsWith(Defines.UnresolvedNamespace))
     .filterNot(_.signature.startsWith(Defines.UnresolvedSignature))
@@ -55,7 +55,7 @@ class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
 
     val hasDifferingArg = method.parameter.zip(callArgs).exists { case (parameter, argument) =>
       val maybeArgumentType = argument.propertyOption(Properties.TypeFullName).getOrElse(TypeConstants.Any)
-      val argMatches =
+      val argMatches        =
         maybeArgumentType == TypeConstants.Any || maybeArgumentType == parameter.typeFullName || (maybeArgumentType == TypeConstants.Null && !PrimitiveTypes
           .contains(parameter.typeFullName))
 

@@ -2,16 +2,14 @@ package io.joern.pythonparser
 
 import io.joern.pythonparser.CharStreamImpl.{defaultInputBufferSize, defaultMinimumReadSize}
 
-import java.io.{IOException, InputStream, InputStreamReader}
+import java.io.{IOException, Reader}
 
 object CharStreamImpl {
   private val defaultInputBufferSize = 4096
   private val defaultMinimumReadSize = 2048
 }
 
-class CharStreamImpl(inputStream: InputStream, inputBufferSize: Int, minimumReadSize: Int) extends CharStream {
-  private val inputReader = new InputStreamReader(inputStream)
-
+class CharStreamImpl(inputReader: Reader, inputBufferSize: Int, minimumReadSize: Int) extends CharStream {
   private var inputBuffer       = new Array[Char](inputBufferSize)
   private var posToLine         = new Array[Int](inputBufferSize)
   private var posToColumn       = new Array[Int](inputBufferSize)
@@ -29,8 +27,8 @@ class CharStreamImpl(inputStream: InputStream, inputBufferSize: Int, minimumRead
   posToLine(0) = 1
   posToColumn(0) = 0
 
-  def this(inputStream: InputStream) = {
-    this(inputStream, defaultInputBufferSize, defaultMinimumReadSize)
+  def this(inputReader: Reader) = {
+    this(inputReader, defaultInputBufferSize, defaultMinimumReadSize)
   }
 
   def getBeginPos: Int = inputBufferOffset + tokenBeginPos - 1

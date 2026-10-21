@@ -1,5 +1,6 @@
 package io.joern.swiftsrc2cpg.astcreation
 
+import io.joern.x2cpg.Defines
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.datastructures.VariableScopeManager.*
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
@@ -14,11 +15,11 @@ class SwiftVariableScopeManager extends VariableScopeManager {
 
   // mapping from TypDecl fullname to members to access members from extensions
   private val typeDeclToMemberMap = mutable.HashMap.empty[String, mutable.ArrayBuffer[MemberElement]]
+  // reverse index: member variable name -> typeDecl fullName for O(1) lookup
+  private val memberToTypeDeclMap = mutable.HashMap.empty[String, String]
 
   def typeDeclFullNameForMember(variableName: String): Option[String] = {
-    typeDeclToMemberMap.collectFirst {
-      case (typeDeclFullName, members) if members.exists(_.variableName == variableName) => typeDeclFullName
-    }
+    memberToTypeDeclMap.get(variableName)
   }
 
   def restoreMembersForExtension(typeDeclFullName: String): Unit = {
@@ -40,9 +41,11 @@ class SwiftVariableScopeManager extends VariableScopeManager {
     if (scopeType == ScopeType.TypeDeclScope) {
       val typeDeclFullName = this.getEnclosingTypeDeclFullName
       if (typeDeclFullName.isDefined) {
-        val members = typeDeclToMemberMap.getOrElse(typeDeclFullName.get, mutable.ArrayBuffer.empty)
+        val fullName = typeDeclFullName.get
+        val members  = typeDeclToMemberMap.getOrElse(fullName, mutable.ArrayBuffer.empty)
         members.addOne(MemberElement(variableName, variableNode, tpe))
-        typeDeclToMemberMap(typeDeclFullName.get) = members
+        typeDeclToMemberMap(fullName) = members
+        memberToTypeDeclMap.getOrElseUpdate(variableName, fullName)
       }
     }
   }
@@ -74,11 +77,31 @@ class SwiftVariableScopeManager extends VariableScopeManager {
     * The final path is the collapsed segments joined by `ScopePathSeparator`.
     */
   override def computeScopePath: String = {
-    val collapsed = getAllEnclosingFullNames(stack).reverse.foldLeft(Seq.empty[String]) {
-      case (acc, name) if acc.lastOption.contains(name) => acc
-      case (acc, name)                                  => acc :+ name
+    val names     = getAllEnclosingFullNames(stack).reverse
+    val collapsed = mutable.ArrayBuffer.empty[String]
+    names.foreach { name =>
+      if (collapsed.isEmpty || collapsed.last != name) {
+        collapsed += name
+      }
     }
     collapsed.mkString(ScopePathSeparator)
+  }
+
+  def isInStaticMethodScope: Boolean = {
+    def isClosureScope(methodScope: MethodScopeElement): Boolean = {
+      methodScope.methodName.startsWith(Defines.ClosurePrefix)
+    }
+
+    def nextNonClosureMethodScope(scopeHead: Option[ScopeElement]): Option[MethodScopeElement] = {
+      scopeHead.flatMap {
+        case ms: MethodScopeElement if !isClosureScope(ms) => Some(ms)
+        case ms: MethodScopeElement                        => nextNonClosureMethodScope(ms.surroundingScope)
+        case bs: BlockScopeElement                         => nextNonClosureMethodScope(bs.surroundingScope)
+        case _: TypeDeclScopeElement                       => None
+      }
+    }
+
+    nextNonClosureMethodScope(stack).exists(_.isStatic)
   }
 
 }

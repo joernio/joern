@@ -2,12 +2,13 @@ package io.shiftleft.semanticcpg.language.operatorextension
 
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Call}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.testing.MockCpg
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+@scala.annotation.nowarn("cat=deprecation")
 class OperatorExtensionTests extends AnyWordSpec with Matchers {
 
   private val methodName = "method"
@@ -61,10 +62,8 @@ class OperatorExtensionTests extends AnyWordSpec with Matchers {
 
   "OpAstNode" should {
     "allow traversing to assignments" in {
-      val cpg     = mockCpgWithCallAndCode(Operators.assignment, "x = 10")
-      val List(x) = cpg.method.assignment.l
-      x.name shouldBe Operators.assignment
-      x.code shouldBe "x = 10"
+      val cpg = mockCpgWithCallAndCode(Operators.assignment, "x = 10")
+      val List(Call(name = Operators.assignment, code = "x = 10")) = cpg.method.assignment.l.runtimeChecked
     }
 
     "allow traversing to arithmetic expressions" in {

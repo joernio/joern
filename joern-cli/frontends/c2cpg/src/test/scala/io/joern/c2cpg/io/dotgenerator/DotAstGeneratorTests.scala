@@ -57,6 +57,20 @@ class DotAstGeneratorTests extends C2CpgSuite {
       }
     }
 
+    "not crash on switch with default case" in {
+      val switchCpg = code("""
+        |void foo(int x) {
+        |  switch(x) {
+        |    case 1: break;
+        |    default: break;
+        |  }
+        |}
+        |""".stripMargin)
+      inside(switchCpg.method.name("foo").dotAst.l) { case List(x) =>
+        x should (startWith("digraph \"foo\"") and include("default") and endWith("}\n"))
+      }
+    }
+
     "allow plotting sub trees of methods correctly escaped" in {
       inside(cpg.method.name("lemon").dotAst.l) { case List(x) =>
         x should (

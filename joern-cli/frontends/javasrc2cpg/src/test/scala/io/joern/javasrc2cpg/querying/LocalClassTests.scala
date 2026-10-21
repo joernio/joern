@@ -42,16 +42,16 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    @inline def localDecl = cpg.typeDecl.fullName("foo.Foo.enclosingMethod.Local")
+    @inline def localDecl = cpg.typeDecl.fullNameExact("foo.Foo.enclosingMethod:void(int).Local")
 
     "have only one Local typeDecl" in {
-      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod.Local")
+      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod:void(int).Local")
     }
 
     "have the correct bindings for methods defined in the local class" in {
       inside(cpg.all.collectAll[Binding].nameExact("noCaptures").l) { case List(noCapturesBinding) =>
-        noCapturesBinding.methodFullName shouldBe "foo.Foo.enclosingMethod.Local.noCaptures:void(int)"
-        noCapturesBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod.Local"
+        noCapturesBinding.methodFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local.noCaptures:void(int)"
+        noCapturesBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
         noCapturesBinding.signature shouldBe "void(int)"
       }
     }
@@ -59,8 +59,8 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
     "have the correct binding for the default constructor" in {
       inside(cpg.all.collectAll[Binding].nameExact("<init>").methodFullName(".*Local.*").l) {
         case List(noCapturesBinding) =>
-          noCapturesBinding.methodFullName shouldBe "foo.Foo.enclosingMethod.Local.<init>:void()"
-          noCapturesBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod.Local"
+          noCapturesBinding.methodFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local.<init>:void()"
+          noCapturesBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
           noCapturesBinding.signature shouldBe "void()"
       }
     }
@@ -103,12 +103,12 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
     }
 
     "have a default constructor with parameters for captured variables" in {
-      localDecl.method.nameExact("<init>").parameter.l match {
+      inside(localDecl.method.nameExact("<init>").parameter.l) {
         case List(thisParam, outerClassParam, capturedLocalParam, capturedParamParam) =>
           thisParam.name shouldBe "this"
-          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
+          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
           thisParam.index shouldBe 0
-          thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod.Local")
+          thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod:void(int).Local")
 
           outerClassParam.name shouldBe "outerClass"
           outerClassParam.typeFullName shouldBe "foo.Foo"
@@ -121,81 +121,62 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
           capturedParamParam.name shouldBe "capturedParam"
           capturedParamParam.typeFullName shouldBe "int"
           capturedParamParam.index shouldBe 3
-
-        case result => fail(s"Unexpected result ${result}")
       }
     }
 
     "have assignments for captured variables in the default constructor" in {
-      localDecl.method.nameExact("<init>").l match {
-        case List(localInit) =>
-          localDecl.method.nameExact("<init>").body.astChildren.l match {
-            case List(outerClassAssign: Call, capturedLocalAssign: Call, capturedParamAssign: Call) =>
-              outerClassAssign.methodFullName shouldBe Operators.assignment
-              capturedLocalAssign.methodFullName shouldBe Operators.assignment
-              capturedParamAssign.methodFullName shouldBe Operators.assignment
+      inside(localDecl.method.nameExact("<init>").l) { case List(localInit) =>
+        inside(localDecl.method.nameExact("<init>").body.astChildren.l) {
+          case List(outerClassAssign: Call, capturedLocalAssign: Call, capturedParamAssign: Call) =>
+            outerClassAssign.methodFullName shouldBe Operators.assignment
+            capturedLocalAssign.methodFullName shouldBe Operators.assignment
+            capturedParamAssign.methodFullName shouldBe Operators.assignment
 
-              outerClassAssign.argument.l match {
-                case List(thisOuterClass: Call, outerClass: Identifier) =>
-                  thisOuterClass.methodFullName shouldBe Operators.fieldAccess
-                  thisOuterClass.argument.l match {
-                    case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
-                      thisIdentifier.name shouldBe "this"
-                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
-                      thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
+            inside(outerClassAssign.argument.l) { case List(thisOuterClass: Call, outerClass: Identifier) =>
+              thisOuterClass.methodFullName shouldBe Operators.fieldAccess
+              inside(thisOuterClass.argument.l) { case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
+                thisIdentifier.name shouldBe "this"
+                thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
+                thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
 
-                      field.canonicalName shouldBe "outerClass"
-
-                    case result => fail(s"Unexpected result ${result}")
-                  }
-
-                  outerClass.name shouldBe "outerClass"
-                  outerClass.typeFullName shouldBe "foo.Foo"
-                  outerClass.refOut.l shouldBe localInit.parameter.name("outerClass").l
-
-                case result => fail(s"Unexpected result ${result}")
+                field.canonicalName shouldBe "outerClass"
               }
 
-              capturedLocalAssign.argument.l match {
-                case List(thisCapturedLocal: Call, capturedLocal: Identifier) =>
-                  thisCapturedLocal.methodFullName shouldBe Operators.fieldAccess
-                  thisCapturedLocal.argument.l match {
-                    case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
-                      thisIdentifier.name shouldBe "this"
-                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
-                      thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
+              outerClass.name shouldBe "outerClass"
+              outerClass.typeFullName shouldBe "foo.Foo"
+              outerClass.refOut.l shouldBe localInit.parameter.name("outerClass").l
+            }
 
-                      field.canonicalName shouldBe "capturedLocal"
-                    case result => fail(s"Unexpected result ${result}")
-                  }
+            inside(capturedLocalAssign.argument.l) { case List(thisCapturedLocal: Call, capturedLocal: Identifier) =>
+              thisCapturedLocal.methodFullName shouldBe Operators.fieldAccess
+              inside(thisCapturedLocal.argument.l) { case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
+                thisIdentifier.name shouldBe "this"
+                thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
+                thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
 
-                  capturedLocal.name shouldBe "capturedLocal"
-                  capturedLocal.typeFullName shouldBe "int"
-                  capturedLocal.refOut.l shouldBe localInit.parameter.name("capturedLocal").l
-                case result => fail(s"Unexpected result ${result}")
+                field.canonicalName shouldBe "capturedLocal"
               }
 
-              capturedParamAssign.argument.l match {
-                case List(thisCapturedParam: Call, capturedParam: Identifier) =>
-                  thisCapturedParam.methodFullName shouldBe Operators.fieldAccess
-                  thisCapturedParam.argument.l match {
-                    case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
-                      thisIdentifier.name shouldBe "this"
-                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
-                      thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
+              capturedLocal.name shouldBe "capturedLocal"
+              capturedLocal.typeFullName shouldBe "int"
+              capturedLocal.refOut.l shouldBe localInit.parameter.name("capturedLocal").l
+            }
 
-                      field.canonicalName shouldBe "capturedParam"
-                    case result => fail(s"Unexpected result ${result}")
-                  }
+            inside(capturedParamAssign.argument.l) { case List(thisCapturedParam: Call, capturedParam: Identifier) =>
+              thisCapturedParam.methodFullName shouldBe Operators.fieldAccess
+              inside(thisCapturedParam.argument.l) { case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
+                thisIdentifier.name shouldBe "this"
+                thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
+                thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
 
-                  capturedParam.name shouldBe "capturedParam"
-                  capturedParam.typeFullName shouldBe "int"
-                  capturedParam.refOut.l shouldBe localInit.parameter.name("capturedParam").l
-                case result => fail(s"Unexpected result ${result}")
+                field.canonicalName shouldBe "capturedParam"
               }
-            case result => fail(s"Unexpected result ${result}")
-          }
-        case result => fail(s"Unexpected result ${result}")
+
+              capturedParam.name shouldBe "capturedParam"
+              capturedParam.typeFullName shouldBe "int"
+              capturedParam.refOut.l shouldBe localInit.parameter.name("capturedParam").l
+            }
+        }
       }
     }
   }
@@ -236,10 +217,10 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    @inline def localDecl = cpg.typeDecl.fullName("foo.Foo.enclosingMethod.Local")
+    @inline def localDecl = cpg.typeDecl.fullNameExact("foo.Foo.enclosingMethod:void(int).Local")
 
     "have only one Local typeDecl" in {
-      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod.Local")
+      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod:void(int).Local")
     }
 
     "have the correct number of members created for captures" in {
@@ -267,12 +248,12 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
     }
 
     "have a default constructor with a parameter for the captured parameter" in {
-      localDecl.method.nameExact("<init>").parameter.l match {
+      inside(localDecl.method.nameExact("<init>").parameter.l) {
         case List(thisParam, capturedLocalParam, capturedParamParam) =>
           thisParam.name shouldBe "this"
-          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
+          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
           thisParam.index shouldBe 0
-          thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod.Local")
+          thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod:void(int).Local")
 
           capturedLocalParam.name shouldBe "capturedLocal"
           capturedLocalParam.typeFullName shouldBe "int"
@@ -281,58 +262,46 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
           capturedParamParam.name shouldBe "capturedParam"
           capturedParamParam.typeFullName shouldBe "int"
           capturedParamParam.index shouldBe 2
-        case result => fail(s"Unexpected result ${result.map(_.name)}")
       }
     }
 
     "have an assignment for the captured parameter in the default constructor" in {
-      localDecl.method.nameExact("<init>").l match {
-        case List(localInit) =>
-          localDecl.method.nameExact("<init>").body.astChildren.l match {
-            case List(capturedLocalAssign: Call, capturedParamAssign: Call) =>
-              capturedParamAssign.methodFullName shouldBe Operators.assignment
-              capturedLocalAssign.methodFullName shouldBe Operators.assignment
+      inside(localDecl.method.nameExact("<init>").l) { case List(localInit) =>
+        inside(localDecl.method.nameExact("<init>").body.astChildren.l) {
+          case List(capturedLocalAssign: Call, capturedParamAssign: Call) =>
+            capturedParamAssign.methodFullName shouldBe Operators.assignment
+            capturedLocalAssign.methodFullName shouldBe Operators.assignment
 
-              capturedParamAssign.argument.l match {
-                case List(thisCapturedParam: Call, capturedParam: Identifier) =>
-                  thisCapturedParam.methodFullName shouldBe Operators.fieldAccess
-                  thisCapturedParam.argument.l match {
-                    case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
-                      thisIdentifier.name shouldBe "this"
-                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
-                      thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
+            inside(capturedParamAssign.argument.l) { case List(thisCapturedParam: Call, capturedParam: Identifier) =>
+              thisCapturedParam.methodFullName shouldBe Operators.fieldAccess
+              inside(thisCapturedParam.argument.l) { case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
+                thisIdentifier.name shouldBe "this"
+                thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
+                thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
 
-                      field.canonicalName shouldBe "capturedParam"
-                    case result => fail(s"Unexpected result ${result}")
-                  }
-
-                  capturedParam.name shouldBe "capturedParam"
-                  capturedParam.typeFullName shouldBe "int"
-                  capturedParam.refOut.l shouldBe localInit.parameter.name("capturedParam").l
-                case result => fail(s"Unexpected result ${result}")
+                field.canonicalName shouldBe "capturedParam"
               }
 
-              capturedLocalAssign.argument.l match {
-                case List(thisCapturedLocal: Call, capturedLocal: Identifier) =>
-                  thisCapturedLocal.methodFullName shouldBe Operators.fieldAccess
-                  thisCapturedLocal.argument.l match {
-                    case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
-                      thisIdentifier.name shouldBe "this"
-                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
-                      thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
+              capturedParam.name shouldBe "capturedParam"
+              capturedParam.typeFullName shouldBe "int"
+              capturedParam.refOut.l shouldBe localInit.parameter.name("capturedParam").l
+            }
 
-                      field.canonicalName shouldBe "capturedLocal"
-                    case result => fail(s"Unexpected result ${result}")
-                  }
+            inside(capturedLocalAssign.argument.l) { case List(thisCapturedLocal: Call, capturedLocal: Identifier) =>
+              thisCapturedLocal.methodFullName shouldBe Operators.fieldAccess
+              inside(thisCapturedLocal.argument.l) { case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
+                thisIdentifier.name shouldBe "this"
+                thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
+                thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
 
-                  capturedLocal.name shouldBe "capturedLocal"
-                  capturedLocal.typeFullName shouldBe "int"
-                  capturedLocal.refOut.l shouldBe localInit.parameter.name("capturedLocal").l
-                case result => fail(s"Unexpected result ${result}")
+                field.canonicalName shouldBe "capturedLocal"
               }
-            case result => fail(s"Unexpected result ${result}")
-          }
-        case result => fail(s"Unexpected result ${result}")
+
+              capturedLocal.name shouldBe "capturedLocal"
+              capturedLocal.typeFullName shouldBe "int"
+              capturedLocal.refOut.l shouldBe localInit.parameter.name("capturedLocal").l
+            }
+        }
       }
     }
   }
@@ -354,64 +323,52 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    @inline def localDecl = cpg.typeDecl.fullName("foo.Foo.enclosingMethod.Local")
+    @inline def localDecl = cpg.typeDecl.fullNameExact("foo.Foo.enclosingMethod:void(int).Local")
 
     "have only one Local typeDecl" in {
-      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod.Local")
+      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod:void(int).Local")
     }
 
     "have a field for the captured outer class" in {
-      localDecl.member.l match {
-        case List(outerClassMember) =>
-          outerClassMember.name shouldBe "outerClass"
-          outerClassMember.typeFullName shouldBe "foo.Foo"
-        case result => fail(s"Unexpected result ${result}")
+      inside(localDecl.member.l) { case List(outerClassMember) =>
+        outerClassMember.name shouldBe "outerClass"
+        outerClassMember.typeFullName shouldBe "foo.Foo"
       }
     }
 
     "have an init parameter for the captured outer class" in {
-      localDecl.method.nameExact("<init>").parameter.l match {
-        case List(thisParam, outerClassParam) =>
-          thisParam.name shouldBe "this"
-          thisParam.index shouldBe 0
-          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
-          thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod.Local")
+      inside(localDecl.method.nameExact("<init>").parameter.l) { case List(thisParam, outerClassParam) =>
+        thisParam.name shouldBe "this"
+        thisParam.index shouldBe 0
+        thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
+        thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod:void(int).Local")
 
-          outerClassParam.name shouldBe "outerClass"
-          outerClassParam.typeFullName shouldBe "foo.Foo"
-          outerClassParam.index shouldBe 1
+        outerClassParam.name shouldBe "outerClass"
+        outerClassParam.typeFullName shouldBe "foo.Foo"
+        outerClassParam.index shouldBe 1
 
-        case result => fail(s"Found unexpected output ${result}")
       }
     }
 
     "have an assignment for the captured outer class in the default constructor" in {
-      localDecl.method.nameExact("<init>").l match {
-        case List(localInit) =>
-          localDecl.method.nameExact("<init>").body.astChildren.l match {
-            case List(outerClassAssign: Call) =>
-              outerClassAssign.methodFullName shouldBe Operators.assignment
-              outerClassAssign.argument.l match {
-                case List(thisOuterClass: Call, outerClass: Identifier) =>
-                  thisOuterClass.methodFullName shouldBe Operators.fieldAccess
-                  thisOuterClass.argument.l match {
-                    case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
-                      thisIdentifier.name shouldBe "this"
-                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
-                      thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
+      inside(localDecl.method.nameExact("<init>").l) { case List(localInit) =>
+        inside(localDecl.method.nameExact("<init>").body.astChildren.l) { case List(outerClassAssign: Call) =>
+          outerClassAssign.methodFullName shouldBe Operators.assignment
+          inside(outerClassAssign.argument.l) { case List(thisOuterClass: Call, outerClass: Identifier) =>
+            thisOuterClass.methodFullName shouldBe Operators.fieldAccess
+            inside(thisOuterClass.argument.l) { case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
+              thisIdentifier.name shouldBe "this"
+              thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
+              thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
 
-                      field.canonicalName shouldBe "outerClass"
-                    case result => fail(s"Unexpected result ${result}")
-                  }
+              field.canonicalName shouldBe "outerClass"
+            }
 
-                  outerClass.name shouldBe "outerClass"
-                  outerClass.typeFullName shouldBe "foo.Foo"
-                  outerClass.refOut.l shouldBe localInit.parameter.name("outerClass").l
-                case result => fail(s"Unexpected result ${result}")
-              }
-            case result => fail(s"Unexpected result ${result}")
+            outerClass.name shouldBe "outerClass"
+            outerClass.typeFullName shouldBe "foo.Foo"
+            outerClass.refOut.l shouldBe localInit.parameter.name("outerClass").l
           }
-        case result => fail(s"Unexpected result ${result}")
+        }
       }
     }
   }
@@ -433,10 +390,10 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    @inline def localDecl = cpg.typeDecl.fullName("foo.Foo.enclosingMethod.Local")
+    @inline def localDecl = cpg.typeDecl.fullNameExact("foo.Foo.enclosingMethod:void(int).Local")
 
     "have only one Local typeDecl" in {
-      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod.Local")
+      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod:void(int).Local")
     }
 
     "not have a field for the captured outer class" in {
@@ -444,13 +401,11 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
     }
 
     "not have an init parameter for the outer class" in {
-      localDecl.method.nameExact("<init>").parameter.l match {
-        case List(thisParam) =>
-          thisParam.name shouldBe "this"
-          thisParam.index shouldBe 0
-          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
-          thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod.Local")
-        case result => fail(s"Unexpected result ${result}")
+      inside(localDecl.method.nameExact("<init>").parameter.l) { case List(thisParam) =>
+        thisParam.name shouldBe "this"
+        thisParam.index shouldBe 0
+        thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
+        thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod:void(int).Local")
       }
     }
 
@@ -490,14 +445,14 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    @inline def localDecl = cpg.typeDecl.fullName("foo.Foo.enclosingMethod.Local")
+    @inline def localDecl = cpg.typeDecl.fullNameExact("foo.Foo.enclosingMethod:void(int).Local")
 
     "have only one Local typeDecl" in {
-      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod.Local")
+      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod:void(int).Local")
     }
 
     "have the correct full name set" in {
-      localDecl.fullName.l shouldBe List("foo.Foo.enclosingMethod.Local")
+      localDecl.fullName.l shouldBe List("foo.Foo.enclosingMethod:void(int).Local")
     }
 
     "have the correct code set" in {
@@ -538,12 +493,12 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
     }
 
     "have a default constructor with parameters for used captures" in {
-      localDecl.method.nameExact("<init>").parameter.l match {
+      inside(localDecl.method.nameExact("<init>").parameter.l) {
         case List(thisParam, outerClassParam, capturedLocalParam) =>
           thisParam.name shouldBe "this"
-          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
+          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
           thisParam.index shouldBe 0
-          thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod.Local")
+          thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod:void(int).Local")
 
           outerClassParam.name shouldBe "outerClass"
           outerClassParam.typeFullName shouldBe "foo.Foo"
@@ -552,59 +507,46 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
           capturedLocalParam.name shouldBe "capturedLocal"
           capturedLocalParam.typeFullName shouldBe "int"
           capturedLocalParam.index shouldBe 2
-
-        case result => fail(s"Unexpected result ${result}")
       }
     }
 
     "have assignments for used captures in the default constructor" in {
-      localDecl.method.nameExact("<init>").l match {
-        case List(localInit) =>
-          localDecl.method.nameExact("<init>").body.astChildren.l match {
-            case List(outerClassAssign: Call, capturedLocalAssign: Call) =>
-              outerClassAssign.methodFullName shouldBe Operators.assignment
-              capturedLocalAssign.methodFullName shouldBe Operators.assignment
+      inside(localDecl.method.nameExact("<init>").l) { case List(localInit) =>
+        inside(localDecl.method.nameExact("<init>").body.astChildren.l) {
+          case List(outerClassAssign: Call, capturedLocalAssign: Call) =>
+            outerClassAssign.methodFullName shouldBe Operators.assignment
+            capturedLocalAssign.methodFullName shouldBe Operators.assignment
 
-              outerClassAssign.argument.l match {
-                case List(thisOuterClass: Call, outerClass: Identifier) =>
-                  thisOuterClass.methodFullName shouldBe Operators.fieldAccess
-                  thisOuterClass.argument.l match {
-                    case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
-                      thisIdentifier.name shouldBe "this"
-                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
-                      thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
+            inside(outerClassAssign.argument.l) { case List(thisOuterClass: Call, outerClass: Identifier) =>
+              thisOuterClass.methodFullName shouldBe Operators.fieldAccess
+              inside(thisOuterClass.argument.l) { case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
+                thisIdentifier.name shouldBe "this"
+                thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
+                thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
 
-                      field.canonicalName shouldBe "outerClass"
-                    case result => fail(s"Unexpected result ${result}")
-                  }
-
-                  outerClass.name shouldBe "outerClass"
-                  outerClass.typeFullName shouldBe "foo.Foo"
-                  outerClass.refOut.l shouldBe localInit.parameter.name("outerClass").l
-                case result => fail(s"Unexpected result ${result}")
+                field.canonicalName shouldBe "outerClass"
               }
 
-              capturedLocalAssign.argument.l match {
-                case List(thisCapturedLocal: Call, capturedLocal: Identifier) =>
-                  thisCapturedLocal.methodFullName shouldBe Operators.fieldAccess
-                  thisCapturedLocal.argument.l match {
-                    case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
-                      thisIdentifier.name shouldBe "this"
-                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
-                      thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
+              outerClass.name shouldBe "outerClass"
+              outerClass.typeFullName shouldBe "foo.Foo"
+              outerClass.refOut.l shouldBe localInit.parameter.name("outerClass").l
+            }
 
-                      field.canonicalName shouldBe "capturedLocal"
-                    case result => fail(s"Unexpected result ${result}")
-                  }
+            inside(capturedLocalAssign.argument.l) { case List(thisCapturedLocal: Call, capturedLocal: Identifier) =>
+              thisCapturedLocal.methodFullName shouldBe Operators.fieldAccess
+              inside(thisCapturedLocal.argument.l) { case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
+                thisIdentifier.name shouldBe "this"
+                thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
+                thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
 
-                  capturedLocal.name shouldBe "capturedLocal"
-                  capturedLocal.typeFullName shouldBe "int"
-                  capturedLocal.refOut.l shouldBe localInit.parameter.name("capturedLocal").l
-                case result => fail(s"Unexpected result ${result}")
+                field.canonicalName shouldBe "capturedLocal"
               }
-            case result => fail(s"Unexpected result ${result}")
-          }
-        case result => fail(s"Unexpected result ${result}")
+
+              capturedLocal.name shouldBe "capturedLocal"
+              capturedLocal.typeFullName shouldBe "int"
+              capturedLocal.refOut.l shouldBe localInit.parameter.name("capturedLocal").l
+            }
+        }
       }
     }
   }
@@ -632,7 +574,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
     @inline def localConstructor = cpg.typeDecl.name(".*Local.*").method.nameExact("<init>")
 
     "have the original parameter followed by params for captures" in {
-      localConstructor.parameter.l match {
+      inside(localConstructor.parameter.l) {
         case List(thisParam, ctxParam, outerClassParam, outerLocalParam, outerParamParam) =>
           thisParam.name shouldBe "this"
           thisParam.index shouldBe 0
@@ -648,8 +590,6 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
 
           outerParamParam.name shouldBe "outerParam"
           outerParamParam.index shouldBe 4
-
-        case result => fail(s"Unexpected result ${result}")
       }
     }
 
@@ -685,18 +625,22 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     @inline def constructors =
-      cpg.typeDecl.fullName("foo.Foo.enclosingMethod.Local").method.nameExact("<init>").sortBy(_.parameter.size)
+      cpg.typeDecl
+        .fullNameExact("foo.Foo.enclosingMethod:void(int).Local")
+        .method
+        .nameExact("<init>")
+        .sortBy(_.parameter.size)
 
     "have correct bindings for the explicit constructors" in {
       val bindings = cpg.all.collectAll[Binding].toList
       inside(cpg.all.collectAll[Binding].nameExact("<init>").methodFullName(".*Local.*").sortBy(_.signature.length).l) {
         case List(noArgBinding, explicitArgBinding) =>
-          noArgBinding.methodFullName shouldBe "foo.Foo.enclosingMethod.Local.<init>:void()"
-          noArgBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod.Local"
+          noArgBinding.methodFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local.<init>:void()"
+          noArgBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
           noArgBinding.signature shouldBe "void()"
 
-          explicitArgBinding.methodFullName shouldBe "foo.Foo.enclosingMethod.Local.<init>:void(int)"
-          explicitArgBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod.Local"
+          explicitArgBinding.methodFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local.<init>:void(int)"
+          explicitArgBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
           explicitArgBinding.signature shouldBe "void(int)"
       }
     }
@@ -742,7 +686,11 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     @inline def constructors =
-      cpg.typeDecl.fullName("foo.Foo.enclosingMethod.Local").method.nameExact("<init>").sortBy(_.parameter.size)
+      cpg.typeDecl
+        .fullNameExact("foo.Foo.enclosingMethod:void(int).Local")
+        .method
+        .nameExact("<init>")
+        .sortBy(_.parameter.size)
 
     "not have any orphan locals or parameters" in {
       cpg.local.filter(_.astIn.isEmpty).l shouldBe List()
@@ -765,9 +713,20 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         "this.outerClass = outerClass",
         "this.outerParam = outerParam"
       )
-      val lastBody = constructors.last.body.astChildren.l
-      inside(constructors.last.body.astChildren.l) { case List(thisCall: Call, sinkCall: Call) =>
-        thisCall.argument.code.l shouldBe List("this", "outerClass", "outerParam")
+      val lastCtx  = constructors.last
+      val lastBody = lastCtx.body.astChildren.l
+      inside(lastBody) { case List(thisCall: Call, sinkCall: Call) =>
+        inside(thisCall.argument.l) {
+          case List(thisArg: Identifier, outerClassArg: Identifier, outerParamArg: Identifier) =>
+            thisArg.name shouldBe "this"
+            thisArg.refsTo.l shouldBe lastCtx.parameter.name("this").l
+
+            outerClassArg.name shouldBe "outerClass"
+            outerClassArg.refsTo.l shouldBe lastCtx.parameter.name("outerClass").l
+
+            outerParamArg.name shouldBe "outerParam"
+            outerParamArg.refsTo.l shouldBe lastCtx.parameter.name("outerParam").l
+        }
         sinkCall.code shouldBe "sink(ctxParam)"
       }
     }
@@ -791,30 +750,25 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "call the captured method on the outerClass field" in {
-      cpg.call.name("foo").l match {
-        case List(fooCall) =>
-          fooCall.name shouldBe "foo"
-          fooCall.methodFullName shouldBe "foo.Foo.foo:void()"
-          fooCall.code shouldBe "this.outerClass.foo()"
-          fooCall.signature shouldBe "void()"
-          fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      inside(cpg.call.name("foo").l) { case List(fooCall) =>
+        fooCall.name shouldBe "foo"
+        fooCall.methodFullName shouldBe "foo.Foo.foo:void()"
+        fooCall.code shouldBe "this.outerClass.foo()"
+        fooCall.signature shouldBe "void()"
+        fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
-          fooCall.receiver.l match {
-            case List(receiverFieldAccess: Call) =>
-              receiverFieldAccess.name shouldBe Operators.fieldAccess
-              receiverFieldAccess.typeFullName shouldBe "foo.Foo"
+        inside(fooCall.receiver.l) { case List(receiverFieldAccess: Call) =>
+          receiverFieldAccess.name shouldBe Operators.fieldAccess
+          receiverFieldAccess.typeFullName shouldBe "foo.Foo"
 
-              receiverFieldAccess.argument.l match {
-                case List(thisIdentifier: Identifier, outerClassFieldId: FieldIdentifier) =>
-                  thisIdentifier.name shouldBe "this"
-                  thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
+          inside(receiverFieldAccess.argument.l) {
+            case List(thisIdentifier: Identifier, outerClassFieldId: FieldIdentifier) =>
+              thisIdentifier.name shouldBe "this"
+              thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
 
-                  outerClassFieldId.canonicalName shouldBe "outerClass"
-                case result => fail(s"Unexpected result ${result}")
-              }
-            case result => fail(s"Unexpected result ${result}")
+              outerClassFieldId.canonicalName shouldBe "outerClass"
           }
-        case result => fail(s"Unexpected result ${result}")
+        }
       }
     }
   }
@@ -837,15 +791,13 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "not represent the call as a call to the outerClass field" in {
-      cpg.call.name("foo").l match {
-        case List(fooCall) =>
-          fooCall.name shouldBe "foo"
-          fooCall.methodFullName shouldBe "foo.Foo.foo:void()"
-          fooCall.code shouldBe "foo()"
-          fooCall.signature shouldBe "void()"
-          fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-          fooCall.receiver.isEmpty shouldBe true
-        case result => fail(s"Unexpected result ${result}")
+      inside(cpg.call.name("foo").l) { case List(fooCall) =>
+        fooCall.name shouldBe "foo"
+        fooCall.methodFullName shouldBe "foo.Foo.foo:void()"
+        fooCall.code shouldBe "foo()"
+        fooCall.signature shouldBe "void()"
+        fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        fooCall.receiver.isEmpty shouldBe true
       }
     }
   }
@@ -876,25 +828,21 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       @inline def initCall = cpg.call.name("sink").ast.collectAll[Call].nameExact("<init>")
 
       "have the correct init node properties" in {
-        initCall.l match {
-          case List(call) =>
-            call.methodFullName shouldBe "foo.Foo.fooMethod.Local.<init>:void(int)"
-            call.signature shouldBe "void(int)"
-          // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
-          case result => fail(s"Unexpected result ${result}")
+        inside(initCall.l) { case List(call) =>
+          call.methodFullName shouldBe "foo.Foo.fooMethod:void(int).Local.<init>:void(int)"
+          call.signature shouldBe "void(int)"
+        // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
         }
       }
 
       "have the correct init receiver" in {
-        initCall.receiver.l match {
-          case List(receiver: Identifier) =>
-            receiver.typeFullName shouldBe "foo.Foo.fooMethod.Local"
-          case result => fail(s"Unexpected result ${result}")
+        inside(initCall.receiver.l) { case List(receiver: Identifier) =>
+          receiver.typeFullName shouldBe "foo.Foo.fooMethod:void(int).Local"
         }
       }
 
       "have the explicit and capture arguments in the correct order" in {
-        initCall.argument.l match {
+        inside(initCall.argument.l) {
           case List(
                 _,
                 explicitArg: Literal,
@@ -916,8 +864,6 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
             capturedParam.name shouldBe "fooParam"
             capturedParam.argumentIndex shouldBe 4
             capturedParam.refOut.l shouldBe cpg.method.name("fooMethod").parameter.name("fooParam").l
-
-          case result => fail(s"Unexpected result ${result}")
         }
       }
     }
@@ -947,25 +893,21 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       @inline def initCall = cpg.call.name("sink").ast.collectAll[Call].nameExact("<init>")
 
       "have the correct init node properties" in {
-        initCall.l match {
-          case List(call) =>
-            call.methodFullName shouldBe "foo.Foo.foo.Local.<init>:void()"
-            call.signature shouldBe "void()"
-          // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
-          case result => fail(s"Unexpected result ${result}")
+        inside(initCall.l) { case List(call) =>
+          call.methodFullName shouldBe "foo.Foo.foo:void(int).Local.<init>:void()"
+          call.signature shouldBe "void()"
+        // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
         }
       }
 
       "have the correct init receiver" in {
-        initCall.receiver.l match {
-          case List(receiver: Identifier) =>
-            receiver.typeFullName shouldBe "foo.Foo.foo.Local"
-          case result => fail(s"Unexpected result ${result}")
+        inside(initCall.receiver.l) { case List(receiver: Identifier) =>
+          receiver.typeFullName shouldBe "foo.Foo.foo:void(int).Local"
         }
       }
 
       "have the explicit and capture arguments in the correct order" in {
-        initCall.argument.l match {
+        inside(initCall.argument.l) {
           case List(_, outerClass: Identifier, capturedLocal: Identifier, capturedParam: Identifier) =>
             outerClass.name shouldBe "this"
             outerClass.argumentIndex shouldBe 1
@@ -978,7 +920,6 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
             capturedParam.name shouldBe "fooParam"
             capturedParam.argumentIndex shouldBe 3
             capturedParam.refOut.l shouldBe cpg.method.name("foo").parameter.name("fooParam").l
-          case result => fail(s"Unexpected result ${result}")
         }
       }
     }
@@ -1008,34 +949,28 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       @inline def initCall = cpg.call.name("sink").ast.collectAll[Call].nameExact("<init>")
 
       "have the correct init node properties" in {
-        initCall.l match {
-          case List(call) =>
-            call.methodFullName shouldBe "foo.Foo.fooMethod.Local.<init>:void()"
-            call.signature shouldBe "void()"
-          // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
-          case result => fail(s"Unexpected result ${result}")
+        inside(initCall.l) { case List(call) =>
+          call.methodFullName shouldBe "foo.Foo.fooMethod:void(int).Local.<init>:void()"
+          call.signature shouldBe "void()"
+        // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
         }
       }
 
       "have the correct init receiver" in {
-        initCall.receiver.l match {
-          case List(receiver: Identifier) =>
-            receiver.typeFullName shouldBe "foo.Foo.fooMethod.Local"
-          case result => fail(s"Unexpected result ${result}")
+        inside(initCall.receiver.l) { case List(receiver: Identifier) =>
+          receiver.typeFullName shouldBe "foo.Foo.fooMethod:void(int).Local"
         }
       }
 
       "have the explicit and capture arguments in the correct order" in {
-        initCall.argument.l match {
-          case List(_, outerClass: Identifier, capturedLocal: Identifier) =>
-            outerClass.name shouldBe "this"
-            outerClass.argumentIndex shouldBe 1
-            outerClass.refOut.l shouldBe cpg.method.name("fooMethod").parameter.index(0).l
+        inside(initCall.argument.l) { case List(_, outerClass: Identifier, capturedLocal: Identifier) =>
+          outerClass.name shouldBe "this"
+          outerClass.argumentIndex shouldBe 1
+          outerClass.refOut.l shouldBe cpg.method.name("fooMethod").parameter.index(0).l
 
-            capturedLocal.name shouldBe "fooLocal"
-            capturedLocal.argumentIndex shouldBe 2
-            capturedLocal.refOut.l shouldBe cpg.method.name("fooMethod").local.name("fooLocal").l
-          case result => fail(s"Unexpected result ${result}")
+          capturedLocal.name shouldBe "fooLocal"
+          capturedLocal.argumentIndex shouldBe 2
+          capturedLocal.refOut.l shouldBe cpg.method.name("fooMethod").local.name("fooLocal").l
         }
       }
     }
@@ -1062,30 +997,24 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       @inline def initCall = cpg.call.name("sink").ast.collectAll[Call].nameExact("<init>")
 
       "have the correct init node properties" in {
-        initCall.l match {
-          case List(call) =>
-            call.methodFullName shouldBe "foo.Foo.fooMethod.Local.<init>:void()"
-            call.signature shouldBe "void()"
-          // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
-          case result => fail(s"Unexpected result ${result}")
+        inside(initCall.l) { case List(call) =>
+          call.methodFullName shouldBe "foo.Foo.fooMethod:void(int).Local.<init>:void()"
+          call.signature shouldBe "void()"
+        // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
         }
       }
 
       "have the correct init receiver" in {
-        initCall.receiver.l match {
-          case List(receiver: Identifier) =>
-            receiver.typeFullName shouldBe "foo.Foo.fooMethod.Local"
-          case result => fail(s"Unexpected result ${result}")
+        inside(initCall.receiver.l) { case List(receiver: Identifier) =>
+          receiver.typeFullName shouldBe "foo.Foo.fooMethod:void(int).Local"
         }
       }
 
       "have the explicit and capture arguments in the correct order" in {
-        initCall.argument.l match {
-          case List(_, outerClass: Identifier) =>
-            outerClass.name shouldBe "this"
-            outerClass.argumentIndex shouldBe 1
-            outerClass.refOut.l shouldBe cpg.method.name("fooMethod").parameter.index(0).l
-          case result => fail(s"Unexpected result ${result}")
+        inside(initCall.argument.l) { case List(_, outerClass: Identifier) =>
+          outerClass.name shouldBe "this"
+          outerClass.argumentIndex shouldBe 1
+          outerClass.refOut.l shouldBe cpg.method.name("fooMethod").parameter.index(0).l
         }
       }
     }
@@ -1115,25 +1044,21 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       @inline def initCall = cpg.call.name("sink").ast.collectAll[Call].nameExact("<init>")
 
       "have the correct init node properties" in {
-        initCall.l match {
-          case List(call) =>
-            call.methodFullName shouldBe "foo.Foo.fooMethod.Local.<init>:void(int)"
-            call.signature shouldBe "void(int)"
-          // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
-          case result => fail(s"Unexpected result ${result}")
+        inside(initCall.l) { case List(call) =>
+          call.methodFullName shouldBe "foo.Foo.fooMethod:void(int).Local.<init>:void(int)"
+          call.signature shouldBe "void(int)"
+        // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
         }
       }
 
       "have the correct init receiver" in {
-        initCall.receiver.l match {
-          case List(receiver: Identifier) =>
-            receiver.typeFullName shouldBe "foo.Foo.fooMethod.Local"
-          case result => fail(s"Unexpected result ${result}")
+        inside(initCall.receiver.l) { case List(receiver: Identifier) =>
+          receiver.typeFullName shouldBe "foo.Foo.fooMethod:void(int).Local"
         }
       }
 
       "have the explicit and capture arguments in the correct order" in {
-        initCall.argument.l match {
+        inside(initCall.argument.l) {
           case List(_, explicitArg: Literal, capturedLocal: Identifier, capturedParam: Identifier) =>
             explicitArg.code shouldBe "0"
             explicitArg.argumentIndex shouldBe 1
@@ -1145,7 +1070,6 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
             capturedParam.name shouldBe "fooParam"
             capturedParam.argumentIndex shouldBe 3
             capturedParam.refOut.l shouldBe cpg.method.name("fooMethod").parameter.name("fooParam").l
-          case result => fail(s"Unexpected result ${result}")
         }
       }
     }
@@ -1175,30 +1099,24 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       @inline def initCall = cpg.call.name("sink").ast.collectAll[Call].nameExact("<init>")
 
       "have the correct init node properties" in {
-        initCall.l match {
-          case List(call) =>
-            call.methodFullName shouldBe "foo.Foo.fooMethod.Local.<init>:void()"
-            call.signature shouldBe "void()"
-          // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
-          case result => fail(s"Unexpected result ${result}")
+        inside(initCall.l) { case List(call) =>
+          call.methodFullName shouldBe "foo.Foo.fooMethod:void(int).Local.<init>:void()"
+          call.signature shouldBe "void()"
+        // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
         }
       }
 
       "have the correct init receiver" in {
-        initCall.receiver.l match {
-          case List(receiver: Identifier) =>
-            receiver.typeFullName shouldBe "foo.Foo.fooMethod.Local"
-          case result => fail(s"Unexpected result ${result}")
+        inside(initCall.receiver.l) { case List(receiver: Identifier) =>
+          receiver.typeFullName shouldBe "foo.Foo.fooMethod:void(int).Local"
         }
       }
 
       "have the explicit and capture arguments in the correct order" in {
-        initCall.argument.l match {
-          case List(_, capturedLocal: Identifier) =>
-            capturedLocal.name shouldBe "fooLocal"
-            capturedLocal.argumentIndex shouldBe 1
-            capturedLocal.refOut.l shouldBe cpg.method.name("fooMethod").local.name("fooLocal").l
-          case result => fail(s"Unexpected result ${result}")
+        inside(initCall.argument.l) { case List(_, capturedLocal: Identifier) =>
+          capturedLocal.name shouldBe "fooLocal"
+          capturedLocal.argumentIndex shouldBe 1
+          capturedLocal.refOut.l shouldBe cpg.method.name("fooMethod").local.name("fooLocal").l
         }
       }
     }
@@ -1224,29 +1142,23 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       @inline def initCall = cpg.call.name("sink").ast.collectAll[Call].nameExact("<init>")
 
       "have the correct init node properties" in {
-        initCall.l match {
-          case List(call) =>
-            call.methodFullName shouldBe "foo.Foo.fooMethod.Local.<init>:void(int)"
-            call.signature shouldBe "void(int)"
-          // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
-          case result => fail(s"Unexpected result ${result}")
+        inside(initCall.l) { case List(call) =>
+          call.methodFullName shouldBe "foo.Foo.fooMethod:void(int).Local.<init>:void(int)"
+          call.signature shouldBe "void(int)"
+        // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
         }
       }
 
       "have the correct init receiver" in {
-        initCall.receiver.l match {
-          case List(receiver: Identifier) =>
-            receiver.typeFullName shouldBe "foo.Foo.fooMethod.Local"
-          case result => fail(s"Unexpected result ${result}")
+        inside(initCall.receiver.l) { case List(receiver: Identifier) =>
+          receiver.typeFullName shouldBe "foo.Foo.fooMethod:void(int).Local"
         }
       }
 
       "only the explicit arg" in {
-        initCall.argument.l match {
-          case List(_, explicitArg: Literal) =>
-            explicitArg.code shouldBe "0"
-            explicitArg.argumentIndex shouldBe 1
-          case result => fail(s"Unexpected result ${result}")
+        inside(initCall.argument.l) { case List(_, explicitArg: Literal) =>
+          explicitArg.code shouldBe "0"
+          explicitArg.argumentIndex shouldBe 1
         }
       }
     }
@@ -1273,59 +1185,52 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
           |""".stripMargin)
 
       "have the correct nested structure for the access" in {
-        cpg.call.name("sink").argument.l match {
-          case List(thisArg: Identifier, fooAccess: Call) =>
-            thisArg.name shouldBe "this"
+        inside(cpg.call.name("sink").argument.l) { case List(thisArg: Identifier, fooAccess: Call) =>
+          thisArg.name shouldBe "this"
 
-            fooAccess.name shouldBe Operators.fieldAccess
-            fooAccess.typeFullName shouldBe "int"
+          fooAccess.name shouldBe Operators.fieldAccess
+          fooAccess.typeFullName shouldBe "int"
 
-            fooAccess.argument.l match {
-              case List(outerClassAccess: Call, fooFieldIdentifier: FieldIdentifier) =>
-                outerClassAccess.name shouldBe Operators.fieldAccess
-                outerClassAccess.typeFullName shouldBe "foo.Foo.foo.Bar"
+          inside(fooAccess.argument.l) { case List(outerClassAccess: Call, fooFieldIdentifier: FieldIdentifier) =>
+            outerClassAccess.name shouldBe Operators.fieldAccess
+            outerClassAccess.typeFullName shouldBe "foo.Foo.foo:void(int).Bar"
 
-                outerClassAccess.argument.l match {
-                  case List(thisIdentifier: Identifier, outerFieldIdentifier: FieldIdentifier) =>
-                    thisIdentifier.name shouldBe "this"
-                    thisIdentifier.typeFullName shouldBe "foo.Foo.foo.Bar.bar.Baz"
-                    thisIdentifier.refOut.l shouldBe cpg.method.name("baz").parameter.index(0).l
+            inside(outerClassAccess.argument.l) {
+              case List(thisIdentifier: Identifier, outerFieldIdentifier: FieldIdentifier) =>
+                thisIdentifier.name shouldBe "this"
+                thisIdentifier.typeFullName shouldBe "foo.Foo.foo:void(int).Bar.bar:void().Baz"
+                thisIdentifier.refOut.l shouldBe cpg.method.name("baz").parameter.index(0).l
 
-                    outerFieldIdentifier.canonicalName shouldBe "outerClass"
-                  case result => fail(s"Unexpected result ${result}")
-                }
-
-                fooFieldIdentifier.canonicalName shouldBe "fooParam"
-              case result => fail(s"Unexpected result ${result}")
+                outerFieldIdentifier.canonicalName shouldBe "outerClass"
             }
-          case result => fail(s"Unexpected result ${result}")
+
+            fooFieldIdentifier.canonicalName shouldBe "fooParam"
+          }
         }
       }
 
       "have a constructor parameter for the captured param in the outer local class" in {
-        cpg.typeDecl.name("Bar").method.nameExact("<init>").parameter.l match {
+        inside(cpg.typeDecl.name("Bar").method.nameExact("<init>").parameter.l) {
           case List(thisParam, outerClassParam, capturedParamParam) =>
             thisParam.name shouldBe "this"
-            thisParam.typeFullName shouldBe "foo.Foo.foo.Bar"
+            thisParam.typeFullName shouldBe "foo.Foo.foo:void(int).Bar"
 
             outerClassParam.name shouldBe "outerClass"
             outerClassParam.typeFullName shouldBe "foo.Foo"
 
             capturedParamParam.name shouldBe "fooParam"
             capturedParamParam.typeFullName shouldBe "int"
-          case result => fail(s"Unexpected result ${result}")
         }
       }
 
       "not have a constructor paramater for the captured param in the inner local class" in {
-        cpg.typeDecl.name("Baz").method.nameExact("<init>").parameter.l match {
+        inside(cpg.typeDecl.name("Baz").method.nameExact("<init>").parameter.l) {
           case List(thisParam, outerClassParam) =>
             thisParam.name shouldBe "this"
-            thisParam.typeFullName shouldBe "foo.Foo.foo.Bar.bar.Baz"
+            thisParam.typeFullName shouldBe "foo.Foo.foo:void(int).Bar.bar:void().Baz"
 
             outerClassParam.name shouldBe "outerClass"
-            outerClassParam.typeFullName shouldBe "foo.Foo.foo.Bar"
-          case result => fail(s"Unexpected result ${result}")
+            outerClassParam.typeFullName shouldBe "foo.Foo.foo:void(int).Bar"
         }
       }
     }
@@ -1351,44 +1256,38 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
           |""".stripMargin)
       // The member access happens through a double outer class access
       "have the correct double outer class access structure" in {
-        cpg.call.name("sink").argument.l match {
-          case List(thisArg: Identifier, fooMemberAccess: Call) =>
-            thisArg.name shouldBe "this"
+        inside(cpg.call.name("sink").argument.l) { case List(thisArg: Identifier, fooMemberAccess: Call) =>
+          thisArg.name shouldBe "this"
 
-            fooMemberAccess.name shouldBe Operators.fieldAccess
-            fooMemberAccess.code shouldBe "this.outerClass.outerClass.fooMember"
-            fooMemberAccess.typeFullName shouldBe "int"
+          fooMemberAccess.name shouldBe Operators.fieldAccess
+          fooMemberAccess.code shouldBe "this.outerClass.outerClass.fooMember"
+          fooMemberAccess.typeFullName shouldBe "int"
 
-            fooMemberAccess.argument.l match {
-              case List(barMemberAccess: Call, fooMemberIdentifier: FieldIdentifier) =>
-                fooMemberIdentifier.canonicalName shouldBe "fooMember"
+          inside(fooMemberAccess.argument.l) { case List(barMemberAccess: Call, fooMemberIdentifier: FieldIdentifier) =>
+            fooMemberIdentifier.canonicalName shouldBe "fooMember"
 
-                barMemberAccess.name shouldBe Operators.fieldAccess
-                barMemberAccess.code shouldBe "this.outerClass.outerClass"
-                barMemberAccess.typeFullName shouldBe "foo.Foo"
+            barMemberAccess.name shouldBe Operators.fieldAccess
+            barMemberAccess.code shouldBe "this.outerClass.outerClass"
+            barMemberAccess.typeFullName shouldBe "foo.Foo"
 
-                barMemberAccess.argument.l match {
-                  case List(bazMemberAccess: Call, barClassIdentifier: FieldIdentifier) =>
-                    barClassIdentifier.canonicalName shouldBe "outerClass"
+            inside(barMemberAccess.argument.l) {
+              case List(bazMemberAccess: Call, barClassIdentifier: FieldIdentifier) =>
+                barClassIdentifier.canonicalName shouldBe "outerClass"
 
-                    bazMemberAccess.name shouldBe Operators.fieldAccess
-                    bazMemberAccess.code shouldBe "this.outerClass"
-                    bazMemberAccess.typeFullName shouldBe "foo.Foo.foo.Bar"
+                bazMemberAccess.name shouldBe Operators.fieldAccess
+                bazMemberAccess.code shouldBe "this.outerClass"
+                bazMemberAccess.typeFullName shouldBe "foo.Foo.foo:void().Bar"
 
-                    bazMemberAccess.argument.l match {
-                      case List(thisIdentifier: Identifier, bazClassIdentifier: FieldIdentifier) =>
-                        thisIdentifier.name shouldBe "this"
-                        thisIdentifier.refOut.l shouldBe cpg.method.name("baz").parameter.index(0).l
-                        thisIdentifier.typeFullName shouldBe "foo.Foo.foo.Bar.bar.Baz"
+                inside(bazMemberAccess.argument.l) {
+                  case List(thisIdentifier: Identifier, bazClassIdentifier: FieldIdentifier) =>
+                    thisIdentifier.name shouldBe "this"
+                    thisIdentifier.refOut.l shouldBe cpg.method.name("baz").parameter.index(0).l
+                    thisIdentifier.typeFullName shouldBe "foo.Foo.foo:void().Bar.bar:void().Baz"
 
-                        bazClassIdentifier.canonicalName shouldBe "outerClass"
-                      case result => fail(s"Unexpected result ${result}")
-                    }
-                  case result => fail(s"Unexpected result ${result}")
+                    bazClassIdentifier.canonicalName shouldBe "outerClass"
                 }
-              case result => fail(s"Unexpected result ${result}")
             }
-          case result => fail(s"Unexpected result ${result}")
+          }
         }
       }
     }
@@ -1414,38 +1313,32 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         """.stripMargin)
 
       "have the correct receiver structure" in {
-        cpg.call.name("outerCall").l match {
-          case List(outerCallCall: Call) =>
-            outerCallCall.methodFullName shouldBe "foo.Foo.outerCall:void()"
+        inside(cpg.call.name("outerCall").l) { case List(outerCallCall: Call) =>
+          outerCallCall.methodFullName shouldBe "foo.Foo.outerCall:void()"
 
-            outerCallCall.receiver.l match {
-              case List(barMemberAccess: Call) =>
-                barMemberAccess.name shouldBe Operators.fieldAccess
-                barMemberAccess.code shouldBe "this.outerClass.outerClass"
-                barMemberAccess.typeFullName shouldBe "foo.Foo"
+          inside(outerCallCall.receiver.l) { case List(barMemberAccess: Call) =>
+            barMemberAccess.name shouldBe Operators.fieldAccess
+            barMemberAccess.code shouldBe "this.outerClass.outerClass"
+            barMemberAccess.typeFullName shouldBe "foo.Foo"
 
-                barMemberAccess.argument.l match {
-                  case List(bazMemberAccess: Call, barClassIdentifier: FieldIdentifier) =>
-                    barClassIdentifier.canonicalName shouldBe "outerClass"
+            inside(barMemberAccess.argument.l) {
+              case List(bazMemberAccess: Call, barClassIdentifier: FieldIdentifier) =>
+                barClassIdentifier.canonicalName shouldBe "outerClass"
 
-                    bazMemberAccess.name shouldBe Operators.fieldAccess
-                    bazMemberAccess.code shouldBe "this.outerClass"
-                    bazMemberAccess.typeFullName shouldBe "foo.Foo.foo.Bar"
+                bazMemberAccess.name shouldBe Operators.fieldAccess
+                bazMemberAccess.code shouldBe "this.outerClass"
+                bazMemberAccess.typeFullName shouldBe "foo.Foo.foo:void().Bar"
 
-                    bazMemberAccess.argument.l match {
-                      case List(thisIdentifier: Identifier, bazClassIdentifier: FieldIdentifier) =>
-                        thisIdentifier.name shouldBe "this"
-                        thisIdentifier.refOut.l shouldBe cpg.method.name("baz").parameter.index(0).l
-                        thisIdentifier.typeFullName shouldBe "foo.Foo.foo.Bar.bar.Baz"
+                inside(bazMemberAccess.argument.l) {
+                  case List(thisIdentifier: Identifier, bazClassIdentifier: FieldIdentifier) =>
+                    thisIdentifier.name shouldBe "this"
+                    thisIdentifier.refOut.l shouldBe cpg.method.name("baz").parameter.index(0).l
+                    thisIdentifier.typeFullName shouldBe "foo.Foo.foo:void().Bar.bar:void().Baz"
 
-                        bazClassIdentifier.canonicalName shouldBe "outerClass"
-                      case result => fail(s"Unexpected result ${result}")
-                    }
-                  case result => fail(s"Unexpected result ${result}")
+                    bazClassIdentifier.canonicalName shouldBe "outerClass"
                 }
-              case result => fail(s"Unexpected result ${result}")
             }
-          case result => fail(s"Unexpected result ${result}")
+          }
         }
       }
     }
@@ -1490,10 +1383,10 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         """.stripMargin)
 
     "have the correct parameters for the outermost local class constructor" in {
-      cpg.typeDecl.name("Foo").method.nameExact("<init>").parameter.l match {
+      inside(cpg.typeDecl.name("Foo").method.nameExact("<init>").parameter.l) {
         case List(thisParam, outerClassParam, capturedLocalParam, capturedParamParam) =>
           thisParam.name shouldBe "this"
-          thisParam.typeFullName shouldBe "Test.test.Foo"
+          thisParam.typeFullName shouldBe "Test.test:void(int).Foo"
 
           outerClassParam.name shouldBe "outerClass"
           outerClassParam.typeFullName shouldBe "Test"
@@ -1503,45 +1396,42 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
 
           capturedParamParam.name shouldBe "testParam"
           capturedParamParam.typeFullName shouldBe "int"
-        case result => fail(s"Unexpected result ${result}")
       }
     }
 
     "have the correct parameters for the outermost static local class constructor" in {
-      cpg.typeDecl.name("Bar").method.nameExact("<init>").parameter.l match {
+      inside(cpg.typeDecl.name("Bar").method.nameExact("<init>").parameter.l) {
         case List(thisParam, capturedLocalParam, capturedParamParam) =>
           thisParam.name shouldBe "this"
-          thisParam.typeFullName shouldBe "Test.test.Foo.foo.Bar"
+          thisParam.typeFullName shouldBe "Test.test:void(int).Foo.foo:void(int).Bar"
 
           capturedLocalParam.name shouldBe "fooLocal"
           capturedLocalParam.typeFullName shouldBe "int"
 
           capturedParamParam.name shouldBe "fooParam"
           capturedParamParam.typeFullName shouldBe "int"
-        case result => fail(s"Unexpected result ${result}")
       }
     }
 
     "have the correct parameters for the innermost local class constructor" in {
-      cpg.typeDecl.name("Baz").method.nameExact("<init>").parameter.l match {
+      inside(cpg.typeDecl.name("Baz").method.nameExact("<init>").parameter.l) {
         case List(thisParam, outerClassParam, capturedLocalParam, capturedParamParam) =>
           thisParam.name shouldBe "this"
-          thisParam.typeFullName shouldBe "Test.test.Foo.foo.Bar.bar.Baz"
+          thisParam.typeFullName shouldBe "Test.test:void(int).Foo.foo:void(int).Bar.bar:void(int).Baz"
 
           outerClassParam.name shouldBe "outerClass"
-          outerClassParam.typeFullName shouldBe "Test.test.Foo.foo.Bar"
+          outerClassParam.typeFullName shouldBe "Test.test:void(int).Foo.foo:void(int).Bar"
 
           capturedLocalParam.name shouldBe "barLocal"
           capturedLocalParam.typeFullName shouldBe "int"
 
           capturedParamParam.name shouldBe "barParam"
           capturedParamParam.typeFullName shouldBe "int"
-        case result => fail(s"Unexpected result ${result}")
       }
     }
 
     "have the correct members for the outermost local class" in {
-      cpg.typeDecl.name("Foo").member.l match {
+      inside(cpg.typeDecl.name("Foo").member.l) {
         case List(outerClassMember, capturedLocalMember, capturedParamMember, fooMember) =>
           outerClassMember.name shouldBe "outerClass"
           outerClassMember.typeFullName shouldBe "Test"
@@ -1554,37 +1444,33 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
 
           fooMember.name shouldBe "fooMember"
           fooMember.typeFullName shouldBe "int"
-        case result => fail(s"Unexpected result ${result.map(_.code)}")
       }
     }
 
     "have the correct members for the outermost static local class" in {
-      cpg.typeDecl.name("Bar").member.l match {
-        case List(capturedLocalMember, capturedParamMember, barMember) =>
-          capturedLocalMember.name shouldBe "fooLocal"
-          capturedLocalMember.typeFullName shouldBe "int"
+      inside(cpg.typeDecl.name("Bar").member.l) { case List(capturedLocalMember, capturedParamMember, barMember) =>
+        capturedLocalMember.name shouldBe "fooLocal"
+        capturedLocalMember.typeFullName shouldBe "int"
 
-          capturedParamMember.name shouldBe "fooParam"
-          capturedParamMember.typeFullName shouldBe "int"
+        capturedParamMember.name shouldBe "fooParam"
+        capturedParamMember.typeFullName shouldBe "int"
 
-          barMember.name shouldBe "barMember"
-          barMember.typeFullName shouldBe "int"
-        case result => fail(s"Unexpected result ${result.map(_.name)}")
+        barMember.name shouldBe "barMember"
+        barMember.typeFullName shouldBe "int"
       }
     }
 
     "have the correct members for the innermost local class" in {
-      cpg.typeDecl.name("Baz").member.l match {
+      inside(cpg.typeDecl.name("Baz").member.l) {
         case List(outerClassMember, capturedLocalMember, capturedParamMember) =>
           outerClassMember.name shouldBe "outerClass"
-          outerClassMember.typeFullName shouldBe "Test.test.Foo.foo.Bar"
+          outerClassMember.typeFullName shouldBe "Test.test:void(int).Foo.foo:void(int).Bar"
 
           capturedLocalMember.name shouldBe "barLocal"
           capturedLocalMember.typeFullName shouldBe "int"
 
           capturedParamMember.name shouldBe "barParam"
           capturedParamMember.typeFullName shouldBe "int"
-        case result => fail(s"Unexpected result ${result}")
       }
     }
   }

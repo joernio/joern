@@ -1,6 +1,7 @@
 package io.joern.x2cpg
 
 import io.joern.x2cpg.AstNodeBuilder.methodReturnNodeWithExplicitPositionInfo
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, PropertyDefaults}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.apache.commons.lang3.StringUtils
@@ -20,7 +21,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   private lazy val maxCodeLength: Int =
     sys.env.get("JOERN_MAX_CODE_LENGTH").flatMap(_.toIntOption).getOrElse(DefaultMaxCodeLength)
 
-  private def setOffset[T <: AstNodeNew](node: Node, astNode: T): T = {
+  protected def setOffset[T <: AstNodeNew](node: Node, astNode: T): T = {
     offset(node).foreach { case (offset, offsetEnd) =>
       astNode.offset(offset).offsetEnd(offsetEnd)
     }
@@ -55,7 +56,20 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     }
   }
 
-  protected def offset(node: Node): Option[(Int, Int)] = None
+  protected def offsetSource: Option[OffsetUtils.OffsetSourceType]
+
+  private lazy val offsetNormalizer: Int => Int =
+    offsetSource.fold(identity[Int])(OffsetUtils.buildOffsetConverter)
+
+  protected def unadjustedOffset(node: Node): Option[(Int, Int)]
+
+  protected final def offset(node: Node): Option[(Int, Int)] = {
+    Option
+      .when(offsetSource.isDefined) {
+        unadjustedOffset(node).map { case (start, end) => (offsetNormalizer(start), offsetNormalizer(end)) }
+      }
+      .flatten
+  }
 
   protected def unknownNode(node: Node, code: String): NewUnknown = {
     val node_ = NewUnknown()
@@ -122,11 +136,22 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     setOffset(node, node_)
   }
 
-  protected def newImportNode(code: String, importedEntity: String, importedAs: String, include: Node): NewImport = {
+  protected def newImportNode(
+    code: String,
+    importedEntity: String,
+    importedAs: String,
+    include: Node,
+    isWildcard: Boolean = false,
+    isExplicit: Boolean = false,
+    isModuleImport: Boolean = false
+  ): NewImport = {
     val node_ = NewImport()
       .code(code)
       .importedEntity(importedEntity)
       .importedAs(importedAs)
+      .isWildcard(isWildcard)
+      .isExplicit(isExplicit)
+      .isModuleImport(isModuleImport)
       .lineNumber(line(include))
       .columnNumber(column(include))
     setOffset(include, node_)
@@ -224,7 +249,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .evaluationStrategy(evaluationStrategy)
       .lineNumber(line(node))
       .columnNumber(column(node))
-      .typeFullName(typeFullName.getOrElse("ANY"))
+      .typeFullName(typeFullName.getOrElse(Defines.Any))
       .dynamicTypeHintFullName(dynamicTypeHintFullName)
     setOffset(node, node_)
   }
@@ -239,7 +264,8 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     methodFullName: String,
     dispatchType: String,
     signature: Option[String],
-    typeFullName: Option[String]
+    typeFullName: Option[String],
+    staticReceiver: Option[String] = None
   ): NewCall = {
     val node_ =
       NewCall()
@@ -247,8 +273,10 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
         .name(name)
         .methodFullName(methodFullName)
         .dispatchType(dispatchType)
+        .staticReceiver(staticReceiver)
         .lineNumber(line(node))
         .columnNumber(column(node))
+        .typeFullName(typeFullName.getOrElse(Defines.Any))
     signature.foreach { s => node_.signature(s) }
     typeFullName.foreach { t => node_.typeFullName(t) }
     setOffset(node, node_)

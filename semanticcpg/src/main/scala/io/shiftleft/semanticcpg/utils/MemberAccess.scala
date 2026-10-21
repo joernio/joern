@@ -32,7 +32,9 @@ object MemberAccess {
     (name == Operators.indirectFieldAccess) ||
     (name == Operators.indexAccess) ||
     (name == Operators.indirectIndexAccess) ||
-    (name == Operators.getElementPtr)
+    (name == Operators.getElementPtr) ||
+    // sizeOf is added here since it is effectively used as `array.length`
+    (name == Operators.sizeOf)
   }
 
 }

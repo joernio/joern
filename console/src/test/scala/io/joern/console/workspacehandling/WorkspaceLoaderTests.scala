@@ -60,12 +60,12 @@ class WorkspaceLoaderTests extends AnyWordSpec with Matchers {
 
   "ProjectFile" should {
 
-    import org.json4s.DefaultFormats
-    import org.json4s.native.Serialization.{read => jsonRead, write => jsonWrite}
-    implicit val formats: DefaultFormats.type = DefaultFormats
-
     "be serializable to json" in {
-      jsonWrite(ProjectFile("foo", "aname")) shouldBe """{"inputPath":"foo","name":"aname"}"""
+      FileUtil.usingTemporaryDirectory(tmpDirPrefix) { tmpDir =>
+        val manager     = new WorkspaceManager(tmpDir.toString)
+        val projectPath = manager.writeProjectFile(ProjectFile("foo", "aname"), tmpDir)
+        Files.readString(projectPath) shouldBe """{"inputPath":"foo","name":"aname"}"""
+      }
     }
 
   }

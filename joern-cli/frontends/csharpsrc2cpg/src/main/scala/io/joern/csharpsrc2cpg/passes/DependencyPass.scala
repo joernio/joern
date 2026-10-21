@@ -39,7 +39,7 @@ class DependencyPass(cpg: Cpg, buildFiles: List[String], registerPackageId: Stri
                   .orElse(packageReference.attribute("Update"))
                   .map(_.toString()) match {
                   case Some(name) => name
-                  case None =>
+                  case None       =>
                     throw new RuntimeException(
                       s"Unable to parse `Include` or `Update` attribute for the package, skipping '$packageReference'"
                     )

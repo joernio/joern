@@ -3,7 +3,7 @@ package io.joern.ghidra2cpg.fixtures
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.joern.x2cpg.testfixtures.LanguageFrontend
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.validation.PostFrontendValidator
+import io.shiftleft.semanticcpg.validation.{PostFrontendValidator, ValidationLevel}
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -24,7 +24,7 @@ class BinToCpgFixture(val frontend: LanguageFrontend) extends AnyWordSpec with M
     val bin = new File(binDirectory, binName)
     cpg = frontend.execute(bin)
     passes(cpg)
-    new PostFrontendValidator(cpg, false).run()
+    new PostFrontendValidator(cpg, ValidationLevel.V0).run()
   }
 
   override def afterAll(): Unit = {

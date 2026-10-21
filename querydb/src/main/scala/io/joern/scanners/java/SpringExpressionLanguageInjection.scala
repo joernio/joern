@@ -23,7 +23,6 @@ object SpringExpressionLanguageInjection extends QueryBundle {
         |""".stripMargin,
       score = 8,
       withStrRep({ cpg =>
-
         def source =
           cpg.parameter.where(_.annotation.name("RequestParam")).where(_.name("expression"))
 

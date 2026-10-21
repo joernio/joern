@@ -6,7 +6,9 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Root level="WARN">
+        <!-- ghidra's internal logging (ghidra.util.Msg) is forwarded to log4j at debug level;
+             enable locally with SL_LOGGING_LEVEL=DEBUG -->
+        <Root level="${env:SL_LOGGING_LEVEL:-WARN}">
             <AppenderRef ref="STDOUT"/>
         </Root>
     </Loggers>

@@ -3,9 +3,10 @@ package io.joern.jimple2cpg.astcreation
 import io.joern.jimple2cpg.astcreation.declarations.AstForDeclarationsCreator
 import io.joern.jimple2cpg.astcreation.expressions.AstForExpressionsCreator
 import io.joern.jimple2cpg.astcreation.statements.AstForStatementsCreator
+import io.joern.jimple2cpg.passes.AstCreationPass
 import io.joern.x2cpg.Ast.storeInDiffGraph
-import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.*
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.objectweb.asm.Type
@@ -23,7 +24,7 @@ import scala.util.Try
 class AstCreator(
   protected val filename: String,
   protected val cls: SootClass,
-  global: Global,
+  accumulator: AstCreationPass.Accumulator,
   fileContent: Option[String] = None
 )(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase[Host, AstCreator](filename)
@@ -37,8 +38,12 @@ class AstCreator(
     * key in the map.
     */
   protected def registerType(typeName: String): String = {
-    global.usedTypes.put(typeName, true)
+    accumulator.registerType(typeName)
     typeName
+  }
+
+  protected def sootTypeToString(typ: soot.Type): String = {
+    typ.toString.replace("\'", "")
   }
 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
@@ -60,7 +65,7 @@ class AstCreator(
   /** Translate compilation unit into AST
     */
   private def astForCompilationUnit(cls: SootClass): Ast = {
-    val ast = astForPackageDeclaration(cls.getPackageName)
+    val ast                    = astForPackageDeclaration(cls.getPackageName)
     val namespaceBlockFullName =
       ast.root.collect { case x: NewNamespaceBlock => x.fullName }.getOrElse("none")
     ast.withChild(astForTypeDecl(cls.getType, namespaceBlockFullName))
@@ -69,8 +74,8 @@ class AstCreator(
   /** Translate package declaration into AST consisting of a corresponding namespace block.
     */
   private def astForPackageDeclaration(packageDecl: String): Ast = {
-    val absolutePath = new java.io.File(filename).toPath.toAbsolutePath.normalize().toString
-    val name         = packageDecl.split("\\.").lastOption.getOrElse("")
+    val absolutePath   = new java.io.File(filename).toPath.toAbsolutePath.normalize().toString
+    val name           = packageDecl.split("\\.").lastOption.getOrElse("")
     val namespaceBlock = NewNamespaceBlock()
       .name(name)
       .fullName(packageDecl)
@@ -105,8 +110,8 @@ class AstCreator(
       case x: ParameterRef       => Seq(astForParameterRef(x, parentUnit))
       case x: IdentityRef        => Seq(astForIdentityRef(x, parentUnit))
       case x: ArrayRef           => Seq(astForArrayRef(x, parentUnit))
-      case x =>
-        logger.warn(s"Unhandled soot.Value type ${x.getClass}")
+      case other                 =>
+        logger.warn(s"Unhandled soot.Value type ${other.getClass}")
         Seq()
     }
   }
@@ -119,7 +124,7 @@ class AstCreator(
       .code(arrRef.toString())
       .lineNumber(line(parentUnit))
       .columnNumber(column(parentUnit))
-      .typeFullName(registerType(arrRef.getType.toQuotedString))
+      .typeFullName(registerType(sootTypeToString(arrRef.getType)))
 
     val astChildren = astsForValue(arrRef.getBase, parentUnit) ++ astsForValue(arrRef.getIndex, parentUnit)
     Ast(indexAccess)
@@ -129,7 +134,7 @@ class AstCreator(
 
   protected def astForLocal(local: soot.Local, parentUnit: SUnit): Ast = {
     val name         = local.getName
-    val typeFullName = registerType(local.getType.toQuotedString)
+    val typeFullName = registerType(sootTypeToString(local.getType))
     Ast(
       NewIdentifier()
         .name(name)
@@ -145,7 +150,7 @@ class AstCreator(
       NewIdentifier()
         .code(x.toString())
         .name(x.toString())
-        .typeFullName(registerType(x.getType.toQuotedString))
+        .typeFullName(registerType(sootTypeToString(x.getType)))
         .lineNumber(line(parentUnit))
         .columnNumber(column(parentUnit))
     )
@@ -156,8 +161,8 @@ class AstCreator(
       NewIdentifier()
         .name("this")
         .code("this")
-        .typeFullName(registerType(method.getType.toQuotedString))
-        .dynamicTypeHintFullName(Seq(registerType(method.getType.toQuotedString)))
+        .typeFullName(registerType(sootTypeToString(method.getType)))
+        .dynamicTypeHintFullName(Seq(registerType(sootTypeToString(method.getType))))
     )
   }
 
@@ -165,7 +170,7 @@ class AstCreator(
 
   protected def createThisNode(method: SootMethodRef, builder: NewNode): Ast = {
     if (!method.isStatic || method.isConstructor) {
-      val parentType = registerType(Try(method.getDeclaringClass.getType.toQuotedString).getOrElse("ANY"))
+      val parentType = registerType(Try(sootTypeToString(method.getDeclaringClass.getType)).getOrElse("ANY"))
       Ast(builder match {
         case x: NewIdentifier =>
           x.name("this")
@@ -205,7 +210,7 @@ class AstCreator(
     val fieldAccessBlock = NewCall()
       .name(Operators.fieldAccess)
       .code(s"$leftOpString.${fieldRef.getFieldRef.name()}")
-      .typeFullName(registerType(fieldRef.getType.toQuotedString))
+      .typeFullName(registerType(sootTypeToString(fieldRef.getType)))
       .methodFullName(Operators.fieldAccess)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .lineNumber(line(parentUnit))
@@ -219,7 +224,7 @@ class AstCreator(
         .columnNumber(column(parentUnit))
         .name(leftOpString)
         .code(leftOpString)
-        .typeFullName(registerType(leftOpType.toQuotedString)),
+        .typeFullName(registerType(sootTypeToString(leftOpType))),
       NewFieldIdentifier()
         .order(2)
         .argumentIndex(2)
@@ -241,7 +246,7 @@ class AstCreator(
         .columnNumber(column(parentUnit))
         .name(caughtException.toString())
         .code(caughtException.toString())
-        .typeFullName(registerType(caughtException.getType.toQuotedString))
+        .typeFullName(registerType(sootTypeToString(caughtException.getType)))
     )
   }
 
@@ -251,7 +256,7 @@ class AstCreator(
         Ast(
           NewLiteral()
             .code(s"${x.value.parseAsJavaType}.class")
-            .typeFullName(registerType(x.getType.toQuotedString))
+            .typeFullName(registerType(sootTypeToString(x.getType)))
         )
       case _: NullConstant =>
         Ast(
@@ -263,7 +268,7 @@ class AstCreator(
         Ast(
           NewLiteral()
             .code(constant.toString)
-            .typeFullName(registerType(constant.getType.toQuotedString))
+            .typeFullName(registerType(sootTypeToString(constant.getType)))
         )
     }
   }
@@ -285,6 +290,10 @@ class AstCreator(
   override def lineEnd(node: Host): Option[Int] = None
 
   override def code(node: Host): String = node.toString
+
+  override def offsetSource: Option[OffsetUtils.OffsetSourceType] = None
+
+  override def unadjustedOffset(node: Host): Option[(Int, Int)] = None
 
   /** Tracks AST scope.
     */

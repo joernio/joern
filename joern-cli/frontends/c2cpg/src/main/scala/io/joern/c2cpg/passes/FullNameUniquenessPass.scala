@@ -1,12 +1,8 @@
 package io.joern.c2cpg.passes
 
 import io.joern.c2cpg.astcreation.Defines
+import io.shiftleft.codepropertygraph.generated.nodes.{Method, NamespaceBlock, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.{Cpg, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.nodes.Binding
-import io.shiftleft.codepropertygraph.generated.nodes.Call
-import io.shiftleft.codepropertygraph.generated.nodes.Method
-import io.shiftleft.codepropertygraph.generated.nodes.NamespaceBlock
-import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -40,14 +36,13 @@ class FullNameUniquenessPass(cpg: Cpg) extends CpgPass(cpg) {
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     handleMethods(dstGraph)
     handleTypeDecls(dstGraph)
-    handleNamespaceBlocks(dstGraph)
   }
 
   private def handleMethods(dstGraph: DiffGraphBuilder): Unit = {
     val methodFullNameMap = generateStableFullNameMapping(cpg.method.nameNot(NamespaceTraversal.globalNamespaceName))
     methodFullNameMap.foreach { case (fullName, methods) =>
       logDuplicates(methods, fullName)
-      val sortedMethods = sortNodesByLocation(methods)
+      val sortedMethods      = sortNodesByLocation(methods)
       lazy val callsAffected =
         cpg.call.methodFullNameExact(fullName).filterNot(_.file.exists(_.name == sortedMethods.head.filename)).l
       lazy val bindingsAffected = cpg.binding.methodFullNameExact(fullName).l
@@ -107,14 +102,6 @@ class FullNameUniquenessPass(cpg: Cpg) extends CpgPass(cpg) {
   private def handleTypeDecls(dstGraph: DiffGraphBuilder): Unit = {
     handleDuplicateFullNames(
       cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName),
-      PropertyNames.FullName,
-      dstGraph
-    )
-  }
-
-  private def handleNamespaceBlocks(dstGraph: DiffGraphBuilder): Unit = {
-    handleDuplicateFullNames(
-      cpg.namespaceBlock.nameNot(NamespaceTraversal.globalNamespaceName),
       PropertyNames.FullName,
       dstGraph
     )

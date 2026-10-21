@@ -8,6 +8,7 @@ import io.shiftleft.semanticcpg.language.*
 object CopyLoops extends QueryBundle {
 
   @q
+  @scala.annotation.nowarn("cat=deprecation")
   def isCopyLoop(): Query =
     Query.make(
       name = "copy-loop",

@@ -1,5 +1,6 @@
 package io.joern.javasrc2cpg.io
 
+import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
@@ -11,7 +12,6 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import java.nio.file.{Files, Path}
 
-import scala.collection.parallel.CollectionConverters.RangeIsParallelizable
 import scala.util.Failure
 import scala.util.Success
 
@@ -19,22 +19,21 @@ class JavaSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
 
   private var port: Int = -1
 
-  private def newProjectUnderTest(index: Option[Int] = None): Path = {
-    val dir  = Files.createTempDirectory("javasrc2cpgTestsHttpTest")
-    val file = dir / "Main.java"
-    file.createWithParentsIfNotExists(createParents = true)
-    val indexStr = index.map(_.toString).getOrElse("")
-    val content = s"""
-                     |class HelloWorld {
-                     |  public static void main(String[] args) {
-                     |    System.out.println($indexStr);
-                     |  }
-                     |}
-                     |""".stripMargin
-    Files.writeString(file, content)
-    FileUtil.deleteOnExit(file)
-    FileUtil.deleteOnExit(dir)
-    dir
+  private def newProjectUnderTest[T](index: Option[Int] = None)(f: Path => T): T = {
+    FileUtil.usingTemporaryDirectory("javasrc2cpgTestsHttpTest") { dir =>
+      val file = dir / "Main.java"
+      file.createWithParentsIfNotExists(createParents = true)
+      val indexStr = index.map(_.toString).getOrElse("")
+      val content  = s"""
+                       |class HelloWorld {
+                       |  public static void main(String[] args) {
+                       |    System.out.println($indexStr);
+                       |  }
+                       |}
+                       |""".stripMargin
+      Files.writeString(file, content)
+      f(dir)
+    }
   }
 
   override def beforeAll(): Unit = {
@@ -47,39 +46,41 @@ class JavaSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
 
   "Using javasrc2cpg in server mode" should {
     "build CPGs correctly (single test)" in {
-      val cpgOutFile = FileUtil.newTemporaryFile("javasrc2cpg.bin")
-      FileUtil.deleteOnExit(cpgOutFile)
-      val projectUnderTest = newProjectUnderTest()
-      val input            = projectUnderTest.toAbsolutePath.toString
-      val output           = cpgOutFile.toString
-      val client           = FrontendHTTPClient(port)
-      val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))
-      client.sendRequest(req) match {
-        case Failure(exception) => fail(exception.getMessage)
-        case Success(out) =>
-          out shouldBe output
-          val cpg = CpgLoader.load(output)
-          cpg.method.name.l should contain("main")
-          cpg.call.code.l should contain("System.out.println()")
+      FileUtil.usingTemporaryFile("javasrc2cpg", ".bin") { cpgOutFile =>
+        newProjectUnderTest() { projectUnderTest =>
+          val input  = projectUnderTest.toAbsolutePath.toString
+          val output = cpgOutFile.toString
+          val client = FrontendHTTPClient(port)
+          val req    = client.buildRequest("input" -> Some(input), "output" -> Some(output))
+          client.sendRequest(req) match {
+            case Failure(exception) => fail(exception.getMessage)
+            case Success(out)       =>
+              out shouldBe output
+              val cpg = CpgLoader.load(output)
+              cpg.method.name.l should contain("main")
+              cpg.call.code.l should contain("System.out.println()")
+          }
+        }
       }
     }
 
     "build CPGs correctly (multi-threaded test)" in {
-      (0 until 10).par.foreach { index =>
-        val cpgOutFile = FileUtil.newTemporaryFile("javasrc2cpg.bin")
-        FileUtil.deleteOnExit(cpgOutFile)
-        val projectUnderTest = newProjectUnderTest(Some(index))
-        val input            = projectUnderTest.toAbsolutePath.toString
-        val output           = cpgOutFile.toString
-        val client           = FrontendHTTPClient(port)
-        val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))
-        client.sendRequest(req) match {
-          case Failure(exception) => fail(exception.getMessage)
-          case Success(out) =>
-            out shouldBe output
-            val cpg = CpgLoader.load(output)
-            cpg.method.name.l should contain("main")
-            cpg.call.code.l should contain(s"System.out.println($index)")
+      ConcurrentTaskUtil.parForeach(0 until 10) { index =>
+        FileUtil.usingTemporaryFile("javasrc2cpg", ".bin") { cpgOutFile =>
+          newProjectUnderTest(Some(index)) { projectUnderTest =>
+            val input  = projectUnderTest.toAbsolutePath.toString
+            val output = cpgOutFile.toString
+            val client = FrontendHTTPClient(port)
+            val req    = client.buildRequest("input" -> Some(input), "output" -> Some(output))
+            client.sendRequest(req) match {
+              case Failure(exception) => fail(exception.getMessage)
+              case Success(out)       =>
+                out shouldBe output
+                val cpg = CpgLoader.load(output)
+                cpg.method.name.l should contain("main")
+                cpg.call.code.l should contain(s"System.out.println($index)")
+            }
+          }
         }
       }
     }

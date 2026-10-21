@@ -2,13 +2,84 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.Return
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Return, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
-import java.io.File
-
 class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
+  "a Java 25 compact class declaration" should {
+    val cpg = code("""
+        |String s = "hello";
+        |
+        |void main(ArrayList<String> list) {
+        |  list.add(s);
+        |}
+        |""".stripMargin)
+
+    "contain a typeDecl with the correct fields set for the compact class" in {
+      inside(cpg.typeDecl.internal.l) { case List(compactDecl) =>
+        compactDecl.name shouldBe "$COMPACT_CLASS"
+        compactDecl.inheritsFromTypeFullName.l shouldBe List("java.lang.Object")
+      }
+    }
+
+    "contain a member node for s" in {
+      inside(cpg.member.name("s").l) { case List(sMember) =>
+        sMember.name shouldBe "s"
+        sMember.typeFullName shouldBe "java.lang.String"
+
+        sMember.astParent.isInstanceOf[TypeDecl] shouldBe true
+        sMember.astParent.asInstanceOf[TypeDecl].fullName shouldBe "$COMPACT_CLASS"
+      }
+    }
+
+    "contain the main method" in {
+      inside(cpg.method("main").l) { case List(mainMethod) =>
+        mainMethod.fullName shouldBe "$COMPACT_CLASS.main:void(java.util.ArrayList)"
+        inside(mainMethod.parameter.index(1).l) { case List(listParam) =>
+          listParam.typeFullName shouldBe "java.util.ArrayList"
+        }
+      }
+    }
+  }
+
+  "a Java 25 compact class declaration with a package declaration" should {
+    val cpg = code("""
+        |package foo.bar;
+        |
+        |String s = "hello";
+        |
+        |void main(ArrayList<String> list) {
+        |  list.add(s);
+        |}
+        |""".stripMargin)
+
+    "contain a typeDecl with the correct fields set for the compact class" in {
+      inside(cpg.typeDecl.internal.l) { case List(compactDecl) =>
+        compactDecl.name shouldBe "$COMPACT_CLASS"
+        compactDecl.fullName shouldBe "foo.bar.$COMPACT_CLASS"
+        compactDecl.inheritsFromTypeFullName.l shouldBe List("java.lang.Object")
+      }
+    }
+
+    "contain a member node for s" in {
+      inside(cpg.member.name("s").l) { case List(sMember) =>
+        sMember.typeFullName shouldBe "java.lang.String"
+        sMember.astParent.isInstanceOf[TypeDecl] shouldBe true
+        sMember.astParent.asInstanceOf[TypeDecl].fullName shouldBe "foo.bar.$COMPACT_CLASS"
+      }
+    }
+
+    "contain the main method with the correct full name" in {
+      inside(cpg.method("main").l) { case List(mainMethod) =>
+        mainMethod.fullName shouldBe "foo.bar.$COMPACT_CLASS.main:void(java.util.ArrayList)"
+        inside(mainMethod.parameter.index(1).l) { case List(listParam) =>
+          listParam.typeFullName shouldBe "java.util.ArrayList"
+        }
+      }
+    }
+  }
+
   "constructors with access modifiers" should {
     "have correct public modifier" in {
       val cpg = code("""
@@ -59,6 +130,18 @@ class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
     }
   }
 
+  "type decl code" should {
+    "include abstract modifier and type parameters" in {
+      val cpg = code("""
+          |class BaseReq {}
+          |public abstract class GenericService<T extends BaseReq, R> {}
+          |""".stripMargin)
+
+      cpg.typeDecl.nameExact("GenericService").code.l shouldBe
+        List("public abstract class GenericService<T extends BaseReq, R>")
+    }
+  }
+
   "typedecls extending unresolved types available in imports should have inheritsFrom set" in {
     val cpg = code("""package io.vrooom.vulnerableapp;
         |
@@ -106,7 +189,127 @@ class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
     }
   }
 
+  "a package-private class" should {
+    val cpg = code("class Foo {}")
+
+    "have no modifier" in {
+      cpg.typeDecl.name("Foo").modifier.modifierType.toSet shouldBe Set()
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name("Foo").code.l shouldBe List("class Foo")
+    }
+  }
+
+  "a public class" should {
+    val cpg = code("public class Foo {}")
+
+    "have the correct modifier" in {
+      cpg.typeDecl.name("Foo").modifier.modifierType.toSet shouldBe Set("PUBLIC")
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name("Foo").code.l shouldBe List("public class Foo")
+    }
+  }
+
+  "a protected class" should {
+    val cpg = code("class Outer { protected class Foo {} }")
+
+    "have the correct modifier" in {
+      cpg.typeDecl.name(".*Foo").modifier.modifierType.toSet shouldBe Set("PROTECTED")
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name(".*Foo").code.l shouldBe List("protected class Foo")
+    }
+  }
+
+  "a private class" should {
+    val cpg = code("class Outer { private class Foo {} }")
+
+    "have the correct modifier" in {
+      cpg.typeDecl.name(".*Foo").modifier.modifierType.toSet shouldBe Set("PRIVATE")
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name(".*Foo").code.l shouldBe List("private class Foo")
+    }
+  }
+
+  "an abstract class" should {
+    val cpg = code("abstract class Foo {}")
+
+    "have the correct modifier" in {
+      cpg.typeDecl.name("Foo").modifier.modifierType.toSet shouldBe Set("ABSTRACT")
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name("Foo").code.l shouldBe List("abstract class Foo")
+    }
+  }
+
+  "a static class" should {
+    val cpg = code("class Outer { static class Foo {} }")
+
+    "have the correct modifier" in {
+      cpg.typeDecl.name(".*Foo").modifier.modifierType.toSet shouldBe Set("STATIC")
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name(".*Foo").code.l shouldBe List("static class Foo")
+    }
+  }
+
+  "a final class" should {
+    val cpg = code("final class Foo {}")
+
+    "have the correct modifier" in {
+      cpg.typeDecl.name("Foo").modifier.modifierType.toSet shouldBe Set("FINAL")
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name("Foo").code.l shouldBe List("final class Foo")
+    }
+  }
+
+  "a sealed class" should {
+    val cpg = code("sealed class Foo {}")
+
+    "have the correct modifier" in {
+      cpg.typeDecl.name("Foo").modifier.modifierType.toSet shouldBe Set("SEALED")
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name("Foo").code.l shouldBe List("sealed class Foo")
+    }
+  }
+
+  "a non-sealed class" should {
+    val cpg = code("non-sealed class Foo {}")
+
+    "have the correct modifier" in {
+      cpg.typeDecl.name("Foo").modifier.modifierType.toSet shouldBe Set("NON_SEALED")
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name("Foo").code.l shouldBe List("non-sealed class Foo")
+    }
+  }
+
+  "a strictfp class" should {
+    val cpg = code("strictfp class Foo {}")
+
+    "have the correct modifier" in {
+      cpg.typeDecl.name("Foo").modifier.modifierType.toSet shouldBe Set("STRICTFP")
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name("Foo").code.l shouldBe List("strictfp class Foo")
+    }
+  }
 }
+
 class TypeDeclTests extends JavaSrcCode2CpgFixture {
 
   val cpg = code(
@@ -201,47 +404,34 @@ class TypeDeclTests extends JavaSrcCode2CpgFixture {
   }
 
   "should create a correct type decl for inner interface" in {
-    cpg.typeDecl.nameExact("OuterClass$InnerInterface").l match {
-      case List(interface) =>
-        interface.fullName shouldBe "a.b.c.d.OuterClass$InnerInterface"
-        interface.inheritsFromTypeFullName.toList shouldBe List("java.lang.Object")
-        interface.isExternal shouldBe false
-        interface.method.name("id").toList match {
-          case List(method) =>
-            method.fullName shouldBe "a.b.c.d.OuterClass$InnerInterface.id:int(int)"
-            method.signature shouldBe "int(int)"
-            method.parameter.size shouldBe 2
-          // TODO: Add and check modifiers
-
-          case res => fail(s"Expected method id on interface but got $res")
-        }
-
-      case res =>
-        fail(s"Expected typeDecl for interface but got $res")
+    inside(cpg.typeDecl.nameExact("OuterClass$InnerInterface").l) { case List(interface) =>
+      interface.fullName shouldBe "a.b.c.d.OuterClass$InnerInterface"
+      interface.inheritsFromTypeFullName.toList shouldBe List("java.lang.Object")
+      interface.isExternal shouldBe false
+      inside(interface.method.name("id").toList) { case List(method) =>
+        method.fullName shouldBe "a.b.c.d.OuterClass$InnerInterface.id:int(int)"
+        method.signature shouldBe "int(int)"
+        method.parameter.size shouldBe 2
+      // TODO: Add and check modifiers
+      }
     }
   }
 
   "should create type decl for inner class implementing interface" in {
-    cpg.typeDecl.nameExact("OuterClass$InnerClass").l match {
-      case List(innerClass) =>
-        innerClass.fullName shouldBe "a.b.c.d.OuterClass$InnerClass"
-        innerClass.inheritsFromTypeFullName should contain theSameElementsAs List(
-          "java.lang.Object",
-          "a.b.c.d.OuterClass$InnerInterface"
-        )
-        innerClass.isExternal shouldBe false
+    inside(cpg.typeDecl.nameExact("OuterClass$InnerClass").l) { case List(innerClass) =>
+      innerClass.fullName shouldBe "a.b.c.d.OuterClass$InnerClass"
+      innerClass.inheritsFromTypeFullName should contain theSameElementsAs List(
+        "java.lang.Object",
+        "a.b.c.d.OuterClass$InnerInterface"
+      )
+      innerClass.isExternal shouldBe false
 
-        innerClass.method.nameExact("id").l match {
-          case List(method) =>
-            method.fullName shouldBe "a.b.c.d.OuterClass$InnerClass.id:int(int)"
-            method.signature shouldBe "int(int)"
-            method.block.astChildren.head shouldBe a[Return]
-            method.block.ast.isIdentifier.head.name shouldBe "x"
-
-          case res => fail(s"Expected id method in InnerClass but got $res")
-        }
-
-      case res => fail(s"Expected type decl for inner class but got $res")
+      inside(innerClass.method.nameExact("id").l) { case List(method) =>
+        method.fullName shouldBe "a.b.c.d.OuterClass$InnerClass.id:int(int)"
+        method.signature shouldBe "int(int)"
+        method.block.astChildren.head shouldBe a[Return]
+        method.block.ast.isIdentifier.head.name shouldBe "x"
+      }
     }
   }
 

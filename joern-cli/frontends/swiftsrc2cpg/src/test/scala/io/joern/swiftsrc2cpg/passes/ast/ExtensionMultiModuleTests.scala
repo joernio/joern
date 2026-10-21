@@ -18,10 +18,14 @@ class ExtensionMultiModuleTests extends SwiftCompilerMultiModuleSrc2CpgSuite {
   private val moduleACode =
     """
       |public class Foo {
-      |    public init() {}
+      |  public var x = 0
+      |
+      |  public init() {}
       |}
       |
       |public extension Foo {
+      |  var a: Int { return 1 }
+      |
       |  func foo() {}
       |}
       |""".stripMargin
@@ -31,7 +35,11 @@ class ExtensionMultiModuleTests extends SwiftCompilerMultiModuleSrc2CpgSuite {
       |import ModuleA
       |
       |public extension Foo {
-      |  func bar() {}
+      |  var b: String { return "hello" }
+      |
+      |  func bar() {
+      |    print(x)
+      |  }
       |}
       |""".stripMargin
 
@@ -61,6 +69,25 @@ class ExtensionMultiModuleTests extends SwiftCompilerMultiModuleSrc2CpgSuite {
 
       val List(barCall) = cpg.call.nameExact("bar").l
       barCall.methodFullName shouldBe "ModuleB.ModuleA.Foo<extension>.bar:()->()"
+
+      val List(selfParamInBar) = cpg.method.nameExact("bar").parameter.nameExact("self").l
+      selfParamInBar.typeFullName shouldBe "ModuleA.Foo"
+
+      val List(printCall)  = cpg.call.nameExact("print").l
+      val List(selfAccess) = printCall.argument.isCall.l
+      selfAccess.code shouldBe "self.x"
+      selfAccess.typeFullName shouldBe "Swift.Int"
+      val List(selfIdentifier) = selfAccess.argument.isIdentifier.l
+      selfIdentifier.name shouldBe "self"
+      selfIdentifier.typeFullName shouldBe "ModuleA.Foo"
+
+      val Seq(a, b, x) = fooTypeDecl.member.sortBy(_.name)
+      a.name shouldBe "a"
+      b.name shouldBe "b"
+      x.name shouldBe "x"
+      a.typeFullName shouldBe "Swift.Int"
+      b.typeFullName shouldBe "Swift.String"
+      x.typeFullName shouldBe "Swift.Int"
     }
 
   }

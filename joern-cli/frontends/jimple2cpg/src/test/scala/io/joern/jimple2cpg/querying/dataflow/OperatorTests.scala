@@ -49,6 +49,7 @@ class OperatorTests extends JimpleDataFlowCodeToCpgSuite {
         |
         |  public void test6() {
         |    String s = "MALICIOUS";
+        |    System.out.printf("do not optimize away: %s", s);
         |    s = "SAFE";
         |    System.out.println(s);
         |  }

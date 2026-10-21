@@ -1,0 +1,358 @@
+package io.joern.rust2cpg.astcreation
+
+import flatgraph.DiffGraphBuilder
+import io.joern.rust2cpg.Config
+import io.joern.rust2cpg.parser.RustJsonParser.{ParseResult, isMacroExpanded}
+import io.joern.rust2cpg.parser.RustNodeSyntax
+import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
+import io.joern.rust2cpg.parser.RustNodeSyntaxExtensions.op
+import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.AstNodeBuilder.bindingNode
+import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewCall,
+  NewFile,
+  NewMember,
+  NewMethod,
+  NewNamespaceBlock,
+  NewNode,
+  NewTypeDecl
+}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, PropertyDefaults, PropertyNames}
+import io.joern.x2cpg.utils.OffsetUtils
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import org.slf4j.LoggerFactory
+
+import java.nio.charset.StandardCharsets
+
+class AstCreator(val config: Config, val parseResult: ParseResult)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase[RustNode, AstCreator](parseResult.filename)
+    with RustVisitor
+    with RustFullNames {
+
+  private val logger = LoggerFactory.getLogger(getClass)
+
+  protected val contextStack = new ContextStack
+  private var detachedAsts   = List.empty[Ast]
+
+  // When visiting macro-expanded nodes, we store the outermost macro call expression
+  // in order to give macro-expanded nodes line/column information.
+  private var outermostMacroCall: Option[RustNode] = None
+
+  override def createAst(): DiffGraphBuilder = {
+    val sourceFile = parseResult.ast.asInstanceOf[RustNodeSyntax.SourceFile]
+    val ast        = visitSourceFile(sourceFile)
+    Ast.storeInDiffGraph(ast, diffGraph)
+    detachedAsts.foreach(Ast.storeInDiffGraph(_, diffGraph))
+    contextStack.resolvedVariableReferences.foreach { case (identifier, decl) =>
+      diffGraph.addEdge(identifier, decl, EdgeTypes.REF)
+    }
+    diffGraph
+  }
+
+  protected def addDetachedAst(ast: Ast): Unit = {
+    detachedAsts = ast :: detachedAsts
+  }
+
+  protected def addDetachedBindingAsts(typeDecl: NewTypeDecl, methodAsts: Seq[Ast], signature: String): Unit = {
+    methodAsts.flatMap(_.root).collect { case method: NewMethod =>
+      val binding = bindingNode(method.name, signature, method.fullName)
+      addDetachedAst(Ast(binding).withBindsEdge(typeDecl, binding))
+    }
+  }
+
+  protected def withMacroCall[T](macroCall: RustNode)(body: => T): T = {
+    if (outermostMacroCall.isDefined) {
+      body
+    } else {
+      outermostMacroCall = Some(macroCall)
+      val result = body
+      outermostMacroCall = None
+      result
+    }
+  }
+
+  // NB: rust_ast_gen uses 0-based line/column
+  override protected def line(node: RustNode): Option[Int] = {
+    if (node.isMacroExpanded) {
+      outermostMacroCall.flatMap(line)
+    } else {
+      node.startLine.map(_ + 1)
+    }
+  }
+
+  override protected def column(node: RustNode): Option[Int] = {
+    if (node.isMacroExpanded) {
+      outermostMacroCall.flatMap(column)
+    } else {
+      node.startColumn.map(_ + 1)
+    }
+  }
+
+  override protected def lineEnd(node: RustNode): Option[Int]   = None
+  override protected def columnEnd(node: RustNode): Option[Int] = None
+
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] =
+    Option.unless(config.disableFileContent) {
+      OffsetUtils.OffsetSourceType.Bytes(parseResult.contentBytes, StandardCharsets.UTF_8)
+    }
+
+  override protected def unadjustedOffset(node: RustNode): Option[(Int, Int)] =
+    if (node.isMacroExpanded) None else node.startOffset.zip(node.endOffset)
+
+  override protected def code(node: RustNode): String = text(node).map(shortenCode(_)).getOrElse(PropertyDefaults.Code)
+
+  protected def text(node: RustNode): Option[String] = if (node.isMacroExpanded) {
+    node.text
+  } else {
+    (node.startOffset, node.endOffset) match {
+      case (Some(start), Some(end)) => Some(String(parseResult.contentBytes.slice(start, end), StandardCharsets.UTF_8))
+      case _                        => None
+    }
+  }
+
+  protected def notHandledYet(node: RustNode): Ast = {
+    val text =
+      s"""Node type '${node.getClass.getSimpleName}' not handled yet!
+         |  Code: '${code(node)}'
+         |  File: '${parseResult.fullPath}'
+         |  Line: ${line(node).getOrElse(-1)}
+         |  Column: ${column(node).getOrElse(-1)}
+         |  """.stripMargin
+    logger.warn(text)
+    Ast(unknownNode(node, code(node)))
+  }
+
+  protected def macroNotExpanded(macroCall: RustNodeSyntax.MacroCall): Ast = {
+    val name = code(macroCall.path)
+    val text =
+      s"""Macro '$name' not expanded!
+         |  Code: '${code(macroCall)}'
+         |  File: '${parseResult.fullPath}'
+         |  Line: ${line(macroCall).getOrElse(-1)}
+         |  Column: ${column(macroCall).getOrElse(-1)}
+         |  """.stripMargin
+    logger.warn(text)
+    Ast(unknownNode(macroCall, code(macroCall)))
+  }
+
+  protected def assignmentNode(node: RustNodeSyntax.RustNode, code: String): NewCall = {
+    operatorCallNode(node = node, name = Operators.assignment, code = code, typeFullName = None)
+  }
+
+  protected def methodNode(node: RustNode, name: String): NewMethod = {
+    methodNode(
+      node = node,
+      name = name,
+      code = name,
+      fullName = composeRustFullName(name),
+      signature = Some(""),
+      fileName = parseResult.filename,
+      astParentType = Some(contextStack.astParentType),
+      astParentFullName = Some(contextStack.astParentFullName)
+    )
+  }
+
+  protected def globalNamespaceBlockNode(): NewNamespaceBlock = {
+    NewNamespaceBlock()
+      .name(rustNamespaceFullName)
+      .fullName(globalNamespaceFullName)
+      .filename(parseResult.filename)
+      .order(1)
+  }
+
+  private def globalNamespaceFullName: String = {
+    s"${parseResult.filename}:$rustNamespaceFullName"
+  }
+
+  protected def moduleNamespaceBlockNode(module: RustNodeSyntax.Module): NewNamespaceBlock = {
+    val name = typeFullNameForModule(module)
+    namespaceBlockNode(module, name, s"${parseResult.filename}:$name", parseResult.filename)
+  }
+
+  protected def globalFakeMethodNode(
+    sourceFile: RustNodeSyntax.SourceFile,
+    namespaceBlock: NewNamespaceBlock
+  ): NewMethod = {
+    val name = NamespaceTraversal.globalNamespaceName
+    methodNode(
+      node = sourceFile,
+      name = name,
+      code = name,
+      fullName = combineRustFullName(namespaceBlock.fullName, name),
+      signature = Some(""),
+      fileName = parseResult.filename,
+      astParentType = Some(NodeTypes.NAMESPACE_BLOCK),
+      astParentFullName = Some(namespaceBlock.fullName)
+    )
+  }
+
+  protected def typeDeclForStruct(struct: RustNodeSyntax.Struct, inheritsFrom: Seq[String]): NewTypeDecl = {
+    val name = code(struct.name)
+    typeDeclNode(
+      node = struct,
+      name = name,
+      fullName = typeFullNameForStruct(struct),
+      filename = parseResult.filename,
+      code = code(struct),
+      astParentType = contextStack.astParentType,
+      astParentFullName = contextStack.astParentFullName,
+      inherits = inheritsFrom
+    )
+  }
+
+  protected def moduleTypeDeclNode(node: RustNode): NewTypeDecl = {
+    val fullName = contextStack.rustParentFullName
+    val name     = RustFullNames.shortName(fullName)
+    typeDeclNode(
+      node = node,
+      name = name,
+      fullName = fullName,
+      filename = parseResult.filename,
+      code = name,
+      astParentType = contextStack.astParentType,
+      astParentFullName = contextStack.astParentFullName,
+      inherits = Nil
+    )
+  }
+
+  protected def typeDeclForEnum(enum_ : RustNodeSyntax.Enum, inheritsFrom: Seq[String]): NewTypeDecl = {
+    typeDeclNode(
+      node = enum_,
+      name = code(enum_.name),
+      fullName = typeFullNameForEnum(enum_),
+      filename = parseResult.filename,
+      code = code(enum_),
+      astParentType = contextStack.astParentType,
+      astParentFullName = contextStack.astParentFullName,
+      inherits = inheritsFrom
+    )
+  }
+
+  protected def typeDeclForVariant(variant: RustNodeSyntax.Variant, enumFullName: String): NewTypeDecl = {
+    val name = code(variant.name)
+    typeDeclNode(
+      node = variant,
+      name = name,
+      fullName = combineRustFullName(enumFullName, name),
+      filename = parseResult.filename,
+      code = code(variant),
+      astParentType = contextStack.astParentType,
+      astParentFullName = contextStack.astParentFullName,
+      inherits = Seq(enumFullName)
+    )
+  }
+
+  protected def typeDeclForImpl(impl: RustNodeSyntax.Impl): NewTypeDecl = {
+    val implType = typeFullNameForImpl(impl)
+    val name     = RustFullNames.shortName(implType)
+    typeDeclNode(
+      node = impl,
+      name = name,
+      fullName = implType,
+      filename = parseResult.filename,
+      code = code(impl),
+      astParentType = contextStack.astParentType,
+      astParentFullName = contextStack.astParentFullName
+    )
+  }
+
+  protected def typeDeclForTraitImpl(
+    impl: RustNodeSyntax.Impl,
+    implTrait: RustNodeSyntax.Type,
+    implType: RustNodeSyntax.Type
+  ): NewTypeDecl = {
+    val implTypeFullName  = typeFullNameForType(implType)
+    val traitTypeFullName = typeFullNameForType(implTrait)
+    val name              = RustFullNames.shortName(implTypeFullName)
+    typeDeclNode(
+      node = impl,
+      name = name,
+      fullName = impl.typeFullName.getOrElse(traitImplFullName(implTypeFullName, traitTypeFullName)),
+      filename = parseResult.filename,
+      code = code(impl),
+      inherits = Seq(traitTypeFullName)
+    )
+  }
+
+  protected def memberForAssocConst(const: RustNodeSyntax.Const): NewMember = {
+    val member = memberNode(
+      node = const,
+      name = code(const.name.get),
+      code = code(const),
+      typeFullName = typeFullNameForType(const.typ)
+    )
+    member.astParentType(contextStack.astParentType).astParentFullName(contextStack.astParentFullName)
+  }
+
+  protected def typeDeclForTypeAlias(typeAlias: RustNodeSyntax.TypeAlias): NewTypeDecl = {
+    val name = code(typeAlias.name)
+    typeDeclNode(
+      node = typeAlias,
+      name = name,
+      fullName = typeFullNameForTypeAlias(typeAlias),
+      filename = parseResult.filename,
+      code = code(typeAlias),
+      astParentType = contextStack.astParentType,
+      astParentFullName = contextStack.astParentFullName,
+      alias = typeAlias.typ.map(typeFullNameForType)
+    )
+  }
+
+  protected def enclosingTypeDeclFullName: Option[String] = {
+    contextStack.enclosingTypeDeclFullName
+  }
+
+  protected def identifierAst(node: RustNode, name: String, code: String, typeFullName: String): Ast = {
+    val ident = identifierNode(node, name, code, typeFullName)
+    contextStack.addVariableReference(ident)
+    Ast(ident)
+  }
+
+  protected def localAst(node: RustNode, name: String, code: String, typeFullName: String): Ast = {
+    val local = localNode(node, name, code, typeFullName)
+    contextStack.declareLocal(local)
+    Ast(local)
+  }
+
+  protected def operatorNameFor(binExpr: RustNodeSyntax.BinExpr): Option[String] = binExpr.op match {
+    case Some(_: RustNodeSyntax.Pipe2Token)     => Some(Operators.logicalOr)
+    case Some(_: RustNodeSyntax.Amp2Token)      => Some(Operators.logicalAnd)
+    case Some(_: RustNodeSyntax.Eq2Token)       => Some(Operators.equals)
+    case Some(_: RustNodeSyntax.NeqToken)       => Some(Operators.notEquals)
+    case Some(_: RustNodeSyntax.LteqToken)      => Some(Operators.lessEqualsThan)
+    case Some(_: RustNodeSyntax.GteqToken)      => Some(Operators.greaterEqualsThan)
+    case Some(_: RustNodeSyntax.LAngleToken)    => Some(Operators.lessThan)
+    case Some(_: RustNodeSyntax.RAngleToken)    => Some(Operators.greaterThan)
+    case Some(_: RustNodeSyntax.PlusToken)      => Some(Operators.addition)
+    case Some(_: RustNodeSyntax.StarToken)      => Some(Operators.multiplication)
+    case Some(_: RustNodeSyntax.MinusToken)     => Some(Operators.subtraction)
+    case Some(_: RustNodeSyntax.SlashToken)     => Some(Operators.division)
+    case Some(_: RustNodeSyntax.PercentToken)   => Some(Operators.modulo)
+    case Some(_: RustNodeSyntax.ShlToken)       => Some(Operators.shiftLeft)
+    case Some(_: RustNodeSyntax.ShrToken)       => Some(Operators.arithmeticShiftRight)
+    case Some(_: RustNodeSyntax.CaretToken)     => Some(Operators.xor)
+    case Some(_: RustNodeSyntax.PipeToken)      => Some(Operators.or)
+    case Some(_: RustNodeSyntax.AmpToken)       => Some(Operators.and)
+    case Some(_: RustNodeSyntax.EqToken)        => Some(Operators.assignment)
+    case Some(_: RustNodeSyntax.PluseqToken)    => Some(Operators.assignmentPlus)
+    case Some(_: RustNodeSyntax.SlasheqToken)   => Some(Operators.assignmentDivision)
+    case Some(_: RustNodeSyntax.StareqToken)    => Some(Operators.assignmentMultiplication)
+    case Some(_: RustNodeSyntax.PercenteqToken) => Some(Operators.assignmentModulo)
+    case Some(_: RustNodeSyntax.ShreqToken)     => Some(Operators.assignmentArithmeticShiftRight)
+    case Some(_: RustNodeSyntax.ShleqToken)     => Some(Operators.assignmentShiftLeft)
+    case Some(_: RustNodeSyntax.MinuseqToken)   => Some(Operators.assignmentMinus)
+    case Some(_: RustNodeSyntax.PipeeqToken)    => Some(Operators.assignmentOr)
+    case Some(_: RustNodeSyntax.AmpeqToken)     => Some(Operators.assignmentAnd)
+    case Some(_: RustNodeSyntax.CareteqToken)   => Some(Operators.assignmentXor)
+    case _                                      => None
+  }
+
+  protected def operatorNameFor(prefixExpr: RustNodeSyntax.PrefixExpr): Option[String] = prefixExpr.op match {
+    case Some(_: RustNodeSyntax.MinusToken) => Some(Operators.minus)
+    case Some(_: RustNodeSyntax.BangToken)  => Some(Operators.logicalNot)
+    case Some(_: RustNodeSyntax.StarToken)  => Some(Operators.indirection)
+    case _                                  => None
+  }
+
+}

@@ -2,14 +2,8 @@ package io.joern.pysrc2cpg.dataflow
 
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
-import io.joern.dataflowengineoss.semanticsloader.{
-  FlowMapping,
-  FlowSemantic,
-  NilSemantics,
-  NoCrossTaintSemantics,
-  NoSemantics,
-  PassThroughMapping
-}
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, NilSemantics, NoCrossTaintSemantics, NoSemantics}
+import io.joern.dataflowengineoss.semanticsloader.FlowPath.{FlowMapping, PassThroughMapping}
 import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, Method}
@@ -517,7 +511,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         "models.py"
       )
 
-    val List(method: Method) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.l
+    val List(method: Method) = cpg.identifier.name("foo").inCall.isAssignment.source.isCall.callee.l
     method.fullName shouldBe "models.py:<module>.Foo.__init__"
     val List(typeDeclFullName) = method.typeDecl.fullName.l
     typeDeclFullName shouldBe "models.py:<module>.Foo"
@@ -536,7 +530,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         "models.py"
       )
 
-    val List(method: Method) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.l
+    val List(method: Method) = cpg.identifier.name("foo").inCall.isAssignment.source.isCall.callee.l
     method.fullName shouldBe "models.py:<module>.Foo.__init__"
     val List(typeDeclFullName) = method.typeDecl.fullName.l
     typeDeclFullName shouldBe "models.py:<module>.Foo"
@@ -677,7 +671,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     val sink       = cpg.call("print").argument(1)
     val List(flow) = sink.reachableByFlows(source).map(flowToResultPairs).l
 
-    flow shouldBe List(("tmp0[\"Property1\"] = \"foo\"", 2), ("baz = import(p1.bar, baz)", 2), ("print(baz)", 3))
+    flow shouldBe List(("tmp0[\"Property1\"] = \"foo\"", 2), ("baz = from p1.bar import baz", 2), ("print(baz)", 3))
   }
 
   "flow from literal in an imported method-returned dictionary to `print`" in {
@@ -721,7 +715,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     def sink       = cpg.call("print").argument.argumentIndex(1)
     def source     = cpg.literal("\"XYZ\"")
     val List(flow) = sink.reachableByFlows(source).map(flowToResultPairs).l
-    flow shouldBe List(("FOOBAR = \"XYZ\"", 2), ("FOOBAR = import(models, FOOBAR)", 2), ("print(FOOBAR)", 3))
+    flow shouldBe List(("FOOBAR = \"XYZ\"", 2), ("FOOBAR = from models import FOOBAR", 2), ("print(FOOBAR)", 3))
   }
 
   "flow from global variable defined in imported file and used inside a method as argument to `print`" in {
@@ -740,7 +734,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     def sink       = cpg.call("print").argument.argumentIndex(1)
     def source     = cpg.literal("\"XYZ\"")
     val List(flow) = sink.reachableByFlows(source).map(flowToResultPairs).l
-    flow shouldBe List(("FOOBAR = \"XYZ\"", 2), ("FOOBAR = import(models, FOOBAR)", 2), ("print(FOOBAR)", 4))
+    flow shouldBe List(("FOOBAR = \"XYZ\"", 2), ("FOOBAR = from models import FOOBAR", 2), ("print(FOOBAR)", 4))
   }
 
   "flow from global variable defined in imported file and used as argument to another module's imported method" in {
@@ -760,7 +754,11 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     def sink       = cpg.call("doThing").argument.argumentIndex(1)
     def source     = cpg.literal("\"XYZ\"")
     val List(flow) = sink.reachableByFlows(source).map(flowToResultPairs).l
-    flow shouldBe List(("FOOBAR = \"XYZ\"", 2), ("FOOBAR = import(models, FOOBAR)", 3), ("service.doThing(FOOBAR)", 5))
+    flow shouldBe List(
+      ("FOOBAR = \"XYZ\"", 2),
+      ("FOOBAR = from models import FOOBAR", 3),
+      ("service.doThing(FOOBAR)", 5)
+    )
   }
 
   "flow from global variable defined in imported file and used as field access to `print`" in {
@@ -778,7 +776,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     def sink       = cpg.call("print").argument.argumentIndex(1)
     def source     = cpg.literal("\"XYZ\"")
     val List(flow) = sink.reachableByFlows(source).map(flowToResultPairs).l
-    flow shouldBe List(("FOOBAR = \"XYZ\"", 2), ("models = import(, models)", 2), ("print(models.FOOBAR)", 3))
+    flow shouldBe List(("FOOBAR = \"XYZ\"", 2), ("models = import models", 2), ("print(models.FOOBAR)", 3))
   }
 
   "flows through nested try-except structures" in {

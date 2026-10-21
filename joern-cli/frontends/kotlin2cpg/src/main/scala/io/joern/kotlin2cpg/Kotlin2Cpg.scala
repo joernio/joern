@@ -13,17 +13,28 @@ import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.passes.frontend.TypeNodePass
-import io.joern.x2cpg.utils.dependency.DependencyResolver
-import io.joern.x2cpg.utils.dependency.DependencyResolverParams
-import io.joern.x2cpg.utils.dependency.GradleConfigKeys
+import io.joern.x2cpg.utils.dependency.{
+  DependencyResolverV2,
+  DependencyResolver,
+  DependencyResolverParams,
+  GradleConfigKeys,
+  GradleDependencies
+}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.joern.x2cpg.SourceFiles.filterFile
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.utils.IOUtils
-import org.jetbrains.kotlin.cli.jvm.compiler.{KotlinCoreEnvironment, KotlinToJVMBytecodeCompiler}
+import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
+import org.jetbrains.kotlin.cli.common.config.KotlinSourceRoot
+import org.jetbrains.kotlin.cli.jvm.compiler.{
+  CoreEnvironmentUtilsKt,
+  KotlinCoreEnvironment,
+  KotlinToJVMBytecodeCompiler
+}
 import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
+import org.jetbrains.kotlin.config.{CommonConfigurationKeys, CompilerConfiguration}
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.slf4j.LoggerFactory
@@ -34,7 +45,7 @@ import java.util.regex.Pattern
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.jdk.StreamConverters.StreamHasToScala
-import scala.util.Try
+import scala.util.{Failure, Try, Using}
 import scala.util.matching.Regex
 
 object Kotlin2Cpg {
@@ -98,37 +109,20 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
     filesWithKtExtension
   }
 
-  private def gatherFilesWithJavaExtension(sourceDir: String, config: Config): List[String] = {
-    val filesWithJavaExtension = SourceFiles.determine(
-      sourceDir,
-      Set(".java"),
-      ignoredFilesRegex = Option(config.ignoredFilesRegex),
-      ignoredFilesPath = Option(config.ignoredFiles),
-      ignoredDefaultRegex = Option(config.defaultIgnoredFilesRegex)
-    )
+  private def gatherFilesWithJavaExtension(sourceDirs: List[String], config: Config): List[String] = {
+    val filesWithJavaExtension = sourceDirs.flatMap { sourceDir =>
+      SourceFiles.determine(
+        sourceDir,
+        Set(".java"),
+        ignoredFilesRegex = Option(config.ignoredFilesRegex),
+        ignoredFilesPath = Option(config.ignoredFiles),
+        ignoredDefaultRegex = Option(config.defaultIgnoredFilesRegex)
+      )
+    }.distinct
     if (filesWithJavaExtension.nonEmpty) {
       logger.info(s"Found ${filesWithJavaExtension.size} files with the `.java` extension.")
     }
     filesWithJavaExtension
-  }
-
-  private def gatherDependenciesPaths(
-    sourceDir: String,
-    config: Config,
-    filesWithJavaExtension: List[String]
-  ): Seq[String] = {
-    val jar4ImportServiceOpt = config.jar4importServiceUrl.flatMap(reachableServiceMaybe)
-    if (jar4ImportServiceOpt.isDefined) {
-      val filesWithKtExtension = gatherFilesWithKtExtension(sourceDir, config)
-      val importNames          = importNamesForFilesAtPaths(filesWithKtExtension ++ filesWithJavaExtension)
-      logger.trace(s"Found imports: `$importNames`")
-      dependenciesFromService(jar4ImportServiceOpt.get, importNames)
-    } else if (config.downloadDependencies) {
-      downloadDependencies(sourceDir, config)
-    } else {
-      logger.info(s"Not downloading any dependencies.")
-      Seq()
-    }
   }
 
   private def gatherMavenCoordinates(sourceDir: String, config: Config): Seq[String] = {
@@ -138,7 +132,41 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
     } else Seq()
   }
 
-  private def gatherJarsAtConfigClassPath(config: Config): Seq[String] = {
+  private def gatherJarsOfDependencies(
+    sourceDir: String,
+    config: Config,
+    filesWithJavaExtension: List[String],
+    enableX2cpgDependencies: Boolean
+  ): Seq[DefaultContentRootJarPath] = {
+    val jar4ImportServiceOpt = config.jar4importServiceUrl.flatMap(reachableServiceMaybe)
+    val dependencies         = {
+      if (jar4ImportServiceOpt.isDefined) {
+        val filesWithKtExtension = gatherFilesWithKtExtension(sourceDir, config)
+        val importNames          = importNamesForFilesAtPaths(filesWithKtExtension ++ filesWithJavaExtension)
+        logger.trace(s"Found imports: `$importNames`")
+        dependenciesFromService(jar4ImportServiceOpt.get, importNames)
+      } else if (enableX2cpgDependencies) {
+        downloadDependencies(sourceDir, config)
+      } else {
+        logger.info(s"Not downloading any dependencies.")
+        Seq()
+      }
+    }
+
+    dependencies.map { path =>
+      DefaultContentRootJarPath(path, isResource = false)
+    }
+  }
+
+  private def gatherJarsFromStdLib(config: Config): Seq[DefaultContentRootJarPath] = {
+    if (config.withStdlibJarsInClassPath) {
+      defaultKotlinStdlibContentRootJarPaths
+    } else {
+      Seq()
+    }
+  }
+
+  private def gatherJarsFromConfigClassPath(config: Config): Seq[DefaultContentRootJarPath] = {
     val jarsAtConfigClassPath = findJarsIn(config.classpath)
     if (config.classpath.nonEmpty) {
       if (jarsAtConfigClassPath.nonEmpty) {
@@ -147,40 +175,26 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
         logger.warn("No jars found in the specified classpath.")
       }
     }
-    jarsAtConfigClassPath
+    jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, isResource = false) }
   }
 
-  private def gatherDefaultContentRootJars(
-    sourceDir: String,
-    config: Config,
-    filesWithJavaExtension: List[String]
-  ): Seq[DefaultContentRootJarPath] = {
-    val stdlibJars            = if (config.withStdlibJarsInClassPath) defaultKotlinStdlibContentRootJarPaths else Seq()
-    val jarsAtConfigClassPath = gatherJarsAtConfigClassPath(config)
-    val dependenciesPaths     = gatherDependenciesPaths(sourceDir, config, filesWithJavaExtension)
-    val defaultContentRootJars = stdlibJars ++
-      jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, isResource = false) } ++
-      dependenciesPaths.map { path =>
-        DefaultContentRootJarPath(path, isResource = false)
-      }
-    defaultContentRootJars
-  }
-
-  private def gatherDirsForSourcesToCompile(sourceDir: String): Seq[String] = {
-    val dirsForSourcesToCompile = ContentSourcesPicker.dirsForRoot(sourceDir)
-    if (dirsForSourcesToCompile.isEmpty) {
-      logger.warn("The list of directories to analyze is empty.")
+  private def gatherDirsForSourcesToCompile(sourceDirs: List[String]): Seq[String] = {
+    sourceDirs.flatMap(ContentSourcesPicker.dirsForRoot) match {
+      case Nil =>
+        logger.warn("The list of directories to analyze is empty.")
+        Nil
+      case sources => sources
     }
-    dirsForSourcesToCompile
   }
 
   private def gatherSourceFiles(
     sourceDir: String,
     config: Config,
-    environment: KotlinCoreEnvironment
+    environment: KotlinCoreEnvironment,
+    allowParentTraversal: Boolean
   ): Iterable[KtFileWithMeta] = {
-    val sourceEntries = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
-    val sourceFiles = sourceEntries.filter(entry =>
+    val sourceEntries = entriesForSources(environment.getSourceFiles.asScala, sourceDir, allowParentTraversal)
+    val sourceFiles   = sourceEntries.filter(entry =>
       SourceFiles.filterFile(
         entry.filename,
         config.inputPath,
@@ -196,57 +210,93 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
     cpg: Cpg,
     config: Config,
     filesWithJavaExtension: List[String],
-    kotlinAstCreatorTypes: List[String]
-  ): Unit = {
+    kotlinAstCreatorTypes: Set[String]
+  ): Set[String] = {
     if (config.includeJavaSourceFiles && filesWithJavaExtension.nonEmpty) {
       val javaAstCreator = JavaSrcInterop.astCreationPass(config.inputPath, filesWithJavaExtension, cpg)
       javaAstCreator.createAndApply()
-      val javaAstCreatorTypes = javaAstCreator.global.usedTypes.keys().asScala.toList
+      val javaAstCreatorTypes = javaAstCreator.usedTypes()
 
       javaAstCreator.sourceParser.cleanupDelombokOutput()
       javaAstCreator.clearJavaParserCaches()
 
-      TypeNodePass
-        .withRegisteredTypes((javaAstCreatorTypes.toSet -- kotlinAstCreatorTypes.toSet).toList, cpg)
-        .createAndApply()
+      javaAstCreatorTypes
+    } else {
+      Set.empty
     }
   }
 
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       val sourceDir = config.inputPath
-      logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
+      logger.info(s"Starting CPG generation for input directory '$sourceDir'.")
 
       checkSourceDir(sourceDir)
       logMaxHeapSize()
 
-      val filesWithJavaExtension  = gatherFilesWithJavaExtension(sourceDir, config)
+      val (dependencyJars, sourceRoots, filesWithJavaExtension, v2Active) =
+        resolveDependencies(sourceDir, config)
+
       val mavenCoordinates        = gatherMavenCoordinates(sourceDir, config)
-      val defaultContentRootJars  = gatherDefaultContentRootJars(sourceDir, config, filesWithJavaExtension)
-      val dirsForSourcesToCompile = gatherDirsForSourcesToCompile(sourceDir)
+      val stdlibJars              = gatherJarsFromStdLib(config)
+      val classPathJars           = gatherJarsFromConfigClassPath(config)
+      val dirsForSourcesToCompile = gatherDirsForSourcesToCompile(sourceRoots)
+      val dependencyContentRoots  = stdlibJars ++ classPathJars ++ dependencyJars
+
       val environment = CompilerAPI.makeEnvironment(
         dirsForSourcesToCompile,
         filesWithJavaExtension,
-        defaultContentRootJars,
+        dependencyContentRoots,
         new ErrorLoggingMessageCollector
       )
 
-      val sourceFiles = gatherSourceFiles(sourceDir, config, environment)
+      val sourceFiles = gatherSourceFiles(sourceDir, config, environment, v2Active)
       val configFiles = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)
 
       new MetaDataPass(cpg, Languages.KOTLIN, config.inputPath).createAndApply()
 
-      val bindingContext = createBindingContext(environment)
+      val bindingContext =
+        createBindingContext(environment)
+          .recoverWith { exception =>
+            if (dependencyContentRoots != stdlibJars) {
+              logger.warn("Kotlin compiler analysis failed with exception", exception)
+              logger.warn("Fallback: Reconfiguring kotlin compiler environment without dependencies")
+
+              Using.resource(
+                CompilerAPI.makeEnvironment(
+                  dirsForSourcesToCompile,
+                  filesWithJavaExtension,
+                  stdlibJars,
+                  new ErrorLoggingMessageCollector
+                )
+              ) { fallbackEnvironment =>
+                createBindingContext(fallbackEnvironment)
+              }(fallbackEnvironment => Disposer.dispose(fallbackEnvironment.getProjectEnvironment.getParentDisposable))
+
+            } else {
+              Failure(exception)
+            }
+          }
+          .recover { exception =>
+            logger.error("Kotlin compiler analysis failed with exception", exception)
+            BindingContext.EMPTY
+          }
+          .get
+
       val astCreator =
         new AstCreationPass(sourceFiles, bindingContext, cpg, config.disableFileContent)(config.schemaValidation)
       astCreator.createAndApply()
 
+      new SamTypeDeclPass(cpg, astCreator.samInfoEntries())(config.schemaValidation).createAndApply()
+
       Disposer.dispose(environment.getProjectEnvironment.getParentDisposable)
 
       val kotlinAstCreatorTypes = astCreator.usedTypes()
-      TypeNodePass.withRegisteredTypes(kotlinAstCreatorTypes, cpg).createAndApply()
+      val javaAstCreatorTypes   = runJavaSrcInterop(cpg, config, filesWithJavaExtension, kotlinAstCreatorTypes)
+      val allAstCreatorTypes    = kotlinAstCreatorTypes ++ javaAstCreatorTypes
 
-      runJavaSrcInterop(cpg, config, filesWithJavaExtension, kotlinAstCreatorTypes)
+      TypeNodePass.withRegisteredTypes(allAstCreatorTypes, cpg).createAndApply()
+
       new ConfigPass(configFiles, cpg).createAndApply()
       new DependenciesFromMavenCoordinatesPass(mavenCoordinates, cpg).createAndApply()
     }
@@ -259,10 +309,49 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
     }
   }
 
+  // Owns the V2-enablement decision, the V2 invocation, and the V1 fallback. Returns
+  // (dependencyJars, sourceRoots, filesWithJavaExtension, v2Active) so the caller can
+  // proceed straight to CPG construction without further branching on V2 state. This will
+  // eventually be moved into DependencyResolverV2 when it is clear what can be shared
+  // with javasrc2cpg and what is kotlin-specific.
+  private def resolveDependencies(
+    sourceDir: String,
+    config: Config
+  ): (Seq[DefaultContentRootJarPath], List[String], List[String], Boolean) = {
+    val v2Requested = DependencyResolverV2.isRequested(config.enableDependencyResolverV2)
+
+    val v2Result = Option
+      .when(v2Requested) {
+        DependencyResolverV2.resolve(sourceDir, DependencyResolverParams(Map.empty, gatherGradleParams(config)))
+      }
+      .flatten
+
+    v2Result match {
+      case Some((v2SourceRoots, v2DependencyJars)) =>
+        val sourceRootsList = v2SourceRoots.map(_.absolutePathAsString).toList
+        val javaFiles       = gatherFilesWithJavaExtension(sourceRootsList, config)
+        val jarContentRoots =
+          v2DependencyJars
+            .map(jarPath => DefaultContentRootJarPath(jarPath.absolutePathAsString, isResource = false))
+            .toSeq
+        (jarContentRoots, sourceRootsList, javaFiles, true)
+
+      case None =>
+        if (v2Requested) {
+          logger.warn(s"Falling back to dependency resolver v1 as v2 could not resolve correctly")
+        }
+        val javaFiles      = gatherFilesWithJavaExtension(List(sourceDir), config)
+        val dependencyJars =
+          gatherJarsOfDependencies(sourceDir, config, javaFiles, v2Requested || config.downloadDependencies)
+        (dependencyJars, List(sourceDir), javaFiles, false)
+    }
+  }
+
   private def gatherGradleParams(config: Config) = {
     Map(
       GradleConfigKeys.ProjectName       -> config.gradleProjectName,
-      GradleConfigKeys.ConfigurationName -> config.gradleConfigurationName
+      GradleConfigKeys.ConfigurationName -> config.gradleConfigurationName,
+      GradleConfigKeys.AndroidVariant    -> sys.env.get(DependencyResolverV2.AndroidVariantEnvVar)
     ).collect { case (key, Some(value)) => (key, value) }
   }
 
@@ -298,26 +387,30 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
 
   private def findJarsIn(dirs: Set[String]) = {
     dirs.foldLeft(Seq[String]())((acc, classpathEntry) => {
-      val f = Paths.get(classpathEntry)
+      val path  = Paths.get(classpathEntry)
       val files =
-        if (Files.isDirectory(f))
-          f.walk().filterNot(_ == f).filter(_.extension().getOrElse("") == JarExtension).map(_.toString)
+        if (Files.isDirectory(path))
+          path.walk().filterNot(_ == path).filter(_.extension().getOrElse("") == JarExtension).map(_.toString)
         else Seq()
       acc ++ files
     })
   }
 
-  private def entriesForSources(files: Iterable[KtFile], relativeTo: String): Iterable[KtFileWithMeta] = {
+  private def entriesForSources(
+    files: Iterable[KtFile],
+    relativeTo: String,
+    allowParentTraversal: Boolean
+  ): Iterable[KtFileWithMeta] = {
     val filesWithMeta = for {
       file    <- files
-      relPath <- Try(SourceFiles.toRelativePath(file.getVirtualFilePath, relativeTo)).toOption
+      relPath <- Try(SourceFiles.toRelativePath(file.getVirtualFilePath, relativeTo, allowParentTraversal)).toOption
     } yield KtFileWithMeta(file, relPath, file.getVirtualFilePath)
     filesWithMeta.filterNot { fwp =>
       // TODO: add test for this type of filtering
       // TODO: support Windows paths
       val willFilter = SourceFilesPicker.shouldFilter(fwp.relativizedPath)
       if (willFilter) {
-        logger.debug(s"Filtered file at `${fwp.f.getVirtualFilePath}`.")
+        logger.debug(s"Filtered file at '${fwp.f.getVirtualFilePath}'.")
       }
       willFilter
     }
@@ -331,18 +424,14 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
     } yield FileContentAtPath(fileContents, relPath, fileName)
   }
 
-  private def createBindingContext(environment: KotlinCoreEnvironment): BindingContext = {
-    try {
+  private def createBindingContext(environment: KotlinCoreEnvironment): Try[BindingContext] = {
+    Try {
       logger.info("Running Kotlin compiler analysis...")
       val t0             = System.nanoTime()
       val analysisResult = KotlinToJVMBytecodeCompiler.INSTANCE.analyze(environment)
       val t1             = System.nanoTime()
       logger.info(s"Kotlin compiler analysis finished in `${(t1 - t0) / 1000000}` ms.")
       analysisResult.getBindingContext
-    } catch {
-      case exc: Exception =>
-        logger.error(s"Kotlin compiler analysis failed with exception `${exc.toString}`:`${exc.getMessage}`.", exc)
-        BindingContext.EMPTY
     }
   }
 }

@@ -3,21 +3,24 @@ package io.joern.swiftsrc2cpg.astcreation
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
+import io.joern.swiftsrc2cpg.passes.AstCreationPass
 import io.joern.swiftsrc2cpg.utils.FullnameProvider
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.SwiftFileLocalTypeMapping
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
+import io.joern.x2cpg.utils.OffsetUtils
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, ModifierTypes, NodeTypes, PropertyDefaults}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
 
+import java.nio.charset.StandardCharsets
 import scala.collection.mutable
 
 class AstCreator(
   val config: Config,
-  val global: SwiftSrcGlobal,
+  val accumulator: AstCreationPass.Accumulator,
   val parserResult: ParseResult,
   val typeMap: SwiftFileLocalTypeMapping
 )(implicit withSchemaValidation: ValidationMode)
@@ -57,9 +60,8 @@ class AstCreator(
     fileContent.foreach(fileNode.content(_))
     val namespaceBlock = globalNamespaceBlock()
     methodAstParentStack.push(namespaceBlock)
-    val astForFakeMethod =
-      astInFakeMethod(namespaceBlock.fullName, parserResult.filename, parserResult.ast)
-    val ast = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(astForFakeMethod))
+    val astForFakeMethod = astInFakeMethod(namespaceBlock.fullName, parserResult.filename, parserResult.ast)
+    val ast              = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(astForFakeMethod))
     Ast.storeInDiffGraph(ast, diffGraph)
     scope.createVariableReferenceLinks(diffGraph, parserResult.filename)
     diffGraph
@@ -76,20 +78,29 @@ class AstCreator(
     scope.pushNewMethodScope(fullName, name, fakeGlobalMethod, None)
     val sourceFileAst = astForNode(ast)
     val methodReturn  = methodReturnNode(ast, Defines.Any)
-    val modifiers =
+    val modifiers     =
       Seq(modifierNode(ast, ModifierTypes.VIRTUAL).order(0), modifierNode(ast, ModifierTypes.MODULE).order(1))
     Ast(fakeGlobalTypeDecl).withChild(
       methodAst(fakeGlobalMethod, Seq.empty, sourceFileAst, methodReturn, modifiers = modifiers)
     )
   }
 
+  // FunctionDeclLike is a cross-category union, so its members are peeled off inside the ExprSyntax and
+  // DeclSyntax branches rather than testing the whole union first for every node.
   protected def astForNode(node: SwiftNode): Ast = node match {
-    case func: FunctionDeclLike             => astForFunctionLike(func, List.empty, None)
-    case swiftToken: SwiftToken             => astForSwiftToken(swiftToken)
+    case swiftToken: SwiftToken => astForSwiftToken(swiftToken)
+    case exprSyntax: ExprSyntax =>
+      exprSyntax match {
+        case closure: ClosureExprSyntax => astForFunctionLike(closure, List.empty, None)
+        case other                      => astForExprSyntax(other)
+      }
+    case declSyntax: DeclSyntax =>
+      declSyntax match {
+        case func: FunctionDeclLike => astForFunctionLike(func, List.empty, None)
+        case other                  => astForDeclSyntax(other)
+      }
     case syntax: Syntax                     => astForSyntax(syntax)
-    case exprSyntax: ExprSyntax             => astForExprSyntax(exprSyntax)
     case typeSyntax: TypeSyntax             => astForTypeSyntax(typeSyntax)
-    case declSyntax: DeclSyntax             => astForDeclSyntax(declSyntax)
     case patternSyntax: PatternSyntax       => astForPatternSyntax(patternSyntax)
     case stmtSyntax: StmtSyntax             => astForStmtSyntax(stmtSyntax)
     case syntaxCollection: SyntaxCollection => astForSyntaxCollection(syntaxCollection)
@@ -101,27 +112,30 @@ class AstCreator(
   override protected def lineEnd(node: SwiftNode): Option[Int]   = node.endLine
   override protected def columnEnd(node: SwiftNode): Option[Int] = node.endColumn
 
-  private def nodeOffsets(node: SwiftNode): Option[(Int, Int)] = {
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] =
+    Option.unless(config.disableFileContent) {
+      OffsetUtils.OffsetSourceType.Bytes(parserResult.contentBytes, StandardCharsets.UTF_8)
+    }
+
+  override protected def unadjustedOffset(node: SwiftNode): Option[(Int, Int)] = {
     for {
       startOffset <- node.startOffset
       endOffset   <- node.endOffset
-    } yield (math.max(startOffset, 0), math.min(endOffset, parserResult.fileContent.length))
-  }
-
-  override protected def offset(node: SwiftNode): Option[(Int, Int)] = {
-    Option.when(!config.disableFileContent) { nodeOffsets(node) }.flatten
+    } yield (math.max(startOffset, 0), math.min(endOffset, parserResult.contentBytes.length))
   }
 
   override protected def code(node: SwiftNode): String = {
-    (nodeOffsets(node), node) match {
-      case (Some((startOffset, endOffset)), _: TypeSyntax) =>
-        parserResult.fileContent.substring(startOffset, endOffset).trim.stripSuffix("?").stripSuffix("!")
-      case (Some((startOffset, endOffset)), _: identifier) =>
-        parserResult.fileContent.substring(startOffset, endOffset).trim.stripSuffix("()")
-      case (Some((startOffset, endOffset)), _) =>
-        shortenCode(parserResult.fileContent.substring(startOffset, endOffset).trim)
-      case _ =>
-        PropertyDefaults.Code
+    val (start, end) = unadjustedOffset(node) match {
+      case Some(startOffset, endOffset) if endOffset >= startOffset => (startOffset, endOffset)
+      case _                                                        => return PropertyDefaults.Code
+    }
+    // Decode directly from the shared byte array (which is UTF-8, see SwiftJsonParser) without copying it first.
+    val code = new String(parserResult.contentBytes, start, end - start, StandardCharsets.UTF_8)
+    node match {
+      case _: TypeSyntax => code.trim.stripSuffix("?").stripSuffix("!")
+      case _: identifier => code.trim.stripSuffix("()")
+      case _             => shortenCode(code).stripLineEnd
     }
   }
+
 }

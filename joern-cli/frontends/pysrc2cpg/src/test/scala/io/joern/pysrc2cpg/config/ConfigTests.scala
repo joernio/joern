@@ -12,7 +12,7 @@ class ConfigTests extends AnyWordSpec with Matchers with Inside {
 
   "pysrc2cpg command line args should be parsed correctly" in {
     val parser = NewMain.cmdLineParser
-    val args = Array(
+    val args   = Array(
       // Common args
       "INPUT",
       "--output",

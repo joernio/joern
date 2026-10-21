@@ -33,10 +33,10 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
       val jarPath = s"$inputPath.jar"
       generateCommercial(jarPath, outputPath)
     } else {
-      var command = rootPath.resolve("java2cpg.sh").toString
+      var command   = rootPath.resolve("java2cpg.sh").toString
       var arguments =
         Seq(inputPath, "-o", outputPath) ++ jvmLanguages ++ config.cmdLineParams
-      if (System.getProperty("os.name").startsWith("Windows")) {
+      if (scala.util.Properties.isWin) {
         command = "powershell"
         arguments = Seq(rootPath.resolve("java2cpg.ps1").toString) ++ arguments
       }

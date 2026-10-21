@@ -4,15 +4,14 @@ import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, op
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain
 import io.joern.php2cpg.parser.Domain.*
-import io.joern.x2cpg.Defines.{UnresolvedNamespace, UnresolvedSignature}
-import io.joern.x2cpg.Defines.UnresolvedSignature
 import io.joern.php2cpg.utils.BlockScope
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -49,7 +48,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case propertyFetchExpr: PhpPropertyFetchExpr     => astForPropertyFetchExpr(propertyFetchExpr)
       case includeExpr: PhpIncludeExpr                 => astForIncludeExpr(includeExpr)
       case shellExecExpr: PhpShellExecExpr             => astForShellExecExpr(shellExecExpr)
-      case null =>
+      case null                                        =>
         logger.warn("expr was null")
         ???
       case other => throw new NotImplementedError(s"unexpected expression '$other' of type ${other.getClass}")
@@ -61,7 +60,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val name      = getCallName(call, nameAst)
     val arguments = call.args.map(astForCallArg)
 
-    val inStaticScope = scope.getEnclosingTypeDeclTypeFullName.exists(_.endsWith(Domain.MetaTypeDeclExtension))
     /*
      * A receiver only makes sense if one can track the receiver back to some sort of runtime type information. In the
      * case of a normal top-level call like foo() that is not possible. There is no corresponding foo identifier which
@@ -84,53 +82,52 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
      * scope.
      */
     call.target match {
-      case None if isCallOnVariable(call) => astForDynamicCall(call, name, arguments, None)
-      case None                           => astForStaticCall(call, name, arguments)
-      case _ if call.isStatic             => astForStaticCall(call, name, arguments)
-      case maybeTarget                    => astForDynamicCall(call, name, arguments, maybeTarget)
+      case None =>
+        nameAst match {
+          // The callee is an expression producing a callable value, e.g. `$f()` or `[$obj, 'm']()`
+          case Some(calleeAst) => astForCallableValueCall(call, name, arguments, calleeAst)
+          case None            => astForStaticCall(call, name, arguments)
+        }
+      case _ if call.isStatic => astForStaticCall(call, name, arguments)
+      case Some(target)       => astForDynamicCall(call, name, arguments, target)
     }
   }
 
-  private def astForDynamicCall(
-    call: PhpCallExpr,
-    name: String,
-    arguments: Seq[Ast],
-    maybeTarget: Option[PhpExpr]
-  ): Ast = {
-    val argsCode   = getArgsCode(call, arguments)
-    val targetAst  = maybeTarget.map(astForExpr)
-    val codePrefix = targetAst.map(codeForMethodCall(call, _, name)).getOrElse(name)
+  /** Lowers a call on an expression that evaluates to a callable, e.g. `$f()` or `[$obj, 'm']()`, to a synthetic
+    * `__invoke` call with the callee expression as the receiver.
+    */
+  private def astForCallableValueCall(call: PhpCallExpr, name: String, arguments: Seq[Ast], calleeAst: Ast): Ast = {
+    val argsCode = getArgsCode(call, arguments)
+    // Expression callees may be rooted at nodes without code (e.g. the block lowering a callable
+    // array), in which case we fall back to the original source text.
+    val codePrefix = Option.when(name.nonEmpty)(name).getOrElse(codeForExpr(call.methodName))
     val code       = s"$codePrefix($argsCode)"
 
-    val dispatchType = DispatchTypes.DYNAMIC_DISPATCH
-
-    val (receiverAst, callRoot) = targetAst match {
-      case None =>
-        val receiverAst = astForExpr(call.methodName)
-
-        val fullName = s"${getMfn(call, name)}.${NameConstants.Invoke}"
-        val callRoot = callNode(call, code, NameConstants.Invoke, fullName, dispatchType, None, Some(Defines.Any))
-
-        (receiverAst, callRoot)
-      case Some(target) =>
-        val receiverAst = target
-        val nameAst     = astForExpr(call.methodName)
-        val fullName    = getMfn(call, name)
-        val callRoot    = callNode(call, code, name, fullName, dispatchType, None, Some(Defines.Any))
-
-        (receiverAst, callRoot)
+    val fullName = call.methodName match {
+      case _: PhpVariable => s"${getMfn(call, name)}.${NameConstants.Invoke}"
+      case _              => s"${Defines.UnresolvedNamespace}$MethodDelimiter${NameConstants.Invoke}"
     }
+    val callRoot =
+      callNode(call, code, NameConstants.Invoke, fullName, DispatchTypes.DYNAMIC_DISPATCH, None, Some(Defines.Any))
 
-    if (isCallOnVariable(call))
-      callAst(callRoot, arguments, receiver = Option(receiverAst))
-    else
-      callAst(callRoot, arguments, base = Option(receiverAst))
+    callAst(callRoot, arguments, receiver = Option(calleeAst))
+  }
 
+  private def astForDynamicCall(call: PhpCallExpr, name: String, arguments: Seq[Ast], target: PhpExpr): Ast = {
+    val argsCode  = getArgsCode(call, arguments)
+    val targetAst = astForExpr(target)
+    val code      = s"${codeForMethodCall(call, targetAst, name)}($argsCode)"
+
+    val fullName = getMfn(call, name)
+    val callRoot = callNode(call, code, name, fullName, DispatchTypes.DYNAMIC_DISPATCH, None, Some(Defines.Any))
+
+    callAst(callRoot, arguments, base = Option(targetAst))
   }
 
   private def astForStaticCall(call: PhpCallExpr, name: String, arguments: Seq[Ast]): Ast = {
     val argsCode   = getArgsCode(call, arguments)
-    val codePrefix = codeForStaticMethodCall(call, name)
+    val targetAst  = call.target.map(astForExpr)
+    val codePrefix = codeForStaticMethodCall(call, targetAst, name)
     val code       = s"$codePrefix($argsCode)"
 
     val dispatchType = DispatchTypes.STATIC_DISPATCH
@@ -141,9 +138,21 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case _                                             => getMfn(call, name)
     }
 
-    val callRoot = callNode(call, code, name, fullName, dispatchType, None, Some(Defines.Any))
+    val staticReceiver = call.target.collect {
+      case nameExpr: PhpNameExpr if nameExpr.name == NameConstants.Self =>
+        getTypeDeclPrefix
+      case nameExpr: PhpNameExpr =>
+        Option(s"${nameExpr.name}")
+    }.flatten
 
-    callAst(callRoot, arguments)
+    val callRoot = callNode(call, code, name, fullName, dispatchType, None, Some(Defines.Any), staticReceiver)
+
+    // Expression targets (e.g. the `self::$client` in `self::$client::$method(...)`) are attached as
+    // the base so that they are not lost. Plain name targets (e.g. `Foo::`) are represented by the
+    // static receiver property instead.
+    val baseAst = targetAst.filter(_ => !call.target.exists(_.isInstanceOf[PhpNameExpr]))
+
+    callAst(callRoot, arguments, base = baseAst)
   }
 
   protected def simpleAssignAst(origin: PhpNode, target: Ast, source: Ast): Ast = {
@@ -154,7 +163,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForAssignment(assignment: PhpAssignment): Ast = {
     assignment.target match {
-      case arrayDimFetch: PhpArrayDimFetchExpr if arrayDimFetch.dimension.isEmpty =>
+      case arrayDimFetch @ PhpArrayDimFetchExpr(innerArrayDimFetch: PhpArrayDimFetchExpr, _, _)
+          if !isIndexAccessWithDimensions(arrayDimFetch) =>
+        // Rewrite `$xs[][$expr] = <value_expr>` as multiple assignments/pushes
+        astForMultiArrayDimAssign(assignment, arrayDimFetch)
+      case arrayDimFetch @ PhpArrayDimFetchExpr(_, _, _) if arrayDimFetch.dimension.isEmpty =>
         // Rewrite `$xs[] = <value_expr>` as `array_push($xs, <value_expr>)` to simplify finding dataflows.
         astForEmptyArrayDimAssign(assignment, arrayDimFetch)
       case arrayExpr: (PhpArrayExpr | PhpListExpr) =>
@@ -175,8 +188,223 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  /** This is used to rewrite the short form $xs[] = <value_expr> as array_push($xs, <value_expr>) to avoid having to
-    * handle the empty array access operator as a special case in the dataflow engine.
+  private def createTmpIdentifierAst(origin: PhpNode, tmpName: String, local: NewNode): Ast = {
+    val identifier = identifierNode(origin, tmpName, s"$$$tmpName", Defines.Any)
+    astForIdentifierWithLocalRef(identifier, local)
+  }
+
+  private def createArrayElementAssignment(
+    origin: PhpNode,
+    targetName: String,
+    targetLocal: NewNode,
+    key: Option[PhpExpr],
+    value: Ast
+  ): Ast = {
+    val targetIdentifier = identifierNode(origin, targetName, s"$$$targetName", Defines.Any)
+    val targetAst        = astForIdentifierWithLocalRef(targetIdentifier, targetLocal)
+
+    val keyAst = key match {
+      case Some(keyExpr) =>
+        astForExpr(keyExpr)
+      case None =>
+        val zeroLiteral = literalNode(origin, "0", TypeConstants.Int)
+        Ast(zeroLiteral)
+    }
+
+    val indexAccessCode = s"$$$targetName[${keyAst.rootCodeOrEmpty}]"
+    val indexAccessNode = operatorCallNode(origin, indexAccessCode, Operators.indexAccess, None)
+    val indexAccessAst  = callAst(indexAccessNode, targetAst :: keyAst :: Nil)
+
+    simpleAssignAst(origin, indexAccessAst, value)
+  }
+
+  private def createArrayPushAssignment(origin: PhpNode, arrayVar: PhpExpr, valueAst: Ast): Ast = {
+    val arrayAst          = astForExpr(arrayVar)
+    val arrayPushCode     = s"${arrayAst.rootCodeOrEmpty}[] = ${valueAst.rootCodeOrEmpty}"
+    val arrayPushCallNode = callNode(
+      origin,
+      arrayPushCode,
+      "array_push",
+      "array_push",
+      DispatchTypes.STATIC_DISPATCH,
+      Some(arrayPushCode),
+      Some(Defines.Any)
+    )
+    callAst(arrayPushCallNode, arrayAst :: valueAst :: Nil)
+  }
+
+  @tailrec
+  private def isIndexAccessWithDimensions(expr: PhpExpr): Boolean = {
+    expr match {
+      case arrayDimFetchExpr: PhpArrayDimFetchExpr =>
+        val hasDimension = arrayDimFetchExpr.dimension.nonEmpty
+
+        arrayDimFetchExpr.variable match {
+          case innerArrayDimFetchExpr: PhpArrayDimFetchExpr if hasDimension =>
+            isIndexAccessWithDimensions(innerArrayDimFetchExpr)
+          case _: PhpArrayDimFetchExpr =>
+            // has no dimensions ($xs...[])
+            false
+          case _ =>
+            hasDimension
+        }
+      case _ =>
+        false
+    }
+  }
+
+  private def isSimpleExpression(expr: PhpExpr): Boolean = expr match {
+    case _: PhpVariable | _: PhpScalar | _: PhpNameExpr | _: PhpConstFetchExpr => true
+    case _                                                                     => false
+  }
+
+  /** This is used to rewrite the short form $xs[][$expr] = <value_expr> as a combination of multiple assignments and
+    * array_push(...) calls.
+    *
+    * All index accesses from the right except the one on the variable are lowered as assignments to tmp variables. The
+    * leftmost index access is represented as either an array_push(...) call if dimensionless (see
+    * [[astForEmptyArrayDimAssign]]), or an index assignment if there is a dimension.
+    *
+    * For simple expressions (variables, literals), we evaluate the RHS twice to avoid a tmp variable. For complex
+    * expressions (calls, operators), we use a tmp to avoid duplicate evaluation.
+    */
+  private def astForMultiArrayDimAssign(assignment: PhpAssignment, arrayDimFetchExpr: PhpArrayDimFetchExpr): Ast = {
+    val attrs = assignment.attributes
+
+    def traverseArrayDimExpr(expr: PhpArrayDimFetchExpr, lastValueAst: Ast): List[Ast] = {
+      expr.variable match {
+        case variable if !variable.isInstanceOf[PhpArrayDimFetchExpr] || isIndexAccessWithDimensions(expr) =>
+          if (expr.dimension.isEmpty && !variable.isInstanceOf[PhpArrayDimFetchExpr]) {
+            List(createArrayPushAssignment(assignment, variable, lastValueAst))
+          } else {
+            val targetAst = astForExpr(expr)
+            List(simpleAssignAst(assignment, targetAst, lastValueAst))
+          }
+
+        case innerArrayDimFetchExpr: PhpArrayDimFetchExpr
+            if expr.dimension.isEmpty && isIndexAccessWithDimensions(innerArrayDimFetchExpr) =>
+          List(createArrayPushAssignment(assignment, innerArrayDimFetchExpr, lastValueAst))
+
+        case innerArrayDimFetchExpr: PhpArrayDimFetchExpr =>
+          val tmpName  = this.scope.getNewVarTmp()
+          val tmpLocal = handleVariableOccurrence(assignment, tmpName)
+
+          val singleElemArray =
+            createSingleElementArrayAssignment(assignment, tmpName, tmpLocal, expr.dimension, lastValueAst)
+
+          val tmpIdentAst = createTmpIdentifierAst(assignment, tmpName, tmpLocal)
+          singleElemArray :: traverseArrayDimExpr(innerArrayDimFetchExpr, tmpIdentAst)
+
+        case variable =>
+          val errorPosition = s"${line(assignment).getOrElse("")}:$relativeFileName"
+          logger.warn(s"Unknown variable found in ArrayDimFetchExpr: $errorPosition")
+          Nil
+      }
+    }
+
+    arrayDimFetchExpr.variable match {
+      case innerArrayDimFetchExpr: PhpArrayDimFetchExpr =>
+        // use a BlockScope to ensure new tmp locals are not in the enclosing scope
+        val block = blockNode(assignment)
+        scope.pushNewScope(BlockScope(block, ""))
+
+        // For complex expressions, use a tmp to avoid duplicate evaluation
+        // For simple expressions (variables, literals), evaluate twice to avoid tmp overhead
+        val (loweringAsts, returnAst) = if (isSimpleExpression(assignment.source)) {
+          // Simple expression - safe to evaluate twice
+          val sourceAst = astForExpr(assignment.source)
+          val lowering  = traverseArrayDimExpr(arrayDimFetchExpr, sourceAst)
+          val return_   = astForExpr(assignment.source)
+          (lowering, return_)
+        } else {
+          // Complex expression (call, operator, etc.) - use tmp to evaluate once
+          val tmpName             = this.scope.getNewVarTmp()
+          val tmpLocal            = handleVariableOccurrence(assignment, tmpName)
+          val sourceAst           = astForExpr(assignment.source)
+          val tmpIdent            = createTmpIdentifierAst(assignment, tmpName, tmpLocal)
+          val tmpAssign           = simpleAssignAst(assignment, tmpIdent, sourceAst)
+          val tmpIdentForTraverse = createTmpIdentifierAst(assignment, tmpName, tmpLocal)
+          val lowering            = tmpAssign :: traverseArrayDimExpr(arrayDimFetchExpr, tmpIdentForTraverse)
+          val return_             = createTmpIdentifierAst(assignment, tmpName, tmpLocal)
+          (lowering, return_)
+        }
+
+        val blockCode = codeForExpr(assignment)
+        block.code(blockCode)
+        scope.popScope()
+
+        Ast(block)
+          .withChildren(loweringAsts)
+          .withChild(returnAst)
+      case _ =>
+        val errorPosition = s"${line(assignment).getOrElse("")}:$relativeFileName"
+        logger.warn(s"ArrayDimFetchExpr without ArrayDimFetchExpr should be handled in assignment: $errorPosition")
+        Ast()
+    }
+  }
+
+  /** Create assignment AST for single-element array: tmpVar = array(key => value) This mimics the structure created by
+    * [[astForArrayExpr]], which creates its own tmp variable.
+    */
+  private def createSingleElementArrayAssignment(
+    origin: PhpNode,
+    targetTmpName: String,
+    targetTmpLocal: NewNode,
+    key: Option[PhpExpr],
+    valueAst: Ast
+  ): Ast = {
+    val arrayTmpName  = this.scope.getNewVarTmp()
+    val arrayTmpLocal = handleVariableOccurrence(origin, arrayTmpName)
+
+    // Create the array initialization: arrayTmp = array()
+    val initArrayCode     = "array()"
+    val initArrayCallNode = callNode(
+      origin,
+      initArrayCode,
+      "array",
+      "array",
+      DispatchTypes.STATIC_DISPATCH,
+      Some(initArrayCode),
+      Some(TypeConstants.Array)
+    )
+    val initArrayAst      = callAst(initArrayCallNode)
+    val arrayTmpIdentAst1 = createTmpIdentifierAst(origin, arrayTmpName, arrayTmpLocal)
+    val initAssign        = simpleAssignAst(origin, arrayTmpIdentAst1, initArrayAst)
+
+    // Assign element: arrayTmp[key] = value
+    val elemAssign = createArrayElementAssignment(origin, arrayTmpName, arrayTmpLocal, key, valueAst)
+
+    // Return the array tmp identifier
+    val arrayTmpIdentAst2 = createTmpIdentifierAst(origin, arrayTmpName, arrayTmpLocal)
+
+    // Create a block for the array creation
+    val arrayBlock    = blockNode(origin)
+    val arrayBlockAst = Ast(arrayBlock)
+      .withChild(initAssign)
+      .withChild(elemAssign)
+      .withChild(arrayTmpIdentAst2)
+
+    // Now assign this block to the target tmp: targetTmp = <arrayBlock>
+    val targetTmpIdentAst = createTmpIdentifierAst(origin, targetTmpName, targetTmpLocal)
+    val targetAssign      = simpleAssignAst(origin, targetTmpIdentAst, arrayBlockAst)
+
+    val keyCode = key
+      .map(codeForExpr)
+      .map(k => s"$k => ")
+      .getOrElse("")
+    val valueCode    = valueAst.rootCodeOrEmpty
+    val overrideCode = s"$$$targetTmpName = array($keyCode$valueCode)"
+
+    targetAssign.root.collect { case rootNode: NewCall =>
+      rootNode.code(overrideCode)
+    }
+
+    targetAssign
+  }
+
+  /** This is used to rewrite the short form $expr[] = [[$value_expr]] as array_push($expr, [[$value_expr]]), where
+    * [[$expr]] is either a variable or an indexAccess, to avoid having to handle the empty array access operator as a
+    * special case in the dataflow engine.
     *
     * This representation is technically wrong in the case where the shorthand is used to initialise a new array (since
     * PHP expects the first argument to array_push to be an existing array). This shouldn't affect dataflow, however.
@@ -343,7 +571,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     args match {
       case singleArg :: Nil => singleArg
-      case _ =>
+      case _                =>
         val callNode = operatorCallNode(encapsed, code, PhpOperators.encaps, Some(TypeConstants.String))
         callAst(callNode, args)
     }
@@ -353,7 +581,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     scalar match {
       case encapsed: PhpEncapsed         => astForEncapsed(encapsed)
       case simpleScalar: PhpSimpleScalar => Ast(literalNode(scalar, simpleScalar.value, simpleScalar.typeFullName))
-      case null =>
+      case null                          =>
         logger.warn("scalar was null")
         ???
     }
@@ -379,7 +607,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val exprAst = astForExpr(unaryOp.expr)
 
     val symbol = operatorSymbols.getOrElse(unaryOp.operator, unaryOp.operator)
-    val code =
+    val code   =
       if (isPostfixOperator(unaryOp.operator))
         s"${exprAst.rootCodeOrEmpty}$symbol"
       else
@@ -432,7 +660,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val elseAst      = astForExpr(ternaryOp.elseExpr)
 
     val operatorName = if (maybeThenAst.isDefined) Operators.conditional else PhpOperators.elvisOp
-    val code = maybeThenAst match {
+    val code         = maybeThenAst match {
       case Some(thenAst) => s"${conditionAst.rootCodeOrEmpty} ? ${thenAst.rootCodeOrEmpty} : ${elseAst.rootCodeOrEmpty}"
       case None          => s"${conditionAst.rootCodeOrEmpty} ?: ${elseAst.rootCodeOrEmpty}"
     }
@@ -445,9 +673,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForCallArg(arg: PhpArgument): Ast = {
     arg match {
-      case PhpArg(expr, _, _, _, _) =>
+      case PhpArg(expr, Some(parameterName), _, _, _) =>
+        val argAst = astForExpr(expr)
+        argAst.root.collect { case i: ExpressionNew => i.argumentName(parameterName) }
+        argAst
+      case PhpArg(expr, None, _, _, _) =>
         astForExpr(expr)
-
       case _: PhpVariadicPlaceholder =>
         val identifier = identifierNode(arg, "...", "...", TypeConstants.VariadicPlaceholder)
         val local      = handleVariableOccurrence(arg, "...")
@@ -516,7 +747,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForPropertyFetchExpr(expr: PhpPropertyFetchExpr): Ast = {
 
     def fieldNodeAndName(nameExpr: PhpExpr): (PhpExpr, Option[String]) = nameExpr match {
-      case name: PhpNameExpr => (name, Option(name.name))
+      case name: PhpNameExpr     => (name, Option(name.name))
       case variable: PhpVariable =>
         val (expr, maybeName) = fieldNodeAndName(variable.value)
         (expr, maybeName.map(name => s"$$$name"))
@@ -541,8 +772,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       else if (expr.isNullsafe) s"?$InstanceMethodDelimiter"
       else InstanceMethodDelimiter
 
-    val targetAst  = astForExpr(expr.expr)
-    val targetCode = targetAst.rootCodeOrEmpty
+    val targetAst    = astForExpr(expr.expr)
+    val targetCode   = targetAst.rootCodeOrEmpty
     val fieldAstCode = fieldName match {
       case Some(_) => fieldAst.rootCodeOrEmpty
       case None    => s"{${fieldAst.rootCodeOrEmpty}}"
@@ -648,7 +879,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val itemAssignments = expr.items.flatMap {
       case Some(item) => Option(assignForArrayItem(item, tmpName, idxTracker))
-      case None =>
+      case None       =>
         idxTracker.next // Skip an index
         None
     }
@@ -731,13 +962,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForMatchExpr(expr: PhpMatchExpr): Ast = {
     val conditionAst = astForExpr(expr.condition)
 
-    val matchNode = controlStructureNode(expr, ControlStructureTypes.MATCH, s"match (${conditionAst.rootCodeOrEmpty})")
-
     val matchBodyBlock = blockNode(expr)
     val armsAsts       = expr.matchArms.flatMap(astsForMatchArm)
     val matchBody      = Ast(matchBodyBlock).withChildren(armsAsts)
 
-    controlStructureAst(matchNode, Option(conditionAst), matchBody :: Nil)
+    matchAst(expr, Some(conditionAst), matchBody :: Nil, Some(s"match (${conditionAst.rootCodeOrEmpty})"))
   }
 
   private def astsForMatchArm(matchArm: PhpMatchArm): List[Ast] = {
@@ -759,22 +988,24 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForYieldExpr(expr: PhpYieldExpr): Ast = {
-    val maybeKey = expr.key.map(astForExpr)
-    val maybeVal = expr.value.map(astForExpr)
-
-    val code = (maybeKey, maybeVal) match {
+    val exprAst = (expr.key, expr.value) match {
       case (Some(key), Some(value)) =>
-        s"yield ${key.rootCodeOrEmpty} => ${value.rootCodeOrEmpty}"
-
+        Some(astForKeyValPair(expr, key, value))
+      case (_, Some(value)) =>
+        Some(astForExpr(value))
       case _ =>
-        s"yield ${maybeKey.map(_.rootCodeOrEmpty).getOrElse("")}${maybeVal.map(_.rootCodeOrEmpty).getOrElse("")}".trim
+        None
     }
 
-    val yieldNode = controlStructureNode(expr, ControlStructureTypes.YIELD, code)
+    val code = exprAst match {
+      case Some(ast) => s"yield ${ast.rootCodeOrEmpty}"
+      case _         => s"yield"
+    }
 
-    Ast(yieldNode)
-      .withChildren(maybeKey.toList)
-      .withChildren(maybeVal.toList)
+    val node = returnNode(expr, code)
+
+    Ast(node)
+      .withChildren(exprAst.toList)
   }
 
   private def astForClassConstFetchExpr(expr: PhpClassConstFetchExpr): Ast = {
@@ -836,6 +1067,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForSimpleNewExpr(expr: PhpNewExpr, classNameExpr: PhpExpr): Ast = {
+    val block = blockNode(expr)
+    scope.pushNewScope(BlockScope(block, ""))
+
     val (maybeNameAst, className) = classNameExpr match {
       case nameExpr: PhpNameExpr =>
         (None, nameExpr.name)
@@ -856,15 +1090,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val allocAst        = callAst(allocNode, base = maybeNameAst)
     val allocAssignCode = s"${tmpIdentifier.code} = ${allocAst.rootCodeOrEmpty}"
     val allocAssignNode = operatorCallNode(expr, allocAssignCode, Operators.assignment, Option(className))
-    val allocAssignAst =
+    val allocAssignAst  =
       callAst(allocAssignNode, astForIdentifierWithLocalRef(tmpIdentifier, local) :: allocAst :: Nil)
 
     // Init node
     val initArgs      = expr.args.map(astForCallArg)
     val initFullName  = s"$className$MethodDelimiter$ConstructorMethodName"
     val initCode      = s"new $className(${initArgs.map(_.rootCodeOrEmpty).mkString(",")})"
-    val maybeTypeHint = scope.resolveIdentifier(className).map(_.name) // consider imported or defined types
-    val initCallNode = callNode(
+    val maybeTypeHint = scope.resolveClassIdentifier(className).map(_.name) // consider imported or defined types
+    val initCallNode  = callNode(
       expr,
       initCode,
       ConstructorMethodName,
@@ -878,7 +1112,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     // Return identifier
     val returnIdentifierAst = astForIdentifierWithLocalRef(tmpIdentifier.copy, local)
-    Ast(blockNode(expr, "", Defines.Any))
+
+    scope.popScope()
+    Ast(block)
       .withChild(allocAssignAst)
       .withChild(initCallAst)
       .withChild(returnIdentifierAst)

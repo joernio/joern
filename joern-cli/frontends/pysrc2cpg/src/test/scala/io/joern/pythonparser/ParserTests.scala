@@ -243,6 +243,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
       testT("with x as y, z:\n\tpass")
       testT("with x as y, z as a:\n\tpass")
       testT("with x as y, z as a,:\n\tpass", s"with x as y, z as a:\n\tpass")
+      testT("with (x).y:\n\tpass", "with x.y:\n\tpass")
     }
 
     "for statement tests" in {
@@ -252,12 +253,14 @@ class ParserTests extends AnyFreeSpec with Matchers {
       testT("for x, y, in l:\n\tpass", s"for (x,y) in l:\n\tpass")
       testT("for *x in l:\n\tpass")
       testT("for x.y in l:\n\tpass")
+      testT("for x[y] in l:\n\tpass")
+      testT("for [x, y] in l:\n\tpass")
+      testT("for (x,y) in l:\n\tpass")
       testT("for x in l,:\n\tpass", s"for x in (l,):\n\tpass")
       testT("for x in *l:\n\tpass")
       testT("for x in l.m:\n\tpass")
       testT("for x in l, m:\n\tpass", s"for x in (l,m):\n\tpass")
       testT("for x in l, m,:\n\tpass", s"for x in (l,m):\n\tpass")
-      // TODO test with parenthesized target an iter
     }
 
     "assign statement tests" in {
@@ -1116,6 +1119,16 @@ class ParserTests extends AnyFreeSpec with Matchers {
 
   "test non keyword 'type' usages" in {
     testT("x = type")
+  }
+
+  "test lazy keyword" in {
+    testT("lazy import x", "import x")
+    testT("lazy from x import y", "from x import y")
+  }
+
+  "test non keyword 'lazy' usages" in {
+    testT("lazy = 1")
+    testT("from x import lazy")
   }
 
   "non-latin identifier name tests" in {

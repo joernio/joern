@@ -7,6 +7,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   IfExpression,
   IndexAccess,
   InstanceFieldIdentifier,
+  LiteralExpr,
   MemberAccess,
   MemberCall,
   RubyExpression,
@@ -20,14 +21,13 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   UnaryExpression
 }
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, FieldDecl}
-import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
-import io.joern.rubysrc2cpg.passes.GlobalTypes
-import io.joern.rubysrc2cpg.passes.GlobalTypes.{kernelFunctions, kernelPrefix}
+import io.joern.rubysrc2cpg.passes.{Defines, GlobalTypes}
+import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelFunctions
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.Constants
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
 
 import scala.collection.mutable
 
@@ -51,7 +51,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     useSurroundingTypeFullName: Boolean = false
   ): String = {
     val surroundingName =
-      if useSurroundingTypeFullName then scope.surroundingTypeFullName.head else scope.surroundingScopeFullName.head
+      if (useSurroundingTypeFullName) scope.surroundingTypeFullName.head else scope.surroundingScopeFullName.head
     val candidate = counter match {
       case Some(cnt) => s"$surroundingName.$name$cnt"
       case None      => s"$surroundingName.$name"
@@ -93,12 +93,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def handleVariableOccurrence(node: RubyExpression): Ast = {
-    val name       = code(node)
-    val identifier = identifierNode(node, name, name, Defines.Any)
-    val typeRef    = scope.tryResolveTypeReference(name)
-
     node match {
       case fieldVariable: RubyFieldIdentifier =>
+        val name = code(node)
         scope.findFieldInScope(name) match {
           case None =>
             scope.pushField(FieldDecl(name, Defines.Any, false, false, fieldVariable))
@@ -107,25 +104,68 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
             astForFieldInstance(name, field.node)
         }
       case _ =>
-        scope.lookupVariable(name) match {
-          case None if typeRef.isDefined =>
-            Ast(identifier.typeFullName(typeRef.get.name))
-          case None =>
-            val local = localNode(node, name, name, Defines.Any)
-            scope.addToScope(name, local) match {
-              case BlockScope(block) => diffGraph.addEdge(block, local, EdgeTypes.AST)
-              case _                 =>
-            }
-            Ast(identifier).withRefEdge(identifier, local)
-          case Some(local) =>
-            local match {
-              case x: NewLocal             => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
-              case x: NewMethodParameterIn => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
-            }
-            Ast(identifier).withRefEdge(identifier, local)
+        handleVariableOccurrence(code(node), node)
+    }
+  }
+
+  protected def handleVariableOccurrence(name: String, positionNode: RubyExpression): Ast = {
+    val identifier = identifierNode(positionNode, name, name, Defines.Any)
+    val typeRef    = scope.tryResolveTypeReference(name)
+
+    scope.lookupVariable(name) match {
+      case None if typeRef.isDefined =>
+        Ast(identifier.typeFullName(typeRef.get.name))
+      case None =>
+        val local = localNode(positionNode, name, name, Defines.Any)
+        scope.addToScope(name, local) match {
+          case BlockScope(block) => diffGraph.addEdge(block, local, EdgeTypes.AST)
+          case _                 =>
         }
+        Ast(identifier).withRefEdge(identifier, local)
+      case Some(local) =>
+        local match {
+          case x: NewLocal             => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
+          case x: NewMethodParameterIn => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
+        }
+        Ast(identifier).withRefEdge(identifier, local)
+    }
+  }
+
+  protected def astForIfStatement(builder: (IfExpression, Ast, Ast, Option[Ast]) => Ast)(node: IfExpression): Ast = {
+    def astForJsonIfStatement(node: IfExpression): Ast = {
+      val conditionAst = astForExpression(node.condition)
+      val thenAst      = astForThenClause(node.thenClause)
+      val elseAst      = node.elseClause
+        .map {
+          case x: IfExpression =>
+            val wrappedBlock = blockNode(x)
+            Ast(wrappedBlock).withChild(astForJsonIfStatement(x))
+          case x =>
+            astForElseClause(x)
+        }
+
+      conditionalStatementBuilder(node, conditionAst, thenAst, elseAst)
     }
 
+    // TODO: Remove or modify the builder pattern when we are no longer using ANTLR
+    node.elseClause match {
+      case Some(elseClause) =>
+        elseClause match {
+          case _: IfExpression => astForJsonIfStatement(node)
+          case _               => foldIfExpression(builder)(node)
+        }
+      case None =>
+        foldIfExpression(builder)(node)
+    }
+  }
+
+  protected def conditionalStatementBuilder(
+    node: ControlFlowStatement,
+    conditionAst: Ast,
+    thenAst: Ast,
+    elseAst: Option[Ast]
+  ): Ast = {
+    ifThenElseAst(node, Some(conditionAst), thenAst, elseAst)
   }
 
   protected def astForAssignment(
@@ -174,8 +214,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   def lowerAssignmentOperator(lhs: RubyExpression, rhs: RubyExpression, op: String, span: TextSpan): RubyExpression &
     ControlFlowStatement = {
     val condition =
-      if op == "||=" then UnaryExpression(op = "!", expression = lhs)(span.spanStart(s"!${lhs.span.text}"))
-      else lhs
+      if (op == "||=") { UnaryExpression(op = "!", expression = lhs)(span.spanStart(s"!${lhs.span.text}")) }
+      else { lhs }
     val thenClause = StatementList(
       List(SingleAssignment(lhs, "=", rhs)(span.spanStart(s"${lhs.span.text} = ${rhs.span.text}")))
     )(span.spanStart(s"${lhs.span.text} = ${rhs.span.text}"))
@@ -184,27 +224,32 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     )
   }
 
+  protected def createScopedTmpLocal(): String = {
+    val tmpName  = scope.getNewVarTmp
+    val tmpLocal = NewLocal().name(tmpName).code(tmpName).typeFullName(Defines.Any)
+    scope.addToScope(tmpName, tmpLocal) match {
+      case BlockScope(block) => diffGraph.addEdge(block, tmpLocal, EdgeTypes.AST)
+      case _                 =>
+    }
+    tmpName
+  }
+
   /** Regex matches implicitly assign values to global variables. Lowering the `=~` operator may look like
     *
     * { tmp = 'hello'.match(/h(el)lo/); if tmp; $~ = tmp; $& = tmp[0]; tmp.begin(0); else $~= nil; $& = nil; nil end; }
     */
   def lowerRegexMatch(target: RubyExpression, regex: RubyExpression, originSpan: TextSpan): RubyExpression = {
     // Create tmpName that takes the regex match result
-    val tmpName     = scope.getNewVarTmp
-    val tmpGenLocal = NewLocal().name(tmpName).code(tmpName).typeFullName(Defines.Any)
-    scope.addToScope(tmpName, tmpGenLocal) match {
-      case BlockScope(block) => diffGraph.addEdge(block, tmpGenLocal, EdgeTypes.AST)
-      case _                 =>
-    }
-    def tmp = SimpleIdentifier()(originSpan.spanStart(tmpName))
+    val tmpName = createScopedTmpLocal()
+    def tmp     = SimpleIdentifier()(originSpan.spanStart(tmpName))
 
     val matchCall = {
-      val code = s"${regex.text}.match(${target.text})"
-      MemberCall(regex, ".", "match", target :: Nil)(originSpan.spanStart(code))
+      val code_ = s"${code(regex)}.match(${code(target)})"
+      MemberCall(regex, ".", "match", target :: Nil)(originSpan.spanStart(code_))
     }
     val tmpAssignment = {
-      val code = s"$tmpName = ${matchCall.text}"
-      SingleAssignment(tmp, "=", matchCall)(originSpan.spanStart(code))
+      val code_ = s"$tmpName = ${code(matchCall)}"
+      SingleAssignment(tmp, "=", matchCall)(originSpan.spanStart(code_))
     }
 
     def self            = SelfIdentifier()(originSpan.spanStart(Defines.Self))
@@ -253,6 +298,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
     StatementList(tmpAssignment :: ifStmt :: Nil)(originSpan)
   }
+
+  def symbolName(expr: RubyExpression): String = expr.text.stripPrefix(":")
 
   protected def isErbCall(callName: String): Boolean = ErbTemplateCallNames.contains(callName)
 

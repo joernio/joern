@@ -3,7 +3,7 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.passes.SymbolSummaryPass.SymbolSummary
-import io.joern.php2cpg.utils.{NamespaceScope, Scope}
+import io.joern.php2cpg.utils.{BlockScope, NamespaceScope, Scope}
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
@@ -34,16 +34,15 @@ class AstCreator(
 
   protected val logger: Logger       = LoggerFactory.getLogger(AstCreator.getClass)
   protected val scope                = new Scope(summary)
-  protected var fileContentBytes     = Array.empty[Byte]
-  protected var fileContent          = Option.empty[String]
-  protected var fileCharset: Charset = StandardCharsets.UTF_8
+  protected val filePath             = Path.of(fileName)
+  protected val fileContentBytes     = Files.readAllBytes(filePath)
+  protected val fileCharset: Charset =
+    Try(Charset.forName(UniversalDetector.detectCharset(filePath))).getOrElse(StandardCharsets.UTF_8)
+  protected var fileContent = Option.empty[String]
 
   override def createAst(): DiffGraphBuilder = {
     if (!disableFileContent) {
-      val filePath = Path.of(fileName)
-      fileContentBytes = Files.readAllBytes(filePath)
-      fileCharset = Try(Charset.forName(UniversalDetector.detectCharset(filePath))).getOrElse(StandardCharsets.UTF_8)
-      fileContent = Some(new String(fileContentBytes, fileCharset))
+      fileContent = Option(new String(fileContentBytes, fileCharset))
     }
 
     val ast = astForPhpFile(phpAst)
@@ -125,7 +124,7 @@ class AstCreator(
       case switchStmt: PhpSwitchStmt       => astForSwitchStmt(switchStmt) :: Nil
       case tryStmt: PhpTryStmt             => astForTryStmt(tryStmt) :: Nil
       case returnStmt: PhpReturnStmt       => astForReturnStmt(returnStmt) :: Nil
-      case classLikeStmt: PhpClassLikeStmt => astForClassLikeStmt(classLikeStmt)
+      case classLikeStmt: PhpClassLikeStmt => astForClassLikeStmt(classLikeStmt) :: Nil
       case gotoStmt: PhpGotoStmt           => astForGotoStmt(gotoStmt) :: Nil
       case labelStmt: PhpLabelStmt         => astForLabelStmt(labelStmt) :: Nil
       case namespace: PhpNamespaceStmt     => astForNamespaceStmt(namespace) :: Nil
@@ -140,7 +139,7 @@ class AstCreator(
       case traitUseStmt: PhpTraitUseStmt   => astforTraitUseStmt(traitUseStmt) :: Nil
       case enumCase: PhpEnumCaseStmt       => astForEnumCase(enumCase) :: Nil
       case staticStmt: PhpStaticStmt       => astsForStaticStmt(staticStmt)
-      case unhandled =>
+      case unhandled                       =>
         logger.error(s"Unhandled stmt $unhandled in $relativeFileName")
         ???
     }
@@ -162,10 +161,13 @@ class AstCreator(
       .fullName(fullName)
 
     scope.pushNewScope(NamespaceScope(namespaceBlock, namespaceBlock.fullName))
+    val block = blockNode(stmt)
+    scope.pushNewScope(BlockScope(block, ""))
     val bodyStmts = astsForClassLikeBody(stmt, stmt.stmts, createDefaultConstructor = false, None)
     scope.popScope()
+    scope.popScope()
 
-    Ast(namespaceBlock).withChildren(bodyStmts)
+    Ast(namespaceBlock).withChild(Ast(block).withChildren(bodyStmts))
   }
 
   private def astForHaltCompilerStmt(stmt: PhpHaltCompilerStmt): Ast = {
@@ -176,9 +178,9 @@ class AstCreator(
   }
 
   private def astForUnsetStmt(stmt: PhpUnsetStmt): Ast = {
-    val name = PhpOperators.unset
-    val args = stmt.vars.map(astForExpr)
-    val code = s"$name(${args.map(_.rootCodeOrEmpty).mkString(", ")})"
+    val name     = PhpOperators.unset
+    val args     = stmt.vars.map(astForExpr)
+    val code     = s"$name(${args.map(_.rootCodeOrEmpty).mkString(", ")})"
     val callNode = operatorCallNode(stmt, code, name, Some(TypeConstants.Void))
       .methodFullName(PhpOperators.unset)
     callAst(callNode, args)
@@ -217,13 +219,13 @@ class AstCreator(
       s"Trait use statement encountered. This is not yet supported. Location: $relativeFileName:${line(stmt)}"
     )
 
-    Ast(unknownNode(stmt, code(stmt)))
+    Ast(unknownNode(stmt, code(stmt)).typeFullName(Defines.Any))
   }
 
   private def astForUseUse(stmt: PhpUseUse, namePrefix: String = ""): Ast = {
     val originalName = s"$namePrefix${stmt.originalName.name}"
     val aliasCode    = stmt.alias.map(alias => s" as ${alias.name}").getOrElse("")
-    val typeCode = stmt.useType match {
+    val typeCode     = stmt.useType match {
       case PhpUseType.Function => s"function "
       case PhpUseType.Constant => s"const "
       case _                   => ""
@@ -231,11 +233,13 @@ class AstCreator(
     val code              = s"use $typeCode$originalName$aliasCode"
     lazy val defaultAlias = originalName.split("\\\\").last
 
-    val importNode = NewImport()
-      .importedEntity(originalName)
-      .importedAs(stmt.alias.map(_.name).getOrElse(defaultAlias))
-      .isExplicit(true)
-      .code(code)
+    val importNode = newImportNode(
+      code = code,
+      importedEntity = originalName,
+      importedAs = stmt.alias.map(_.name).getOrElse(defaultAlias),
+      include = stmt,
+      isExplicit = true
+    )
 
     Ast(importNode)
   }

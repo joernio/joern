@@ -17,7 +17,7 @@ class DataFlowTestCpg extends TestCpg with SwiftSrc2CpgFrontend {
     val context = new LayerCreatorContext(this)
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
-    swiftsrc2cpg.postProcessingPasses(this, XTypeRecoveryConfig()).foreach(_.createAndApply())
+    new swiftsrc2cpg.SwiftPostProcessing(XTypeRecoveryConfig()).run(context)
   }
 
 }

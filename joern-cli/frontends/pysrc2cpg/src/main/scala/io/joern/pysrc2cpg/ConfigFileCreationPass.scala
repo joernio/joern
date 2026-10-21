@@ -15,6 +15,8 @@ class ConfigFileCreationPass(cpg: Cpg, requirementsTxt: String = "requirement.tx
     extensionFilter(".ini"),
     // YAML files
     extensionFilter(".yaml"),
+    // Jinja2 templates
+    extensionFilter(".jinja2"),
     // HTML files
     extensionFilter(".html"),
     // HTM files

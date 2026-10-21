@@ -71,13 +71,10 @@ class LombokTests extends JavaSrcCode2CpgFixture {
     ).withConfig(config)
 
     "delombok the source correctly" in {
-      cpg.method.name("getValue").l match {
-        case method :: Nil =>
-          method.fullName shouldBe "foo.Foo.getValue:int()"
-          method.body.astChildren.size shouldBe 1
-          method.filename.contains("delombok") shouldBe false
-
-        case result => fail(s"Expected single getValue method but got $result")
+      inside(cpg.method.name("getValue").l) { case method :: Nil =>
+        method.fullName shouldBe "foo.Foo.getValue:int()"
+        method.body.astChildren.size shouldBe 1
+        method.filename.contains("delombok") shouldBe false
       }
     }
 
@@ -98,13 +95,10 @@ class LombokTests extends JavaSrcCode2CpgFixture {
     ).withConfig(config)
 
     "delombok the source correctly" in {
-      cpg.method.name("getValue").l match {
-        case method :: Nil =>
-          method.fullName shouldBe "Foo.getValue:int()"
-          method.body.astChildren.size shouldBe 1
-          method.filename.contains("delombok") shouldBe false
-
-        case result => fail(s"Expected single getValue method but got $result")
+      inside(cpg.method.name("getValue").l) { case method :: Nil =>
+        method.fullName shouldBe "Foo.getValue:int()"
+        method.body.astChildren.size shouldBe 1
+        method.filename.contains("delombok") shouldBe false
       }
     }
 
@@ -191,6 +185,116 @@ class LombokTypesOnlyTests extends JavaSrcCode2CpgFixture {
     cpg.call.name("getFirstName").head.methodFullName shouldBe "Foo.getFirstName:java.lang.String()"
     // Log member should not be found since it hasn't been generated in the source we scan.
     cpg.member.name("log").isEmpty shouldBe true
+  }
+}
+
+class SimpleDelombokProjectTests extends JavaSrcCode2CpgFixture {
+
+  "delombok on a maven project with multiple source roots" should {
+    val fileA =
+      """package com.example.a;
+        |
+        |import lombok.Data;
+        |
+        |@Data
+        |public class FileA {
+        |    private String name;
+        |}
+        |""".stripMargin
+
+    val fileB =
+      """package com.example.b;
+        |
+        |import com.example.a.FileA;
+        |import lombok.ToString;
+        |
+        |@ToString
+        |public class FileB {
+        |
+        |    private FileA fileA;
+        |
+        |    @ToString.Include(name = "aName")
+        |    String describeA() {
+        |        return fileA.getName();
+        |    }
+        |}
+        |""".stripMargin
+
+    val fileB2 =
+      """package com.example.b;
+        |
+        |import com.example.a.FileA;
+        |import lombok.ToString;
+        |
+        |@ToString
+        |public class FileB2 {
+        |
+        |    private FileA fileA;
+        |
+        |    @ToString.Include(name = "aName")
+        |    String describeA() {
+        |        return fileA.getName();
+        |    }
+        |}
+        |""".stripMargin
+
+    val fileC =
+      """package com.example.c;
+        |
+        |import com.example.a.FileA;
+        |import com.example.b.FileB;
+        |import lombok.ToString;
+        |
+        |@ToString
+        |public class FileC {
+        |
+        |    private FileA fileA;
+        |    private FileB fileB;
+        |
+        |    @ToString.Include(name = "combined")
+        |    String describeCombined() {
+        |        return fileA.getName() + " / " + fileB.toString();
+        |    }
+        |}
+        |""".stripMargin
+
+    val cpg = code(fileA, "src/main/java/com/example/a/FileA.java")
+      .moreCode(fileB, "src/main/java-b/com/example/b/FileB.java")
+      .moreCode(fileB2, "src/main/java-b/com/example/b/FileB2.java")
+      .moreCode(fileC, "src/main/java-c/com/example/c/FileC.java")
+      .withConfig(Config().withDelombokMode("default"))
+
+    "generate the @Data getters and setters on FileA" in {
+      cpg.method.fullName.toSet should contain allOf (
+        "com.example.a.FileA.getName:java.lang.String()",
+        "com.example.a.FileA.setName:void(java.lang.String)"
+      )
+    }
+
+    "generate the @ToString-produced toString on FileB, FileB2, and FileC" in {
+      val toStringOwners = cpg.method.name("toString").typeDecl.fullName.toSet
+      toStringOwners should contain allOf ("com.example.b.FileB", "com.example.b.FileB2", "com.example.c.FileC")
+    }
+
+    "resolve the cross-source-root FileA#getName call from FileB#describeA" in {
+      val call = cpg.typeDecl.fullNameExact("com.example.b.FileB").method.name("describeA").call.name("getName").head
+      call.methodFullName shouldBe "com.example.a.FileA.getName:java.lang.String()"
+    }
+
+    "resolve the cross-source-root FileA and FileB references from FileC#describeCombined" in {
+      val method      = cpg.typeDecl.fullNameExact("com.example.c.FileC").method.name("describeCombined").head
+      val getNameCall = method.call.name("getName").head
+      getNameCall.methodFullName shouldBe "com.example.a.FileA.getName:java.lang.String()"
+
+      val toStringCall = method.call.name("toString").head
+      toStringCall.methodFullName shouldBe "com.example.b.FileB.toString:java.lang.String()"
+    }
+
+    "not expose delomboked temp paths on typeDecl filenames" in {
+      cpg.typeDecl.fullName("com.example\\..*").filename.foreach { filename =>
+        filename.contains("delombok") shouldBe false
+      }
+    }
   }
 }
 

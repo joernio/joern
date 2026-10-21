@@ -13,7 +13,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
   val IGNORE_TEST_FILE_REGEX = ".*_test(s)?.*"
   "Simple use case of third-party dependency download" should {
     val config = Config().withFetchDependencies(true).withIgnoredFilesRegex(IGNORE_TEST_FILE_REGEX)
-    val cpg = code(
+    val cpg    = code(
       """
         |module joern.io/sample
         |go 1.18
@@ -41,7 +41,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
   // ignoring the below uni tests, which tries to download the dependencies.
   "Download dependency example with different package and namespace name" ignore {
     val config = Config().withFetchDependencies(true).withIgnoredFilesRegex(IGNORE_TEST_FILE_REGEX)
-    val cpg = code(
+    val cpg    = code(
       """
         |module joern.io/sample
         |go 1.18
@@ -132,7 +132,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
   // ignoring the below uni tests, which tries to download the dependencies.
   "dependency resolution having type struct" ignore {
     val config = Config().withFetchDependencies(true).withIgnoredFilesRegex(IGNORE_TEST_FILE_REGEX)
-    val cpg = code(
+    val cpg    = code(
       """
         |module joern.io/sample
         |go 1.18
@@ -176,7 +176,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
   "If the dependency is not getting used then it " should {
     val goGlobal = GoGlobal()
     val config   = Config().withFetchDependencies(true).withIgnoredFilesRegex(IGNORE_TEST_FILE_REGEX)
-    val cpg = code(
+    val cpg      = code(
       """
         |module joern.io/sample
         |go 1.18
@@ -244,7 +244,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
   "The dependency is getting imported somewhere but not getting used then it" should {
     val goGlobal = GoGlobal()
     val config   = Config().withFetchDependencies(true).withIgnoredFilesRegex(IGNORE_TEST_FILE_REGEX)
-    val cpg = code(
+    val cpg      = code(
       """
         |module joern.io/sample
         |go 1.18
@@ -318,7 +318,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
   "The dependency is getting imported and used in the code then it" should {
     val goGlobal = GoGlobal()
     val config   = Config().withFetchDependencies(true).withIgnoredFilesRegex(IGNORE_TEST_FILE_REGEX)
-    val cpg = code(
+    val cpg      = code(
       """
         |module joern.io/sample
         |go 1.18

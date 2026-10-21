@@ -1,10 +1,10 @@
 package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.passes.DomPassTestsHelper
-import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
+import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.shiftleft.semanticcpg.language.*
 
-class TemplateDomAstCreationPassTests extends AstJsSrc2CpgSuite with DomPassTestsHelper {
+class TemplateDomAstCreationPassTests extends JsSrc2CpgSuite with DomPassTestsHelper {
 
   "AST generation for template DOM" should {
 

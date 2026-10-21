@@ -50,12 +50,12 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
         )
       } else {
         // Map params to their annotations
-        val mTags = methodDeclaration.getTags.asScala
+        val mTags      = methodDeclaration.getTags.asScala
         val paramAnnos =
           mTags.collect { case x: VisibilityParameterAnnotationTag => x }.flatMap(_.getVisibilityAnnotations.asScala)
         val paramNames           = mTags.collect { case x: ParamNamesTag => x }.flatMap(_.getNames.asScala)
         val parameterAnnotations = paramNames.zip(paramAnnos).filter(_._2 != null).toMap
-        val methodBody = Try(methodDeclaration.getActiveBody) match {
+        val methodBody           = Try(methodDeclaration.getActiveBody) match {
           case Failure(_)    => methodDeclaration.retrieveActiveBody()
           case Success(body) => body
         }
@@ -68,7 +68,7 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
         methodAstWithAnnotations(
           methodNode
             .lineNumberEnd(methodBody.toString.split('\n').filterNot(_.isBlank).length)
-            .code(methodBody.toString),
+            .code(methodBody.toString.replace("\'", "")),
           parameterAsts,
           astForMethodBody(methodBody, bodyStatementsInfo),
           astForMethodReturn(methodDeclaration),
@@ -146,15 +146,15 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
   }
 
   private def astForMethodReturn(methodDeclaration: SootMethod): NewMethodReturn = {
-    val typeFullName = registerType(methodDeclaration.getReturnType.toQuotedString)
+    val typeFullName = registerType(sootTypeToString(methodDeclaration.getReturnType))
     methodReturnNode(methodDeclaration, typeFullName)
   }
 
   private def createMethodNode(methodDeclaration: SootMethod, typeDecl: RefType) = {
     val name           = methodDeclaration.getName
     val fullName       = methodFullName(typeDecl, methodDeclaration)
-    val methodDeclType = registerType(methodDeclaration.getReturnType.toQuotedString)
-    val code = if (!methodDeclaration.isConstructor) {
+    val methodDeclType = registerType(sootTypeToString(methodDeclaration.getReturnType))
+    val code           = if (!methodDeclaration.isConstructor) {
       s"$methodDeclType $name${paramListSignature(methodDeclaration, withParams = true)}"
     } else {
       s"${typeDecl.getClassName}${paramListSignature(methodDeclaration, withParams = true)}"
@@ -168,27 +168,28 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
       Option(signature),
       filename,
       Option(NodeTypes.TYPE_DECL),
-      Option(typeDecl.toQuotedString)
+      Option(sootTypeToString(typeDecl))
     )
   }
 
   private def methodFullName(typeDecl: RefType, methodDeclaration: SootMethod): String = {
-    val typeName   = registerType(typeDecl.toQuotedString)
-    val returnType = registerType(methodDeclaration.getReturnType.toQuotedString)
+    val typeName   = registerType(sootTypeToString(typeDecl))
+    val returnType = registerType(sootTypeToString(methodDeclaration.getReturnType))
     val methodName = methodDeclaration.getName
     s"$typeName.$methodName:$returnType${paramListSignature(methodDeclaration)}"
   }
 
   private def paramListSignature(methodDeclaration: SootMethod, withParams: Boolean = false) = {
-    val paramTypes = methodDeclaration.getParameterTypes.asScala.map(x => registerType(x.toQuotedString))
+    val paramTypes =
+      methodDeclaration.getParameterTypes.asScala.map(paramType => registerType(sootTypeToString(paramType)))
 
     val paramNames =
       if (!methodDeclaration.isPhantom && Try(methodDeclaration.retrieveActiveBody()).isSuccess)
         methodDeclaration.retrieveActiveBody().getParameterLocals.asScala.map(_.getName)
       else
-        paramTypes.zipWithIndex.map(x => {
+        paramTypes.zipWithIndex.map { x =>
           s"param${x._2 + 1}"
-        })
+        }
     if (!withParams) {
       "(" + paramTypes.mkString(",") + ")"
     } else {
@@ -198,7 +199,7 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
 
   protected def astForParameterRef(parameterRef: ParameterRef, parentUnit: SUnit): Ast = {
     val name = s"@parameter${parameterRef.getIndex}"
-    Ast(identifierNode(parentUnit, name, name, registerType(parameterRef.getType.toQuotedString)))
+    Ast(identifierNode(parentUnit, name, name, registerType(sootTypeToString(parameterRef.getType))))
   }
 
   private def astForParameter(
@@ -207,7 +208,7 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
     methodDeclaration: SootMethod,
     parameterAnnotations: Map[String, VisibilityAnnotationTag]
   ): Ast = {
-    val typeFullName = registerType(parameter.getType.toQuotedString)
+    val typeFullName = registerType(sootTypeToString(parameter.getType))
 
     val paramAst = Ast(
       parameterInNode(
@@ -234,9 +235,9 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
     val jimpleParams = body.getParameterLocals.asScala.toList
     // Don't let parameters also become locals (avoiding duplication)
     val jimpleLocals = body.getLocals.asScala.filterNot(l => jimpleParams.contains(l) || l.getName == "this").toList
-    val locals = jimpleLocals.map { local =>
+    val locals       = jimpleLocals.map { local =>
       val name         = local.getName
-      val typeFullName = registerType(local.getType.toQuotedString)
+      val typeFullName = registerType(sootTypeToString(local.getType))
       val code         = s"$typeFullName $name"
       Ast(localNode(body, name, code, typeFullName))
     }
@@ -274,11 +275,7 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
       stack.push(stack.pop().withChildren(asts))
     }
 
-    if (stack.nonEmpty) {
-      stack.pop()
-    } else {
-      Ast(blockNode(body))
-    }
+    if (stack.nonEmpty) stack.pop() else Ast(blockNode(body))
   }
 
 }

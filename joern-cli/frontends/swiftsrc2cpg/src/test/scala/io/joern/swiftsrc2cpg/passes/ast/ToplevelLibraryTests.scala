@@ -2,13 +2,13 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-class ToplevelLibraryTests extends AstSwiftSrc2CpgSuite {
+class ToplevelLibraryTests extends SwiftSrc2CpgSuite {
 
   "ToplevelLibraryTests" should {
 
@@ -36,6 +36,7 @@ class ToplevelLibraryTests extends AstSwiftSrc2CpgSuite {
       cpg.method.fullName.sorted.l shouldBe List(
         "<operator>.addition",
         "<operator>.assignment",
+        "Swift.Function<()->ANY>.single_apply:()->ANY",
         "Test0.swift:<global>",
         "Test0.swift:<global>.<lambda>0:()->ANY",
         "Test0.swift:<global>.<lambda>1:()->ANY"

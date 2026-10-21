@@ -18,24 +18,20 @@ class ConditionalTests extends CSharpCode2CpgFixture {
 
       cpg.method("Main").controlStructure.size shouldBe 1
 
-      inside(cpg.method("Main").controlStructure.l) {
-        case ifNode :: Nil =>
-          ifNode.code shouldBe "if (a == 1)"
-          ifNode.controlStructureType shouldBe ControlStructureTypes.IF
-          inside(ifNode.condition.l) { case List(cndNode) =>
-            cndNode.code shouldBe "a == 1"
-          }
-          ifNode.whenTrue.assignment.code.l shouldBe List("a++")
+      inside(cpg.method("Main").controlStructure.l) { case ifNode :: Nil =>
+        ifNode.code shouldBe "if (a == 1)"
+        ifNode.controlStructureType shouldBe ControlStructureTypes.IF
+        inside(ifNode.condition.l) { case List(cndNode) =>
+          cndNode.code shouldBe "a == 1"
+        }
+        ifNode.whenTrue.isBlock.astChildren.isCall.isAssignment.code.l shouldBe List("a++")
 
-          inside(ifNode.astChildren.isBlock.l) {
-            case blockNode :: Nil =>
-              val List(incCall) = blockNode.ast.isCall.l
-              incCall.code shouldBe "a++"
-              incCall.astParent shouldBe blockNode
-            case _ => fail("Incorrect body for `if` statement")
-          }
+        inside(ifNode.astChildren.isBlock.l) { case blockNode :: Nil =>
+          val List(incCall) = blockNode.ast.isCall.l
+          incCall.code shouldBe "a++"
+          incCall.astParent shouldBe blockNode
+        }
 
-        case _ => fail("No `if` node found.")
       }
     }
 
@@ -48,40 +44,27 @@ class ConditionalTests extends CSharpCode2CpgFixture {
           | a--;
           |}
           |""".stripMargin))
-      cpg.method("Main").controlStructure.size shouldBe 2
+      inside(cpg.method("Main").controlStructure.l) { case ifNode :: Nil =>
+        ifNode.code shouldBe "if (a == 1)"
+        ifNode.controlStructureType shouldBe ControlStructureTypes.IF
 
-      inside(cpg.method("Main").controlStructure.l) {
-        case ifNode :: elseNode :: Nil =>
-          ifNode.code shouldBe "if (a == 1)"
-          elseNode.code shouldBe "else"
+        inside(ifNode.condition.l) { case List(cndNode) =>
+          cndNode.code shouldBe "a == 1"
+        }
 
-          ifNode.controlStructureType shouldBe ControlStructureTypes.IF
-          elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
+        inside(ifNode.whenTrue.isBlock.l) { case blockNode :: Nil =>
+          val List(incCall) = blockNode.ast.isCall.l
+          incCall.code shouldBe "a++"
+          incCall.astParent shouldBe blockNode
+        }
 
-          inside(ifNode.condition.l) { case List(cndNode) =>
-            cndNode.code shouldBe "a == 1"
-          }
+        inside(ifNode.whenFalse.isBlock.l) { case blockNode :: Nil =>
+          val List(decCall) = blockNode.ast.isCall.l
+          decCall.code shouldBe "a--"
+          decCall.astParent shouldBe blockNode
+        }
 
-          inside(ifNode.astChildren.isBlock.l) {
-            case blockNode :: Nil =>
-              val List(incCall) = blockNode.ast.isCall.l
-              incCall.code shouldBe "a++"
-              incCall.astParent shouldBe blockNode
-            case _ => fail("Incorect body for `if` statement")
-          }
-
-          inside(elseNode.astChildren.isBlock.l) {
-            case blockNode :: Nil =>
-              val List(decCall) = blockNode.ast.isCall.l
-              decCall.code shouldBe "a--"
-              decCall.astParent shouldBe blockNode
-            case _ => fail("Incorect body for `else` statement")
-
-          }
-
-          ifNode.whenTrue.assignment.code.l shouldBe List("a++")
-
-        case _ => fail("No `if` or `else` node found.")
+        ifNode.whenTrue.isBlock.astChildren.isCall.isAssignment.code.l shouldBe List("a++")
       }
 
     }
@@ -98,50 +81,38 @@ class ConditionalTests extends CSharpCode2CpgFixture {
           |}
           |""".stripMargin))
 
-      inside(cpg.method("Main").controlStructure.sortBy(_.lineNumber).l) {
-        case ifNode :: elseIfNode :: elseNode :: Nil =>
-          ifNode.code shouldBe "if (a < 5)"
-          ifNode.controlStructureType shouldBe ControlStructureTypes.IF
-          inside(ifNode.condition.l) {
-            case List(cndNode) =>
-              cndNode.code shouldBe "a < 5"
-            case _ => fail("Unexpected condition for `if` statement")
-          }
-          inside(ifNode.astChildren.isBlock.l) {
-            case blockNode :: Nil =>
-              val List(incCall) = blockNode.ast.isCall.l
-              incCall.code shouldBe "a++"
-              incCall.astParent shouldBe blockNode
-            case _ => fail("Unexpected body contents for `if` statement")
-          }
+      inside(cpg.method("Main").controlStructure.sortBy(_.lineNumber).l) { case ifNode :: elseIfNode :: Nil =>
+        ifNode.code shouldBe "if (a < 5)"
+        ifNode.controlStructureType shouldBe ControlStructureTypes.IF
+        inside(ifNode.condition.l) { case List(cndNode) =>
+          cndNode.code shouldBe "a < 5"
+        }
+        inside(ifNode.whenTrue.isBlock.l) { case blockNode :: Nil =>
+          val List(incCall) = blockNode.ast.isCall.l
+          incCall.code shouldBe "a++"
+          incCall.astParent shouldBe blockNode
+        }
 
-          elseIfNode.code shouldBe "if (a > 5)"
-          elseIfNode.controlStructureType shouldBe ControlStructureTypes.IF
-          inside(elseIfNode.condition.l) {
-            case List(cndNode) =>
-              cndNode.code shouldBe "a > 5"
-            case _ => fail("Unexpected condition for `else if` statement")
-          }
-          inside(elseIfNode.astChildren.isBlock.l) {
-            case blockNode :: Nil =>
-              val List(decCall) = blockNode.ast.isCall.l
-              decCall.code shouldBe "a--"
-              decCall.astParent shouldBe blockNode
-            case _ => fail("Unexpected body contents for `else if` statement")
-          }
+        // the `else if` is wired directly as the false branch of the outer `if`
+        ifNode.whenFalse.l shouldBe List(elseIfNode)
 
-          elseNode.code shouldBe "else"
-          elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-          inside(elseNode.astChildren.isBlock.l) {
-            case blockNode :: Nil =>
-              val List(plusEqualsCall) = blockNode.ast.isCall.l
-              plusEqualsCall.code shouldBe "a += 2"
-              plusEqualsCall.astParent shouldBe blockNode
-            case _ => fail("Unexpected body contents for `else` statement")
+        elseIfNode.code shouldBe "if (a > 5)"
+        elseIfNode.controlStructureType shouldBe ControlStructureTypes.IF
+        inside(elseIfNode.condition.l) { case List(cndNode) =>
+          cndNode.code shouldBe "a > 5"
+        }
+        inside(elseIfNode.whenTrue.isBlock.l) { case blockNode :: Nil =>
+          val List(decCall) = blockNode.ast.isCall.l
+          decCall.code shouldBe "a--"
+          decCall.astParent shouldBe blockNode
+        }
 
-          }
-
-        case _ => fail("Incorrect number of control structures in the method.")
+        // the final `else` block is wired directly as the false branch of the `else if`
+        inside(elseIfNode.whenFalse.isBlock.l) { case blockNode :: Nil =>
+          val List(plusEqualsCall) = blockNode.ast.isCall.l
+          plusEqualsCall.code shouldBe "a += 2"
+          plusEqualsCall.astParent shouldBe blockNode
+        }
       }
     }
 
@@ -153,27 +124,22 @@ class ConditionalTests extends CSharpCode2CpgFixture {
       inside(cpg.call.name(Operators.assignment).argument.l) {
         case (foo: Identifier) :: (controlStructure: Call) :: Nil =>
           foo.typeFullName shouldBe "System.Int32"
-        case _ => fail("Expected two arguments in assignment call.")
       }
 
-      inside(cpg.method("Main").call(Operators.conditional).l) {
-        case ternaryIf :: Nil =>
-          ternaryIf.code shouldBe "1 > 2 ? 1 : 2"
+      inside(cpg.method("Main").call(Operators.conditional).l) { case ternaryIf :: Nil =>
+        ternaryIf.code shouldBe "1 > 2 ? 1 : 2"
 
-          inside(ternaryIf.argument.l) {
-            case (condition: Call) :: (whenTrue: Literal) :: (whenFalse: Literal) :: Nil =>
-              condition.code shouldBe "1 > 2"
-              condition.typeFullName shouldBe "System.Boolean"
+        inside(ternaryIf.argument.l) { case (condition: Call) :: (whenTrue: Literal) :: (whenFalse: Literal) :: Nil =>
+          condition.code shouldBe "1 > 2"
+          condition.typeFullName shouldBe "System.Boolean"
 
-              whenTrue.code shouldBe "1"
-              whenTrue.typeFullName shouldBe "System.Int32"
+          whenTrue.code shouldBe "1"
+          whenTrue.typeFullName shouldBe "System.Int32"
 
-              whenFalse.code shouldBe "2"
-              whenFalse.typeFullName shouldBe "System.Int32"
-            case _ => fail("Expected 3 arguments in conditional call.")
-          }
+          whenFalse.code shouldBe "2"
+          whenFalse.typeFullName shouldBe "System.Int32"
+        }
 
-        case _ => fail("No ternary condition found")
       }
 
     }

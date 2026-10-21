@@ -2,7 +2,7 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.globalFromLiteral
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
@@ -29,16 +29,16 @@ object SourcesToStartingPoints {
         .dedup
         .toList
       sources.headOption
-        .map(src => {
+        .map { src =>
           // We need to get Cpg wrapper from graph. Hence we are taking head element from source iterator.
           // This will also ensure if the source list is empty then these tasks are invoked.
-          val cpg                           = Cpg(src.graph)
-          val (startingPoints, methodTasks) = calculateStartingPoints(sources, executorService)
+          val cpg                                  = Cpg(src.graph)
+          val (startingPoints, methodTasks)        = calculateStartingPoints(sources, executorService)
           val startingPointFromUsageInOtherClasses =
             calculateStatingPointsWithUsageInOtherClasses(methodTasks, cpg, executorService)
           (startingPoints ++ startingPointFromUsageInOtherClasses)
             .sortBy(_.source.id)
-        })
+        }
         .getOrElse(Nil)
     } catch {
       case e: RejectedExecutionException =>
@@ -109,10 +109,10 @@ object SourcesToStartingPoints {
   *   \- number of tasks for the exit condition.
   */
 class SourceStartingPointResultAggregator(private var totalNoTasks: Int) extends Runnable {
-  val logger      = LoggerFactory.getLogger(this.getClass)
-  val finalResult = ListBuffer[StartingPointWithSource]()
-  val methodTasks = ListBuffer[UsageInput]()
-  val resultQueue = LinkedBlockingQueue[ResultSummary]()
+  val logger               = LoggerFactory.getLogger(this.getClass)
+  val finalResult          = ListBuffer[StartingPointWithSource]()
+  val methodTasks          = ListBuffer[UsageInput]()
+  val resultQueue          = LinkedBlockingQueue[ResultSummary]()
   override def run(): Unit = {
     var terminate = false
     while (!terminate) {
@@ -144,9 +144,9 @@ class SourceToStartingPointsInMethod(
     resultQueue.put(ResultSummary(result, List()))
   }
 
-  private def usageInOtherClasses(m: Method, usageInputs: List[UsageInput]): List[StartingPointWithSource] = {
+  private def usageInOtherClasses(method: Method, usageInputs: List[UsageInput]): List[StartingPointWithSource] = {
     usageInputs.flatMap { case UsageInput(src, typeDecl, astNode) =>
-      m.fieldAccess
+      method.call.isFieldAccess
         .or(
           _.argument(1).isIdentifier.typeFullNameExact(typeDecl.fullName),
           _.argument(1).isTypeRef.typeFullNameExact(typeDecl.fullName)
@@ -197,7 +197,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
       case lit: Literal =>
         val usageInput = targetsToClassIdentifierPair(literalToInitializedMembers(lit), src)
         val uses       = usages(usageInput)
-        val globals = globalFromLiteral(lit, recursive = false).flatMap {
+        val globals    = globalFromLiteral(lit, recursive = false).flatMap {
           case x: Identifier if x.isModuleVariable => moduleVariableToFirstUsagesAcrossProgram(x)
           case x                                   => x :: Nil
         }
@@ -227,7 +227,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
   private def withFieldAndIndexAccesses(nodes: List[CfgNode]): List[CfgNode] =
     nodes.flatMap {
       case identifier: Identifier if identifier.isArgument.nonEmpty => identifier :: Nil
-      case moduleVar: Identifier if moduleVar.isModuleVariable =>
+      case moduleVar: Identifier if moduleVar.isModuleVariable      =>
         moduleVar :: moduleVariableToFirstUsagesAcrossProgram(moduleVar)
       case identifier: Identifier => identifier :: fieldAndIndexAccesses(identifier)
       case x                      => x :: Nil
@@ -267,18 +267,19 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
 
   /** For given method, determine the first usage of the given expression.
     */
-  private def firstUsagesOf(astNode: AstNode, m: Method, typeDecl: TypeDecl): List[Expression] = {
+  private def firstUsagesOf(astNode: AstNode, method: Method, typeDecl: TypeDecl): List[Expression] = {
     astNode match {
       case member: Member =>
-        firstUsagesForName(member.name, m)
+        firstUsagesForName(member.name, method)
       case identifier: Identifier =>
-        firstUsagesForName(identifier.name, m)
+        firstUsagesForName(identifier.name, method)
       case fieldIdentifier: FieldIdentifier =>
-        val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
+        val fieldIdentifiers = method.ast.isFieldIdentifier.sortBy(field => (field.lineNumber, field.columnNumber)).l
         fieldIdentifiers
           .canonicalNameExact(fieldIdentifier.canonicalName)
-          .inFieldAccess
-          // TODO `isIdentifier` seems to limit us here
+          .inCall
+          .isFieldAccess
+          // TODO `isIdentifier` seems to limit us here, e.g it does not deal with nested field accesses
           .where(_.argument(1).isIdentifier.or(_.nameExact("this", "self"), _.typeFullNameExact(typeDecl.fullName)))
           .takeWhile(notLeftHandOfAssignment)
           .l
@@ -286,14 +287,16 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
     }
   }
 
-  private def firstUsagesForName(name: String, m: Method): List[Expression] = {
-    val identifiers      = m._identifierViaContainsOut.l
+  private def firstUsagesForName(name: String, method: Method): List[Expression] = {
+    val identifiers      = method._identifierViaContainsOut.l
     val identifierUsages = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
-    val fieldIdentifiers = m.fieldAccess.fieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
-    val thisRefs         = Seq("this", "self") ++ m.typeDecl.name.headOption.toList
+    val fieldIdentifiers =
+      method.call.isFieldAccess.fieldIdentifier.sortBy(field => (field.lineNumber, field.columnNumber)).l
+    val thisRefs          = Seq("this", "self") ++ method.typeDecl.name.headOption.toList
     val fieldAccessUsages = fieldIdentifiers.isFieldIdentifier
       .canonicalNameExact(name)
-      .inFieldAccess
+      .inCall
+      .isFieldAccess
       .where(_.argument(1).codeExact(thisRefs*))
       .takeWhile(notLeftHandOfAssignment)
       .l
@@ -304,7 +307,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
     * members. An initialized member is either an identifier or a field-identifier.
     */
   private def literalToInitializedMembers(lit: Literal): List[CfgNode] =
-    lit.inAssignment
+    lit.inCall.isAssignment
       .or(
         _.method.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName, "__init__"),
         // in language such as Python, where assignments for members can be directly under a type decl
@@ -333,12 +336,8 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
     typeDecl.method.flatMap(methods).l
   }
 
-  private def isTargetInAssignment(identifier: Identifier): List[Identifier] = {
-    identifier.start.argumentIndex(1).where(_.inAssignment).l
-  }
-
-  protected def notLeftHandOfAssignment(x: Expression): Boolean = {
-    !(x.argumentIndex == 1 && x.inCall.exists(y => allAssignmentTypes.contains(y.name)))
+  protected def notLeftHandOfAssignment(expr: Expression): Boolean = {
+    expr.argumentIndex != 1 || expr.inCall.isAssignment.isEmpty
   }
 
   private def targetsToClassIdentifierPair(targets: List[AstNode], src: StoredNode): List[UsageInput] = {

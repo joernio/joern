@@ -22,7 +22,10 @@ null
 /gnupg-*
 /joern-cli/${sys:LOG_DIR}/
 .local
+**/.carabiner
+$HOME
 **/astgen-win.exe
+**/astgen-win-arm.exe
 **/astgen-macos
 **/astgen-macos-arm
 **/astgen-linux
@@ -50,8 +53,22 @@ slices.json
 **/.antlr
 /joern-cli/frontends/*/bin
 /joern-cli/frontends/*/type_stubs
+/joern-cli/frontends/*/node_modules
+/joern-cli/frontends/*/package-lock.json
 **/.gradle
 **/build/gatheredDependencies
+**/abapgen-win.exe
+**/abapgen-win-arm.exe
+**/abapgen-linux
+**/abapgen-linux-arm
+**/abapgen-macos
+**/abapgen-macos-arm
+/joern-cli/frontends/x2cpg/src/test/resources/code/**/build/
+/joern-cli/frontends/x2cpg/src/test/resources/code/**/gradle/wrapper/gradle-wrapper.jar
+
+# Explicitly track specific abap2cpg documentation only
+!/joern-cli/frontends/abap2cpg/architecture.md
+!/joern-cli/frontends/abap2cpg/README.md
 
 ##############
 # Nix flakes #
@@ -82,3 +99,24 @@ flake.lock
 
 /joern-cli/frontends/c2cpg/eclipse-cdt/build/
 /joern-cli/frontends/c2cpg/eclipse-cdt/org.eclipse.cdt.core-*.jar
+
+
+##############
+# Bazel      #
+##############
+user.bazelrc
+bazel-*
+
+##############
+# Python     #
+##############
+__pycache__/
+*.pyc
+
+##############
+# AI agents  #
+##############
+# Shared guidance lives in AGENTS.md (CLAUDE.md is a symlink to it). Personal files stay local.
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/worktrees/

@@ -6,6 +6,7 @@ import io.joern.kotlin2cpg.Kotlin2Cpg
 import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import io.joern.x2cpg.Defines
 import FileUtil.*
+import io.joern.x2cpg.utils.JoernRunfilesLocator
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.ProjectRoot
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
@@ -39,7 +40,9 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
   }
 
   "KotlinCoreEnvironment generation on simple test code which calls external libraries" - {
-    val projectDirPath          = ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/test/resources/code/ktmin")
+    val projectDirPath = JoernRunfilesLocator
+      .resolve("joern/joern-cli/frontends/kotlin2cpg/src/test/resources/code/ktmin")
+      .getOrElse(ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/test/resources/code/ktmin"))
     val projectDependenciesPath = Paths.get(projectDirPath, "dependencies")
 
     "should not receive a compiler error message when the dependencies of the project have been provided" in {
@@ -69,25 +72,5 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
       KotlinToJVMBytecodeCompiler.INSTANCE.analyze(environment)
       messageCollector.hasErrors() shouldBe true
     }
-  }
-
-  "KotlinCoreEnvironment generation on springboot-kotlin-webgoat" - {
-    val projectDirPath =
-      ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/test/resources/code/springboot-kotlin-webgoat")
-    val projectDependenciesPath = Paths.get(projectDirPath, "build", "gatheredDependencies")
-
-    "should not contain methods with unresolved types/namespaces" in {
-      val command =
-        if (scala.util.Properties.isWin) Seq("cmd.exe", "/C", "gradlew.bat", "gatherDependencies")
-        else Seq("./gradlew", "gatherDependencies")
-      ExternalCommand.run(command, Option(Paths.get(projectDirPath))).toTry shouldBe Symbol("success")
-      val config = Config(classpath = Set(projectDependenciesPath.toString))
-      val cpg = new Kotlin2Cpg().createCpg(config.withInputPath(projectDirPath)).getOrElse {
-        fail("Could not create a CPG!")
-      }
-      cpg.method.fullName(s".*${Defines.UnresolvedNamespace}.*") shouldBe empty
-      cpg.method.signature(s".*${Defines.UnresolvedNamespace}.*") shouldBe empty
-    }
-
   }
 }

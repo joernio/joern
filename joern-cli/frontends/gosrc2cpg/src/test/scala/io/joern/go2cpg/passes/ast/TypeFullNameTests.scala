@@ -627,7 +627,7 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
 
   "Method call return value assigned to variable type check" should {
     val goGlobal = GoGlobal()
-    val cpg = code(
+    val cpg      = code(
       """
         |module joern.io/sample
         |go 1.18

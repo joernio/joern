@@ -1,55 +1,55 @@
 package io.joern.javasrc2cpg.passes
 
-import com.github.javaparser.{JavaParser, ParserConfiguration}
-import com.github.javaparser.ParserConfiguration.LanguageLevel
-import com.github.javaparser.ast.CompilationUnit
-import com.github.javaparser.ast.Node.Parsedness
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade
-import com.github.javaparser.symbolsolver.resolution.typesolvers.{
-  ClassLoaderTypeSolver,
-  JarTypeSolver,
-  ReflectionTypeSolver
-}
+import io.joern.javasrc2cpg.Config
 import io.joern.javasrc2cpg.JavaSrc2Cpg.JavaSrcEnvVar
 import io.joern.javasrc2cpg.astcreation.AstCreator
 import io.joern.javasrc2cpg.passes.AstCreationPass.*
-import io.joern.javasrc2cpg.typesolvers.{EagerSourceTypeSolver, JdkJarTypeSolver, SimpleCombinedTypeSolver}
-import io.joern.javasrc2cpg.util.Delombok.DelombokMode
-import io.joern.javasrc2cpg.util.Delombok.DelombokMode.*
-import io.joern.javasrc2cpg.util.{Delombok, SourceParser}
-import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
-import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.datastructures.Global
-import io.shiftleft.semanticcpg.utils.FileUtil.*
-import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
+import io.joern.javasrc2cpg.typesolvers.{EagerSourceTypeSolver, JarTypeSolver, SimpleCombinedTypeSolver}
+import io.joern.javasrc2cpg.util.SourceParser
 import io.joern.x2cpg.utils.dependency.DependencyResolver
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
 import io.shiftleft.semanticcpg.utils.FileUtil
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.slf4j.LoggerFactory
 
-import java.net.URLClassLoader
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Paths}
 import java.util.concurrent.ConcurrentHashMap
-import scala.collection.parallel.CollectionConverters.*
-import scala.collection.concurrent
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
-import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Failure, Success, Try}
 
 class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[String]] = None)
-    extends ForkJoinParallelCpgPass[String](cpg) {
+    extends ForkJoinParallelCpgPassWithAccumulator[String, AstCreationPass.Accumulator](cpg) {
 
-  val global: Global                = new Global()
   private val logger                = LoggerFactory.getLogger(classOf[AstCreationPass])
   private val loggedExceptionCounts = new ConcurrentHashMap[Class[?], Int]().asScala
 
-  val (sourceParser, symbolSolver) = initParserAndUtils(config)
+  private var _usedTypes: Set[String] = Set.empty
+
+  def usedTypes(): Set[String] = _usedTypes
+
+  val (sourceParser, symbolSolver, combinedTypeSolver) = initParserAndUtils(config)
+
+  override def createAccumulator(): AstCreationPass.Accumulator = AstCreationPass.Accumulator()
+
+  override def mergeAccumulator(left: AstCreationPass.Accumulator, right: AstCreationPass.Accumulator): Unit = {
+    left.usedTypes ++= right.usedTypes
+  }
+
+  override def onAccumulatorComplete(builder: DiffGraphBuilder, accumulator: AstCreationPass.Accumulator): Unit = {
+    _usedTypes = accumulator.usedTypes.toSet
+  }
 
   override def generateParts(): Array[String] = sourceParser.relativeFilenames.toArray
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
+  override def runOnPart(
+    diffGraph: DiffGraphBuilder,
+    filename: String,
+    accumulator: AstCreationPass.Accumulator
+  ): Unit = {
     sourceParser.parseAnalysisFile(filename, !config.disableFileContent) match {
       case Some(compilationUnit, fileContent) =>
         symbolSolver.inject(compilationUnit)
@@ -60,15 +60,16 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
             filename,
             compilationUnit,
             contentToUse,
-            global,
+            accumulator,
             symbolSolver,
             config.keepTypeArguments,
             loggedExceptionCounts
           )(config.schemaValidation, config.disableTypeFallback)
             .createAst()
         )
+        logger.debug(s"Processed '$filename'")
 
-      case None => logger.warn(s"Skipping AST creation for $filename")
+      case None => logger.warn(s"Failed to process '$filename'")
     }
   }
 
@@ -79,11 +80,16 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     JavaParserFacade.clearInstances()
   }
 
-  private def initParserAndUtils(config: Config): (SourceParser, JavaSymbolSolver) = {
-    val dependencies = getDependencyList(config.inputPath)
-    val sourceParser = SourceParser(config, sourcesOverride)
-    val symbolSolver = createSymbolSolver(config, dependencies, sourceParser)
-    (sourceParser, symbolSolver)
+  /** Close type solver resources (open JAR files, jrt: file systems). Should be called after all AST creation is done
+    * and [[clearJavaParserCaches]] has been called.
+    */
+  def closeTypeSolvers(): Unit = combinedTypeSolver.close()
+
+  private def initParserAndUtils(config: Config): (SourceParser, JavaSymbolSolver, SimpleCombinedTypeSolver) = {
+    val dependencies                   = getDependencyList(config.inputPath)
+    val sourceParser                   = SourceParser(config, sourcesOverride, dependencies)
+    val (symbolSolver, combinedSolver) = createSymbolSolver(config, dependencies, sourceParser)
+    (sourceParser, symbolSolver, combinedSolver)
   }
 
   private def getDependencyList(inputPath: String): List[String] = {
@@ -105,7 +111,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     if (shouldFetch) {
       DependencyResolver.getDependencies(Paths.get(inputPath)) match {
         case Some(deps) => deps.toList
-        case None =>
+        case None       =>
           logger.warn(s"Could not fetch dependencies for project at path $inputPath")
           List()
       }
@@ -118,7 +124,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     config: Config,
     dependencies: List[String],
     sourceParser: SourceParser
-  ): JavaSymbolSolver = {
+  ): (JavaSymbolSolver, SimpleCombinedTypeSolver) = {
     val verboseDebugLoggingEnvVarValue = Option(System.getenv(JavaSrcEnvVar.EnableVerboseTypeLogging.name))
     val enableVerboseTypeLogging       = verboseDebugLoggingEnvVarValue.isDefined || config.enableVerboseTypeLogging
     if (enableVerboseTypeLogging) {
@@ -130,7 +136,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     val symbolSolver       = new JavaSymbolSolver(combinedTypeSolver)
 
     val jdkPathFromEnvVar = Option(System.getenv(JavaSrcEnvVar.JdkPath.name))
-    val jdkPath = (config.jdkPath, jdkPathFromEnvVar) match {
+    val jdkPath           = (config.jdkPath, jdkPathFromEnvVar) match {
       case (None, None) =>
         val javaHome = System.getProperty("java.home")
         logger.info(s"No explicit jdk-path set in , so using system java.home for JDK type information: $javaHome")
@@ -148,7 +154,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     }
 
     combinedTypeSolver.addNonCachingTypeSolver(
-      JdkJarTypeSolver.fromJdkPath(jdkPath, config.cacheJdkTypeSolver, enableVerboseTypeLogging)
+      JarTypeSolver.fromPath(jdkPath, config.cacheJdkTypeSolver, enableVerboseTypeLogging, isJdkPath = true)
     )
 
     val sourceTypeSolver =
@@ -167,22 +173,22 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     }
     (jarsList ++ dependencies)
       .foreach { path =>
-        Try(new JarTypeSolver(path)) match {
+        Try(JarTypeSolver.fromPath(path, useCache = true, enableVerboseTypeLogging = enableVerboseTypeLogging)) match {
           case Success(jarTypeSolver) =>
             combinedTypeSolver.addNonCachingTypeSolver(jarTypeSolver)
             if (enableVerboseTypeLogging) {
               logger.debug(s"Added JarTypeSolver for jar at $path")
-              logger.debug(
-                (s"Known classes:" :: jarTypeSolver.getKnownClasses.asScala.toList.sorted)
-                  .mkString(s"${System.lineSeparator()} - ")
-              )
             }
           case Failure(exception) =>
-            logger.warn(s"Could not create JarTypeSolver for jar at $path")
+            logger.warn(
+              s"Could not create type solver for archive at $path (${exception.getMessage}). " +
+                s"Types from this archive may be unresolved."
+            )
+            logger.debug(s"Could not create type solver for archive at $path", exception)
         }
       }
 
-    symbolSolver
+    (symbolSolver, combinedTypeSolver)
   }
 
   private def recursiveJarsFromPath(path: String): List[String] = {
@@ -201,5 +207,11 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
       case _ =>
         Nil
     }
+  }
+}
+
+object AstCreationPass {
+  case class Accumulator(usedTypes: mutable.HashSet[String] = mutable.HashSet.empty) {
+    def registerType(typeName: String): Unit = usedTypes.add(typeName)
   }
 }

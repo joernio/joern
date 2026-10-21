@@ -16,6 +16,8 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       callNode.signature shouldBe ""
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(1)
+      callNode.offset shouldBe Some(0)
+      callNode.offsetEnd shouldBe Some(10)
     }
 
     "test call receiver" in {
@@ -232,6 +234,36 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(5)
       callNode.methodFullName shouldBe "test.py:<module>.func"
+    }
+  }
+
+  "call with **kwargs unpacking" should {
+    val cpg = code("""func(a, **my_dict)""".stripMargin)
+
+    "test call node properties" in {
+      val callNode = cpg.call.codeExact("func(a, **my_dict)").head
+      callNode.name shouldBe "func"
+      callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+    }
+
+    "test that the unpacked dict appears as an argument" in {
+      val callNode  = cpg.call.codeExact("func(a, **my_dict)").head
+      val kwargsArg = callNode.argument.isIdentifier.nameExact("my_dict").head
+      kwargsArg.code shouldBe "my_dict"
+      kwargsArg.argumentIndex shouldBe -1
+      kwargsArg.argumentName shouldBe Some("<keyword_dict>")
+    }
+  }
+
+  "call on member with **kwargs unpacking" should {
+    val cpg = code("""x.func(a, **my_dict)""".stripMargin)
+
+    "test that the unpacked dict appears as an argument" in {
+      val callNode  = cpg.call.codeExact("x.func(a, **my_dict)").head
+      val kwargsArg = callNode.argument.isIdentifier.nameExact("my_dict").head
+      kwargsArg.code shouldBe "my_dict"
+      kwargsArg.argumentIndex shouldBe -1
+      kwargsArg.argumentName shouldBe Some("<keyword_dict>")
     }
   }
 

@@ -5,7 +5,7 @@ import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.nodes.FieldIdentifier
-import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.shiftleft.codepropertygraph.generated.nodes.TypeRef
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
@@ -33,7 +33,7 @@ class EnumTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         }
         inside(color.astChildren.isMethod.l) { case List(clinit) =>
           clinit.name shouldBe io.joern.x2cpg.Defines.StaticInitMethodName
-          clinit.fullName shouldBe s"color:${io.joern.x2cpg.Defines.StaticInitMethodName}"
+          clinit.fullName shouldBe s"color.${io.joern.x2cpg.Defines.StaticInitMethodName}:color()"
           clinit.lineNumber shouldBe Option(2)
           clinit.columnNumber shouldBe Option(1)
           clinit.filename shouldBe "Test0.cpp"
@@ -68,7 +68,7 @@ class EnumTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
           }
           inside(color.astChildren.isMethod.l) { case List(clinit) =>
             clinit.name shouldBe io.joern.x2cpg.Defines.StaticInitMethodName
-            clinit.fullName shouldBe s"color:${io.joern.x2cpg.Defines.StaticInitMethodName}"
+            clinit.fullName shouldBe s"color.${io.joern.x2cpg.Defines.StaticInitMethodName}:color()"
             inside(clinit.ast.isCall.l) { case List(greenInit) =>
               greenInit.code shouldBe "green = 20"
             }
@@ -94,7 +94,7 @@ class EnumTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         }
         inside(altitude.astChildren.isMethod.l) { case List(clinit) =>
           clinit.name shouldBe io.joern.x2cpg.Defines.StaticInitMethodName
-          clinit.fullName shouldBe s"altitude:${io.joern.x2cpg.Defines.StaticInitMethodName}"
+          clinit.fullName shouldBe s"altitude.${io.joern.x2cpg.Defines.StaticInitMethodName}:altitude()"
           inside(clinit.ast.isCall.code.l) { case List(highInit, lowInit) =>
             highInit shouldBe "high='h'"
             lowInit shouldBe "low='l'"
@@ -185,9 +185,10 @@ class EnumTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         inside(cpg.call.l) { case List(assign, ma) =>
           assign.code shouldBe "x = X::a"
           ma.code shouldBe "X::a"
-          inside(ma.ast.l) { case List(call: Call, idX: Identifier, fieldIdA: FieldIdentifier) =>
+          inside(ma.ast.l) { case List(call: Call, typeRefX: TypeRef, fieldIdA: FieldIdentifier) =>
             call.name shouldBe Operators.fieldAccess
-            idX.order shouldBe 1
+            typeRefX.order shouldBe 1
+            typeRefX.typeFullName shouldBe "X"
             fieldIdA.order shouldBe 2
           }
         }

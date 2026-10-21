@@ -1,29 +1,35 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class ImportCpgTests extends AnyFreeSpec with Matchers {
+class ImportCpgTests extends PySrc2CpgFixture with Matchers {
 
   "test plain import statement" in {
-    lazy val cpg   = Py2CpgTestContext.buildCpg("""import a""".stripMargin)
+    val cpg        = code("""import a""".stripMargin)
     val assignment = cpg.call.code(".*=.*import.*").l
 
     val lhsIdentifier = assignment.argument(1).isIdentifier.head
     lhsIdentifier.code shouldBe "a"
 
-    val fromLiteral = assignment.argument(2).isCall.argument(1).head
+    val importCall = assignment.argument(2).isCall.head
+    importCall.name shouldBe Operators.importCall
+    importCall.methodFullName shouldBe Operators.importCall
+    importCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    importCall.receiver.l shouldBe empty
+
+    val fromLiteral = importCall.argument(1)
     fromLiteral.code shouldBe ""
 
-    val importedEntity = assignment.argument(2).isCall.argument(2).head
+    val importedEntity = importCall.argument(2)
     importedEntity.code shouldBe "a"
   }
 
   "test plain import statement with hierarchical name" in {
-    lazy val cpg   = Py2CpgTestContext.buildCpg("""import a.b""".stripMargin)
+    val cpg        = code("""import a.b""".stripMargin)
     val assignment = cpg.call.code(".*=.*import.*").l
 
     val lhsIdentifier = assignment.argument(1).isIdentifier.head
@@ -37,7 +43,7 @@ class ImportCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "test 'from ... import' statement with hierarchical name" in {
-    lazy val cpg   = Py2CpgTestContext.buildCpg("""from a.b import c""".stripMargin)
+    val cpg        = code("""from a.b import c""".stripMargin)
     val assignment = cpg.call.code(".*=.*import.*").l
 
     val lhsIdentifier = assignment.argument(1).isIdentifier.head

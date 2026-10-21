@@ -3,8 +3,9 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.x2cpg.AstNodeBuilder.{bindingNode, closureBindingNode}
-import io.joern.x2cpg.{Ast, AstEdge, ValidationMode}
+import io.joern.x2cpg.{Ast, AstEdge, Defines as XDefines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.*
 
@@ -46,11 +47,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       }
 
     val astParentType =
-      if useSurroundingTypeFullName || shouldUseSurroundingTypeFullName then Some(NodeTypes.TYPE_DECL)
+      if (useSurroundingTypeFullName || shouldUseSurroundingTypeFullName) Some(NodeTypes.TYPE_DECL)
       else scope.surroundingAstLabel
 
     val astParentFullName =
-      if useSurroundingTypeFullName || shouldUseSurroundingTypeFullName then scope.surroundingTypeFullName
+      if (useSurroundingTypeFullName || shouldUseSurroundingTypeFullName) scope.surroundingTypeFullName
       else scope.surroundingScopeFullName
 
     val method = methodNode(
@@ -91,7 +92,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val refs = {
       val typeRef =
-        if isClosure then typeRefNode(node, s"$methodName&Proc", s"$fullName&Proc")
+        if (isClosure) typeRefNode(node, s"$methodName&Proc", s"$fullName&Proc")
         else typeRefNode(node, methodName, fullName)
       List(typeRef, methodRefNode(node, methodName, fullName, fullName)).map(Ast.apply)
     }
@@ -101,7 +102,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     // Consider which variables are captured from the outer scope
     val stmtBlockAst = if (isClosure || isSingletonObjectMethod) {
       // create closure `self` local used for capturing
-      scope.lookupSelfInOuterScope
+      scope
+        .lookupCapturedVariable(Defines.Self)
         .collect {
           case local: NewLocal             => local.name
           case param: NewMethodParameterIn => param.name
@@ -117,11 +119,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       if (methodName == Defines.TypeDeclBody) {
         val stmtList = node.body.asInstanceOf[StatementList]
         astForStatementList(StatementList(stmtList.statements ++ optionalStatementList.statements)(stmtList.span))
-      } else if (methodName != Defines.Initialize) {
-        astForMethodBody(node.body, optionalStatementList)
-      } else {
-        astForConstructorMethodBody(node.body, optionalStatementList)
-      }
+      } else if (methodName != Defines.Initialize) astForMethodBody(node.body, optionalStatementList)
+      else astForConstructorMethodBody(node.body, optionalStatementList)
     }
 
     // For yield statements where there isn't an explicit proc parameter
@@ -139,12 +138,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       astParentType.foreach(typeDeclNode_.astParentType(_))
       astParentFullName.foreach(typeDeclNode_.astParentFullName(_))
       createMethodTypeBindings(method, typeDeclNode_)
-      if isClosure then Ast(typeDeclNode_).withChild(Ast(modifierNode(node, ModifierTypes.LAMBDA)))
-      else Ast(typeDeclNode_)
+      if (isClosure) Ast(typeDeclNode_).withChild(Ast(modifierNode(node, ModifierTypes.LAMBDA))) else Ast(typeDeclNode_)
     }
 
     // Due to lambdas being invoked by `call()`, this additional type ref holding that member is created.
-    val lambdaTypeDeclAst = if isClosure then {
+    val lambdaTypeDeclAst = if (isClosure) {
       val typeDeclNode_ = typeDeclNode(node, s"$methodName&Proc", s"$fullName&Proc", relativeFileName, code(node))
       astParentType.foreach(typeDeclNode_.astParentType(_))
       astParentFullName.foreach(typeDeclNode_.astParentFullName(_))
@@ -161,21 +159,18 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       // <main> functions are private functions on the Object class
       else if (isSurroundedByProgramScope) ModifierTypes.PRIVATE
       // Else, use whatever modifier has been user-defined (or is default for current scope)
-      else currentAccessModifier
+      else scope.visibilityForMethod(methodName).getOrElse(currentAccessModifier)
     val modifiers = mutable.Buffer(ModifierTypes.VIRTUAL, accessModifier)
     if (isClosure) modifiers.addOne(ModifierTypes.LAMBDA)
     if (isConstructor) modifiers.addOne(ModifierTypes.CONSTRUCTOR)
 
     val prefixMemberAst =
-      if isClosure || isSingletonObjectMethod || isSurroundedByProgramScope then
+      if (isClosure || isSingletonObjectMethod || isSurroundedByProgramScope) {
         Ast() // program scope members are set elsewhere
-      else {
-        // Singleton constructors that initialize @@ fields should have their members linked under the singleton class
-        val methodMember = scope.surroundingTypeFullName match {
-          case Some(astParentTfn) => memberForMethod(method, Option(NodeTypes.TYPE_DECL), Option(astParentTfn))
-          case None               => memberForMethod(method, scope.surroundingAstLabel, scope.surroundingScopeFullName)
-        }
-        Ast(memberForMethod(method, Option(NodeTypes.TYPE_DECL), astParentFullName))
+      } else {
+        Ast(
+          memberForMethod(method, Option(NodeTypes.TYPE_DECL), astParentFullName.orElse(scope.surroundingTypeFullName))
+        )
       }
     // For closures, we also want the method/type refs for upstream use
     val methodAst_ = {
@@ -194,32 +189,23 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .foreach(Ast.storeInDiffGraph(_, diffGraph))
     // In the case of a closure, we expect this method to return a method ref, otherwise, we bind a pointer to a
     // method ref, e.g. self.foo = def foo(...)
-    if isClosure || isSingletonObjectMethod then refs else createMethodRefPointer(method) :: Nil
+    if (isClosure || isSingletonObjectMethod) refs else createMethodRefPointer(method) :: Nil
   }
 
   protected def astForMethodAccessModifier(node: MethodAccessModifier): Seq[Ast] = {
-    val originalAccessModifier = currentAccessModifier
-    popAccessModifier()
-
-    node match {
-      case _: PrivateMethodModifier =>
-        pushAccessModifier(ModifierTypes.PRIVATE)
-      case _: PublicMethodModifier =>
-        pushAccessModifier(ModifierTypes.PUBLIC)
+    val (operatorName, expr) = node match {
+      case x: PrivateMethodModifier => (RubyOperators.privateClassMethod, x: RubyExpression)
+      case x: PublicMethodModifier  => (RubyOperators.publicClassMethod, x: RubyExpression)
     }
 
-    val methodAst = node.method match {
+    val methodAsts = node.arguments.flatMap {
       case m: ProcedureDeclaration => astsForStatement(m)
-      case x                       =>
-        // Not sure how we should represent dynamically setting access modifiers based on method refs
-        logger.debug(s"Unhandled method reference from AST type ${x.getClass}")
-        Nil
+      case _                       => Nil
     }
 
-    popAccessModifier()
-    pushAccessModifier(originalAccessModifier)
-
-    methodAst
+    val argAsts = node.arguments.map(astForExpression)
+    val call    = callNode(expr, code(expr), operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
+    methodAsts :+ callAst(call, argAsts)
   }
 
   private def transformAsClosureBody(originNode: RubyExpression, refs: List[Ast], baseStmtBlockAst: Ast): Ast = {
@@ -227,13 +213,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val capturedLocalNodes = baseStmtBlockAst.nodes
       .collect { case x: NewIdentifier if x.name != Defines.Self => x }
       .distinctBy(_.name)
-      .map(i => scope.lookupVariableInOuterScope(i.name))
-      .filter(_.iterator.nonEmpty)
-      .flatten
-      .toSet
+      .filter { i =>
+        val localVar    = scope.lookupVariable(i.name)
+        val capturedVar = scope.lookupCapturedVariable(i.name)
+        localVar.isEmpty || capturedVar.contains(localVar.get)
+      }
+      .flatMap(i => scope.lookupCapturedVariable(i.name))
+      .toList
 
-    val selfLocal     = scope.lookupSelfInOuterScope.toSet
-    val capturedNodes = capturedLocalNodes ++ selfLocal
+    val selfLocal     = scope.lookupCapturedVariable(Defines.Self).toList
+    val capturedNodes = (capturedLocalNodes ++ selfLocal).distinct
 
     val capturedIdentifiers = baseStmtBlockAst.nodes.collect {
       case i: NewIdentifier if capturedNodes.map(_.name).contains(i.name) => i
@@ -255,7 +244,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     createClosureBindingInformation(capturedNodes)
       .collect { case (capturedLocal, name, code, Some(closureBindingId)) =>
         val selfCapturingLocal = Option.when(name == Defines.Self)(scope.lookupSelfInCurrentScope).flatten
-        val capturingLocal = selfCapturingLocal.getOrElse(
+        val capturingLocal     = selfCapturingLocal.getOrElse(
           localNode(originNode, name, name, Defines.Any, closureBindingId = Option(closureBindingId))
         )
 
@@ -317,7 +306,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           case ArrayParameter(_) => prefixAsCoreType("Array")
           case HashParameter(_)  => prefixAsCoreType("Hash")
         }
-        val name = node.name.stripPrefix("*")
+        val name        = node.name.stripPrefix("*")
         val parameterIn = parameterInNode(
           node = node,
           name = name,
@@ -481,7 +470,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         }
 
         // The member for these types refers to the singleton class
-        val member = memberForMethod(method, Option(NodeTypes.TYPE_DECL), astParentFullName.map(x => s"$x<class>"))
+        val memberParentFullName =
+          astParentFullName.map(name => s"$name<class>").orElse(Option(XDefines.UnresolvedNamespace))
+        val member = memberForMethod(method, Option(NodeTypes.TYPE_DECL), memberParentFullName)
         diffGraph.addNode(member)
 
         val _methodAst =
@@ -490,15 +481,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             parameterAsts ++ anonProcParam,
             stmtBlockAst,
             methodReturnNode(node, Defines.Any),
-            modifierNode(node, ModifierTypes.VIRTUAL) :: modifierNode(node, currentAccessModifier) :: Nil
+            modifierNode(node, ModifierTypes.VIRTUAL) :: modifierNode(node, ModifierTypes.STATIC) :: modifierNode(
+              node,
+              scope.visibilityForMethod(node.methodName).getOrElse(currentAccessModifier)
+            ) :: Nil
           )
 
         _methodAst :: methodTypeDeclAst :: Nil foreach (Ast.storeInDiffGraph(_, diffGraph))
-        if (addEdge) {
-          Nil
-        } else {
-          createMethodRefPointer(method) :: Nil
-        }
+        if (addEdge) Nil else createMethodRefPointer(method) :: Nil
       case targetNode =>
         logger.warn(
           s"Target node type for singleton method declarations are not supported yet: ${targetNode.text} (${targetNode.getClass.getSimpleName}), skipping"
@@ -520,7 +510,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
       val methodRefIdent = {
         val self = NewIdentifier().name(Defines.Self).code(Defines.Self).typeFullName(Defines.Any)
-        val fi = NewFieldIdentifier()
+        val fi   = NewFieldIdentifier()
           .code(method.name)
           .canonicalName(method.name)
           .lineNumber(method.lineNumber)
@@ -568,11 +558,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     if (this.parseLevel == AstParseLevel.SIGNATURES) {
       Ast()
     } else {
-      body match
+      body match {
         case stmtList: StatementList =>
           val combinedStmtList =
             StatementList(optionalStatementList.statements ++ stmtList.statements)(stmtList.span)
-          if returnLastExpression then astForStatementListReturningLastExpression(combinedStmtList)
+          if (returnLastExpression) astForStatementListReturningLastExpression(combinedStmtList)
           else astForStatementList(combinedStmtList)
         case rescueExpr: RescueExpression =>
           astForRescueExpression(rescueExpr)
@@ -580,13 +570,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
               SimpleCall | MemberAccess | MemberCall) =>
           val combinedStmtList =
             StatementList(optionalStatementList.statements ++ List(body))(body.span)
-          if returnLastExpression then astForStatementListReturningLastExpression(combinedStmtList)
+          if (returnLastExpression) astForStatementListReturningLastExpression(combinedStmtList)
           else astForStatementList(combinedStmtList)
         case body =>
           logger.warn(
             s"Non-linear method bodies are not supported yet: ${body.text} (${body.getClass.getSimpleName}) ($relativeFileName), skipping"
           )
           astForUnknown(body)
+      }
     }
   }
 
@@ -594,7 +585,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     if (this.parseLevel == AstParseLevel.SIGNATURES) {
       Ast()
     } else {
-      body match
+      body match {
         case stmtList: StatementList =>
           astForStatementList(StatementList(optionalStatementList.statements ++ stmtList.statements)(stmtList.span))
         case _: (StaticLiteral | BinaryExpression | SingleAssignment | SimpleIdentifier | ArrayLiteral | HashLiteral |
@@ -605,6 +596,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             s"Non-linear method bodies are not supported yet: ${body.text} (${body.getClass.getSimpleName}) ($relativeFileName), skipping"
           )
           astForUnknown(body)
+      }
     }
   }
 
@@ -633,8 +625,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   private def createClosureBindingInformation(
-    capturedNodes: Set[DeclarationNew]
-  ): Set[(DeclarationNew, String, String, Option[String])] = {
+    capturedNodes: List[DeclarationNew]
+  ): List[(DeclarationNew, String, String, Option[String])] = {
     capturedNodes
       .collect {
         case local: NewLocal =>

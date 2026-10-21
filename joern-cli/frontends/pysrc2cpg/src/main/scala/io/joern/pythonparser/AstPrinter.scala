@@ -120,7 +120,7 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
   override def visit(ifStmt: If): String = {
     val elseString =
       ifStmt.orelse.size match {
-        case 0 => ""
+        case 0                                        => ""
         case 1 if ifStmt.orelse.head.isInstanceOf[If] =>
           s"${ls}el" + print(ifStmt.orelse.head)
         case _ =>
@@ -351,7 +351,7 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
   }
 
   override def visit(formattedValue: FormattedValue): String = {
-    val equalSignStr = if (formattedValue.equalSign) "=" else ""
+    val equalSignStr  = if (formattedValue.equalSign) "=" else ""
     val conversionStr = formattedValue.conversion match {
       case -1  => ""
       case 115 => "!s"
@@ -609,7 +609,7 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     var result             = ""
     var separatorString    = ""
     val combinedPosArgSize = arguments.posonlyargs.size + arguments.args.size
-    val defaultArgs = immutable.List.fill(combinedPosArgSize - arguments.defaults.size)(None) ++
+    val defaultArgs        = immutable.List.fill(combinedPosArgSize - arguments.defaults.size)(None) ++
       arguments.defaults.map(Option.apply)
 
     if (arguments.posonlyargs.nonEmpty) {
@@ -627,7 +627,7 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
     if (arguments.args.nonEmpty) {
       val defaultsForArgs = defaultArgs.drop(arguments.posonlyargs.size)
-      val argsString =
+      val argsString      =
         arguments.args
           .zip(defaultsForArgs)
           .map { case (arg, defaultOption) =>

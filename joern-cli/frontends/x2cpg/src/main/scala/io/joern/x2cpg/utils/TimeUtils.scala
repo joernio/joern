@@ -2,10 +2,7 @@ package io.joern.x2cpg.utils
 
 import java.util.Locale
 import scala.concurrent.*
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.*
-import scala.language.postfixOps
-import scala.util.Try
 
 object TimeUtils {
 
@@ -20,10 +17,6 @@ object TimeUtils {
 
   /** Selects most appropriate TimeUnit for given duration and formats it accordingly */
   def pretty(duration: Long): String = pretty(Duration.fromNanos(duration))
-
-  def runWithTimeout[T](timeoutMs: Long)(f: => T): Try[T] = {
-    Try(Await.result(Future(f), timeoutMs milliseconds))
-  }
 
   private def pretty(duration: Duration): String =
     duration match {

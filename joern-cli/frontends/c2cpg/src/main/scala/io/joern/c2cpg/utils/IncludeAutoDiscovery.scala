@@ -1,14 +1,13 @@
 package io.joern.c2cpg.utils
 
 import io.joern.c2cpg.Config
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.shiftleft.semanticcpg.utils.FileUtil.*
-import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.LoggerFactory
 
-import java.nio.file.{Path, Paths, Files}
+import java.nio.file.{Files, Path, Paths}
 import scala.collection.mutable
-import scala.util.Failure
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 object IncludeAutoDiscovery {
 
@@ -37,35 +36,43 @@ object IncludeAutoDiscovery {
   private val LanguageSetting = Map("LC_ALL" -> "C")
 
   // Only check once
-  private var isGccAvailable: Option[Boolean] = None
+  @volatile private var isGccAvailable: Option[Boolean] = None
 
   // Only discover them once
-  private var systemIncludePathsC: mutable.LinkedHashSet[Path]   = mutable.LinkedHashSet.empty
-  private var systemIncludePathsCPP: mutable.LinkedHashSet[Path] = mutable.LinkedHashSet.empty
+  @volatile private var systemIncludePathsC: mutable.LinkedHashSet[Path]   = mutable.LinkedHashSet.empty
+  @volatile private var systemIncludePathsCPP: mutable.LinkedHashSet[Path] = mutable.LinkedHashSet.empty
 
   def discoverIncludePathsC(config: Config): mutable.LinkedHashSet[Path] = {
     if (!config.includePathsAutoDiscovery) return mutable.LinkedHashSet.empty
     if (systemIncludePathsC.nonEmpty) return systemIncludePathsC
-
-    if (isMSVCProject(config)) {
-      systemIncludePathsCPP = discoverMSVCPaths() // discovers paths for both languages
-      systemIncludePathsC = systemIncludePathsCPP
-      reportIncludePaths(systemIncludePathsC, "MSVC")
+    IncludeAutoDiscovery.synchronized {
+      if (systemIncludePathsC.nonEmpty) return systemIncludePathsC
+      if (isMSVCProject(config)) {
+        systemIncludePathsCPP = discoverMSVCPaths() // discovers paths for both languages
+        systemIncludePathsC = systemIncludePathsCPP
+        reportIncludePaths(systemIncludePathsC, "MSVC")
+      }
+      if (systemIncludePathsC.isEmpty && gccAvailable()) {
+        systemIncludePathsC = discoverPaths(CIncludeCommand)
+        reportIncludePaths(systemIncludePathsC, "C")
+      }
+      systemIncludePathsC
     }
-    if (systemIncludePathsC.isEmpty && gccAvailable()) {
-      systemIncludePathsC = discoverPaths(CIncludeCommand)
-      reportIncludePaths(systemIncludePathsC, "C")
-    }
-    systemIncludePathsC
   }
 
   def gccAvailable(): Boolean = {
     isGccAvailable match {
-      case Some(value) =>
-        value
-      case None =>
-        isGccAvailable = Option(checkForGcc())
-        isGccAvailable.get
+      case Some(value) => value
+      case None        =>
+        IncludeAutoDiscovery.synchronized {
+          isGccAvailable match {
+            case Some(value) => value
+            case None        =>
+              val result = checkForGcc()
+              isGccAvailable = Some(result)
+              result
+          }
+        }
     }
   }
 
@@ -82,7 +89,7 @@ object IncludeAutoDiscovery {
 
   private def discoverPaths(command: Seq[String]): mutable.LinkedHashSet[Path] =
     GccSpecificExternalCommand.run(command, ".", LanguageSetting) match {
-      case Success(output) => extractPaths(output)
+      case Success(output)    => extractPaths(output)
       case Failure(exception) =>
         logger.warn(s"Unable to discover system include paths. Running '$command' failed.", exception)
         mutable.LinkedHashSet.empty
@@ -93,7 +100,7 @@ object IncludeAutoDiscovery {
     val endIndex   = output.indexWhere(_.startsWith("End of search list."))
     mutable.LinkedHashSet.from(output.slice(startIndex, endIndex).map { pathString =>
       val trimmedPathString = pathString.trim
-      val macSpecificFix = if (trimmedPathString.contains(" (") && trimmedPathString.endsWith(")")) {
+      val macSpecificFix    = if (trimmedPathString.contains(" (") && trimmedPathString.endsWith(")")) {
         trimmedPathString.substring(0, trimmedPathString.indexOf(" ("))
       } else trimmedPathString
       Paths.get(macSpecificFix).toRealPath()
@@ -146,17 +153,19 @@ object IncludeAutoDiscovery {
   def discoverIncludePathsCPP(config: Config): mutable.LinkedHashSet[Path] = {
     if (!config.includePathsAutoDiscovery) return mutable.LinkedHashSet.empty
     if (systemIncludePathsCPP.nonEmpty) return systemIncludePathsCPP
-
-    if (isMSVCProject(config)) {
-      systemIncludePathsCPP = discoverMSVCPaths() // discovers paths for both languages
-      systemIncludePathsC = systemIncludePathsCPP
-      reportIncludePaths(systemIncludePathsCPP, "MSVC")
+    IncludeAutoDiscovery.synchronized {
+      if (systemIncludePathsCPP.nonEmpty) return systemIncludePathsCPP
+      if (isMSVCProject(config)) {
+        systemIncludePathsCPP = discoverMSVCPaths() // discovers paths for both languages
+        systemIncludePathsC = systemIncludePathsCPP
+        reportIncludePaths(systemIncludePathsCPP, "MSVC")
+      }
+      if (systemIncludePathsCPP.isEmpty && gccAvailable()) {
+        systemIncludePathsCPP = discoverPaths(CppIncludeCommand)
+        reportIncludePaths(systemIncludePathsCPP, "CPP")
+      }
+      systemIncludePathsCPP
     }
-    if (systemIncludePathsCPP.isEmpty && gccAvailable()) {
-      systemIncludePathsCPP = discoverPaths(CppIncludeCommand)
-      reportIncludePaths(systemIncludePathsCPP, "CPP")
-    }
-    systemIncludePathsCPP
   }
 
 }

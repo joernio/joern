@@ -13,7 +13,7 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
 
   protected def astForTypeSpec(typeSpecNode: ParserNodeInfo): Seq[Ast] = {
     val (name, fullName, memberAsts) = processTypeSepc(createParserNodeInfo(typeSpecNode.json))
-    val typeDeclNode_ =
+    val typeDeclNode_                =
       typeDeclNode(typeSpecNode, name, fullName, relPathFileName, typeSpecNode.code)
     val modifier = addModifier(typeSpecNode, typeDeclNode_, name)
     Seq(Ast(typeDeclNode_).withChild(Ast(modifier)).withChildren(memberAsts))
@@ -26,34 +26,35 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
   }
 
   protected def astForStructType(expr: ParserNodeInfo, typeDeclFullName: String): Seq[Ast] = {
-    Try(expr.json(ParserKeys.Fields)) match
+    Try(expr.json(ParserKeys.Fields)) match {
       case Success(fields) if fields != null =>
         fields(ParserKeys.List).arrOpt
           .getOrElse(List())
-          .flatMap(x => {
+          .flatMap { x =>
             val typeInfo                = createParserNodeInfo(x(ParserKeys.Type))
             val (typeFullName, _, _, _) = processTypeInfo(typeInfo)
             x(ParserKeys.Names).arrOpt
               .getOrElse(List())
-              .map(fieldInfo => {
+              .map { fieldInfo =>
                 val fieldNodeInfo = createParserNodeInfo(fieldInfo)
                 val fieldName     = fieldNodeInfo.json(ParserKeys.Name).str
                 if (goGlobal.checkForDependencyFlags(fieldName)) {
                   goGlobal.recordStructTypeMemberTypeInfo(typeDeclFullName, fieldName, typeFullName)
                 }
                 Ast(memberNode(typeInfo, fieldName, fieldNodeInfo.code, typeFullName))
-              })
-          })
+              }
+          }
           .toSeq
       case _ => Seq.empty
+    }
   }
 
   private def processReceiver(info: ParserNodeInfo): (Seq[Ast], String) = {
     val xnode           = createParserNodeInfo(info.json(ParserKeys.X))
     val fieldIdentifier = info.json(ParserKeys.Sel)(ParserKeys.Name).str
-    xnode.node match
+    xnode.node match {
       case Ident =>
-        Try(xnode.json(ParserKeys.Obj)) match
+        Try(xnode.json(ParserKeys.Obj)) match {
           case Success(_) =>
             // The presence of "Obj" field indicates its variable identifier and not an alias
             receiverAstAndFullName(xnode, fieldIdentifier)
@@ -69,15 +70,17 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
                   s"$nameSpace.$fieldIdentifier${Defines.dot}${Defines.FieldAccess}${Defines.dot}${XDefines.Unknown}"
                 )
             )
+        }
       case _ =>
         // This will take care of chained calls
         receiverAstAndFullName(xnode, fieldIdentifier)
+    }
   }
 
   private def receiverAstAndFullName(xnode: ParserNodeInfo, fieldIdentifier: String): (Seq[Ast], String) = {
     val identifierAsts       = astForNode(xnode)
     val receiverTypeFullName = getTypeFullNameFromAstNode(identifierAsts)
-    val fieldTypeFullName = goGlobal
+    val fieldTypeFullName    = goGlobal
       .getStructTypeMemberType(receiverTypeFullName, fieldIdentifier)
       .getOrElse(
         s"$receiverTypeFullName${Defines.dot}$fieldIdentifier${Defines.dot}${Defines.FieldAccess}${Defines.dot}${XDefines.Unknown}"
@@ -88,7 +91,7 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
   protected def astForFieldAccess(info: ParserNodeInfo): Seq[Ast] = {
     val (identifierAsts, fieldTypeFullName) = processReceiver(info)
     val fieldIdentifier                     = info.json(ParserKeys.Sel)(ParserKeys.Name).str
-    val callNode =
+    val callNode                            =
       operatorCallNode(info, info.code, Operators.fieldAccess, Some(fieldTypeFullName))
     Seq(callAst(callNode, identifierAsts ++ Seq(Ast(fieldIdentifierNode(info, fieldIdentifier, fieldIdentifier)))))
   }

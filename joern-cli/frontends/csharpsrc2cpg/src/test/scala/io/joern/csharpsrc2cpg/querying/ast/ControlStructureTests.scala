@@ -1,12 +1,11 @@
 package io.joern.csharpsrc2cpg.querying.ast
 
-import io.joern.csharpsrc2cpg.CSharpOperators
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.Block
 import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.ControlStructure
 import io.shiftleft.codepropertygraph.generated.nodes.JumpTarget
 import io.shiftleft.semanticcpg.language.*
 
@@ -17,22 +16,17 @@ class ControlStructureTests extends CSharpCode2CpgFixture {
         |throw new Exception("Error!");
         |""".stripMargin))
 
-    "create a throw operation with exception constructor" in {
-      inside(cpg.call.nameExact(CSharpOperators.throws).headOption) {
-        case Some(x: Call) =>
-          x.methodFullName shouldBe CSharpOperators.throws
-          x.code shouldBe "throw new Exception(\"Error!\");"
-          x.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    "create a throw control structure with exception constructor" in {
+      inside(cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.THROW).headOption) {
+        case Some(throwNode: ControlStructure) =>
+          throwNode.code shouldBe "throw new Exception(\"Error!\");"
 
-          inside(x.argumentOption(1)) {
-            case Some(exp: Call) =>
-              exp.code shouldBe "new Exception(\"Error!\")"
-              exp.name shouldBe Defines.ConstructorMethodName
-              exp.typeFullName shouldBe "System.Exception"
-            case _ => fail("No exception constructor node found!")
+          inside(throwNode.astChildren.isCall.headOption) { case Some(exp: Call) =>
+            exp.code shouldBe "new Exception(\"Error!\")"
+            exp.name shouldBe Defines.ConstructorMethodName
+            exp.typeFullName shouldBe "System.Exception"
+            throwNode.argumentOut.l shouldBe List(exp)
           }
-
-        case None => fail("No 'throw' call node found!")
       }
     }
   }
@@ -199,9 +193,8 @@ class ControlStructureTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "partially resolve calls on the defined variable" in {
-      inside(cpg.call.name("Open").methodFullName.l) {
-        case x :: Nil => x shouldBe "SqlConnection.Open:<unresolvedSignature>"
-        case _        => fail("Unexpected call node structure")
+      inside(cpg.call.name("Open").methodFullName.l) { case x :: Nil =>
+        x shouldBe "SqlConnection.Open:<unresolvedSignature>"
       }
     }
   }

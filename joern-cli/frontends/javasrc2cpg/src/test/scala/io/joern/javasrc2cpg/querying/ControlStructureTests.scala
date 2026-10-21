@@ -9,15 +9,18 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   ControlStructure,
   FieldIdentifier,
   Identifier,
+  JumpTarget,
   Literal,
   Local,
   Return,
-  TypeRef
+  TypeRef,
+  Unknown
 }
 import io.shiftleft.semanticcpg.language.*
 
 import scala.jdk.CollectionConverters.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class NewControlStructureTests extends JavaSrcCode2CpgFixture {
 
   "try with multiple catches and finally" should {
@@ -66,7 +69,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "create nodes for resources" in {
-      cpg.method.name("foo").body.astChildren.l match {
+      inside(cpg.method.name("foo").body.astChildren.l) {
         case List(
               frLocal: Local,
               frAssign: Call,
@@ -113,15 +116,10 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           brInitArg.typeFullName shouldBe "java.io.FileReader"
 
           tryBlock.controlStructureType shouldBe ControlStructureTypes.TRY
-          tryBlock.astChildren.l match {
-            case List(block: Block) =>
-              val List(returnStmt: Return) = block.astChildren.l: @unchecked
-              returnStmt.code shouldBe "return br.readLine();"
-
-            case result => fail(s"Expected single block as try body but got $result")
+          inside(tryBlock.astChildren.l) { case List(block: Block) =>
+            val List(returnStmt: Return) = block.astChildren.l: @unchecked
+            returnStmt.code shouldBe "return br.readLine();"
           }
-
-        case result => fail(s"Expected resource assignments before try but got $result")
       }
     }
   }
@@ -183,9 +181,8 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
        |""".stripMargin)
 
     "create a local node for the array" in {
-      val local = cpg.method.name("foo").local.nameExact("$iterLocal0").l match {
-        case List(local) => local
-        case result      => fail(s"Expected single iterator local but got $result")
+      val local = inside(cpg.method.name("foo").local.nameExact("$iterLocal0").l) { case List(local) =>
+        local
       }
 
       local.typeFullName shouldBe "java.lang.String[]"
@@ -201,19 +198,16 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
             case List(identifier: Identifier, _: Call) if identifier.name == "$iterLocal0" => true
             case _                                                                         => false
           }
-        } match {
-        case Some(iterAssign) => iterAssign
-        case result           => fail(s"Expected an assign to iterLocal in method but got $result")
-      }
+        }
+        .get
 
       assignment.name shouldBe Operators.assignment
       assignment.methodFullName shouldBe Operators.assignment
       assignment.order shouldBe 2
       assignment.typeFullName shouldBe "java.lang.String[]"
 
-      val (iterIdentifier, arrayInitializer) = assignment.argument.l match {
+      val (iterIdentifier, arrayInitializer) = inside(assignment.argument.l) {
         case List(iterIdentifier: Identifier, arrayAlloc: Call) => (iterIdentifier, arrayAlloc)
-        case result => fail(s"Expected arrayInitializer assign to iterLocal but got $result")
       }
 
       iterIdentifier.name shouldBe "$iterLocal0"
@@ -235,9 +229,8 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
     }
 
     "create a local node for idx" in {
-      val local = cpg.controlStructure.astChildren.l match {
-        case List(local: Local, _, _, _, _) => local
-        case result                         => fail(s"Expected local as first AST child but got $result")
+      val local = inside(cpg.controlStructure.astChildren.l) { case List(local: Local, _, _, _, _) =>
+        local
       }
       local.name shouldBe "$idx0"
       local.typeFullName shouldBe "int"
@@ -245,9 +238,8 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
     }
 
     "initialize idx to 0" in {
-      val (idxLocal, initializer) = cpg.controlStructure.astChildren.l match {
+      val (idxLocal, initializer) = inside(cpg.controlStructure.astChildren.l) {
         case List(itemLocal: Local, initializer: Call, _, _, _) => (itemLocal, initializer)
-        case result => fail(s"Expected initializer as second ast child but got $result")
       }
 
       initializer.name shouldBe Operators.assignment
@@ -255,27 +247,24 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       initializer.typeFullName shouldBe "int"
       initializer.order shouldBe 2
 
-      initializer.argument.l match {
-        case List(idx: Identifier, zeroLiteral: Literal) =>
-          idx.name shouldBe "$idx0"
-          idx.typeFullName shouldBe "int"
-          idx.order shouldBe 1
-          idx.argumentIndex shouldBe 1
-          idx.refOut.toSet should contain(idxLocal)
+      inside(initializer.argument.l) { case List(idx: Identifier, zeroLiteral: Literal) =>
+        idx.name shouldBe "$idx0"
+        idx.typeFullName shouldBe "int"
+        idx.order shouldBe 1
+        idx.argumentIndex shouldBe 1
+        idx.refOut.toSet should contain(idxLocal)
 
-          zeroLiteral.code shouldBe "0"
-          zeroLiteral.typeFullName shouldBe "int"
-          zeroLiteral.order shouldBe 2
-          zeroLiteral.argumentIndex shouldBe 2
+        zeroLiteral.code shouldBe "0"
+        zeroLiteral.typeFullName shouldBe "int"
+        zeroLiteral.order shouldBe 2
+        zeroLiteral.argumentIndex shouldBe 2
 
-        case result => fail(s"Expected args for idx = 0 but got $result")
       }
     }
 
     "compare idx to input array size" in {
-      val (idxLocal, condition) = cpg.controlStructure.astChildren.l match {
+      val (idxLocal, condition) = inside(cpg.controlStructure.astChildren.l) {
         case List(idxLocal: Local, _, conditionCall: Call, _, _) => (idxLocal, conditionCall)
-        case result => fail(s"Expected condition call as third AST child but got $result")
       }
 
       condition.name shouldBe Operators.lessThan
@@ -283,69 +272,53 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       condition.typeFullName shouldBe "boolean"
       condition.order shouldBe 3
 
-      condition.argument.l match {
-        case List(idx: Identifier, arraySize: Call) =>
-          idx.name shouldBe "$idx0"
-          idx.typeFullName shouldBe "int"
-          idx.order shouldBe 1
-          idx.argumentIndex shouldBe 1
-          idx.refOut.toSet should contain(idxLocal)
+      inside(condition.argument.l) { case List(idx: Identifier, arraySize: Call) =>
+        idx.name shouldBe "$idx0"
+        idx.typeFullName shouldBe "int"
+        idx.order shouldBe 1
+        idx.argumentIndex shouldBe 1
+        idx.refOut.toSet should contain(idxLocal)
 
-          arraySize.name shouldBe Operators.fieldAccess
-          arraySize.typeFullName shouldBe "int"
-          arraySize.order shouldBe 2
-          arraySize.argumentIndex shouldBe 2
+        arraySize.name shouldBe Operators.sizeOf
+        arraySize.typeFullName shouldBe "int"
+        arraySize.order shouldBe 2
+        arraySize.argumentIndex shouldBe 2
 
-          arraySize.argument.l match {
-            case List(items: Identifier, length: FieldIdentifier) =>
-              items.name shouldBe "$iterLocal0"
-              items.typeFullName shouldBe "java.lang.String[]"
-              items.order shouldBe 1
-              items.argumentIndex shouldBe 1
-              items.refOut.toSet should contain(cpg.method.name("foo").local.nameExact("$iterLocal0").head)
-
-              length.code shouldBe "length"
-              length.order shouldBe 2
-              length.argumentIndex shouldBe 2
-
-            case result => fail(s"Expected array.length field access but got $result")
-          }
-
-        case result => fail(s"Expected idx < array.length args but got $result")
+        inside(arraySize.argument.l) { case List(items: Identifier) =>
+          items.name shouldBe "$iterLocal0"
+          items.typeFullName shouldBe "java.lang.String[]"
+          items.order shouldBe 1
+          items.argumentIndex shouldBe 1
+          items.refOut.toSet should contain(cpg.method.name("foo").local.nameExact("$iterLocal0").head)
+        }
       }
     }
 
     "update idx on each loop" in {
-      val (idxLocal, update) = cpg.controlStructure.astChildren.l match {
+      val (idxLocal, update) = inside(cpg.controlStructure.astChildren.l) {
         case List(idxLocal: Local, _, _, update: Call, _) => (idxLocal, update)
-        case result                                       => fail(s"Expected update as 4th AST child but got $result")
       }
 
       update.name shouldBe Operators.postIncrement
       update.typeFullName shouldBe "int"
       update.order shouldBe 4
 
-      update.argument.l match {
-        case List(idx: Identifier) =>
-          idx.name shouldBe "$idx0"
-          idx.typeFullName shouldBe "int"
-          idx.order shouldBe 1
-          idx.argumentIndex shouldBe 1
-          idx.refOut.toSet should contain(idxLocal)
-
-        case result => fail(s"Expected single argument to ++ call but got $result")
+      inside(update.argument.l) { case List(idx: Identifier) =>
+        idx.name shouldBe "$idx0"
+        idx.typeFullName shouldBe "int"
+        idx.order shouldBe 1
+        idx.argumentIndex shouldBe 1
+        idx.refOut.toSet should contain(idxLocal)
       }
     }
 
     "create an assignment to the `item` local in the FOR body" in {
-      val (idxLocal, body) = cpg.controlStructure.astChildren.l match {
+      val (idxLocal, body) = inside(cpg.controlStructure.astChildren.l) {
         case List(idxLocal: Local, _, _, _, body: Block) => (idxLocal, body)
-        case result                                      => fail(s"Expected body as 5th AST child but got $result")
       }
 
-      val (itemLocal: Local, itemAssign: Call, sink: Call) = body.astChildren.l match {
+      val (itemLocal: Local, itemAssign: Call, sink: Call) = inside(body.astChildren.l) {
         case List(itemLocal: Local, itemAssign: Call, sink: Call) => (itemLocal, itemAssign, sink)
-        case result => fail(s"Expected local, assign and sink, but got $result")
       }
 
       itemLocal.name shouldBe "item"
@@ -355,48 +328,43 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       itemAssign.name shouldBe Operators.assignment
       itemAssign.typeFullName shouldBe "java.lang.String"
       itemAssign.order shouldBe 2
-      itemAssign.argument.l match {
-        case List(itemIdentifier: Identifier, indexAccess: Call) =>
-          itemIdentifier.name shouldBe "item"
-          itemIdentifier.typeFullName shouldBe "java.lang.String"
-          itemIdentifier.order shouldBe 1
-          itemIdentifier.argumentIndex shouldBe 1
-          itemIdentifier.refOut.toSet should contain(itemLocal)
+      inside(itemAssign.argument.l) { case List(itemIdentifier: Identifier, indexAccess: Call) =>
+        itemIdentifier.name shouldBe "item"
+        itemIdentifier.typeFullName shouldBe "java.lang.String"
+        itemIdentifier.order shouldBe 1
+        itemIdentifier.argumentIndex shouldBe 1
+        itemIdentifier.refOut.toSet should contain(itemLocal)
 
-          indexAccess.name shouldBe Operators.indexAccess
-          indexAccess.typeFullName shouldBe "java.lang.String"
-          indexAccess.order shouldBe 2
-          indexAccess.argumentIndex shouldBe 2
-          val (iterLocal: Identifier, idx: Identifier) = (indexAccess.argument.l match {
-            case List(items: Identifier, idx: Identifier) => (items, idx)
-            case result                                   => s"Expected iterLocal0[idx] args but got $result"
-          }): @unchecked
-          iterLocal.name shouldBe "$iterLocal0"
-          iterLocal.typeFullName shouldBe "java.lang.String[]"
-          iterLocal.order shouldBe 1
-          iterLocal.argumentIndex shouldBe 1
-          iterLocal.refOut.toSet should contain(cpg.local.nameExact("$iterLocal0").head)
+        indexAccess.name shouldBe Operators.indexAccess
+        indexAccess.typeFullName shouldBe "java.lang.String"
+        indexAccess.order shouldBe 2
+        indexAccess.argumentIndex shouldBe 2
+        val (iterLocal: Identifier, idx: Identifier) = (indexAccess.argument.l match {
+          case List(items: Identifier, idx: Identifier) => (items, idx)
+          case result                                   => s"Expected iterLocal0[idx] args but got $result"
+        }): @unchecked
+        iterLocal.name shouldBe "$iterLocal0"
+        iterLocal.typeFullName shouldBe "java.lang.String[]"
+        iterLocal.order shouldBe 1
+        iterLocal.argumentIndex shouldBe 1
+        iterLocal.refOut.toSet should contain(cpg.local.nameExact("$iterLocal0").head)
 
-          idx.name shouldBe "$idx0"
-          idx.typeFullName shouldBe "int"
-          idx.order shouldBe 2
-          idx.argumentIndex shouldBe 2
-          idx.refOut.toSet should contain(idxLocal)
-        case result => fail(s"Expected item = iterLocal0[idx] args but got $result")
+        idx.name shouldBe "$idx0"
+        idx.typeFullName shouldBe "int"
+        idx.order shouldBe 2
+        idx.argumentIndex shouldBe 2
+        idx.refOut.toSet should contain(idxLocal)
       }
 
       sink.name shouldBe "sink"
       sink.methodFullName shouldBe "Foo.sink:void(java.lang.String)"
       sink.order shouldBe 3
-      sink.argument.l match {
-        case List(item: Identifier) =>
-          item.name shouldBe "item"
-          item.typeFullName shouldBe "java.lang.String"
-          item.order shouldBe 1
-          item.argumentIndex shouldBe 1
-          item.refOut.toSet should contain(itemLocal)
-
-        case result => fail(s"Expected single identifier argument to sink but got $result")
+      inside(sink.argument.l) { case List(item: Identifier) =>
+        item.name shouldBe "item"
+        item.typeFullName shouldBe "java.lang.String"
+        item.order shouldBe 1
+        item.argumentIndex shouldBe 1
+        item.refOut.toSet should contain(itemLocal)
       }
     }
   }
@@ -415,9 +383,8 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "create a local node for idx" in {
-      val local = cpg.controlStructure.astChildren.l match {
-        case List(local: Local, _, _, _, _) => local
-        case result                         => fail(s"Expected local as first AST child but got $result")
+      val local = inside(cpg.controlStructure.astChildren.l) { case List(local: Local, _, _, _, _) =>
+        local
       }
       local.name shouldBe "$idx0"
       local.typeFullName shouldBe "int"
@@ -425,9 +392,8 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
     }
 
     "initialize idx to 0" in {
-      val (idxLocal, initializer) = cpg.controlStructure.astChildren.l match {
+      val (idxLocal, initializer) = inside(cpg.controlStructure.astChildren.l) {
         case List(itemLocal: Local, initializer: Call, _, _, _) => (itemLocal, initializer)
-        case result => fail(s"Expected initializer as second ast child but got $result")
       }
 
       initializer.name shouldBe Operators.assignment
@@ -435,27 +401,23 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       initializer.typeFullName shouldBe "int"
       initializer.order shouldBe 2
 
-      initializer.argument.l match {
-        case List(idx: Identifier, zeroLiteral: Literal) =>
-          idx.name shouldBe "$idx0"
-          idx.typeFullName shouldBe "int"
-          idx.order shouldBe 1
-          idx.argumentIndex shouldBe 1
-          idx.refOut.toSet should contain(idxLocal)
+      inside(initializer.argument.l) { case List(idx: Identifier, zeroLiteral: Literal) =>
+        idx.name shouldBe "$idx0"
+        idx.typeFullName shouldBe "int"
+        idx.order shouldBe 1
+        idx.argumentIndex shouldBe 1
+        idx.refOut.toSet should contain(idxLocal)
 
-          zeroLiteral.code shouldBe "0"
-          zeroLiteral.typeFullName shouldBe "int"
-          zeroLiteral.order shouldBe 2
-          zeroLiteral.argumentIndex shouldBe 2
-
-        case result => fail(s"Expected args for idx = 0 but got $result")
+        zeroLiteral.code shouldBe "0"
+        zeroLiteral.typeFullName shouldBe "int"
+        zeroLiteral.order shouldBe 2
+        zeroLiteral.argumentIndex shouldBe 2
       }
     }
 
     "compare idx to input array size" in {
-      val (idxLocal, condition) = cpg.controlStructure.astChildren.l match {
+      val (idxLocal, condition) = inside(cpg.controlStructure.astChildren.l) {
         case List(idxLocal: Local, _, conditionCall: Call, _, _) => (idxLocal, conditionCall)
-        case result => fail(s"Expected condition call as third AST child but got $result")
       }
 
       condition.name shouldBe Operators.lessThan
@@ -463,69 +425,53 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       condition.typeFullName shouldBe "boolean"
       condition.order shouldBe 3
 
-      condition.argument.l match {
-        case List(idx: Identifier, arraySize: Call) =>
-          idx.name shouldBe "$idx0"
-          idx.typeFullName shouldBe "int"
-          idx.order shouldBe 1
-          idx.argumentIndex shouldBe 1
-          idx.refOut.toSet should contain(idxLocal)
+      inside(condition.argument.l) { case List(idx: Identifier, arraySize: Call) =>
+        idx.name shouldBe "$idx0"
+        idx.typeFullName shouldBe "int"
+        idx.order shouldBe 1
+        idx.argumentIndex shouldBe 1
+        idx.refOut.toSet should contain(idxLocal)
 
-          arraySize.name shouldBe Operators.fieldAccess
-          arraySize.typeFullName shouldBe "int"
-          arraySize.order shouldBe 2
-          arraySize.argumentIndex shouldBe 2
+        arraySize.name shouldBe Operators.sizeOf
+        arraySize.typeFullName shouldBe "int"
+        arraySize.order shouldBe 2
+        arraySize.argumentIndex shouldBe 2
 
-          arraySize.argument.l match {
-            case List(items: Identifier, length: FieldIdentifier) =>
-              items.name shouldBe "items"
-              items.typeFullName shouldBe "java.lang.String[]"
-              items.order shouldBe 1
-              items.argumentIndex shouldBe 1
-              items.refOut.toSet should contain(cpg.parameter.name("items").head)
-
-              length.code shouldBe "length"
-              length.order shouldBe 2
-              length.argumentIndex shouldBe 2
-
-            case result => fail(s"Expected array.length field access but got $result")
-          }
-
-        case result => fail(s"Expected idx < array.length args but got $result")
+        inside(arraySize.argument.l) { case List(items: Identifier) =>
+          items.name shouldBe "items"
+          items.typeFullName shouldBe "java.lang.String[]"
+          items.order shouldBe 1
+          items.argumentIndex shouldBe 1
+          items.refOut.toSet should contain(cpg.parameter.name("items").head)
+        }
       }
     }
 
     "update idx on each loop" in {
-      val (idxLocal, update) = cpg.controlStructure.astChildren.l match {
+      val (idxLocal, update) = inside(cpg.controlStructure.astChildren.l) {
         case List(idxLocal: Local, _, _, update: Call, _) => (idxLocal, update)
-        case result                                       => fail(s"Expected update as 4th AST child but got $result")
       }
 
       update.name shouldBe Operators.postIncrement
       update.typeFullName shouldBe "int"
       update.order shouldBe 4
 
-      update.argument.l match {
-        case List(idx: Identifier) =>
-          idx.name shouldBe "$idx0"
-          idx.typeFullName shouldBe "int"
-          idx.order shouldBe 1
-          idx.argumentIndex shouldBe 1
-          idx.refOut.toSet should contain(idxLocal)
-
-        case result => fail(s"Expected single argument to ++ call but got $result")
+      inside(update.argument.l) { case List(idx: Identifier) =>
+        idx.name shouldBe "$idx0"
+        idx.typeFullName shouldBe "int"
+        idx.order shouldBe 1
+        idx.argumentIndex shouldBe 1
+        idx.refOut.toSet should contain(idxLocal)
       }
     }
 
     "create an assignment to the `item` local in the FOR body" in {
-      val (idxLocal, body) = cpg.controlStructure.astChildren.l match {
+      val (idxLocal, body) = inside(cpg.controlStructure.astChildren.l) {
         case List(idxLocal: Local, _, _, _, body: Block) => (idxLocal, body)
-        case result                                      => fail(s"Expected body as 5th AST child but got $result")
       }
 
-      val (itemLocal: Local, itemAssign: Call, sink: Call) = body.astChildren.l match {
+      val (itemLocal: Local, itemAssign: Call, sink: Call) = inside(body.astChildren.l) {
         case List(itemLocal: Local, itemAssign: Call, sink: Call) => (itemLocal, itemAssign, sink)
-        case result => fail(s"Expected local, assign and sink, but got $result")
       }
 
       itemLocal.name shouldBe "item"
@@ -535,48 +481,52 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       itemAssign.name shouldBe Operators.assignment
       itemAssign.typeFullName shouldBe "java.lang.String"
       itemAssign.order shouldBe 2
-      itemAssign.argument.l match {
-        case List(itemIdentifier: Identifier, indexAccess: Call) =>
-          itemIdentifier.name shouldBe "item"
-          itemIdentifier.typeFullName shouldBe "java.lang.String"
-          itemIdentifier.order shouldBe 1
-          itemIdentifier.argumentIndex shouldBe 1
-          itemIdentifier.refOut.toSet should contain(itemLocal)
+      inside(itemAssign.argument.l) { case List(itemIdentifier: Identifier, indexAccess: Call) =>
+        itemIdentifier.name shouldBe "item"
+        itemIdentifier.typeFullName shouldBe "java.lang.String"
+        itemIdentifier.order shouldBe 1
+        itemIdentifier.argumentIndex shouldBe 1
+        itemIdentifier.refOut.toSet should contain(itemLocal)
 
-          indexAccess.name shouldBe Operators.indexAccess
-          indexAccess.typeFullName shouldBe "java.lang.String"
-          indexAccess.order shouldBe 2
-          indexAccess.argumentIndex shouldBe 2
-          val (items: Identifier, idx: Identifier) = (indexAccess.argument.l match {
-            case List(items: Identifier, idx: Identifier) => (items, idx)
-            case result                                   => s"Expected items[idx] args but got $result"
-          }): @unchecked
-          items.name shouldBe "items"
-          items.typeFullName shouldBe "java.lang.String[]"
-          items.order shouldBe 1
-          items.argumentIndex shouldBe 1
-          items.refOut.toSet should contain(cpg.parameter.name("items").head)
+        indexAccess.name shouldBe Operators.indexAccess
+        indexAccess.typeFullName shouldBe "java.lang.String"
+        indexAccess.order shouldBe 2
+        indexAccess.argumentIndex shouldBe 2
+        val (items: Identifier, idx: Identifier) = (indexAccess.argument.l match {
+          case List(items: Identifier, idx: Identifier) => (items, idx)
+          case result                                   => s"Expected items[idx] args but got $result"
+        }): @unchecked
+        items.name shouldBe "items"
+        items.typeFullName shouldBe "java.lang.String[]"
+        items.order shouldBe 1
+        items.argumentIndex shouldBe 1
+        items.refOut.toSet should contain(cpg.parameter.name("items").head)
 
-          idx.name shouldBe "$idx0"
-          idx.typeFullName shouldBe "int"
-          idx.order shouldBe 2
-          idx.argumentIndex shouldBe 2
-          idx.refOut.toSet should contain(idxLocal)
-        case result => fail(s"Expected item = items[idx] args but got $result")
+        idx.name shouldBe "$idx0"
+        idx.typeFullName shouldBe "int"
+        idx.order shouldBe 2
+        idx.argumentIndex shouldBe 2
+        idx.refOut.toSet should contain(idxLocal)
       }
 
       sink.name shouldBe "sink"
       sink.methodFullName shouldBe "Foo.sink:void(java.lang.String)"
       sink.order shouldBe 3
-      sink.argument.l match {
-        case List(item: Identifier) =>
-          item.name shouldBe "item"
-          item.typeFullName shouldBe "java.lang.String"
-          item.order shouldBe 1
-          item.argumentIndex shouldBe 1
-          item.refOut.toSet should contain(itemLocal)
+      inside(sink.argument.l) { case List(item: Identifier) =>
+        item.name shouldBe "item"
+        item.typeFullName shouldBe "java.lang.String"
+        item.order shouldBe 1
+        item.argumentIndex shouldBe 1
+        item.refOut.toSet should contain(itemLocal)
+      }
+    }
 
-        case result => fail(s"Expected single identifier argument to sink but got $result")
+    "connect the desugared FOR init, update and body via control structure edges" in {
+      val List(forNode) = cpg.controlStructure.controlStructureType(ControlStructureTypes.FOR).l
+      forNode.forInitOut.code.l shouldBe List("int $idx0 = 0")
+      forNode.forUpdateOut.code.l shouldBe List("$idx0++")
+      inside(forNode.forBodyOut.l) { case List(body: Block) =>
+        body.astChildren.isCall.name.l shouldBe List(Operators.assignment, "sink")
       }
     }
   }
@@ -597,9 +547,8 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
        |""".stripMargin)
 
     "create a local for the iterator as a child of the FOR block" in {
-      val iterLocal = cpg.method.name("foo").body.astChildren.l match {
-        case List(iterLocal: Local, _, _) => iterLocal
-        case result                       => fail(s"Expected iterLocal as first of 3 foo body children but got $result")
+      val iterLocal = inside(cpg.method.name("foo").body.astChildren.l) { case List(iterLocal: Local, _, _) =>
+        iterLocal
       }
 
       iterLocal.name shouldBe "$iterLocal0"
@@ -609,9 +558,8 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
     }
 
     "assign items.iterator() to iterLocal" in {
-      val (iterLocal, iterAssign) = cpg.method.name("foo").body.astChildren.l match {
+      val (iterLocal, iterAssign) = inside(cpg.method.name("foo").body.astChildren.l) {
         case List(iterLocal: Local, iterAssign: Call, _) => (iterLocal, iterAssign)
-        case result => fail(s"Expected local and assign in foo body but got $result")
       }
 
       iterAssign.name shouldBe Operators.assignment
@@ -620,9 +568,8 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       iterAssign.order shouldBe 2
       iterAssign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-      val (target, iteratorCall) = iterAssign.argument.l match {
-        case List(target: Identifier, iteratorCall: Call) => (target, iteratorCall)
-        case result => fail(s"Expected iter = items.iterator() args but got $result")
+      val (target, iteratorCall) = inside(iterAssign.argument.l) { case List(target: Identifier, iteratorCall: Call) =>
+        (target, iteratorCall)
       }
 
       target.name shouldBe "$iterLocal0"
@@ -639,26 +586,21 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       iteratorCall.order shouldBe 2
       iteratorCall.argumentIndex shouldBe 2
 
-      iteratorCall.argument(0).start.l match {
-        case List(items: Identifier) =>
-          items.name shouldBe "items"
-          items.typeFullName shouldBe "java.util.List"
-          items.order shouldBe 1
-          items.argumentIndex shouldBe 0
-
-        case result => fail(s"Expected single identifier receiver but got $result")
+      inside(iteratorCall.argument(0).start.l) { case List(items: Identifier) =>
+        items.name shouldBe "items"
+        items.typeFullName shouldBe "java.util.List"
+        items.order shouldBe 1
+        items.argumentIndex shouldBe 0
       }
     }
 
     "create hasNext() condition call" in {
-      val (iterLocal, whileBlock) = cpg.method.name("foo").body.astChildren.l match {
+      val (iterLocal, whileBlock) = inside(cpg.method.name("foo").body.astChildren.l) {
         case List(iterLocal: Local, _, whileBlock: ControlStructure) => (iterLocal, whileBlock)
-        case result => fail(s"Expected local and assign in foo body but got $result")
       }
 
-      val conditionCall = whileBlock.condition.l match {
-        case List(conditionCall: Call) => conditionCall
-        case result                    => fail(s"Expected condition call but got $result")
+      val conditionCall = inside(whileBlock.condition.l) { case List(conditionCall: Call) =>
+        conditionCall
       }
 
       conditionCall.name shouldBe "hasNext"
@@ -668,34 +610,28 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       conditionCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       conditionCall.order shouldBe 1
 
-      conditionCall.argument(0).start.l match {
-        case List(receiver: Identifier) =>
-          receiver.name shouldBe "$iterLocal0"
-          receiver.typeFullName shouldBe "java.util.Iterator"
-          receiver.order shouldBe 1
-          receiver.argumentIndex shouldBe 0
-          receiver.refOut.toSet should contain(iterLocal)
-
-        case result => fail(s"Expected single identifier receiver but got $result")
+      inside(conditionCall.argument(0).start.l) { case List(receiver: Identifier) =>
+        receiver.name shouldBe "$iterLocal0"
+        receiver.typeFullName shouldBe "java.util.Iterator"
+        receiver.order shouldBe 1
+        receiver.argumentIndex shouldBe 0
+        receiver.refOut.toSet should contain(iterLocal)
       }
     }
 
     "create an item local and assignment in the body of the FOR loop" in {
-      val (iterLocal, whileBlock) = cpg.method.name("foo").body.astChildren.l match {
+      val (iterLocal, whileBlock) = inside(cpg.method.name("foo").body.astChildren.l) {
         case List(iterLocal: Local, _, whileBlock: ControlStructure) => (iterLocal, whileBlock)
-        case result => fail(s"Expected local and assign in foo body but got $result")
       }
 
-      val body = whileBlock.astChildren.l match {
-        case List(_, body: Block) => body
-        case result               => fail(s"Expected body as last child of FOR but got $result")
+      val body = inside(whileBlock.astChildren.l) { case List(_, body: Block) =>
+        body
       }
 
       body.order shouldBe 2
 
-      val (itemLocal, itemAssign, sinkCall) = body.astChildren.l match {
+      val (itemLocal, itemAssign, sinkCall) = inside(body.astChildren.l) {
         case List(itemLocal: Local, itemAssign: Call, sinkCall: Call) => (itemLocal, itemAssign, sinkCall)
-        case result => fail(s"Expected 3 statements in for body but got $result")
       }
 
       itemLocal.name shouldBe "item"
@@ -708,9 +644,8 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       itemAssign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       itemAssign.typeFullName shouldBe "java.lang.String"
       itemAssign.order shouldBe 2
-      val (assignTarget, assignSource) = itemAssign.argument.l match {
+      val (assignTarget, assignSource) = inside(itemAssign.argument.l) {
         case List(assignTarget: Identifier, assignSource: Call) => (assignTarget, assignSource)
-        case result => fail(s"Expected item = iterLocal.next args but got $result")
       }
 
       assignTarget.name shouldBe "item"
@@ -725,15 +660,12 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       assignSource.typeFullName shouldBe "java.lang.Object"
       assignSource.order shouldBe 2
       assignSource.argumentIndex shouldBe 2
-      assignSource.argument(0).start.l match {
-        case List(iterIdent: Identifier) =>
-          iterIdent.name shouldBe "$iterLocal0"
-          iterIdent.typeFullName shouldBe "java.util.Iterator"
-          iterIdent.order shouldBe 1
-          iterIdent.argumentIndex shouldBe 0
-          iterIdent.refOut.toSet should contain(iterLocal)
-
-        case result => fail(s"Expected single identifier receiver but got $result")
+      inside(assignSource.argument(0).start.l) { case List(iterIdent: Identifier) =>
+        iterIdent.name shouldBe "$iterLocal0"
+        iterIdent.typeFullName shouldBe "java.util.Iterator"
+        iterIdent.order shouldBe 1
+        iterIdent.argumentIndex shouldBe 0
+        iterIdent.refOut.toSet should contain(iterLocal)
       }
 
       sinkCall.name shouldBe "sink"
@@ -742,15 +674,141 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       sinkCall.typeFullName shouldBe "void"
       sinkCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       sinkCall.order shouldBe 3
-      sinkCall.argument.l match {
-        case List(itemIdent: Identifier) =>
-          itemIdent.name shouldBe "item"
-          itemIdent.typeFullName shouldBe "java.lang.String"
-          itemIdent.order shouldBe 1
-          itemIdent.argumentIndex shouldBe 1
-          itemIdent.refOut.toSet should contain(itemLocal)
+      inside(sinkCall.argument.l) { case List(itemIdent: Identifier) =>
+        itemIdent.name shouldBe "item"
+        itemIdent.typeFullName shouldBe "java.lang.String"
+        itemIdent.order shouldBe 1
+        itemIdent.argumentIndex shouldBe 1
+        itemIdent.refOut.toSet should contain(itemLocal)
+      }
+    }
+  }
 
-        case result => fail(s"Expected single identifier arg to sink but got $result")
+  "`if-elseif-else` statements" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public static void foo(int c) {
+        |    if (c > 10) {
+        |      c -= 10;
+        |    } else if (c < 10) {
+        |      c += 10;
+        |    } else {
+        |      c = 10;
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l) {
+        case List(ifOne: ControlStructure, ifTwo: ControlStructure) =>
+          ifOne.condition.code.l shouldBe List("c > 10")
+          ifOne.trueBodyOut.astChildren.code.l shouldBe List("c -= 10")
+          inside(ifOne.falseBodyOut.l) { case List(elseBlock: Block) =>
+            elseBlock.astChildren.l shouldBe List(ifTwo)
+          }
+
+          ifTwo.condition.code.l shouldBe List("c < 10")
+          ifTwo.trueBodyOut.astChildren.code.l shouldBe List("c += 10")
+          inside(ifTwo.falseBodyOut.l) { case List(elseBlock: Block) =>
+            elseBlock.astChildren.code.l shouldBe List("c = 10")
+          }
+      }
+    }
+  }
+
+  "`do-while` statements" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public static void foo(int c) {
+        |    do {
+        |      c += 1;
+        |    } while (c < 10);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "connect do-while body via DO_BODY edge" in {
+      inside(cpg.method.name("foo").doBlock.l) { case List(doBlock: ControlStructure) =>
+        doBlock.condition.code.l shouldBe List("c < 10")
+        doBlock.doBodyOut.isBlock.astChildren.code.l shouldBe List("c += 1")
+      }
+    }
+  }
+
+  "`try-catch-finally` statements" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public static int foo(int c) {
+        |    try {
+        |      return 5 / c;
+        |    } catch (Exception ex) {
+        |      printf("catch");
+        |    } finally {
+        |      printf("finally");
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    "connect try, catch and finally bodies via explicit edges" in {
+      inside(cpg.controlStructure.isTry.l) { case List(tryNode: ControlStructure) =>
+        tryNode.tryBodyOut.isBlock.astChildren.code.l shouldBe List("return 5 / c;")
+        inside(tryNode.catchBodyOut.l) { case List(catchNode: ControlStructure) =>
+          catchNode.astChildren.isBlock.astChildren.code.l shouldBe List("printf(\"catch\")")
+        }
+        inside(tryNode.finallyBodyOut.l) { case List(finallyNode: ControlStructure) =>
+          finallyNode.astChildren.isBlock.astChildren.code.l shouldBe List("printf(\"finally\")")
+        }
+      }
+    }
+  }
+
+  "`throw` statements" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public static void foo(Exception ex) {
+        |    throw ex;
+        |  }
+        |}
+        |""".stripMargin)
+
+    "lower as a THROW control structure with the thrown expression as its argument" in {
+      inside(cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.THROW).l) {
+        case List(throwNode: ControlStructure) =>
+          throwNode.code shouldBe "throw ex;"
+          val List(thrownExpr) = throwNode.astChildren.l
+          thrownExpr.code shouldBe "ex"
+          throwNode.argumentOut.l shouldBe List(thrownExpr)
+      }
+    }
+  }
+
+  "`for-loop` statements" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public static int foo(int c) {
+        |    for (int i = 0; i < c; i++) {
+        |      printf("%d ", i);
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    "connect for-loop and branches via control structure edges" in {
+      inside(cpg.controlStructure.l) { case List(forNode: ControlStructure) =>
+        forNode.code shouldBe "for (int i = 0; i < c; i++)"
+
+        inside(forNode.forInitOut.isBlock.astChildren.l) { case List(local: Local, call: Call) =>
+          local.name shouldBe "i"
+          local.code shouldBe "int i"
+
+          call.name shouldBe Operators.assignment
+          call.code shouldBe "int i = 0"
+        }
+
+        forNode.forUpdateOut.code.l shouldBe List("i++")
+        forNode.forBodyOut.isBlock.astChildren.code.l shouldBe List("printf(\"%d \", i)")
       }
     }
   }
@@ -863,7 +921,7 @@ class ControlStructureTests extends JavaSrcCode2CpgFixture {
   "should identify an else block" in {
     val ifBlock = cpg.method.name("elseTest").ifBlock.head
     ifBlock.code shouldBe "if (b)"
-    val List(condition: Identifier, thenBlock: Block, elseBlock: ControlStructure) = ifBlock.astChildren.l: @unchecked
+    val List(condition: Identifier, thenBlock: Block, elseBlock: Block) = ifBlock.astChildren.l: @unchecked
     condition.code shouldBe "b"
     condition.order shouldBe 1
 
@@ -874,18 +932,15 @@ class ControlStructureTests extends JavaSrcCode2CpgFixture {
     thenBody.argument.l.tail.head.code shouldBe "42"
     thenBody.order shouldBe 1
 
-    elseBlock.code shouldBe "else"
-    elseBlock.controlStructureType shouldBe "ELSE"
     elseBlock.order shouldBe 3
-    val elseAssign = elseBlock.astChildren.head.astChildren.head.asInstanceOf[Call]
+    val elseAssign = elseBlock.astChildren.head.asInstanceOf[Call]
     elseAssign.order shouldBe 1
     elseAssign.code shouldBe "x = 39"
   }
 
   "should handle a switch conditioned on `this`" in {
-    val switchBlock = cpg.method.name("isConnected").switchBlock.l match {
-      case List(block) => block
-      case res         => fail(s"Expected single switch block but got $res")
+    val switchBlock = inside(cpg.method.name("isConnected").switchBlock.l) { case List(block) =>
+      block
     }
 
     switchBlock.astChildren.size shouldBe 2
@@ -897,5 +952,158 @@ class ControlStructureTests extends JavaSrcCode2CpgFixture {
 
     // The visible statements/labels + jump targets
     body.astChildren.size shouldBe 7
+  }
+
+  "a switch expression with arrow syntax" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public String test(int x) {
+        |    return switch (x) {
+        |      case 1 -> "one";
+        |      case 2 -> "two";
+        |      default -> "other";
+        |    };
+        |  }
+        |}
+        |""".stripMargin)
+
+    "create a MATCH control structure with the correct full AST structure" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.MATCH).l) { case List(matchNode) =>
+        matchNode.code shouldBe "switch(x)"
+        matchNode.lineNumber shouldBe Some(4)
+
+        inside(matchNode.astChildren.l) { case List(selector: Identifier, body: Block) =>
+          selector.name shouldBe "x"
+          selector.typeFullName shouldBe "int"
+          selector.order shouldBe 1
+
+          body.order shouldBe 2
+
+          inside(body.astChildren.l) {
+            case List(
+                  case1Target: JumpTarget,
+                  case1Label: Literal,
+                  case1Result: Literal,
+                  case2Target: JumpTarget,
+                  case2Label: Literal,
+                  case2Result: Literal,
+                  defaultTarget: JumpTarget,
+                  defaultResult: Literal
+                ) =>
+              case1Target.name shouldBe "case"
+              case1Target.code shouldBe "1"
+              case1Target.order shouldBe 1
+
+              case1Label.code shouldBe "1"
+              case1Label.order shouldBe 2
+
+              case1Result.code shouldBe "\"one\""
+              case1Result.typeFullName shouldBe "java.lang.String"
+              case1Result.order shouldBe 3
+
+              case2Target.name shouldBe "case"
+              case2Target.code shouldBe "2"
+              case2Target.order shouldBe 4
+
+              case2Label.code shouldBe "2"
+              case2Label.order shouldBe 5
+
+              case2Result.code shouldBe "\"two\""
+              case2Result.typeFullName shouldBe "java.lang.String"
+              case2Result.order shouldBe 6
+
+              defaultTarget.name shouldBe "default"
+              defaultTarget.code shouldBe "default"
+              defaultTarget.order shouldBe 7
+
+              defaultResult.code shouldBe "\"other\""
+              defaultResult.typeFullName shouldBe "java.lang.String"
+              defaultResult.order shouldBe 8
+          }
+        }
+
+        matchNode.condition.l shouldBe List(matchNode.astChildren.head)
+      }
+    }
+  }
+
+  "a switch expression with a pattern and guard" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public String test(Object obj) {
+        |    return switch (obj) {
+        |      case String s when s.length() > 5 -> "long string";
+        |      case String s -> "short string";
+        |      default -> "not a string";
+        |    };
+        |  }
+        |}
+        |""".stripMargin)
+
+    "create a MATCH control structure with pattern matching and guards" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.MATCH).l) { case List(matchNode) =>
+        matchNode.code shouldBe "switch(obj)"
+        matchNode.lineNumber shouldBe Some(4)
+
+        inside(matchNode.astChildren.l) { case List(selector: Identifier, body: Block) =>
+          selector.name shouldBe "obj"
+          selector.order shouldBe 1
+
+          body.order shouldBe 2
+
+          // Pattern matching cases have: JumpTarget, Block (with Local and IF), repeated for each case
+          // Default case has: JumpTarget, Literal
+          inside(body.astChildren.l) {
+            case List(
+                  case1Target: JumpTarget,
+                  case1Block: Block,
+                  case2Target: JumpTarget,
+                  case2Block: Block,
+                  defaultTarget: JumpTarget,
+                  defaultResult: Literal
+                ) =>
+              // First case: pattern with guard
+              case1Target.name shouldBe "case"
+              case1Target.code shouldBe "String s"
+              case1Target.order shouldBe 1
+
+              case1Block.order shouldBe 2
+              inside(case1Block.astChildren.l) { case List(patternLocal: Local, ifNode: ControlStructure) =>
+                patternLocal.name shouldBe "s"
+                patternLocal.typeFullName shouldBe "java.lang.String"
+
+                ifNode.controlStructureType shouldBe ControlStructureTypes.IF
+
+                // The IF condition includes the instanceof check and the guard (s.length() > 5)
+                // The guard should be present in the AST
+                val allCalls = ifNode.ast.collectAll[Call].l
+                allCalls.exists(_.name == Operators.greaterThan) shouldBe true
+                allCalls.exists(_.name == "length") shouldBe true
+              }
+
+              // Second case: pattern without guard
+              case2Target.name shouldBe "case"
+              case2Target.code shouldBe "String s"
+              case2Target.order shouldBe 3
+
+              case2Block.order shouldBe 4
+              inside(case2Block.astChildren.l) { case List(patternLocal: Local, ifNode: ControlStructure) =>
+                patternLocal.name shouldBe "s"
+                patternLocal.typeFullName shouldBe "java.lang.String"
+
+                ifNode.controlStructureType shouldBe ControlStructureTypes.IF
+              }
+
+              // Default case
+              defaultTarget.name shouldBe "default"
+              defaultTarget.code shouldBe "default"
+              defaultTarget.order shouldBe 5
+
+              defaultResult.code shouldBe "\"not a string\""
+              defaultResult.order shouldBe 6
+          }
+        }
+      }
+    }
   }
 }

@@ -5,6 +5,7 @@ import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.AstC2CpgSuite
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.operatorextension.*
 import org.apache.commons.lang3.StringUtils
 
 class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt) {
@@ -147,6 +148,27 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       andRef.argumentIndex shouldBe 1
       retExpr.argument(2).code shouldBe "true"
       retExpr.argument(3).code shouldBe "args"
+    }
+
+    "handle folding expressions over non-constant evaluations" in {
+      // Regression test for https://github.com/joernio/joern/issues/6260:
+      // EvalBinary.toString contains no ": " separator when the fold is over
+      // non-constant evaluations (e.g. lambda calls) which previously crashed
+      // type resolution with a StringIndexOutOfBoundsException.
+      val cpg = code("""
+          |namespace ns {
+          |std::wstring GetHelperExe() { return L"helper.exe"; }
+          |template<class... Args>
+          |int LOStart(Args... args) {
+          |    auto quote = [](const std::wstring& s) { return L"\"" + s + L"\""; };
+          |    std::wstring sCmdLine((quote(GetHelperExe()) + ... + (L" " + quote(args))));
+          |    return (int)sCmdLine.size();
+          |}
+          |}
+          |""".stripMargin)
+      val List(foldCall) = cpg.call.nameExact("<operator>.fold").l
+      foldCall.code shouldBe "(quote(GetHelperExe()) + ... + (L\" \" + quote(args)))"
+      foldCall.typeFullName shouldBe "ANY"
     }
 
     "handle folding expressions (unary)" in {
@@ -295,6 +317,19 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       cpg.typeDecl.member.nameExact("count").typeFullName.l shouldBe List("int")
     }
 
+    "handle namespace alias" in {
+      val cpg = code("""
+          |namespace A {
+          |  class Foo {};
+          |}
+          |
+          |namespace B = A;
+          |auto f = B::Foo();
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").fullName.loneElement shouldBe "A.Foo"
+      cpg.identifier.nameExact("f").typeFullName.loneElement shouldBe "A.Foo"
+    }
+
     "handle nested namespaces" in {
       val cpg = code("""
           |namespace A1 { // old
@@ -309,14 +344,111 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  int i;
           |}
           |""".stripMargin)
-      cpg.namespaceBlock.nameNot("<global>").name.sorted shouldBe List("A1", "A2", "B1", "B2", "C1", "C2")
-      cpg.namespaceBlock.nameNot("<global>").fullName.sorted shouldBe List(
-        "A1",
-        "A1.B1",
-        "A1.B1.C1",
-        "A2",
-        "A2.B2",
-        "A2.B2.C2"
+      cpg.namespaceBlock.nameNot("<global>").name.sorted shouldBe Seq("A1", "A2", "B1", "B2", "C1", "C2")
+      cpg.namespaceBlock.nameNot("<global>").fullName.sorted shouldBe Seq(
+        "Test0.cpp:A1",
+        "Test0.cpp:A1.B1",
+        "Test0.cpp:A1.B1.C1",
+        "Test0.cpp:A2",
+        "Test0.cpp:A2.B2",
+        "Test0.cpp:A2.B2.C2"
+      )
+    }
+
+    "handle namespaces and classes with the same name" in {
+      val cpg = code("""
+          |namespace A {
+          |  class A {}
+          |}
+          |
+          |namespace A {
+          |  class B {}
+          |}
+          |""".stripMargin)
+      cpg.namespaceBlock.nameNot("<global>").name.sorted shouldBe Seq("A", "A")
+      cpg.namespaceBlock.nameNot("<global>").fullName.sorted shouldBe Seq("Test0.cpp:A", "Test0.cpp:A<extension>0")
+
+      cpg.typeDecl.nameNot("<global>").name.sorted shouldBe Seq("A", "B")
+
+      // We get these fullNames directly from CDT, so they do not include the filename prefix.
+      // Classes in anonymous namespaces have no fullName prefix at all according to the CDT fullName resolution.
+      cpg.typeDecl.nameNot("<global>").fullName.sorted shouldBe Seq("A.A", "A.B")
+    }
+
+    "handle the same namespace appearing multiple times in the same file" in {
+      val cpg = code("""
+          |namespace A { // old
+          |  namespace B {
+          |    namespace C {
+          |      class Foo {};
+          |    }
+          |  }
+          |}
+          |
+          |namespace A::B::C { // new
+          |  class Bar {};
+          |}
+          |
+          |namespace X {
+          |  class SomeClass {};
+          |}
+          |
+          |namespace X {
+          |  class SomeOtherClass {};
+          |}
+          |
+          |// anonymous namespaces
+          |namespace {
+          |  class HiddenClass1 {};
+          |}
+          |namespace {
+          |  class HiddenClass2 {};
+          |}
+          |""".stripMargin)
+      cpg.namespaceBlock.nameNot("<global>").name.sorted shouldBe Seq(
+        // Within a translation unit each unnamed namespace definition maps to the same unique name:
+        // multiple unnamed namespace definitions in the same scope denote the same unnamed namespace
+        "<anonymous>",
+        "<anonymous>",
+        "A",
+        "A",
+        "B",
+        "B",
+        "C",
+        "C",
+        "X",
+        "X"
+      )
+      cpg.namespaceBlock.nameNot("<global>").fullName.sorted shouldBe Seq(
+        "Test0.cpp:<anonymous>",
+        "Test0.cpp:<anonymous><extension>0",
+        "Test0.cpp:A",
+        "Test0.cpp:A.B",
+        "Test0.cpp:A.B.C",
+        "Test0.cpp:A.B.C<extension>0",
+        "Test0.cpp:A.B<extension>0",
+        "Test0.cpp:A<extension>0",
+        "Test0.cpp:X",
+        "Test0.cpp:X<extension>0"
+      )
+      cpg.typeDecl.nameNot("<global>").name.sorted shouldBe Seq(
+        "Bar",
+        "Foo",
+        "HiddenClass1",
+        "HiddenClass2",
+        "SomeClass",
+        "SomeOtherClass"
+      )
+
+      // We get these fullNames directly from CDT, so they do not include the filename prefix.
+      // Classes in anonymous namespaces have no fullName prefix at all according to the CDT fullName resolution.
+      cpg.typeDecl.nameNot("<global>").fullName.sorted shouldBe Seq(
+        "A.B.C.Bar",
+        "A.B.C.Foo",
+        "HiddenClass1",
+        "HiddenClass2",
+        "X.SomeClass",
+        "X.SomeOtherClass"
       )
     }
 
@@ -419,6 +551,110 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       }
     }
 
+    "emit ARGUMENT edges on the assignments synthesized for structured bindings" in {
+      val cpg = code("""
+          |struct Point { int x; int y; };
+          |Point make();
+          |void foo() {
+          |  auto [a, b] = make();
+          |}
+          |void bar() {
+          |  int arr[2] = {1, 2};
+          |  for (const auto& [c, d] : arr) {};
+          |}
+          |""".stripMargin)
+
+      // the holder assignment and the two per-binding assignments all carry two arguments
+      cpg.call
+        .nameExact(Operators.assignment)
+        .map(c => (c.code, c.argument.size, c.argument.argumentIndex.l))
+        .l should contain allElementsOf List(
+        ("<tmp>0 = make()", 2, List(1, 2)),
+        ("a = <tmp>0.a", 2, List(1, 2)),
+        ("b = <tmp>0.b", 2, List(1, 2)),
+        ("<tmp>0 = arr", 2, List(1, 2)),
+        ("c = <tmp>0[0]", 2, List(1, 2)),
+        ("d = <tmp>0[1]", 2, List(1, 2))
+      )
+
+      inside(cpg.call.codeExact("a = <tmp>0.a").l) { case List(assignment) =>
+        assignment.argument(1).code shouldBe "a"
+        assignment.argument(2).code shouldBe "<tmp>0.a"
+      }
+      inside(cpg.call.codeExact("c = <tmp>0[0]").l) { case List(assignment) =>
+        assignment.argument(1).code shouldBe "c"
+        assignment.argument(2).code shouldBe "<tmp>0[0]"
+      }
+
+      // the stock traversal steps no longer throw NoSuchElementException
+      cpg.assignment.target.code.l should contain allElementsOf List("a", "b", "c", "d")
+      cpg.assignment.source.code.l should contain allElementsOf List("<tmp>0.a", "<tmp>0.b", "<tmp>0[0]", "<tmp>0[1]")
+    }
+
+    "not crash on nested range-based for loops over structured bindings with unresolved types" in {
+      // Regression test for https://github.com/joernio/joern/issues/6261:
+      // CDT's auto type deduction runs into unbounded mutual recursion (StackOverflowError)
+      // when a structured binding introduced by a range-based for loop is itself used as the
+      // range of a nested range-based for loop and the container type cannot be resolved.
+      val cpg = code("""
+          |void f() {
+          |  Map m;
+          |  for (const auto& [k, v] : m)
+          |    for (auto& e : v)
+          |      ;
+          |}
+          |""".stripMargin)
+      cpg.method.nameExact("f").nonEmpty shouldBe true
+      val locals = cpg.local.map(l => (l.name, l.typeFullName)).toMap
+      locals("k") shouldBe "ANY"
+      locals("v") shouldBe "ANY"
+      locals("e") shouldBe "ANY&"
+    }
+
+    "not drop the file on a structured binding at namespace scope" in {
+      val cpg = code("""
+          |struct Pair { int a; int b; };
+          |Pair gP{1, 2};
+          |auto [gA, gB] = gP;
+          |int boundsCheck(const char* buf, unsigned len, unsigned idx) {
+          |  if (idx >= len) { return -1; }
+          |  return buf[idx];
+          |}
+          |""".stripMargin)
+      cpg.method.nameExact("boundsCheck").nonEmpty shouldBe true
+      cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.IF).code.l shouldBe List(
+        "if (idx >= len) { return -1; }"
+      )
+    }
+
+    "lower a structured binding at namespace scope like one at block scope" in {
+      val cpg = code("""
+          |struct Pair { int a; int b; };
+          |Pair gP{1, 2};
+          |auto [gA, gB] = gP;
+          |""".stripMargin)
+      cpg.local.map(loc => (loc.name, loc.typeFullName)).toMap shouldBe Map(
+        "gP"     -> "Pair",
+        "<tmp>0" -> "Pair",
+        "gA"     -> "int",
+        "gB"     -> "int",
+        // CDT does not deduce the type of the initializer here, just as it does not at block scope
+        "<tmp>1" -> "ANY"
+      )
+      cpg.call.code.l should contain theSameElementsAs List(
+        "gP = Pair.Pair(1, 2)",
+        "Pair.Pair(1, 2)",
+        "<tmp>0 = <operator>.alloc",
+        "<operator>.alloc",
+        "&<tmp>0",
+        "<tmp>1 = gP",
+        "gA = <tmp>1.gA",
+        "<tmp>1.gA",
+        "gB = <tmp>1.gB",
+        "<tmp>1.gB"
+      )
+    }
+
     "handle selection statements with initializer" in {
       val cpg = code("""
           |void foo() {
@@ -466,8 +702,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |static_assert(isIntegral<S>() == false);
           |""".stripMargin)
       cpg.method.nameExact("isIntegral").controlStructure.code.map(StringUtils.normalizeSpace).l shouldBe List(
-        "if constexpr (std::is_integral<T>::value) { return true; } else { return false; }",
-        "else"
+        "if constexpr (std::is_integral<T>::value) { return true; } else { return false; }"
       )
     }
 

@@ -59,6 +59,21 @@ class ClosureTests extends PhpCode2CpgFixture {
     }
   }
 
+  "multiple top-level closures inside a named namespace" should {
+    val cpg = code(
+      """<?
+        |namespace X;
+        |$a = function () {};
+        |$b = function () {};
+        |""".stripMargin,
+      fileName = "foo.php"
+    )
+
+    "get unique, namespace-scoped fullNames" in {
+      cpg.method.name(".*<lambda>.*").fullName.sorted.l shouldBe List("foo.php:X.<lambda>0", "foo.php:X.<lambda>1")
+    }
+  }
+
   "long-form closures with uses " should {
     val cpg = code(
       """<?php
@@ -102,7 +117,7 @@ class ClosureTests extends PhpCode2CpgFixture {
         use2.code shouldBe "&$use2"
         use2.closureBindingId shouldBe Some(s"$expectedName:use2")
 
-        echoCall.code shouldBe "sink($value,$use1)"
+        echoCall.code shouldBe "sink($value, $use1)"
       }
     }
 
@@ -121,6 +136,39 @@ class ClosureTests extends PhpCode2CpgFixture {
         methodRef.code shouldBe expectedName
         methodRef.lineNumber shouldBe Some(3)
       }
+    }
+  }
+
+  "a variable captured by a use-closure and also referenced in the enclosing method" should {
+    val cpg = code(
+      """<?php
+        |class articles {
+        |  public function getArticles() {
+        |    $result = foo();
+        |    foreach ($result AS $res) {
+        |      $res->body = preg_replace_callback("/x/", function($match) use ($res) {
+        |        $res->video = $match[1];
+        |      }, $res->body);
+        |    }
+        |    return $result;
+        |  }
+        |}
+        |""".stripMargin,
+      fileName = "articles.php"
+    )
+
+    "create separate locals for the outer method and the closure" in {
+      val outerLocal = cpg.method.name("getArticles").local.nameExact("res").loneElement
+      outerLocal.closureBindingId shouldBe None
+
+      val closureLocal = cpg.method.name(".*<lambda>0").local.nameExact("res").loneElement
+      closureLocal.closureBindingId shouldBe Some("articles.getArticles.<lambda>0:res")
+    }
+
+    "not create a REF edge crossing the method boundary" in {
+      cpg.method.name("getArticles").ast.isIdentifier.nameExact("res")._localViaRefOut.method.name.toSet shouldBe Set(
+        "getArticles"
+      )
     }
   }
 
@@ -273,7 +321,6 @@ class ClosureTests extends PhpCode2CpgFixture {
           firstOuterLambda.name shouldBe "foo.php:<global>.<lambda>0"
           secondOuterInnerLambda.name shouldBe "foo.php:<global>.<lambda>1.<lambda>0"
           secondOuterLambda.name shouldBe "foo.php:<global>.<lambda>1"
-        case xs => fail(s"Expected four lambdas, instead got ${xs.name.mkString(", ")}")
       }
     }
   }
@@ -489,6 +536,53 @@ class ClosureTests extends PhpCode2CpgFixture {
     }
   }
 
+  "closure containing a global statement" should {
+    val cpg = code(
+      """<?php
+        |$wpdb = new Db();
+        |$nums = [1, 2, 3];
+        |$out = array_map(function ($n) {
+        |  global $wpdb;
+        |  return $n;
+        |}, $nums);
+        |""".stripMargin,
+      fileName = "foo.php"
+    )
+
+    "attach the closure methodRef to exactly one AST parent" in {
+      inside(cpg.methodRef.methodFullName(".*<lambda>.*").l) { case List(methodRef) =>
+        methodRef._astIn.size shouldBe 1
+      }
+    }
+
+    "not give any node multiple AST parents" in {
+      cpg.all.collectAll[AstNode].filter(_._astIn.size >= 2).l shouldBe empty
+    }
+
+    "still create the closure binding for the captured global" in {
+      inside(cpg.all.collectAll[ClosureBinding].filter(_.closureBindingId.exists(_.endsWith("wpdb"))).l) {
+        case List(closureBinding) =>
+          val capturedNode = cpg.method.nameExact("<global>").local.name("wpdb").head
+          closureBinding.refOut.toList shouldBe List(capturedNode)
+      }
+    }
+  }
+
+  "named function containing a global statement" should {
+    val cpg = code("""<?php
+        |$a = 10;
+        |function foo() {
+        |  global $a;
+        |}
+        |""".stripMargin)
+
+    "attach the function methodRef to exactly one AST parent" in {
+      inside(cpg.methodRef.methodFullNameExact("foo").l) { case List(methodRef) =>
+        methodRef._astIn.size shouldBe 1
+      }
+    }
+  }
+
   "global in nested functions" should {
     val cpg = code("""<?php
         |$a = 10;
@@ -586,14 +680,12 @@ class ClosureTests extends PhpCode2CpgFixture {
     }
 
     "should only have two methodRefs" in {
-      inside(cpg.all.collectAll[MethodRef].l) {
-        case fooMethodRef :: fooBarMethodRef :: Nil =>
-          fooMethodRef.methodFullName shouldBe "foo"
-          fooMethodRef.astParent.astParent.asInstanceOf[Method].fullName shouldBe "Test0.php:<global>"
+      inside(cpg.all.collectAll[MethodRef].l) { case fooMethodRef :: fooBarMethodRef :: Nil =>
+        fooMethodRef.methodFullName shouldBe "foo"
+        fooMethodRef.astParent.astParent.asInstanceOf[Method].fullName shouldBe "Test0.php:<global>"
 
-          fooBarMethodRef.methodFullName shouldBe "foo.bar"
-          fooBarMethodRef.astParent.astParent.asInstanceOf[Method].fullName shouldBe "foo"
-        case xs => fail(s"Expected two methodRefs, got ${xs.methodFullName.mkString("[", ",", "]")}")
+        fooBarMethodRef.methodFullName shouldBe "foo.bar"
+        fooBarMethodRef.astParent.astParent.asInstanceOf[Method].fullName shouldBe "foo"
       }
     }
   }
@@ -631,11 +723,9 @@ class ClosureTests extends PhpCode2CpgFixture {
     }
 
     "have a methodRef for construct" in {
-      inside(cpg.all.collectAll[MethodRef].l) {
-        case constructorRef :: Nil =>
-          constructorRef.methodFullName shouldBe "Foo.__construct"
-          constructorRef.astParent.astParent.asInstanceOf[Method].fullName shouldBe "Test0.php:<global>"
-        case xs => fail(s"Expected one methodRef for constructor, got ${xs.methodFullName.mkString("[", ",", "]")}")
+      inside(cpg.all.collectAll[MethodRef].l) { case constructorRef :: Nil =>
+        constructorRef.methodFullName shouldBe "Foo.__construct"
+        constructorRef.astParent.astParent.asInstanceOf[Method].fullName shouldBe "Test0.php:<global>"
       }
     }
   }
@@ -709,11 +799,9 @@ class ClosureTests extends PhpCode2CpgFixture {
     }
 
     "create two method refs" in {
-      inside(cpg.methodRefWithName("foo.*").l) {
-        case methodRef :: duplicateMethodRef :: Nil =>
-          methodRef.methodFullName shouldBe "foo"
-          duplicateMethodRef.methodFullName shouldBe "foo<duplicate>0"
-        case xs => fail(s"Expected two method refs, got ${xs.methodFullName.mkString("[", ",", "]")}")
+      inside(cpg.methodRefWithName("foo.*").l) { case methodRef :: duplicateMethodRef :: Nil =>
+        methodRef.methodFullName shouldBe "foo"
+        duplicateMethodRef.methodFullName shouldBe "foo<duplicate>0"
       }
     }
   }

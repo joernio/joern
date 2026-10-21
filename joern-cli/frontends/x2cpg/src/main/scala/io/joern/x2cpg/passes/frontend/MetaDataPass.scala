@@ -16,7 +16,7 @@ class MetaDataPass(cpg: Cpg, language: String, root: String, hash: Option[String
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     def addMetaDataNode(diffGraph: DiffGraphBuilder): Unit = {
       val absolutePathToRoot = Paths.get(root).absolutePathAsString
-      val metaNode = NewMetaData()
+      val metaNode           = NewMetaData()
         .language(language)
         .root(absolutePathToRoot)
         .version(classOf[MetaDataPass].getPackage.getImplementationVersion)

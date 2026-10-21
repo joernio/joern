@@ -56,10 +56,10 @@ class SymbolSummaryPass(
       case None                            => stmt.stmts.flatMap(visit(_, stack))
       case Some(fullName) if stack.isEmpty =>
         // We are the first namespace declaration in a possibly nested namespace, so this name should be fully separated
-        val nameParts = fullName.split("\\\\")
-        val name      = nameParts.head
-        val newStack  = (nameParts.reverse ++ stack).toSeq
-        val children  = stmt.stmts.flatMap(stmt => visit(stmt, newStack)).distinct
+        val nameParts  = fullName.split("\\\\")
+        val name       = nameParts.head
+        val newStack   = (nameParts.reverse ++ stack).toSeq
+        val children   = stmt.stmts.flatMap(stmt => visit(stmt, newStack)).distinct
         val namespaces = nameParts.tail.foldRight(PhpNamespace(name) :: Nil)((name, acc) => {
           val newName = acc.lastOption.map(_.name).toList :+ name mkString "\\"
           PhpNamespace(newName) :: acc
@@ -80,7 +80,7 @@ class SymbolSummaryPass(
 
   private def visitClassDecl(classLike: PhpClassLikeStmt, stack: NamespaceScopeStack): Seq[SymbolSummary] =
     classLike.name match {
-      case None => Nil
+      case None           => Nil
       case Some(nameExpr) =>
         val classFullName = nameExpr.fullName(stack)
         PhpClass(classFullName) :: Nil // children are ignored, as they cannot be imported directly

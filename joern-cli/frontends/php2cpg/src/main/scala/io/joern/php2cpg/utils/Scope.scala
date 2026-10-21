@@ -1,7 +1,7 @@
 package io.joern.php2cpg.utils
 
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
-import io.joern.php2cpg.parser.Domain.{MetaTypeDeclExtension, PhpExpr, PhpNode}
+import io.joern.php2cpg.parser.Domain.{PhpExpr, PhpNode}
 import io.joern.php2cpg.passes.SymbolSummaryPass.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{NamespaceLikeScope, ScopeElement, TypedScopeElement, Scope as X2CpgScope}
@@ -31,7 +31,10 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
     val mappedNode = scopeNode match {
       case block: BlockScope =>
         val blockFullName = stack.headOption
-          .map { case ScopeElement(node: NamedScope, _) => node.fullName }
+          .map {
+            case ScopeElement(node: NamedScope, _) => node.fullName
+            case _                                 => throw MatchError(scopeNode)
+          }
           .getOrElse("")
         BlockScope(block.block, blockFullName)
       case method: MethodScope =>
@@ -120,16 +123,16 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
   }
 
   def getNewVarTmp(varPrefix: String = ""): String = {
-    stack.headOption match {
-      case Some(ScopeElement(namespace: NamespaceScope, _)) =>
-        s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${namespace.getNextVarTmp}"
-      case Some(ScopeElement(typeScope: TypeScope, _)) =>
-        s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${typeScope.getNextVarTmp}"
-      case Some(ScopeElement(methodScope: MethodScope, _)) =>
-        s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${methodScope.getNextVarTmp}"
-      case _ =>
-        s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${this.getNextVarTmp}"
-    }
+    stack
+      .collectFirst {
+        case ScopeElement(namespace: NamespaceScope, _) =>
+          s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${namespace.getNextVarTmp}"
+        case ScopeElement(typeScope: TypeScope, _) =>
+          s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${typeScope.getNextVarTmp}"
+        case ScopeElement(methodScope: MethodScope, _) =>
+          s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${methodScope.getNextVarTmp}"
+      }
+      .getOrElse(s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${this.getNextVarTmp}")
   }
 
   def addMethodRef(methodRefName: String, methodRef: NewMethodRef): Unit = methodRefsInAst.put(methodRefName, methodRef)
@@ -158,14 +161,21 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
     methods
   }
 
-  def isSurroundedByMetaclassTypeDecl: Boolean =
-    stack
-      .map(_.scopeNode)
-      .collectFirst { case TypeScope(td, _) => td }
-      .exists(_.name.endsWith(MetaTypeDeclExtension))
-
   def isSurroundedByArrowClosure: Boolean =
     stack.map(_.scopeNode).collectFirst { case nm: MethodScope if nm.isArrowFunc => nm }.isDefined
+
+  /** Looks up a variable, but only within the current method boundary, i.e. the block scopes up to and including the
+    * nearest enclosing method scope.
+    */
+  def lookupVariableInCurrentMethod(identifier: String): Option[NewNode] = {
+    val (upToMethod, methodAndBelow) = stack.span {
+      case ScopeElement(_: MethodScope, _) => false
+      case _                               => true
+    }
+    (upToMethod ++ methodAndBelow.take(1)).collectFirst {
+      case scopeElement if scopeElement.variables.contains(identifier) => scopeElement.variables(identifier)
+    }
+  }
 
   def isTopLevel: Boolean =
     getEnclosingTypeDeclTypeName.forall(_ == NamespaceTraversal.globalNamespaceName)
@@ -182,6 +192,13 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
   def getEnclosingTypeDecl: Option[NewTypeDecl] =
     stack.map(_.scopeNode).collectFirst { case TypeScope(td, _) => td }
 
+  def getEnclosingParentInfo: Option[(String, String)] =
+    stack.map(_.scopeNode).collectFirst {
+      case MethodScope(mn, _, _, _, _, _, _) => (NodeTypes.METHOD, mn.fullName)
+      case TypeScope(td, _)                  => (NodeTypes.TYPE_DECL, td.fullName)
+      case NamespaceScope(ns, _)             => (NodeTypes.NAMESPACE_BLOCK, ns.fullName)
+    }
+
   def createMethodNameWithSurroundingInformation(methodName: String): String = {
     val namespaces =
       getEnclosingNamespaceNames.filterNot(_ == NamespaceTraversal.globalNamespaceName).reverse.mkString("\\")
@@ -191,7 +208,7 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
       .collectFirst {
         case NamespaceScope(nm, _) if nm.name != NamespaceTraversal.globalNamespaceName => s"${nm.name}\\$methodName"
         case TypeScope(td, _) if td.name != NamespaceTraversal.globalNamespaceName      => s"${td.fullName}.$methodName"
-        case MethodScope(nm, _, _, _, _, _) if nm.name != NamespaceTraversal.globalNamespaceName =>
+        case MethodScope(nm, _, _, _, _, _, _) if nm.name != NamespaceTraversal.globalNamespaceName =>
           if (namespaces.isEmpty) {
             s"${nm.fullName}.$methodName"
           } else {
@@ -210,15 +227,15 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
   def getSurroundingMethodsForArrowClosure: List[MethodScope] = {
     val methods = mutable.ArrayBuffer[MethodScope]()
     stack
-      .collect { case scopeEl @ ScopeElement(_: MethodScope, _) =>
-        scopeEl
+      .collect { case scopeEl @ ScopeElement(methodScope: MethodScope, _) =>
+        methodScope
       }
       .takeWhile {
-        case ScopeElement(ms: MethodScope, _) if ms.isArrowFunc =>
-          methods.addOne(ms)
+        case methodScope if methodScope.isArrowFunc =>
+          methods.addOne(methodScope)
           true
-        case ScopeElement(ms: MethodScope, _) =>
-          methods.addOne(ms)
+        case methodScope =>
+          methods.addOne(methodScope)
           false
       }
 
@@ -250,14 +267,16 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
   }
 
   def getScopedClosureName: String = {
-    stack.headOption match {
-      case Some(ScopeElement(ns: NamespaceScope, _)) => ns.getClosureMethodName
-      case Some(ScopeElement(ts: TypeScope, _))      => ts.getClosureMethodName
-      case Some(ScopeElement(ms: MethodScope, _))    => ms.getClosureMethodName
-      case _ =>
-        logger.warn("BUG: Attempting to get scopedClosureName, but no scope has been push. Defaulting to unscoped")
+    stack
+      .collectFirst {
+        case ScopeElement(ns: NamespaceScope, _) => ns.getClosureMethodName
+        case ScopeElement(ts: TypeScope, _)      => ts.getClosureMethodName
+        case ScopeElement(ms: MethodScope, _)    => ms.getClosureMethodName
+      }
+      .getOrElse {
+        logger.warn("Attempting to get scopedClosureName, but no scope has been pushed. Defaulting to unscoped.")
         NameConstants.Closure
-    }
+      }
   }
 
   private def addInitToScope(init: PhpInit, initList: List[mutable.ArrayBuffer[PhpInit]]): Unit = {
@@ -341,5 +360,17 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
     */
   def resolveIdentifier(symbol: String): Option[SymbolSummary] = {
     importedSymbols.get(symbol)
+  }
+
+  def resolveClassIdentifier(symbol: String): Option[SymbolSummary] = {
+    resolveIdentifier(symbol).collect { case sym: PhpClass =>
+      sym
+    }
+  }
+
+  def resolveFunctionIdentifier(symbol: String): Option[SymbolSummary] = {
+    resolveIdentifier(symbol).collect { case sym: PhpFunction =>
+      sym
+    }
   }
 }

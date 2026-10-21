@@ -94,7 +94,7 @@ class CallTests extends PhpCode2CpgFixture {
     "have the correct method node defined" in {
       inside(cpg.call.l) { case List(fooCall) =>
         fooCall.name shouldBe "foo"
-        fooCall.methodFullName shouldBe s"Foo${Domain.MetaTypeDeclExtension}.foo"
+        fooCall.methodFullName shouldBe s"Foo.foo"
         fooCall.receiver.isEmpty shouldBe true
         fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         fooCall.lineNumber shouldBe Some(2)
@@ -139,10 +139,11 @@ class CallTests extends PhpCode2CpgFixture {
     "resolve the correct method full name" in {
       val List(barCall) = cpg.call("bar").take(1).l
       barCall.name shouldBe "bar"
-      barCall.methodFullName shouldBe s"ClassA${Domain.MetaTypeDeclExtension}.bar"
+      barCall.methodFullName shouldBe s"ClassA.bar"
       barCall.receiver.isEmpty shouldBe true
       barCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       barCall.code shouldBe "self::bar($x)"
+      barCall.staticReceiver shouldBe Some("ClassA")
     }
   }
 
@@ -224,10 +225,8 @@ class CallTests extends PhpCode2CpgFixture {
         |Foo::bar();
         |""".stripMargin)
 
-    cpg.method.name("foo").call.name("bar").methodFullName.l shouldBe List(s"Foo${Domain.MetaTypeDeclExtension}.bar")
-    cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List(
-      s"Foo<metaclass>.foo.anon-class-0${Domain.MetaTypeDeclExtension}.boz"
-    )
+    cpg.method.name("foo").call.name("bar").methodFullName.l shouldBe List(s"Foo.bar")
+    cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List(s"Foo.foo.anon-class-0.boz")
   }
 
   "a static call in a namespace should have a full name including the namespace path" in {
@@ -265,9 +264,7 @@ class CallTests extends PhpCode2CpgFixture {
          |  private static function bar() {}
          |}
          |""".stripMargin)
-    cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List(
-      s"Foo.foo.anon-class-0${Domain.MetaTypeDeclExtension}.boz"
-    )
+    cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List(s"Foo.foo.anon-class-0.boz")
   }
 
   "a chained call from an external namespace should have normalized '.' method delimiters" in {
@@ -278,7 +275,7 @@ class CallTests extends PhpCode2CpgFixture {
         |Http::retry(3)->timeout(10);
         |""".stripMargin)
 
-    cpg.call("retry").methodFullName.head shouldBe "Foo\\Bar\\Http<metaclass>.retry"
+    cpg.call("retry").methodFullName.head shouldBe "Foo\\Bar\\Http.retry"
     cpg.call("timeout").methodFullName.head shouldBe s"${Defines.UnresolvedNamespace}.timeout"
   }
 
@@ -335,8 +332,9 @@ class CallTests extends PhpCode2CpgFixture {
     "be fully qualified in the case of static calls" in {
       val test1 = cpg.call("test1").head
       test1.name shouldBe "test1"
-      test1.methodFullName shouldBe "Foo\\Bar\\baz<metaclass>.test1"
+      test1.methodFullName shouldBe "Foo\\Bar\\baz.test1"
       test1.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      test1.staticReceiver shouldBe Some("Foo\\Bar\\baz")
     }
 
     "be unknown in the case of dynamic calls" in {
@@ -344,6 +342,7 @@ class CallTests extends PhpCode2CpgFixture {
       test2.name shouldBe "test2"
       test2.methodFullName shouldBe s"${Defines.UnresolvedNamespace}.test2"
       test2.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      test2.staticReceiver shouldBe None
     }
   }
 
@@ -354,7 +353,7 @@ class CallTests extends PhpCode2CpgFixture {
         | public function bar() {
         |        $batches = 0;
         |        BatchBuilder::factory()
-        |            ->transferWith(function () {
+        |            ->transferWith(function () use (&$batches) {
         |                $batches++;
         |            })
         |            ->build();
@@ -366,6 +365,40 @@ class CallTests extends PhpCode2CpgFixture {
     cpg.call.argument.isMethodRef.size shouldBe 1
     val lambdaRef = cpg.call.argument.isMethodRef.head
     lambdaRef.methodFullName shouldBe "Foo.bar.<lambda>0"
+  }
+
+  "a call with a named argument should set the argumentName on that argument" in {
+    val cpg = code("""<?php
+        |foo(bar: $x);
+        |""".stripMargin)
+    val call = cpg.call.nameExact("foo").loneElement
+    call.code shouldBe "foo(bar: $x)"
+    inside(call.argument.l) { case List(xArg: Identifier) =>
+      xArg.name shouldBe "x"
+      xArg.code shouldBe "$x"
+      xArg.argumentName shouldBe Some("bar")
+    }
+  }
+
+  "a call with positional and named arguments should only set argumentName on named ones" in {
+    val cpg = code("""<?php
+        |foo($a, nameA: $b, nameB: $c);
+        |""".stripMargin)
+    val call = cpg.call.nameExact("foo").loneElement
+    call.code shouldBe "foo($a, nameA: $b, nameB: $c)"
+    inside(call.argument.l) { case List(aArg: Identifier, bArg: Identifier, cArg: Identifier) =>
+      aArg.name shouldBe "a"
+      aArg.code shouldBe "$a"
+      aArg.argumentName shouldBe None
+
+      bArg.name shouldBe "b"
+      bArg.code shouldBe "$b"
+      bArg.argumentName shouldBe Some("nameA")
+
+      cArg.name shouldBe "c"
+      cArg.code shouldBe "$c"
+      cArg.argumentName shouldBe Some("nameB")
+    }
   }
 
   "a call to a constructor should be static and have a correctly inferred method full name" in {
@@ -385,4 +418,61 @@ class CallTests extends PhpCode2CpgFixture {
     construct.dynamicTypeHintFullName shouldBe Seq.empty
   }
 
+  "calls on callable arrays" should {
+    val cpg = code("""<?php
+        |class Foo {
+        |  function __construct($b) {}
+        |  function baz() {}
+        |}
+        |$b = $_GET["p1"];
+        |array(new Foo($b), "baz")();
+        |[$obj, 'myMethod']();
+        |""".stripMargin)
+
+    "be represented as __invoke calls on the callee expression" in {
+      inside(cpg.call.nameExact(NameConstants.Invoke).l) { case List(longForm, shortForm) =>
+        longForm.code shouldBe """array(new Foo($b), "baz")()"""
+        longForm.methodFullName shouldBe s"${Defines.UnresolvedNamespace}.${NameConstants.Invoke}"
+        longForm.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        longForm.receiver.isEmpty shouldBe false
+
+        shortForm.code shouldBe "[$obj, 'myMethod']()"
+        shortForm.methodFullName shouldBe s"${Defines.UnresolvedNamespace}.${NameConstants.Invoke}"
+        shortForm.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        shortForm.receiver.isEmpty shouldBe false
+      }
+    }
+
+    "keep the callee expression in the AST" in {
+      // `new Foo($b)` inside the callable array must not be dropped from the graph
+      val construct = cpg.call.nameExact(Domain.ConstructorMethodName).head
+      construct.code shouldBe "new Foo($b)"
+    }
+  }
+
+  "static calls with expression targets" should {
+    val cpg = code("""<?php
+        |class Bar {
+        |  static function go($client, $method, $url, $options) {
+        |    self::$client::$method($url, $options);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "retain the callee expression and arguments" in {
+      inside(cpg.call.nameExact("$method").l) { case List(staticCall) =>
+        staticCall.code shouldBe "self::$client::$method($url, $options)"
+        staticCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+        inside(staticCall.argument.l) { case List(base: Call, urlArg: Identifier, optionsArg: Identifier) =>
+          base.code shouldBe "self::$client"
+          base.argumentIndex shouldBe 0
+          urlArg.name shouldBe "url"
+          urlArg.argumentIndex shouldBe 1
+          optionsArg.name shouldBe "options"
+          optionsArg.argumentIndex shouldBe 2
+        }
+      }
+    }
+  }
 }

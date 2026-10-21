@@ -41,10 +41,11 @@ object RubyJsonHelpers {
         if (o.obj.contains(ParserKeys.MetaData)) read[MetaData](o(ParserKeys.MetaData))
         else read[MetaData](o)
 
-      val offset = Option(metaData.offsetStart) -> Option(metaData.offsetEnd) match {
-        case (Some(start), Some(end)) => Option(start -> end)
-        case _                        => None
-      }
+      val offset =
+        (Option(metaData.offsetStart).filterNot(_ == -1), Option(metaData.offsetEnd).filterNot(_ == -1)) match {
+          case (Some(start), Some(end)) => Option(start -> end)
+          case _                        => None
+        }
 
       TextSpan(
         line = Option(metaData.lineNumber).filterNot(_ == -1),
@@ -57,7 +58,8 @@ object RubyJsonHelpers {
     }
 
     def visitOption(key: String)(implicit visit: ujson.Value => RubyExpression): Option[RubyExpression] =
-      if contains(key) then Option(visit(o(key))) else None
+      if (contains(key)) { Option(visit(o(key))) }
+      else { None }
 
     def visitArray(key: String)(implicit visit: ujson.Value => RubyExpression): List[RubyExpression] = {
       o(key).arr.map(visit).toList
@@ -84,7 +86,7 @@ object RubyJsonHelpers {
             val assignmentSpan = field.span.spanStart(s"${field.span.text} = nil")
             SingleAssignment(field, "=", nilLiteral(field.span))(assignmentSpan)
           case assignment @ SingleAssignment(_: RubyFieldIdentifier, _, _) => assignment
-          case assignment @ SingleAssignment(lhs: SimpleIdentifier, _, _) =>
+          case assignment @ SingleAssignment(lhs: SimpleIdentifier, _, _)  =>
             assignment.copy(lhs = ClassFieldIdentifier()(lhs.span))(assignment.span)
           case otherExpr => otherExpr
         }
@@ -267,10 +269,16 @@ object RubyJsonHelpers {
       case head :: tail                                        => head :: slurp(tail, expandSize)
       case Nil                                                 => List.empty
     }
-    val op = "="
+    val op                                               = "="
+    def arraySpan(elems: List[RubyExpression]): TextSpan =
+      obj.toTextSpan.spanStart(elems.map(_.span.text).mkString("[", ", ", "]"))
+
+    def assignSpan(lhs: RubyExpression, rhs: RubyExpression): TextSpan =
+      lhs.span.spanStart(s"${lhs.span.text} $op ${rhs.span.text}")
+
     lazy val defaultAssignments = lhsNodes
       .zipAll(rhsNodes, defaultResult(), nilResult())
-      .map { case (lhs, rhs) => SingleAssignment(lhs, op, rhs)(obj.toTextSpan) }
+      .map { case (lhs, rhs) => SingleAssignment(lhs, op, rhs)(assignSpan(lhs, rhs)) }
 
     val assignments = if ((lhsNodes ++ rhsNodes).exists(_.isInstanceOf[SplattingRubyNode])) {
       rhsNodes.size - lhsNodes.size match {
@@ -286,9 +294,12 @@ object RubyJsonHelpers {
             .sortBy { x => slurpedLhs.indexOf(x._1) } // groupBy produces a map which discards insertion order
             .map {
               case (SplattingRubyNode(lhs), rhss) =>
-                SingleAssignment(lhs, op, ArrayLiteral(rhss)(obj.toTextSpan))(obj.toTextSpan)
-              case (lhs, rhs :: Nil) => SingleAssignment(lhs, op, rhs)(obj.toTextSpan)
-              case (lhs, rhss)       => SingleAssignment(lhs, op, ArrayLiteral(rhss)(obj.toTextSpan))(obj.toTextSpan)
+                val rhs = ArrayLiteral(rhss)(arraySpan(rhss))
+                SingleAssignment(lhs, op, rhs)(assignSpan(lhs, rhs))
+              case (lhs, rhs :: Nil) => SingleAssignment(lhs, op, rhs)(assignSpan(lhs, rhs))
+              case (lhs, rhss)       =>
+                val rhs = ArrayLiteral(rhss)(arraySpan(rhss))
+                SingleAssignment(lhs, op, rhs)(assignSpan(lhs, rhs))
             }
             .toList
         }
@@ -304,9 +315,16 @@ object RubyJsonHelpers {
             .sortBy { x => slurpedRhs.indexOf(x._1) } // groupBy produces a map which discards insertion order
             .flatMap {
               case (SplattingRubyNode(rhs), lhss) =>
-                lhss.map(SingleAssignment(_, op, SplattingRubyNode(rhs)(rhs.span))(obj.toTextSpan))
-              case (rhs, lhs :: Nil) => Seq(SingleAssignment(lhs, op, rhs)(obj.toTextSpan))
-              case (rhs, lhss) => lhss.map(SingleAssignment(_, op, SplattingRubyNode(rhs)(rhs.span))(obj.toTextSpan))
+                lhss.map { lhs =>
+                  val splatRhs = SplattingRubyNode(rhs)(rhs.span)
+                  SingleAssignment(lhs, op, splatRhs)(assignSpan(lhs, splatRhs))
+                }
+              case (rhs, lhs :: Nil) => Seq(SingleAssignment(lhs, op, rhs)(assignSpan(lhs, rhs)))
+              case (rhs, lhss)       =>
+                lhss.map { lhs =>
+                  val splatRhs = SplattingRubyNode(rhs)(rhs.span)
+                  SingleAssignment(lhs, op, splatRhs)(assignSpan(lhs, splatRhs))
+                }
             }
             .toList
         }
@@ -314,7 +332,7 @@ object RubyJsonHelpers {
       }
     } else {
       val diff = rhsNodes.size - lhsNodes.size
-      if diff < 0 then defaultAssignments.dropRight(Math.abs(diff)) else defaultAssignments
+      if (diff < 0) defaultAssignments.dropRight(Math.abs(diff)) else defaultAssignments
     }
     DefaultMultipleAssignment(assignments)(obj.toTextSpan)
   }

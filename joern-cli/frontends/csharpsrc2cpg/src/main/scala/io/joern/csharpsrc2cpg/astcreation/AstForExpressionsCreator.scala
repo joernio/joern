@@ -6,7 +6,6 @@ import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.utils.Utils.{composeMethodFullName, composeMethodLikeSignature}
 import io.joern.csharpsrc2cpg.{CSharpOperators, Constants}
-import io.joern.x2cpg.utils.AstPropertiesUtil.RootPropertiesOnSeq
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewLiteral, NewTypeRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
@@ -101,7 +100,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     assignOp match {
       case Operators.assignment => originalRhs
-      case _ =>
+      case _                    =>
         scope.tryResolveGetterInvocation(propertyName, Some(setterBaseType)) match {
           // Shouldn't happen, provided it is valid code. At any rate, log and emit the RHS verbatim.
           case None =>
@@ -113,8 +112,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
                 logger.warn(s"Unrecognized assignment in ${code(expr)}")
                 originalRhs
               case Some(opName) =>
-                val getterInvocation =
+                val getterInvocation = {
                   createInvocationAst(expr, getterMethod.name, Nil, receiver, Some(getterMethod), Some(setterBaseType))
+                }
                 val operatorCall =
                   operatorCallNode(expr, code(expr), opName, Some(setterMethod.returnType))
                 callAst(operatorCall, getterInvocation +: originalRhs, None, None) :: Nil
@@ -139,20 +139,27 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     rhs: DotNetNodeInfo,
     setterInfo: (CSharpMethod, String)
   ): Seq[Ast] = {
+
     val (setterMethod, setterBaseType) = setterInfo
-    val receiver = if (setterMethod.isStatic) {
-      None
-    } else {
-      val baseNode = createDotNetNodeInfo(lhs.json(ParserKeys.Expression))
-      astForNode(baseNode).headOption
+
+    def createReceiver(): Option[Ast] = {
+      if (setterMethod.isStatic) {
+        None
+      } else {
+        val baseNode = createDotNetNodeInfo(lhs.json(ParserKeys.Expression))
+        astForNode(baseNode).headOption
+      }
     }
-    val rhsAst = lowerSetterAssignmentRhs(assignExpr, assignOp, setterInfo, receiver, rhs)
+
+    val receiver      = createReceiver()
+    val rhsAst        = lowerSetterAssignmentRhs(assignExpr, assignOp, setterInfo, receiver, rhs)
+    val receiverClone = createReceiver()
 
     createInvocationAst(
       assignExpr,
       setterMethod.name,
       rhsAst,
-      receiver,
+      receiverClone,
       Some(setterMethod),
       Some(setterBaseType)
     ) :: Nil
@@ -175,14 +182,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     setterInfo: (CSharpMethod, String)
   ): Seq[Ast] = {
     val (setterMethod, setterBaseType) = setterInfo
-    val receiver = Option.when(!setterMethod.isStatic)(astForThisReceiver(lhs, scope.surroundingTypeDeclFullName))
-    val rhsAst   = lowerSetterAssignmentRhs(assignExpr, assignOp, setterInfo, receiver, rhs)
+    val receiver      = Option.when(!setterMethod.isStatic)(astForThisReceiver(lhs, scope.surroundingTypeDeclFullName))
+    val receiverClone = Option.when(!setterMethod.isStatic)(astForThisReceiver(lhs, scope.surroundingTypeDeclFullName))
+    val rhsAst        = lowerSetterAssignmentRhs(assignExpr, assignOp, setterInfo, receiver, rhs)
 
     createInvocationAst(
       assignExpr,
       setterMethod.name,
       rhsAst,
-      receiver,
+      receiverClone,
       Some(setterMethod),
       Some(setterBaseType)
     ) :: Nil
@@ -209,7 +217,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case SimpleMemberAccessExpression =>
         astForMemberAccessSetterAssignment(assignExpr, lhs, assignOp, rhs, setterInfo)
       case IdentifierName => astForIdentifierSetterAssignment(assignExpr, lhs, assignOp, rhs, setterInfo)
-      case _ =>
+      case _              =>
         logger.warn(s"Unsupported setter assignment: ${code(assignExpr)}")
         Nil
     }
@@ -294,9 +302,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForUnaryExpression(unaryExpr: DotNetNodeInfo): Seq[Ast] = {
     val operatorToken = unaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).str
-    val operatorName = operatorToken match
-      case "+" => Operators.plus
-      case "-" => Operators.minus
+    val operatorName  = operatorToken match {
+      case "+"  => Operators.plus
+      case "-"  => Operators.minus
       case "++" =>
         if (unaryExpr.node.getClass == PostIncrementExpression.getClass) Operators.postIncrement
         else Operators.preIncrement
@@ -306,6 +314,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case "~" => Operators.not
       case "!" => Operators.logicalNot
       case "&" => Operators.addressOf
+    }
 
     val args     = createDotNetNodeInfo(unaryExpr.json(ParserKeys.Operand))
     val argsAst  = astForOperand(args)
@@ -318,7 +327,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val lhsNode       = createDotNetNodeInfo(binaryExpr.json(ParserKeys.Left))
     val rhsNode       = createDotNetNodeInfo(binaryExpr.json(ParserKeys.Right))
     val operatorToken = binaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).str
-    val operatorName = binaryOperatorsMap.getOrElse(
+    val operatorName  = binaryOperatorsMap.getOrElse(
       operatorToken, {
         logger.warn(s"Unhandled operator '$operatorToken' for ${code(binaryExpr)}")
         CSharpOperators.unknown
@@ -374,11 +383,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       Try(elements.map(createDotNetNodeInfo).map(_.json(elementParserKey))).getOrElse(ArrayBuffer.empty).nonEmpty
 
     // We have more expressions in our expressions, which means we have a 2+D array, parse these
-    val args: Seq[Ast] = if (nestedExpressionsExists) {
-      elements.map(createDotNetNodeInfo).flatMap(astForCollectionStaticInitializer(_, elementParserKey)).toSeq
-    } else {
-      elements.slice(0, MAX_INITIALIZERS).map(createDotNetNodeInfo).flatMap(astForNode).toSeq
-    }
+    val args: Seq[Ast] =
+      if (nestedExpressionsExists)
+        elements.map(createDotNetNodeInfo).flatMap(astForCollectionStaticInitializer(_, elementParserKey)).toSeq
+      else elements.slice(0, MAX_INITIALIZERS).map(createDotNetNodeInfo).flatMap(astForNode).toSeq
 
     val typeFullName = elementParserKey match {
       case ParserKeys.Expressions => s"${getTypeFullNameFromAstNode(args)}[]"
@@ -484,7 +492,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callName: String
   ): Seq[Ast] = {
     // This is when a call is made directly, which could also be made from a static import
-    val argTypes = astForArgumentList(argumentList).map(getTypeFullNameFromAstNode).toList
+    val argTypes                           = astForArgumentList(argumentList).map(getTypeFullNameFromAstNode).toList
     val (receiver, baseType, method, args) = scope
       .tryResolveMethodInvocation(callName, argTypes)
       .orElse(scope.tryResolveMethodInvocation(callName, argTypes, scope.surroundingTypeDeclFullName)) match {
@@ -591,11 +599,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .map((typeName, isGetter) => (scope.tryResolveTypeReference(typeName).map(_.name).getOrElse(typeName), isGetter))
       .getOrElse((Defines.Any, false))
 
-    if (isGetter) {
-      astForMemberAccessGetterExpression(byPropertyName.get, baseAst, baseTypeFullName, accessExpr)
-    } else {
-      fieldAccessAst(accessExpr, accessExpr, baseAst, code(accessExpr), fieldIdentifierName, typeFullName) :: Nil
-    }
+    if (isGetter) astForMemberAccessGetterExpression(byPropertyName.get, baseAst, baseTypeFullName, accessExpr)
+    else fieldAccessAst(accessExpr, accessExpr, baseAst, code(accessExpr), fieldIdentifierName, typeFullName) :: Nil
   }
 
   protected def astForElementAccessExpression(elementAccessExpression: DotNetNodeInfo): Seq[Ast] = {
@@ -607,7 +612,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .map { x =>
         val argDotNetInfo = createDotNetNodeInfo(x)
         val argAst        = astForExpression(createDotNetNodeInfo(argDotNetInfo.json(ParserKeys.Expression)))
-        val callNode = operatorCallNode(
+        val callNode      = operatorCallNode(
           elementAccessExpression,
           elementAccessExpression.code,
           Operators.indexAccess,
@@ -631,7 +636,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val signature      = None
     val name           = Defines.ConstructorMethodName
     val methodFullName = s"$typeFullName.$name"
-    val _callNode = callNode(
+    val _callNode      = callNode(
       objectCreation,
       code(objectCreation),
       name,
@@ -649,14 +654,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .json(ParserKeys.Arguments)
       .arr
       .map(createDotNetNodeInfo)
-      .flatMap(x =>
+      .flatMap { x =>
         val argExpression = createDotNetNodeInfo(x.json(ParserKeys.Expression))
         argExpression.node match {
           case _: BaseLambdaExpression =>
             astForSimpleLambdaExpression(argExpression, baseTypeHint)
           case _ => astForExpressionStatement(x)
         }
-      )
+      }
       .toSeq
   }
 
@@ -834,7 +839,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForAttribute(attribute: DotNetNodeInfo): Ast = {
     val attributeName = nameFromNode(attribute)
     val fullName      = nodeTypeFullName(attribute)
-    val argumentAsts =
+    val argumentAsts  =
       Try(astForArgumentList(createDotNetNodeInfo(attribute.json(ParserKeys.ArgumentList)))).getOrElse(Seq.empty[Ast])
 
     val _annotationNode = annotationNode(attribute, attribute.code, attributeName, fullName)
@@ -877,7 +882,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           .typeFullName(nodeTypeFullName(typeInfo))
 
         val conditionAst      = callAst(instanceOfCallNode, expression :+ Ast(typeNode))
-        val assignmentCallAst = callAst(assignmentAst, designationAst +: expression)
+        val expressionClone   = astForExpression(expressionNode)
+        val assignmentCallAst = callAst(assignmentAst, designationAst +: expressionClone)
 
         List(conditionAst, assignmentCallAst)
       case ConstantPattern =>

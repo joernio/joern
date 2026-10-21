@@ -2,87 +2,173 @@ name: release to github
 on:
   workflow_dispatch: # triggered by 'release' workflow via github REST api
 jobs:
-  release-github:
-    concurrency: release
+  check-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      exists: ${{ steps.check.outputs.exists }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Check if release exists
+        id: check
+        run: |
+          if err=$(gh release view "${{ github.ref_name }}" 2>&1 > /dev/null); then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release ${{ github.ref_name }} already exists, skipping"
+          elif echo "$err" | grep -qi "release not found"; then
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Release ${{ github.ref_name }} does not exist, will create it"
+          else
+            echo "Unable to determine whether release exists: $err"
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+
+  build-distribution:
+    needs: check-release
+    if: needs.check-release.outputs.exists == 'false'
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x86_64
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+          - os: macos-15-intel
+            platform: macos-x86_64
+          - os: macos-latest
+            platform: macos-arm64
+          - os: windows-latest
+            platform: windows-x86_64
+          - os: windows-11-arm
+            platform: windows-arm64
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@v1
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 2.7
-      - name: Install Bundler
-        run: gem install bundler -v 2.4.22
+      - name: Set up sbt
+        uses: sbt/setup-sbt@ecad189dd245444b9ae0a0cd5922fd938b88906f # v1.5.12
       - name: Delete `.rustup` directory
         run: rm -rf /home/runner/.rustup # to save disk space
         if: runner.os == 'Linux'
       - name: Delete `.cargo` directory # to save disk space
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
-      - run: sbt stage createDistribution
-      - run: sha512sum target/joern-cli.zip > target/joern-cli.zip.sha512
-      - run: sbt "querydb/runMain io.joern.dumpq.Main"
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Build distribution
+        run: sbt "stage ; createDistribution"
+      - name: Stage distribution zip
+        if: runner.os != 'Windows'
+        run: cp target/out/jvm/*/joern/joern-cli-${{ matrix.platform }}.zip target/
+      - name: Stage distribution zip
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem -Path "target\out\jvm\*\joern\joern-cli-${{ matrix.platform }}.zip" | Select-Object -First 1
+          Copy-Item $zip.FullName -Destination "target\"
+      - name: Generate SHA512 checksum
+        run: sha512sum target/joern-cli-${{ matrix.platform }}.zip > target/joern-cli-${{ matrix.platform }}.zip.sha512
+        if: runner.os != 'Windows'
+      - name: Generate SHA512 checksum
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash -Algorithm SHA512 "target\joern-cli-${{ matrix.platform }}.zip").Hash.ToLower()
+          "$hash  joern-cli-${{ matrix.platform }}.zip" | Out-File -Encoding ASCII "target\joern-cli-${{ matrix.platform }}.zip.sha512"
+      - name: Upload distribution artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist-${{ matrix.platform }}
+          path: |
+            target/joern-cli-${{ matrix.platform }}.zip
+            target/joern-cli-${{ matrix.platform }}.zip.sha512
+          retention-days: 1
+      - name: Dump query database
+        if: matrix.platform == 'linux-x86_64'
+        run: sbt "querydb/runMain io.joern.dumpq.Main"
+      - name: Prepare querydb artifacts
+        if: matrix.platform == 'linux-x86_64'
+        run: |
+          mkdir -p querydb/target
+          cp target/out/jvm/*/querydb/querydb.zip querydb/target/
+          cp /tmp/querydb.json querydb/target/querydb.json
+      - name: Upload querydb artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: matrix.platform == 'linux-x86_64'
+        with:
+          name: querydb
+          path: |
+            querydb/target/querydb.zip
+            querydb/target/querydb.json
+          retention-days: 1
+
+  release-github:
+    needs: build-distribution
+    concurrency: release-github-${{ github.ref_name }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download distribution artifacts
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: dist-*
+          path: target/dist
+          merge-multiple: true
+      - name: Download querydb artifact
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: querydb
+          path: querydb-artifacts
+      - name: Abort if release was created in the meantime
+        id: recheck
+        run: |
+          if err=$(gh release view "${{ github.ref_name }}" 2>&1 > /dev/null); then
+            echo "Release ${{ github.ref_name }} already exists, not publishing again"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          elif echo "$err" | grep -qi "release not found"; then
+            echo "exists=false" >> $GITHUB_OUTPUT
+          else
+            echo "Unable to determine whether release exists: $err"
+            exit 1
+          fi
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+      - name: Create Release and Upload Assets
+        if: steps.recheck.outputs.exists == 'false'
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ github.ref_name }}
-          release_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
           draft: false
           prerelease: false
-      - name: Upload joern-install.sh
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./joern-install.sh
-          asset_name: joern-install.sh
-          asset_content_type: text/plain
-      - name: Upload joern-cli.zip
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: target/joern-cli.zip
-          asset_name: joern-cli.zip
-          asset_content_type: application/zip
-      - name: Upload joern-cli.zip.sha512
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: target/joern-cli.zip.sha512
-          asset_name: joern-cli.zip.sha512
-          asset_content_type: text/plain
-      - name: Upload querydb.zip
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: querydb/target/querydb.zip
-          asset_name: querydb.zip
-          asset_content_type: application/zip
-      - name: Upload querydb.json
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: /tmp/querydb.json
-          asset_name: querydb.json
-          asset_content_type: application/json
+          files: |
+            ./joern-install.sh
+            target/dist/joern-cli-linux-x86_64.zip
+            target/dist/joern-cli-linux-x86_64.zip.sha512
+            target/dist/joern-cli-linux-arm64.zip
+            target/dist/joern-cli-linux-arm64.zip.sha512
+            target/dist/joern-cli-macos-x86_64.zip
+            target/dist/joern-cli-macos-x86_64.zip.sha512
+            target/dist/joern-cli-macos-arm64.zip
+            target/dist/joern-cli-macos-arm64.zip.sha512
+            target/dist/joern-cli-windows-x86_64.zip
+            target/dist/joern-cli-windows-x86_64.zip.sha512
+            target/dist/joern-cli-windows-arm64.zip
+            target/dist/joern-cli-windows-arm64.zip.sha512
+            querydb-artifacts/querydb.zip
+            querydb-artifacts/querydb.json

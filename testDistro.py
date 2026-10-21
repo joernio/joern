@@ -3,12 +3,12 @@
 # Prerequisite:
 # > sbt joerncli/stage querydb/createDistribution
 
+import json
 import subprocess
 import sys
 import os
 import shutil
 import tempfile
-import requests
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
@@ -56,7 +56,7 @@ class TestRunner:
             "jssrc": FrontendConfig(3, "lookForProperty"), 
             "javasrc": FrontendConfig(7, "callsExternalMethod"),
             "java": FrontendConfig(7, "callsExternalMethod"),
-            "ghidra": FrontendConfig(100, "reallocarray"),
+            "ghidra": FrontendConfig(8, "_printf"),
             "pythonsrc": FrontendConfig(2, "my_fun"),
             "php": FrontendConfig(3, "foo"),
         }
@@ -183,7 +183,10 @@ class TestRunner:
         """Test querydb plugin functionality"""
         self.clean_workspace()
         
-        querydb_zip = self.script_dir / "querydb" / "target" / "querydb.zip"
+        querydb_zips = sorted(self.script_dir.glob("target/out/jvm/*/querydb/querydb.zip"))
+        if not querydb_zips:
+            raise RuntimeError("querydb.zip not found under target/out/jvm - was querydb/createDistribution run?")
+        querydb_zip = querydb_zips[0]
 
         # Remove and re-add plugin
         self.run_command([self.joern_exe, "--remove-plugin", "querydb"], 
@@ -211,6 +214,9 @@ class TestRunner:
             
             # Create test file
             (foo_path / "foo.c").write_text("int foo(int a, int b, int c, int d, int e, int f) {}")
+
+            # Use test file for joern-scan parameter test
+            uaf_c_path = self.script_dir / "tests" / "code" / "c" / "uaf.c"
             
             # Run tests
             self.run_command([self.joern_exe, "--src", str(foo_path), "--run", "scan"],
@@ -221,6 +227,48 @@ class TestRunner:
             
             self.run_command([self.joern_scan_exe, "--dump"],
                            "Joern-scan dump")
+
+            # Run scan on real test file to verify functionality
+            proc = self.run_command([self.joern_scan_exe, "--overwrite", "--tags", "all", str(uaf_c_path)],
+                           f"Joern-scan on {uaf_c_path}")
+
+            expected_result = "Result: 5.0 : A value that is free'd is reused without reassignment.: uaf.c:7:bad"
+
+            result_count = sum(1 for line in proc.stdout.splitlines() if expected_result in line)
+            if result_count == 0:
+                raise RuntimeError("Result from joern-scan not found")
+
+            # Same scan, but with a --frontend-args value carrying a backslash. Those values are
+            # interpolated into a generated Scala source, so an unescaped one is not a legal string
+            # literal and the script fails to compile instead of running. The exclusion matches
+            # nothing under the input, so the expected result is unchanged.
+            proc = self.run_command([self.joern_scan_exe, "--overwrite", "--tags", "all", str(uaf_c_path),
+                                     "--frontend-args", "--exclude-regex", r".*/\.git/.*"],
+                           f"Joern-scan on {uaf_c_path} with a backslash in --frontend-args")
+
+            result_count = sum(1 for line in proc.stdout.splitlines() if expected_result in line)
+            if result_count == 0:
+                raise RuntimeError("Result from joern-scan not found with an escaped --frontend-args value")
+
+            # A scan that failed must not reach the caller as a success. The launcher used to exit
+            # with the status of its retry test rather than the JVM's, so every non-zero exit
+            # except 2 arrived as 0 and "scanned, found nothing" was indistinguishable from
+            # "never scanned".
+            missing_path = Path(tmp_dir) / "no-such-directory"
+            proc = self.run_command([self.joern_scan_exe, str(missing_path)],
+                           f"Joern-scan on nonexistent path {missing_path}", check=False)
+            if proc.returncode == 0:
+                raise RuntimeError("Joern-scan exited 0 for a scan that failed")
+
+            proc = self.run_command([self.joern_scan_exe, "--this-option-does-not-exist", str(foo_path)],
+                           "Joern-scan with an unrecognised option", check=False)
+            if proc.returncode == 0:
+                raise RuntimeError("Joern-scan exited 0 for an argument list it rejected")
+
+            proc = self.run_command([self.joern_scan_exe, "--tags", "all"],
+                           "Joern-scan with no source path", check=False)
+            if proc.returncode == 0:
+                raise RuntimeError("Joern-scan exited 0 when given no source path")
 
     @stage
     def slice_test(self):
@@ -276,27 +324,28 @@ class TestRunner:
             self._validate_sarif_file(out_file)
 
     def _validate_sarif_file(self, sarif_file: Path):
-        """Validate SARIF file using external service"""
-        try:
-            with open(sarif_file, "rb") as f:
-                files = {"postedFiles": ("test.sarif", f, "application/octet-stream")}
-                response = requests.post(
-                    "https://sarifweb.azurewebsites.net/Validation/ValidateFiles",
-                    files=files,
-                    timeout=30
-                )
-            
-            response.raise_for_status()
-            result = response.json()
-            exit_code = int(result.get("exitCode", 1))
-            
-            logger.info(f"SARIF Validation Exit Code: {exit_code}")
-            if exit_code != 0:
-                raise RuntimeError("SARIF file validation failed")
-                
-        except requests.RequestException as e:
-            logger.error(f"SARIF validation request failed: {e}")
-            raise
+        """Validate SARIF file using the Microsoft SARIF Multitool (npm)"""
+        # shutil.which resolves npx.cmd on Windows
+        npx = shutil.which("npx")
+        if npx is None:
+            raise RuntimeError("npx not found; Node.js/npm is required for SARIF validation")
+
+        # The multitool exits with 0 even if it finds problems, so we have to
+        # inspect the results it writes to the output file.
+        result_file = sarif_file.parent / f"{sarif_file.stem}.validation.sarif"
+        self.run_command([npx, "--yes", "@microsoft/sarif-multitool@5.8.0", "validate",
+                          str(sarif_file), "--output", str(result_file)],
+                         "Validate SARIF file with @microsoft/sarif-multitool")
+
+        if not result_file.exists():
+            raise RuntimeError("SARIF validation produced no output file")
+
+        results = json.loads(result_file.read_text())["runs"][0].get("results", [])
+        errors = [r for r in results if r.get("level") == "error"]
+        for r in results:
+            logger.info(f"SARIF validation {r.get('level')}: {r.get('ruleId')} {r.get('message', {}).get('text')}")
+        if errors:
+            raise RuntimeError(f"SARIF file validation failed with {len(errors)} error(s)")
 
     @stage
     def schema_extender_test(self):
@@ -316,8 +365,8 @@ class TestRunner:
         env = os.environ.copy()
         env["CPG_VERSION"] = cpg_version
         
-        self.run_command([self.sbt_exe, "clean", "replaceDomainClassesInJoern"],
-                        "Run SBT clean replaceDomainClassesInJoern", 
+        self.run_command([self.sbt_exe, "--server", "--batch", "replaceDomainClassesInJoern"],
+                        "Run SBT replaceDomainClassesInJoern",
                         cwd=schema_extender_dir, env=env)
         
         # Create and run test script
@@ -334,19 +383,29 @@ class TestRunner:
         """Joern CLI Windows test"""
         import wexpect
         child = wexpect.spawn(f"{self.joern_exe} --nocolors")
-        child.expect("joern>")
+        child.expect("joern>", timeout=60)
         child.sendline("help")
-        child.expect("Welcome to the interactive help system.")
+        child.expect("Welcome to the interactive help system.", timeout=30)
+        child.sendline('scala.util.Try(importCode("tests/code/c")).isSuccess')
+        idx = child.expect(["res[0-9]+: Boolean = true", "res[0-9]+: Boolean = false"], timeout=60)
+        if idx == 1:
+            raise RuntimeError("Joern CLI command threw an exception inside the REPL.")
+        child.expect("joern>", timeout=30)
         child.sendline("exit")
-        child.expect(wexpect.EOF)
+        child.expect(wexpect.EOF, timeout=30)
 
     def _joerncli_unix_test(self):
         """Joern CLI Linux and MacOS test"""
         import pexpect
         child = pexpect.spawn(f"{self.joern_exe} --nocolors")
-        child.expect("joern>")
+        child.expect("joern>", timeout=60)
         child.sendline("help")
-        child.expect("Welcome to the interactive help system.", timeout=10)
+        child.expect("Welcome to the interactive help system.", timeout=30)
+        child.sendline('scala.util.Try(importCode("tests/code/c")).isSuccess')
+        idx = child.expect(["res[0-9]+: Boolean = true", "res[0-9]+: Boolean = false"], timeout=60)
+        if idx == 1:
+            raise RuntimeError("Joern CLI command threw an exception inside the REPL.")
+        child.expect("joern>", timeout=30)
         child.sendline("exit")
         child.expect(pexpect.EOF, timeout=10)
 

@@ -1,14 +1,14 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, nodes}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class WhileCpgTests extends AnyFreeSpec with Matchers {
-  "while statement" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""while x :
+class WhileCpgTests extends PySrc2CpgFixture with Matchers {
+  "while statement" should {
+    val cpg = code("""while x :
         |  y""".stripMargin)
 
     "test control structure node properties" in {
@@ -32,8 +32,8 @@ class WhileCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "while else statement" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""while x :
+  "while else statement" should {
+    val cpg = code("""while x :
         |  y
         |else:
         |  z""".stripMargin)
@@ -63,6 +63,12 @@ class WhileCpgTests extends AnyFreeSpec with Matchers {
       elseNode.isInstanceOf[nodes.Block] shouldBe true
       elseNode.code shouldBe "z"
       cpg.controlStructure.astChildren.order(3).head shouldBe elseNode
+    }
+
+    "connect loop body and else block via TRUE_BODY/FALSE_BODY edges" in {
+      val whileNode = cpg.controlStructure.isWhile.head
+      whileNode.trueBodyOut.code.l shouldBe List("y")
+      whileNode.falseBodyOut.code.l shouldBe List("z")
     }
   }
 }

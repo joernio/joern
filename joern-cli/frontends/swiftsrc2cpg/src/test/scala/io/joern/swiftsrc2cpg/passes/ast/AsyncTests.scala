@@ -2,14 +2,14 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-class AsyncTests extends AstSwiftSrc2CpgSuite {
+class AsyncTests extends SwiftSrc2CpgSuite {
 
   "AsyncTests" should {
 
@@ -69,19 +69,25 @@ class AsyncTests extends AstSwiftSrc2CpgSuite {
       cpg.typeDecl.fullNameExact("Test0.swift:<global>.<Swift.Function>0").size shouldBe 1
     }
 
-    "testAsync11a" ignore {
+    "testAsync11a" in {
       val cpg = code("let _ = [() async -> ()]()")
-      ???
+      cpg.call.nameExact(Operators.arrayInitializer).code.l should contain("[() async -> ()]")
+      val List(invokeCall) = cpg.call.code("\\[\\(\\) async -> \\(\\)\\]\\(\\)").l
+      invokeCall.code shouldBe "[() async -> ()]()"
     }
 
-    "testAsync11b" ignore {
+    "testAsync11b" in {
       val cpg = code("let _ = [() async throws -> ()]()")
-      ???
+      cpg.call.nameExact(Operators.arrayInitializer).code.l should contain("[() async throws -> ()]")
+      val List(invokeCall) = cpg.call.code("\\[\\(\\) async throws -> \\(\\)\\]\\(\\)").l
+      invokeCall.code shouldBe "[() async throws -> ()]()"
     }
 
-    "testAsync11d" ignore {
+    "testAsync11d" in {
       val cpg = code("let _ = [() async -> ()]()")
-      ???
+      cpg.call.nameExact(Operators.arrayInitializer).code.l should contain("[() async -> ()]")
+      val List(invokeCall) = cpg.call.code("\\[\\(\\) async -> \\(\\)\\]\\(\\)").l
+      invokeCall.code shouldBe "[() async -> ()]()"
     }
 
     "testAsync12" in {

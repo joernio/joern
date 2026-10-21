@@ -25,7 +25,6 @@ object TwigTemplateInjection extends QueryBundle {
           |""".stripMargin,
       score = 5,
       withStrRep({ cpg =>
-
         def source =
           cpg.call.name(Operators.assignment).argument.code("(?i).*request.*")
 

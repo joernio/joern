@@ -1,12 +1,6 @@
 package io.joern.c2cpg.parser
 
-import org.eclipse.cdt.core.dom.ast.{
-  IASTPreprocessorFunctionStyleMacroDefinition,
-  IASTPreprocessorIfStatement,
-  IASTPreprocessorIfdefStatement,
-  IASTPreprocessorStatement,
-  IASTTranslationUnit
-}
+import org.eclipse.cdt.core.dom.ast.*
 import org.slf4j.LoggerFactory
 
 trait PreprocessorStatementsLogger {

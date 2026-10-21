@@ -1,17 +1,12 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
-import io.joern.x2cpg
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 
 trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
-
-  protected def setOrderExplicitly(ast: Ast, order: Int): Unit = {
-    ast.root.foreach { case expr: ExpressionNew => expr.order = order }
-  }
 
   protected def codeOf(node: NewNode): String = node match {
     case astNodeNew: AstNodeNew => astNodeNew.code
@@ -35,14 +30,14 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     val elseIfIfConfigClauses = children.filter(c => code(c.poundKeyword) == "#elseif")
     val elseIfConfigClauses   = children.filter(c => code(c.poundKeyword) == "#else")
     ifIfConfigClauses match {
-      case Nil => Seq.empty
+      case Nil                                                                           => Seq.empty
       case ifIfConfigClause :: Nil if ifConfigDeclConditionIsSatisfied(ifIfConfigClause) =>
         jumpTargetFromIfConfigClauseSyntax(ifIfConfigClause)
       case _ :: Nil =>
         val firstElseIfSatisfied = elseIfIfConfigClauses.find(ifConfigDeclConditionIsSatisfied)
         firstElseIfSatisfied match {
           case Some(elseIfIfConfigClause) => jumpTargetFromIfConfigClauseSyntax(elseIfIfConfigClause)
-          case None =>
+          case None                       =>
             elseIfConfigClauses match {
               case Nil                       => Seq.empty
               case elseIfConfigClause :: Nil => jumpTargetFromIfConfigClauseSyntax(elseIfConfigClause)
@@ -101,8 +96,13 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     callAst(callNode_, arguments)
   }
 
-  protected def createFieldAccessCallAst(node: SwiftNode, baseAst: Ast, partNode: NewNode): Ast = {
-    val tpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+  protected def createFieldAccessCallAst(
+    node: SwiftNode,
+    baseAst: Ast,
+    partNode: NewNode,
+    explicitType: Option[String] = None
+  ): Ast = {
+    val tpe = explicitType.getOrElse(fullnameProvider.typeFullname(node).getOrElse(Defines.Any))
     registerType(tpe)
     val callNode_ = callNode(
       node,
@@ -184,11 +184,11 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
   protected def createFunctionTypeAndTypeDecl(node: SwiftNode, methodNode: NewMethod): Unit = {
     registerType(methodNode.fullName)
 
-    val (inherits, bindingName) = if (node.isInstanceOf[ClosureExprSyntax]) {
+    val (inherits, bindingName, signature) = if (node.isInstanceOf[ClosureExprSyntax]) {
       val inheritsFunctionFullName = s"${Defines.Function}<${methodNode.signature}>"
       registerType(inheritsFunctionFullName)
-      (Seq(inheritsFunctionFullName), Defines.ClosureApplyMethodName)
-    } else (Seq.empty, methodNode.name)
+      (Seq(inheritsFunctionFullName), Defines.ClosureApplyMethodName, Defines.ErasedSignature)
+    } else (Seq.empty, methodNode.name, methodNode.signature)
 
     val methodTypeDeclNode = typeDeclNode(
       node,
@@ -204,7 +204,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     val functionBinding = NewBinding()
       .name(bindingName)
       .methodFullName(methodNode.fullName)
-      .signature(methodNode.signature)
+      .signature(signature)
 
     val functionBindAst = Ast(functionBinding)
       .withBindsEdge(methodTypeDeclNode, functionBinding)

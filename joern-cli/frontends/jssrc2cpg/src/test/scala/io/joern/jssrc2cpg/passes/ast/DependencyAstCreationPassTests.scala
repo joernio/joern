@@ -1,11 +1,11 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
+import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.joern.x2cpg.layers.Base
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language.*
 
-class DependencyAstCreationPassTests extends AstJsSrc2CpgSuite {
+class DependencyAstCreationPassTests extends JsSrc2CpgSuite {
 
   "AST generation for global builtins" should {
     "have correct structure for JSON.parse" in {
@@ -95,7 +95,6 @@ class DependencyAstCreationPassTests extends AstJsSrc2CpgSuite {
         |import {c} from "";
         |import * as d from "depD";
         |""".stripMargin)
-      Base.passes(cpg).foreach(_.createAndApply())
       val List(a, b, c, d) = cpg.imports.l
       a.code shouldBe "import {a} from \"depA\""
       a.importedEntity shouldBe Option("depA:a")

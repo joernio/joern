@@ -22,8 +22,9 @@ set -o pipefail
 # https://github.com/digimead/sbt-osgi-manager/blob/master/src/main/scala/sbt/osgi/manager/tycho/ResolveP2.scala
 
 # adapt for every release
-JAR_URL='https://ci.eclipse.org/cdt/job/cdt/job/main/614/artifact/releng/org.eclipse.cdt.repo/target/repository/plugins/org.eclipse.cdt.core_9.2.100.202507101054.jar'
-CUSTOM_RELEASE_VERSION='9.2.100.202507101054+1'
+JAR_URL='https://www.eclipse.org/downloads/download.php?file=/tools/cdt/releases/12.6/cdt-12.6.0/plugins/org.eclipse.cdt.core_9.3.200.202607131546.jar&r=1'
+# https://ci.eclipse.org/cdt/job/cdt/job/main/614/artifact/releng/org.eclipse.cdt.repo/target/repository/plugins/org.eclipse.cdt.core_9.2.100.202507101054.jar'
+CUSTOM_RELEASE_VERSION='9.3.200.202607131546+1'
 
 LOCAL_JAR="org.eclipse.cdt.core-$CUSTOM_RELEASE_VERSION.jar"
 echo "downloading jar from $JAR_URL to $LOCAL_JAR"
@@ -47,7 +48,7 @@ mkdir -p src/main/java/org/eclipse/cdt/core
 cp ../CCorePlugin.java src/main/java/org/eclipse/cdt/core
 
 # deploy to sonatype central
-mvn javadoc:jar source:jar package gpg:sign deploy
+mvn -Dgpg.executable=gpg javadoc:jar source:jar package gpg:sign deploy
 popd
 
 echo "release is now published to sonatype central and should get promoted to maven central automatically. For more context go to https://central.sonatype.com/publishing/deployments"

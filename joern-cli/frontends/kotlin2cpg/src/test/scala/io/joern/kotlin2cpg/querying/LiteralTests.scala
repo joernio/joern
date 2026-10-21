@@ -64,7 +64,7 @@ class LiteralTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "inner text in literal strings" in {
     val tripQuote = "\"\"\""
-    val cpg = code(s"""
+    val cpg       = code(s"""
          |class Foo {
          | val a: String = "abc";
          | val b: String = "\\\"abc";

@@ -1,5 +1,6 @@
 package io.joern.javasrc2cpg.astcreation.declarations
 
+import com.github.javaparser.ast.Modifier.Keyword
 import com.github.javaparser.ast.body.{
   AnnotationDeclaration,
   AnnotationMemberDeclaration,
@@ -43,7 +44,7 @@ import com.github.javaparser.resolution.declarations.{
 }
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
-import io.joern.javasrc2cpg.util.{BindingTable, BindingTableEntry, NameConstants, Util}
+import io.joern.javasrc2cpg.util.{BindingTable, BindingTableEntry, JavaModifierTypes, NameConstants, Util}
 import io.joern.x2cpg.{Ast, Defines}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewArrayInitializer,
@@ -60,8 +61,9 @@ import scala.jdk.CollectionConverters.*
 import scala.util.{Success, Try}
 import com.github.javaparser.ast.expr.ObjectCreationExpr
 import com.github.javaparser.ast.stmt.LocalClassDeclarationStmt
+import com.github.javaparser.ast.stmt.LocalRecordDeclarationStmt
 import io.joern.javasrc2cpg.scope.Scope.ScopeVariable
-import com.github.javaparser.ast.Node
+import com.github.javaparser.ast.{Modifier, Node}
 import com.github.javaparser.resolution.types.ResolvedReferenceType
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
@@ -104,7 +106,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     val (astParentType, astParentFullName) = getAstParentInfo()
 
     val genericSignature = binarySignatureCalculator.variableBinarySignature(expr.getType)
-    val typeDeclRoot =
+    val typeDeclRoot     =
       typeDeclNode(
         expr,
         typeName,
@@ -139,7 +141,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     scope.enclosingTypeDecl.foreach(_.registerCapturesForType(declScope.typeDecl.fullName, declScope.getUsedCaptures()))
 
     tryWithSafeStackOverflow(expr.getType.resolve().asReferenceType()).toOption.foreach { ancestorType =>
-      val parentType = bindingTypeForReferenceType(ancestorType)
+      val parentType      = bindingTypeForReferenceType(ancestorType)
       val resolvedMethods = body
         .collect { case method: MethodDeclaration =>
           tryWithSafeStackOverflow(method.resolve())
@@ -167,10 +169,18 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
   def astForLocalClassDeclaration(localClassDecl: LocalClassDeclarationStmt): Ast = {
     val name                  = localClassDecl.getClassDeclaration.getNameAsString
-    val enclosingMethodPrefix = scope.enclosingMethod.getMethodFullName.takeWhile(_ != ':')
+    val enclosingMethodPrefix = scope.enclosingMethod.getMethodFullName
     val fullName              = s"$enclosingMethodPrefix.$name"
     scope.addInnerType(name, fullName, fullName)
     astForTypeDeclaration(localClassDecl.getClassDeclaration, fullNameOverride = Some(fullName), isLocalClass = true)
+  }
+
+  def astForLocalRecordDeclaration(localRecordDecl: LocalRecordDeclarationStmt): Ast = {
+    val name                  = localRecordDecl.getRecordDeclaration.getNameAsString
+    val enclosingMethodPrefix = scope.enclosingMethod.getMethodFullName
+    val fullName              = s"$enclosingMethodPrefix.$name"
+    scope.addInnerType(name, fullName, fullName)
+    astForTypeDeclaration(localRecordDecl.getRecordDeclaration, fullNameOverride = Some(fullName), isLocalClass = true)
   }
 
   def astForTypeDeclaration(
@@ -219,7 +229,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
     val annotationAsts = typeDeclaration.getAnnotations.asScala.map(astForAnnotationExpr)
     val modifiers      = modifiersForTypeDecl(typeDeclaration, isInterface)
-    val enumEntries = typeDeclaration match {
+    val enumEntries    = typeDeclaration match {
       case enumDeclaration: EnumDeclaration => enumDeclaration.getEntries.asScala.toList
       case _                                => Nil
     }
@@ -275,7 +285,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     val explicitMethodNames = recordDeclaration.getMethods.asScala.map(_.getNameAsString).toSet
 
     recordDeclaration.getParameters.asScala.toList.flatMap { parameter =>
-      val parameterName = parameter.getNameAsString
+      val parameterName         = parameter.getNameAsString
       val parameterTypeFullName = tryWithSafeStackOverflow {
         val typ = parameter.getType
         scope
@@ -286,7 +296,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       }.toOption.getOrElse(defaultTypeFallback())
 
       val genericSignature = binarySignatureCalculator.variableBinarySignature(parameter.getType)
-      val parameterMember = memberNode(
+      val parameterMember  = memberNode(
         parameter,
         parameterName,
         code(parameter),
@@ -294,7 +304,10 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
         genericSignature = Option(genericSignature)
       )
       val privateModifier = modifierNode(parameter, ModifierTypes.PRIVATE)
-      val memberAst       = Ast(parameterMember).withChild(Ast(privateModifier))
+      val finalModifier   = modifierNode(parameter, ModifierTypes.FINAL)
+      val memberAst       = Ast(parameterMember).withChild(Ast(privateModifier)).withChild(Ast(finalModifier))
+
+      scope.enclosingTypeDecl.get.addMember(parameterMember, isStatic = false)
 
       val accessorMethodAst = Option.unless(explicitMethodNames.contains(parameterName))(
         astForRecordParameterAccessor(parameter, recordTypeFullName, parameterName, parameterTypeFullName)
@@ -388,8 +401,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     val membersAstPairs: List[(Node, List[Ast])] = members.map { member =>
       val memberAsts = member match {
         case annotationMember: AnnotationMemberDeclaration =>
-          // TODO: Add support for this
-          Nil
+          astForAnnotationMemberDeclaration(annotationMember) :: Nil
 
         case constructor: ConstructorDeclaration =>
           // Added later to create params for captures
@@ -490,6 +502,10 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
             receiverAst.root.foreach(receiver => diffGraph.addEdge(initRoot, receiver, EdgeTypes.RECEIVER))
 
+            // For this() calls, use the synthetic capture parameters from the enclosing constructor
+            // instead of the original captured variables from the enclosing method
+            val thisCaptureParams = scope.enclosingTypeDecl.getThisCallCaptureParams(initRoot)
+
             val capturesAsts =
               usedCaptures
                 .filterNot(outerClassAst.isDefined && _.name == NameConstants.OuterClass)
@@ -502,7 +518,9 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
                     .lineNumber(initRoot.lineNumber)
                     .columnNumber(initRoot.columnNumber)
 
-                  val refsTo = Option.when(usedCapture.name != NameConstants.OuterClass)(usedCapture.node)
+                  val refsTo = thisCaptureParams
+                    .flatMap(_.lift(index))
+                    .orElse(Option.when(usedCapture.name != NameConstants.OuterClass)(usedCapture.node))
 
                   Ast(identifier).withRefEdges(identifier, refsTo.toList)
                 }
@@ -654,21 +672,39 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
   }
 
   private def modifiersForTypeDecl(typ: TypeDeclaration[?], isInterface: Boolean): List[NewModifier] = {
-    val accessModifierType = if (typ.isPublic) {
-      Some(ModifierTypes.PUBLIC)
-    } else if (typ.isPrivate) {
-      Some(ModifierTypes.PRIVATE)
-    } else if (typ.isProtected) {
-      Some(ModifierTypes.PROTECTED)
-    } else {
-      None
+    val modifiers = typ.getModifiers.asScala.toList
+    // Interfaces are implicitly abstract, so add the abstract modifier if it hasn't been explicitly added
+    val implicitInterfaceAbstractModifier = Option.when(
+      isInterface && !modifiers.exists(_.getKeyword == Keyword.ABSTRACT)
+    )(modifierNode(typ, ModifierTypes.ABSTRACT))
+
+    val explicitModifiers = typ.getModifiers.asScala.flatMap { modifier =>
+      modifier.getKeyword match {
+        case Keyword.PUBLIC     => Some(modifierNode(modifier, ModifierTypes.PUBLIC))
+        case Keyword.PROTECTED  => Some(modifierNode(modifier, ModifierTypes.PROTECTED))
+        case Keyword.PRIVATE    => Some(modifierNode(modifier, ModifierTypes.PRIVATE))
+        case Keyword.ABSTRACT   => Some(modifierNode(modifier, ModifierTypes.ABSTRACT))
+        case Keyword.STATIC     => Some(modifierNode(modifier, ModifierTypes.STATIC))
+        case Keyword.FINAL      => Some(modifierNode(modifier, ModifierTypes.FINAL))
+        case Keyword.SEALED     => Some(modifierNode(modifier, JavaModifierTypes.Sealed))
+        case Keyword.NON_SEALED => Some(modifierNode(modifier, JavaModifierTypes.NonSealed))
+        case Keyword.STRICTFP   => Some(modifierNode(modifier, JavaModifierTypes.Strictfp))
+        case _                  =>
+          // This should never be reached since the above list was taken directly from the Java Language Specification
+          logger.warn(s"BUG! Encountered unhandled class modifier $modifier")
+          None
+      }
+    }.toList
+
+    // This isn't technically necessary, but ensures that the implicit abstract modifier for interfaces is inserted
+    // in the standard order, provided the explicit modifiers follow this order.
+    val accessModifiers = Set(ModifierTypes.PUBLIC, ModifierTypes.PRIVATE, ModifierTypes.PROTECTED)
+    explicitModifiers match {
+      case Nil => implicitInterfaceAbstractModifier.toList
+      case maybeAccess :: rest if accessModifiers.contains(maybeAccess.modifierType) =>
+        maybeAccess :: implicitInterfaceAbstractModifier.toList ++ rest
+      case _ => implicitInterfaceAbstractModifier.toList ++ explicitModifiers
     }
-    val accessModifier = accessModifierType.map(modifierNode(typ, _))
-
-    val abstractModifier =
-      Option.when(isInterface || typ.getMethods.asScala.exists(_.isAbstract))(modifierNode(typ, ModifierTypes.ABSTRACT))
-
-    List(accessModifier, abstractModifier).flatten
   }
 
   private def astForFieldVariable(v: VariableDeclarator, fieldDeclaration: FieldDeclaration): Ast = {
@@ -688,7 +724,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     // Use type name without generics stripped in code
     val variableTypeString = tryWithSafeStackOverflow(v.getTypeAsString).getOrElse("")
     val genericSignature   = binarySignatureCalculator.variableBinarySignature(v.getType)
-    val node =
+    val node               =
       memberNode(v, name, s"$variableTypeString $name", typeFullName, genericSignature = Option(genericSignature))
     val memberAst      = Ast(node)
     val annotationAsts = annotations.asScala.map(astForAnnotationExpr)
@@ -730,9 +766,9 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     fullNameOverride: Option[String]
   ): NewTypeDecl = {
     val baseTypeFullNames = if (typ.isClassOrInterfaceDeclaration) {
-      val decl             = typ.asClassOrInterfaceDeclaration()
-      val extendedTypes    = decl.getExtendedTypes.asScala
-      val implementedTypes = decl.getImplementedTypes.asScala
+      val decl                  = typ.asClassOrInterfaceDeclaration()
+      val extendedTypes         = decl.getExtendedTypes.asScala
+      val implementedTypes      = decl.getImplementedTypes.asScala
       val inheritsFromTypeNames =
         (extendedTypes ++ implementedTypes).flatMap { typ =>
           typeInfoCalc.fullName(typ).orElse(scope.lookupType(typ.getNameAsString))
@@ -772,27 +808,32 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
   private def codeForTypeDecl(typ: TypeDeclaration[?], isInterface: Boolean): String = {
     val codeBuilder = new mutable.StringBuilder()
-    if (typ.isPublic) {
-      codeBuilder.append("public ")
-    } else if (typ.isPrivate) {
-      codeBuilder.append("private ")
-    } else if (typ.isProtected) {
-      codeBuilder.append("protected ")
-    }
-
-    if (typ.isStatic) {
-      codeBuilder.append("static ")
-    }
+    typ.getModifiers.asScala
+      .foreach { modifier =>
+        codeBuilder.append(modifier.getKeyword.asString())
+        codeBuilder.append(" ")
+      }
 
     val classPrefix =
       if (isInterface)
         "interface "
       else if (typ.isEnumDeclaration)
         "enum "
+      else if (typ.isRecordDeclaration)
+        "record "
       else
         "class "
     codeBuilder.append(classPrefix)
     codeBuilder.append(typ.getNameAsString)
+
+    val typeParameters = typ match {
+      case classOrInterface: ClassOrInterfaceDeclaration => classOrInterface.getTypeParameters.asScala
+      case recordDeclaration: RecordDeclaration          => recordDeclaration.getTypeParameters.asScala
+      case _                                             => Nil
+    }
+    if (typeParameters.nonEmpty) {
+      codeBuilder.append(typeParameters.mkString("<", ", ", ">"))
+    }
 
     codeBuilder.toString()
   }
@@ -826,7 +867,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       tryWithSafeStackOverflow(entry.resolve().getType).toOption.flatMap(typeInfoCalc.fullName)
 
     val genericSignature = binarySignatureCalculator.enumEntryBinarySignature(entry)
-    val entryNode = memberNode(
+    val entryNode        = memberNode(
       entry,
       entry.getNameAsString,
       entry.toString,

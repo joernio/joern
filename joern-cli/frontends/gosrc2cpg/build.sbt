@@ -1,39 +1,8 @@
-import com.typesafe.config.{Config, ConfigFactory}
+import sbt.util.CacheImplicits.given
+
 import com.typesafe.sbt.packager.Keys.stagingDirectory
-import versionsort.VersionHelper
-
-import scala.sys.process.stringToProcess
-import scala.util.Try
-
-name := "gosrc2cpg"
-
-dependsOn(
-  Projects.dataflowengineoss  % "compile->compile;test->test",
-  Projects.x2cpg              % "compile->compile;test->test",
-  Projects.linterRules % ScalafixConfig
-)
-
-libraryDependencies ++= Seq(
-  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
-  "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
-  "com.lihaoyi"   %% "os-lib"            % Versions.osLib
-)
-
-scalacOptions ++= Seq(
-  "-deprecation" // Emit warning and location for usages of deprecated APIs.
-)
-
-enablePlugins(JavaAppPackaging, LauncherJarPlugin)
-
-lazy val appProperties = settingKey[Config]("App Properties")
-appProperties := {
-  val path            = (Compile / resourceDirectory).value / "application.conf"
-  val applicationConf = ConfigFactory.parseFile(path).resolve()
-  applicationConf
-}
 
 lazy val goAstGenVersion = settingKey[String]("goastgen version")
-goAstGenVersion := appProperties.value.getString("gosrc2cpg.goastgen_version")
 
 lazy val GoAstgenWin      = "goastgen-windows.exe"
 lazy val GoAstgenLinux    = "goastgen-linux"
@@ -42,68 +11,63 @@ lazy val GoAstgenMac      = "goastgen-macos"
 lazy val GoAstgenMacArm   = "goastgen-macos-arm64"
 
 lazy val goAstGenDlUrl = settingKey[String]("goastgen download url")
-goAstGenDlUrl := s"https://github.com/joernio/goastgen/releases/download/v${goAstGenVersion.value}/"
 
-def hasCompatibleAstGenVersion(goAstGenVersion: String): Boolean = {
-  Try("goastgen -version".!!).toOption.map(_.strip()) match {
-    case Some(installedVersion) if installedVersion != "unknown" =>
-      VersionHelper.compare(installedVersion, goAstGenVersion) >= 0
-    case _ => false
-  }
-}
+/** Probed once per build load (settings are re-evaluated on load/reload), so that the result participates in the
+  * cache key of the cached `goAstGenDownloadTask` below instead of being a hidden side effect.
+  */
+lazy val compatibleGoAstGenOnPath = settingKey[Boolean]("compatible goastgen available on PATH")
 
-lazy val goAstGenBinaryNames = taskKey[Seq[String]]("goastgen binary names")
-goAstGenBinaryNames := {
-  if (hasCompatibleAstGenVersion(goAstGenVersion.value)) {
-    Seq.empty
-  } else if (sys.props.get("ALL_PLATFORMS").contains("TRUE")) {
-    Seq(GoAstgenWin, GoAstgenLinux, GoAstgenLinuxArm, GoAstgenMac, GoAstgenMacArm)
-  } else {
-    Environment.operatingSystem match {
-      case Environment.OperatingSystemType.Windows =>
-        Seq(GoAstgenWin)
-      case Environment.OperatingSystemType.Linux =>
-        Environment.architecture match {
-          case Environment.ArchitectureType.X86   => Seq(GoAstgenLinux)
-          case Environment.ArchitectureType.ARMv8 => Seq(GoAstgenLinuxArm)
-        }
-      case Environment.OperatingSystemType.Mac =>
-        Environment.architecture match {
-          case Environment.ArchitectureType.X86   => Seq(GoAstgenMac)
-          case Environment.ArchitectureType.ARMv8 => Seq(GoAstgenMacArm)
-        }
-      case Environment.OperatingSystemType.Unknown =>
-        Seq(GoAstgenWin, GoAstgenLinux, GoAstgenLinuxArm, GoAstgenMac, GoAstgenMacArm)
-    }
-  }
-}
+lazy val goAstGenBinaryNames = settingKey[Seq[String]]("goastgen binary names")
 
-lazy val goAstGenDlTask = taskKey[Unit](s"Download goastgen binaries")
-goAstGenDlTask := {
-  val goAstGenDir = baseDirectory.value / "bin" / "astgen"
+lazy val goAstGenDownloadTask = taskKey[Seq[xsbti.HashedVirtualFileRef]]("Download goastgen binaries")
 
-  goAstGenBinaryNames.value.foreach { fileName =>
-    val file = goAstGenDir / fileName
-    DownloadHelper.ensureIsAvailable(s"${goAstGenDlUrl.value}$fileName", file)
-    // permissions are lost during the download; need to set them manually
-    file.setExecutable(true, false)
-  }
+lazy val goAstGenStageTask = taskKey[Unit]("Stage goastgen binaries into bin/astgen and the Universal staging directory")
 
-  val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
-  distDir.mkdirs()
-  IO.copyDirectory(goAstGenDir, distDir, preserveExecutable = true)
-}
+lazy val gosrc2cpg = (project in file("."))
+  .dependsOn(
+    Projects.dataflowengineoss % "test->test",
+    Projects.x2cpg % "compile->compile;test->test",
+    Projects.linterRules % ScalafixConfig
+  )
+  .enablePlugins(JavaAppPackaging, LauncherJarPlugin)
+  .settings(
+    name := "gosrc2cpg",
 
-Compile / compile := ((Compile / compile) dependsOn goAstGenDlTask).value
+    libraryDependencies ++= Seq(
+      "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
+      "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
+      "com.lihaoyi"   %% "os-lib"            % Versions.osLib
+    ),
+    goAstGenVersion := DownloadHelper.appConfigVersion((Compile / resourceDirectory).value, "gosrc2cpg.goastgen_version"),
+    goAstGenDlUrl := s"https://github.com/joernio/astgen-monorepo/releases/download/go-astgen/v${goAstGenVersion.value}/",
+    compatibleGoAstGenOnPath := DownloadHelper.hasCompatibleVersionOnPath("goastgen", goAstGenVersion.value, versionFlag = "-version"),
+    goAstGenBinaryNames := {
+      if (compatibleGoAstGenOnPath.value) {
+        Seq.empty
+      } else {
+        DownloadHelper.platformBinaries(buildOperatingSystem.value, buildArchitecture.value)(
+          windows = Some(GoAstgenWin),
+          linux = Some(GoAstgenLinux),
+          linuxArm = Some(GoAstgenLinuxArm),
+          mac = Some(GoAstgenMac),
+          macArm = Some(GoAstgenMacArm)
+        )
+      }
+    },
+    goAstGenDownloadTask := DownloadHelper
+      .downloadArtifacts(target.value / "astgen-download", goAstGenDlUrl.value, goAstGenBinaryNames.value, fileConverter.value)
+      .map { vf => Def.declareOutput(vf); vf },
+    goAstGenStageTask := Def.uncached {
+      DownloadHelper.stageArtifacts(
+        goAstGenDownloadTask.value,
+        fileConverter.value,
+        Seq(baseDirectory.value / "bin" / "astgen", (Universal / stagingDirectory).value / "bin" / "astgen")
+      )
+    },
 
-lazy val goAstGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
-goAstGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
+    Compile / compile := Def.uncached { ((Compile / compile).dependsOn(goAstGenStageTask)).value },
 
-stage := Def
-  .sequential(goAstGenSetAllPlatforms, Universal / stage)
-  .andFinally(System.setProperty("ALL_PLATFORMS", "FALSE"))
-  .value
-
-/** write the astgen version to the manifest for downstream usage */
-Compile / packageBin / packageOptions +=
-  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Go-AstGen-Version") -> goAstGenVersion.value)
+    /** write the astgen version to the manifest for downstream usage */
+    Compile / packageBin / packageOptions +=
+      Package.ManifestAttributes("Go-AstGen-Version" -> goAstGenVersion.value)
+  )

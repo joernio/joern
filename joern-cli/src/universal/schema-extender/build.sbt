@@ -1,6 +1,9 @@
+import java.nio.file.Files
+import scala.jdk.CollectionConverters.*
+
 name := "schema-extender"
 
-ThisBuild / scalaVersion := "3.6.4"
+ThisBuild / scalaVersion := "3.9.0"
 
 val cpgVersion = IO.read(file("cpg-version"))
 
@@ -13,9 +16,14 @@ joernInstallPath := "../"
 val replaceDomainClassesInJoern =
   taskKey[Unit]("generates new domain classes based on the given schema, and installs them in the joern distribution")
 
-replaceDomainClassesInJoern := {
+// the implicit root project aggregates the subprojects; without this, the task below would run once per
+// project and the concurrent jar copies would race each other
+replaceDomainClassesInJoern / aggregate := false
+
+replaceDomainClassesInJoern := Def.uncached {
   import java.nio.file._
-  val newDomainClassesJar = (domainClasses / Compile / packageBin).value
+  val converter          = fileConverter.value
+  val newDomainClassesJar = converter.toPath((domainClasses / Compile / packageBin).value).toFile
 
   val targetFile =
     file(joernInstallPath.value) / "lib" / s"io.shiftleft.codepropertygraph-domain-classes_3-$cpgVersion.jar"
@@ -30,16 +38,26 @@ ThisBuild / libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph-domain-classes" % cpgVersion
 )
 
+val codegenOutputRoot = file("target/fg-codegen")
 lazy val schema = project
   .in(file("schema"))
-  .settings(generateDomainClasses := {
-    val outputRoot = target.value / "fg-codegen"
-    FileUtils.deleteRecursively(outputRoot)
-    val invoked = (Compile / runMain).toTask(s" CpgExtCodegen schema/target/fg-codegen").value
-    FileUtils.listFilesRecursively(outputRoot)
-  })
+  .settings(
+    name := "schema",
+    generateDomainClasses := Def.uncached {
+      // plain NIO listing on purpose: sbt 2's IO/Path utilities don't reliably observe the files
+      // written by the forked codegen run (virtual io). Also note: we deliberately don't clean
+      // codegenOutputRoot first - deleting the directory has the same visibility problem.
+      val invoked = (Compile / runMain).toTask(s" CpgExtCodegen ${codegenOutputRoot.getAbsolutePath}").value
+      Files.walk(codegenOutputRoot.toPath).iterator.asScala.map(_.toFile).filter(!_.isDirectory).toSeq
+    }
+  )
 
 lazy val domainClasses =
-  project.in(file("domain-classes")).settings(Compile / sourceGenerators += schema / generateDomainClasses)
+  project
+    .in(file("domain-classes"))
+    .settings(
+      name := "domain-classes",
+      Compile / sourceGenerators += schema / generateDomainClasses
+    )
 
 Global / onChangedBuildSource := ReloadOnSourceChanges

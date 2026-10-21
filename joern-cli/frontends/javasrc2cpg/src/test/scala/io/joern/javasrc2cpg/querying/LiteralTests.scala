@@ -66,7 +66,7 @@ class LiteralTests extends JavaSrcCode2CpgFixture {
 
   "inner text in literal strings" in {
     val tripQuote = "\"\"\""
-    val cpg = code(s"""
+    val cpg       = code(s"""
          |class Foo {
          | String a = "abc";
          | String b = "\\\"abc";

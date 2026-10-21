@@ -15,6 +15,7 @@ trait AstForSwiftTokenCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astForBacktickToken(@unused node: backtick): Ast                 = Ast()
   private def astForBinaryOperatorToken(@unused node: binaryOperator): Ast     = Ast()
   private def astForColonToken(@unused node: colon): Ast                       = Ast()
+  private def astForColonColonToken(@unused node: colonColon): Ast             = Ast()
   private def astForCommaToken(@unused node: comma): Ast                       = Ast()
   private def astForDollarIdentifierToken(@unused node: dollarIdentifier): Ast = Ast()
   private def astForEllipsisToken(@unused node: ellipsis): Ast                 = Ast()
@@ -38,9 +39,10 @@ trait AstForSwiftTokenCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForKeywordToken(node: keyword): Ast = {
     val code = this.code(node)
-    code match
+    code match {
       case "true" | "false" => Ast(literalNode(node, code, Option(Defines.Bool)))
       case _                => notHandledYet(node)
+    }
   }
 
   private def astForLeftAngleToken(@unused node: leftAngle): Ast                             = Ast()
@@ -84,6 +86,7 @@ trait AstForSwiftTokenCreator(implicit withSchemaValidation: ValidationMode) { t
     case node: backtick                => astForBacktickToken(node)
     case node: binaryOperator          => astForBinaryOperatorToken(node)
     case node: colon                   => astForColonToken(node)
+    case node: colonColon              => astForColonColonToken(node)
     case node: comma                   => astForCommaToken(node)
     case node: dollarIdentifier        => astForDollarIdentifierToken(node)
     case node: ellipsis                => astForEllipsisToken(node)

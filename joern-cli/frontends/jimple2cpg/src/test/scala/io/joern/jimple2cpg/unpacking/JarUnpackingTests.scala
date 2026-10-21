@@ -76,10 +76,10 @@ class JarUnpackingTests extends AnyWordSpec with Matchers with BeforeAndAfterAll
       val List(foo) = cpg.typeDecl.fullNameExact("Foo").l
       foo.name shouldBe "Foo"
 
-      if (name == "NestedHelloWorld.jar")
+      if (name == "NestedHelloWorld.jar") {
         cpg.typeDecl.fullNameExact("pac.Bar").l shouldBe Nil
         cpg.method.filterNot(_.isExternal).fullName.toSet shouldBe Set("Foo.<init>:void()", "Foo.add:int(int,int)")
-      else
+      } else {
         val List(bar) = cpg.typeDecl.fullNameExact("pac.Bar").l
         bar.name shouldBe "Bar"
         cpg.method.filterNot(_.isExternal).fullName.toSet shouldBe Set(
@@ -88,6 +88,7 @@ class JarUnpackingTests extends AnyWordSpec with Matchers with BeforeAndAfterAll
           "pac.Bar.sub:int(int,int)",
           "pac.Bar.<init>:void()"
         )
+      }
     }
   }
 
@@ -96,10 +97,10 @@ class JarUnpackingTests extends AnyWordSpec with Matchers with BeforeAndAfterAll
       val List(foo) = cpg.typeDecl.fullNameExact("Foo").l
       foo.name shouldBe "Foo"
 
-      if (name == "NestedHelloWorld.jar")
+      if (name == "NestedHelloWorld.jar") {
         cpg.typeDecl.fullNameExact("pac.Bar").l shouldBe Nil
         cpg.method.filterNot(_.isExternal).fullName.toSet shouldBe Set("Foo.<init>:void()", "Foo.add:int(int,int)")
-      else
+      } else {
         val List(bar) = cpg.typeDecl.fullNameExact("pac.Bar").l
         bar.name shouldBe "Bar"
         cpg.method.filterNot(_.isExternal).fullName.toSet shouldBe Set(
@@ -108,6 +109,7 @@ class JarUnpackingTests extends AnyWordSpec with Matchers with BeforeAndAfterAll
           "pac.Bar.sub:int(int,int)",
           "pac.Bar.<init>:void()"
         )
+      }
     }
   }
 

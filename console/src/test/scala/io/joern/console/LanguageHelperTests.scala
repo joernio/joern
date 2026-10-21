@@ -67,6 +67,22 @@ class LanguageHelperTests extends AnyWordSpec with Matchers {
       }
     }
 
+    "guess `Rust` for a directory containing `.rs`" in {
+      FileUtil.usingTemporaryDirectory("oculartests") { tmpDir =>
+        val subdir = Files.createDirectory(tmpDir / "subdir")
+        (subdir / "main.rs").createWithParentsIfNotExists()
+        guessLanguage(tmpDir.toString) shouldBe Some(Languages.RUST)
+      }
+    }
+
+    "guess `Rust` for a directory containing `Cargo.toml`" in {
+      FileUtil.usingTemporaryDirectory("oculartests") { tmpDir =>
+        val subdir = Files.createDirectory(tmpDir / "subdir")
+        (subdir / "Cargo.toml").createWithParentsIfNotExists()
+        guessLanguage(tmpDir.toString) shouldBe Some(Languages.RUST)
+      }
+    }
+
     "guess `C` for a directory containing .ll (LLVM) file" in {
       FileUtil.usingTemporaryDirectory("oculartests") { tmpDir =>
         val subdir = Files.createDirectory(tmpDir / "subdir")

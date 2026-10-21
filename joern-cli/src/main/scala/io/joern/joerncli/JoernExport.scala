@@ -25,33 +25,37 @@ object JoernExport {
   case class Config(
     cpgFileName: String = "cpg.bin",
     outDir: String = "out",
-    repr: Representation.Value = Representation.Cpg14,
-    format: Format.Value = Format.Dot
+    repr: Representation = Representation.Cpg14,
+    format: Format = Format.Dot
   )
 
   /** Choose from either a subset of the graph, or the entire graph (all).
     */
-  object Representation extends Enumeration {
-    val Ast, Cfg, Ddg, Cdg, Pdg, Cpg14, Cpg, All = Value
-
-    lazy val byNameLowercase: Map[String, Value] =
-      values.map { value =>
-        value.toString.toLowerCase -> value
-      }.toMap
-
-    def withNameIgnoreCase(s: String): Value =
-      byNameLowercase.getOrElse(s, throw new NoSuchElementException(s"No value found for '$s'"))
-
+  enum Representation {
+    case Ast, Cfg, Ddg, Cdg, Pdg, Cpg14, Cpg, All
   }
-  object Format extends Enumeration {
-    val Dot, Neo4jCsv, Graphml, Graphson = Value
 
-    lazy val byNameLowercase: Map[String, Value] =
+  object Representation {
+    lazy val byNameLowercase: Map[String, Representation] =
       values.map { value =>
         value.toString.toLowerCase -> value
       }.toMap
 
-    def withNameIgnoreCase(s: String): Value =
+    def withNameIgnoreCase(s: String): Representation =
+      byNameLowercase.getOrElse(s, throw new NoSuchElementException(s"No value found for '$s'"))
+  }
+
+  enum Format {
+    case Dot, Neo4jCsv, Graphml, Graphson
+  }
+
+  object Format {
+    lazy val byNameLowercase: Map[String, Format] =
+      values.map { value =>
+        value.toString.toLowerCase -> value
+      }.toMap
+
+    def withNameIgnoreCase(s: String): Format =
       byNameLowercase.getOrElse(s, throw new NoSuchElementException(s"No value found for '$s'"))
   }
 
@@ -92,7 +96,7 @@ object JoernExport {
     }.parse(args, Config())
   }
 
-  def exportCpg(cpg: Cpg, representation: Representation.Value, format: Format.Value, outDir: Path): Unit = {
+  def exportCpg(cpg: Cpg, representation: Representation, format: Format, outDir: Path): Unit = {
     implicit val semantics: Semantics = DefaultSemantics()
     if (semantics == NoSemantics) {
       System.err.println("Warning: semantics are empty.")
@@ -112,12 +116,12 @@ object JoernExport {
         exportWithFlatgraphFormat(cpg, representation, outDir, GraphMLExporter)
       case Format.Graphson =>
         exportWithFlatgraphFormat(cpg, representation, outDir, GraphSONExporter)
-      case _ =>
+      case null =>
         throw new NotImplementedError(s"repr=$representation not yet supported for format=$format")
     }
   }
 
-  private def exportDot(repr: Representation.Value, outDir: Path, context: LayerCreatorContext): Unit = {
+  private def exportDot(repr: Representation, outDir: Path, context: LayerCreatorContext): Unit = {
     val outDirStr = outDir.toString
     import Representation._
     repr match {
@@ -133,7 +137,7 @@ object JoernExport {
 
   private def exportWithFlatgraphFormat(
     cpg: Cpg,
-    repr: Representation.Value,
+    repr: Representation,
     outDir: Path,
     exporter: flatgraph.formats.Exporter
   ): Unit = {
@@ -184,7 +188,7 @@ object JoernExport {
     windowsFilenameDeduplicationHelper: mutable.Set[String]
   ): String = {
     val sanitizedMethodName = methodName.replaceAll("[^a-zA-Z0-9-_\\.]", "_")
-    val sanitizedFilename =
+    val sanitizedFilename   =
       if (scala.util.Properties.isWin) {
         // windows has some quirks in it's file system, e.g. we need to ensure paths aren't too long - so we're using a
         // different strategy to sanitize windows file names: first occurrence of a given method uses the method name

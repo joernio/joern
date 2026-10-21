@@ -75,7 +75,7 @@ class DependencyDownloader(
     */
   private def downloadDependency(targetDir: Path, dependency: Dependency): Unit = {
 
-    val dependencyName = dependency.name.strip()
+    val dependencyName                                  = dependency.name.strip()
     def getVersion(packageName: String): Option[String] = Try {
       Using.resource(URI(s"https://$NUGET_BASE_API_V3/${packageName.toLowerCase}/index.json").toURL.openStream()) {
         is =>
@@ -92,7 +92,7 @@ class DependencyDownloader(
     def createUrl(packageType: String, version: String): Option[URL] = {
       Try(new URI(s"https://$NUGET_BASE_API_V2/$packageType/${dependencyName}/$version").toURL) match {
         case Success(url) => Some(url)
-        case Failure(e) =>
+        case Failure(e)   =>
           logger.debug(s"Failed to create URL for packageType: $packageType, version: $version. Error: ${e.getMessage}")
           None
       }
@@ -100,7 +100,7 @@ class DependencyDownloader(
 
     // If dependency version is not specified, latest is returned
     val versionOpt =
-      if dependency.version.isBlank then getVersion(dependencyName) else Option(dependency.version)
+      if (dependency.version.isBlank) getVersion(dependencyName) else Option(dependency.version)
 
     versionOpt match {
       case Some(version) =>
@@ -131,7 +131,7 @@ class DependencyDownloader(
           connection.foreach(_.setRequestProperty("Accept-Encoding", "gzip, deflate"))
           connection match {
             case Some(conn: HttpURLConnection) if conn.getResponseCode == HttpURLConnection.HTTP_OK =>
-              val ext      = if url.toString.contains("/package/") then "nupkg" else "snupkg"
+              val ext      = if (url.toString.contains("/package/")) "nupkg" else "snupkg"
               val fileName = targetDir / s"${dependency.name}.$ext"
 
               val inputStream = Option(conn.getContentEncoding) match {
@@ -211,13 +211,13 @@ class DependencyDownloader(
   private def summarizeDependencies(targetDir: Path): CSharpProgramSummary = {
     val astGenRunner       = new DotNetAstGenRunner(config.withInputPath(targetDir.toString))
     val astGenRunnerResult = astGenRunner.execute(targetDir)
-    val summaries = astGenRunnerResult.parsedFiles
-      .map(x => Paths.get(x))
-      .flatMap { f =>
-        Using.resource(Files.newInputStream(f)) { fis =>
+    val summaries          = astGenRunnerResult.parsedFiles
+      .map(path => Paths.get(path))
+      .flatMap { file =>
+        Using.resource(Files.newInputStream(file)) { fis =>
           CSharpProgramSummary.jsonToInitialMapping(fis) match {
             case Failure(exception) =>
-              logger.error(s"Unable to parse JSON program summary at $f", exception)
+              logger.error(s"Unable to parse JSON program summary at $file", exception)
               None
             case Success(parsedJson) =>
               Option(parsedJson)

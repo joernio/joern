@@ -315,4 +315,73 @@ class MultiModuleTests extends GoCodeToCpgSuite {
       h.typeFullName shouldBe "joern.io/module1/pkg.ModoneSample"
     }
   }
+
+  "Files outside every parsed go.mod" should {
+    // The root has no go.mod (or one goastgen could not parse); a nested module has one.
+    val cpg = code(
+      """
+        |package main
+        |
+        |func Handler() string { return "root" }
+        |""".stripMargin,
+      "main.go"
+    ).moreCode(
+      """
+        |module joern.io/plugin
+        |go 1.18
+        |""".stripMargin,
+      Seq("plugin", "go.mod").mkString(File.separator)
+    ).moreCode(
+      """
+        |package plugin
+        |
+        |func Plugin() string { return "plugin" }
+        |""".stripMargin,
+      Seq("plugin", "plugin.go").mkString(File.separator)
+    )
+
+    "still be in the CPG" in {
+      cpg.method.nameExact("Handler").size shouldBe 1
+      cpg.method.nameExact("Plugin").fullName.l shouldBe List("joern.io/plugin.Plugin")
+    }
+  }
+
+  "A root go.mod with directives from newer Go versions" should {
+    // goastgen 0.1.0 rejects the `tool` directive (Go 1.24) and writes no go.mod.json for the root module.
+    val cpg = code(
+      """
+        |module joern.io/app
+        |
+        |go 1.24
+        |
+        |tool golang.org/x/tools/cmd/stringer
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package main
+        |
+        |func Handler() string { return "root" }
+        |""".stripMargin,
+      "main.go"
+    ).moreCode(
+      """
+        |module joern.io/plugin
+        |go 1.18
+        |""".stripMargin,
+      Seq("plugin", "go.mod").mkString(File.separator)
+    ).moreCode(
+      """
+        |package plugin
+        |
+        |func Plugin() string { return "plugin" }
+        |""".stripMargin,
+      Seq("plugin", "plugin.go").mkString(File.separator)
+    )
+
+    "not drop the root module's files" in {
+      cpg.method.nameExact("Handler").size shouldBe 1
+      cpg.method.nameExact("Plugin").size shouldBe 1
+    }
+  }
 }

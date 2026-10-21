@@ -1,7 +1,6 @@
 package io.joern.c2cpg.parser
 
 import io.joern.c2cpg.Config
-import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CommandObject
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CompilationDatabase
 import io.joern.c2cpg.utils.IncludeAutoDiscovery
 
@@ -21,16 +20,18 @@ object ParserConfig {
     )
 
   def fromConfig(config: Config, compilationDatabase: Option[CompilationDatabase]): ParserConfig = {
-    val commands = compilationDatabase.map(_.commands).getOrElse(Set.empty)
-    val compilationDatabaseDefines = commands.map { c =>
-      c.compiledFile() -> c.defines().toMap
+    val commands                   = compilationDatabase.map(_.commands).getOrElse(Set.empty)
+    val compilationDatabaseDefines = commands.map { cmd =>
+      cmd.compiledFile() -> cmd.defines().toMap
     }.toMap
-    val includes = commands.map { c =>
-      c.compiledFile() -> c.includes()
+    val includes = commands.map { cmd =>
+      cmd.compiledFile() -> cmd.includes()
     }.toMap
-    val definedSymbols = config.defines.map { define =>
+    // User defines take precedence over the MSVC integer types but not over the calling conventions (as before).
+    val definedSymbols = DefaultDefines.MSVC_INTEGER_TYPES ++ config.defines.map { define =>
       if (define.contains("=")) {
-        val split = define.split("=")
+        // Only the first `=` separates name from value: a value may itself contain `=`, or be empty.
+        val split = define.split("=", 2)
         split.head -> split(1)
       } else {
         define -> ""

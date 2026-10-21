@@ -1,16 +1,16 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.nodes.Member
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class MemberCpgTests extends AnyFreeSpec with Matchers {
+class MemberCpgTests extends PySrc2CpgFixture with Matchers {
 
-  "A class variable" - {
+  "A class variable" should {
 
-    lazy val cpg = Py2CpgTestContext.buildCpg("""
+    val cpg = code("""
                                                 |class Foo():
                                                 |   x = 'foo'
                                                 |
@@ -22,9 +22,9 @@ class MemberCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "An instance variable" - {
+  "An instance variable" should {
 
-    lazy val cpg = Py2CpgTestContext.buildCpg("""
+    val cpg = code("""
                                                 |class Foo():
                                                 |   def __init__(self):
                                                 |      self.x = 'foo'
@@ -42,14 +42,17 @@ class MemberCpgTests extends AnyFreeSpec with Matchers {
 
   }
 
-  "An instance variable with additional MEMBER fn" - {
+  "An instance variable with additional MEMBER fn" should {
 
-    lazy val cpg = Py2CpgTestContext.buildCpg("""
+    val cpg = code(
+      """
         |class Foo():
         |   self.x = 'foo'
         |   def replace(self, x):
         |      self.x = x
-        |""".stripMargin)
+        |""".stripMargin,
+      "test.py"
+    )
 
     "should have a MEMBER" in {
       val List(member: Member) = cpg.member.name("x").l
@@ -72,9 +75,9 @@ class MemberCpgTests extends AnyFreeSpec with Matchers {
 
   }
 
-  "A class variable instantiated by some expression" - {
+  "A class variable instantiated by some expression" should {
 
-    lazy val cpg = Py2CpgTestContext.buildCpg("""import models
+    val cpg = code("""import models
         |
         |class SocialApp():
         |    member1 = "1"

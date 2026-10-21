@@ -53,4 +53,61 @@ class LoopsDataflowTests extends GoCodeToCpgSuite(withOssDataflow = true) {
 
     }
   }
+
+  "Code after a range loop" should {
+    // The range loop used to be a FOR with no condition, so its CFG had no exit edge and everything after it was
+    // unreachable. https://github.com/joernio/joern/issues/6323
+    val cpg = code("""
+        |package main
+        |
+        |var items []string
+        |
+        |func sink(s string) {}
+        |func step()         {}
+        |
+        |func NoKey(p string) {
+        |	for range items {
+        |		step()
+        |	}
+        |	sink(p)
+        |}
+        |
+        |func KeyOnly(p string) {
+        |	for i := range items {
+        |		_ = i
+        |	}
+        |	sink(p)
+        |}
+        |
+        |func KeyAndValue(p string) {
+        |	for _, s := range items {
+        |		_ = s
+        |	}
+        |	sink(p)
+        |}
+        |
+        |func IntRange(p string) {
+        |	for range 3 {
+        |		step()
+        |	}
+        |	sink(p)
+        |}
+        |
+        |func Assign(p string) {
+        |	var i int
+        |	for i = range items {
+        |	}
+        |	_ = i
+        |	sink(p)
+        |}
+        |""".stripMargin)
+
+    "be reachable from a parameter" in {
+      for (name <- List("NoKey", "KeyOnly", "KeyAndValue", "IntRange", "Assign")) {
+        val source = cpg.method.nameExact(name).parameter.nameExact("p")
+        val sink   = cpg.method.nameExact(name).call.nameExact("sink").argument(1)
+        withClue(s"$name: ") { sink.reachableByFlows(source).size shouldBe 1 }
+      }
+    }
+  }
 }

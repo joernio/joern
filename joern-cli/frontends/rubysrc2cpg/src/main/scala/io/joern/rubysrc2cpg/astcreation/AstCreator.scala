@@ -4,7 +4,8 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, NamespaceScope, RubyProgramSummary, RubyScope}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
-import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
+import io.joern.x2cpg.utils.OffsetUtils
+import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, EvaluationStrategies, ModifierTypes}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -29,9 +30,6 @@ class AstCreator(
     with AstForTypesCreator
     with AstSummaryVisitor {
 
-  val tmpGen: FreshNameGenerator[String]                      = FreshNameGenerator(i => s"<tmp-$i>")
-  val procParamGen: FreshNameGenerator[Left[String, Nothing]] = FreshNameGenerator(i => Left(s"<proc-param-$i>"))
-
   /* Used to track variable names and their LOCAL nodes.
    */
   protected val scope: RubyScope = new RubyScope(programSummary, projectRoot)
@@ -42,7 +40,15 @@ class AstCreator(
 
   protected var parseLevel: AstParseLevel = AstParseLevel.FULL_AST
 
-  override protected def offset(node: RubyExpression): Option[(Int, Int)] = node.offset
+  private val isErbFile = fileName.endsWith(".erb")
+
+  // SIGNATURES discards its AST, and ERB offsets point into synthetic Ruby rather than file.content
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] =
+    Option.when(enableFileContents && parseLevel != AstParseLevel.SIGNATURES && !isErbFile) {
+      OffsetUtils.OffsetSourceType.Codepoints(fileContent)
+    }
+
+  override protected def unadjustedOffset(node: RubyExpression): Option[(Int, Int)] = node.offset
 
   protected val relativeFileName: String =
     projectRoot
@@ -69,7 +75,7 @@ class AstCreator(
    */
   protected def astForRubyFile(rootStatements: StatementList): Ast = {
     fileNode =
-      if enableFileContents then Option(NewFile().name(relativeFileName).content(fileContent))
+      if (enableFileContents) Option(NewFile().name(relativeFileName).content(fileContent))
       else Option(NewFile().name(relativeFileName))
     val fullName = s"$relativeUnixStyleFileName:${NamespaceTraversal.globalNamespaceName}".stripPrefix("/")
 
@@ -90,11 +96,11 @@ class AstCreator(
     // From the <main> method onwards, we do not embed the <global> namespace name in the full names
     val fullName =
       s"${scope.surroundingScopeFullName.head.stripSuffix(NamespaceTraversal.globalNamespaceName)}$name"
-    val code = rootNode.text
+    val code_       = code(rootNode)
     val methodNode_ = methodNode(
       node = rootNode,
       name = name,
-      code = code,
+      code = code_,
       fullName = fullName,
       signature = None,
       fileName = relativeFileName

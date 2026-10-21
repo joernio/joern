@@ -11,7 +11,6 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Evalu
 import ujson.Value
 
 import scala.collection.mutable
-import scala.util.Try
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -56,7 +55,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     createLocals: Boolean = true
   ): Seq[NewMethodParameterIn] =
     withIndex(parameters) { case (param, index) =>
-      val nodeInfo = createBabelNodeInfo(param)
+      val nodeInfo  = createBabelNodeInfo(param)
       val paramNode = nodeInfo.node match {
         case RestElement =>
           val paramName     = nodeInfo.code.replace("...", "")
@@ -78,7 +77,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           lhsNodeInfo.node match {
             case ObjectPattern | ArrayPattern =>
               val paramName = generateUnusedVariableName(usedVariableNames, s"param$index")
-              val param = parameterInNode(
+              val param     = parameterInNode(
                 nodeInfo,
                 paramName,
                 nodeInfo.code,
@@ -104,7 +103,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           val tpe           = typeFor(nodeInfo)
           val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
           val possibleTypes = Seq(tpe)
-          val param = parameterInNode(
+          val param         = parameterInNode(
             nodeInfo,
             paramName,
             nodeInfo.code,
@@ -113,7 +112,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             EvaluationStrategies.BY_VALUE,
             typeFullName
           ).possibleTypes(possibleTypes)
-          additionalBlockStatements.addAll(nodeInfo.json("elements").arr.toList.map {
+          additionalBlockStatements.addAll(nodeInfo.json("elements").arr.iterator.map {
             case element if !element.isNull =>
               val elementNodeInfo = createBabelNodeInfo(element)
               elementNodeInfo.node match {
@@ -123,7 +122,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
                   val typeFullName   = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
                   val possibleTypes  = Seq(tpe)
                   val localParamNode = identifierNode(elementNodeInfo, elemName).possibleTypes(possibleTypes)
-                  val localTmpNode = localNode(elementNodeInfo, elemName, elemName, typeFullName)
+                  val localTmpNode   = localNode(elementNodeInfo, elemName, elemName, typeFullName)
                     .order(0)
                     .possibleTypes(possibleTypes)
                   diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
@@ -132,7 +131,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
                   val paramNode = identifierNode(elementNodeInfo, paramName)
                   scope.addVariableReference(paramName, paramNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
-                  val keyNode = fieldIdentifierNode(elementNodeInfo, elemName, elemName)
+                  val keyNode   = fieldIdentifierNode(elementNodeInfo, elemName, elemName)
                   val accessAst = createFieldAccessCallAst(
                     paramNode,
                     keyNode,
@@ -181,7 +180,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           ).possibleTypes(possibleTypes)
           scope.addVariable(paramName, param, typeFullName, VariableScopeManager.ScopeType.MethodScope)
 
-          additionalBlockStatements.addAll(nodeInfo.json("properties").arr.toList.map { element =>
+          additionalBlockStatements.addAll(nodeInfo.json("properties").arr.iterator.map { element =>
             val elementNodeInfo = createBabelNodeInfo(element)
             elementNodeInfo.node match {
               case ObjectProperty =>
@@ -201,7 +200,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
                 val paramNode = identifierNode(elementNodeInfo, paramName)
                 scope.addVariableReference(paramName, paramNode, typeFullName, EvaluationStrategies.BY_REFERENCE)
 
-                val keyNode = fieldIdentifierNode(elementNodeInfo, elemName, elemName)
+                val keyNode   = fieldIdentifierNode(elementNodeInfo, elemName, elemName)
                 val accessAst =
                   createFieldAccessCallAst(paramNode, keyNode, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
                 val assignmentCallAst = createAssignmentCallAst(
@@ -225,7 +224,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           // Handle types declared as `credentials: { username: string; password: string; }`
           val tpe          = typeFor(nodeInfo)
           var typeFullName = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
-          val possibleType = Try(createBabelNodeInfo(nodeInfo.json("typeAnnotation")("typeAnnotation")))
+          val possibleType = nodeInfo.json.obj
+            .get("typeAnnotation")
+            .flatMap(_.objOpt)
+            .flatMap(_.get("typeAnnotation"))
+            .filter(!_.isNull)
+            .map(createBabelNodeInfo)
             .map(x =>
               x.node match {
                 case TSTypeLiteral =>
@@ -268,7 +272,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           val tpe           = typeFor(nodeInfo)
           val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
           val possibleTypes = Seq(tpe)
-          val node =
+          val node          =
             parameterInNode(
               nodeInfo,
               nodeInfo.code,
@@ -296,7 +300,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val lhsAst     = astForNode(lhsElement)
 
     val testAst = {
-      val keyNode = identifierNode(element, codeOf(lhsAst.nodes.head))
+      val keyNode      = identifierNode(element, codeOf(lhsAst.nodes.head))
       val voidCallNode =
         callNode(element, "void 0", "<operator>.void", DispatchTypes.STATIC_DISPATCH)
       val equalsCallAst = createEqualsCallAst(Ast(keyNode), Ast(voidCallNode), element.lineNumber, element.columnNumber)
@@ -320,23 +324,20 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def astForTSDeclareFunction(func: BabelNodeInfo): Ast = {
-    val functionNode  = createMethodDefinitionNode(func)
+    val functionNode  = createMethodDefinitionNode(func, ConstructorContent.empty)
     val tpe           = typeFor(func)
     val possibleTypes = Seq(tpe)
     val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
-    val memberNode_ = memberNode(func, functionNode.name, func.code, typeFullName, Seq(functionNode.fullName))
+    val memberNode_   = memberNode(func, functionNode.name, func.code, typeFullName, Seq(functionNode.fullName))
       .possibleTypes(possibleTypes)
     diffGraph.addEdge(getParentTypeDecl, memberNode_, EdgeTypes.AST)
     addModifier(functionNode, func.json)
     Ast()
   }
 
-  protected def createMethodDefinitionNode(
-    func: BabelNodeInfo,
-    methodBlockContent: List[Ast] = List.empty
-  ): NewMethod = {
+  protected def createMethodDefinitionNode(func: BabelNodeInfo, methodBlockContent: ConstructorContent): NewMethod = {
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
-    val methodNode_ = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
+    val methodNode_    = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
     val lambdaModifier = if (methodName.startsWith(io.joern.x2cpg.Defines.ClosurePrefix)) {
       modifierNode(func, ModifierTypes.LAMBDA) :: Nil
     } else {
@@ -356,6 +357,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       handleParameters(func.json("params").arr.toSeq, mutable.ArrayBuffer.empty[Ast], createLocals = false)
     }
 
+    val blockAsts =
+      methodBlockContent.constructorContent.flatMap(m => methodBlockContent.typeDecl.map(astForClassMember(m, _)))
+
     val methodReturnNode_ = methodReturnNode(func)
 
     methodAstParentStack.pop()
@@ -370,11 +374,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         parserResult.filename
       )
 
-    val mAst = if (methodBlockContent.isEmpty) {
+    val mAst = if (blockAsts.isEmpty) {
       methodStubAst(methodNode_, (thisNode +: paramNodes).map(Ast(_)), methodReturnNode_, modifiers)
     } else {
-      setArgumentIndices(methodBlockContent)
-      val bodyAst = blockAst(NewBlock(), methodBlockContent)
+      val bodyAst = blockAst(NewBlock(), blockAsts)
       methodAstWithAnnotations(
         methodNode_,
         (thisNode +: paramNodes).map(Ast(_)),
@@ -396,7 +399,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     func: BabelNodeInfo,
     shouldCreateFunctionReference: Boolean = false,
     shouldCreateAssignmentCall: Boolean = false,
-    methodBlockContent: List[Ast] = List.empty
+    methodBlockContent: ConstructorContent
   ): MethodAst = {
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
 
@@ -416,7 +419,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       Ast()
     }
 
-    val methodNode_ = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
+    val methodNode_    = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
     val lambdaModifier = if (methodName.startsWith(io.joern.x2cpg.Defines.ClosurePrefix)) {
       modifierNode(func, ModifierTypes.LAMBDA) :: Nil
     } else {
@@ -456,10 +459,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         }
       case _ => createBlockStatementAsts(bodyJson("body"))
     }
-    val methodBlockChildren = methodBlockContent ++ additionalBlockStatements.toList ++ bodyStmtAsts
-    setArgumentIndices(methodBlockChildren)
 
-    val methodReturnNode_ = methodReturnNode(func)
+    val methodBlockChildren = methodBlockContent.constructorContent.flatMap(m =>
+      methodBlockContent.typeDecl.map(astForClassMember(m, _))
+    ) ++ additionalBlockStatements.toList ++ bodyStmtAsts
 
     localAstParentStack.pop()
     scope.popScope()
@@ -480,7 +483,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         methodNode_,
         (thisNode +: paramNodes).map(Ast(_)),
         blockAst(blockNode_, methodBlockChildren),
-        methodReturnNode_,
+        methodReturnNode(func),
         modifierNodes,
         astsForDecorators(func)
       )
@@ -500,6 +503,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     func: BabelNodeInfo,
     shouldCreateFunctionReference: Boolean = false,
     shouldCreateAssignmentCall: Boolean = false
-  ): Ast = createMethodAstAndNode(func, shouldCreateFunctionReference, shouldCreateAssignmentCall).ast
+  ): Ast = createMethodAstAndNode(
+    func,
+    shouldCreateFunctionReference,
+    shouldCreateAssignmentCall,
+    ConstructorContent.empty
+  ).ast
 
 }

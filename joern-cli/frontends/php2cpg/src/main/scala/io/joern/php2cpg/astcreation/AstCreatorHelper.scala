@@ -1,18 +1,16 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
+import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
-import io.joern.php2cpg.passes.SymbolSummaryPass.PhpFunction
 import io.joern.php2cpg.utils.{BlockScope, MethodScope}
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
+import io.joern.x2cpg.utils.OffsetUtils
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-
-import scala.collection.mutable
 
 trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -28,18 +26,15 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
 
   protected def code(phpNode: PhpNode): String = "" // Sadly, the Php AST does not carry any code fields
 
-  override protected def offset(phpNode: PhpNode): Option[(Int, Int)] = {
-    Option.when(!disableFileContent) {
-      val startPos =
-        new String(fileContentBytes.slice(0, phpNode.attributes.startFilePos), fileCharset).length
-      val endPos =
-        new String(fileContentBytes.slice(0, phpNode.attributes.endFilePos), fileCharset).length
-      (startPos, endPos)
-    }
-  }
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] =
+    Option.unless(disableFileContent)(OffsetUtils.OffsetSourceType.Bytes(fileContentBytes, fileCharset))
 
-  protected def intToLiteralAst(num: Int): Ast = {
-    Ast(NewLiteral().code(num.toString).typeFullName(TypeConstants.Int))
+  // The PHP parser uses -1 to signal it couldn't determine a position (rare parse errors) — treat
+  // that as no offset info at all, rather than normalizing a nonsensical value.
+  override protected def unadjustedOffset(phpNode: PhpNode): Option[(Int, Int)] = {
+    val start = phpNode.attributes.startFilePos
+    val end   = phpNode.attributes.endFilePos
+    Option.when(start >= 0 && end >= 0)((start, end))
   }
 
   protected def getTmpIdentifier(
@@ -53,23 +48,21 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def composeMethodFullName(methodName: String): String = {
-    scope.resolveIdentifier(methodName) match {
+    scope.resolveFunctionIdentifier(methodName) match {
       case Some(importedMethod)                                         => importedMethod.name
       case None if methodName == NamespaceTraversal.globalNamespaceName => globalNamespace.fullName
-      case None =>
+      case None                                                         =>
         val nameWithClass = scope.createMethodNameWithSurroundingInformation(methodName)
         scope.getDeduplicatedMethodName(nameWithClass)
     }
   }
 
-  protected def composeMethodFullNameForCall(methodName: String, appendMetaTypeDeclExt: Boolean = false): String = {
-    scope.resolveIdentifier(methodName) match {
+  protected def composeMethodFullNameForCall(methodName: String): String = {
+    scope.resolveFunctionIdentifier(methodName) match {
       case Some(importedMethod)                                         => importedMethod.name
       case None if methodName == NamespaceTraversal.globalNamespaceName => globalNamespace.fullName
-      case None =>
-        val className = Option
-          .when(appendMetaTypeDeclExt)(getTypeDeclPrefix.map(name => s"$name$MetaTypeDeclExtension").orNull)
-          .orElse(getTypeDeclPrefix)
+      case None                                                         =>
+        val className = getTypeDeclPrefix
 
         val nameWithClass = List(className, Some(methodName)).flatten.mkString(MethodDelimiter)
         prependNamespacePrefix(nameWithClass)
@@ -83,7 +76,20 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     }
   }
 
-  private def getTypeDeclPrefix: Option[String] =
+  protected def getAstParentInfo: (String, String) = {
+    scope.getEnclosingParentInfo
+      .getOrElse((NameConstants.Unknown, NameConstants.Unknown))
+  }
+
+  protected def getClosureAstParentInfo: (String, String) = {
+    scope.getEnclosingTypeDecl
+      .map { scope =>
+        (NodeTypes.TYPE_DECL, scope.fullName)
+      }
+      .getOrElse(getAstParentInfo)
+  }
+
+  protected def getTypeDeclPrefix: Option[String] =
     scope.getEnclosingTypeDeclTypeName.filterNot(_ == NamespaceTraversal.globalNamespaceName)
 
   protected def codeForMethodCall(call: PhpCallExpr, targetAst: Ast, name: String): String = {
@@ -91,12 +97,29 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     s"${targetAst.rootCodeOrEmpty}$callOperator$name"
   }
 
-  protected def codeForStaticMethodCall(call: PhpCallExpr, name: String): String = {
-    call.target
-      .map(astForExpr)
+  protected def codeForStaticMethodCall(call: PhpCallExpr, targetAst: Option[Ast], name: String): String = {
+    targetAst
       .flatMap(_.rootCode)
       .map(className => s"$className$StaticMethodDelimiter$name")
       .getOrElse(name)
+  }
+
+  protected def codeForExpr(expr: PhpExpr): String = {
+    new String(fileContentBytes.slice(expr.attributes.startFilePos, expr.attributes.endFilePos), fileCharset)
+  }
+
+  protected def codeForSingleArrayTmpElemAssign(targetName: String, key: Option[PhpExpr], value: PhpExpr): String = {
+    val keyCode = key
+      .map(codeForExpr)
+      .map(k => s"$k => ")
+      .getOrElse("")
+    val valueCode = value match {
+      case PhpVariable(name: PhpNameExpr, _) =>
+        s"$$${name.name}"
+      case _ => ""
+    }
+
+    s"$$$targetName = array($keyCode$valueCode)"
   }
 
   protected def dimensionFromSimpleScalar(scalar: PhpSimpleScalar, idxTracker: ArrayIndexTracker): PhpExpr = {
@@ -128,22 +151,6 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     modifiers: List[String] = List.empty
   ): NewNode = {
     scope.lookupVariable(name) match {
-      case None =>
-        val localCode = if name == NameConstants.Self then NameConstants.Self else s"$$$name"
-        val local     = localNode(expr, name, code.getOrElse(localCode), tfn.getOrElse(Defines.Any))
-
-        modifiers.foreach { modifier =>
-          val modNode = modifierNode(expr, modifier)
-          diffGraph.addEdge(local, modNode, EdgeTypes.AST)
-        }
-
-        scope.addToScope(name, local) match {
-          case BlockScope(block, _)              => diffGraph.addEdge(block, local, EdgeTypes.AST)
-          case MethodScope(_, block, _, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
-          case _                                 => // do nothing
-        }
-
-        local
       case Some(local: NewLocal)
           if scope.isSurroundedByArrowClosure && local.closureBindingId.exists(_.contains("<lambda>")) =>
         local // the contains check ensures that we can capture global variables into an arrow closure
@@ -152,7 +159,26 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         createClosureBindingsForArrowClosure(expr, name)
       case Some(_: NewLocal) if scope.isSurroundedByArrowClosure =>
         createClosureBindingsForArrowClosure(expr, name)
-      case Some(local) => local
+      case _ =>
+        scope.lookupVariableInCurrentMethod(name) match {
+          case Some(existing) => existing
+          case None           =>
+            val localCode = if (name == NameConstants.Self) NameConstants.Self else s"$$$name"
+            val local     = localNode(expr, name, code.getOrElse(localCode), tfn.getOrElse(Defines.Any))
+
+            modifiers.foreach { modifier =>
+              val modNode = modifierNode(expr, modifier)
+              diffGraph.addEdge(local, modNode, EdgeTypes.AST)
+            }
+
+            scope.addToScope(name, local) match {
+              case BlockScope(block, _)                 => diffGraph.addEdge(block, local, EdgeTypes.AST)
+              case MethodScope(_, block, _, _, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
+              case _                                    => // do nothing
+            }
+
+            local
+        }
     }
   }
 
@@ -169,11 +195,13 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       val innerMethodRef   = innerMethodScope.methodRefNode
       innerMethodRef match {
         case Some(methodRef) =>
-          if (!isInClosure) {
+          // A closure's methodRef is already attached to the AST at the closure expression site, so
+          // appending it to the enclosing method's body as well would give it two AST parents.
+          val isAnonymousClosure = innerMethodNode.fullName.contains(Defines.ClosurePrefix)
+          if (!isInClosure && !isAnonymousClosure) {
             scope.getMethodRef(innerMethodNode.fullName) match {
               case None =>
-                diffGraph.addNode(methodRef)
-                diffGraph.addEdge(currentMethod.bodyNode, methodRef, EdgeTypes.AST)
+                currentMethod.additionalBodyChildren.append(methodRef)
                 scope.addMethodRef(innerMethodNode.fullName, methodRef)
               case _ =>
             }
@@ -229,12 +257,15 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
 
   protected def getArgsCode(call: PhpCallExpr, arguments: Seq[Ast]): String = {
     arguments
-      .zip(call.args.collect { case x: PhpArg => x.unpack })
+      .zip(call.args.collect { case PhpArg(_, parameterName, _, unpack, _) =>
+        val nameCode = parameterName.map(name => s"$name: ").getOrElse("")
+        (nameCode, unpack)
+      })
       .map {
-        case (arg, true)  => s"...${arg.rootCodeOrEmpty}"
-        case (arg, false) => arg.rootCodeOrEmpty
+        case (arg, (parameterName, true))  => s"$parameterName...${arg.rootCodeOrEmpty}"
+        case (arg, (parameterName, false)) => s"$parameterName${arg.rootCodeOrEmpty}"
       }
-      .mkString(",")
+      .mkString(", ")
   }
 
   protected def getCallName(call: PhpCallExpr, nameAst: Option[Ast]): String = {
@@ -242,7 +273,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       .map(_.rootCodeOrEmpty)
       .getOrElse(call.methodName match {
         case nameExpr: PhpNameExpr => nameExpr.name
-        case other =>
+        case other                 =>
           logger.error(s"Found unexpected call target type: Crash for now to handle properly later: $other")
           ???
       })
@@ -252,13 +283,13 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
 
   protected def getMfn(call: PhpCallExpr, name: String): String = {
     lazy val default               = s"$UnresolvedNamespace$MethodDelimiter$name"
-    lazy val maybeResolvedFunction = scope.resolveIdentifier(name).filter(_.isInstanceOf[PhpFunction])
+    lazy val maybeResolvedFunction = scope.resolveFunctionIdentifier(name)
     call.target match {
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
         // Static method call with a simple receiver
         if (nameExpr.name == NameConstants.Self)
-          composeMethodFullNameForCall(name, appendMetaTypeDeclExt = !scope.isSurroundedByMetaclassTypeDecl)
-        else s"${nameExpr.name}$MetaTypeDeclExtension$MethodDelimiter$name"
+          composeMethodFullNameForCall(name)
+        else s"${nameExpr.name}$MethodDelimiter$name"
       case Some(_) =>
         // As soon as we have a dynamic component to the call, we can't truly define a method full name
         default
@@ -269,14 +300,11 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         name
       // Assume name-space local function call
       case None =>
-        composeMethodFullNameForCall(name, call.isStatic)
+        composeMethodFullNameForCall(name)
     }
   }
 
   protected def isBuiltinFunc(name: String): Boolean = PhpBuiltins.FuncNames.contains(name)
-
-  protected def isCallOnVariable(call: PhpCallExpr): Boolean =
-    call.target.isEmpty && call.methodName.isInstanceOf[PhpVariable]
 
   protected def createListExprCodeField(listExpr: PhpListExpr): String = {
     val name = PhpOperators.listFunc
@@ -284,8 +312,8 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       .map {
         case PhpArrayItem(_, _ @PhpVariable(name: PhpNameExpr, _), _, _, _) => s"$$${name.name}"
         case PhpArrayItem(_, value: PhpListExpr, _, _, _)                   => createListExprCodeField(value)
-        case x =>
-          logger.warn(s"Invalid arg type for code field: ${x.getClass}")
+        case other                                                          =>
+          logger.warn(s"Invalid arg type for code field: ${other.getClass}")
           ""
       }
       .mkString(",")

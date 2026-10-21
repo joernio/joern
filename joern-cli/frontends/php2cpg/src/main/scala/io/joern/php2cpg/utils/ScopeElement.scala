@@ -119,7 +119,8 @@ case class MethodScope(
   fullName: String,
   parameterNames: Seq[String] = Seq.empty,
   methodRefNode: Option[NewMethodRef] = None,
-  isArrowFunc: Boolean = false
+  isArrowFunc: Boolean = false,
+  additionalBodyChildren: mutable.ArrayBuffer[NewNode] = mutable.ArrayBuffer.empty
 ) extends MethodLikeScope
 
 case class BlockScope(block: NewBlock, fullName: String) extends NamedScope

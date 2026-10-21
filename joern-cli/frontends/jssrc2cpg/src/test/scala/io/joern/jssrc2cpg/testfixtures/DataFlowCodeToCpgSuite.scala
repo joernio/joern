@@ -21,7 +21,7 @@ class DataFlowTestCpg extends TestCpg with JsSrc2CpgFrontend {
     val context = new LayerCreatorContext(this)
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
-    jssrc2cpg.postProcessingPasses(this, XTypeRecoveryConfig()).foreach(_.createAndApply())
+    new jssrc2cpg.JavaScriptPostProcessing(XTypeRecoveryConfig()).run(context)
   }
 
 }

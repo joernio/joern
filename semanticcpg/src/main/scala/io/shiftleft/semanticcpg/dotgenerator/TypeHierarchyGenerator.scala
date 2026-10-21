@@ -13,7 +13,7 @@ class TypeHierarchyGenerator {
     val subgraph         = mutable.HashMap.empty[String, Seq[StoredNode]]
     val vertices         = cpg.typeDecl.l
     val typeToIsExternal = vertices.map { t => t.fullName -> t.isExternal }.toMap
-    val edges = for {
+    val edges            = for {
       srcTypeDecl <- vertices
       srcType     <- srcTypeDecl._typeViaRefIn.l
       _ = storeInSubgraph(srcType, subgraph, typeToIsExternal)

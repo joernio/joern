@@ -24,7 +24,9 @@ case class CallSummary(
 class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
-    val methodToParameterCount = mutable.HashMap[String, mutable.HashSet[CallSummary]]()
+    // LinkedHash* collections: this pass is single-threaded and populated in cpg.call
+    // (node) order, so insertion order — and thus iteration order — is deterministic.
+    val methodToParameterCount = mutable.LinkedHashMap[String, mutable.LinkedHashSet[CallSummary]]()
 
     for {
       call <- cpg.call
@@ -32,7 +34,7 @@ class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
         cpg.method.fullNameExact(call.methodFullName).isEmpty
     } {
       methodToParameterCount
-        .getOrElseUpdate(call.methodFullName, mutable.HashSet.empty[CallSummary])
+        .getOrElseUpdate(call.methodFullName, mutable.LinkedHashSet.empty[CallSummary])
         .add(
           CallSummary(
             call.name,
@@ -126,7 +128,7 @@ object MethodStubCreator {
       }
       (firstParameterOrder to parameterCount).zipWithIndex.foreach { case (parameterOrder, index) =>
         val nameAndCode = s"p$parameterOrder"
-        val param = NewMethodParameterIn()
+        val param       = NewMethodParameterIn()
           .code(nameAndCode)
           .order(parameterOrder)
           .index(index + 1)
@@ -141,7 +143,7 @@ object MethodStubCreator {
       val ran = if (startWithInst.get) Range(0, parameterCount) else Range(1, parameterCount + 1)
       for (parameterOrder <- ran) {
         val nameAndCode = s"p$parameterOrder"
-        val param = NewMethodParameterIn()
+        val param       = NewMethodParameterIn()
           .code(nameAndCode)
           .order(parameterOrder)
           .index(parameterOrder)

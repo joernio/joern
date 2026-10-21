@@ -1,12 +1,12 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-class WhileTests extends AstSwiftSrc2CpgSuite {
+class WhileTests extends SwiftSrc2CpgSuite {
 
   "WhileTests" should {
 
@@ -68,7 +68,8 @@ class WhileTests extends AstSwiftSrc2CpgSuite {
           inside(controlStruct.condition.l) { case List(cndNode: Literal) =>
             cndNode.code shouldBe "true"
           }
-          controlStruct.whenTrue.code.l shouldBe List("""print("Endless Loop")""")
+          controlStruct.condition.code.l shouldBe List("true")
+          controlStruct.doBodyOut.code.l shouldBe List("""print("Endless Loop")""")
           controlStruct.lineNumber shouldBe Some(2)
           controlStruct.columnNumber shouldBe Some(1)
       }
@@ -94,7 +95,8 @@ class WhileTests extends AstSwiftSrc2CpgSuite {
             n.name shouldBe "n"
             n.order shouldBe 2
           }
-          controlStruct.whenTrue.astChildren.code.l shouldBe List("print(i)", "i = i + 1")
+          controlStruct.condition.code.l shouldBe List("i <= n")
+          controlStruct.doBodyOut.astChildren.code.l shouldBe List("print(i)", "i = i + 1")
           controlStruct.lineNumber shouldBe Some(2)
           controlStruct.columnNumber shouldBe Some(1)
       }

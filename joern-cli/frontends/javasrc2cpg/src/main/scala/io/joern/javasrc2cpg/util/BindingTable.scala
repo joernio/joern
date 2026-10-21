@@ -97,7 +97,7 @@ object BindingTable {
             val parentSigInDerivedContext = adapter.getMethodSignature(parentMethodDecl, typeParameterInDerivedContext)
             if (directTableEntry.signature == parentSigInDerivedContext) {
               val erasedParentMethodSig = adapter.getMethodSignatureForEmptyTypeMap(parentMethodDecl)
-              val tableEntry = BindingTableEntry
+              val tableEntry            = BindingTableEntry
                 .apply(directTableEntry.name, erasedParentMethodSig, directTableEntry.implementingMethodFullName)
               bindingTable.add(tableEntry)
             }

@@ -60,6 +60,36 @@ class TemplateTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
       }
     }
 
+    "be correct for alias templates" in {
+      val cpg = code("""
+        |struct Widget { int w; };
+        |template <typename T> struct Box { T v; };
+        |template <typename T> using APtr = T*;
+        |template <typename T> using AId  = T;
+        |template <typename T> using ABox = Box<T>;
+        |using PlainWidgetPtr = Widget*;
+        |void take(APtr<Widget> p);
+        |struct Holder { APtr<Widget> m; };
+        |void f() {
+        |  PlainWidgetPtr c0 = nullptr;
+        |  APtr<Widget>   a0 = nullptr;
+        |  AId<int>       a1 = 1;
+        |  ABox<int>      a2;
+        |}
+        |""".stripMargin)
+      inside(cpg.local.l) { case List(c0, a0, a1, a2) =>
+        c0.typeFullName shouldBe "PlainWidgetPtr"
+        a0.typeFullName shouldBe "Widget*"
+        a1.typeFullName shouldBe "int"
+        a2.typeFullName shouldBe "Box"
+      }
+      cpg.member.nameExact("m").typeFullName.l shouldBe List("Widget*")
+      inside(cpg.method.nameExact("take").l) { case List(take) =>
+        take.fullName shouldBe "take:void(Widget*)"
+        take.parameter.nameExact("p").typeFullName.l shouldBe List("Widget*")
+      }
+    }
+
     "be correct for function templates" in {
       val cpg = code("""
        |template<class T, class U>

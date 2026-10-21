@@ -1,50 +1,113 @@
 package io.joern.swiftsrc2cpg.passes
 
 import io.joern.swiftsrc2cpg.Config
-import io.joern.swiftsrc2cpg.astcreation.{AstCreator, SwiftSrcGlobal}
+import io.joern.swiftsrc2cpg.astcreation.AstCreator
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser
-import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
-import io.joern.swiftsrc2cpg.utils.AstGenRunner.AstGenRunnerResult
+import io.joern.swiftsrc2cpg.passes.AstCreationPass.FileAndTypesMap
+import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider
-import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.SwiftFileLocalTypeMapping
+import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{MutableSwiftTypeMapping, SwiftFileLocalTypeMapping}
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
 import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.Paths
+import scala.collection.immutable.ListMap
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
 class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: Config, report: Report = new Report())(
   implicit withSchemaValidation: ValidationMode
-) extends ForkJoinParallelCpgPass[String](cpg) {
+) extends ForkJoinParallelCpgPassWithAccumulator[FileAndTypesMap, AstCreationPass.Accumulator](cpg) {
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  private val global  = new SwiftSrcGlobal()
-  private var typeMap = SwiftTypesProvider(config).map(_.retrieveMappings()).getOrElse(Map.empty)
+  private var collectedTypes: Set[String]                                              = Set.empty
+  private var collectedExtensionInherits: Map[String, Set[String]]                     = Map.empty
+  private var collectedExtensionMembers: Map[String, List[AstCreationPass.MemberInfo]] = Map.empty
+  private var collectedExtensionMethodFullNameMapping: Map[String, String]             = Map.empty
+  private var collectedMemberPropertyMapping: Map[String, String]                      = Map.empty
 
-  def typesSeen(): List[String] =
-    global.usedTypes.keys().asScala.filterNot(Defines.SwiftTypes.contains).toList
+  def typesSeen(): Set[String]                                          = collectedTypes
+  def extensionInherits(): Map[String, Set[String]]                     = collectedExtensionInherits
+  def extensionMembers(): Map[String, List[AstCreationPass.MemberInfo]] = collectedExtensionMembers
+  def extensionMethodFullNameMapping(): Map[String, String]             = collectedExtensionMethodFullNameMapping
+  def memberPropertyMapping(): Map[String, String]                      = collectedMemberPropertyMapping
 
-  def extensionInherits(): Map[String, Set[String]] =
-    global.extensionInherits.asScala.view.mapValues(_.toSet).toMap
+  // LinkedHash* collections: accumulators are merged in part order (sorted files), so
+  // insertion order — and thus iteration order — is deterministic across runs.
+  // mergeAccumulator must stay associative for this to hold.
+  override def createAccumulator(): AstCreationPass.Accumulator = AstCreationPass.Accumulator(
+    usedTypes = mutable.LinkedHashSet.empty,
+    extensionInheritMapping = mutable.LinkedHashMap.empty,
+    extensionMethodFullNameMapping = mutable.LinkedHashMap.empty,
+    extensionMemberMapping = mutable.LinkedHashMap.empty,
+    memberPropertyMapping = mutable.LinkedHashMap.empty
+  )
 
-  def extensionMethodFullNameMapping(): Map[String, String] =
-    global.extensionMethodFullNameMapping.asScala.toMap
+  override def mergeAccumulator(left: AstCreationPass.Accumulator, right: AstCreationPass.Accumulator): Unit = {
+    left.usedTypes ++= right.usedTypes
 
-  override def generateParts(): Array[String] = astGenRunnerResult.parsedFiles.toArray
+    right.extensionInheritMapping.foreach { case (key, rightSet) =>
+      left.extensionInheritMapping.updateWith(key) {
+        case Some(leftSet) => Some(leftSet ++= rightSet)
+        case None          => Some(rightSet)
+      }
+    }
+
+    right.extensionMethodFullNameMapping.foreach { case (key, value) =>
+      left.extensionMethodFullNameMapping.getOrElseUpdate(key, value)
+    }
+
+    right.extensionMemberMapping.foreach { case (key, rightBuf) =>
+      left.extensionMemberMapping.updateWith(key) {
+        case Some(leftBuf) => Some(leftBuf ++= rightBuf)
+        case None          => Some(rightBuf)
+      }
+    }
+
+    right.memberPropertyMapping.foreach { case (key, value) =>
+      left.memberPropertyMapping.getOrElseUpdate(key, value)
+    }
+  }
+
+  override def onAccumulatorComplete(builder: DiffGraphBuilder, accumulator: AstCreationPass.Accumulator): Unit = {
+    collectedTypes = accumulator.usedTypes.toSet.removedAll(Defines.SwiftTypes)
+    collectedExtensionInherits = accumulator.extensionInheritMapping.view.mapValues(_.toSet).toMap
+    // ListMap preserves the accumulator's deterministic insertion order for ExtensionsPass;
+    // `toMap` would re-hash into an unordered immutable.HashMap
+    collectedExtensionMembers = ListMap.from(accumulator.extensionMemberMapping.view.mapValues(_.toList))
+    collectedExtensionMethodFullNameMapping = accumulator.extensionMethodFullNameMapping.toMap
+    collectedMemberPropertyMapping = accumulator.memberPropertyMapping.toMap
+  }
+
+  override def generateParts(): Array[FileAndTypesMap] = {
+    val typesMap = SwiftTypesProvider(config).map(_.retrieveMappings()).getOrElse(new MutableSwiftTypeMapping())
+    if (typesMap.isEmpty) {
+      // early return to skip the readRelativeFilePath calls completely
+      astGenRunnerResult.parsedFiles.map(FileAndTypesMap(_, Map.empty)).toArray
+    } else {
+      astGenRunnerResult.parsedFiles.map { jsonPath =>
+        // we need to read the json files (lazily) to get the actual relative source file path
+        SwiftJsonParser.readRelativeFilePath(Paths.get(jsonPath)) match {
+          case Success(sourceFilename) => FileAndTypesMap(jsonPath, extractFileLocalTypesMap(sourceFilename, typesMap))
+          case _                       => FileAndTypesMap(jsonPath, Map.empty)
+        }
+      }.toArray
+    }
+  }
 
   override def finish(): Unit = {
     astGenRunnerResult.skippedFiles.foreach { skippedFile =>
       val filePath = Paths.get(skippedFile)
-      val fileLOC = Try(IOUtils.readLinesInFile(filePath)) match {
+      val fileLOC  = Try(IOUtils.readLinesInFile(filePath)) match {
         case Success(fileContent) => fileContent.size
-        case Failure(exception) =>
+        case Failure(exception)   =>
           logger.warn(s"Failed to read file: '$filePath'", exception)
           -1
       }
@@ -52,45 +115,121 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
     }
   }
 
-  private def extractFileLocalTypeMap(parseResult: ParseResult): SwiftFileLocalTypeMapping = {
-    typeMap
-      .collectFirst {
-        // special handling for GitHub Windows and MacOS runner
-        // Windows: C:\Users\RUNNER~1\AppData\Local\Temp\hash\Input\file.swift vs. C:\Users\runneradmin\AppData\Local\Temp\hash\Input\file.swift
-        // macOS: /private/var/folders/y6/hash/T/Input/file.swift vs. /var/folders/y6/hash/T/Input/file.swift
-        case (filename, map) if filename.replace("\\", "/").endsWith(parseResult.filename) => (filename, map)
-      }
-      .map { case (filename, map) =>
-        typeMap = typeMap.removed(filename)
-        map
-      }
-      .getOrElse(Map.empty)
+  private def extractFileLocalTypesMap(
+    filename: String,
+    typesMap: MutableSwiftTypeMapping
+  ): SwiftFileLocalTypeMapping = {
+    // early exit
+    if (typesMap.isEmpty) return Map.empty
+
+    // Try exact match first (O(1)), then fall back to suffix match for CI path differences
+    // (Windows short paths, macOS /private/var vs /var symlinks).
+    val normalizedFilename = filename.replace("\\", "/")
+    val mutableMap         = Option(typesMap.remove(normalizedFilename)).orElse {
+      typesMap
+        .keys()
+        .asScala
+        .find(_.endsWith(normalizedFilename))
+        .flatMap(key => Option(typesMap.remove(key)))
+    }
+    mutableMap match {
+      case Some(m) => m.asScala.toMap.map { case (range, set) => range -> set.toSet }
+      case None    => Map.empty
+    }
   }
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, input: String): Unit = {
+  override def runOnPart(
+    diffGraph: DiffGraphBuilder,
+    part: FileAndTypesMap,
+    accumulator: AstCreationPass.Accumulator
+  ): Unit = {
     val ((gotCpg, filename), duration) = TimeUtils.time {
-      SwiftJsonParser.readFile(Paths.get(input)) match {
+      SwiftJsonParser.readFile(Paths.get(part.filename)) match {
         case Success(parseResult) =>
           report.addReportInfo(parseResult.filename, parseResult.loc, parsed = true)
           Try {
-            val fileLocalTypesMap = extractFileLocalTypeMap(parseResult)
-            val astCreator        = new AstCreator(config, global, parseResult, fileLocalTypesMap)
-            val localDiff         = astCreator.createAst()
+            val astCreator = new AstCreator(config, accumulator, parseResult, part.fileLocalTypesMap)
+            val localDiff  = astCreator.createAst()
+            part.fileLocalTypesMap = null // null this map out to keep heap pressure low
             diffGraph.absorb(localDiff)
           } match {
             case Failure(exception) =>
-              logger.warn(s"Failed to generate a CPG for: '${parseResult.filename}'", exception)
+              logger.warn(s"Failed to process '${parseResult.filename}'", exception)
               (false, parseResult.filename)
             case Success(_) =>
-              logger.debug(s"Generated a CPG for: '${parseResult.filename}'")
+              logger.debug(s"Processed '${parseResult.filename}'")
               (true, parseResult.filename)
           }
         case Failure(exception) =>
-          logger.warn(s"Failed to read '$input'", exception)
-          (false, input)
+          logger.warn(s"Failed to read '${part.filename}'", exception)
+          (false, part.filename)
       }
     }
     report.updateReport(filename, cpg = gotCpg, duration)
+  }
+
+}
+
+object AstCreationPass {
+
+  case class MemberInfo(name: String, code: String, typeFullName: String)
+
+  class FileAndTypesMap(val filename: String, var fileLocalTypesMap: SwiftFileLocalTypeMapping)
+
+  /** Per-thread accumulator for data collected during AST creation. Each thread receives its own instance; the
+    * framework merges them after all parts complete.
+    *
+    * @param usedTypes
+    *   Set of type full names encountered during AST creation.
+    * @param extensionInheritMapping
+    *   Mapping from extension fullName to the set of names it inherits from.
+    * @param extensionMethodFullNameMapping
+    *   Mapping from extension method fullName (provided by the compiler) to the fullName the frontend generates for
+    *   fullName uniqueness.
+    * @param extensionMemberMapping
+    *   Mapping from extension fullName to the members it defines as computed properties.
+    * @param memberPropertyMapping
+    *   Mapping from member fullName to method fullName from its computed property.
+    */
+  case class Accumulator(
+    usedTypes: mutable.LinkedHashSet[String],
+    extensionInheritMapping: mutable.LinkedHashMap[String, mutable.LinkedHashSet[String]],
+    extensionMethodFullNameMapping: mutable.LinkedHashMap[String, String],
+    extensionMemberMapping: mutable.LinkedHashMap[String, mutable.ArrayBuffer[MemberInfo]],
+    memberPropertyMapping: mutable.LinkedHashMap[String, String]
+  ) {
+
+    def addExtensionMember(
+      extensionFullName: String,
+      memberName: String,
+      memberCode: String,
+      memberTypeFullName: String
+    ): Unit = {
+      val memberInfo = MemberInfo(memberName, memberCode, memberTypeFullName)
+      extensionMemberMapping.updateWith(extensionFullName) {
+        case Some(buf) => Some(buf += memberInfo)
+        case None      => Some(mutable.ArrayBuffer(memberInfo))
+      }
+    }
+
+    def addExtensionInherits(extensionFullName: String, inheritNames: Seq[String]): Unit = {
+      extensionInheritMapping.updateWith(extensionFullName) {
+        case Some(set) => Some(set ++= inheritNames)
+        case None      => Some(mutable.LinkedHashSet.from(inheritNames))
+      }
+    }
+
+    def addExtensionMethodFullName(extensionMethodFullName: String, fullName: String): Unit = {
+      extensionMethodFullNameMapping.getOrElseUpdate(extensionMethodFullName, fullName)
+    }
+
+    def addMemberPropertyFullName(memberFullName: String, propertyFullName: String): Unit = {
+      memberPropertyMapping.getOrElseUpdate(memberFullName, propertyFullName)
+    }
+
+    def registerType(typeFullName: String): Unit = {
+      usedTypes.add(typeFullName)
+    }
   }
 
 }

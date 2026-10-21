@@ -115,28 +115,34 @@ object JoernSlice {
       if (config.isInstanceOf[DefaultSliceConfig]) {
         configParser.reportError("No command specified! Use --help for more information.")
       } else {
-        val inputCpgPath =
-          if (
-            Files.isDirectory(config.inputPath) || !config.inputPath
-              .extension(includeDot = false)
-              .exists(_.matches("(bin|cpg)"))
-          ) {
-            generateTempCpg(config).get
-          } else {
-            config.inputPath.toString
+        val needsTempCpg = Files.isDirectory(config.inputPath) || !config.inputPath
+          .extension(includeDot = false)
+          .exists(_.matches("(bin|cpg)"))
+
+        if (needsTempCpg) {
+          FileUtil.usingTemporaryFile("joern-slice", ".bin") { tmpFile =>
+            generateTempCpg(config, tmpFile).foreach { inputCpgPath =>
+              processCpg(config, inputCpgPath)
+            }
           }
-        Using.resource(CpgBasedTool.loadFromFile(inputCpgPath)) { cpg =>
-          checkAndApplyOverlays(cpg)
-          // Slice the CPG
-          (config match {
-            case x: DataFlowConfig => DataFlowSlicing.calculateDataFlowSlice(cpg, x)
-            case x: UsagesConfig   => Option(UsageSlicing.calculateUsageSlice(cpg, x))
-            case _                 => None
-          }) match {
-            case Some(programSlice: ProgramSlice) => saveSlice(config.outputSliceFile, programSlice)
-            case None                             => println("Empty slice, no file generated.")
-          }
+        } else {
+          processCpg(config, config.inputPath.toString)
         }
+      }
+    }
+  }
+
+  private def processCpg(config: BaseConfig[?], inputCpgPath: String): Unit = {
+    Using.resource(CpgBasedTool.loadFromFile(inputCpgPath)) { cpg =>
+      checkAndApplyOverlays(cpg)
+      // Slice the CPG
+      (config match {
+        case x: DataFlowConfig => DataFlowSlicing.calculateDataFlowSlice(cpg, x)
+        case x: UsagesConfig   => Option(UsageSlicing.calculateUsageSlice(cpg, x))
+        case _                 => None
+      }) match {
+        case Some(programSlice: ProgramSlice) => saveSlice(config.outputSliceFile, programSlice)
+        case None                             => println("Empty slice, no file generated.")
       }
     }
   }
@@ -156,8 +162,7 @@ object JoernSlice {
     }
   }
 
-  private def generateTempCpg(config: BaseConfig[?]): Try[String] = {
-    val tmpFile = FileUtil.newTemporaryFile("joern-slice", ".bin")
+  private def generateTempCpg(config: BaseConfig[?], tmpFile: Path): Try[String] = {
     println(s"Generating CPG from code at ${config.inputPath.toString}")
 
     JoernParse
@@ -167,7 +172,6 @@ object JoernSlice {
       )
       .map { _ =>
         println(s"Temporary CPG has been successfully generated at ${tmpFile.toString}")
-        FileUtil.deleteOnExit(tmpFile, swallowIOExceptions = true)
         tmpFile.toString
       }
   }

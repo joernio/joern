@@ -37,9 +37,9 @@ package object language
   implicit def toAstNodeMethods(node: AstNode): AstNodeMethods           = new AstNodeMethods(node)
   implicit def toExpressionMethods(node: Expression): ExpressionMethods  = new ExpressionMethods(node)
 
-  implicit def toMethodMethods(node: Method): MethodMethods                   = new MethodMethods(node)
-  implicit def toMethodReturnMethods(node: MethodReturn): MethodReturnMethods = new MethodReturnMethods(node)
-  implicit def toCallMethods(node: Call): CallMethods                         = new CallMethods(node)
+  implicit def toMethodMethods(node: Method): MethodMethods                              = new MethodMethods(node)
+  implicit def toMethodReturnMethods(node: MethodReturn): MethodReturnMethods            = new MethodReturnMethods(node)
+  implicit def toCallMethods(node: Call): CallMethods                                    = new CallMethods(node)
   implicit def toMethodParamInMethods(node: MethodParameterIn): MethodParameterInMethods =
     new MethodParameterInMethods(node)
   implicit def toMethodParamOutMethods(node: MethodParameterOut): MethodParameterOutMethods =
@@ -134,6 +134,12 @@ package object language
 
   implicit def iterToImportTrav[A <: Import](a: IterableOnce[A]): ImportTraversal =
     new ImportTraversal(a.iterator)
+
+  implicit def singleToConfigFileTrav[A <: ConfigFile](node: A): ConfigFileTraversal =
+    new ConfigFileTraversal(Iterator.single(node))
+
+  implicit def iterToConfigFileTrav[A <: ConfigFile](node: IterableOnce[A]): ConfigFileTraversal =
+    new ConfigFileTraversal(node.iterator)
 
   // Call graph extension
   implicit def singleToMethodTravCallGraphExt[A <: Method](a: A): MethodTraversal =
@@ -292,6 +298,10 @@ trait LowPrioImplicits {
     new AstNodeDot(Iterator.single(a))
   implicit def iterOnceToAstNodeDot[A <: AstNode](a: IterableOnce[A]): AstNodeDot[A] =
     new AstNodeDot(a.iterator)
+
+  implicit def toAnnotationNodeMethods(node: Annotation): AnnotationNodeMethods = new AnnotationNodeMethods(node)
+  implicit def toAnnotationLiteralNodeMethods(node: AnnotationLiteral): AnnotationLiteralNodeMethods =
+    new AnnotationLiteralNodeMethods(node)
 
   implicit def toCfgNodeMethods(node: CfgNode): CfgNodeMethods = new CfgNodeMethods(node)
 

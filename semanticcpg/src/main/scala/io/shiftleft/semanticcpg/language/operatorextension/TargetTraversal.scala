@@ -8,6 +8,9 @@ import io.shiftleft.codepropertygraph.generated.help.Doc
 @Traversal(elementType = classOf[Expression])
 class TargetTraversal(val traversal: Iterator[Expression]) extends AnyVal {
 
+  @deprecated(
+    "this step is very imprecise, recursively checking for matching AST children. It may return more than you intended."
+  )
   @Doc(
     info = "Outer-most array access",
     longInfo = """

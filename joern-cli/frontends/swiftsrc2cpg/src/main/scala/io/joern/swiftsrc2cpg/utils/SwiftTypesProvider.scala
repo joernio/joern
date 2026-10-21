@@ -9,15 +9,14 @@ import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
 
-import java.io.{BufferedReader, InputStreamReader, StringReader}
+import java.io.{BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter, StringReader}
+import java.util.concurrent.{Callable, Executors}
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
-import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
-import scala.collection.parallel.ExecutionContextTaskSupport
-import scala.collection.{immutable, mutable}
-import scala.concurrent.ExecutionContext
-import scala.jdk.CollectionConverters.*
+import scala.annotation.tailrec
+import scala.collection.mutable
 import scala.util.matching.Regex
+import scala.util.control.NonFatal
 import scala.util.{Failure, Try, Using}
 
 /** Provides Swift type information by extracting type data from Swift compiler output. This provider uses the Swift
@@ -52,13 +51,18 @@ object SwiftTypesProvider {
     *   The fully qualified decl name (if any; not demangled)
     * @param nodeKind
     *   The AST node kind
+    * @param isStaticCall
+    *   Whether this is a call whose implicit receiver is a type (metatype), i.e., a call to a static or class function,
+    *   an enum case, or an initializer via a qualified type name
     */
   case class TypeInfo(
     filename: String,
     range: (Int, Int),
     typeFullname: Option[String],
     declFullname: Option[String],
-    nodeKind: String
+    inherits: Seq[String],
+    nodeKind: String,
+    isStaticCall: Boolean = false
   ) {
     override def equals(obj: Any): Boolean = obj match {
       case that: TypeInfo =>
@@ -77,16 +81,28 @@ object SwiftTypesProvider {
     }
   }
 
-  /** Information about a Swift type found in the source code. fullName and tpe are demangled.
+  /** Information about a Swift type found in the source code. The provided fullNames are demangled.
     *
     * @param typeFullname
     *   The fully qualified type name (if any; demangled)
     * @param declFullname
-    *   The fully qualified decl name (if any; demangled)
+    *   The fully qualified declaration name (if any; demangled)
+    * @param inherits
+    *   A sequence of fully qualified inherited type names (if any; demangled)
     * @param nodeKind
-    *   The AST node kind
+    *   The AST node kind where this information was observed
+    * @param isStaticCall
+    *   Whether this is a call whose implicit receiver is a type (see [[TypeInfo.isStaticCall]]). It is deliberately
+    *   kept in a second parameter list and thereby not part of equals / hashCode: infos for the same range are
+    *   collected in hash sets and [[io.joern.swiftsrc2cpg.utils.FullnameProvider]] picks `headOption` of such a set if
+    *   the node kind does not disambiguate. Changing the hash would change that pick.
     */
-  case class ResolvedTypeInfo(typeFullname: Option[String], declFullname: Option[String], nodeKind: String)
+  case class ResolvedTypeInfo(
+    typeFullname: Option[String],
+    declFullname: Option[String],
+    inherits: Seq[String],
+    nodeKind: String
+  )(val isStaticCall: Boolean = false)
 
   /**   - [[java.util.concurrent.ConcurrentHashMap]] provides atomic compute and computeIfAbsent operations used here to
     *     create-or-update entries and mutate the inner HashSet safely per key, without extra locks or retry loops.
@@ -149,6 +165,12 @@ object SwiftTypesProvider {
     "weak"
   )
 
+  /** Precomputed padded forms of each [[SwiftDeclModifier]] used by `removeModifier`, so the space-padded prefix and
+    * infix variants are not rebuilt on every fold step. Each entry is `(prefix = "modifier ", infix = " modifier ")`.
+    */
+  private val SwiftDeclModifierPadded: Array[(String, String)] =
+    SwiftDeclModifier.toArray.map(modifier => (s"$modifier ", s" $modifier "))
+
   /** The regular expression pattern `(?<!\\\\)` is used to split a string of spaces, but only if the space is not
     * preceded by a backslash.
     *
@@ -161,15 +183,18 @@ object SwiftTypesProvider {
     * Example: The string {{{file1.swift file\ with\ spaces.swift -o output}}} would be split into
     * {{{["file1.swift", "file\ with\ spaces.swift", "-o", "output"]}}}.
     */
-  private val SwiftCompilerArgSplit = "(?<!\\\\) "
+  private val SwiftCompilerArgSplit = java.util.regex.Pattern.compile("(?<!\\\\) ")
 
   private val SwiftCompilerIgnoredArgs =
     Seq(
       "-v",
+      "-experimental-emit-module-separately",
+      "-explicit-module-build",
       "-output-file-map",
       "-incremental",
       "-whole-module-optimization",
       "-parseable-output",
+      "-use-frontend-parseable-output",
       "-serialize-diagnostics",
       "-Wwarning",
       "-warnings-as-errors"
@@ -208,7 +233,7 @@ object SwiftTypesProvider {
     *   A sequence containing the resolved swift-demangle command path followed by the provided arguments
     */
   private def resolveSwiftDemangleCommand(args: Seq[String]): Seq[String] = {
-    val defaultCommand = SwiftDemangleCommand ++ args
+    val defaultCommand    = SwiftDemangleCommand ++ args
     val osSpecificCommand = Environment.operatingSystem match {
       case io.joern.x2cpg.utils.Environment.OperatingSystemType.Windows =>
         // The Windows installation of Swift puts swift-demangle into the PATH automatically
@@ -372,8 +397,13 @@ object SwiftTypesProvider {
     @scala.annotation.tailrec
     def loop(remaining: List[String], result: List[String]): List[String] = {
       remaining match {
-        case Nil => result.reverse
-        case head :: tail if argShouldBeFiltered(head) =>
+        case Nil                                              => result.reverse
+        case "--" :: tail                                     => loop(tail, result)
+        case "" :: tail                                       => loop(tail, result)
+        case "builtin-Swift-Compilation" :: tail              => loop(tail, result)
+        case "builtin-SwiftDriver" :: tail                    => loop(tail, result)
+        case "builtin-Swift-Compilation-Requirements" :: tail => loop(tail, result)
+        case head :: tail if argShouldBeFiltered(head)        =>
           val remainingArgs = if (tail.headOption.exists(!_.startsWith("-"))) {
             val nextFlagIdx = tail.indexWhere(_.startsWith("-"))
             if (nextFlagIdx >= 0) tail.drop(nextFlagIdx) else Nil
@@ -412,7 +442,7 @@ object SwiftTypesProvider {
     *   A list of individual arguments
     */
   private def argsFromLine(line: String): List[String] = {
-    line.replace("\\ -", " -").replace("/ -", " -").split(SwiftCompilerArgSplit).toList
+    SwiftCompilerArgSplit.split(line.replace("\\ -", " -").replace("/ -", " -").replace("\\=", "=")).toList
   }
 
   /** Lists all readable directories under the given path.
@@ -449,7 +479,7 @@ object SwiftTypesProvider {
       )
       resultSet.toSet
     } catch {
-      case e: Exception =>
+      case NonFatal(e) =>
         logger.warn(s"Error listing module directories under ${path.toFile.toString}: ${e.getMessage}")
         Set.empty
     }
@@ -475,8 +505,8 @@ object SwiftTypesProvider {
       logger.info(s"Building Swift type map from compiler log at ${path.toFile.toString}")
     )
 
-    val sourceModules    = listReadableDirectories(Paths.get(config.inputPath))
-    val swiftInvocations = compilerOutput.filter(isSwiftInvocation)
+    val sourceModules          = listReadableDirectories(Paths.get(config.inputPath))
+    val swiftInvocations       = compilerOutput.filter(isSwiftInvocation)
     val parsedSwiftInvocations =
       swiftInvocations.map(l => parseSwiftCompilerArgs(argsFromLine(l)) ++ SwiftCompilerDumpOptions).filter { args =>
         val moduleNameIndex = args.indexOf("-module-name")
@@ -502,10 +532,18 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
 
   private val mangledNameCache = java.util.concurrent.ConcurrentHashMap[String, Option[String]]()
 
-  /** Demangles a Swift symbol name to a human-readable form.
+  /** Strips common prefixes and normalizes a mangled Swift name before passing it to swift-demangle.
     *
-    * This method invokes the swift-demangle tool to convert mangled Swift symbol names into their original,
-    * human-readable form. It strips certain prefixes and replaces specific patterns before demangling.
+    * @param mangledName
+    *   The raw mangled name
+    * @return
+    *   The stripped name ready for swift-demangle
+    */
+  private def stripMangledName(mangledName: String): String = {
+    mangledName.stripPrefix("$").replace("s:e:s:", "s:").replace(":", "")
+  }
+
+  /** Demangles a Swift symbol name to a human-readable form by invoking swift-demangle for the individual name.
     *
     * @param mangledName
     *   The mangled Swift symbol name to demangle
@@ -514,8 +552,92 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     */
   private def demangle(mangledName: String): Option[String] = {
     if (mangledName.isEmpty) return None
-    val strippedMangledName = mangledName.stripPrefix("$").replace("s:e:s:", "s:").replace(":", "")
+
+    // special handling for objc symbols
+    if (mangledName.contains("@objc")) {
+      // `c:@(C)M@` is used as module prefix for objc symbols
+      // `@objc(cs)` indicates that a type follows that is an objc class
+      // `(im)` indicates that an instance method follows
+      return Some(mangledName.stripPrefix("c:@M@").stripPrefix("c:@CM@").replace("@objc(cs)", ".").replace("(im)", "."))
+    }
+
+    val strippedMangledName = stripMangledName(mangledName)
     findInStdOut(swiftDemangleCommand :+ strippedMangledName).map(_.trim)
+  }
+
+  /** Demangles all given mangled names in a single swift-demangle process invocation by piping them through stdin and
+    * pre-populates [[mangledNameCache]] with fully post-processed results.
+    *
+    * swift-demangle reads one mangled name per line from stdin and writes one demangled name per line to stdout when
+    * stdin is closed (batch mode). This avoids spawning a separate process per name.
+    *
+    * Important: when reading from stdin, swift-demangle requires the `$` prefix to recognize mangled names. Without it,
+    * names are echoed back unmodified. As command-line arguments, swift-demangle handles both forms.
+    *
+    * @param mangledNames
+    *   All mangled names to demangle (may include objc names or empty strings which are filtered out)
+    */
+  private def batchDemangle(mangledNames: Iterable[String]): Unit = {
+    // Group original mangled names by their stripped form to deduplicate swift-demangle calls.
+    // Multiple original names may map to the same stripped name (e.g. "$sfoo" and "sfoo").
+    val grouped = mangledNames
+      .filter(n => n.nonEmpty && !n.contains("@objc"))
+      .groupBy(stripMangledName)
+      .removed("")
+
+    if (grouped.isEmpty) return
+
+    // Ordered list of unique stripped names and their stdin representations.
+    // swift-demangle needs the `$` prefix when reading from stdin.
+    val orderedStripped = grouped.keys.toSeq
+    val stdinNames      = orderedStripped.map { stripped =>
+      if (stripped.startsWith("s") || stripped.startsWith("S")) s"$$$stripped" else stripped
+    }
+
+    logger.debug(s"Batch demangling ${orderedStripped.size} unique symbol names ...")
+
+    val pb = new ProcessBuilder(swiftDemangleCommand*)
+    pb.redirectError(ProcessBuilder.Redirect.DISCARD)
+    try {
+      val process = pb.start()
+      try {
+        // Read stdout on a separate thread to avoid deadlock: if the pipe buffer fills up,
+        // swift-demangle blocks on writing stdout, and we would block on writing stdin.
+        val readerExecutor = Executors.newSingleThreadExecutor()
+        val readFuture     = readerExecutor.submit(new Callable[Unit] {
+          override def call(): Unit = {
+            Using.resource(new BufferedReader(new InputStreamReader(process.getInputStream))) { reader =>
+              orderedStripped.foreach { stripped =>
+                val outputLine = reader.readLine()
+                if (outputLine != null) {
+                  val processed = Some(postProcessDemangled(outputLine.trim))
+                  // Store the final result for every original name that maps to this stripped name
+                  grouped(stripped).foreach(original => mangledNameCache.put(original, processed))
+                }
+              }
+            }
+          }
+        })
+        readerExecutor.shutdown()
+
+        // Write all names to stdin on the current thread.
+        Using.resource(new BufferedWriter(new OutputStreamWriter(process.getOutputStream))) { writer =>
+          stdinNames.foreach { name =>
+            writer.write(name)
+            writer.newLine()
+          }
+        }
+
+        // Wait for the reader thread to finish processing all output.
+        readFuture.get()
+        process.waitFor()
+      } finally {
+        process.destroyForcibly()
+      }
+    } catch {
+      case NonFatal(e) =>
+        logger.debug("Batch demangling failed, falling back to per-name demangling", e)
+    }
   }
 
   /** Removes Swift modifiers from a fullName.
@@ -529,9 +651,11 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     *   The cleaned fullName with modifiers removed
     */
   private def removeModifier(fullName: String): String = {
-    SwiftDeclModifier.foldLeft(fullName) { (cur, repl) =>
-      if (cur.startsWith(s"$repl ") || cur.contains(s" $repl ")) {
-        cur.replace(s" $repl ", " ").stripPrefix(s"$repl ")
+    // A modifier is always followed by a space, so a name without any space cannot contain one.
+    if (!fullName.contains(' ')) return fullName
+    SwiftDeclModifierPadded.foldLeft(fullName) { case (cur, (prefix, infix)) =>
+      if (cur.startsWith(prefix) || cur.contains(infix)) {
+        cur.replace(infix, " ").stripPrefix(prefix)
       } else cur
     }
   }
@@ -547,25 +671,25 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     *   Some(demangled type fullName) if successful, None otherwise
     */
   private def calculateTypeFullname(mangledName: String): Option[String] = {
-    calculateDeclFullname(mangledName).map(_.stripSuffix(".Type"))
+    calculateDeclFullname(mangledName)
   }
 
-  /** This regex is designed to clean up Swift demangled type names by extracting meaningful parts and removing internal
-    * representation details. It has three capture groups:
+  /** Regex to match demangled initializer-like signatures that contain a `->` return type followed by an `(in ...)`
+    * clause and a member after a dot.
     *
-    *   1. `([^(]+)` - Captures everything before the first opening parenthesis, Example:
-    *      `SwiftHelloWorldLib.HelloWorld.`
+    * Example match (abstracted): `... ) -> Module.Type(in _ID...).memberRest`
     *
-    *   1. `\((.+)\sin\s_[^)]+\)` - Matches a pattern with internal identifier details:
-    *      - `\(` - Literal opening parenthesis
-    *      - `(.+)` - Captures the name inside parentheses (before "in _...")
-    *      - `\sin\s_[^)]+\)` - Matches " in _" followed by an identifier and closing parenthesis
-    *   1. `(.*)` - Captures everything after the closing parenthesis. Example: `.getter : Swift.String`
+    * Capture groups:
+    *   1. `(.+)` — the module/type name before the `\(in` clause (e.g. `Module.Type`)
+    *   1. `(.+)` — the member or remainder after the final dot (e.g. `memberRest`)
     *
-    * Full example: `SwiftHelloWorldLib.HelloWorld.(suffix in _C6D5E4A96804CD03B7512662F178D1D8).getter : Swift.String`
-    * becomes: `SwiftHelloWorldLib.HelloWorld.suffix.getter : Swift.String`
+    * Structure breakdown:
+    *   - `.+\)` : any characters ending with a closing parenthesis (end of parameter list)
+    *   - `\s->\s` : literal arrow with surrounding spaces
+    *   - `(.+)\(in.+\)` : capture the module/type name that precedes the `(in ...)` clause
+    *   - `\.(.+)` : a dot followed by the captured member/signature tail
     */
-  private val MemberNameRegex: Regex = """([^(]+)\((.+)\sin\s_[^)]+\)(.*)""".r
+  private val InitNameRegex: Regex = """.+\)\s->\s(.+?)\(in.+\)\.(.+)""".r
 
   /** Basically the same as with MemberNameRegex. But here for extension function fullNames.
     *
@@ -573,12 +697,35 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     */
   private val ExtensionNameRegex: Regex = """^\(extension\sin\s([^)]+)\):(.*)""".r
 
+  private val InNameRegex: Regex = """^(.*?)(\(([^()]+)\s+in\s+_[^)]+\))(.*)$""".r
+
   private val ExtensionInSignatureRegex: Regex = """\(extension in ([^)]+)\):""".r
+
+  /** Post-processes a raw demangled name by applying transformations for extensions, initializers, modifiers, generics,
+    * and whitespace normalization.
+    *
+    * @param rawDemangled
+    *   The raw output from swift-demangle
+    * @return
+    *   The cleaned, fully qualified name
+    */
+  private def postProcessDemangled(rawDemangled: String): String = {
+    val stripped = rawDemangled match {
+      case ExtensionNameRegex(name, rest) =>
+        removeModifier(s"$name<extension>.${rest.stripPrefix(s"$name.")}")
+      case InitNameRegex(name, rest) =>
+        AstCreatorHelper.stripGenerics(removeModifier(s"$name.$rest"))
+      case other =>
+        AstCreatorHelper.stripGenerics(removeModifier(other))
+    }
+    replaceInQualifierInSignature(replaceExtensionInSignature(stripped)).replace(" ", "")
+  }
 
   /** Calculates a demangled declaration fullName from a mangled Swift declaration name.
     *
     * This method demangles the Swift declaration name, applies special transformations for member names and extensions,
-    * and cleans up the result by removing modifiers and spaces. Results are cached.
+    * and cleans up the result by removing modifiers and spaces. Results are cached. If [[batchDemangle]] has been
+    * called, the result is already in the cache.
     *
     * @param mangledName
     *   The mangled Swift declaration name
@@ -586,37 +733,60 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     *   Some(demangled declaration fullName) if successful, None otherwise
     */
   private def calculateDeclFullname(mangledName: String): Option[String] = {
-    mangledNameCache.computeIfAbsent(
-      mangledName,
-      _ =>
-        demangle(mangledName)
-          .map {
-            case ExtensionNameRegex(name, rest) =>
-              removeModifier(s"$name<extension>.${rest.stripPrefix(s"$name.")}")
-            case MemberNameRegex(parent, name, rest) =>
-              AstCreatorHelper.stripGenerics(removeModifier(s"$parent$name$rest"))
-            case other =>
-              AstCreatorHelper.stripGenerics(removeModifier(other))
-          }
-          .map { fullName =>
-            val withExtensionsFixed = replaceExtensionInSignature(fullName)
-            withExtensionsFixed.replace(" ", "")
-          }
-    )
+    mangledNameCache.computeIfAbsent(mangledName, _ => demangle(mangledName).map(postProcessDemangled))
   }
 
-  private def replaceExtensionInSignature(fullName: String): String = {
-    ExtensionInSignatureRegex.replaceAllIn(
-      fullName,
-      m => {
-        val head = m.before
-        val name = m.group(1)
-        val rest = m.after.toString.stripPrefix(s"$name.")
-        // Only extension methods are tagged with <extension> in their fullName.
-        // The signature only contains the module and type fullNames.
-        s"$head$name.$rest"
-      }
-    )
+  /** Rewrites `(extension in X):` fragments that can appear inside demangled Swift signatures. Swift demangling may
+    * embed extension context qualifiers like: `(...(extension in FooExt):Foo.bar...)` This method normalizes those
+    * occurrences by replacing: `(extension in FooExt):Foo.` with `FooExt.Foo.`
+    *
+    * It repeatedly applies the rewrite until no such fragment remains, ensuring nested or multiple occurrences are
+    * handled.
+    *
+    * @param fullName
+    *   The demangled fullName that may contain extension qualifiers.
+    * @return
+    *   The normalized fullName with extension qualifiers rewritten.
+    */
+  @scala.annotation.tailrec
+  private[utils] final def replaceExtensionInSignature(fullName: String): String = {
+    ExtensionInSignatureRegex.findFirstMatchIn(fullName) match {
+      case Some(m) =>
+        val head     = m.before
+        val name     = m.group(1)
+        val tail     = m.after.toString
+        val rest     = tail.stripPrefix(s"$name.")
+        val replaced = s"$head$name.$rest"
+        replaceExtensionInSignature(replaced)
+      case None =>
+        fullName
+    }
+  }
+
+  /** Rewrites `...(TypeName in X)...` fragments that can appear inside demangled Swift signatures. This method
+    * normalizes those occurrences by replacing: `(TypeName in X)` with `TypeName`. This is necessary because Swift
+    * demangling may embed context qualifiers like: `(...(TypeName in _ID...).member...)`
+    *
+    * It repeatedly applies the rewrite until no such fragment remains, ensuring nested or multiple occurrences are
+    * handled.
+    *
+    * @param fullName
+    *   The demangled fullName that may contain `(TypeName in X)` qualifiers.
+    * @return
+    *   The normalized fullName with `(TypeName in X)` qualifiers rewritten to just `TypeName`.
+    */
+  @tailrec
+  private[utils] final def replaceInQualifierInSignature(fullName: String): String = {
+    InNameRegex.findFirstMatchIn(fullName) match {
+      case Some(m) =>
+        val g1       = m.group(1)
+        val name     = m.group(3)
+        val g4       = m.group(4)
+        val replaced = s"$g1$name$g4"
+        replaceInQualifierInSignature(replaced)
+      case None =>
+        fullName
+    }
   }
 
   /** Resolves a TypeInfo object to a ResolvedTypeInfo by demangling type and declaration fullNames.
@@ -629,7 +799,50 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
   private def resolve(typeInfo: TypeInfo): ResolvedTypeInfo = {
     val demangledTypeFullname = typeInfo.typeFullname.flatMap(calculateTypeFullname)
     val demangledDeclFullname = typeInfo.declFullname.flatMap(calculateDeclFullname)
-    ResolvedTypeInfo(demangledTypeFullname, demangledDeclFullname, typeInfo.nodeKind)
+    val demangledInherits     = typeInfo.inherits.flatMap(calculateTypeFullname)
+    ResolvedTypeInfo(demangledTypeFullname, demangledDeclFullname, demangledInherits, typeInfo.nodeKind)(
+      typeInfo.isStaticCall
+    )
+  }
+
+  /** Parses Swift compiler JSON output and collects raw type information without demangling.
+    */
+  private def collectTypeInfoFromJson(jsonString: String, emit: TypeInfo => Unit): Unit = {
+    Using.resource(new StringReader(jsonString)) { reader =>
+      GsonTypeInfoReader.collectTypeInfo(reader, emit)
+    }
+  }
+
+  /** Resolves a TypeInfo and adds it to the type mapping.
+    *
+    * @param typeInfo
+    *   The TypeInfo to resolve and add
+    * @param result
+    *   The type mapping to update
+    */
+  private def addToMapping(typeInfo: TypeInfo, result: MutableSwiftTypeMapping): Unit = {
+    val range    = typeInfo.range
+    val filename = typeInfo.filename.replace("\\", "/")
+    val resolved = resolve(typeInfo)
+    result.compute(
+      filename,
+      {
+        case (_, null) =>
+          logger.debug(s"Generating type map for: ${typeInfo.filename}")
+          val rangeMapping = new MutableSwiftFileLocalTypeMapping()
+          rangeMapping.put(range, new mutable.HashSet[ResolvedTypeInfo]().addOne(resolved))
+          rangeMapping
+        case (_, rangeMapping) =>
+          rangeMapping.compute(
+            range,
+            {
+              case (_, null) => new mutable.HashSet[ResolvedTypeInfo]().addOne(resolved)
+              case (_, set)  => set.addOne(resolved)
+            }
+          )
+          rangeMapping
+      }
+    )
   }
 
   /** Parses Swift compiler JSON output and adds type information to the provided type mapping.
@@ -644,70 +857,72 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     */
   def mappingFromJson(jsonString: String, result: MutableSwiftTypeMapping): Unit = {
     Using.resource(new StringReader(jsonString)) { reader =>
-      GsonTypeInfoReader.collectTypeInfo(reader).foreach { typeInfo =>
-        val range    = typeInfo.range
-        val filename = typeInfo.filename
-        result.compute(
-          filename,
-          {
-            case (_, null) =>
-              logger.debug(s"Generating type map for: $filename")
-              val rangeMapping = new MutableSwiftFileLocalTypeMapping()
-              rangeMapping.put(range, new mutable.HashSet[ResolvedTypeInfo]().addOne(resolve(typeInfo)))
-              rangeMapping
-            case (_, rangeMapping) =>
-              rangeMapping.compute(
-                range,
-                {
-                  case (_, null) => new mutable.HashSet[ResolvedTypeInfo]().addOne(resolve(typeInfo))
-                  case (_, set)  => set.addOne(resolve(typeInfo))
-                }
-              )
-              rangeMapping
-          }
-        )
-      }
+      GsonTypeInfoReader.collectTypeInfo(reader, addToMapping(_, result))
     }
   }
 
   /** Retrieves Swift type mappings by executing Swift compiler commands and processing output.
     *
-    * This method executes all parsed Swift compiler invocations in parallel, processes the JSON output to extract type
-    * information, and builds a comprehensive type mapping. Progress and errors are logged appropriately.
+    * This method works in three phases:
+    *   1. Execute all Swift compiler invocations in parallel and collect raw TypeInfo objects
+    *   1. Batch-demangle all unique mangled names through a single swift-demangle process
+    *   1. Resolve TypeInfo objects (using cached demangle results) and build the type mapping
     *
     * @return
-    *   A Map containing filename-to-type mappings for Swift source files
+    *   A ConcurrentHashMap containing filename-to-type mappings for Swift source files
     */
-  def retrieveMappings(): SwiftTypeMapping = {
-    val mapping = new MutableSwiftTypeMapping
-    // We want to use the same pool for parallel Swift compiler invocations and their type mapping work
-    val pool = java.util.concurrent.Executors.newCachedThreadPool()
+  def retrieveMappings(): MutableSwiftTypeMapping = {
+    val mapping     = new MutableSwiftTypeMapping
+    val parallelism = math.max(1, Runtime.getRuntime.availableProcessors())
+    // Two bounded pools: one runs the (blocking) compiler invocations, the other runs the JSON-line
+    // callbacks. They must be separate because each invocation blocks on its ParallelLineProcessor latch,
+    // so sharing a single bounded pool would let blocked producers starve the callback workers.
+    val invocationPool = Executors.newFixedThreadPool(parallelism)
+    val workerPool     = Executors.newFixedThreadPool(parallelism)
     try {
-      val parInvocations = parsedSwiftInvocations.par
-      val ec             = ExecutionContext.fromExecutorService(pool)
-      parInvocations.tasksupport = new ExecutionContextTaskSupport(ec)
-      parInvocations.foreach { invocationCommand =>
-        Using.Manager { use =>
-          val reader = use(new InputStreamReader(inputStreamFromCommand(invocationCommand, config.inputPath)))
-          val stdOut = use(new BufferedReader(reader))
-          ParallelLineProcessor.processLinesParallel(stdOut, pool, _.startsWith("{"))(jsonString =>
-            mappingFromJson(jsonString, mapping)
-          )
-        } match {
-          case Failure(exception) =>
-            // Using.Manager swallows exceptions otherwise
-            logger.warn("Error during Swift type map creation", exception)
-          case _ => // this is fine
-        }
+      // Phase 1: Collect all raw TypeInfo (no demangling yet)
+      val allTypeInfos = new java.util.concurrent.ConcurrentLinkedQueue[TypeInfo]()
+      val futures      = parsedSwiftInvocations.map { invocationCommand =>
+        invocationPool.submit(new Callable[Unit] {
+          def call(): Unit = {
+            Using.Manager { use =>
+              val process = processFromCommand(invocationCommand, config.inputPath)
+              use(new AutoCloseable { def close(): Unit = { process.destroyForcibly().waitFor(); () } })
+              val reader = use(new InputStreamReader(process.getInputStream))
+              val stdOut = use(new BufferedReader(reader))
+              ParallelLineProcessor.processLinesParallel(stdOut, workerPool, _.startsWith("{")) { jsonString =>
+                collectTypeInfoFromJson(jsonString, allTypeInfos.add)
+              }
+            } match {
+              case Failure(exception) =>
+                // Using.Manager swallows exceptions otherwise
+                logger.warn("Error during Swift type map creation", exception)
+              case _ => // this is fine
+            }
+          }
+        })
       }
+      futures.foreach(_.get())
+
+      // Phase 2: Batch demangle all unique mangled names in a single swift-demangle process.
+      // Collect straight into a Set to deduplicate up front instead of materializing a list with one entry
+      // per name reference (batchDemangle would otherwise re-deduplicate them internally).
+      val uniqueMangledNames = mutable.Set.empty[String]
+      allTypeInfos.forEach { typeInfo =>
+        typeInfo.typeFullname.foreach(uniqueMangledNames.addOne)
+        typeInfo.declFullname.foreach(uniqueMangledNames.addOne)
+        typeInfo.inherits.foreach(uniqueMangledNames.addOne)
+      }
+      batchDemangle(uniqueMangledNames)
+
+      // Phase 3: Resolve and build mapping (demangle calls now hit the cache)
+      allTypeInfos.forEach(addToMapping(_, mapping))
+
       logger.info(s"Got ${mapping.size} type map entries.")
-      mapping.asScala.toMap.map { case (filename, mapping) =>
-        filename -> mapping.asScala.toMap.map { case (range, set) =>
-          range -> set.toSet
-        }
-      }
+      mapping
     } finally {
-      pool.shutdown()
+      invocationPool.shutdown()
+      workerPool.shutdown()
     }
   }
 

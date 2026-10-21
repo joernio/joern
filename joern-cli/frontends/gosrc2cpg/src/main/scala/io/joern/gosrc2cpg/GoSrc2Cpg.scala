@@ -22,27 +22,29 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Option(GoGlobal())) extends X
 
   private val report: Report = new Report()
 
-  private var goMod: Option[GoModHelper] = None
+  private var goMod: Option[GoModHelper]  = None
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       FileUtil.usingTemporaryDirectory("gosrc2cpgOut") { tmpDir =>
         MetaDataPass(cpg, Languages.GOLANG, config.inputPath).createAndApply()
         val astGenResults = new GoAstGenRunner(config).executeForGo(tmpDir)
-        astGenResults.foreach(astGenResult => {
+        astGenResults.foreach { astGenResult =>
           goGlobalOption
             .orElse(Option(GoGlobal()))
-            .foreach(goGlobal => {
+            .foreach { goGlobal =>
               goMod = Some(
                 GoModHelper(
                   Some(astGenResult.modulePath),
                   astGenResult.parsedModFile
-                    .flatMap(modFile => GoAstJsonParser.readModFile(Paths.get(modFile)).map(x => x))
+                    .flatMap(modFile => GoAstJsonParser.readModFile(Paths.get(modFile))),
+                  Some(config.inputPath)
                 )
               )
               goGlobal.mainModule = goMod.flatMap(modHelper => modHelper.getModMetaData().map(mod => mod.module.name))
               InitialMainSrcPass(cpg, astGenResult.parsedFiles, config, goMod.get, goGlobal, tmpDir).createAndApply()
-              if goGlobal.pkgLevelVarAndConstantAstMap.size() > 0 then
+              if (goGlobal.pkgLevelVarAndConstantAstMap.size() > 0) {
                 PackageCtorCreationPass(cpg, config, goGlobal).createAndApply()
+              }
               if (config.fetchDependencies) {
                 goGlobal.processingDependencies = true
                 DownloadDependenciesPass(cpg, goMod.get, goGlobal, config).process()
@@ -51,8 +53,8 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Option(GoGlobal())) extends X
               AstCreationPass(cpg, astGenResult.parsedFiles, config, goMod.get, goGlobal, tmpDir, report)
                 .createAndApply()
               report.print()
-            })
-        })
+            }
+        }
       }
     }
   }

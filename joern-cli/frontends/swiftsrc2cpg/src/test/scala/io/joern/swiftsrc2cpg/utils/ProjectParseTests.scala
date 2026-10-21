@@ -3,7 +3,6 @@ package io.joern.swiftsrc2cpg.utils
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.passes.AstCreationPass
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
-import io.joern.swiftsrc2cpg.utils.AstGenRunner
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
@@ -30,7 +29,7 @@ class ProjectParseTests extends SwiftSrc2CpgSuite with BeforeAndAfterAll {
       |// ❌
       |// 1️⃣ Some comment ...
       |func main() {
-      |  print("6️⃣ Something: \(foo?.bar ?? 0)")  // 💥 May crash
+      |  print("6️⃣ Something: \(foo?.bar ?? 0)") // 💥 May crash
       |  print("✅ Done!")
       |}
       |""".stripMargin
@@ -45,7 +44,7 @@ class ProjectParseTests extends SwiftSrc2CpgSuite with BeforeAndAfterAll {
   private object ProjectParseTestsFixture {
     def apply(projectDir: Path)(f: Cpg => Unit): Unit = {
       FileUtil.usingTemporaryDirectory("swiftsrc2cpgTests") { tmpDir =>
-        val cpg = newEmptyCpg()
+        val cpg    = newEmptyCpg()
         val config = Config()
           .withInputPath(projectDir.toString)
           .withOutputPath(tmpDir.toString)
@@ -60,13 +59,13 @@ class ProjectParseTests extends SwiftSrc2CpgSuite with BeforeAndAfterAll {
   "Parsing a project" should {
 
     "handle utf8 correctly" in ProjectParseTestsFixture(projectWithUtf8) { cpg =>
-      val List(op) = cpg.call.nameExact(Operators.elvis).l
-      op.offset shouldBe Some(99)
-      op.offsetEnd shouldBe Some(112)
+      val List(op)    = cpg.call.nameExact(Operators.elvis).l
+      val fileContent = cpg.file.content.head
+      fileContent.substring(op.offset.get, op.offsetEnd.get) shouldBe op.code
       cpg.method.nameExact("main").content.head.linesIterator.map(_.trim).toSeq shouldBe Seq(
         "func main() {",
-        "print(\"6?? Something: \\(foo?.bar ?? 0)\")  // ? May crash",
-        "print(\"? Done!\")",
+        """print("6️⃣ Something: \(foo?.bar ?? 0)") // 💥 May crash""",
+        """print("✅ Done!")""",
         "}"
       )
     }

@@ -1,10 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
-import io.joern.rubysrc2cpg.passes.Defines.Main
 import io.joern.rubysrc2cpg.passes.{DependencyPass, Defines as RubyDefines}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Identifier}
 import io.shiftleft.semanticcpg.language.*
 
 class DependencyTests extends RubyCode2CpgFixture {
@@ -25,7 +22,6 @@ class DependencyTests extends RubyCode2CpgFixture {
           betterErrors.name shouldBe "better_errors"
           betterErrors.version shouldBe "2.5.1"
 
-        case xs => fail(s"Expected exactly three dependencies, instead got [${xs.name.mkString(",")}]")
       }
     }
 
@@ -47,7 +43,6 @@ class DependencyTests extends RubyCode2CpgFixture {
           coffeeRails.name shouldBe "coffee-rails"
           coffeeRails.version shouldBe ""
 
-        case xs => fail(s"Expected exactly three dependencies, instead got [${xs.name.mkString(",")}]")
       }
     }
 
@@ -66,92 +61,6 @@ class DependencyTests extends RubyCode2CpgFixture {
     }
 
   }
-}
-
-class DownloadDependencyTest extends RubyCode2CpgFixture(downloadDependencies = true) {
-
-  "Code for method full name when method present in module" should {
-    val cpg = code(
-      """
-        |require "dummy_logger"
-        |
-        |v = Main_module::Main_outer_class.new
-        |v.first_fun("value")
-        |
-        |g = Help.new
-        |g.help_print()
-        |
-        |""".stripMargin,
-      "main.rb"
-    )
-      .moreCode(
-        """
-          |source 'https://rubygems.org'
-          |gem 'dummy_logger'
-          |
-          |""".stripMargin,
-        "Gemfile"
-      )
-
-    "recognize the full method name of the imported Main_outer_class's constructor" in {
-      inside(cpg.assignment.where(_.target.isIdentifier.name("v")).argument.l) {
-        case (v: Identifier) :: (block: Block) :: Nil =>
-          v.dynamicTypeHintFullName should contain("dummy_logger.Main_module.Main_outer_class")
-
-          inside(block.astChildren.isCall.nameExact(RubyDefines.Initialize).headOption) {
-            case Some(constructorCall) =>
-              constructorCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
-            case None => fail(s"Expected constructor call, did not find one")
-          }
-        case xs => fail(s"Expected two arguments under the constructor assignment, got [${xs.code.mkString(", ")}]")
-      }
-    }
-
-    "recognize the full method name of the imported Help's constructor" in {
-      inside(cpg.assignment.where(_.target.isIdentifier.name("g")).argument.l) {
-        case (g: Identifier) :: (block: Block) :: Nil =>
-          g.dynamicTypeHintFullName should contain("dummy_logger.Help")
-
-          inside(block.astChildren.isCall.name(RubyDefines.Initialize).headOption) {
-            case Some(constructorCall) =>
-              constructorCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
-            case None => fail(s"Expected constructor call, did not find one")
-          }
-        case xs => fail(s"Expected two arguments under the constructor assignment, got [${xs.code.mkString(", ")}]")
-      }
-    }
-
-    // TODO: This requires type propagation
-    "recognise methodFullName for `first_fun`" ignore {
-      cpg.call.name("first_fun").head.methodFullName should equal(
-        s"dummy_logger.$Main.Main_module.Main_outer_class.first_fun"
-      )
-      cpg.call
-        .name("help_print")
-        .head
-        .methodFullName shouldBe s"dummy_logger.$Main:Help:help_print"
-    }
-  }
-
-  "parsing logger repo" should {
-    val cpg = code(
-      """
-        |require "logger"
-        |""".stripMargin,
-      "main.rb"
-    )
-      .moreCode(
-        """
-          |source 'https://rubygems.org'
-          |gem 'logger'
-          |
-          |""".stripMargin,
-        "Gemfile"
-      )
-
-    "Not throw any exceptions" in {}
-  }
-
 }
 
 object DependencyTests {

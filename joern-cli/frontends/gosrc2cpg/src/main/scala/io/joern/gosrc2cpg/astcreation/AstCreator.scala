@@ -8,6 +8,7 @@ import io.joern.x2cpg.astgen.{AstGenNodeBuilder, BaseNodeInfo}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import org.slf4j.{Logger, LoggerFactory}
@@ -44,9 +45,13 @@ class AstCreator(
   protected val scope: Scope[String, (NewNode, String), NewNode] = new Scope()
   protected val aliasToNameSpaceMapping: mutable.Map[String, String] = mutable.Map.empty
   protected val lineNumberMapping: Map[Int, String]                  = positionLookupTables
-  protected val declaredPackageName = parserResult.json(ParserKeys.Name)(ParserKeys.Name).str
+  protected val declaredPackageName   = parserResult.json(ParserKeys.Name)(ParserKeys.Name).str
   protected val fullyQualifiedPackage =
     goMod.getNameSpace(parserResult.fullPath, declaredPackageName)
+
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] = AstCreator.offsetSource
+
+  override protected def unadjustedOffset(node: BaseNodeInfo[?]): Option[(Int, Int)] = AstCreator.unadjustedOffset(node)
 
   override def createAst(): DiffGraphBuilder = {
     val rootNode = createParserNodeInfo(parserResult.json)
@@ -57,8 +62,8 @@ class AstCreator(
   }
 
   private def astForTranslationUnit(rootNode: ParserNodeInfo): Ast = {
-    val name     = s"$fullyQualifiedPackage.${parserResult.filename}"
-    val fullName = s"$relPathFileName:$name"
+    val name                    = s"$fullyQualifiedPackage.${parserResult.filename}"
+    val fullName                = s"$relPathFileName:$name"
     val fakeGlobalMethodForFile =
       methodNode(
         rootNode,
@@ -74,7 +79,7 @@ class AstCreator(
     scope.pushNewScope(fakeGlobalMethodForFile)
     val blockNode_   = blockNode(rootNode, Defines.empty, Defines.anyTypeName)
     val methodReturn = methodReturnNode(rootNode, Defines.anyTypeName)
-    val declsAsts = rootNode
+    val declsAsts    = rootNode
       .json(ParserKeys.Decls)
       .arr
       .flatMap { item =>
@@ -107,4 +112,11 @@ class AstCreator(
   protected def astForNode(json: Value): Seq[Ast] = {
     astForNode(createParserNodeInfo(json))
   }
+}
+
+object AstCreator {
+
+  val offsetSource: Option[OffsetUtils.OffsetSourceType] = None
+
+  def unadjustedOffset(node: BaseNodeInfo[?]): Option[(Int, Int)] = None
 }

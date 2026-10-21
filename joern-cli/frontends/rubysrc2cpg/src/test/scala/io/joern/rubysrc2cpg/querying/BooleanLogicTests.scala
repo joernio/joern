@@ -136,6 +136,40 @@ class BooleanLogicTests extends RubyCode2CpgFixture {
     six.code shouldBe "6"
   }
 
+  "multi-line `&&` with operator at the start of a new line should be parsed as a single logical expression" in {
+    val cpg = code("""
+                     |1
+                     |  && 2
+                     |  && 3
+                     |""".stripMargin)
+
+    val List(andOuter, andInner) = cpg.call.methodFullName(Operators.logicalAnd).l
+    val List(ab, c)              = andOuter.argument.l
+    ab shouldBe andInner
+    c.code shouldBe "3"
+
+    val List(a, b) = andInner.argument.l
+    a.code shouldBe "1"
+    b.code shouldBe "2"
+  }
+
+  "multi-line `||` with operator at the start of a new line should be parsed as a single logical expression" in {
+    val cpg = code("""
+                     |1
+                     |  || 2
+                     |  || 3
+                     |""".stripMargin)
+
+    val List(orOuter, orInner) = cpg.call.methodFullName(Operators.logicalOr).l
+    val List(ab, c)            = orOuter.argument.l
+    ab shouldBe orInner
+    c.code shouldBe "3"
+
+    val List(a, b) = orInner.argument.l
+    a.code shouldBe "1"
+    b.code shouldBe "2"
+  }
+
   "`not` binds tighter than `or`" in {
     val cpg = code("""
                      |1 or not 2

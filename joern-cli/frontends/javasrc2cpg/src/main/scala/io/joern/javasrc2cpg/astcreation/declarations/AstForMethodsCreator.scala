@@ -1,17 +1,9 @@
 package io.joern.javasrc2cpg.astcreation.declarations
 
-import io.joern.x2cpg.utils.AstPropertiesUtil.*
-import com.github.javaparser.ast.NodeList
-import com.github.javaparser.ast.body.{
-  CallableDeclaration,
-  CompactConstructorDeclaration,
-  ConstructorDeclaration,
-  FieldDeclaration,
-  MethodDeclaration,
-  Parameter,
-  VariableDeclarator
-}
-import com.github.javaparser.ast.stmt.{BlockStmt, ExplicitConstructorInvocationStmt}
+import com.github.javaparser.ast.Node
+import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, Type}
+import com.github.javaparser.ast.body.*
+import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt
 import com.github.javaparser.resolution.declarations.{
   ResolvedMethodDeclaration,
   ResolvedMethodLikeDeclaration,
@@ -19,108 +11,179 @@ import com.github.javaparser.resolution.declarations.{
 }
 import com.github.javaparser.resolution.types.ResolvedType
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
+import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserParameterDeclaration
+import io.joern.javasrc2cpg.astcreation.declarations.AstForMethodsCreator.PartialConstructorDeclaration
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
+import io.joern.javasrc2cpg.scope.JavaScopeElement.fullName
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.Util.*
+import io.joern.javasrc2cpg.util.{NameConstants, Util}
+import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AstNodeNew,
-  NewBlock,
-  NewCall,
-  NewFieldIdentifier,
-  NewIdentifier,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodReturn,
-  NewModifier
-}
-import io.shiftleft.codepropertygraph.generated.{
-  DispatchTypes,
-  EdgeTypes,
-  EvaluationStrategies,
-  ModifierTypes,
-  NodeTypes,
-  Operators,
-  nodes
-}
-import io.joern.javasrc2cpg.scope.JavaScopeElement.fullName
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.*
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
-import scala.util.{Failure, Success, Try}
-import com.github.javaparser.ast.Node
-import com.github.javaparser.ast.`type`.ClassOrInterfaceType
-import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserParameterDeclaration
-import io.joern.javasrc2cpg.astcreation.declarations.AstForMethodsCreator.PartialConstructorDeclaration
-import io.joern.javasrc2cpg.util.{NameConstants, Util}
+import scala.util.Try
 
 private[declarations] trait AstForMethodsCreator { this: AstCreator =>
+
+  def astForAnnotationMemberDeclaration(member: AnnotationMemberDeclaration): Ast = {
+    val methodNode = createPartialMethod(member)
+
+    val (expectedType, returnTypeFullName, thisAst) =
+      pushMethodScopeAndThis(member, methodNode, member.getType, member.getTypeAsString, Nil, isStatic = false)
+
+    // Must run before the body is built: a default value may reference nested/local types whose binary names
+    // are namespaced under this method's fullName.
+    setMethodFullNameAndSignature(methodNode, member.getNameAsString, returnTypeFullName, Option(Nil), 0)
+
+    val bodyAst = member.getDefaultValue.toScala
+      .map { defaultValue =>
+        val returnStmt = returnNode(defaultValue, s"return ${code(defaultValue)}")
+        val valueAsts  = astsForExpression(defaultValue, expectedType)
+        blockAst(blockNode(member), returnAst(returnStmt, valueAsts) :: Nil)
+      }
+      .getOrElse(Ast(NewBlock()))
+
+    // Annotation elements are always implicitly public, non-static, and have no concrete dispatch target.
+    val modifiers = List(
+      modifierNode(member, ModifierTypes.PUBLIC),
+      modifierNode(member, ModifierTypes.ABSTRACT),
+      modifierNode(member, ModifierTypes.VIRTUAL)
+    )
+    val annotationAsts = member.getAnnotations.asScala.map(astForAnnotationExpr).toSeq
+
+    finishMethodAst(methodNode, member.getType, returnTypeFullName, thisAst, Nil, bodyAst, modifiers, annotationAsts)
+  }
+
   def astForMethod(methodDeclaration: MethodDeclaration): Ast = {
     val methodNode = createPartialMethod(methodDeclaration)
 
     val typeParameters = getIdentifiersForTypeParameters(methodDeclaration)
-    methodDeclaration.getType
+    val maybeResolved  = tryWithSafeStackOverflow(methodDeclaration.resolve()).toOption
 
-    val maybeResolved = tryWithSafeStackOverflow(methodDeclaration.resolve()).toOption
-    val expectedReturnType = tryWithSafeStackOverflow(
-      symbolSolver.toResolvedType(methodDeclaration.getType, classOf[ResolvedType])
-    ).toOption
-    val simpleMethodReturnType =
-      tryWithSafeStackOverflow(methodDeclaration.getTypeAsString).map(Util.stripGenericTypes).toOption
-    val returnTypeFullName = expectedReturnType
-      .flatMap(typeInfoCalc.fullName)
-      .orElse(simpleMethodReturnType.flatMap(scope.lookupType(_)))
-      .orElse(tryWithSafeStackOverflow(methodDeclaration.getType).toOption.collect { case t: ClassOrInterfaceType =>
-        scope.lookupType(t.getNameAsString)
-      }.flatten)
-      .orElse(typeParameters.find(typeParam => simpleMethodReturnType.contains(typeParam.name)).map(_.typeFullName))
-
-    scope.pushMethodScope(
+    val (_, returnTypeFullName, thisAst) = pushMethodScopeAndThis(
+      methodDeclaration,
       methodNode,
-      ExpectedType(returnTypeFullName, expectedReturnType),
+      methodDeclaration.getType,
+      methodDeclaration.getTypeAsString,
+      typeParameters,
       methodDeclaration.isStatic()
     )
-    typeParameters.foreach { typeParameter => scope.addTypeParameter(typeParameter.name, typeParameter.typeFullName) }
 
-    val genericSignature = binarySignatureCalculator.methodBinarySignature(methodDeclaration)
-    methodNode.genericSignature(genericSignature)
+    // Must run after type parameters are registered in scope (done above by pushMethodScopeAndThis), since
+    // the signature may reference them as type variables rather than resolved classes.
+    methodNode.genericSignature(binarySignatureCalculator.methodBinarySignature(methodDeclaration))
 
     val parameterAsts  = astsForParameterList(methodDeclaration.getParameters.asScala.toList)
     val parameterTypes = argumentTypesForMethodLike(maybeResolved)
-    val signature      = composeSignature(returnTypeFullName, parameterTypes, parameterAsts.size)
+
+    // Must run before the body is built: nested/local types declared in the body are namespaced under this
+    // method's fullName.
+    setMethodFullNameAndSignature(
+      methodNode,
+      methodDeclaration.getNameAsString,
+      returnTypeFullName,
+      parameterTypes,
+      parameterAsts.size
+    )
+
+    val bodyAst = methodDeclaration.getBody.toScala
+      .map(astForBlockStatement(_, includeTemporaryLocals = true))
+      .getOrElse(Ast(NewBlock()))
+
+    val modifiers      = modifiersForMethod(methodDeclaration)
+    val annotationAsts = methodDeclaration.getAnnotations.asScala.map(astForAnnotationExpr).toSeq
+
+    finishMethodAst(
+      methodNode,
+      methodDeclaration.getType,
+      returnTypeFullName,
+      thisAst,
+      parameterAsts,
+      bodyAst,
+      modifiers,
+      annotationAsts
+    )
+  }
+
+  private def setMethodFullNameAndSignature(
+    methodNode: NewMethod,
+    name: String,
+    returnTypeFullName: Option[String],
+    parameterTypes: Option[List[String]],
+    parameterCount: Int
+  ): Unit = {
+    val signature      = composeSignature(returnTypeFullName, parameterTypes, parameterCount)
     val namespaceName  = scope.enclosingTypeDecl.fullName.getOrElse(Defines.UnresolvedNamespace)
-    val methodFullName = composeMethodFullName(namespaceName, methodDeclaration.getNameAsString, signature)
+    val methodFullName = composeMethodFullName(namespaceName, name, signature)
 
     methodNode
       .fullName(methodFullName)
       .signature(signature)
+  }
 
-    val thisNode = Option.when(!methodDeclaration.isStatic) {
-      val typeFullName = scope.enclosingTypeDecl.fullName
-      thisNodeForMethod(methodDeclaration, typeFullName)
-    }
-    val thisAst = thisNode.map(Ast(_)).toList
+  /** Resolves the return type, pushes the method scope, registers type parameters, and wires up the implicit `this`
+    * parameter (registering it in scope so bodies built afterwards may reference it implicitly). Must be followed by a
+    * call to [[finishMethodAst]] once parameters and the body have been built.
+    *
+    * @return
+    *   the resolved expected return type, the resolved return type full name, and the `this` parameter as an AST (empty
+    *   for static methods)
+    */
+  private def pushMethodScopeAndThis(
+    originNode: Node,
+    methodNode: NewMethod,
+    returnType: => Type,
+    returnTypeAsString: => String,
+    typeParameters: List[NewIdentifier],
+    isStatic: Boolean
+  ): (ExpectedType, Option[String], List[Ast]) = {
+    val expectedReturnType = tryWithSafeStackOverflow(
+      symbolSolver.toResolvedType(returnType, classOf[ResolvedType])
+    ).toOption
+    val simpleReturnType =
+      tryWithSafeStackOverflow(returnTypeAsString).map(Util.stripGenericTypes).toOption
+    val returnTypeFullName = expectedReturnType
+      .flatMap(typeInfoCalc.fullName)
+      .orElse(simpleReturnType.flatMap(scope.lookupType(_)))
+      .orElse(tryWithSafeStackOverflow(returnType).toOption.collect { case t: ClassOrInterfaceType =>
+        scope.lookupType(t.getNameAsString)
+      }.flatten)
+      .orElse(typeParameters.find(typeParam => simpleReturnType.contains(typeParam.name)).map(_.typeFullName))
+
+    val expectedType = ExpectedType(returnTypeFullName, expectedReturnType)
+    scope.pushMethodScope(methodNode, expectedType, isStatic)
+    typeParameters.foreach { typeParameter => scope.addTypeParameter(typeParameter.name, typeParameter.typeFullName) }
+
+    val thisNode = Option.when(!isStatic)(thisNodeForMethod(originNode, scope.enclosingTypeDecl.fullName))
+    val thisAst  = thisNode.map(Ast(_)).toList
 
     thisNode.foreach { node =>
       scope.enclosingMethod.get.addParameter(node, scope.enclosingTypeDecl.get.typeDecl.genericSignature)
     }
 
-    val bodyAst = methodDeclaration.getBody.toScala
-      .map(astForBlockStatement(_, includeTemporaryLocals = true))
-      .getOrElse(Ast(NewBlock()))
-    val (lineNr, columnNr) = tryWithSafeStackOverflow(methodDeclaration.getType) match {
-      case Success(typ) => (line(typ), column(typ))
-      case Failure(_)   => (line(methodDeclaration), column(methodDeclaration))
-    }
+    (expectedType, returnTypeFullName, thisAst)
+  }
+
+  /** Pops the method scope pushed by [[pushMethodScopeAndThis]] and assembles the completed method AST from its
+    * already-built parts. The method's fullName/signature must already be set (see [[setMethodFullNameAndSignature]])
+    * before this is called.
+    */
+  private def finishMethodAst(
+    methodNode: NewMethod,
+    returnType: => Type,
+    returnTypeFullName: Option[String],
+    thisAst: List[Ast],
+    parameterAsts: Seq[Ast],
+    bodyAst: Ast,
+    modifiers: List[NewModifier],
+    annotationAsts: Seq[Ast]
+  ): Ast = {
     val methodReturn =
-      methodReturnNode(
-        methodDeclaration.getType,
-        returnTypeFullName.getOrElse(defaultTypeFallback(methodDeclaration.getType))
-      )
-
-    val annotationAsts = methodDeclaration.getAnnotations.asScala.map(astForAnnotationExpr).toSeq
-
-    val modifiers = modifiersForMethod(methodDeclaration)
+      methodReturnNode(returnType, returnTypeFullName.getOrElse(defaultTypeFallback(returnType)))
 
     scope.popMethodScope()
 
@@ -145,7 +208,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       methodReturnNode(parameter, parameterTypeFullName)
 
     val genericSignature = binarySignatureCalculator.recordParameterAccessorBinarySignature(parameter)
-    val methodRoot = methodNode(
+    val methodRoot       = methodNode(
       parameter,
       parameterName,
       s"public ${code(parameter.getType)} ${parameterName}()",
@@ -232,7 +295,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
   private def getIdentifiersForTypeParameters(methodDeclaration: CallableDeclaration[?]): List[NewIdentifier] = {
     methodDeclaration.getTypeParameters.asScala.map { typeParameter =>
-      val name = typeParameter.getNameAsString
+      val name         = typeParameter.getNameAsString
       val typeFullName = tryWithSafeStackOverflow(typeParameter.getTypeBound.asScala.headOption).toOption.flatten
         .flatMap(typeInfoCalc.fullName)
         .getOrElse(TypeConstants.Object)
@@ -269,7 +332,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   def astForDefaultConstructor(originNode: Node, instanceFieldDeclarations: List[FieldDeclaration]): Ast = {
     val parameters       = scope.enclosingTypeDecl.get.recordParameters
     val genericSignature = binarySignatureCalculator.defaultConstructorSignature(parameters)
-    val constructorNode = NewMethod()
+    val constructorNode  = NewMethod()
       .name(io.joern.x2cpg.Defines.ConstructorMethodName)
       .filename(filename)
       .isExternal(false)
@@ -286,7 +349,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
     val typeFullName = scope.enclosingTypeDecl.fullName
     val signature    = composeSignature(Option(TypeConstants.Void), resolvedParameterTypes, parameterAsts.size)
-    val fullName = composeMethodFullName(
+    val fullName     = composeMethodFullName(
       typeFullName.getOrElse(Defines.UnresolvedNamespace),
       Defines.ConstructorMethodName,
       signature
@@ -374,11 +437,11 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   }
 
   private def astForParameter(parameter: Parameter, childNum: Int): Ast = {
-    val maybeArraySuffix = if (parameter.isVarArgs) "[]" else ""
+    val maybeArraySuffix     = if (parameter.isVarArgs) "[]" else ""
     val rawParameterTypeName =
       tryWithSafeStackOverflow(parameter.getTypeAsString).map(Util.stripGenericTypes).getOrElse(NameConstants.Unknown)
     val parameterType = tryWithSafeStackOverflow(parameter.getType).toOption
-    val typeFullName =
+    val typeFullName  =
       parameterType
         .flatMap(typeInfoCalc.fullName)
         .orElse(scope.lookupType(rawParameterTypeName))
@@ -493,15 +556,15 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         case compactConstructor: CompactConstructorDeclaration => scope.enclosingTypeDecl.get.recordParameters
       }
       val parameterAsts = astsForParameterList(parameters).toList
-      val paramTypes = constructorDeclaration match {
-        case constructor: ConstructorDeclaration => argumentTypesForMethodLike(maybeResolved)
+      val paramTypes    = constructorDeclaration match {
+        case constructor: ConstructorDeclaration        => argumentTypesForMethodLike(maybeResolved)
         case constructor: CompactConstructorDeclaration =>
           val resolvedParams = parameters.flatMap(param => tryWithSafeStackOverflow(param.resolve()).toOption).toList
           calcParameterTypes(resolvedParams, ResolvedTypeParametersMap.empty())
       }
       val signature    = composeSignature(Some(TypeConstants.Void), paramTypes, parameterAsts.size)
       val typeFullName = scope.enclosingTypeDecl.fullName
-      val fullName =
+      val fullName     =
         composeMethodFullName(
           typeFullName.getOrElse(Defines.UnresolvedNamespace),
           Defines.ConstructorMethodName,
@@ -537,8 +600,8 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         case _ => Nil
       }
 
-      val bodyStatements = constructorDeclaration.getBody.getStatements.asScala.toList
-      val statementsAsts = bodyStatements.flatMap(astsForStatement)
+      val bodyStatements   = constructorDeclaration.getBody.getStatements.asScala.toList
+      val statementsAsts   = bodyStatements.flatMap(astsForStatement)
       val bodyContainsThis = bodyStatements.headOption
         .collect { case consInvocation: ExplicitConstructorInvocationStmt => consInvocation.isThis }
         .getOrElse(false)
@@ -622,12 +685,21 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       )
     }
 
-    val thisNode = partialConstructor.thisNode
+    val thisNode               = partialConstructor.thisNode
     val assignmentsForCaptures =
-      if (partialConstructor.startsWithThisCall)
+      if (partialConstructor.startsWithThisCall) {
+        // Register the synthetic capture parameters for this constructor's this() call
+        // so that REF edges can be created correctly in addArgsToPartialInits
+        partialConstructor.bodyStatementAsts.headOption
+          .flatMap(_.root)
+          .collect { case initCall: NewCall => initCall }
+          .foreach { initCall =>
+            scope.enclosingTypeDecl.foreach(_.registerThisCallCaptureParams(initCall, paramsForCaptures))
+          }
         Nil
-      else
+      } else {
         paramsForCaptures.map(assignmentForCapture(partialConstructor.originNode, _, partialConstructor.thisNode))
+      }
 
     val bodyAst =
       astForConstructorBody(partialConstructor.originNode, partialConstructor.bodyStatementAsts, assignmentsForCaptures)
@@ -679,10 +751,13 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   /** Constructor and Method declarations share a lot of fields, so this method adds the fields they have in common.
     * `fullName` and `signature` are omitted
     */
-  private def createPartialMethod(declaration: CallableDeclaration[?] | CompactConstructorDeclaration): NewMethod = {
+  private def createPartialMethod(
+    declaration: CallableDeclaration[?] | CompactConstructorDeclaration | AnnotationMemberDeclaration
+  ): NewMethod = {
     val methodCode = declaration match {
       case callableDeclaration: CallableDeclaration[?]       => callableDeclaration.getDeclarationAsString.trim
       case compactConstructor: CompactConstructorDeclaration => code(compactConstructor)
+      case annotationMember: AnnotationMemberDeclaration     => code(annotationMember)
     }
     val columnNumber = declaration.getBegin.map(x => Integer.valueOf(x.column)).toScala
     val endLine      = declaration.getEnd.map(x => Integer.valueOf(x.line)).toScala
@@ -695,6 +770,8 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         binarySignatureCalculator.methodBinarySignature(callableDeclaration)
       case compactConstructor: CompactConstructorDeclaration =>
         binarySignatureCalculator.defaultConstructorSignature(scope.enclosingTypeDecl.get.recordParameters)
+      case annotationMember: AnnotationMemberDeclaration =>
+        binarySignatureCalculator.annotationMemberBinarySignature(annotationMember)
     }
     methodNode(
       declaration,

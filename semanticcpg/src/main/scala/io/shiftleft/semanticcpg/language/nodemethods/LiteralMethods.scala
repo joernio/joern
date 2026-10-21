@@ -18,19 +18,19 @@ class LiteralMethods(val literal: Literal) extends AnyVal with NodeExtension {
 
     stringDelimiters
       .filter(literal.code.startsWith(_))
-      .map(delimiter =>
+      .map { delimiter =>
         val start = literal.code.indexOf(delimiter) + delimiter.length
         val end   = literal.code.lastIndexOf(delimiter)
 
         literal.code.substring(start, end)
-      )
+      }
       .headOption
       .getOrElse(literal.code)
   }
 }
 
 object LiteralMethods {
-  val logger: Logger = LoggerFactory.getLogger(getClass)
+  val logger: Logger                        = LoggerFactory.getLogger(getClass)
   val delimiters: Map[String, List[String]] = HashMap[String, List[String]](
     Languages.JAVASRC    -> List("\"\"\"", "\""),
     Languages.JAVA       -> List("\"\"\"", "\""),

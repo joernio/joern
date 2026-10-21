@@ -9,19 +9,10 @@ import io.joern.javasrc2cpg.scope.NodeTypeInfo
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.javasrc2cpg.util.Util.composeMethodFullName
-import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.shiftleft.codepropertygraph.generated.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewBlock,
-  NewControlStructure,
-  NewLiteral,
-  NewLocal,
-  NewMember,
-  NewMethodParameterIn,
-  NewNode
-}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.joern.x2cpg.{Ast, Defines}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyDefaults}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
@@ -49,24 +40,13 @@ trait AstForForLoopsCreator { this: AstCreator =>
   def astsForFor(stmt: ForStmt): List[Ast] = {
     val forContext       = new ForStatementContext(stmt, new CombinedTypeSolver())
     val patternPartition = partitionPatternAstsByScope(stmt)
+    val forCode          = getForCode(stmt)
 
-    val forNode =
-      NewControlStructure()
-        .controlStructureType(ControlStructureTypes.FOR)
-        .code(getForCode(stmt))
-        .lineNumber(line(stmt))
-        .columnNumber(column(stmt))
-
-    val initAsts =
-      stmt.getInitialization.asScala.flatMap(astsForExpression(_, expectedType = ExpectedType.empty))
-
-    val compareAsts = stmt.getCompare.toScala.toList.flatMap {
-      astsForExpression(_, ExpectedType.Boolean)
-    }
+    val initAsts    = stmt.getInitialization.asScala.flatMap(astsForExpression(_, expectedType = ExpectedType.empty))
+    val compareAsts = stmt.getCompare.toScala.toList.flatMap(astsForExpression(_, ExpectedType.Boolean))
 
     val updateAsts = stmt.getUpdate.asScala.toList match {
-      case Nil => Nil
-
+      case Nil         => Nil
       case expressions =>
         scope.pushBlockScope()
         scope.addLocalsForPatternsToEnclosingBlock(
@@ -86,19 +66,8 @@ trait AstForForLoopsCreator { this: AstCreator =>
 
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedByStatement)
 
-    val ast = Ast(forNode)
-      .withChildren(initAsts)
-      .withChildren(compareAsts)
-      .withChildren(updateAsts)
-      .withChild(bodyAst)
-
-    val astWithConditionEdge = compareAsts.flatMap(_.root) match {
-      case c :: Nil =>
-        ast.withConditionEdge(forNode, c)
-      case _ => ast
-    }
-
-    patternLocals :+ astWithConditionEdge
+    val ast = forAst(stmt, Nil, initAsts.toSeq, compareAsts, updateAsts, Seq(bodyAst), Some(forCode))
+    patternLocals :+ ast
   }
 
   def astForForEach(stmt: ForEachStmt): Seq[Ast] = {
@@ -128,7 +97,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
     val variableAssignAst      = astForIterableForEachItemAssign(stmt, iteratorLocalNode, variableLocal)
 
     val bodyPrefixAsts = Seq(Ast(variableLocal), variableAssignAst)
-    val bodyAst = stmt.getBody match {
+    val bodyAst        = stmt.getBody match {
       case block: BlockStmt =>
         astForBlockStatement(block, prefixAsts = bodyPrefixAsts)
 
@@ -140,16 +109,8 @@ trait AstForForLoopsCreator { this: AstCreator =>
           .withChildren(bodyStmtAsts)
     }
 
-    val forNode =
-      NewControlStructure()
-        .controlStructureType(ControlStructureTypes.WHILE)
-        .code(ControlStructureTypes.FOR)
-        .lineNumber(lineNo)
-        .columnNumber(column(stmt))
-
-    val forAst = controlStructureAst(forNode, Some(iteratorHasNextCallAst), List(bodyAst))
-
-    Seq(Ast(iteratorLocalNode), iteratorAssignAst, forAst)
+    val forAst_ = whileAst(stmt, Some(iteratorHasNextCallAst), Seq(bodyAst), Some(ControlStructureTypes.FOR))
+    Seq(Ast(iteratorLocalNode), iteratorAssignAst, forAst_)
   }
 
   private def astForIterableForEachItemAssign(
@@ -157,13 +118,13 @@ trait AstForForLoopsCreator { this: AstCreator =>
     iteratorLocalNode: NewLocal,
     variableLocal: NewLocal
   ): Ast = {
-    val forVariableType = variableLocal.typeFullName
+    val forVariableType    = variableLocal.typeFullName
     val varLocalAssignNode =
       operatorCallNode(stmt, PropertyDefaults.Code, Operators.assignment, Some(forVariableType))
     val varLocalAssignIdentifier =
       identifierNode(stmt, variableLocal.name, variableLocal.name, variableLocal.typeFullName)
 
-    val iterNextCallSignature = composeSignature(Option(TypeConstants.Object), Option(Nil), 0)
+    val iterNextCallSignature      = composeSignature(Option(TypeConstants.Object), Option(Nil), 0)
     val iterNextCallMethodFullName =
       composeMethodFullName(TypeConstants.Iterator, NameConstants.NextCallName, iterNextCallSignature)
     val iterNextCallNode =
@@ -201,27 +162,17 @@ trait AstForForLoopsCreator { this: AstCreator =>
       case iterableExpr => iterableAssignAstsForNativeForEach(iterableExpr, iterableType)
     }
 
-    val forNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.FOR)
-
-    val lineNo = line(stmt)
-
-    val idxLocal          = nativeForEachIdxLocalNode(lineNo)
+    val idxLocal          = nativeForEachIdxLocalNode(lineNo = line(stmt))
     val idxInitializerAst = nativeForEachIdxInitializerAst(stmt, idxLocal)
     // TODO next: pass NodeTypeInfo around
     val compareAst   = nativeForEachCompareAst(stmt, iterableSource, idxLocal)
     val incrementAst = nativeForEachIncrementAst(stmt, idxLocal)
     val bodyAst      = nativeForEachBodyAst(stmt, idxLocal, iterableSource)
 
-    val forAst = Ast(forNode)
-      .withChild(Ast(idxLocal))
-      .withChild(idxInitializerAst)
-      .withChild(compareAst)
-      .withChild(incrementAst)
-      .withChild(bodyAst)
-      .withConditionEdges(forNode, compareAst.root.toList)
+    val forLoopAst =
+      forAst(stmt, Seq(Ast(idxLocal)), Seq(idxInitializerAst), Seq(compareAst), Seq(incrementAst), Seq(bodyAst))
 
-    tempIterableInitAsts ++ Seq(forAst)
+    tempIterableInitAsts ++ Seq(forLoopAst)
   }
 
   private def iterableAssignAstsForNativeForEach(
@@ -236,15 +187,15 @@ trait AstForForLoopsCreator { this: AstCreator =>
         logger.warn(s"Could not create AST for iterable expr $iterableExpression: $filename:l$lineNo")
         Ast()
       case iterableAstHead :: Nil => iterableAstHead
-      case iterableAsts =>
+      case iterableAsts           =>
         logger.warn(
           s"Found multiple ASTS for iterable expr $iterableExpression: $filename:l$lineNo\nDropping all but the first!"
         )
         iterableAsts.head
     }
 
-    val iterableName     = nextIterableName()
-    val genericSignature = binarySignatureCalculator.unspecifiedClassType
+    val iterableName      = nextIterableName()
+    val genericSignature  = binarySignatureCalculator.unspecifiedClassType
     val iterableLocalNode = localNode(
       iterableExpression,
       iterableName,
@@ -259,7 +210,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
     val iterableAssignIdentifier =
       identifierNode(iterableExpression, iterableName, iterableName, iterableType.getOrElse("ANY"))
     val iterableAssignArgs = List(Ast(iterableAssignIdentifier), iterableAst)
-    val iterableAssignAst =
+    val iterableAssignAst  =
       callAst(iterableAssignNode, iterableAssignArgs)
         .withRefEdge(iterableAssignIdentifier, iterableLocalNode)
 
@@ -273,7 +224,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
     val idxName          = nextIndexName()
     val typeFullName     = TypeConstants.Int
     val genericSignature = binarySignatureCalculator.variableBinarySignature(TypeConstants.Int)
-    val idxLocal =
+    val idxLocal         =
       NewLocal()
         .name(idxName)
         .typeFullName(typeFullName)
@@ -285,7 +236,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
   }
 
   private def nativeForEachIdxInitializerAst(stmt: ForEachStmt, idxLocal: NewLocal): Ast = {
-    val idxName = idxLocal.name
+    val idxName                = idxLocal.name
     val idxInitializerCallNode =
       operatorCallNode(stmt, s"int $idxName = 0", Operators.assignment, Some(TypeConstants.Int))
     val idxIdentifierArg      = identifierNode(stmt, idxName, idxName, idxLocal.typeFullName)
@@ -305,25 +256,23 @@ trait AstForForLoopsCreator { this: AstCreator =>
       typeFullName = Some(TypeConstants.Boolean)
     )
     val comparisonIdxIdentifier = identifierNode(stmt, idxName, idxName, idxLocal.typeFullName)
-    val comparisonFieldAccess = operatorCallNode(
+    val sizeOfCall              = operatorCallNode(
       stmt,
       code = s"${iterableSource.name}.${NameConstants.Length}",
-      Operators.fieldAccess,
+      Operators.sizeOf,
       typeFullName = Some(TypeConstants.Int)
     )
-    val fieldAccessIdentifier =
+    val sizeOfIdentifier =
       identifierNode(stmt, iterableSource.name, iterableSource.name, iterableSource.typeFullName.getOrElse("ANY"))
-    val fieldAccessFieldIdentifier = fieldIdentifierNode(stmt, NameConstants.Length, NameConstants.Length)
-    val fieldAccessArgs            = List(fieldAccessIdentifier, fieldAccessFieldIdentifier).map(Ast(_))
-    val fieldAccessAst             = callAst(comparisonFieldAccess, fieldAccessArgs)
-    val compareArgs                = List(Ast(comparisonIdxIdentifier), fieldAccessAst)
-
-    // TODO: This is a workaround for a crash when looping over statically imported members. Handle those properly.
-    val iterableSourceNode = localParamOrMemberFromNode(iterableSource)
+    val sizeOfArgs = List(Ast(sizeOfIdentifier))
+    // TODO: localParamOrMemberFromNode is a workaround for a crash when looping over statically imported members.
+    //       It returns None for static imports, so no REF edge is created. Handle those properly.
+    val sizeOfAst =
+      callAst(sizeOfCall, sizeOfArgs).withRefEdges(sizeOfIdentifier, localParamOrMemberFromNode(iterableSource).toList)
+    val compareArgs = List(Ast(comparisonIdxIdentifier), sizeOfAst)
 
     callAst(compareNode, compareArgs)
       .withRefEdge(comparisonIdxIdentifier, idxLocal)
-      .withRefEdges(fieldAccessIdentifier, iterableSourceNode.toList)
   }
 
   private def nativeForEachIncrementAst(stmt: ForEachStmt, idxLocal: NewLocal): Ast = {
@@ -343,7 +292,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
         logger.warn(s"ForEach statement has empty variable list: $filename$lineNo")
         None
       case variable :: Nil => Some(variable)
-      case variable :: _ =>
+      case variable :: _   =>
         logger.warn(s"ForEach statement defines multiple variables. Dropping all but the first: $filename$lineNo")
         Some(variable)
     }
@@ -357,7 +306,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
       case Some(variable) =>
         val originalName = variable.getNameAsString
         // TODO: Name mangling
-        val mangledName = originalName
+        val mangledName  = originalName
         val typeFullName =
           tryWithSafeStackOverflow(variable.getType).toOption.flatMap(typeInfoCalc.fullName).getOrElse("ANY")
         val localNode = partialLocalNode
@@ -395,7 +344,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
     val iteratorAssignIdentifier =
       identifierNode(iterExpr, iteratorLocalNode.name, iteratorLocalNode.name, iteratorLocalNode.typeFullName)
 
-    val iteratorCallSignature = composeSignature(Option(TypeConstants.Iterator), Option(Nil), 0)
+    val iteratorCallSignature  = composeSignature(Option(TypeConstants.Iterator), Option(Nil), 0)
     val iteratorCallMethodName = composeMethodFullName(
       iterableType.getOrElse(Defines.UnresolvedNamespace),
       NameConstants.IteratorCallName,
@@ -459,14 +408,14 @@ trait AstForForLoopsCreator { this: AstCreator =>
   ): Ast = {
     // Everything will be on the same line as the `for` statement, but this is the most useful
     // solution for debugging.
-    val lineNo = variableLocal.lineNumber
+    val lineNo        = variableLocal.lineNumber
     val varAssignNode =
       operatorCallNode(stmt, PropertyDefaults.Code, Operators.assignment, Option(variableLocal.typeFullName))
 
     val targetNode = identifierNode(stmt, variableLocal.name, variableLocal.name, variableLocal.typeFullName)
 
     val indexAccessTypeFullName = iterable.typeFullName.map(_.replaceAll(raw"\[]", ""))
-    val indexAccess =
+    val indexAccess             =
       operatorCallNode(stmt, PropertyDefaults.Code, Operators.indexAccess, indexAccessTypeFullName)
 
     val indexAccessIdentifier =
@@ -514,7 +463,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
 
   private def getForCode(stmt: ForStmt): String = {
     val init    = stmt.getInitialization.asScala.map(_.toString).mkString(", ")
-    val compare = stmt.getCompare.toScala.map(_.toString)
+    val compare = stmt.getCompare.toScala.map(_.toString).getOrElse("")
     val update  = stmt.getUpdate.asScala.map(_.toString).mkString(", ")
     s"for ($init; $compare; $update)"
   }

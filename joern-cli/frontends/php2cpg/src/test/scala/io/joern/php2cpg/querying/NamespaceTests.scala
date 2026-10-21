@@ -3,18 +3,32 @@ package io.joern.php2cpg.querying
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.php2cpg.parser.Domain
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.codepropertygraph.generated.nodes.Method
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Local, Method}
 
 class NamespaceTests extends PhpCode2CpgFixture {
-  "namespaces should be able to contain statements as top-level AST children" in {
+  "namespaces should be able to contain statements in a top-level block" in {
     val cpg = code("""<?php
         |namespace foo {
         |  echo 0;
         |}
         |""".stripMargin)
 
-    inside(cpg.namespaceBlock.name("foo").l) { case List(ns) =>
-      ns.astChildren.code.l shouldBe List("echo 0")
+    inside(cpg.namespaceBlock.name("foo").astChildren.l) { case List(block: Block) =>
+      block.astChildren.code.l shouldBe List("echo 0")
+    }
+  }
+
+  "locals declared by top-level statements in a namespace should be nested in the namespace block" in {
+    val cpg = code("""<?php
+        |namespace foo;
+        |$x = new Bar();
+        |""".stripMargin)
+
+    inside(cpg.namespaceBlock.name("foo").astChildren.l) { case List(block: Block) =>
+      inside(block.astChildren.isLocal.l) { case List(local: Local) =>
+        local.name shouldBe "x"
+        local.code shouldBe "$x"
+      }
     }
   }
 
@@ -118,7 +132,7 @@ class NamespaceTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     cpg.method.name("foo").fullName.l shouldBe List("A.foo")
-    cpg.method.name("bar").fullName.l shouldBe List(s"A${Domain.MetaTypeDeclExtension}.bar")
+    cpg.method.name("bar").fullName.l shouldBe List(s"A.bar")
   }
 
   "static and instance methods in namespaced code should be correct" in {
@@ -132,7 +146,7 @@ class NamespaceTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     cpg.method.name("foo").fullName.l shouldBe List("ns\\A.foo")
-    cpg.method.name("bar").fullName.l shouldBe List(s"ns\\A${Domain.MetaTypeDeclExtension}.bar")
+    cpg.method.name("bar").fullName.l shouldBe List(s"ns\\A.bar")
   }
 
   "global namespace block should have the relative filename prepended to fullName" in {

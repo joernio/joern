@@ -5,8 +5,8 @@ import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult}
 import io.joern.x2cpg.astgen
 import io.joern.x2cpg.astgen.AstGenRunner
-import io.joern.x2cpg.utils.Environment.ArchitectureType.ArchitectureType
-import io.joern.x2cpg.utils.Environment.OperatingSystemType.OperatingSystemType
+import io.joern.x2cpg.utils.Environment.ArchitectureType
+import io.joern.x2cpg.utils.Environment.OperatingSystemType
 import io.joern.x2cpg.utils.Environment
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
@@ -120,12 +120,21 @@ class GoAstGenRunner(config: Config, includeFileRegex: String = "")
     if (parsedModFiles.nonEmpty) {
       parsedModFiles
         .sortBy(_.split(UtilityConstants.fileSeparateorPattern).length)
-        .foreach(modFile => {
+        .foreach { modFile =>
           moduleMeta.addModFile(modFile, inputPath, outPath)
-        })
+        }
       parsedFiles.foreach(moduleMeta.addParsedFile)
       skippedFiles.foreach(moduleMeta.addSkippedFile)
-      moduleMeta.getOnlyChildren
+      if (moduleMeta.parsedFiles.isEmpty) {
+        moduleMeta.getOnlyChildren
+      } else {
+        // Files under no parsed go.mod: the input root has none, or goastgen failed to parse it. Keep them as a
+        // module without a go.mod instead of dropping them.
+        logger.warn(
+          s"${moduleMeta.parsedFiles.size} file(s) are not under any parsed go.mod; processing them without module information"
+        )
+        moduleMeta.getAllChildren
+      }
     } else {
       parsedFiles.foreach(moduleMeta.addParsedFile)
       skippedFiles.foreach(moduleMeta.addSkippedFile)

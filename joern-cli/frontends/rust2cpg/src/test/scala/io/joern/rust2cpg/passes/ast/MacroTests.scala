@@ -1,0 +1,681 @@
+package io.joern.rust2cpg.passes.ast
+
+import io.joern.rust2cpg.testfixtures.{Rust2CpgSuite, RustDefaultTestCpg}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import java.nio.file.Paths
+
+class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
+
+  "an expression macro" should {
+    val cpg = code("""
+        |macro_rules! double { ($x:expr) => { $x * 2 }; }
+        |macro_rules! quad { ($x:expr) => { double!($x) + double!($x) }; }
+        |fn main() {
+        | let single = double!(5);
+        | let nested = quad!(3);
+        |}
+        |""".stripMargin)
+
+    "lower to the expanded multiplication call" in {
+      inside(cpg.assignment.codeExact("let single = double!(5);").source.l) { case (mul: Call) :: Nil =>
+        mul.name shouldBe Operators.multiplication
+        mul.code shouldBe "5*2"
+        mul.typeFullName shouldBe "i32"
+        mul.argument.isLiteral.sortBy(_.argumentIndex).code.l shouldBe List("5", "2")
+      }
+    }
+
+    "expand nested macro calls recursively" in {
+      inside(cpg.assignment.codeExact("let nested = quad!(3);").source.l) { case (add: Call) :: Nil =>
+        add.name shouldBe Operators.addition
+        add.argument.isCall.nameExact(Operators.multiplication).code.l shouldBe List("3*2", "3*2")
+      }
+    }
+
+    "have correct line numbers" in {
+      cpg.assignment.codeExact("let single = double!(5);").lineNumber.l shouldBe List(5)
+      cpg.call.nameExact(Operators.multiplication).lineNumber.sorted.l shouldBe List(5, 6, 6)
+    }
+  }
+
+  "a statement macro expanding to multiple statements" should {
+    val cpg = code("""
+        |macro_rules! two_lets { ($a:expr) => { let p = $a; let q = p + 1; }; }
+        |fn main() {
+        | two_lets!(4);
+        |}
+        |""".stripMargin)
+
+    "create a local for each expanded let" in {
+      cpg.method.name("main").block.local.name.l shouldBe List("p", "q")
+    }
+
+    "have the macro argument as the assignment source of `p`" in {
+      inside(
+        cpg.method
+          .name("main")
+          .block
+          .astChildren
+          .isCall
+          .isAssignment
+          .where(_.target.isIdentifier.nameExact("p"))
+          .source
+          .l
+      ) { case (lit: Literal) :: Nil =>
+        lit.code shouldBe "4"
+        lit.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have the addition as the assignment source of `q`" in {
+      inside(
+        cpg.method
+          .name("main")
+          .block
+          .astChildren
+          .isCall
+          .isAssignment
+          .where(_.target.isIdentifier.nameExact("q"))
+          .source
+          .l
+      ) { case (add: Call) :: Nil =>
+        add.name shouldBe Operators.addition
+        add.argument.sortBy(_.argumentIndex).code.l shouldBe List("p", "1")
+      }
+    }
+  }
+
+  "statement macro declaring a local named by the caller" should {
+    val cpg = code("""
+        |macro_rules! def { ($n:ident) => { let $n = 1; }; }
+        |fn main() {
+        | def!(z);
+        | let w = z;
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      cpg.method.nameExact("main").block.local.name.l shouldBe List("z", "w")
+    }
+
+    "have correct assignments" in {
+      inside(cpg.method.nameExact("main").block.astChildren.isCall.isAssignment.sortBy(_.order).l) {
+        case zAssign :: wAssign :: Nil =>
+          zAssign.code shouldBe "let z = 1;"
+          zAssign.lineNumber shouldBe Some(4)
+          wAssign.code shouldBe "let w = z;"
+          wAssign.lineNumber shouldBe Some(5)
+      }
+    }
+
+    "have correct references" in {
+      cpg.local.nameExact("z").referencingIdentifiers.lineNumber.l shouldBe List(4, 5)
+    }
+  }
+
+  "nested tail macro call yielding two statements" should {
+    val cpg = code("""
+        |macro_rules! inner { ($x:ident) => { $x += 1; $x += 2; }; }
+        |macro_rules! outer { ($x:ident) => { inner!{$x} }; }
+        |fn main() {
+        | let mut x = 3;
+        | outer!(x);
+        |}
+        |""".stripMargin)
+
+    "inline the expanded statements" in {
+      cpg.method.nameExact("main").block.astChildren.isCall.code.l shouldBe List("let mut x = 3;", "x+=1", "x+=2")
+    }
+  }
+
+  "nested tail macro call yielding an expression" should {
+    val cpg = code("""
+        |macro_rules! inner { () => { 2 }; }
+        |macro_rules! outer { () => { inner!() }; }
+        |fn main() {
+        | outer!();
+        |}
+        |""".stripMargin)
+
+    "inline the expanded expression" in {
+      cpg.method.nameExact("main").block.astChildren.code.l shouldBe List("2")
+    }
+  }
+
+  "macro call expression expanding to multiple statements" should {
+    val cpg = code("""
+        |macro_rules! three { () => { let mut s = 1; s += 2; s }; }
+        |fn main() {
+        | let x = { three!() };
+        |}
+        |""".stripMargin)
+
+    "have correct locals" in {
+      inside(cpg.local.sortBy(_.order).l) { case xLocal :: sLocal :: Nil =>
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "i32"
+        sLocal.name shouldBe "s"
+        sLocal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct assignments" in {
+      cpg.method.nameExact("main").block.ast.isCall.isAssignment.sortBy(_.order).code.l shouldBe List(
+        "let x = { three!() };",
+        "let mut s = 1;",
+        "s+=2"
+      )
+    }
+
+    "have correct children" in {
+      inside(cpg.method.nameExact("main").block.astChildren.isCall.isAssignment.source.isBlock.astChildren.l) {
+        case (three: Block) :: Nil =>
+          three.code shouldBe "three!()"
+          three.typeFullName shouldBe "i32"
+          inside(three.astChildren.l) {
+            case (local: Local) :: (assign: Call) :: (assignPlus: Call) :: (ident: Identifier) :: Nil =>
+              local.name shouldBe "s"
+              assign.code shouldBe "let mut s = 1;"
+              assign.methodFullName shouldBe Operators.assignment
+              assignPlus.code shouldBe "s+=2"
+              assignPlus.methodFullName shouldBe Operators.assignmentPlus
+              ident.name shouldBe "s"
+              ident.typeFullName shouldBe "i32"
+          }
+      }
+    }
+  }
+
+  "a type macro" should {
+    val cpg = code("""
+        |macro_rules! int_type { () => { i128 }; }
+        |fn main() {
+        | let x: int_type!() = 1;
+        |}
+        |""".stripMargin)
+
+    "expand in type position for the local" in {
+      cpg.local.name("x").typeFullName.l shouldBe List("i128")
+    }
+
+    "expand in type position for the assignment target" in {
+      cpg.assignment.codeExact("let x: int_type!() = 1;").target.isIdentifier.typeFullName.l shouldBe List("i128")
+    }
+  }
+
+  "pattern macro" should {
+    val cpg = code("""
+        |macro_rules! pair { ($a:ident, $b:ident) => { ($a, $b) }; }
+        |fn foo(t: (i32, i32)) {
+        | let pair!(a, b) = t;
+        |}
+        |""".stripMargin)
+
+    "have correct children" in {
+      inside(cpg.method.nameExact("foo").block.astChildren.l) {
+        case (tmp: Local) :: (aLocal: Local) :: (bLocal: Local) :: (tmpAssign: Call) ::
+            (aAssign: Call) :: (bAssign: Call) :: Nil =>
+          tmp.name shouldBe "<tmp>0"
+          tmp.typeFullName shouldBe "(i32, i32)"
+          tmpAssign.code shouldBe "<tmp>0 = t"
+
+          aLocal.name shouldBe "a"
+          aLocal.typeFullName shouldBe "i32"
+          aAssign.code shouldBe "a = <tmp>0.0"
+
+          bLocal.name shouldBe "b"
+          bLocal.typeFullName shouldBe "i32"
+          bAssign.code shouldBe "b = <tmp>0.1"
+      }
+    }
+  }
+
+  "a module-level item macro" should {
+    val cpg = code("""
+        |macro_rules! make_fn { () => { fn generated() -> i32 { 42 } }; }
+        |macro_rules! unused { () => { fn never() {} }; }
+        |make_fn!();
+        |""".stripMargin)
+
+    "expand to the generated method" in {
+      inside(cpg.method.name("generated").l) { case generated :: Nil =>
+        generated.fullName shouldBe "rust2cpgtest::generated"
+        generated.methodReturn.typeFullName shouldBe "i32"
+        generated.block.astChildren.isReturn.code.l shouldBe List("42")
+      }
+    }
+
+    "create no method for the uninvoked macro" in {
+      cpg.method.name("never") shouldBe empty
+    }
+
+    "create no Unknown nodes" in {
+      cpg.all.collectAll[Unknown] shouldBe empty
+    }
+  }
+
+  "unparseable macro expansion" should {
+    val cpg = code("""
+        |macro_rules! broken { () => { let }; }
+        |fn main() {
+        | broken!();
+        |}
+        |""".stripMargin)
+
+    "create an unknown node" in {
+      inside(cpg.method.name("main").block.astChildren.l) { case (broken: Unknown) :: Nil =>
+        broken.code shouldBe "broken!()"
+        broken.lineNumber shouldBe Some(4)
+      }
+    }
+  }
+}
+
+class MacroTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
+
+  private def withProcMacroCrate(testCpg: RustDefaultTestCpg): RustDefaultTestCpg = {
+    testCpg
+      .moreCode(
+        """
+          |[package]
+          |name = "rust2cpgtest"
+          |version = "0.1.0"
+          |edition = "2021"
+          |
+          |[dependencies]
+          |pm = { path = "pm" }
+          |""".stripMargin,
+        fileName = "Cargo.toml"
+      )
+      .moreCode(
+        """
+          |[package]
+          |name = "pm"
+          |version = "0.1.0"
+          |edition = "2021"
+          |
+          |[lib]
+          |proc-macro = true
+          |""".stripMargin,
+        fileName = (Paths.get("pm") / "Cargo.toml").toString
+      )
+      .moreCode(
+        """
+          |use proc_macro::TokenStream;
+          |
+          |#[proc_macro]
+          |pub fn emit_f(_input: TokenStream) -> TokenStream {
+          |    "fn f() {}".parse().unwrap()
+          |}
+          |
+          |#[proc_macro]
+          |pub fn foo(input: TokenStream) -> TokenStream {
+          |    input
+          |}
+          |
+          |#[proc_macro_attribute]
+          |pub fn prepend_g(_attr: TokenStream, item: TokenStream) -> TokenStream {
+          |    let mut output: TokenStream = "fn g() {}".parse().unwrap();
+          |    output.extend(item);
+          |    output
+          |}
+          |""".stripMargin,
+        fileName = (Paths.get("pm") / "src" / "lib.rs").toString
+      )
+  }
+
+  "a `vec!` macro resolved against the sysroot" should {
+    val cpg = code("""
+        |fn main() {
+        | let v = vec![1, 2, 3];
+        |}
+        |""".stripMargin)
+
+    "type the local as alloc::vec::Vec" in {
+      cpg.local.name("v").typeFullName.l shouldBe List("alloc::vec::Vec<i32, alloc::alloc::Global>")
+    }
+
+    "have the expanded constructor call as the assignment source" in {
+      inside(cpg.assignment.codeExact("let v = vec![1, 2, 3];").source.l) { case (rhs: Call) :: Nil =>
+        rhs.typeFullName shouldBe "alloc::vec::Vec<i32, alloc::alloc::Global>"
+      }
+    }
+
+    "lower the elements to an arrayInitializer inside the expanded constructor" in {
+      inside(cpg.assignment.codeExact("let v = vec![1, 2, 3];").source.l) { case (rhs: Call) :: Nil =>
+        // The specific methods that vec! expands to are not "public", in the sense they can change
+        // depending on the sysroot/platform. But the arrayInitializer should be safe to assert.
+        inside(rhs.astChildren.isCall.astChildren.isCall.nameExact(Operators.arrayInitializer).l) { case array :: Nil =>
+          array.code shouldBe "[1,2,3]"
+          array.typeFullName shouldBe "[i32; 3]"
+          array.argument.isLiteral.sortBy(_.argumentIndex).code.l shouldBe List("1", "2", "3")
+        }
+      }
+    }
+  }
+
+  "a `format!` macro resolved against the sysroot" should {
+    val cpg = code("""
+        |fn main() {
+        | let x = 7;
+        | let s = format!("{} {}", x, 3);
+        |}
+        |""".stripMargin)
+
+    "lower to a formatString call" in {
+      inside(cpg.call.nameExact(Operators.formatString).l) { case format :: Nil =>
+        format.methodFullName shouldBe Operators.formatString
+        format.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        format.typeFullName shouldBe "core::fmt::Arguments<'a>"
+      }
+    }
+
+    "have the template and the formattedValues as arguments" in {
+      inside(cpg.call.nameExact(Operators.formatString).argument.sortBy(_.argumentIndex).l) {
+        case (lit: Literal) :: (fmtX: Call) :: (fmt3: Call) :: Nil =>
+          lit.code shouldBe "\"{} {}\""
+          lit.typeFullName shouldBe "&str"
+
+          fmtX.name shouldBe Operators.formattedValue
+          fmtX.typeFullName shouldBe "i32"
+          fmtX.argument.isIdentifier.name.l shouldBe List("x")
+
+          fmt3.name shouldBe Operators.formattedValue
+          fmt3.argument.isLiteral.code.l shouldBe List("3")
+      }
+    }
+  }
+
+  "a `format!` macro with implicitly captured arguments" should {
+    val cpg = code("""
+        |fn main() {
+        | let x = 7;
+        | let w = 3;
+        | let s = format!("{x:w$} {}", 1);
+        |}
+        |""".stripMargin)
+
+    "have the template and the formattedValues as arguments" in {
+      inside(cpg.call.nameExact(Operators.formatString).argument.sortBy(_.argumentIndex).l) {
+        case (lit: Literal) :: (fmt1: Call) :: (fmtX: Call) :: (fmtW: Call) :: Nil =>
+          // TODO(rust_ast_gen): implicit parameters are only appended.
+          lit.code shouldBe "\"{x:w$} {}\""
+          lit.typeFullName shouldBe "&str"
+
+          fmt1.methodFullName shouldBe Operators.formattedValue
+          fmt1.typeFullName shouldBe "i32"
+          inside(fmt1.argument.l) { case (one: Literal) :: Nil =>
+            one.code shouldBe "1"
+            one.typeFullName shouldBe "i32"
+          }
+
+          fmtX.methodFullName shouldBe Operators.formattedValue
+          fmtX.typeFullName shouldBe "i32"
+          inside(fmtX.argument.sortBy(_.argumentIndex).l) { case (ident: Identifier) :: (spec: Literal) :: Nil =>
+            ident.code shouldBe "x"
+            ident.name shouldBe "x"
+            ident.typeFullName shouldBe "i32"
+            ident.argumentIndex shouldBe 1
+            spec.code shouldBe "w$"
+            spec.typeFullName shouldBe "&str"
+            spec.argumentIndex shouldBe 2
+          }
+
+          fmtW.methodFullName shouldBe Operators.formattedValue
+          fmtW.typeFullName shouldBe "usize"
+          inside(fmtW.argument.l) { case (ident: Identifier) :: Nil =>
+            ident.code shouldBe "w"
+            ident.name shouldBe "w"
+            ident.typeFullName shouldBe "usize"
+          }
+      }
+    }
+  }
+
+  "a `format!` macro with named and implicitly captured arguments" should {
+    val cpg = code("""
+        |fn main() {
+        | let x = 7;
+        | let s = format!("{x} {y}", y = 1);
+        |}
+        |""".stripMargin)
+
+    "have the template and the formattedValues as arguments" in {
+      inside(cpg.call.nameExact(Operators.formatString).argument.sortBy(_.argumentIndex).l) {
+        // TODO(rust_ast_gen): implicit parameters are only appended.
+        case (lit: Literal) :: (fmtY: Call) :: (fmtX: Call) :: Nil =>
+          lit.code shouldBe "\"{x} {y}\""
+          lit.typeFullName shouldBe "&str"
+
+          fmtY.methodFullName shouldBe Operators.formattedValue
+          fmtY.typeFullName shouldBe "i32"
+          fmtY.code shouldBe "y = 1"
+          inside(fmtY.argument.l) { case (one: Literal) :: Nil =>
+            one.code shouldBe "1"
+            one.typeFullName shouldBe "i32"
+          }
+
+          fmtX.methodFullName shouldBe Operators.formattedValue
+          fmtX.typeFullName shouldBe "i32"
+          inside(fmtX.argument.l) { case (ident: Identifier) :: Nil =>
+            ident.typeFullName shouldBe "i32"
+            ident.name shouldBe "x"
+            ident.code shouldBe "x"
+          }
+      }
+    }
+  }
+
+  "a `format!` macro capturing the same identifier twice" should {
+    val cpg = code("""
+        |fn main() {
+        | let x = 7;
+        | let s = format!("{x} {x}");
+        |}
+        |""".stripMargin)
+
+    "have a single formattedValue" in {
+      inside(cpg.call.nameExact(Operators.formatString).argument.sortBy(_.argumentIndex).l) {
+        case (lit: Literal) :: (fmtX: Call) :: Nil =>
+          lit.code shouldBe "\"{x} {x}\""
+          lit.typeFullName shouldBe "&str"
+
+          fmtX.methodFullName shouldBe Operators.formattedValue
+          fmtX.typeFullName shouldBe "i32"
+          inside(fmtX.argument.l) { case (ident: Identifier) :: Nil =>
+            ident.name shouldBe "x"
+            ident.code shouldBe "x"
+            ident.typeFullName shouldBe "i32"
+          }
+      }
+    }
+  }
+
+  "a `println!` macro resolved against the sysroot" should {
+    val cpg = code("""
+        |fn main() {
+        | let x = 7;
+        | println!("{}", x);
+        |}
+        |""".stripMargin)
+
+    "lower to a `_print` call on a formatString" in {
+      inside(cpg.call.nameExact("_print").l) { case print :: Nil =>
+        print.methodFullName shouldBe "std::io::stdio::_print"
+
+        inside(print.argument.l) { case (format: Call) :: Nil =>
+          format.name shouldBe Operators.formatString
+          format.typeFullName shouldBe "core::fmt::Arguments<'a>"
+          format.argument.isCall.nameExact(Operators.formattedValue).argument.isIdentifier.name.l shouldBe List("x")
+        }
+      }
+    }
+  }
+
+  "a file include!-ed twice" should {
+    val cpg = code(
+      """
+        |include!("foo.rs");
+        |
+        |mod bar {
+        | include!("foo.rs");
+        |}
+        |
+        |fn main() {
+        | foo();
+        | bar::foo();
+        |}
+        |""".stripMargin,
+      fileName = (Paths.get("src") / "lib.rs").toString
+    ).moreCode("pub fn foo() {}", fileName = (Paths.get("src") / "foo.rs").toString)
+
+    "have correct files" in {
+      cpg.file.name.sorted.l shouldBe List("<unknown>", (Paths.get("src") / "lib.rs").toString)
+    }
+
+    "have correct fullNames" in {
+      cpg.method.nameExact("foo").fullName.sorted.l shouldBe List("rust2cpgtest::bar::foo", "rust2cpgtest::foo")
+      cpg.call.nameExact("foo").methodFullName.sorted.l shouldBe List("rust2cpgtest::bar::foo", "rust2cpgtest::foo")
+    }
+  }
+
+  "proc-macro in item" should {
+    val cpg = withProcMacroCrate(code("""
+        |pm::emit_f!();
+        |
+        |fn k() {
+        | f();
+        |}
+        |""".stripMargin))
+
+    "have correct method" in {
+      inside(cpg.method.nameExact("f").l) { case method :: Nil =>
+        method.fullName shouldBe "rust2cpgtest::f"
+        method.lineNumber shouldBe Some(2)
+        method.code shouldBe "f"
+      }
+    }
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("f").l) { case call :: Nil =>
+        call.methodFullName shouldBe "rust2cpgtest::f"
+        call.lineNumber shouldBe Some(5)
+        call.code shouldBe "f()"
+      }
+    }
+  }
+
+  "proc-macro in expression" should {
+    val cpg = withProcMacroCrate(code("""
+        |fn bar() -> i32 {
+        | let baz = pm::foo![42];
+        | pm::foo![baz]
+        |}
+        |""".stripMargin))
+
+    "have correct children" in {
+      inside(cpg.method.nameExact("bar").block.astChildren.l) {
+        case (local: Local) :: (assign: Call) :: (ret: Return) :: Nil =>
+          local.name shouldBe "baz"
+          local.typeFullName shouldBe "i32"
+
+          assign.code shouldBe "let baz = pm::foo![42];"
+          assign.lineNumber shouldBe Some(3)
+          inside(assign.argument.sortBy(_.argumentIndex).l) { case (lhs: Identifier) :: (rhs: Literal) :: Nil =>
+            lhs.name shouldBe "baz"
+            lhs.typeFullName shouldBe "i32"
+
+            rhs.code shouldBe "42"
+            rhs.typeFullName shouldBe "i32"
+            rhs.lineNumber shouldBe Some(3)
+          }
+
+          ret.code shouldBe "pm::foo![baz]"
+          inside(ret.astChildren.l) { case (ident: Identifier) :: Nil =>
+            ident.name shouldBe "baz"
+            ident.typeFullName shouldBe "i32"
+            ident.lineNumber shouldBe Some(4)
+          }
+      }
+    }
+  }
+
+  "proc-macro in impl fn attribute" should {
+    val cpg = withProcMacroCrate(code("""
+        |struct S;
+        |
+        |impl S {
+        |  #[pm::prepend_g]
+        |  fn h(&self) -> i32 {
+        |    pm::foo![42]
+        |  }
+        |}
+        |
+        |fn k() {
+        |  S.h();
+        |}
+        |""".stripMargin))
+
+    "have correct methods" in {
+      inside(cpg.method.nameExact("g").l) { case method :: Nil =>
+        method.fullName shouldBe "rust2cpgtest::S::g"
+        method.lineNumber shouldBe Some(5)
+      }
+      inside(cpg.method.nameExact("h").l) { case method :: Nil =>
+        method.fullName shouldBe "rust2cpgtest::S::h"
+        method.lineNumber shouldBe Some(5)
+      }
+    }
+
+    "have correct return" in {
+      inside(cpg.method.nameExact("h").block.astChildren.isReturn.astChildren.l) { case (literal: Literal) :: Nil =>
+        literal.code shouldBe "42"
+        literal.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("h").l) { case call :: Nil =>
+        call.methodFullName shouldBe "rust2cpgtest::S::h"
+        call.lineNumber shouldBe Some(12)
+      }
+    }
+  }
+
+  "proc-macro in fn attribute" should {
+    val cpg = withProcMacroCrate(code("""
+        |#[pm::prepend_g]
+        |fn h() {}
+        |
+        |fn k() {
+        | g();
+        | h();
+        |}
+        |""".stripMargin))
+
+    "have correct methods" in {
+      inside(cpg.method.nameExact("g").l) { case method :: Nil =>
+        method.fullName shouldBe "rust2cpgtest::g"
+        method.lineNumber shouldBe Some(2)
+      }
+      inside(cpg.method.nameExact("h").l) { case method :: Nil =>
+        method.fullName shouldBe "rust2cpgtest::h"
+        method.lineNumber shouldBe Some(2)
+      }
+    }
+
+    "have correct calls" in {
+      inside(cpg.call.nameExact("g").l) { case call :: Nil =>
+        call.methodFullName shouldBe "rust2cpgtest::g"
+        call.lineNumber shouldBe Some(6)
+      }
+      inside(cpg.call.nameExact("h").l) { case call :: Nil =>
+        call.methodFullName shouldBe "rust2cpgtest::h"
+        call.lineNumber shouldBe Some(7)
+      }
+    }
+  }
+}

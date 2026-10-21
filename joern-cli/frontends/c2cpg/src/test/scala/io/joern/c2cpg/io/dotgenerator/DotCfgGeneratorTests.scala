@@ -80,9 +80,10 @@ class DotCfgGeneratorTests extends C2CpgSuite {
       inside(cpg.method.name("example").dotCfg.l) { case List(dotStr) =>
         dotStr should (
           startWith("digraph \"example\" {") and
-            include("[label = <IDENTIFIER, 4<BR/>a<BR/>if(a) { foo(); }> ]") and
-            include("[label = <IDENTIFIER, 5<BR/>b<BR/>if(b) { foo_2(); }> ]") and
-            include("[label = <IDENTIFIER, 6<BR/>c<BR/>if (c) { foo_3(); }> ]") and
+            include("[label = <&lt;operator&gt;.assignment, 3<BR/>x = 3> ]") and
+            include("[label = <&lt;operator&gt;.notEquals, 4<BR/>a != 0> ]") and
+            include("[label = <&lt;operator&gt;.notEquals, 5<BR/>b != 0> ]") and
+            include("[label = <&lt;operator&gt;.notEquals, 5<BR/>b != 0> ]") and
             endWith("}\n")
         )
       }

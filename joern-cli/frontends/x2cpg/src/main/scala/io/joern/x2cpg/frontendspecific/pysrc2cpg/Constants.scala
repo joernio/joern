@@ -13,4 +13,9 @@ object Constants {
 
   val moduleName = "<module>"
   val initName   = "__init__"
+  val callName   = "__call__"
+}
+
+object PythonOperators {
+  val slice: String = "<operator>.slice"
 }

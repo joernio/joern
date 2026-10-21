@@ -55,7 +55,7 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
 
   override def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
     case x @ (_: Identifier | _: Local | _: MethodParameterIn) => symbolTable.append(x, x.getKnownTypes)
-    case call: Call =>
+    case call: Call                                            =>
       val tnfs =
         if (
           call.name != "initialize" && (call.methodFullName == XDefines.DynamicCallUnknownFullName || call.methodFullName

@@ -47,8 +47,8 @@ object SourceFilesPicker {
   }
 
   private def isGradleFile(fileName: String): Boolean = {
-    val gradleRelatedFiles = Seq("build.gradle", "settings.gradle", "gradle.properties", "build.gradle.kts")
-    gradleRelatedFiles.exists(fileName.endsWith)
+    val gradleRelatedSuffixes = Seq(".gradle", ".gradle.kts", "gradle.properties")
+    gradleRelatedSuffixes.exists(fileName.endsWith)
   }
 
   private def isKotlinScript(fileName: String): Boolean = {
@@ -65,7 +65,7 @@ object SourceFilesPicker {
         val relativized = SourceFiles.toRelativePath(fileName, forDir)
         val willFilter  = SourceFilesPicker.shouldFilter(relativized)
         if (willFilter) {
-          logger.debug(s"Filtered file at `$fileName`.")
+          logger.debug(s"Filtered file at '$fileName'.")
         }
         willFilter
       }

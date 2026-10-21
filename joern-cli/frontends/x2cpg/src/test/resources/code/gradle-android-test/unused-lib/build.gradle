@@ -1,0 +1,26 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+}
+
+// Intentionally NOT consumed by any other module. Exists to verify that the
+// dependency fetcher includes it as its own depInfo entry but the `app`
+// module's sourceDependencies does NOT list it.
+
+android {
+    namespace 'com.example.unused'
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 24
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+}

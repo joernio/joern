@@ -40,7 +40,7 @@ trait UsesService { this: Kotlin2Cpg =>
       val coordinates = service.fetchDependencyCoordinates(importNames)
       logger.debug(s"Found coordinates `$coordinates`.")
 
-      val resolver = new ArtifactResolver()
+      val resolver  = new ArtifactResolver()
       val artifacts = coordinates.map { coordinate =>
         val strippedCoordinate = coordinate.stripPrefix("\"").stripSuffix("\"")
         val result             = resolver.download(strippedCoordinate, true)

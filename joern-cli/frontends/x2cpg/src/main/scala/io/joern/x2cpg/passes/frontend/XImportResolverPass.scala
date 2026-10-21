@@ -14,11 +14,12 @@ import java.util.Base64
 
 abstract class XImportResolverPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Import](cpg) {
 
-  protected val logger: Logger = LoggerFactory.getLogger(this.getClass)
+  protected val logger: Logger      = LoggerFactory.getLogger(this.getClass)
   protected val codeRootDir: String =
-    Paths.get(cpg.metaData.root.headOption.getOrElse(JFile.separator).stripSuffix(JFile.separator)) match
+    Paths.get(cpg.metaData.root.headOption.getOrElse(JFile.separator).stripSuffix(JFile.separator)) match {
       case f if Files.isDirectory(f) => f.toString
       case f                         => f.getParent.toString
+    }
 
   override def generateParts(): Array[Import] = cpg.imports.toArray
 

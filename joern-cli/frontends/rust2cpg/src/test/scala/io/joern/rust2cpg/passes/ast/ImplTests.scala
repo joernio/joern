@@ -1,0 +1,1199 @@
+package io.joern.rust2cpg.passes.ast
+
+import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil.PathExt
+
+import java.nio.file.Paths
+
+class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
+
+  "an inherent method in an impl block" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo {
+        |  fn bar(&self) {}
+        |}
+        |""".stripMargin)
+
+    "have correct fullName" in {
+      cpg.method.nameExact("bar").fullName.l shouldBe List("rust2cpgtest::Foo::bar")
+    }
+
+    "have correct return typeFullName" in {
+      cpg.method.nameExact("bar").methodReturn.typeFullName.l shouldBe List("()")
+    }
+
+    "have correct self properties" in {
+      inside(cpg.method.nameExact("bar").parameter.nameExact("self").l) { case self :: Nil =>
+        self.index shouldBe 0
+        self.order shouldBe 0
+        self.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
+        self.typeFullName shouldBe "&rust2cpgtest::Foo"
+      }
+    }
+
+    "be an AST child of the corresponding TYPE_DECL" in {
+      cpg.typeDecl.nameExact("Foo").method.nameExact("bar").fullName.l shouldBe List("rust2cpgtest::Foo::bar")
+    }
+
+    "have no modifiers" in {
+      cpg.method.nameExact("bar").modifier shouldBe empty
+    }
+
+    "not create a duplicate TYPE_DECL" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Foo").size shouldBe 1
+    }
+  }
+
+  "method inside generic impl" should {
+    val cpg = code("""
+        |struct Foo<T> { v: T }
+        |impl<T> Foo<T> {
+        |  fn bar<U>(&self, u: U) {}
+        |}
+        |fn run(f: Foo<i32>) { f.bar(1); }
+        |""".stripMargin)
+
+    "have correct fullName" in {
+      cpg.method.nameExact("bar").fullName.l shouldBe List("rust2cpgtest::Foo<T>::bar<U>")
+    }
+
+    "have the same fullName as the one at the call site" in {
+      cpg.call.nameExact("bar").methodFullName.l shouldBe List("rust2cpgtest::Foo<T>::bar<U>")
+    }
+  }
+
+  "method inside lifetime impl" should {
+    val cpg = code("""
+        |struct Foo<'a> { v: &'a str }
+        |impl<'a> Foo<'a> {
+        |  fn bar(&self) {}
+        |}
+        |fn run(f: Foo) { f.bar(); }
+        |""".stripMargin)
+
+    "have correct fullName" in {
+      cpg.method.nameExact("bar").fullName.l shouldBe List("rust2cpgtest::Foo<'a>::bar")
+    }
+
+    "have the same fullName as the one at the call site" in {
+      cpg.call.nameExact("bar").methodFullName.l shouldBe List("rust2cpgtest::Foo<'a>::bar")
+    }
+  }
+
+  "method inside const impl" should {
+    val cpg = code("""
+        |struct Foo<const N: usize>;
+        |impl<const N: usize> Foo<N> {
+        |  fn bar(&self) {}
+        |}
+        |fn run(f: Foo<3>) { f.bar(); }
+        |""".stripMargin)
+
+    "have correct fullName" in {
+      cpg.method.nameExact("bar").fullName.l shouldBe List("rust2cpgtest::Foo<N>::bar")
+    }
+
+    "have the same fullName as the one at the call site" in {
+      cpg.call.nameExact("bar").methodFullName.l shouldBe List("rust2cpgtest::Foo<N>::bar")
+    }
+  }
+
+  "an inherent method with a `&mut self` and an explicit parameter" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo {
+        |  fn bar(&mut self, x: i32) {}
+        |}
+        |""".stripMargin)
+
+    "have correct self properties" in {
+      inside(cpg.method.nameExact("bar").parameter.nameExact("self").l) { case self :: Nil =>
+        self.index shouldBe 0
+        self.order shouldBe 0
+        self.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
+        self.typeFullName shouldBe "&mut rust2cpgtest::Foo"
+      }
+    }
+
+    "have correct explicit parameter properties" in {
+      inside(cpg.method.nameExact("bar").parameter.nameExact("x").l) { case param :: Nil =>
+        param.index shouldBe 1
+        param.order shouldBe 1
+        param.typeFullName shouldBe "i32"
+      }
+    }
+  }
+
+  "an inherent method with a by-value `self` receiver" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo {
+        |  fn bar(self) {}
+        |}
+        |""".stripMargin)
+
+    "have correct self properties" in {
+      inside(cpg.method.nameExact("bar").parameter.nameExact("self").l) { case self :: Nil =>
+        self.index shouldBe 0
+        self.order shouldBe 0
+        self.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
+        self.typeFullName shouldBe "rust2cpgtest::Foo"
+      }
+    }
+  }
+
+  "an associated function without a receiver" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo {
+        |  fn new() -> Foo { Foo }
+        |}
+        |""".stripMargin)
+
+    "have no parameters" in {
+      cpg.method.nameExact("new").parameter shouldBe empty
+    }
+
+    "have correct return typeFullName" in {
+      cpg.method.nameExact("new").methodReturn.typeFullName.l shouldBe List("rust2cpgtest::Foo")
+    }
+  }
+
+  "an associated function returning `Self`" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo {
+        |  fn new() -> Self { Foo }
+        |}
+        |""".stripMargin)
+
+    "have correct return typeFullName" in {
+      cpg.method.nameExact("new").methodReturn.typeFullName.l shouldBe List("rust2cpgtest::Foo")
+    }
+  }
+
+  "multiple methods in a single impl block" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo {
+        |  fn a(&self) {}
+        |  fn b(&self) {}
+        |}
+        |""".stripMargin)
+
+    "lower each as an AST child of the corresponding TYPE_DECL" in {
+      cpg.typeDecl.nameExact("Foo").method.fullName.sorted.l shouldBe List(
+        "rust2cpgtest::Foo::<init>",
+        "rust2cpgtest::Foo::a",
+        "rust2cpgtest::Foo::b"
+      )
+    }
+  }
+
+  "multiple impl blocks for the same type" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo {
+        |  fn a(&self) {}
+        |}
+        |impl Foo {
+        |  fn b(&self) {}
+        |}
+        |""".stripMargin)
+
+    "merge all methods under the same TYPE_DECL" in {
+      cpg.typeDecl.nameExact("Foo").method.fullName.sorted.l shouldBe List(
+        "rust2cpgtest::Foo::<init>",
+        "rust2cpgtest::Foo::a",
+        "rust2cpgtest::Foo::b"
+      )
+    }
+
+    "not create a duplicate TYPE_DECL" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Foo").size shouldBe 1
+    }
+  }
+
+  "multiple impl blocks for the same type spread across files" should {
+    val cpg = code(
+      """
+        |struct Foo;
+        |mod a;
+        |mod b;
+        |""".stripMargin,
+      fileName = (Paths.get("src") / "lib.rs").toString
+    ).moreCode(
+      """
+          |impl crate::Foo {
+          | fn a(&self) {}
+          |}
+          |""".stripMargin,
+      fileName = (Paths.get("src") / "a.rs").toString
+    ).moreCode(
+      """
+        |impl crate::Foo {
+        | fn b(&self) {}
+        |}""".stripMargin,
+      fileName = (Paths.get("src") / "b.rs").toString
+    )
+
+    "merge all methods under the same TYPE_DECL" in {
+      cpg.typeDecl.nameExact("Foo").method.fullName.sorted.l shouldBe List(
+        "rust2cpgtest::Foo::<init>",
+        "rust2cpgtest::Foo::a",
+        "rust2cpgtest::Foo::b"
+      )
+    }
+
+    "not create a duplicate TYPE_DECL" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Foo").size shouldBe 1
+    }
+  }
+
+  "const in an inherent impl" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo {
+        |  const MAX: usize = 3;
+        |}
+        |""".stripMargin)
+
+    "have correct members" in {
+      inside(cpg.typeDecl.nameExact("Foo").member.l) { case max :: Nil =>
+        max.name shouldBe "MAX"
+        max.code shouldBe "const MAX: usize = 3;"
+        max.typeFullName shouldBe "usize"
+      }
+    }
+  }
+
+  "const in an inherent impl in a different file" should {
+    val cpg = code(
+      """
+        |struct Foo;
+        |mod a;
+        |""".stripMargin,
+      fileName = (Paths.get("src") / "lib.rs").toString
+    ).moreCode(
+      """
+        |impl crate::Foo {
+        |  const MAX: usize = 3;
+        |}
+        |""".stripMargin,
+      fileName = (Paths.get("src") / "a.rs").toString
+    )
+
+    "have correct members" in {
+      inside(cpg.typeDecl.nameExact("Foo").member.l) { case max :: Nil =>
+        max.name shouldBe "MAX"
+        max.code shouldBe "const MAX: usize = 3;"
+        max.typeFullName shouldBe "usize"
+      }
+    }
+  }
+
+  "const in a trait impl" should {
+    val cpg = code("""
+        |trait Bar { const MAX: usize; }
+        |struct Foo;
+        |impl Bar for Foo {
+        |  const MAX: usize = 3;
+        |}
+        |""".stripMargin)
+
+    "have correct members" in {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>").member.l) { case max :: Nil =>
+        max.name shouldBe "MAX"
+        max.code shouldBe "const MAX: usize = 3;"
+        max.typeFullName shouldBe "usize"
+      }
+    }
+  }
+
+  "a call to an inherent method" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo { fn bar(&self) {} }
+        |fn run(f: Foo) { f.bar(); }
+        |""".stripMargin)
+
+    "have correct properties and callee" in {
+      inside(cpg.call.nameExact("bar").l) { case call :: Nil =>
+        implicit val callResolver: NoResolve.type = NoResolve
+        call.methodFullName shouldBe "rust2cpgtest::Foo::bar"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        call.callee.l shouldBe cpg.method.fullNameExact("rust2cpgtest::Foo::bar").l
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("bar").argument.l) { case (base: Call) :: Nil =>
+        base.name shouldBe Operators.addressOf
+        base.code shouldBe "&f"
+        base.argumentIndex shouldBe 0
+        base.typeFullName shouldBe "&rust2cpgtest::Foo"
+        inside(base.argument.l) { case (inner: Identifier) :: Nil =>
+          inner.name shouldBe "f"
+          inner.typeFullName shouldBe "rust2cpgtest::Foo"
+        }
+      }
+    }
+
+    "have correct self typeFullName" in {
+      cpg.method.nameExact("bar").parameter.nameExact("self").typeFullName.l shouldBe List("&rust2cpgtest::Foo")
+    }
+  }
+
+  "a call to an associated function" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo { fn new() -> Foo { Foo } }
+        |fn run() { Foo::new(); }
+        |""".stripMargin)
+
+    "have correct properties and callee" in {
+      inside(cpg.call.nameExact("new").l) { case call :: Nil =>
+        implicit val callResolver: NoResolve.type = NoResolve
+        call.methodFullName shouldBe "rust2cpgtest::Foo::new"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        call.callee.l shouldBe cpg.method.fullNameExact("rust2cpgtest::Foo::new").l
+      }
+    }
+
+    "have no arguments" in {
+      cpg.call.nameExact("new").argument shouldBe empty
+    }
+  }
+
+  "an impl block for a trait" should {
+    val cpg = code("""
+        |trait Bar {
+        |  fn do_stuff(&self) -> i32;
+        |  fn do_mut(&mut self);
+        |  fn do_take(self);
+        |}
+        |struct Foo;
+        |impl Bar for Foo {
+        |  fn do_stuff(&self) -> i32 { 1 }
+        |  fn do_mut(&mut self) {}
+        |  fn do_take(self) {}
+        |}
+        |""".stripMargin)
+
+    "have correct typeDecl fullnames" in {
+      inside(cpg.typeDecl.nameExact("Foo").fullName.sorted.l) { case traitImplFullName :: typeFullName :: Nil =>
+        typeFullName shouldBe "rust2cpgtest::Foo"
+        traitImplFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>"
+      }
+    }
+
+    "have correct inheritsFromTypeFullName" in {
+      cpg.typeDecl
+        .fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>")
+        .inheritsFromTypeFullName
+        .l shouldBe List("rust2cpgtest::Bar")
+    }
+
+    "have correct inheritsFromTypeFullName on the struct" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Foo").inheritsFromTypeFullName.l shouldBe List(
+        "<rust2cpgtest::Foo as rust2cpgtest::Bar>"
+      )
+    }
+
+    "have correct methodFullName" in {
+      cpg.typeDecl
+        .fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>")
+        .method
+        .fullName
+        .sorted
+        .l shouldBe List(
+        "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_mut",
+        "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff",
+        "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_take"
+      )
+    }
+
+    "have correct `&self` properties" in {
+      inside(cpg.method.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff").parameter.l) {
+        case self :: Nil =>
+          self.name shouldBe "self"
+          self.index shouldBe 0
+          self.order shouldBe 0
+          self.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
+          self.typeFullName shouldBe "&rust2cpgtest::Foo"
+      }
+    }
+
+    "have correct `&mut self` properties" in {
+      inside(cpg.method.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_mut").parameter.l) {
+        case self :: Nil =>
+          self.name shouldBe "self"
+          self.index shouldBe 0
+          self.order shouldBe 0
+          self.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
+          self.typeFullName shouldBe "&mut rust2cpgtest::Foo"
+      }
+    }
+
+    "have correct `self` properties" in {
+      inside(cpg.method.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_take").parameter.l) {
+        case self :: Nil =>
+          self.name shouldBe "self"
+          self.index shouldBe 0
+          self.order shouldBe 0
+          self.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
+          self.typeFullName shouldBe "rust2cpgtest::Foo"
+      }
+    }
+
+    "have correct return typeFullName" in {
+      cpg.method
+        .fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff")
+        .methodReturn
+        .typeFullName
+        .l shouldBe List("i32")
+    }
+
+    "have a virtual modifier on the trait-impl method" in {
+      cpg.method
+        .fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff")
+        .modifier
+        .modifierType
+        .l shouldBe List(ModifierTypes.VIRTUAL)
+    }
+
+    "create binding node for the method" in {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>").methodBinding.sortBy(_.name).l) {
+        case bindingMut :: bindingStuff :: bindingTake :: Nil =>
+          bindingMut.name shouldBe "do_mut"
+          bindingMut.signature shouldBe "rust2cpgtest::Bar"
+          bindingMut.methodFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_mut"
+
+          bindingStuff.name shouldBe "do_stuff"
+          bindingStuff.signature shouldBe "rust2cpgtest::Bar"
+          bindingStuff.methodFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff"
+
+          bindingTake.name shouldBe "do_take"
+          bindingTake.signature shouldBe "rust2cpgtest::Bar"
+          bindingTake.methodFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_take"
+
+      }
+    }
+  }
+
+  "an impl overriding a trait default method" should {
+    val cpg = code("""
+        |trait Bar {
+        |  fn a(&self) -> i32 { 0 }
+        |  fn b(&self) -> i32 { 0 }
+        |}
+        |struct Foo;
+        |impl Bar for Foo {
+        |  fn b(&self) -> i32 { 1 }
+        |}
+        |""".stripMargin)
+
+    "create a binding node for the overriding method" in {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>").methodBinding.l) {
+        case binding :: Nil =>
+          binding.name shouldBe "b"
+          binding.signature shouldBe "rust2cpgtest::Bar"
+          binding.methodFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>::b"
+      }
+    }
+  }
+
+  "a trait impl in a different file" should {
+    val cpg = code(
+      """
+        |mod a;
+        |trait Bar {
+        |  fn do_stuff(&self) -> i32;
+        |}
+        |struct Foo;
+        |""".stripMargin,
+      fileName = (Paths.get("src") / "lib.rs").toString
+    ).moreCode(
+      """
+        |impl crate::Bar for crate::Foo {
+        |  fn do_stuff(&self) -> i32 { 1 }
+        |}
+        |""".stripMargin,
+      fileName = (Paths.get("src") / "a.rs").toString
+    )
+
+    "have correct inheritsFromTypeFullName on the struct" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Foo").inheritsFromTypeFullName.l shouldBe List(
+        "<rust2cpgtest::Foo as rust2cpgtest::Bar>"
+      )
+    }
+  }
+
+  "trait impl for unit-variant enum" should {
+    val cpg = code("""
+        |trait Bar {
+        |  fn do_stuff(&self) -> i32;
+        |}
+        |enum Color { Red, Green }
+        |impl Bar for Color {
+        |  fn do_stuff(&self) -> i32 { 1 }
+        |}
+        |""".stripMargin)
+
+    "have correct inheritsFrom on the impl" in {
+      cpg.typeDecl
+        .fullNameExact("<rust2cpgtest::Color as rust2cpgtest::Bar>")
+        .inheritsFromTypeFullName
+        .l shouldBe List("rust2cpgtest::Bar")
+    }
+
+    "have correct inheritsFrom on the enum" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Color").inheritsFromTypeFullName.l shouldBe List(
+        "<rust2cpgtest::Color as rust2cpgtest::Bar>"
+      )
+    }
+  }
+
+  "two trait impls for the same type" should {
+    val cpg = code("""
+        |trait Bar { fn a(&self) -> i32; }
+        |trait Baz { fn b(&self) -> i32; }
+        |struct Foo;
+        |impl Bar for Foo { fn a(&self) -> i32 { 1 } }
+        |impl Baz for Foo { fn b(&self) -> i32 { 2 } }
+        |""".stripMargin)
+
+    "have correct inheritsFromTypeFullName on the struct" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Foo").inheritsFromTypeFullName.l shouldBe List(
+        "<rust2cpgtest::Foo as rust2cpgtest::Bar>",
+        "<rust2cpgtest::Foo as rust2cpgtest::Baz>"
+      )
+    }
+  }
+
+  "impl for an unknown trait" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Unknown for Foo { fn bar(&self) {} }
+        |""".stripMargin)
+
+    "have correct typeDecl" in {
+      inside(cpg.typeDecl.nameExact("Foo").l) { case typeDecl :: Nil =>
+        typeDecl.fullName shouldBe "rust2cpgtest::Foo"
+        typeDecl.inheritsFromTypeFullName shouldBe empty
+      }
+    }
+
+    "have correct methodFullName" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Foo").method.fullName.sorted.l shouldBe List(
+        "rust2cpgtest::Foo::<init>",
+        "rust2cpgtest::Foo::bar"
+      )
+    }
+  }
+
+  "two impls for unkwnown traits on the same type" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl UnknownA for Foo { fn a(&self) {} }
+        |impl UnknownB for Foo { fn b(&self) {} }
+        |fn run(f: Foo) { f.a(); f.b(); }
+        |""".stripMargin)
+
+    "have correct typeDecl" in {
+      inside(cpg.typeDecl.nameExact("Foo").l) { case typeDecl :: Nil =>
+        typeDecl.fullName shouldBe "rust2cpgtest::Foo"
+        typeDecl.inheritsFromTypeFullName shouldBe empty
+      }
+    }
+
+    "have correct methodFullName" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Foo").method.fullName.sorted.l shouldBe List(
+        "rust2cpgtest::Foo::<init>",
+        "rust2cpgtest::Foo::a",
+        "rust2cpgtest::Foo::b"
+      )
+    }
+
+    "have correct call methodFullName" in {
+      cpg.call.nameExact("a").methodFullName.l shouldBe List("<unresolvedNamespace>::a")
+      cpg.call.nameExact("b").methodFullName.l shouldBe List("<unresolvedNamespace>::b")
+    }
+  }
+
+  "impls for structs with lifetimes" should {
+    val cpg = code("""
+        |trait Bar { fn a(&self); }
+        |struct Foo<'a> { v: &'a str }
+        |struct Baz<'a> { v: &'a str }
+        |impl<'a> Bar for Foo<'a> { fn a(&self) {} }
+        |impl<'a> Bar for Baz<'a> { fn a(&self) {} }
+        |""".stripMargin)
+
+    "have correct fullNames" in {
+      cpg.typeDecl.where(_.method.nameExact("a")).fullName.sorted.l shouldBe List(
+        "<rust2cpgtest::Baz<'a> as rust2cpgtest::Bar>",
+        "<rust2cpgtest::Foo<'a> as rust2cpgtest::Bar>",
+        "rust2cpgtest::Bar"
+      )
+    }
+
+    "have correct names" in {
+      cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo<'a> as rust2cpgtest::Bar>").name.l shouldBe List("Foo")
+      cpg.typeDecl.fullNameExact("<rust2cpgtest::Baz<'a> as rust2cpgtest::Bar>").name.l shouldBe List("Baz")
+    }
+
+    "have correct methodFullName" in {
+      cpg.method.nameExact("a").fullName.sorted.l shouldBe List(
+        "<rust2cpgtest::Baz<'a> as rust2cpgtest::Bar>::a",
+        "<rust2cpgtest::Foo<'a> as rust2cpgtest::Bar>::a",
+        "rust2cpgtest::Bar::a"
+      )
+    }
+
+    "have correct inheritsFrom" in {
+      cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo<'a> as rust2cpgtest::Bar>").inheritsFromTypeFullName.l shouldBe
+        List("rust2cpgtest::Bar")
+      cpg.typeDecl.fullNameExact("<rust2cpgtest::Baz<'a> as rust2cpgtest::Bar>").inheritsFromTypeFullName.l shouldBe
+        List("rust2cpgtest::Bar")
+    }
+  }
+
+  "impl block for a type alias" should {
+    val cpg = code("""
+        |struct Foo;
+        |type Alias = Foo;
+        |impl Alias {
+        |  fn bar(&self) {}
+        |}
+        |fn run(f: Foo) { f.bar(); }
+        |""".stripMargin)
+
+    "have correct typeDecl" in {
+      inside(cpg.typeDecl.nameExact("Foo").l) { case typeDecl :: Nil =>
+        typeDecl.fullName shouldBe "rust2cpgtest::Foo"
+        typeDecl.method.fullName.sorted.l shouldBe List("rust2cpgtest::Foo::<init>", "rust2cpgtest::Foo::bar")
+      }
+    }
+
+    "have correct call methodFullName" in {
+      cpg.call.nameExact("bar").methodFullName.l shouldBe List("rust2cpgtest::Foo::bar")
+    }
+  }
+
+  "a trait-impl function returning `Self`" should {
+    val cpg = code("""
+        |trait Bar {
+        |  fn make() -> Self;
+        |}
+        |struct Foo;
+        |impl Bar for Foo {
+        |  fn make() -> Self { Foo }
+        |}
+        |""".stripMargin)
+
+    "have correct return typeFullName" in {
+      cpg.method
+        .fullNameExact("<rust2cpgtest::Foo as rust2cpgtest::Bar>::make")
+        .methodReturn
+        .typeFullName
+        .l shouldBe List("rust2cpgtest::Foo")
+    }
+  }
+
+  "impl block for a trait on an associated type" should {
+    val cpg = code("""
+        |struct Foo;
+        |struct Bar;
+        |trait Baz {
+        |  type Item;
+        |}
+        |impl Baz for Foo {
+        |  type Item = Bar;
+        |}
+        |trait Qux {
+        |  fn do_stuff(&self) -> Self;
+        |}
+        |impl Qux for <Foo as Baz>::Item {
+        |  fn do_stuff(&self) -> Self { Bar }
+        |}
+        |fn run(bar: Bar) { bar.do_stuff(); }
+        |""".stripMargin)
+
+    "have correct typeDecl fullName" in {
+      inside(cpg.typeDecl.nameExact("Bar").fullName.sorted.l) { case traitImplFullName :: typeFullName :: Nil =>
+        typeFullName shouldBe "rust2cpgtest::Bar"
+        traitImplFullName shouldBe "<rust2cpgtest::Bar as rust2cpgtest::Qux>"
+      }
+    }
+
+    "have correct inheritsFrom on the trait" in {
+      cpg.typeDecl
+        .fullNameExact("<rust2cpgtest::Bar as rust2cpgtest::Qux>")
+        .inheritsFromTypeFullName
+        .l shouldBe List("rust2cpgtest::Qux")
+    }
+
+    // TODO(rust_ast_gen): check why implementedTraits is missing.
+    "have correct inheritsFrom on the struct" in {
+      pendingUntilFixed {
+        cpg.typeDecl.fullNameExact("rust2cpgtest::Bar").inheritsFromTypeFullName.l shouldBe List(
+          "<rust2cpgtest::Bar as rust2cpgtest::Qux>"
+        )
+      }
+    }
+
+    "have correct method properties" in {
+      inside(cpg.method.fullNameExact("<rust2cpgtest::Bar as rust2cpgtest::Qux>::do_stuff").l) { case method :: Nil =>
+        method.methodReturn.typeFullName shouldBe "rust2cpgtest::Bar"
+        method.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL)
+        inside(method.parameter.l) { case self :: Nil =>
+          self.name shouldBe "self"
+          self.index shouldBe 0
+          self.order shouldBe 0
+          self.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
+          self.typeFullName shouldBe "&rust2cpgtest::Bar"
+        }
+      }
+    }
+
+    "have correct binding" in {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Bar as rust2cpgtest::Qux>").methodBinding.l) {
+        case binding :: Nil =>
+          binding.name shouldBe "do_stuff"
+          binding.signature shouldBe "rust2cpgtest::Qux"
+          binding.methodFullName shouldBe "<rust2cpgtest::Bar as rust2cpgtest::Qux>::do_stuff"
+      }
+    }
+
+    "have the same fullName as the one at the call site" in {
+      inside(cpg.call.nameExact("do_stuff").l) { case call :: Nil =>
+        call.methodFullName shouldBe "<rust2cpgtest::Bar as rust2cpgtest::Qux>::do_stuff"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      }
+    }
+
+    "have correct call arguments" in {
+      inside(cpg.call.nameExact("do_stuff").argument.l) { case (addressOf: Call) :: Nil =>
+        addressOf.name shouldBe Operators.addressOf
+        addressOf.code shouldBe "&bar"
+        addressOf.argumentIndex shouldBe 0
+        addressOf.typeFullName shouldBe "&rust2cpgtest::Bar"
+        inside(addressOf.argument.l) { case (bar: Identifier) :: Nil =>
+          bar.name shouldBe "bar"
+          bar.typeFullName shouldBe "rust2cpgtest::Bar"
+        }
+      }
+    }
+  }
+
+  "a call to a trait method" should {
+    val cpg = code("""
+        |trait Bar { fn do_stuff(&self) -> i32; }
+        |struct Foo;
+        |impl Bar for Foo { fn do_stuff(&self) -> i32 { 1 } }
+        |fn run(f: Foo) { f.do_stuff(); }
+        |""".stripMargin)
+
+    "have correct methodFullName" in {
+      inside(cpg.call.nameExact("do_stuff").l) { case call :: Nil =>
+        call.methodFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("do_stuff").argument.l) { case (base: Call) :: Nil =>
+        base.name shouldBe Operators.addressOf
+        base.code shouldBe "&f"
+        base.argumentIndex shouldBe 0
+        base.typeFullName shouldBe "&rust2cpgtest::Foo"
+        inside(base.argument.l) { case (inner: Identifier) :: Nil =>
+          inner.name shouldBe "f"
+          inner.typeFullName shouldBe "rust2cpgtest::Foo"
+        }
+      }
+    }
+  }
+
+  "a call to a trait method via fully-qualified syntax" should {
+    val cpg = code("""
+        |trait Bar { fn do_stuff(&self) -> i32; }
+        |struct Foo;
+        |impl Bar for Foo { fn do_stuff(&self) -> i32 { 1 } }
+        |fn run(f: Foo) { Foo::do_stuff(&f); }
+        |""".stripMargin)
+
+    "have correct methodFullName" in {
+      inside(cpg.call.nameExact("do_stuff").l) { case call :: Nil =>
+        call.methodFullName shouldBe "<rust2cpgtest::Foo as rust2cpgtest::Bar>::do_stuff"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("do_stuff").argument.l) { case (base: Call) :: Nil =>
+        base.name shouldBe Operators.addressOf
+        base.code shouldBe "&*&f"
+        base.argumentIndex shouldBe 0
+        base.typeFullName shouldBe "&rust2cpgtest::Foo"
+        inside(base.argument.l) { case (deref: Call) :: Nil =>
+          deref.name shouldBe Operators.indirection
+          deref.code shouldBe "*&f"
+          deref.typeFullName shouldBe "rust2cpgtest::Foo"
+          inside(deref.argument.l) { case (inner: Call) :: Nil =>
+            inner.name shouldBe Operators.addressOf
+            inner.code shouldBe "&f"
+            inner.typeFullName shouldBe "&rust2cpgtest::Foo"
+          }
+        }
+      }
+    }
+  }
+
+  "same-named structs and impls inside if branches" should {
+    val cpg = code("""
+        |trait Bar { fn do_stuff(&self) -> i32; }
+        |fn outer(something: bool) {
+        |  if something {
+        |     struct Foo;
+        |     impl Bar for Foo { fn do_stuff(&self) -> i32 { 1 } }
+        |     let x = Foo;
+        |     x.do_stuff();
+        |  } else {
+        |     struct Foo;
+        |     impl Bar for Foo { fn do_stuff(&self) -> i32 { 2 } }
+        |     let x = Foo;
+        |     x.do_stuff();
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct typeDecl fulNames" in {
+      cpg.typeDecl.name("Foo.*").fullName.sorted.l shouldBe List(
+        "<rust2cpgtest::outer::Foo#1 as rust2cpgtest::Bar>",
+        "<rust2cpgtest::outer::Foo#2 as rust2cpgtest::Bar>",
+        "rust2cpgtest::outer::Foo#1",
+        "rust2cpgtest::outer::Foo#2"
+      )
+    }
+
+    "have correct inheritsFrom" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::outer::Foo#1").inheritsFromTypeFullName.l shouldBe List(
+        "<rust2cpgtest::outer::Foo#1 as rust2cpgtest::Bar>"
+      )
+      cpg.typeDecl.fullNameExact("rust2cpgtest::outer::Foo#2").inheritsFromTypeFullName.l shouldBe List(
+        "<rust2cpgtest::outer::Foo#2 as rust2cpgtest::Bar>"
+      )
+    }
+
+    "have correct method fullNames" in {
+      cpg.method.nameExact("do_stuff").fullName.sorted.l shouldBe List(
+        "<rust2cpgtest::outer::Foo#1 as rust2cpgtest::Bar>::do_stuff",
+        "<rust2cpgtest::outer::Foo#2 as rust2cpgtest::Bar>::do_stuff",
+        "rust2cpgtest::Bar::do_stuff"
+      )
+    }
+
+    "have correct bindings" in {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::outer::Foo#1 as rust2cpgtest::Bar>").methodBinding.l) {
+        case binding :: Nil =>
+          binding.name shouldBe "do_stuff"
+          binding.signature shouldBe "rust2cpgtest::Bar"
+          binding.methodFullName shouldBe "<rust2cpgtest::outer::Foo#1 as rust2cpgtest::Bar>::do_stuff"
+      }
+
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::outer::Foo#2 as rust2cpgtest::Bar>").methodBinding.l) {
+        case binding :: Nil =>
+          binding.name shouldBe "do_stuff"
+          binding.signature shouldBe "rust2cpgtest::Bar"
+          binding.methodFullName shouldBe "<rust2cpgtest::outer::Foo#2 as rust2cpgtest::Bar>::do_stuff"
+      }
+    }
+
+    "have correct calls" in {
+      inside(cpg.call.nameExact("do_stuff").sortBy(_.lineNumber).l) { case thenCall :: elseCall :: Nil =>
+        thenCall.methodFullName shouldBe "<rust2cpgtest::outer::Foo#1 as rust2cpgtest::Bar>::do_stuff"
+        thenCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+        inside(thenCall.argument.l) { case (addressOf: Call) :: Nil =>
+          addressOf.methodFullName shouldBe Operators.addressOf
+          addressOf.code shouldBe "&x"
+          addressOf.typeFullName shouldBe "&rust2cpgtest::outer::Foo#1"
+        }
+
+        elseCall.methodFullName shouldBe "<rust2cpgtest::outer::Foo#2 as rust2cpgtest::Bar>::do_stuff"
+        elseCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+        inside(elseCall.argument.l) { case (addressOf: Call) :: Nil =>
+          addressOf.methodFullName shouldBe Operators.addressOf
+          addressOf.code shouldBe "&x"
+          addressOf.typeFullName shouldBe "&rust2cpgtest::outer::Foo#2"
+        }
+      }
+    }
+  }
+
+  "trait impls inside if branches" should {
+    val cpg = code("""
+        |trait Bar { fn do_bar(&self) -> i32; }
+        |trait Baz { fn do_baz(&self) -> i32; }
+        |fn outer(something: bool) {
+        | struct Foo;
+        | if something {
+        |   impl Bar for Foo { fn do_bar(&self) -> i32 { 1 } }
+        |   let x = Foo;
+        |   x.do_bar();
+        | } else {
+        |   impl Baz for Foo { fn do_baz(&self) -> i32 { 2 } }
+        |   let x = Foo;
+        |   x.do_baz();
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct typeDecl fulNames" in {
+      cpg.typeDecl.nameExact("Foo").fullName.sorted.l shouldBe List(
+        "<rust2cpgtest::outer::Foo as rust2cpgtest::Bar>",
+        "<rust2cpgtest::outer::Foo as rust2cpgtest::Baz>",
+        "rust2cpgtest::outer::Foo"
+      )
+    }
+
+    // TODO(rust_ast_gen): check why implementedTraits here is missing.
+    "have correct inheritsFrom" in {
+      pendingUntilFixed {
+        cpg.typeDecl.fullNameExact("rust2cpgtest::outer::Foo").inheritsFromTypeFullName.sorted.l shouldBe List(
+          "<rust2cpgtest::outer::Foo as rust2cpgtest::Bar>",
+          "<rust2cpgtest::outer::Foo as rust2cpgtest::Baz>"
+        )
+      }
+    }
+
+    // TODO(rust_ast_gen): check why these are unresolved.
+    "have correct method fullNames" in {
+      pendingUntilFixed {
+        cpg.method.name("do_ba.*").fullName.sorted.l shouldBe List(
+          "<rust2cpgtest::outer::Foo as rust2cpgtest::Bar>::do_bar",
+          "<rust2cpgtest::outer::Foo as rust2cpgtest::Baz>::do_baz",
+          "rust2cpgtest::Bar::do_bar",
+          "rust2cpgtest::Baz::do_baz"
+        )
+      }
+    }
+
+    "have correct bindings" in {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::outer::Foo as rust2cpgtest::Bar>").methodBinding.l) {
+        case binding :: Nil =>
+          binding.name shouldBe "do_bar"
+          binding.signature shouldBe "rust2cpgtest::Bar"
+          binding.methodFullName shouldBe "<rust2cpgtest::outer::Foo as rust2cpgtest::Bar>::do_bar"
+      }
+
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::outer::Foo as rust2cpgtest::Baz>").methodBinding.l) {
+        case binding :: Nil =>
+          binding.name shouldBe "do_baz"
+          binding.signature shouldBe "rust2cpgtest::Baz"
+          binding.methodFullName shouldBe "<rust2cpgtest::outer::Foo as rust2cpgtest::Baz>::do_baz"
+      }
+    }
+
+    // TODO(rust_ast_gen): check why these are unresolved.
+    "have correct calls" in {
+      inside(cpg.call.name("do_ba.*").sortBy(_.lineNumber).l) { case thenCall :: elseCall :: Nil =>
+        thenCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        elseCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+        pendingUntilFixed {
+          thenCall.methodFullName shouldBe "<rust2cpgtest::outer::Foo as rust2cpgtest::Bar>::do_bar"
+
+          inside(thenCall.argument.l) { case (addressOf: Call) :: Nil =>
+            addressOf.methodFullName shouldBe Operators.addressOf
+            addressOf.code shouldBe "&x"
+            addressOf.typeFullName shouldBe "&rust2cpgtest::outer::Foo"
+          }
+
+          elseCall.methodFullName shouldBe "<rust2cpgtest::outer::Foo as rust2cpgtest::Baz>::do_baz"
+
+          inside(elseCall.argument.l) { case (addressOf: Call) :: Nil =>
+            addressOf.methodFullName shouldBe Operators.addressOf
+            addressOf.code shouldBe "&x"
+            addressOf.typeFullName shouldBe "&rust2cpgtest::outer::Foo"
+          }
+        }
+      }
+    }
+
+  }
+
+  "trait impls with const arguments" should {
+    val cpg = code("""
+        |trait Tr<const N: usize> { fn m(&self); }
+        |struct S;
+        |impl Tr<3> for S { fn m(&self) {} }
+        |impl Tr<4> for S { fn m(&self) {} }
+        |fn f(s: S) {
+        |  <S as Tr<3>>::m(&s);
+        |  Tr::<4>::m(&s);
+        |}
+        |""".stripMargin)
+
+    "have correct impl typeDecl fullNames" in {
+      cpg.typeDecl.nameExact("S").where(_.method.nameExact("m")).fullName.sorted.l shouldBe List(
+        "<rust2cpgtest::S as rust2cpgtest::Tr<3>>",
+        "<rust2cpgtest::S as rust2cpgtest::Tr<4>>"
+      )
+    }
+
+    // TODO(rust_ast_gen): missing const N.
+    "have correct trait typeDecl fullName" in {
+      pendingUntilFixed {
+        cpg.typeDecl.nameExact("Tr").fullName.l shouldBe List("rust2cpgtest::Tr<N>")
+      }
+    }
+
+    "have correct methodFullName" in {
+      cpg.method.nameExact("m").fullName.sorted.l shouldBe List(
+        "<rust2cpgtest::S as rust2cpgtest::Tr<3>>::m",
+        "<rust2cpgtest::S as rust2cpgtest::Tr<4>>::m",
+        "rust2cpgtest::Tr<N>::m"
+      )
+    }
+
+    "have correct call methodFullName" in {
+      cpg.call.nameExact("m").methodFullName.l shouldBe List(
+        "<rust2cpgtest::S as rust2cpgtest::Tr<3>>::m",
+        "<rust2cpgtest::S as rust2cpgtest::Tr<4>>::m"
+      )
+    }
+  }
+
+  "trait impl with lifetime arguments" should {
+    val cpg = code("""
+        |trait Tr<'a> { fn m(&self); }
+        |struct S;
+        |impl<'a> Tr<'a> for S { fn m(&self) {} }
+        |fn f(s: S) {
+        |  <S as Tr>::m(&s);
+        |}
+        |""".stripMargin)
+
+    "have correct impl typeDecl fullName" in {
+      cpg.typeDecl.nameExact("S").where(_.method.nameExact("m")).fullName.l shouldBe List(
+        "<rust2cpgtest::S as rust2cpgtest::Tr<'a>>"
+      )
+    }
+
+    "have correct impl methodFullName" in {
+      cpg.typeDecl.nameExact("S").method.nameExact("m").fullName.l shouldBe List(
+        "<rust2cpgtest::S as rust2cpgtest::Tr<'a>>::m"
+      )
+    }
+
+    "have correct call methodFullName" in {
+      cpg.call.nameExact("m").methodFullName.l shouldBe List("<rust2cpgtest::S as rust2cpgtest::Tr<'a>>::m")
+    }
+
+    // TODO(rust_ast_gen): missing lifetime..
+    "have correct trait typeDecl fullName" in {
+      pendingUntilFixed {
+        cpg.typeDecl.nameExact("Tr").fullName.l shouldBe List("rust2cpgtest::Tr<'a>")
+      }
+    }
+
+    // TODO(rust_ast_gen): missing lifetime.
+    "have correct trait methodFullName" in {
+      pendingUntilFixed {
+        cpg.typeDecl.nameExact("Tr").method.nameExact("m").fullName.l shouldBe List("rust2cpgtest::Tr<'a>::m")
+      }
+    }
+  }
+}
+
+class ImplTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
+
+  "an impl block for the `Default` trait resolved against the sysroot" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Default for Foo {
+        |  fn default() -> Foo { Foo }
+        |}
+        |fn run() {
+        |  Foo::default();
+        |}
+        |""".stripMargin)
+
+    "have correct fullName for the impl" in {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo as core::default::Default>").l) { case typeDecl :: Nil =>
+        typeDecl.inheritsFromTypeFullName shouldBe List("core::default::Default")
+        typeDecl.method.fullName.l shouldBe List("<rust2cpgtest::Foo as core::default::Default>::default")
+      }
+    }
+
+    "have correct inheritsFromTypeFullName on the struct" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Foo").inheritsFromTypeFullName.l shouldBe List(
+        "<rust2cpgtest::Foo as core::default::Default>"
+      )
+    }
+
+    "create binding node for the method" in {
+      inside(cpg.typeDecl.fullNameExact("<rust2cpgtest::Foo as core::default::Default>").methodBinding.l) {
+        case binding :: Nil =>
+          binding.name shouldBe "default"
+          binding.signature shouldBe "core::default::Default"
+          binding.methodFullName shouldBe "<rust2cpgtest::Foo as core::default::Default>::default"
+      }
+    }
+
+    "have correct fulName for the trait call" in {
+      inside(cpg.call.nameExact("default").l) { case call :: Nil =>
+        call.methodFullName shouldBe "<rust2cpgtest::Foo as core::default::Default>::default"
+      }
+    }
+
+    "have no arguments" in {
+      cpg.call.nameExact("default").argument shouldBe empty
+    }
+  }
+
+  "trait impls for dyn types with auto trait bounds" should {
+    val cpg = code("""
+        |trait Tr {}
+        |trait Foo { fn m(&self); }
+        |impl Foo for Box<dyn Tr> { fn m(&self) {} }
+        |impl Foo for Box<dyn Tr + Send> { fn m(&self) {} }
+        |impl Foo for Box<dyn Tr + Sync> { fn m(&self) {} }
+        |impl Foo for Box<dyn Tr + Send + Sync> { fn m(&self) {} }
+        |fn run(g: Box<dyn Tr + Sync + Send>) {}
+        |""".stripMargin)
+
+    "have correct fullName" in {
+      cpg.typeDecl.fullName(".* as rust2cpgtest::Foo>").fullName.sorted.l shouldBe List(
+        "<alloc::boxed::Box<dyn rust2cpgtest::Tr + core::marker::Send + core::marker::Sync, alloc::alloc::Global> as rust2cpgtest::Foo>",
+        "<alloc::boxed::Box<dyn rust2cpgtest::Tr + core::marker::Send, alloc::alloc::Global> as rust2cpgtest::Foo>",
+        "<alloc::boxed::Box<dyn rust2cpgtest::Tr + core::marker::Sync, alloc::alloc::Global> as rust2cpgtest::Foo>",
+        "<alloc::boxed::Box<dyn rust2cpgtest::Tr, alloc::alloc::Global> as rust2cpgtest::Foo>"
+      )
+    }
+
+    "have correct method fullName" in {
+      cpg.method.nameExact("m").fullName.sorted.l shouldBe List(
+        "<alloc::boxed::Box<dyn rust2cpgtest::Tr + core::marker::Send + core::marker::Sync, alloc::alloc::Global> as rust2cpgtest::Foo>::m",
+        "<alloc::boxed::Box<dyn rust2cpgtest::Tr + core::marker::Send, alloc::alloc::Global> as rust2cpgtest::Foo>::m",
+        "<alloc::boxed::Box<dyn rust2cpgtest::Tr + core::marker::Sync, alloc::alloc::Global> as rust2cpgtest::Foo>::m",
+        "<alloc::boxed::Box<dyn rust2cpgtest::Tr, alloc::alloc::Global> as rust2cpgtest::Foo>::m",
+        "rust2cpgtest::Foo::m"
+      )
+    }
+
+    "have correct parameter typeFullName" in {
+      cpg.method.nameExact("run").parameter.nameExact("g").typeFullName.l shouldBe List(
+        "alloc::boxed::Box<dyn rust2cpgtest::Tr + core::marker::Send + core::marker::Sync>"
+      )
+    }
+  }
+}

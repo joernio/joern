@@ -13,6 +13,7 @@ object IntegerTruncations extends QueryBundle {
     * truncation on 64 bit platforms.
     */
   @q
+  @scala.annotation.nowarn("cat=deprecation")
   def strlenAssignmentTruncations(): Query =
     Query.make(
       name = "strlen-truncation",

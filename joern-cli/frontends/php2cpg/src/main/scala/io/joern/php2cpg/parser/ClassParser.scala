@@ -18,27 +18,24 @@ class ClassParser(targetDir: Path) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  private lazy val classParserScript = {
-    val f = FileUtil.newTemporaryFile("ClassParser", ".php")
-    FileUtil.deleteOnExit(f, swallowIOExceptions = true)
-
-    Using(Source.fromResource("ClassParser.php")) { br =>
-      Files.writeString(f, br.getLines().mkString("\n"))
-    }
-    f
-  }
-
-  private lazy val phpClassParseCommand: Seq[String] =
-    Seq("php", classParserScript.toString, targetDir.toString)
-
-  def parse(): Try[List[ClassParserClass]] = Try {
+  def parse(): Try[List[ClassParserClass]] = {
     val inputDirectory = targetDir.getParent.toAbsolutePath
-    ExternalCommand.run(phpClassParseCommand, Option(inputDirectory)).toTry.map(_.reverse) match {
-      case Success(output) =>
-        read[List[ClassParserClass]](output.mkString("\n"))
-      case Failure(exception) =>
-        logger.error(s"Failure running `ClassParser.php` with $phpClassParseCommand", exception.getMessage)
-        throw exception
+
+    FileUtil.usingTemporaryFile("ClassParser", ".php") { scriptFile =>
+      Using(Source.fromResource("ClassParser.php")) { br =>
+        Files.writeString(scriptFile, br.getLines().mkString("\n"))
+      }
+
+      ExternalCommand
+        .run(Seq("php", scriptFile.toString, targetDir.toString), Option(inputDirectory))
+        .toTry
+        .map(_.reverse) match {
+        case Success(output) =>
+          Try(read[List[ClassParserClass]](output.mkString("\n")))
+        case Failure(exception) =>
+          logger.error(s"Failure running `ClassParser.php`", exception.getMessage)
+          Failure(exception)
+      }
     }
   }
 

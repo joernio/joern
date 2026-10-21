@@ -52,7 +52,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
       val typeFullName         = x.propertyOption(Properties.TypeFullName).getOrElse(Defines.Any)
       val typeHints            = symbolTable.get(LocalVar(typeFullName)) - typeFullName
       lazy val cpgTypeFullName = cpg.typeDecl.nameExact(typeFullName).fullName.toSet
-      val resolvedTypeHints =
+      val resolvedTypeHints    =
         if (typeHints.nonEmpty) symbolTable.put(x, typeHints)
         else if (cpgTypeFullName.nonEmpty) symbolTable.put(x, cpgTypeFullName)
         else symbolTable.put(x, x.getKnownTypes)
@@ -65,7 +65,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
         val typeFullName         = possibleTypes.head
         val typeHints            = symbolTable.get(LocalVar(typeFullName)) - typeFullName
         lazy val cpgTypeFullName = cpg.typeDecl.nameExact(typeFullName).fullName.toSet
-        val resolvedTypeHints =
+        val resolvedTypeHints    =
           if (typeHints.nonEmpty) symbolTable.put(x, typeHints)
           else if (cpgTypeFullName.nonEmpty) symbolTable.put(x, cpgTypeFullName)
           else symbolTable.put(x, x.getKnownTypes)
@@ -96,7 +96,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
           case (_, ts)                 => ts.map(_.replaceAll(s"\\.(?!js:${Defines.Program})", pathSep))
         }
       p match {
-        case _: MethodParameterIn => symbolTable.put(p, resolvedHints)
+        case _: MethodParameterIn                         => symbolTable.put(p, resolvedHints)
         case _: MethodReturn if resolvedHints.sizeIs == 1 =>
           builder.setNodeProperty(p, PropertyNames.TypeFullName, resolvedHints.head)
         case _: MethodReturn =>
@@ -122,14 +122,14 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
 
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = if (c.methodFullName.endsWith(".alloc")) {
-      val newOp       = c.inAssignment.astSiblings.isCall.nameExact(Defines.OperatorsNew).headOption
+      val newOp       = c.inCall.isAssignment.astSiblings.isCall.nameExact(Defines.OperatorsNew).headOption
       val newChildren = newOp.astChildren.l
 
       val possibleImportIdentifier = newChildren.isIdentifier.headOption match {
         case Some(id) if GlobalBuiltins.builtins.contains(id.name) => Set(s"__ecma.${id.name}")
-        case Some(id) =>
+        case Some(id)                                              =>
           val typs = symbolTable.get(CallAlias(id.name, Option("this")))
-          if typs.nonEmpty then newOp.foreach(symbolTable.put(_, typs))
+          if (typs.nonEmpty) { newOp.foreach(symbolTable.put(_, typs)) }
           symbolTable.get(id)
         case None => Set.empty[String]
       }

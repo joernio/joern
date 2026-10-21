@@ -49,7 +49,7 @@ class X86FunctionPass(
   override def runOnPart(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
     // we need it just once with default settings
     val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
-    val methodNode =
+    val methodNode          =
       createMethodNode(decompiler, function, filename)
     val localGraphBuilder = Cpg.newDiffGraphBuilder
     val methodReturn      = createReturnNode()

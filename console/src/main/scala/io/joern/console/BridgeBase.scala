@@ -37,8 +37,18 @@ case class Config(
   verbose: Boolean = false,
   dependencies: Seq[String] = Seq.empty,
   resolvers: Seq[String] = Seq.empty,
-  maxHeight: Option[Int] = None
+  maxHeight: Option[Int] = None,
+  scanMaxCallDepth: Option[Int] = None,
+  scanScriptNames: Array[String] = Array.empty,
+  scanTagNames: Array[String] = Array.empty,
+  scalacOptions: Seq[String] = Config.DefaultScalacOptions
 )
+
+object Config {
+  val DefaultScalacOptions: Seq[String] = Seq(
+    "-Wconf:msg=Implicit parameters should be provided with a `using` clause:s"
+  )
+}
 
 /** Base class for ReplBridge, split by topic into multiple self types.
   */
@@ -195,6 +205,13 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
         .action((x, c) => c.copy(maxHeight = Some(x)))
         .text("Maximum number lines to print before output gets truncated (default: no limit)")
 
+      opt[String]("scalacOption")
+        .valueName("-Xfatal-warnings")
+        .unbounded()
+        .optional()
+        .action((x, c) => c.copy(scalacOptions = c.scalacOptions :+ x))
+        .text("additional scalac option passed to the underlying compiler - may be passed multiple times")
+
       help("help")
         .text("Print this help text")
     }
@@ -230,17 +247,23 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
   /** code that is executed on startup */
   protected def runBeforeCode: Seq[String]
 
-  private def escapeForWindows(s: String, isInteractive: Boolean) = {
-    if (!isInteractive && scala.util.Properties.isWin) {
+  private def escapeForWindows(s: String, isInteractive: Boolean, isServer: Boolean = false): String = {
+    if (isServer) {
+      s // no escaping for server mode
+    } else if (!isInteractive && scala.util.Properties.isWin) {
       s.replace("\\", "\\\\").replace("\"", "\\\"")
     } else {
       s
     }
   }
 
-  protected def buildRunBeforeCode(config: Config, isInteractive: Boolean = false): Seq[String] = {
+  protected def buildRunBeforeCode(
+    config: Config,
+    isInteractive: Boolean = false,
+    isServer: Boolean = false
+  ): Seq[String] = {
     val builder = Seq.newBuilder[String]
-    builder ++= runBeforeCode.map(code => escapeForWindows(code, isInteractive))
+    builder ++= runBeforeCode.map(code => escapeForWindows(code, isInteractive, isServer))
     config.cpgToLoad.foreach { cpgFile =>
       val path = escapeForWindows(cpgFile.toString, isInteractive)
       builder += s"""importCpg("$path")"""
@@ -250,6 +273,19 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
       builder += s"""openForInputPath("$path")""".stripMargin
     }
     builder ++= config.runBefore.map(code => escapeForWindows(code, isInteractive))
+
+    if (config.pluginToRun.contains("scan")) {
+      builder += "import io.joern.joerncli.Scan"
+      builder += s"""Scan.defaultOpts.names = Array(${escapeForWindows(
+          config.scanScriptNames.map(n => s""""$n"""").mkString(", "),
+          isInteractive
+        )})"""
+      builder += s"""Scan.defaultOpts.tags = Array(${escapeForWindows(
+          config.scanTagNames.map(n => s""""$n"""").mkString(", "),
+          isInteractive
+        )})"""
+      builder += config.scanMaxCallDepth.map(d => s"Scan.defaultOpts.maxCallDepth = $d").getOrElse("")
+    }
     builder.result()
   }
 
@@ -281,7 +317,8 @@ trait InteractiveShell { this: BridgeBase =>
           ),
         greeting = Option(greeting),
         prompt = Option(promptStr),
-        maxHeight = config.maxHeight
+        maxHeight = config.maxHeight,
+        scalacOptions = config.scalacOptions
       )
     )
   }
@@ -305,7 +342,16 @@ trait ScriptExecution { this: BridgeBase =>
           params = config.params,
           verbose = config.verbose,
           classpathConfig = replpp.Config
-            .ForClasspath(inheritClasspath = true, dependencies = config.dependencies, resolvers = config.resolvers)
+            .ForClasspath(
+              inheritClasspath = true,
+              // when running via `sbt test` the sbt launcher jar is part of `java.class.path`. It bundles older
+              // scala library classes, which - depending on the (sorted) classpath order, e.g. on Windows - shadow
+              // the real scala library in the forked script runner JVM (-> NoSuchMethodError)
+              inheritClasspathExcludes = Seq("sbt-launch.*\\.jar"),
+              dependencies = config.dependencies,
+              resolvers = config.resolvers
+            ),
+          scalacOptions = config.scalacOptions
         )
       )
       if (config.verbose && scriptReturn.isFailure) {
@@ -391,6 +437,7 @@ trait PluginHandling { this: BridgeBase =>
           case Languages.C | Languages.NEWC => "c"
           case Languages.JAVA               => "jvm"
           case Languages.JAVASRC            => "java"
+          case Languages.PYTHONSRC          => "python"
           case lang                         => lang.toLowerCase
         }
         .getOrElse("c")
@@ -400,9 +447,12 @@ trait PluginHandling { this: BridgeBase =>
   private def argsStringFromConfig(config: Config): String = {
     config.frontendArgs match {
       case Array() => ""
-      case args =>
+      case args    =>
+        // Escaped as a Scala string literal, exactly as `src` is in loadOrCreateCpg above:
+        // these values are interpolated into a generated source file, so an unescaped backslash
+        // or quote yields an invalid literal and the script fails to compile rather than run.
         val quotedArgs = args.map { arg =>
-          "\"" ++ arg ++ "\""
+          "\"" ++ StringEscapeUtils.escapeJava(arg) ++ "\""
         }
         val argsString = quotedArgs.mkString(", ")
         s", args=List($argsString)"
@@ -424,11 +474,12 @@ trait ServerHandling { this: BridgeBase =>
   protected def startHttpServer(config: Config): Unit = {
     val baseConfig = replpp.Config(
       predefFiles = config.predefFiles,
-      runBefore = buildRunBeforeCode(config),
+      runBefore = buildRunBeforeCode(config, isServer = true),
       runAfter = buildRunAfterCode(config),
       verbose = true, // always print what's happening - helps debugging
       classpathConfig = replpp.Config
-        .ForClasspath(inheritClasspath = true, dependencies = config.dependencies, resolvers = config.resolvers)
+        .ForClasspath(inheritClasspath = true, dependencies = config.dependencies, resolvers = config.resolvers),
+      scalacOptions = config.scalacOptions
     )
 
     replpp.server.ReplServer.startHttpServer(

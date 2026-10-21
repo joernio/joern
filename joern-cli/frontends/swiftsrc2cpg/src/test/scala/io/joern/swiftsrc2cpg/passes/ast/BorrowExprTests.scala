@@ -2,10 +2,10 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 import io.shiftleft.semanticcpg.language.*
 
-class BorrowExprTests extends AstSwiftSrc2CpgSuite {
+class BorrowExprTests extends SwiftSrc2CpgSuite {
 
   "BorrowExprTests" should {
 
@@ -14,7 +14,7 @@ class BorrowExprTests extends AstSwiftSrc2CpgSuite {
         |func useString(_ str: String) {}
         |var global: String = "123"
         |func testGlobal() {
-        |  useString(_borrow global)
+        |  useString(borrow global)
         |}
         |""".stripMargin)
       cpg.call.nameExact("useString").argument(1).isIdentifier.name.l shouldBe List("global")
@@ -26,7 +26,7 @@ class BorrowExprTests extends AstSwiftSrc2CpgSuite {
         |func testVar() {
         |  var t = String()
         |  t = String()
-        |  useString(_borrow t)
+        |  useString(borrow t)
         |}
         |""".stripMargin)
       cpg.call.nameExact("useString").argument(1).isIdentifier.name.l shouldBe List("t")

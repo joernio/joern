@@ -1,13 +1,13 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class BuiltinIdentifierTests extends AnyFreeSpec with Matchers {
-  "builtin identifier" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""def f():
+class BuiltinIdentifierTests extends PySrc2CpgFixture with Matchers {
+  "builtin identifier" should {
+    val cpg = code("""def f():
         |  x = list()""".stripMargin)
 
     "test assignment to list exists" in {

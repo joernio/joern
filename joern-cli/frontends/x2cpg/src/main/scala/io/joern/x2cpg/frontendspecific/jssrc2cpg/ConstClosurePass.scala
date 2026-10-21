@@ -24,7 +24,7 @@ class ConstClosurePass(cpg: Cpg) extends CpgPass(cpg) {
   private def handleConstClosuresDefinedInObjectExpr(diffGraph: DiffGraphBuilder): Unit =
     for {
       assignment      <- cpg.assignment.filter(_.code.startsWith("_tmp_"))
-      name            <- assignment.start.target.fieldAccess.argument(2).isFieldIdentifier.canonicalName
+      name            <- assignment.start.target.isCall.isFieldAccess.fieldIdentifier.canonicalName
       methodRef       <- assignment.start.source.isMethodRef
       method          <- methodRef.referencedMethod
       enclosingMethod <- assignment.start.method.fullName

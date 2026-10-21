@@ -10,7 +10,7 @@ class CodeDumperTests extends JimpleCode2CpgFixture {
 
   "a Java source code CPG" should {
     implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
-    val cpg: Cpg = code(
+    val cpg: Cpg                             = code(
       """
                      |public class Foo {
                      |
@@ -49,7 +49,7 @@ class CodeDumperTests extends JimpleCode2CpgFixture {
 
   "Java Source CPG across multiple files" should {
     implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
-    val cpg: Cpg = code(
+    val cpg: Cpg                             = code(
       """
         |package bar;
         |public class Foo {

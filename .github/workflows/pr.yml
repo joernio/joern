@@ -1,99 +1,133 @@
 name: pr
 on: pull_request
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
 jobs:
-  test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+  lint-and-format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
+      - name: Fetch base branch with depth 1
+        run: git fetch --depth=1 origin ${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@ecad189dd245444b9ae0a0cd5922fd938b88906f # v1.5.12
+      - name: Check formatting and lint
+        run: sbt "scalafmtCheck ; Test/scalafmtCheck ; integrationTests/scalafmtCheck ; integrationTests/Test/scalafmtCheck ; scalafix --diff-base origin/${{ github.event.pull_request.base.ref }} RestrictedImports SingleLetterIdentifiers UnorderedIteration"
+      - run: echo "Previous step failed because the code is not formatted or violates coding quality expectations. Run 'sbt scalafmt Test/scalafmt' to format, and check the logs for scalafix violations."
+        if: ${{ failure() }}
+
+  validate-citation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+      - name: Validate CITATION.cff
+        uses: dieghernan/cff-validator@d8f85828214016ce6976e740b6e0504c0fdc4dbb # v5
+
+  run-tests:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+      - name: Set up JDK
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: sbt
+      - uses: sbt/setup-sbt@ecad189dd245444b9ae0a0cd5922fd938b88906f # v1.5.12
       - name: Install php
         if: matrix.os == 'macos-latest'
         run: brew install php
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           cache: false
           go-version: 1.25
+      - name: Set up Swift (macos-latest)
+        if: matrix.os == 'macos-latest'
+        uses: SwiftyLab/setup-swift@d60245579ea3836a3f2fa65ebbe1e8891d577c76 # v1.14.2
+        # macos-latest runner switched to Xcode 26.4.1 as the new default
+        # Some swiftsrc2cpg tests use `import Foundation` which can not be
+        # compiled with an incompatible toolchain/SDK combination.
+        #
+        # error: failed to build module 'Darwin'; this SDK is not supported by the compiler
+        # (the SDK is built with 'Apple Swift version 6.3.2 (swiftlang-6.3.2.1.2 clang-2100.0.123.2)',
+        # while this compiler is 'Apple Swift version 6.1.3 (swift-6.1.3-RELEASE)').
+        # Please select a toolchain which matches the SDK.
+        #
+        # See: https://github.com/actions/runner-images/issues/14167
+        with:
+          swift-version: "6.3"
       - name: Set up Swift
-        uses: SwiftyLab/setup-swift@latest
+        if: matrix.os != 'macos-latest'
+        uses: SwiftyLab/setup-swift@d60245579ea3836a3f2fa65ebbe1e8891d577c76 # v1.14.2
         with:
           swift-version: "6.1"
-      - name: Delete `.rustup` directory
-        run: rm -rf /home/runner/.rustup # to save disk space
-        if: runner.os == 'Linux'
-      - name: Delete `.cargo` directory # to save disk space
-        run: rm -rf /home/runner/.cargo
-        if: runner.os == 'Linux'
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
+        with:
+          toolchain: stable
+          components: rust-src
       - name: Run tests
-        run: sbt clean test
+        run: sbt "testFull"
 
-  formatting:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: sbt
-      - uses: sbt/setup-sbt@v1
-      - name: Check formatting
-        run: sbt scalafmtCheck Test/scalafmtCheck
-      - run: echo "Previous step failed because code is not formatted. Run 'sbt scalafmt Test/scalafmt'"
-        if: ${{ failure() }}
-      - name: Validate CITATION.cff
-        uses: dieghernan/cff-validator@v3
-        with:
-          install-r: true
-
-  linting:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: sbt
-      - uses: sbt/setup-sbt@v1
-      - name: Check for usage of restricted imports
-        run: sbt "scalafix RestrictedImports"
-      - run: echo "Previous step failed because certain coding quality expectations were violated. Please check the logs."
-        if: ${{ failure() }}
-
-  test-scripts:
+  integration-tests:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@ecad189dd245444b9ae0a0cd5922fd938b88906f # v1.5.12
+      - name: Run integration tests
+        run: sbt "c2cpg/stage ; integrationTests/testFull"
+
+  test-scripts:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+      - name: Set up JDK
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: sbt
+      - uses: sbt/setup-sbt@ecad189dd245444b9ae0a0cd5922fd938b88906f # v1.5.12
       - name: Install coreutils
         if: matrix.os == 'macos-latest'
         run: brew install coreutils
@@ -103,12 +137,34 @@ jobs:
       - name: Install Python dependencies for distribution test (Linux, MacOS)
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
-          python -m pip install requests pexpect
+          python -m pip install pexpect
       - name: Install Python dependencies for distribution test (Windows)
         if: matrix.os == 'windows-latest'
         run: |
-          python -m pip install requests wexpect
+          python -m pip install setuptools<81
+          python -m pip install wexpect
       - name: Test distribution
         run: |
-          sbt joerncli/stage querydb/createDistribution
+          sbt "joerncli/stage ; querydb/createDistribution"
           python -u ./testDistro.py
+
+  test:
+    timeout-minutes: 60
+    needs: [validate-citation, lint-and-format, run-tests, integration-tests, test-scripts]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Check results of all required jobs
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          failed=$(echo "$NEEDS" | jq -r 'to_entries[] | select(.value.result != "success") | "\(.key) (\(.value.result))"' | paste -sd, -)
+          if [ -n "$failed" ]; then
+            echo "::error::Required jobs did not succeed: $failed"
+            exit 1
+          fi
+          echo "All required jobs succeeded."

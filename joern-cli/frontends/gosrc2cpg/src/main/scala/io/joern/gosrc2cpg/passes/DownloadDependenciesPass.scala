@@ -13,10 +13,11 @@ import org.slf4j.LoggerFactory
 import java.io.File as JFile
 import java.nio.file.Paths
 import java.util.concurrent.LinkedBlockingQueue
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoGlobal, config: Config) {
-  private val logger = LoggerFactory.getLogger(getClass)
+  private val logger  = LoggerFactory.getLogger(getClass)
   def process(): Unit = {
     val processor       = new DependencyProcessorQueue()
     val processorThread = new Thread(processor)
@@ -24,12 +25,12 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
     FileUtil.usingTemporaryDirectory("go-temp-download") { projDir =>
       parentGoMod
         .getModMetaData()
-        .foreach(mod => {
+        .foreach { mod =>
           ExternalCommand.run(Seq("go", "mod", "init", "joern.io/temp"), Option(projDir)).toTry match {
             case Success(_) =>
               mod.dependencies
                 .filter(dep => dep.beingUsed)
-                .map(dependency => {
+                .map { dependency =>
                   val cmd     = Seq("go", "get", dependency.dependencyStr())
                   val results = ExternalCommand.run(cmd, Option(projDir)).toTry
                   results match {
@@ -39,11 +40,11 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
                     case Failure(f) =>
                       logger.error(s"\t- command '$cmd' failed", f)
                   }
-                })
+                }
             case Failure(f) =>
               logger.error("\t- command 'go mod init joern.io/temp' failed", f)
           }
-        })
+        }
     }
     processor.queue.put(None)
     processorThread.join()
@@ -66,13 +67,13 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
         }
       } catch {
         case exception: InterruptedException => logger.warn("Interrupted WriterThread", exception)
-        case exc: Exception =>
+        case NonFatal(exc)                   =>
           logger.error("error in writer thread, ", exc)
       }
     }
 
     private def processDependency(dependency: GoModDependency): Unit = {
-      val gopath = Try(sys.env("GOPATH")).getOrElse(Seq(os.home, "go").mkString(JFile.separator))
+      val gopath             = Try(sys.env("GOPATH")).getOrElse(Seq(os.home, "go").mkString(JFile.separator))
       val dependencyLocation =
         (Seq(gopath, "pkg", "mod") ++ dependency.dependencyStr().split("/")).mkString(JFile.separator)
       FileUtil.usingTemporaryDirectory("godep") { astLocation =>

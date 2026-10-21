@@ -353,22 +353,16 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
       )
 
     "be explicitly detected and imported for a constructor type" in {
-      inside(cpg.imports.where(_.call.file.name(".*Foo.*")).headOption) {
-        case Some(i) =>
-          i.importedAs shouldBe Some("A")
-          i.importedEntity shouldBe Some("A")
-        case None =>
-          fail("Expected `A` to be explicitly imported into `Foo.rb`")
+      inside(cpg.imports.where(_.call.file.name(".*Foo.*")).headOption) { case Some(i) =>
+        i.importedAs shouldBe Some("A")
+        i.importedEntity shouldBe Some("A")
       }
     }
 
     "be explicitly detected and imported for a call invocation" in {
-      inside(cpg.imports.where(_.call.file.name(".*Bar.*")).headOption) {
-        case Some(i) =>
-          i.importedAs shouldBe Some("bar/B")
-          i.importedEntity shouldBe Some("bar/B")
-        case None =>
-          fail("Expected `B` to be explicitly imported into `Foo.rb`")
+      inside(cpg.imports.where(_.call.file.name(".*Bar.*")).headOption) { case Some(i) =>
+        i.importedAs shouldBe Some("bar/B")
+        i.importedEntity shouldBe Some("bar/B")
       }
     }
 
@@ -397,12 +391,10 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
         |""".stripMargin)
 
     "resolve calls to builtin functions" in {
-      inside(cpg.call.methodFullName("(pp|csv).*").l) {
-        case csvParseCall :: csvTableCall :: ppCall :: Nil =>
-          csvParseCall.methodFullName shouldBe "csv.CSV.parse"
-          csvTableCall.methodFullName shouldBe "csv.CSV.Table.initialize"
-          ppCall.methodFullName shouldBe "pp.PP.pp"
-        case xs => fail(s"Expected calls, got [${xs.code.mkString(",")}] instead")
+      inside(cpg.call.methodFullName("(pp|csv).*").l) { case csvParseCall :: csvTableCall :: ppCall :: Nil =>
+        csvParseCall.methodFullName shouldBe "csv.CSV.parse"
+        csvTableCall.methodFullName shouldBe "csv.CSV.Table.initialize"
+        ppCall.methodFullName shouldBe "pp.PP.pp"
       }
 
       // TODO: fixme - set is empty
@@ -457,7 +449,6 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
           requireAll.isWildcard shouldBe Option(true)
           requireRelative.importedAs shouldBe Option("../foo")
           load.importedAs shouldBe Option("pp")
-        case xs => fail(s"Expected two imports, got [${xs.code.mkString(",")}] instead")
       }
     }
   }
@@ -508,12 +499,10 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
     )
 
     "resolve the calls directly" in {
-      inside(cpg.call.name("foo.*").l) {
-        case foo1 :: foo2 :: foo3 :: Nil =>
-          foo1.methodFullName shouldBe s"lib/file1.rb:$Main.File1.foo"
-          foo2.methodFullName shouldBe s"lib/file2.rb:$Main.File2.foo"
-          foo3.methodFullName shouldBe s"src/file3.rb:$Main.File3.foo"
-        case xs => fail(s"Expected 3 calls, got [${xs.code.mkString(",")}] instead")
+      inside(cpg.call.name("foo.*").l) { case foo1 :: foo2 :: foo3 :: Nil =>
+        foo1.methodFullName shouldBe s"lib/file1.rb:$Main.File1.foo"
+        foo2.methodFullName shouldBe s"lib/file2.rb:$Main.File2.foo"
+        foo3.methodFullName shouldBe s"src/file3.rb:$Main.File3.foo"
       }
     }
   }

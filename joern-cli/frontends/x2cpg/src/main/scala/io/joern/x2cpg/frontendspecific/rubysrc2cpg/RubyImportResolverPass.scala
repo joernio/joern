@@ -37,7 +37,7 @@ class RubyImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
 
     // TODO Limited ResolvedMethod exposure for now, will open up after looking at more concrete examples
     val finalResolved = {
-      val filePattern = s"${Pattern.quote(expResolvedPath)}\\.?.*"
+      val filePattern       = s"${Pattern.quote(expResolvedPath)}\\.?.*"
       val resolvedTypeDecls = cpg.typeDecl
         .where(_.file.name(filePattern))
         .whereNot(_.isModule)
@@ -72,12 +72,12 @@ class RubyImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
   }
 
   def getResolvedPath(expEntity: String, fileName: String) = {
-    val rawEntity   = expEntity.stripPrefix("./")
-    val matcher     = pathPattern.matcher(rawEntity)
-    val sep         = Matcher.quoteReplacement(JFile.separator)
-    val root        = s"$codeRootDir${JFile.separator}"
-    val currentFile = s"$root$fileName"
-    val entity      = if (matcher.find()) matcher.group(1) else rawEntity
+    val rawEntity    = expEntity.stripPrefix("./")
+    val matcher      = pathPattern.matcher(rawEntity)
+    val sep          = Matcher.quoteReplacement(JFile.separator)
+    val root         = s"$codeRootDir${JFile.separator}"
+    val currentFile  = s"$root$fileName"
+    val entity       = if (matcher.find()) matcher.group(1) else rawEntity
     val resolvedPath = Paths
       .get(
         currentFile.stripSuffix(currentFile.split(sep).lastOption.getOrElse("")),

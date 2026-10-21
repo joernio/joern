@@ -98,5 +98,10 @@ class PackageRootFinderTests extends SourceCodeFixture {
       rootFinderTest(files, Set("A.java", "B.java", "src"))
     }
 
+    "find the correct paths with package root equal to the project root" in {
+      val files = List(("package foo;", "foo/C.java"))
+      rootFinderTest(files, Set("."))
+    }
+
   }
 }

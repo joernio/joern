@@ -24,12 +24,12 @@ abstract class SBKey(val identifier: String) {
 }
 
 object SBKey {
-  protected val logger: Logger = LoggerFactory.getLogger(getClass)
+  protected val logger: Logger                            = LoggerFactory.getLogger(getClass)
   def fromNodeToLocalKey(node: AstNode): Option[LocalKey] = {
     Option(node match {
       case n: Identifier => LocalVar(n.name)
       case n: Local      => LocalVar(n.name)
-      case n: Call =>
+      case n: Call       =>
         CallAlias(n.name, n.argument.collectFirst { case x: Identifier if x.argumentIndex == 0 => x.name })
       case n: Method            => CallAlias(n.name, Option("this"))
       case n: MethodRef         => CallAlias(n.code)

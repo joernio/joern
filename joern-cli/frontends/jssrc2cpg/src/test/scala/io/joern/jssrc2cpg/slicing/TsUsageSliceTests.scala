@@ -105,7 +105,10 @@ class TsUsageSliceTests extends DataFlowCodeToCpgSuite {
     val programSlice = UsageSlicing.calculateUsageSlice(cpg, config.copy(excludeOperatorCalls = false))
 
     "extract 'loader' object slice from the main program" in {
-      val slice = programSlice.objectSlices.find(x => x.fullName == "main.ts::program").flatMap(_.slices.headOption).get
+      val slice = programSlice.objectSlices
+        .find(x => x.fullName == "main.ts::program:Game:<init>")
+        .flatMap(_.slices.lastOption)
+        .get
       slice.definedBy shouldBe Option(CallDef("new Loader", "Loader", Option("Loader"), Option(24), Option(21)))
       slice.targetObj shouldBe LocalDef("loader", "loader:Loader", Option(24), Option(4))
 

@@ -5,7 +5,8 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, MethodRef}
 import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
@@ -15,6 +16,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
+import scala.util.control.NonFatal
 
 /** We compute the set of possible call-targets for each dynamic call, and add them as CALL edges to the graph, based on
   * call.methodFullName, method.name and method.signature, the inheritance hierarchy and the AST of typedecls and
@@ -75,7 +77,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       try {
         linkDynamicCall(call, dstGraph)
       } catch {
-        case exception: Exception =>
+        case NonFatal(exception) =>
           throw new RuntimeException(exception)
       }
     }
@@ -98,7 +100,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   ): mutable.LinkedHashSet[String] = {
     cache.get(typDeclFullName) match {
       case Some(superClasses) => superClasses
-      case None =>
+      case None               =>
         val totalSuperclasses = (cpg.typeDecl
           .fullNameExact(typDeclFullName)
           .headOption match {
@@ -123,8 +125,8 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       .collectAll[TypeDecl]
       .to(mutable.LinkedHashSet) match {
       case classesToEval if classesToEval.isEmpty => visitedNodes
-      case classesToEval =>
-        classesToEval.flatMap(t => inheritTraversal(t, inSuperDirection, visitedNodes))
+      case classesToEval                          =>
+        classesToEval.flatMap(typDecl => inheritTraversal(typDecl, inSuperDirection, visitedNodes))
         visitedNodes
     }
   }
@@ -148,7 +150,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     def split(str: String, n: Int) = (str.take(n), str.drop(n + 1))
     val (fullName, signature)      = split(call.methodFullName, call.methodFullName.lastIndexOf(":"))
     val typeDeclFullName           = fullName.replace(s".${call.name}", "")
-    val candidateInheritedMethods =
+    val candidateInheritedMethods  =
       cpg.typeDecl
         .fullNameExact(allSuperClasses(typeDeclFullName).toIndexedSeq*)
         .astChildren
@@ -170,7 +172,33 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     }
   }
 
+  private def unpackMethodRefs(node: AstNode): Iterator[MethodRef] = node match {
+    case m: MethodRef                               => Iterator(m)
+    case c: Call if c.name == Operators.conditional =>
+      (c.argumentOption(2).iterator ++ c.argumentOption(3).iterator).flatMap(unpackMethodRefs)
+    case c: Call if c.name == Operators.cast =>
+      c.argumentOption(2).iterator.flatMap(unpackMethodRefs)
+    case c: Call if c.name == Operators.addressOf =>
+      c.argument.flatMap(unpackMethodRefs)
+    case _ => Iterator.empty
+  }
+
+  /** Link dynamic calls (e.g. C {@code <operator>.pointerCall}) to methods named by {@code METHOD_REF} nodes in the
+    * receiver AST (e.g. {@code cond ? f : g} before invocation). Additive only; vtable resolution still runs.
+    */
+  private def linkMethodsReferencedByReceiver(call: Call, dstGraph: DiffGraphBuilder): Unit = {
+    val methods = call.receiver.flatMap(unpackMethodRefs).referencedMethod.toList
+    if (methods.isEmpty) return
+    val linked = call._callOut.cast[Method].fullName.toSetImmutable
+    methods.foreach { tgtM =>
+      if (!linked.contains(tgtM.fullName)) {
+        dstGraph.addEdge(call, tgtM, EdgeTypes.CALL)
+      }
+    }
+  }
+
   private def linkDynamicCall(call: Call, dstGraph: DiffGraphBuilder): Unit = {
+    linkMethodsReferencedByReceiver(call, dstGraph)
     // This call linker requires a method full name entry
     if (call.methodFullName.equals("<empty>") || call.methodFullName.equals(DynamicCallUnknownFullName)) return
     // Support for overriding

@@ -43,8 +43,8 @@ trait AstParsingPass(config: Config, parser: PhpParser) { this: ForkJoinParallel
   override def runOnPart(builder: DiffGraphBuilder, part: BatchOfPhpScripts): Unit = {
     parser.parseFiles(part).foreach {
       case PhpParseResult(fileName, Some(result), _) => processPart(builder, fileName, result)
-      case PhpParseResult(fileName, None, _) =>
-        logger.warn(s"Could not parse file $fileName. Results will be missing!")
+      case PhpParseResult(fileName, None, _)         =>
+        logger.warn(s"Failed to process '$fileName'")
         None
     }
   }

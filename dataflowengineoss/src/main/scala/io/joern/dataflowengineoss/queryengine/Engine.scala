@@ -26,7 +26,7 @@ class Engine(context: EngineContext) {
 
   private val logger: Logger                   = LoggerFactory.getLogger(this.getClass)
   private val executorService: ExecutorService = Executors.newWorkStealingPool()
-  private val completionService =
+  private val completionService                =
     new ExecutorCompletionService[TaskSummary](executorService)
 
   /** All results of tasks are accumulated in this table. At the end of the analysis, we extract results from the table
@@ -160,7 +160,7 @@ class Engine(context: EngineContext) {
       }
       .map { case (_, list) =>
         val lenIdPathPairs = list.map(x => (x.path.length, x))
-        val withMaxLength = (lenIdPathPairs.sortBy(_._1).reverse match {
+        val withMaxLength  = (lenIdPathPairs.sortBy(_._1).reverse match {
           case Nil    => Nil
           case h :: t => h :: t.takeWhile(y => y._1 == h._1)
         }).map(_._2)
@@ -221,7 +221,7 @@ object Engine {
           case parentNode: Expression =>
             val parentNodeCall = parentNode.inCall.l
             val sameCallSite   = parentNode.inCall.l == childNode.start.inCall.l
-            val visible = if (sameCallSite) {
+            val visible        = if (sameCallSite) {
               val semanticExists         = parentNode.semanticsForCallByArg.nonEmpty
               val internalMethodsForCall = parentNodeCall.flatMap(methodsForCall).internal
               (semanticExists && parentNode.isDefined) || internalMethodsForCall.isEmpty
@@ -327,11 +327,11 @@ case class EngineConfig(
 
 /** Tracks various performance characteristics of the query engine.
   */
-object QueryEngineStatistics extends Enumeration {
+enum QueryEngineStatistic {
+  case PATH_CACHE_HITS, PATH_CACHE_MISSES
+}
 
-  type QueryEngineStatistic = Value
-
-  val PATH_CACHE_HITS, PATH_CACHE_MISSES = Value
+object QueryEngineStatistics {
 
   private val statistics = new ConcurrentHashMap[QueryEngineStatistic, Long]()
 
@@ -355,6 +355,6 @@ object QueryEngineStatistics extends Enumeration {
   /** Sets all the tracked values back to 0.
     */
   def reset(): Unit =
-    QueryEngineStatistics.values.map((_, 0L)).foreach { case (v, t) => statistics.put(v, t) }
+    QueryEngineStatistic.values.map((_, 0L)).foreach { case (v, t) => statistics.put(v, t) }
 
 }

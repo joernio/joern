@@ -30,7 +30,7 @@ object Shared {
         .stdOut
         .mkString("\n")
     } match {
-      case Success(v) => Success(v)
+      case Success(v)   => Success(v)
       case Failure(exc) =>
         System.err.println("Executing `dot` failed: is `graphviz` installed?")
         System.err.println(exc)

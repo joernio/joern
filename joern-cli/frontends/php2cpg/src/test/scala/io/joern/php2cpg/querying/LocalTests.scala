@@ -74,4 +74,71 @@ class LocalTests extends PhpCode2CpgFixture {
       xLocal.lineNumber shouldBe Some(4)
     }
   }
+
+  "function-local variable scoping" should {
+    "not resolve a variable to a top-level local without the global keyword" in {
+      val cpg = code(
+        """<?php
+          |$aaa = 1;
+          |function foo() {
+          |  return $aaa;
+          |}
+          |""".stripMargin,
+        fileName = "main.php"
+      )
+
+      val fooLocal = cpg.method.name("foo").local.nameExact("aaa").loneElement
+      fooLocal.code shouldBe "$aaa"
+      cpg.method.name("foo").ast.isIdentifier.nameExact("aaa")._localViaRefOut.l shouldBe List(fooLocal)
+    }
+
+    "not resolve a variable to a parameter of a sibling method" in {
+      val cpg = code("""<?php
+          |class ClassLoader {
+          |  public function setPsr4($prefix) {
+          |    return $prefix;
+          |  }
+          |  public function findFile() {
+          |    return $prefix;
+          |  }
+          |}
+          |""".stripMargin)
+
+      cpg.method.name("setPsr4").parameter.nameExact("prefix").size shouldBe 1
+      val findFileLocal = cpg.method.name("findFile").local.nameExact("prefix").loneElement
+      findFileLocal.code shouldBe "$prefix"
+    }
+
+    "not capture an outer variable into a plain closure without a use clause" in {
+      val cpg = code(
+        """<?php
+          |$aaa = 1;
+          |$fn = function () {
+          |  return $aaa;
+          |};
+          |""".stripMargin,
+        fileName = "server.php"
+      )
+
+      val closure      = cpg.method.name(".*<lambda>0").loneElement
+      val closureLocal = closure.local.nameExact("aaa").loneElement
+      closureLocal.closureBindingId shouldBe None
+    }
+
+    "keep the tmp local for a parameter attribute array literal inside the method" in {
+      val cpg = code(
+        """<?php
+          |function f(
+          |  #[CompletionProvider(values: ['welcome', 'faq'])]
+          |  string $noteId
+          |): string {
+          |  return $noteId;
+          |}
+          |""".stripMargin,
+        fileName = "server.php"
+      )
+
+      cpg.local.method.name.toSet shouldBe Set("f")
+    }
+  }
 }

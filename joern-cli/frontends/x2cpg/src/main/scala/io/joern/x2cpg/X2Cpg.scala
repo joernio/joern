@@ -17,7 +17,7 @@ import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 object X2CpgConfig {
-  def defaultOutputPath: String = "cpg.bin"
+  def defaultOutputPath: String = ""
 
   final case class GenericConfig(
     inputPath: String = "",
@@ -111,6 +111,7 @@ object DependencyDownloadConfig {
       opt[Unit]("download-dependencies")
         .text("Download the dependencies of the target project and use their symbols to resolve types.")
         .action((_, c) => c.withDownloadDependencies(true))
+        .unbounded()
     )
   }
 }
@@ -360,7 +361,7 @@ object X2Cpg {
       Try {
         applyPasses(cpg, config)
       } match {
-        case Success(_) => cpg
+        case Success(_)         => cpg
         case Failure(exception) =>
           cpg.close()
           throw exception

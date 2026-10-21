@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.Assertion
 
+@scala.annotation.nowarn("cat=deprecation")
 class EnumerationExtensionTests extends SwiftSrc2CpgSuite {
 
   private val enumACode =
@@ -98,8 +99,7 @@ class EnumerationExtensionTests extends SwiftSrc2CpgSuite {
       "c1 = 1",
       "var a = A()",
       "var b = false",
-      "var c = 0.0",
-      "var g: Double { return self * 1_000.0 }" // lowered as assignment
+      "var c = 0.0"
     )
 
     val List(fooStaticInit) = typeDeclFoo.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).isConstructor.l

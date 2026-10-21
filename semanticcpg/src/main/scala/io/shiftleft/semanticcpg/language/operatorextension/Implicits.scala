@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language.operatorextension
 
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Expression}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Expression, Call}
 import io.shiftleft.semanticcpg.language.operatorextension.nodemethods.*
 
 trait Implicits {

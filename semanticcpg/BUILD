@@ -1,0 +1,26 @@
+load("//bazel:scala.bzl", "scala_library", "scala_test")
+
+scala_library(
+    name = "semanticcpg",
+    srcs = glob(["src/main/scala/**/*.scala"]),
+    visibility = ["//visibility:public"],
+    deps = [
+        "//bazel/reexports:com_lihaoyi_upickle_with_deps",
+        "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
+        "@maven//:com_michaelpollmeier_scala_repl_pp_3_9_0",
+        "@maven//:commons_io_commons_io",
+        "@maven//:org_apache_commons_commons_lang3",
+        "@maven//:org_apache_commons_commons_text",
+        "@maven//:org_scala_lang_modules_scala_xml_3",
+        "@maven//:org_slf4j_slf4j_api",
+    ],
+)
+
+scala_test(
+    name = "tests",
+    srcs = glob(["src/test/scala/**/*.scala"]),
+    deps = [
+        ":semanticcpg",
+        "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
+    ],
+)

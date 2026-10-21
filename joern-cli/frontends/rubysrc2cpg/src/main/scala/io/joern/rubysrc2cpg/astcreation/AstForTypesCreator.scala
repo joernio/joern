@@ -20,15 +20,16 @@ import scala.collection.mutable
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForClassDeclaration(node: RubyExpression & TypeDeclaration): Seq[Ast] = {
-    node.name match
+    node.name match {
       case name: SimpleIdentifier => astForSimpleNamedClassDeclaration(node, name)
-      case name =>
+      case name                   =>
         logger.warn(s"Qualified class names are not supported yet: ${name.text} ($relativeFileName), skipping")
         astForUnknown(node) :: Nil
+    }
   }
 
   private def getBaseClassName(node: RubyExpression): String = {
-    node match
+    node match {
       case simpleIdentifier: SimpleIdentifier =>
         simpleIdentifier.text
       case _: SelfIdentifier =>
@@ -42,6 +43,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           s"Base class names of type ${x.getClass} are not supported yet: ${code(node)} ($relativeFileName), returning string as-is"
         )
         x.text
+    }
   }
 
   private def astForSimpleNamedClassDeclaration(
@@ -81,7 +83,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val (typeDecl, classFullName, shouldPopAdditionalScope) = node match {
       case x: NamespaceDeclaration if x.namespaceParts.isDefined =>
-        val className = nameIdentifier.text
+        val className    = nameIdentifier.text
         val typeDeclTemp = typeDeclNode(
           node = node,
           name = className,
@@ -128,25 +130,25 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       .fullName(s"$classFullName<class>")
       .inheritsFromTypeFullName(inheritsFrom.map(x => s"$x<class>"))
 
+    val classBody     = node.body.asInstanceOf[StatementList]
+    val visibilityMap = computeVisibilityMap(classBody)
+
     val (classModifiers, singletonModifiers) = node match {
       case _: ModuleDeclaration =>
-        scope.pushNewScope(ModuleScope(classFullName))
+        scope.pushNewScope(ModuleScope(classFullName, visibilityMap))
         (
           ModifierTypes.VIRTUAL :: Nil map (modifierNode(node, _)) map Ast.apply,
           ModifierTypes.VIRTUAL :: ModifierTypes.FINAL :: Nil map (modifierNode(node, _)) map Ast.apply
         )
       case _: TypeDeclaration =>
-        scope.pushNewScope(TypeScope(classFullName, List.empty))
+        scope.pushNewScope(TypeScope(classFullName, List.empty, visibilityMap))
         (
           ModifierTypes.VIRTUAL :: Nil map (modifierNode(node, _)) map Ast.apply,
           ModifierTypes.VIRTUAL :: Nil map (modifierNode(node, _)) map Ast.apply
         )
     }
 
-    val classBody =
-      node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
-
-    val statementsToForwardUpTheAst = mutable.ArrayBuffer.empty[Ast]
+    val statementsToForwardUpTheAst                          = mutable.ArrayBuffer.empty[Ast]
     def separateStatementsFromBody(ss: List[RubyExpression]) = {
       // There may be additional expression nodes introduced from nodes such as type decls, so we must
       // re-distribute these back into the <body> method
@@ -185,7 +187,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     scope.popScope()
 
-    if scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL) then {
+    if (scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)) {
       val typeDeclMember = NewMember()
         .name(className)
         .code(className)
@@ -197,7 +199,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       diffGraph.addNode(typeDeclMember)
     }
 
-    val prefixAst = createTypeRefPointer(typeDecl)
+    val prefixAst   = createTypeRefPointer(typeDecl)
     val typeDeclAst = Ast(typeDecl)
       .withChildren(classModifiers)
       .withChildren(fieldTypeMemberNodes.map(_._2))
@@ -214,7 +216,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     (typeDeclAst :: singletonTypeDeclAst :: Nil).foreach(Ast.storeInDiffGraph(_, diffGraph))
 
-    if shouldPopAdditionalScope then scope.popScope()
+    if (shouldPopAdditionalScope) { scope.popScope() }
     popAccessModifier()
     prefixAst :: bodyMemberCallAst :: statementsToForwardUpTheAst.toList
   }
@@ -241,7 +243,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
       val typeRefIdent = {
         val self = NewIdentifier().name(Defines.Self).code(Defines.Self).typeFullName(Defines.Any)
-        val fi = NewFieldIdentifier()
+        val fi   = NewFieldIdentifier()
           .code(typeDecl.name)
           .canonicalName(typeDecl.name)
           .lineNumber(typeDecl.lineNumber)
@@ -269,7 +271,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def astsForSingleFieldDeclaration(node: FieldsDeclaration, nameNode: RubyExpression): Seq[Ast] = {
-    nameNode match
+    nameNode match {
       case nameAsSymbol: StaticLiteral if nameAsSymbol.isSymbol =>
         val fieldName   = nameAsSymbol.innerText.prepended('@')
         val memberNode_ = memberNode(nameAsSymbol, fieldName, code(node), Defines.Any)
@@ -289,12 +291,13 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           s"Unsupported field declaration: ${nameNode.text} (${nameNode.getClass}) (${this.relativeFileName}), skipping"
         )
         Seq()
+    }
   }
 
   // creates a `def <name>() { return <fieldName> }` METHOD, for <fieldName> = @<name>.
   private def astForGetterMethod(node: FieldsDeclaration, fieldName: String): Seq[Ast] = {
-    val name = fieldName.drop(1)
-    val code = s"def $name (...)"
+    val name       = fieldName.drop(1)
+    val code       = s"def $name (...)"
     val methodDecl = MethodDeclaration(
       name,
       Nil,
@@ -307,8 +310,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   // creates a `def <name>=(x) { <fieldName> = x }` METHOD, for <fieldName> = @<name>
   private def astForSetterMethod(node: FieldsDeclaration, fieldName: String): Seq[Ast] = {
-    val name = fieldName.drop(1) + "="
-    val code = s"def $name (...)"
+    val name       = fieldName.drop(1) + "="
+    val code       = s"def $name (...)"
     val assignment = SingleAssignment(
       InstanceFieldIdentifier()(node.span.spanStart(fieldName)),
       "=",
@@ -320,6 +323,54 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       StatementList(assignment :: Nil)(node.span.spanStart(s"return $fieldName"))
     )(node.span.spanStart(code))
     astForMethodDeclaration(methodDecl, useSurroundingTypeFullName = true)
+  }
+
+  private def computeVisibilityMap(classBody: StatementList): Map[String, String] = {
+    def accessModifierType(node: AccessModifier): String = node match {
+      case _: PublicModifier    => ModifierTypes.PUBLIC
+      case _: PrivateModifier   => ModifierTypes.PRIVATE
+      case _: ProtectedModifier => ModifierTypes.PROTECTED
+    }
+
+    val allStatements = classBody.statements
+      .flatMap {
+        case m: MethodDeclaration if m.methodName == Defines.TypeDeclBody =>
+          m.body.asInstanceOf[StatementList].statements
+        case other => other :: Nil
+      }
+      .sortBy(el => (el.line.getOrElse(0), el.column.getOrElse(0)))
+
+    var currentModifier = ModifierTypes.PUBLIC
+    val visibilityMap   = mutable.LinkedHashMap.empty[String, String]
+
+    allStatements.foreach {
+      case node: AccessModifier if node.arguments.isEmpty =>
+        currentModifier = accessModifierType(node)
+      case node: AccessModifier =>
+        val modifier = accessModifierType(node)
+        node.arguments.foreach {
+          case lit: StaticLiteral => visibilityMap.put(symbolName(lit), modifier)
+          case arr: ArrayLiteral  =>
+            arr.elements.foreach(el => visibilityMap.put(symbolName(el), modifier))
+          case _ =>
+        }
+      case node: MethodAccessModifier =>
+        val modifier = node match {
+          case _: PrivateMethodModifier => ModifierTypes.PRIVATE
+          case _: PublicMethodModifier  => ModifierTypes.PUBLIC
+        }
+        node.arguments.foreach {
+          case proc: ProcedureDeclaration => visibilityMap.put(proc.methodName, modifier)
+          case lit: StaticLiteral         => visibilityMap.put(symbolName(lit), modifier)
+          case arr: ArrayLiteral          =>
+            arr.elements.foreach(el => visibilityMap.put(symbolName(el), modifier))
+          case _ =>
+        }
+      case node: ProcedureDeclaration if !visibilityMap.contains(node.methodName) =>
+        visibilityMap.put(node.methodName, currentModifier)
+      case _ =>
+    }
+    visibilityMap.toMap
   }
 
 }

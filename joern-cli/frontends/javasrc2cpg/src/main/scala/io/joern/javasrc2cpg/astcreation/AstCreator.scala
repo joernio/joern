@@ -1,35 +1,20 @@
 package io.joern.javasrc2cpg.astcreation
 
 import com.github.javaparser.ast.`type`.Type
-import com.github.javaparser.ast.expr.{
-  AnnotationExpr,
-  BooleanLiteralExpr,
-  CharLiteralExpr,
-  DoubleLiteralExpr,
-  Expression,
-  IntegerLiteralExpr,
-  LongLiteralExpr,
-  MethodCallExpr,
-  NullLiteralExpr,
-  StringLiteralExpr,
-  TextBlockLiteralExpr
-}
+import com.github.javaparser.ast.expr.*
 import com.github.javaparser.ast.nodeTypes.{NodeWithName, NodeWithSimpleName}
 import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, Node, PackageDeclaration}
 import com.github.javaparser.printer.configuration.DefaultPrinterConfiguration.ConfigOption
 import com.github.javaparser.printer.configuration.{DefaultConfigurationOption, DefaultPrinterConfiguration}
 import com.github.javaparser.resolution.UnsolvedSymbolException
-import com.github.javaparser.resolution.declarations.{
-  ResolvedMethodDeclaration,
-  ResolvedMethodLikeDeclaration,
-  ResolvedReferenceTypeDeclaration
-}
+import com.github.javaparser.resolution.declarations.{ResolvedMethodLikeDeclaration, ResolvedReferenceTypeDeclaration}
 import com.github.javaparser.resolution.types.ResolvedType
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import io.joern.javasrc2cpg.astcreation.declarations.{AstForDeclarationsCreator, BinarySignatureCalculator}
 import io.joern.javasrc2cpg.astcreation.expressions.AstForExpressionsCreator
 import io.joern.javasrc2cpg.astcreation.statements.AstForStatementsCreator
+import io.joern.javasrc2cpg.passes.AstCreationPass
 import io.joern.javasrc2cpg.scope.Scope
 import io.joern.javasrc2cpg.scope.Scope.*
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
@@ -40,23 +25,13 @@ import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.{
   JavaparserBindingDeclType,
   RegularClassDeclaration
 }
-import io.joern.javasrc2cpg.util.{
-  BindingTable,
-  BindingTableAdapterForJavaparser,
-  MultiBindingTableAdapterForJavaparser,
-  NameConstants,
-  TemporaryNameProvider,
-  Util
-}
-import io.joern.x2cpg.datastructures.Global
+import io.joern.javasrc2cpg.util.*
 import io.joern.x2cpg.utils.OffsetUtils
-import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.shiftleft.codepropertygraph.generated.nodes.{NewClosureBinding, NewFile, NewImport, NewNamespaceBlock}
 import org.slf4j.LoggerFactory
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
-import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
@@ -89,11 +64,11 @@ class AstCreator(
   val filename: String,
   javaParserAst: CompilationUnit,
   fileContent: Option[String],
-  global: Global,
+  accumulator: AstCreationPass.Accumulator,
   val symbolSolver: JavaSymbolSolver,
   protected val keepTypeArguments: Boolean,
   val loggedExceptionCounts: scala.collection.concurrent.Map[Class[?], Int]
-)(implicit val withSchemaValidation: ValidationMode, val disableTypeFallback: Boolean)
+)(implicit withSchemaValidation: ValidationMode, disableTypeFallback: Boolean)
     extends AstCreatorBase[Node, AstCreator](filename)
     with AstForDeclarationsCreator
     with AstForExpressionsCreator
@@ -104,11 +79,12 @@ class AstCreator(
   private[astcreation] val scope = Scope()
 
   private[astcreation] val typeInfoCalc: TypeInfoCalculator =
-    TypeInfoCalculator(global, symbolSolver, keepTypeArguments)
+    TypeInfoCalculator(accumulator, symbolSolver, keepTypeArguments)
   private[astcreation] val bindingTableCache = mutable.HashMap.empty[String, BindingTable]
   private[astcreation] val binarySignatureCalculator: BinarySignatureCalculator = new BinarySignatureCalculator(scope)
 
   private[astcreation] val tempNameProvider: TemporaryNameProvider = new TemporaryNameProvider
+  private[astcreation] val captureUseFinder                        = new CaptureUseFinder()
 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.
@@ -116,9 +92,8 @@ class AstCreator(
   def createAst(): DiffGraphBuilder = {
     val fileNode = NewFile().name(filename).order(0)
     fileContent.foreach(fileNode.content(_))
-    val ast = astForTranslationUnit(javaParserAst)
+    val ast = Ast(fileNode).withChild(astForTranslationUnit(javaParserAst))
     storeInDiffGraph(ast)
-    diffGraph.addNode(fileNode)
     diffGraph
   }
 
@@ -171,56 +146,63 @@ class AstCreator(
 
   private val lineOffsetTable = OffsetUtils.getLineOffsetTable(fileContent)
 
-  override protected def offset(node: Node): Option[(Int, Int)] = {
-    Option
-      .when(fileContent.isDefined) {
-        for {
-          lineNr      <- line(node)
-          columnNr    <- column(node)
-          lineEndNr   <- lineEnd(node)
-          columnEndNr <- columnEnd(node)
-        } yield OffsetUtils.coordinatesToOffset(
-          lineOffsetTable,
-          lineNr - 1,
-          columnNr - 1,
-          lineEndNr - 1,
-          columnEndNr - 1
-        )
-      }
-      .flatten
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] =
+    Option.when(fileContent.isDefined)(OffsetUtils.OffsetSourceType.Utf_16)
+
+  override protected def unadjustedOffset(node: Node): Option[(Int, Int)] = {
+    for {
+      lineNr      <- line(node)
+      columnNr    <- column(node)
+      lineEndNr   <- lineEnd(node)
+      columnEndNr <- columnEnd(node)
+    } yield OffsetUtils.coordinatesToOffset(lineOffsetTable, lineNr - 1, columnNr - 1, lineEndNr - 1, columnEndNr - 1)
   }
 
   private def getImportCode(importDeclaration: ImportDeclaration): String = {
     importDeclaration.toString.trim.stripSuffix(";")
   }
 
-  // TODO: Handle static imports correctly.
   private def addImportsToScope(compilationUnit: CompilationUnit): Seq[NewImport] = {
     val (asteriskImports, specificImports) = compilationUnit.getImports.asScala.toList.partition(_.isAsterisk)
-    val specificImportNodes = specificImports.map { importStmt =>
+    val specificImportNodes                = specificImports.map { importStmt =>
       val name         = importStmt.getName.getIdentifier
       val typeFullName = importStmt.getNameAsString // fully qualified name
-      typeInfoCalc.registerType(typeFullName)
-      val importNode = NewImport()
-        .importedAs(name)
-        .importedEntity(typeFullName)
-        .code(getImportCode(importStmt))
+      if (importStmt.isStatic) {
+        importStmt.getName.getQualifier.toScala.foreach { declaringType =>
+          typeInfoCalc.registerType(declaringType.asString)
+          scope.addStaticImport(name, declaringType.asString)
+        }
+      } else {
+        typeInfoCalc.registerType(typeFullName)
+      }
 
-      if (!importStmt.isStatic) {
+      val importNode = newImportNode(
+        code = getImportCode(importStmt),
+        importedEntity = typeFullName,
+        importedAs = name,
+        include = importStmt,
+        isModuleImport = importStmt.isModule
+      )
+
+      if (!importStmt.isStatic && !importStmt.isModule) {
         scope.addTopLevelType(name, typeFullName)
       }
       importNode
     }
 
+    asteriskImports.filter(_.isStatic).foreach(imp => scope.addStaticWildcardImport(imp.getNameAsString))
+
     val asteriskImportNodes = asteriskImports match {
       case imp :: Nil =>
         val name         = NameConstants.WildcardImportName
         val typeFullName = imp.getNameAsString
-        val importNode = NewImport()
-          .importedAs(name)
-          .importedEntity(typeFullName)
-          .isWildcard(true)
-          .code(getImportCode(imp))
+        val importNode   = newImportNode(
+          code = getImportCode(imp),
+          importedEntity = typeFullName,
+          importedAs = name,
+          include = imp,
+          isWildcard = true
+        )
         scope.addWildcardImport(typeFullName)
         Seq(importNode)
       case _ => // Only try to guess a wildcard import if exactly one is defined
@@ -248,10 +230,10 @@ class AstCreator(
       Ast(namespaceBlock).withChildren(typeDeclAsts).withChildren(importNodes)
     } catch {
       case exception: UnsolvedSymbolException =>
-        logger.warn(s"Unsolved symbol exception caught in $filename", exception)
+        logger.warn(s"Unsolved symbol exception caught in '$filename'", exception)
         Ast()
       case t: Throwable =>
-        logger.warn(s"Parsing file $filename failed", t)
+        logger.warn(s"Failed to process '$filename'", t)
         Ast()
     }
   }
@@ -282,7 +264,7 @@ class AstCreator(
       Try(expr) match {
         case success: Success[_]                         => success
         case Failure(exception: UnsolvedSymbolException) => Failure(exception)
-        case failure: Failure[_] =>
+        case failure: Failure[_]                         =>
           val exceptionType = failure.exception.getClass
 
           val loggedCount = loggedExceptionCounts.updateWith(exceptionType) {
@@ -300,7 +282,7 @@ class AstCreator(
       // This is really, really ugly, but there's a bug in the JavaParser symbol solver that can lead to
       // unterminated recursion in some cases where types cannot be resolved.
       case e: StackOverflowError =>
-        logger.debug(s"Caught StackOverflowError in $filename")
+        logger.debug(s"Caught StackOverflowError in '$filename'")
         Failure(e)
     }
   }

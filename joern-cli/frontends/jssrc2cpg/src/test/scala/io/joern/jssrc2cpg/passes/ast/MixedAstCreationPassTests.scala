@@ -1,13 +1,13 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
+import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{ClosureBinding, MethodParameterIn}
 import io.shiftleft.semanticcpg.language.*
 
-class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
+class MixedAstCreationPassTests extends JsSrc2CpgSuite {
 
   "AST method full names" should {
     "anonymous arrow function full name 1" in {
@@ -676,7 +676,8 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
       destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
 
-      val List(assignmentToA) = destructionBlock.assignment.codeExact("a = _tmp_0.a === void 0 ? 1 : _tmp_0.a").l
+      val List(assignmentToA) =
+        destructionBlock.astChildren.isCall.isAssignment.codeExact("a = _tmp_0.a === void 0 ? 1 : _tmp_0.a").l
       assignmentToA.astChildren.isIdentifier.size shouldBe 1
 
       val List(ifA) = assignmentToA.astChildren.isCall.codeExact("_tmp_0.a === void 0 ? 1 : _tmp_0.a").l
@@ -695,7 +696,8 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(falseBranchA) = ifA.astChildren.isCall.codeExact("_tmp_0.a").l
       falseBranchA.name shouldBe Operators.fieldAccess
 
-      val List(assignmentToB) = destructionBlock.assignment.codeExact("b = _tmp_0.b === void 0 ? 2 : _tmp_0.b").l
+      val List(assignmentToB) =
+        destructionBlock.astChildren.isCall.isAssignment.codeExact("b = _tmp_0.b === void 0 ? 2 : _tmp_0.b").l
       assignmentToB.astChildren.isIdentifier.size shouldBe 1
 
       val List(ifB) = assignmentToB.astChildren.isCall.codeExact("_tmp_0.b === void 0 ? 2 : _tmp_0.b").l
@@ -760,7 +762,8 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
       destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
 
-      val List(assignmentToN) = destructionBlock.assignment.codeExact("n = _tmp_0.a === void 0 ? 1 : _tmp_0.a").l
+      val List(assignmentToN) =
+        destructionBlock.astChildren.isCall.isAssignment.codeExact("n = _tmp_0.a === void 0 ? 1 : _tmp_0.a").l
       assignmentToN.astChildren.isIdentifier.size shouldBe 1
 
       val List(ifA) = assignmentToN.astChildren.isCall.codeExact("_tmp_0.a === void 0 ? 1 : _tmp_0.a").l
@@ -779,7 +782,8 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(falseBranchA) = ifA.astChildren.isCall.codeExact("_tmp_0.a").l
       falseBranchA.name shouldBe Operators.fieldAccess
 
-      val List(assignmentToM) = destructionBlock.assignment.codeExact("m = _tmp_0.b === void 0 ? 2 : _tmp_0.b").l
+      val List(assignmentToM) =
+        destructionBlock.astChildren.isCall.isAssignment.codeExact("m = _tmp_0.b === void 0 ? 2 : _tmp_0.b").l
       assignmentToN.astChildren.isIdentifier.size shouldBe 1
 
       val List(ifB) = assignmentToM.astChildren.isCall.codeExact("_tmp_0.b === void 0 ? 2 : _tmp_0.b").l
@@ -1044,7 +1048,8 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       destructionBlock.astChildren.isLocal.nameExact("_tmp_0").size shouldBe 1
       destructionBlock.astChildren.isCall.codeExact("_tmp_0 = x").size shouldBe 1
 
-      val List(assignmentToA) = destructionBlock.assignment.codeExact("a = _tmp_0[0] === void 0 ? 1 : _tmp_0[0]").l
+      val List(assignmentToA) =
+        destructionBlock.astChildren.isCall.isAssignment.codeExact("a = _tmp_0[0] === void 0 ? 1 : _tmp_0[0]").l
       assignmentToA.astChildren.isIdentifier.size shouldBe 1
 
       val List(ifA) = assignmentToA.astChildren.isCall.codeExact("_tmp_0[0] === void 0 ? 1 : _tmp_0[0]").l
@@ -1063,7 +1068,8 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(falseBranchA) = ifA.astChildren.isCall.codeExact("_tmp_0[0]").l
       falseBranchA.name shouldBe Operators.indexAccess
 
-      val List(assignmentToB) = destructionBlock.assignment.codeExact("b = _tmp_0[1] === void 0 ? 2 : _tmp_0[1]").l
+      val List(assignmentToB) =
+        destructionBlock.astChildren.isCall.isAssignment.codeExact("b = _tmp_0[1] === void 0 ? 2 : _tmp_0[1]").l
       assignmentToB.astChildren.isIdentifier.size shouldBe 1
 
       val List(ifB) = assignmentToB.astChildren.isCall.codeExact("_tmp_0[1] === void 0 ? 2 : _tmp_0[1]").l
@@ -1244,7 +1250,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(delete) = program.astChildren.isBlock.astChildren.isCall.codeExact("delete foo.x").l
       delete.name shouldBe Operators.delete
 
-      val List(rhs) = delete.fieldAccess.l
+      val List(rhs) = delete.argument.isCall.isFieldAccess.l
       rhs.code shouldBe "foo.x"
     }
   }
@@ -1284,7 +1290,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       assignmentA.astChildren.isIdentifier.nameExact("a").size shouldBe 1
 
       val List(ternaryCallA) = assignmentA.astChildren.isCall.nameExact(Operators.conditional).l
-      val List(testCallA) =
+      val List(testCallA)    =
         ternaryCallA.astChildren.isCall.nameExact(Operators.equals).l
       testCallA.astChildren.isIdentifier.nameExact("a").size shouldBe 1
       testCallA.astChildren.isCall.nameExact("<operator>.void").size shouldBe 1
@@ -1376,18 +1382,46 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
 
     "make available `require` statements via cpg.imports" in {
       val cpg       = code("const x = require(\"foo\");")
-      val List(imp) = cpg.imports.l
-      imp.code shouldBe "x = require(\"foo\")"
+      val List(imp) = cpg.imports.codeExact("x = require(\"foo\")").l
       imp.importedEntity shouldBe Option("foo")
       imp.importedAs shouldBe Option("x")
     }
 
     "allow traversing from dependency to import for `require` statements" in {
       val cpg        = code("const x = require(\"foo\");")
-      val List(imp)  = cpg.imports.l
+      val List(imp)  = cpg.imports.codeExact("x = require(\"foo\")").l
       val List(dep)  = cpg.dependency.l
       val List(imp2) = dep.imports.l
       imp shouldBe imp2
+    }
+
+    "have the base object as argument 0 for optional chaining calls" in {
+      val cpg            = code("username?.substring(2, 3)")
+      val List(call)     = cpg.call.nameExact("substring").l
+      val List(receiver) = call.receiver.isCall.l
+      receiver.name shouldBe Operators.fieldAccess
+      receiver.code shouldBe "username?.substring"
+      val List(base) = call.arguments(0).isIdentifier.l
+      base.name shouldBe "username"
+      base.code shouldBe "username"
+    }
+
+    "have correct code for optional index access" in {
+      val cpg         = code("a?.[0]; a?.b.c")
+      val List(index) = cpg.call.codeExact("a?.[0]").l
+      index.name shouldBe Operators.indexAccess
+      index.argument(1).code shouldBe "a"
+      index.argument(2).code shouldBe "0"
+      cpg.call.nameExact(Operators.fieldAccess).code.sorted shouldBe Seq("a?.b", "a?.b.c")
+
+      val callCpg        = code("a?.[0](1)")
+      val List(call)     = callCpg.call.codeExact("a?.[0](1)").l
+      val List(receiver) = call.receiver.isCall.l
+      receiver.name shouldBe Operators.indexAccess
+      receiver.code shouldBe "a?.[0]"
+      val List(base) = call.arguments(0).isIdentifier.l
+      base.name shouldBe "a"
+      base.code shouldBe "a"
     }
   }
 

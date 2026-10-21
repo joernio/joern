@@ -1,12 +1,12 @@
 package io.joern.jssrc2cpg.types
 
-import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
+import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.joern.jssrc2cpg.Config
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
-class TSTypesTests extends AstJsSrc2CpgSuite {
+class TSTypesTests extends JsSrc2CpgSuite {
 
   "have correct dynamicTypeHint for this without proper surrounding type" in {
     val cpg     = code("exports.isAuthorized = function() { this.publicKey }").withConfig(Config().withTsTypes(true))
@@ -95,11 +95,12 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
     y1.possibleTypes shouldBe Seq("Foo")
     y2.typeFullName shouldBe Defines.Any
     y2.possibleTypes shouldBe Seq("Foo")
-    val List(p1) = cpg.parameter("p1").l
+    val List(bar) = cpg.method.nameExact("bar").l
+    val List(p1)  = bar.parameter.name("p1").l
     p1.typeFullName shouldBe Defines.Number
-    val List(p2) = cpg.parameter("p2").l
+    val List(p2) = bar.parameter.name("p2").l
     p2.typeFullName shouldBe Defines.String
-    val List(barRet) = cpg.method("bar").methodReturn.l
+    val barRet = bar.methodReturn
     barRet.typeFullName shouldBe Defines.Any
     barRet.possibleTypes shouldBe Seq("Foo")
     cpg.typ.name.sorted.l shouldBe List(
@@ -188,13 +189,11 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
       |""".stripMargin,
       "Test0.ts"
     ).withConfig(Config().withTsTypes(true))
-    inside(cpg.typeDecl("ObjectFoo").l) { case List(objFoo) =>
-      objFoo.fullName shouldBe "Test0.ts::program:ObjectFoo"
+    inside(cpg.typeDecl.fullNameExact("Test0.ts::program:ObjectFoo").l) { case List(objFoo) =>
       objFoo.aliasTypeFullName shouldBe Option("Test0.ts::program:Alias")
       objFoo.code shouldBe "type ObjectFoo = {\n  property: string,\n  method(): number,\n}"
     }
-    inside(cpg.typeDecl("Alias").l) { case List(alias) =>
-      alias.fullName shouldBe "Test0.ts::program:Alias"
+    inside(cpg.typeDecl.fullNameExact("Test0.ts::program:Alias").l) { case List(alias) =>
       alias.code shouldBe "type Alias = ObjectFoo"
       alias.aliasTypeFullName shouldBe empty
     }
@@ -208,13 +207,11 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
      |""".stripMargin,
       "Test0.ts"
     ).withConfig(Config().withTsTypes(true))
-    inside(cpg.typeDecl("Foo").l) { case List(foo) =>
-      foo.fullName shouldBe "Test0.ts::program:Foo"
+    inside(cpg.typeDecl.fullNameExact("Test0.ts::program:Foo").l) { case List(foo) =>
       foo.aliasTypeFullName shouldBe Option("Test0.ts::program:Alias")
       foo.code shouldBe "class Foo"
     }
-    inside(cpg.typeDecl("Alias").l) { case List(alias) =>
-      alias.fullName shouldBe "Test0.ts::program:Alias"
+    inside(cpg.typeDecl.fullNameExact("Test0.ts::program:Alias").l) { case List(alias) =>
       alias.code shouldBe "type Alias = Foo"
       alias.aliasTypeFullName shouldBe empty
     }
@@ -231,13 +228,11 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
       |""".stripMargin,
       "Test0.ts"
     ).withConfig(Config().withTsTypes(true))
-    inside(cpg.typeDecl("ObjectFoo").l) { case List(objFoo) =>
-      objFoo.fullName shouldBe "Test0.ts::program:ObjectFoo"
+    inside(cpg.typeDecl.fullNameExact("Test0.ts::program:ObjectFoo").l) { case List(objFoo) =>
       objFoo.aliasTypeFullName shouldBe Option("Test0.ts::program:Alias")
       objFoo.code shouldBe "type ObjectFoo = {\n  property: string,\n  method(): number,\n}"
     }
-    inside(cpg.typeDecl("Alias").l) { case List(alias) =>
-      alias.fullName shouldBe "Test0.ts::program:Alias"
+    inside(cpg.typeDecl.fullNameExact("Test0.ts::program:Alias").l) { case List(alias) =>
       alias.code shouldBe "type Alias = ObjectFoo"
       alias.aliasTypeFullName shouldBe empty
     }
@@ -251,13 +246,11 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
      |""".stripMargin,
       "Test0.ts"
     ).withConfig(Config().withTsTypes(true))
-    inside(cpg.typeDecl("Foo").l) { case List(foo) =>
-      foo.fullName shouldBe "Test0.ts::program:Foo"
+    inside(cpg.typeDecl.fullNameExact("Test0.ts::program:Foo").l) { case List(foo) =>
       foo.aliasTypeFullName shouldBe Option("Test0.ts::program:Alias")
       foo.code shouldBe "class Foo"
     }
-    inside(cpg.typeDecl("Alias").l) { case List(alias) =>
-      alias.fullName shouldBe "Test0.ts::program:Alias"
+    inside(cpg.typeDecl.fullNameExact("Test0.ts::program:Alias").l) { case List(alias) =>
       alias.code shouldBe "type Alias = Foo"
       alias.aliasTypeFullName shouldBe empty
     }

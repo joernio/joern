@@ -24,7 +24,7 @@ case class ExternalCommandResult(
       logger.error(s"""Process exited with code $exitCode.
            |${additionalContext.getOrElse("")}
            |Input: $input
-           |Output: $stdOutAndError
+           |Output: ${stdOutAndError.mkString("\n")}
            |""".stripMargin)
     }
     this

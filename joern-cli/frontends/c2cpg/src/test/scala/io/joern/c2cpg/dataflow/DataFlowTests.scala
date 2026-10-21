@@ -1381,7 +1381,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       |}""".stripMargin)
 
     "not find a flow from 'a' at 'foo' to 'sink'" in {
-      val src  = cpg.call("foo").inAssignment.target.head
+      val src  = cpg.call("foo").inCall.isAssignment.target.head
       val sink = cpg.method("sink").parameter
       sink.reachableByFlows(src).size shouldBe 0
     }
@@ -1468,8 +1468,8 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       |}""".stripMargin)
 
     "find flow from `free` to `free`" in {
-      val sink   = cpg.call("free").argument(1)
-      val source = cpg.call("free").argument(1)
+      val sink             = cpg.call("free").argument(1)
+      val source           = cpg.call("free").argument(1)
       val List(flow: Path) = sink
         .reachableByFlows(source)
         .filter(path => path.elements.sizeIs > 1)

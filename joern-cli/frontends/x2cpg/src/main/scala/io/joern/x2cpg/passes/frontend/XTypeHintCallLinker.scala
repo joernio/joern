@@ -107,8 +107,8 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   protected def createMethodStub(methodName: String, call: Call, builder: DiffGraphBuilder): NewMethod = {
     // In the case of Python/JS we can use name info to check if, despite the method name might be incorrect, that we
     // label the method correctly as internal by finding that the method should belong to an internal file
-    val matcher  = fileNamePattern.matcher(methodName)
-    val basePath = cpg.metaData.root.head
+    val matcher    = fileNamePattern.matcher(methodName)
+    val basePath   = cpg.metaData.root.head
     val isExternal = if (matcher.matches()) {
       val fileName = matcher.group(1)
       cpg.file.nameExact(s"$basePath$fileName").isEmpty
@@ -132,8 +132,8 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     isExternal: Boolean,
     builder: DiffGraphBuilder
   ): NewMethod = {
-    val nameIdx = fullName.lastIndexOf(name)
-    val default = (NodeTypes.NAMESPACE_BLOCK, XTypeHintCallLinker.namespace)
+    val nameIdx                            = fullName.lastIndexOf(name)
+    val default                            = (NodeTypes.NAMESPACE_BLOCK, XTypeHintCallLinker.namespace)
     val (astParentType, astParentFullName) =
       if (!fullName.isBlank && !fullName.startsWith("<operator") && nameIdx > 0) {
         cpg.typeDecl

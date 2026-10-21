@@ -1,5 +1,6 @@
 package io.joern.dataflowengineoss.semanticsloader
 
+import io.joern.dataflowengineoss.semanticsloader.FlowPath.{FlowMapping, PassThroughMapping}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

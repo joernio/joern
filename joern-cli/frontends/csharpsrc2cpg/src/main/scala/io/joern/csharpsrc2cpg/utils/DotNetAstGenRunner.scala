@@ -50,7 +50,7 @@ class DotNetAstGenRunner(config: Config) extends AstGenRunner(DotNetAstGenRunner
         diagnosticMap.put(SourceFiles.toRelativePath(fileName, in.toString), Nil)
       case s"fail: DotNetAstGen.Program[0] Error(s) encountered while parsing: $_" => // ignore
       case s"fail: DotNetAstGen.Program[0] $reason"                                => addReason(reason)
-      case s"warn: DotNetAstGen.Program[0] $filename does $reason, skipping..." =>
+      case s"warn: DotNetAstGen.Program[0] $filename does $reason, skipping..."    =>
         addReason(s"does $reason", Option(filename))
       case s"info: DotNetAstGen.Program[0] Skipping file: $fileName" =>
         addReason("Skipped", Option(SourceFiles.toRelativePath(fileName, in.toString)))

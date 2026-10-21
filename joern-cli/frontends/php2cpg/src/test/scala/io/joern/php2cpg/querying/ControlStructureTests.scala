@@ -15,7 +15,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Local
 }
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.codepropertygraph.generated.nodes.AstNode
+import io.joern.x2cpg.Defines
 
 import scala.util.Try
 
@@ -431,6 +431,28 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         }
       }
     }
+
+    "should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+      val cpg = code("""<?php
+          |if ($cond1) {
+          |  $body1;
+          |} else if ($cond2) {
+          |  $body2;
+          |} else {
+          |  $body3;
+          |};
+          |""".stripMargin)
+
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).headOption.l) {
+        case List(ifControl: ControlStructure) =>
+          ifControl.trueBodyOut.astChildren.code.l shouldBe List("$body1")
+
+          inside(ifControl.falseBodyOut.astChildren.l) { case List(elseIfControl: ControlStructure) =>
+            elseIfControl.trueBodyOut.astChildren.code.l shouldBe List("$body2")
+            elseIfControl.falseBodyOut.astChildren.code.l shouldBe List("$body3")
+          }
+      }
+    }
   }
 
   "break statements" should {
@@ -584,6 +606,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       doAst.code shouldBe "do {...} while ($a)"
       doAst.lineNumber shouldBe Some(2)
 
+      inside(doAst.doBodyOut.isBlock.l) { case List(doBody: Block) =>
+        doBody.astChildren.isIdentifier.code.l shouldBe List("$b", "$c")
+      }
+
       inside(doAst.astChildren.collectAll[Block].l) { case List(block) =>
         block.lineNumber shouldBe Some(2)
 
@@ -654,6 +680,16 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     "create the correct body AST" in {
       inside(cpg.controlStructure.astChildren.l) { case List(_, _, _, body: Block) =>
         body.astChildren.code.l shouldBe List("echo $i")
+      }
+    }
+
+    "connect for-loop and body branches via FOR_BODY edges" in {
+      inside(cpg.controlStructure.l) { case List(forNode: ControlStructure) =>
+        forNode.code shouldBe "for ($i = 0;$i < 42;$i++)"
+
+        forNode.forInitOut.code.l shouldBe List("$i = 0")
+        forNode.forUpdateOut.code.l shouldBe List("$i++")
+        forNode.forBodyOut.isBlock.astChildren.code.l shouldBe List("echo $i")
       }
     }
   }
@@ -748,27 +784,53 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     }
 
     "create the catch blocks correctly" in {
-      val List(catchA, catchB) = tryNode.astChildren.isControlStructure.isCatch.l
-      catchA.code shouldBe "catch (A | D $a)"
-      catchB.code shouldBe "catch (B $b)"
+      inside(tryNode.astChildren.isControlStructure.isCatch.l) { case catchA :: catchB :: Nil =>
+        catchA.code shouldBe "catch (A | D $a)"
+        catchB.code shouldBe "catch (B $b)"
+        catchA.lineNumber shouldBe Some(4)
+        catchB.lineNumber shouldBe Some(6)
 
-      val List(catchALocal) = catchA.astChildren.isLocal.l
-      catchALocal.code shouldBe "a"
-      catchALocal.dynamicTypeHintFullName shouldBe IndexedSeq("A", "D")
-      catchA.astChildren.isBlock.astChildren.code.l shouldBe List("$body2")
-      catchA.lineNumber shouldBe Some(4)
+        inside(catchA.astChildren.isBlock.l) { case block :: Nil =>
+          block.typeFullName shouldBe Defines.Any
+          block.astChildren.code.l shouldBe List("a", "$body2")
 
-      val List(catchBLocal) = catchB.astChildren.isLocal.l
-      catchBLocal.code shouldBe "b"
-      catchBLocal.dynamicTypeHintFullName shouldBe IndexedSeq("B")
-      catchB.astChildren.isBlock.astChildren.code.l shouldBe List("$body3")
-      catchB.lineNumber shouldBe Some(6)
+          inside(block.astChildren.l) { case (catchALocal: Local) :: x :: Nil =>
+            catchALocal.code shouldBe "a"
+            catchALocal.dynamicTypeHintFullName shouldBe IndexedSeq("A", "D")
+          }
+        }
+
+        inside(catchB.astChildren.isBlock.l) { case block :: Nil =>
+          block.typeFullName shouldBe Defines.Any
+          block.astChildren.code.l shouldBe List("b", "$body3")
+
+          inside(block.astChildren.l) { case (catchBLocal: Local) :: x :: Nil =>
+            catchBLocal.code shouldBe "b"
+            catchBLocal.dynamicTypeHintFullName shouldBe IndexedSeq("B")
+          }
+        }
+      }
     }
 
     "create the finally block correctly" in {
       val List(finallyNode) = tryNode.astChildren.isControlStructure.isFinally.l
       finallyNode.astChildren.isBlock.astChildren.code.l shouldBe List("$body4")
       finallyNode.lineNumber shouldBe Some(8)
+    }
+
+    "should connect try, catch and finally bodies via explicit edges" in {
+      inside(cpg.controlStructure.isTry.l) { case List(tryControl: ControlStructure) =>
+        tryControl.code shouldBe "try { ... }"
+        tryControl.tryBodyOut.astChildren.code.l shouldBe List("$body1")
+
+        inside(tryControl.catchBodyOut.l) { case List(catchA: ControlStructure, catchB: ControlStructure) =>
+          catchA.code shouldBe "catch (A | D $a)"
+          catchB.code shouldBe "catch (B $b)"
+        }
+
+        tryControl.finallyBodyOut.code.l shouldBe List("finally")
+        tryControl.finallyBodyOut.astChildren.isBlock.astChildren.code.l shouldBe List("$body4")
+      }
     }
   }
 
@@ -817,9 +879,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     "create the catch blocks correctly" in {
       val List(catchA, catchB) = tryNode.astChildren.isControlStructure.isCatch.l
-      catchA.astChildren.isBlock.astChildren.code.l shouldBe List("$body2")
+      catchA.astChildren.isBlock.astChildren.code.l shouldBe List("a", "$body2")
       catchA.lineNumber shouldBe Some(4)
-      catchB.astChildren.isBlock.astChildren.code.l shouldBe List("$body3")
+      catchB.astChildren.isBlock.astChildren.code.l shouldBe List("b", "$body3")
       catchB.lineNumber shouldBe Some(6)
     }
   }
@@ -1000,12 +1062,11 @@ class ControlStructureTests extends PhpCode2CpgFixture {
      |}
      |""".stripMargin)
 
-    inside(cpg.controlStructure.l) { case List(yieldStructure) =>
-      yieldStructure.controlStructureType shouldBe ControlStructureTypes.YIELD
-      yieldStructure.code shouldBe "yield from $xs"
-      yieldStructure.lineNumber shouldBe Some(3)
+    inside(cpg.ret.l) { case List(returnNode) =>
+      returnNode.code shouldBe "yield from $xs"
+      returnNode.lineNumber shouldBe Some(3)
 
-      inside(yieldStructure.astChildren.l) { case List(xs: Identifier) =>
+      inside(returnNode.astChildren.l) { case List(xs: Identifier) =>
         xs.name shouldBe "xs"
         xs.code shouldBe "$xs"
         xs.lineNumber shouldBe Some(3)
@@ -1021,12 +1082,11 @@ class ControlStructureTests extends PhpCode2CpgFixture {
        |}
        |""".stripMargin)
 
-      inside(cpg.controlStructure.l) { case List(yieldStructure) =>
-        yieldStructure.controlStructureType shouldBe ControlStructureTypes.YIELD
-        yieldStructure.code shouldBe "yield"
-        yieldStructure.lineNumber shouldBe Some(3)
+      inside(cpg.ret.l) { case List(returnNode) =>
+        returnNode.code shouldBe "yield"
+        returnNode.lineNumber shouldBe Some(3)
 
-        yieldStructure.astChildren.size shouldBe 0
+        returnNode.astChildren.size shouldBe 0
       }
     }
 
@@ -1037,12 +1097,11 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-      inside(cpg.controlStructure.l) { case List(yieldStructure) =>
-        yieldStructure.controlStructureType shouldBe ControlStructureTypes.YIELD
-        yieldStructure.code shouldBe "yield 1"
-        yieldStructure.lineNumber shouldBe Some(3)
+      inside(cpg.ret.l) { case List(returnNode) =>
+        returnNode.code shouldBe "yield 1"
+        returnNode.lineNumber shouldBe Some(3)
 
-        inside(yieldStructure.astChildren.l) { case List(value: Literal) =>
+        inside(returnNode.astChildren.l) { case List(value: Literal) =>
           value.code shouldBe "1"
           value.lineNumber shouldBe Some(3)
         }
@@ -1056,18 +1115,21 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-      inside(cpg.controlStructure.l) { case List(yieldStructure) =>
-        yieldStructure.controlStructureType shouldBe ControlStructureTypes.YIELD
-        yieldStructure.code shouldBe "yield 1 => $x"
-        yieldStructure.lineNumber shouldBe Some(3)
+      inside(cpg.ret.l) { case List(returnNode) =>
+        returnNode.code shouldBe "yield 1 => $x"
+        returnNode.lineNumber shouldBe Some(3)
 
-        inside(yieldStructure.astChildren.l) { case List(key: Literal, value: Identifier) =>
-          key.code shouldBe "1"
-          key.lineNumber shouldBe Some(3)
+        inside(returnNode.astChildren.l) { case List(kv: Call) =>
+          kv.code shouldBe "1 => $x"
+          kv.lineNumber shouldBe Some(3)
+          kv.methodFullName shouldBe "<operator>.doubleArrow"
 
-          value.name shouldBe "x"
-          value.code shouldBe "$x"
-          value.lineNumber shouldBe Some(3)
+          inside(kv.astChildren.l) { case (literal: Literal) :: (identifier: Identifier) :: Nil =>
+            literal.code shouldBe "1"
+            literal.typeFullName shouldBe "int"
+
+            identifier.name shouldBe "x"
+          }
         }
       }
     }
@@ -1260,9 +1322,8 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       |""".stripMargin)
 
     val foreachStruct = inside(cpg.method.name("foo").body.astChildren.l) {
-      case List(iterLocal: Local, keyLocal: Local, valLocal: Local, foreachStruct: ControlStructure) =>
+      case List(iterLocal: Local, valLocal: Local, foreachStruct: ControlStructure) =>
         iterLocal.name shouldBe "foo@iter_tmp-0"
-        keyLocal.name shouldBe "key"
         valLocal.name shouldBe "val"
 
         foreachStruct
@@ -1275,7 +1336,18 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         (initAsts, updateAsts, body)
     }
 
-    inside(initAsts.assignment.l) { case List(_: Call, keyInit: Call, valInit: Call) =>
+    inside(initAsts.astChildren.l) { case List(assign: Call, kvBlock: Block) =>
+      assign.code shouldBe "$foo@iter_tmp-0 = $arr"
+
+      inside(kvBlock.astChildren.l) { case List(value: Local, key: Local, _, _) =>
+        value.code shouldBe "$val"
+        value.name shouldBe "val"
+        key.code shouldBe "$key"
+        key.name shouldBe "key"
+      }
+    }
+
+    inside(initAsts.ast.isCall.isAssignment.l) { case List(_: Call, keyInit: Call, valInit: Call) =>
       keyInit.name shouldBe Operators.assignment
       keyInit.code shouldBe "$key = $foo@iter_tmp-0->key()"
       inside(keyInit.argument.l) { case List(target: Identifier, keyCall: Call) =>
@@ -1305,7 +1377,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     inside(updateAsts.astChildren.l) { case List(_: Call, updateBlock: Block) =>
       val tmp = updateBlock.astChildren.l
-      inside(updateBlock.assignment.l) { case List(keyInit: Call, valInit: Call) =>
+      inside(updateBlock.astChildren.isCall.isAssignment.l) { case List(keyInit: Call, valInit: Call) =>
         keyInit.code shouldBe "$key = $foo@iter_tmp-0->key()"
         valInit.code shouldBe "$val = $foo@iter_tmp-0->current()"
       }
@@ -1313,6 +1385,57 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     inside(body.astChildren.l) { case List(echoCall: Call) =>
       echoCall.code shouldBe "echo $val"
+    }
+  }
+
+  "foreach statements with key and list destructuring should be represented as a for" in {
+    val cpg = code("""<?php
+      |function foo($arr) {
+      |  foreach ($arr as $key => list($a, $b)) {
+      |    echo $key;
+      |    echo $a;
+      |    echo $b;
+      |  }
+      |}
+      |""".stripMargin)
+
+    val foreachStruct = inside(cpg.method.name("foo").body.astChildren.l) {
+      case List(iterLocal: Local, aLocal: Local, bLocal: Local, keyLocal: Local, foreachStruct: ControlStructure) =>
+        iterLocal.name shouldBe "foo@iter_tmp-0"
+        keyLocal.name shouldBe "key"
+        aLocal.name shouldBe "a"
+        bLocal.name shouldBe "b"
+
+        foreachStruct
+    }
+
+    foreachStruct.code shouldBe "foreach ($arr as $key => list($a, $b))"
+
+    val (initAsts, updateAsts, body) = inside(foreachStruct.astChildren.l) {
+      case List(initAsts: Block, _, updateAsts: Block, body: Block) =>
+        (initAsts, updateAsts, body)
+    }
+
+    inside(initAsts.ast.isCall.isAssignment.l) {
+      case List(_: Call, keyInit: Call, tmpInit: Call, aInit: Call, bInit: Call) =>
+        keyInit.code shouldBe "$key = $foo@iter_tmp-0->key()"
+        tmpInit.code shouldBe "$foo@tmp-1 = $foo@iter_tmp-0->current()"
+        aInit.code shouldBe "$a = $foo@tmp-1[0]"
+        bInit.code shouldBe "$b = $foo@tmp-1[1]"
+    }
+
+    inside(updateAsts.ast.isCall.isAssignment.l) {
+      case List(keyInit: Call, tmpAssign: Call, aAssign: Call, bAssign: Call) =>
+        keyInit.code shouldBe "$key = $foo@iter_tmp-0->key()"
+        tmpAssign.code shouldBe "$foo@tmp-1 = $foo@iter_tmp-0->current()"
+        aAssign.code shouldBe "$a = $foo@tmp-1[0]"
+        bAssign.code shouldBe "$b = $foo@tmp-1[1]"
+    }
+
+    inside(body.astChildren.l) { case List(echoKey: Call, echoA: Call, echoB: Call) =>
+      echoKey.code shouldBe "echo $key"
+      echoA.code shouldBe "echo $a"
+      echoB.code shouldBe "echo $b"
     }
   }
 
@@ -1334,10 +1457,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         lhsIdent.code shouldBe s"$$${variableName}"
 
         rhsIdxAccess.methodFullName shouldBe Operators.indexAccess
-        rhsIdxAccess.code shouldBe s"$$foo@tmp-0[${arrayIndex}]" // $foo@tmp-0 is the name of the variable holding the current value
+        rhsIdxAccess.code shouldBe s"$$foo@tmp-1[${arrayIndex}]" // $foo@tmp-1 is the name of the variable holding the current value
         val List(idxLhs: Identifier, idxRhs: Literal) = rhsIdxAccess.argument.l: @unchecked
-        idxLhs.name shouldBe "foo@tmp-0"
-        idxLhs.code shouldBe "$foo@tmp-0"
+        idxLhs.name shouldBe "foo@tmp-1"
+        idxLhs.code shouldBe "$foo@tmp-1"
       }
     }
 
@@ -1349,7 +1472,6 @@ class ControlStructureTests extends PhpCode2CpgFixture {
           bLocal.name shouldBe "b"
           cLocal.name shouldBe "c"
           foreachStruct.code shouldBe "foreach ($data as list($a,$b,$c))"
-        case xs => fail(s"Expected five astChildren, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -1372,10 +1494,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             val List(valInit: Call, aInit: Call, bInit: Call, cInit: Call) =
               valInitBlock.astChildren.isBlock.astChildren.l: @unchecked
             valInit.name shouldBe Operators.assignment
-            valInit.code shouldBe "$foo@tmp-0 = $foo@iter_tmp-0->current()"
+            valInit.code shouldBe "$foo@tmp-1 = $foo@iter_tmp-0->current()"
             inside(valInit.argument.l) { case List(valId: Identifier, currentCall: Call) =>
-              valId.name shouldBe "foo@tmp-0"
-              valId.code shouldBe "$foo@tmp-0"
+              valId.name shouldBe "foo@tmp-1"
+              valId.code shouldBe "$foo@tmp-1"
               valId.argumentIndex shouldBe 1
 
               currentCall.name shouldBe "current"
@@ -1391,7 +1513,6 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             assignmentTests(bInit, variableName = "b", arrayIndex = 1)
             assignmentTests(cInit, variableName = "c", arrayIndex = 2)
           }
-        case xs => fail(s"Expected four children for control structure, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -1411,10 +1532,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             val List(valInit: Call, aInit: Call, bInit: Call, cInit: Call) =
               valAssignBlock.astChildren.isBlock.astChildren.l: @unchecked
             valInit.name shouldBe Operators.assignment
-            valInit.code shouldBe "$foo@tmp-0 = $foo@iter_tmp-0->current()"
+            valInit.code shouldBe "$foo@tmp-1 = $foo@iter_tmp-0->current()"
             inside(valInit.argument.l) { case List(valId: Identifier, currentCall: Call) =>
-              valId.name shouldBe "foo@tmp-0"
-              valId.code shouldBe "$foo@tmp-0"
+              valId.name shouldBe "foo@tmp-1"
+              valId.code shouldBe "$foo@tmp-1"
               valId.argumentIndex shouldBe 1
 
               currentCall.name shouldBe "current"
@@ -1435,7 +1556,6 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             echoCallA.code shouldBe "echo $a"
             echoCallB.code shouldBe "echo $b"
           }
-        case xs => fail(s"Expected four children for control structure, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -1448,37 +1568,33 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       The above sample is still valid Php code and runs as long as we don't use the $c variable in the loop (only a warning is emitted when running the code). This means
       that the `!isNull` condition should be an OR since the loop still executes above, even though $c is a null-value
        */
-      inside(cpg.controlStructure.isFor.condition.l) {
-        case parentOr :: Nil =>
-          inside(parentOr.astChildren.l) {
-            case (nestedOr: Call) :: (logicalNot: Call) :: Nil =>
-              nestedOr.methodFullName shouldBe Operators.or
-              val List(orLeftArg: Call, orRightArg: Call) = nestedOr.argument.l: @unchecked
-              orLeftArg.methodFullName shouldBe Operators.logicalNot
-              orRightArg.methodFullName shouldBe Operators.logicalNot
+      inside(cpg.controlStructure.isFor.condition.l) { case parentOr :: Nil =>
+        inside(parentOr.astChildren.l) { case (nestedOr: Call) :: (logicalNot: Call) :: Nil =>
+          nestedOr.methodFullName shouldBe Operators.or
+          val List(orLeftArg: Call, orRightArg: Call) = nestedOr.argument.l: @unchecked
+          orLeftArg.methodFullName shouldBe Operators.logicalNot
+          orRightArg.methodFullName shouldBe Operators.logicalNot
 
-              val List(orLeftArgNullCall: Call) = orLeftArg.argument.l: @unchecked
-              orLeftArgNullCall.methodFullName shouldBe PhpOperators.isNull
+          val List(orLeftArgNullCall: Call) = orLeftArg.argument.l: @unchecked
+          orLeftArgNullCall.methodFullName shouldBe PhpOperators.isNull
 
-              val List(aVar) = orLeftArgNullCall.argument.l: @unchecked
-              aVar.code shouldBe "$a"
+          val List(aVar) = orLeftArgNullCall.argument.l: @unchecked
+          aVar.code shouldBe "$a"
 
-              val List(orRightArgNullCall: Call) = orRightArg.argument.l: @unchecked
-              orRightArgNullCall.methodFullName shouldBe PhpOperators.isNull
+          val List(orRightArgNullCall: Call) = orRightArg.argument.l: @unchecked
+          orRightArgNullCall.methodFullName shouldBe PhpOperators.isNull
 
-              val List(bVar) = orRightArgNullCall.argument.l: @unchecked
-              bVar.code shouldBe "$b"
+          val List(bVar) = orRightArgNullCall.argument.l: @unchecked
+          bVar.code shouldBe "$b"
 
-              logicalNot.methodFullName shouldBe Operators.logicalNot
-              val List(notArg: Call) = logicalNot.argument.l: @unchecked
-              notArg.methodFullName shouldBe PhpOperators.isNull
+          logicalNot.methodFullName shouldBe Operators.logicalNot
+          val List(notArg: Call) = logicalNot.argument.l: @unchecked
+          notArg.methodFullName shouldBe PhpOperators.isNull
 
-              val List(cVar: Identifier) = notArg.argument.l: @unchecked
-              cVar.code shouldBe "$c"
+          val List(cVar: Identifier) = notArg.argument.l: @unchecked
+          cVar.code shouldBe "$c"
 
-            case xs => fail(s"Expected two children calls for condition, got, ${xs.code.mkString("[", ",", "]")}")
-          }
-        case xs => fail(s"Expected one condition for FOR construct, got ${xs.code.mkString("[", ",", "]")}")
+        }
       }
     }
   }
@@ -1515,7 +1631,6 @@ class ControlStructureTests extends PhpCode2CpgFixture {
           bLocal.name shouldBe "b"
           cLocal.name shouldBe "c"
           foreachStruct.code shouldBe "foreach ($data as list($a,list($b,$c)))"
-        case xs => fail(s"Expected five astChildren, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -1538,10 +1653,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             val List(valInit: Call, aInit: Call, tmp1Init: Call, tmp2Init: Call, bInit: Call, cInit: Call) =
               valInitBlock.astChildren.isBlock.astChildren.l: @unchecked
             valInit.name shouldBe Operators.assignment
-            valInit.code shouldBe "$foo@tmp-0 = $foo@iter_tmp-0->current()"
+            valInit.code shouldBe "$foo@tmp-1 = $foo@iter_tmp-0->current()"
             inside(valInit.argument.l) { case List(valId: Identifier, currentCall: Call) =>
-              valId.name shouldBe "foo@tmp-0"
-              valId.code shouldBe "$foo@tmp-0"
+              valId.name shouldBe "foo@tmp-1"
+              valId.code shouldBe "$foo@tmp-1"
               valId.argumentIndex shouldBe 1
 
               currentCall.name shouldBe "current"
@@ -1554,22 +1669,21 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             }
 
             tmp2Init.methodFullName shouldBe Operators.assignment
-            tmp2Init.code shouldBe "$foo@tmp-2 = $foo@tmp-1"
+            tmp2Init.code shouldBe "$foo@tmp-3 = $foo@tmp-2"
             inside(tmp2Init.argument.l) { case List(lhsIdent: Identifier, rhsIdent: Identifier) =>
-              lhsIdent.name shouldBe "foo@tmp-2"
-              lhsIdent.code shouldBe "$foo@tmp-2"
+              lhsIdent.name shouldBe "foo@tmp-3"
+              lhsIdent.code shouldBe "$foo@tmp-3"
 
-              rhsIdent.name shouldBe "foo@tmp-1"
-              rhsIdent.code shouldBe "$foo@tmp-1"
+              rhsIdent.name shouldBe "foo@tmp-2"
+              rhsIdent.code shouldBe "$foo@tmp-2"
             }
 
-            assignmentTests(aInit, variableName = "a", tmpIndex = 0, arrayIndex = 0)
-            assignmentTests(bInit, variableName = "b", tmpIndex = 2, arrayIndex = 0)
-            assignmentTests(cInit, variableName = "c", tmpIndex = 2, arrayIndex = 1)
+            assignmentTests(aInit, variableName = "a", tmpIndex = 1, arrayIndex = 0)
+            assignmentTests(bInit, variableName = "b", tmpIndex = 3, arrayIndex = 0)
+            assignmentTests(cInit, variableName = "c", tmpIndex = 3, arrayIndex = 1)
 
-            assignmentTests(tmp1Init, variableName = "foo@tmp-1", tmpIndex = 0, arrayIndex = 1)
+            assignmentTests(tmp1Init, variableName = "foo@tmp-2", tmpIndex = 1, arrayIndex = 1)
           }
-        case xs => fail(s"Expected four children for control structure, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -1589,10 +1703,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             val List(valInit: Call, aInit: Call, tmp1Init: Call, tmp2Init: Call, bInit: Call, cInit: Call) =
               valAssignBlock.astChildren.isBlock.astChildren.l: @unchecked
             valInit.name shouldBe Operators.assignment
-            valInit.code shouldBe "$foo@tmp-0 = $foo@iter_tmp-0->current()"
+            valInit.code shouldBe "$foo@tmp-1 = $foo@iter_tmp-0->current()"
             inside(valInit.argument.l) { case List(valId: Identifier, currentCall: Call) =>
-              valId.name shouldBe "foo@tmp-0"
-              valId.code shouldBe "$foo@tmp-0"
+              valId.name shouldBe "foo@tmp-1"
+              valId.code shouldBe "$foo@tmp-1"
               valId.argumentIndex shouldBe 1
 
               currentCall.name shouldBe "current"
@@ -1605,27 +1719,26 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             }
 
             tmp2Init.methodFullName shouldBe Operators.assignment
-            tmp2Init.code shouldBe "$foo@tmp-2 = $foo@tmp-1"
+            tmp2Init.code shouldBe "$foo@tmp-3 = $foo@tmp-2"
             inside(tmp2Init.argument.l) { case List(lhsIdent: Identifier, rhsIdent: Identifier) =>
-              lhsIdent.name shouldBe "foo@tmp-2"
-              lhsIdent.code shouldBe "$foo@tmp-2"
+              lhsIdent.name shouldBe "foo@tmp-3"
+              lhsIdent.code shouldBe "$foo@tmp-3"
 
-              rhsIdent.name shouldBe "foo@tmp-1"
-              rhsIdent.code shouldBe "$foo@tmp-1"
+              rhsIdent.name shouldBe "foo@tmp-2"
+              rhsIdent.code shouldBe "$foo@tmp-2"
             }
 
-            assignmentTests(aInit, variableName = "a", tmpIndex = 0, arrayIndex = 0)
-            assignmentTests(bInit, variableName = "b", tmpIndex = 2, arrayIndex = 0)
-            assignmentTests(cInit, variableName = "c", tmpIndex = 2, arrayIndex = 1)
+            assignmentTests(aInit, variableName = "a", tmpIndex = 1, arrayIndex = 0)
+            assignmentTests(bInit, variableName = "b", tmpIndex = 3, arrayIndex = 0)
+            assignmentTests(cInit, variableName = "c", tmpIndex = 3, arrayIndex = 1)
 
-            assignmentTests(tmp1Init, variableName = "foo@tmp-1", tmpIndex = 0, arrayIndex = 1)
+            assignmentTests(tmp1Init, variableName = "foo@tmp-2", tmpIndex = 1, arrayIndex = 1)
           }
 
           inside(body.astChildren.l) { case List(echoCallA: Call, echoCallB: Call) =>
             echoCallA.code shouldBe "echo $a"
             echoCallB.code shouldBe "echo $b"
           }
-        case xs => fail(s"Expected four children for control structure, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -1634,37 +1747,33 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       For nested list deconstruction, we have !a || (!b || !c) instead of (!a || !b) || !c because we process
       the nested list first, which gives the (!b || !c), and then we use that result to create the !a || (!b || !c)
        */
-      inside(cpg.controlStructure.isFor.condition.l) {
-        case parentOr :: Nil =>
-          inside(parentOr.astChildren.l) {
-            case (logicalNot: Call) :: (nestedOr: Call) :: Nil =>
-              nestedOr.methodFullName shouldBe Operators.or
-              val List(orLeftArg: Call, orRightArg: Call) = nestedOr.argument.l: @unchecked
-              orLeftArg.methodFullName shouldBe Operators.logicalNot
-              orRightArg.methodFullName shouldBe Operators.logicalNot
+      inside(cpg.controlStructure.isFor.condition.l) { case parentOr :: Nil =>
+        inside(parentOr.astChildren.l) { case (logicalNot: Call) :: (nestedOr: Call) :: Nil =>
+          nestedOr.methodFullName shouldBe Operators.or
+          val List(orLeftArg: Call, orRightArg: Call) = nestedOr.argument.l: @unchecked
+          orLeftArg.methodFullName shouldBe Operators.logicalNot
+          orRightArg.methodFullName shouldBe Operators.logicalNot
 
-              val List(orLeftArgNullCall: Call) = orLeftArg.argument.l: @unchecked
-              orLeftArgNullCall.methodFullName shouldBe PhpOperators.isNull
+          val List(orLeftArgNullCall: Call) = orLeftArg.argument.l: @unchecked
+          orLeftArgNullCall.methodFullName shouldBe PhpOperators.isNull
 
-              val List(bVar) = orLeftArgNullCall.argument.l: @unchecked
-              bVar.code shouldBe "$b"
+          val List(bVar) = orLeftArgNullCall.argument.l: @unchecked
+          bVar.code shouldBe "$b"
 
-              val List(orRightArgNullCall: Call) = orRightArg.argument.l: @unchecked
-              orRightArgNullCall.methodFullName shouldBe PhpOperators.isNull
+          val List(orRightArgNullCall: Call) = orRightArg.argument.l: @unchecked
+          orRightArgNullCall.methodFullName shouldBe PhpOperators.isNull
 
-              val List(cVar) = orRightArgNullCall.argument.l: @unchecked
-              cVar.code shouldBe "$c"
+          val List(cVar) = orRightArgNullCall.argument.l: @unchecked
+          cVar.code shouldBe "$c"
 
-              logicalNot.methodFullName shouldBe Operators.logicalNot
-              val List(notArg: Call) = logicalNot.argument.l: @unchecked
-              notArg.methodFullName shouldBe PhpOperators.isNull
+          logicalNot.methodFullName shouldBe Operators.logicalNot
+          val List(notArg: Call) = logicalNot.argument.l: @unchecked
+          notArg.methodFullName shouldBe PhpOperators.isNull
 
-              val List(aVar: Identifier) = notArg.argument.l: @unchecked
-              aVar.code shouldBe "$a"
+          val List(aVar: Identifier) = notArg.argument.l: @unchecked
+          aVar.code shouldBe "$a"
 
-            case xs => fail(s"Expected two children calls for condition, got, ${xs.code.mkString("[", ",", "]")}")
-          }
-        case xs => fail(s"Expected one condition for FOR construct, got ${xs.code.mkString("[", ",", "]")}")
+        }
       }
     }
   }

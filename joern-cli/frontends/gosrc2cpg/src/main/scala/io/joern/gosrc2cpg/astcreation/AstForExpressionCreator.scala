@@ -30,7 +30,7 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
     // Randomly taking first element of the LHS.
     // TODO: We need to create proper unit tests for corner cases to be handled separately
     var typeFullName = getTypeFullNameFromAstNode(arguments)
-    val op = binaryExpr.json(ParserKeys.Op).value match {
+    val op           = binaryExpr.json(ParserKeys.Op).value match {
       case "*"  => Operators.multiplication
       case "/"  => Operators.division
       case "%"  => Operators.modulo
@@ -38,7 +38,7 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
       case "-"  => Operators.subtraction
       case "<<" => Operators.shiftLeft
       case ">>" => Operators.arithmeticShiftRight
-      case "<" =>
+      case "<"  =>
         typeFullName = Defines.Bool
         Operators.lessThan
       case ">" =>
@@ -50,9 +50,9 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
       case ">=" =>
         typeFullName = Defines.Bool
         Operators.greaterEqualsThan
-      case "&" => Operators.and
-      case "^" => Operators.xor
-      case "|" => Operators.or
+      case "&"  => Operators.and
+      case "^"  => Operators.xor
+      case "|"  => Operators.or
       case "&&" =>
         typeFullName = Defines.Bool
         Operators.logicalAnd
@@ -80,8 +80,8 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForUnaryExpr(unaryExpr: ParserNodeInfo): Seq[Ast] = {
-    val operand      = astForNode(unaryExpr.json(ParserKeys.X))
-    var typeFullName = getTypeFullNameFromAstNode(operand)
+    val operand        = astForNode(unaryExpr.json(ParserKeys.X))
+    var typeFullName   = getTypeFullNameFromAstNode(operand)
     val operatorMethod = unaryExpr.json(ParserKeys.Op).value match {
       case "+" => Operators.plus
       case "-" => Operators.minus
@@ -104,13 +104,13 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astForIndexExpression(indexNode: ParserNodeInfo): Seq[Ast] = {
     val indexAst                                = astForNode(indexNode.json(ParserKeys.Index))
     val (indexIdentifier, callNodeTypeFullName) = processIndexIdentifier(indexNode.json(ParserKeys.X))
-    val callNode =
+    val callNode                                =
       createCallNodeForOperator(indexNode, Operators.indexAccess, typeFullName = Some(callNodeTypeFullName))
     Seq(callAst(callNode, indexIdentifier ++ indexAst))
   }
 
   private def processIndexIdentifier(identNode: Value): (Seq[Ast], String) = {
-    val identifierAst = astForNode(identNode)
+    val identifierAst          = astForNode(identNode)
     val identifierTypeFullName = getTypeFullNameFromAstNode(identifierAst)
       .stripPrefix("*")
       .stripPrefix("[]")

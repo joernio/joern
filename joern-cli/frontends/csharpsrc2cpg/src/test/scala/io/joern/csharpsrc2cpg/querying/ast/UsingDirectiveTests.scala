@@ -22,11 +22,8 @@ class UsingDirectiveTests extends CSharpCode2CpgFixture {
       )
 
     "make the imported namespace available in the current file" in {
-      inside(cpg.call("WriteLine").l) {
-        case writeLine :: Nil =>
-          writeLine.methodFullName shouldBe "System.Console.WriteLine:System.Void(System.String)"
-        case xs =>
-          fail(s"Expected single WriteLine call, but found $xs")
+      inside(cpg.call("WriteLine").l) { case writeLine :: Nil =>
+        writeLine.methodFullName shouldBe "System.Console.WriteLine:System.Void(System.String)"
       }
     }
   }
@@ -48,11 +45,8 @@ class UsingDirectiveTests extends CSharpCode2CpgFixture {
       )
 
     "not affect the imported namespaces in the current file" in {
-      inside(cpg.call("WriteLine").l) {
-        case writeLine :: Nil =>
-          writeLine.methodFullName shouldBe "<unresolvedNamespace>.WriteLine:<unresolvedSignature>"
-        case xs =>
-          fail(s"Expected single WriteLine call, but found $xs")
+      inside(cpg.call("WriteLine").l) { case writeLine :: Nil =>
+        writeLine.methodFullName shouldBe "<unresolvedNamespace>.WriteLine:<unresolvedSignature>"
       }
     }
   }

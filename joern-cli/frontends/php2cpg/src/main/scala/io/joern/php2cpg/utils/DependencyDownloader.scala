@@ -3,7 +3,8 @@ package io.joern.php2cpg.utils
 import com.github.sh4869.semver_parser.{Range, SemVer}
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain.PhpOperators
-import io.joern.php2cpg.passes.{Composer, PsrArray, PsrString}
+import io.joern.php2cpg.passes.Composer
+import io.joern.php2cpg.passes.PsrStringOrArray.{PsrArray, PsrString}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Dependency
@@ -16,7 +17,6 @@ import java.io.{FileOutputStream, IOException}
 import java.nio.file.{CopyOption, Files, Path, StandardCopyOption}
 import java.net.{HttpURLConnection, URI, URL, URLConnection}
 import java.util.zip.ZipEntry
-import javax.json.JsonException
 import scala.util.{Failure, Success, Try, Using}
 import scala.jdk.CollectionConverters.*
 
@@ -29,15 +29,14 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
   private val PACKAGIST_API = "repo.packagist.org/p2"
 
   /** Downloads dependencies and places them in a temporary directory.
+    * @param outputDir
+    *   the directory where downloaded dependencies should be placed. Must exist.
     * @return
-    *   the path to the directory of downloaded dependencies. This directory is deleted on exit.
+    *   the path to the output directory containing downloaded dependencies.
     */
-  def download(): Path = {
-    val dir = Files.createTempDirectory("joern-php2cpg")
-    FileUtil.deleteOnExit(dir, swallowIOExceptions = true)
-    cpg.dependency.filterNot(isAutoloadedDependency).foreach(downloadDependency(dir, _))
-
-    dir
+  def download(outputDir: Path): Path = {
+    cpg.dependency.filterNot(isAutoloadedDependency).foreach(downloadDependency(outputDir, _))
+    outputDir
   }
 
   private def isAutoloadedDependency(dependency: Dependency): Boolean = {
@@ -228,7 +227,7 @@ implicit val urlRw: ReadWriter[URL] = readwriter[ujson.Value]
     x => ujson.Str(x.toString),
     {
       case json @ (j: ujson.Str) => URI(json.str).toURL
-      case x                     => throw JsonException(s"Unexpected value type for URL strings: ${x.getClass}")
+      case x                     => throw RuntimeException(s"Unexpected value type for URL strings: ${x.getClass}")
     }
   )
 
@@ -237,7 +236,7 @@ implicit val semverRw: ReadWriter[SemVer] = readwriter[ujson.Value]
     x => ujson.Str(x.toString),
     {
       case json @ (j: ujson.Str) => json.str.asSemver
-      case x                     => throw JsonException(s"Unexpected value type for URL strings: ${x.getClass}")
+      case x                     => throw RuntimeException(s"Unexpected value type for URL strings: ${x.getClass}")
     }
   )
 
@@ -247,11 +246,12 @@ private case class Package(dist: Dist, @upickle.implicits.key("version_normalize
 
 implicit val packageRw: ReadWriter[PackageReleases] = readwriter[ujson.Value].bimap[PackageReleases](
   x => ujson.Obj("packages" -> write(x.packages)),
-  json =>
+  json => {
     val packagesWithDist = json("packages").obj.map { case (packName, packages) =>
       packName -> packages.arr.filter(_.obj.keySet.contains("dist"))
     }
     PackageReleases(read[Map[String, List[Package]]](packagesWithDist))
+  }
 )
 
 private case class PackageReleases(packages: Map[String, List[Package]])

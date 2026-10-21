@@ -1,5 +1,7 @@
 package io.joern.javasrc2cpg.astcreation.statements
 
+import com.github.javaparser.ast.Node
+import com.github.javaparser.ast.NodeList
 import com.github.javaparser.ast.expr.{Expression, PatternExpr, TypePatternExpr}
 import com.github.javaparser.ast.stmt.{
   AssertStmt,
@@ -26,7 +28,7 @@ import io.joern.javasrc2cpg.astcreation.expressions.PatternInitAndRefAsts
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewControlStructure, NewJumpTarget, NewReturn}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewJumpTarget, NewReturn}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes}
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 
@@ -114,31 +116,19 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     callAst(callNode, args)
   }
 
-  private[statements] def astForBreakStatement(stmt: BreakStmt): Ast = {
-    val node = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.BREAK)
-      .lineNumber(line(stmt))
-      .columnNumber(column(stmt))
-      .code(code(stmt))
-    Ast(node)
-  }
+  private[statements] def astForBreakStatement(stmt: BreakStmt): Ast =
+    breakAst(stmt, code(stmt), stmt.getLabel.toScala.map(_.getIdentifier))
 
-  private[statements] def astForContinueStatement(stmt: ContinueStmt): Ast = {
-    val node = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.CONTINUE)
-      .lineNumber(line(stmt))
-      .columnNumber(column(stmt))
-      .code(code(stmt))
-    Ast(node)
-  }
+  private[statements] def astForContinueStatement(stmt: ContinueStmt): Ast =
+    continueAst(stmt, code(stmt), stmt.getLabel.toScala.map(_.getIdentifier))
 
   private[statements] def astsForDo(stmt: DoStmt): Seq[Ast] = {
+    val code         = s"do {...} while (${stmt.getCondition.toString})"
     val conditionAst = astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption
 
     val patternLocals = scope.enclosingMethod.get.getAndClearUnaddedPatternLocals().map(Ast(_))
 
     val patternPartition = partitionPatternAstsByScope(stmt)
-
     scope.pushBlockScope()
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedToBody)
     val bodyAst = wrapInBlockWithPrefix(Nil, stmt.getBody)
@@ -146,19 +136,16 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
 
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedByStatement)
 
-    val code         = s"do {...} while (${stmt.getCondition.toString})"
-    val lineNumber   = line(stmt)
-    val columnNumber = column(stmt)
-
-    patternLocals :+ doWhileAst(conditionAst, List(bodyAst), Some(code), lineNumber, columnNumber)
+    patternLocals :+ doWhileAst(stmt, conditionAst, List(bodyAst), Some(code))
   }
 
   private[statements] def astsForWhile(stmt: WhileStmt): Seq[Ast] = {
-    val conditionAst  = astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption
+    val code         = s"while (${stmt.getCondition.toString})"
+    val conditionAst = astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption
+
     val patternLocals = scope.enclosingMethod.get.getAndClearUnaddedPatternLocals().map(Ast(_))
 
     val patternPartition = partitionPatternAstsByScope(stmt)
-
     scope.pushBlockScope()
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedToBody)
     val bodyAst = wrapInBlockWithPrefix(Nil, stmt.getBody)
@@ -166,20 +153,13 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
 
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedByStatement)
 
-    val code         = s"while (${stmt.getCondition.toString})"
-    val lineNumber   = line(stmt)
-    val columnNumber = column(stmt)
-
-    patternLocals :+ whileAst(conditionAst, List(bodyAst), Some(code), lineNumber, columnNumber)
+    patternLocals :+ whileAst(stmt, conditionAst, List(bodyAst), Some(code))
   }
 
   private[statements] def astsForIf(stmt: IfStmt): Seq[Ast] = {
-
-    val conditionAst =
-      astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption.toList
-
-    val patternLocals = scope.enclosingMethod.get.getAndClearUnaddedPatternLocals().map(Ast(_))
-
+    val conditionAst     = astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption
+    val ifCode           = s"if (${conditionAst.flatMap(_.rootCode).getOrElse("")})"
+    val patternLocals    = scope.enclosingMethod.get.getAndClearUnaddedPatternLocals().map(Ast(_))
     val patternPartition = partitionPatternAstsByScope(stmt)
 
     scope.pushBlockScope()
@@ -195,96 +175,65 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
 
     scope.pushBlockScope()
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedToElse)
-    val elseAst = stmt.getElseStmt.toScala.map { elseStmt =>
+    val elseNode = stmt.getElseStmt.toScala
+    val elseAst  = elseNode.map { elseStmt =>
       val elseBodyStatements = elseStmt match {
         case blockStmt: BlockStmt => blockStmt.getStatements.asScala
         case elseStmt: Statement  => elseStmt :: Nil
       }
-
       val elseBodyAsts = elseBodyStatements.flatMap(astsForStatement).toList
-      val elseBlock    = blockAst(blockNode(elseStmt), elseBodyAsts)
-      val elseNode     = controlStructureNode(elseStmt, ControlStructureTypes.ELSE, "else")
-      controlStructureAst(elseNode, None, elseBlock :: Nil)
+      blockAst(blockNode(elseStmt), elseBodyAsts)
     }
     scope.popBlockAndHoistPatternVariables()
-
-    val ifNode =
-      NewControlStructure()
-        .controlStructureType(ControlStructureTypes.IF)
-        .lineNumber(line(stmt))
-        .columnNumber(column(stmt))
-        .code(s"if (${conditionAst.headOption.flatMap(_.rootCode).getOrElse("")})")
-
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedByStatement)
-    val ast = Ast(ifNode)
-      .withChildren(conditionAst)
-      .withChild(thenAst)
-      .withChildren(elseAst.toList)
 
-    val astWithConditionEdge = conditionAst.flatMap(_.root.toList) match {
-      case r :: Nil =>
-        ast.withConditionEdge(ifNode, r)
-      case _ =>
-        ast
-    }
-
-    patternLocals :+ astWithConditionEdge
-  }
-
-  private[statements] def astForElse(maybeStmt: Option[Statement]): Option[Ast] = {
-    maybeStmt.map { stmt =>
-      val elseAsts = astsForStatement(stmt)
-
-      val elseNode =
-        NewControlStructure()
-          .controlStructureType(ControlStructureTypes.ELSE)
-          .lineNumber(line(stmt))
-          .columnNumber(column(stmt))
-          .code("else")
-
-      Ast(elseNode).withChildren(elseAsts)
-    }
+    val astWithBodies = ifThenElseAst(stmt, conditionAst, thenAst, elseAst, Some(ifCode))
+    patternLocals :+ astWithBodies
   }
 
   private[statements] def astForSwitchStatement(stmt: SwitchStmt): Ast = {
-    // TODO: Add support for switch expressions
-    // TODO: Switch expressions should either be represented with MATCH or we should add a break.
-    val switchNode =
-      NewControlStructure()
-        .controlStructureType(ControlStructureTypes.SWITCH)
-        .code(s"switch(${stmt.getSelector.toString})")
+    astForSwitch(stmt, stmt.getSelector, stmt.getEntries)
+  }
 
-    val selectorAst = astsForExpression(stmt.getSelector, ExpectedType.empty) match {
+  private[astcreation] def astForSwitch(node: Node, selector: Expression, entries: NodeList[SwitchEntry]): Ast = {
+    val (selectorAst, selectorReferenceAst) = astForSwitchSelector(selector, entries)
+    val switchBodyAst                       = astForSwitchBody(node, entries, selectorReferenceAst)
+    switchAst(node, Some(selectorAst), Seq(switchBodyAst), Some(s"switch(${code(selector)})"))
+  }
+
+  protected def astForSwitchSelector(
+    selector: Expression,
+    entries: NodeList[SwitchEntry]
+  ): (Ast, Option[PatternInitAndRefAsts]) = {
+    val selectorAst = astsForExpression(selector, ExpectedType.empty) match {
       case Seq() =>
-        throw new IllegalArgumentException(s"Got an empty ast list for expression ${code(stmt.getSelector)}")
+        throw new IllegalArgumentException(s"Got an empty ast list for expression ${code(selector)}")
 
       case Seq(ast) => ast
 
       case asts =>
-        logger.warn(s"Found multiple asts for selector expression ${code(stmt.getSelector)}")
+        logger.warn(s"Found multiple asts for selector expression ${code(selector)}")
         asts.head
     }
 
-    val selectorNode = selectorAst.root.get
-
     val selectorMustBeIdentifierOrFieldAccess =
-      stmt.getEntries.asScala.flatMap(_.getLabels.asScala).exists(_.isPatternExpr)
+      entries.asScala.flatMap(_.getLabels.asScala).exists(_.isPatternExpr)
 
-    val (initializerAst, referenceAst) = if (selectorMustBeIdentifierOrFieldAccess) {
-      val initAndRefAsts = initAndRefAstsForPatternInitializer(stmt.getSelector, selectorAst)
+    if (selectorMustBeIdentifierOrFieldAccess) {
+      val initAndRefAsts = initAndRefAstsForPatternInitializer(selector, selectorAst)
       (initAndRefAsts.get, Option(initAndRefAsts))
     } else {
       (selectorAst, None)
     }
+  }
 
-    val entryAsts = stmt.getEntries.asScala.flatMap(astForSwitchEntry(_, referenceAst))
-
-    val switchBodyAst = Ast(NewBlock()).withChildren(entryAsts)
-
-    Ast(switchNode)
-      .withChild(initializerAst)
-      .withChild(switchBodyAst)
-      .withConditionEdge(switchNode, selectorNode)
+  protected def astForSwitchBody(
+    node: Node,
+    entries: NodeList[SwitchEntry],
+    selectorReferenceAst: Option[PatternInitAndRefAsts]
+  ): Ast = {
+    val entryAsts = entries.asScala.flatMap(astForSwitchEntry(_, selectorReferenceAst))
+    blockAst(blockNode(node), entryAsts.toList)
   }
 
   private[statements] def astForSynchronizedStatement(stmt: SynchronizedStmt): Ast = {
@@ -304,7 +253,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
       .withChild(bodyAst)
   }
 
-  private def astsForSwitchLabels(labels: List[Expression], isDefault: Boolean): Seq[Ast] = {
+  private[astcreation] def astsForSwitchLabels(labels: List[Expression], isDefault: Boolean): Seq[Ast] = {
     val defaultAst = Option.when(labels.isEmpty || isDefault) {
       val target = NewJumpTarget()
         .name("default")
@@ -328,17 +277,19 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     (defaultAst ++ explicitLabelAsts).toList
   }
 
-  private def astForSwitchEntry(entry: SwitchEntry, selectorReferenceAst: Option[PatternInitAndRefAsts]): Seq[Ast] = {
+  private[astcreation] def astForSwitchEntry(
+    entry: SwitchEntry,
+    selectorReferenceAst: Option[PatternInitAndRefAsts]
+  ): Seq[Ast] = {
     // Fallthrough to/from a pattern is a compile error, so an entry can only have a pattern label if that is
     // the only label
     val labels    = entry.getLabels.asScala.toList
     val labelAsts = astsForSwitchLabels(labels, entry.isDefault)
 
-    val entryContext = new SwitchEntryContext(entry, new CombinedTypeSolver())
-
     if (entry.getStatements.isEmpty) {
       labelAsts
     } else {
+      val entryContext = new SwitchEntryContext(entry, new CombinedTypeSolver())
       scope.pushBlockScope()
 
       val instanceOfAst = labels.lastOption.collect { case patternExpr: PatternExpr =>
@@ -358,21 +309,15 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
 
         case Some(guard) =>
           val bodyAst = wrapInBlockWithPrefix(Nil, entry.getStatements.asScala.toList)
-
-          val ifNode = controlStructureNode(
-            entry.getGuard.get(),
-            ControlStructureTypes.IF,
-            s"if (${guard.headOption.flatMap(_.rootCode)})"
-          )
-
-          controlStructureAst(ifNode, guard.headOption, bodyAst :: Nil)
+          val ifCode  = s"if (${guard.headOption.flatMap(_.rootCode).getOrElse("")})"
+          ifThenElseAst(entry.getGuard.get(), guard.headOption, bodyAst, None, Some(ifCode))
       }
       scope.popBlockScope()
 
       val ifInstanceOfAst = instanceOfAst
         .map { instanceOfAst =>
-          val ifNode = controlStructureNode(entry, ControlStructureTypes.IF, s"if (${instanceOfAst.rootCodeOrEmpty})")
-          controlStructureAst(ifNode, Option(instanceOfAst), statementsAst :: Nil)
+          val ifCode = s"if (${instanceOfAst.rootCodeOrEmpty})"
+          ifThenElseAst(entry, Some(instanceOfAst), statementsAst, None, Some(ifCode))
         }
         .getOrElse(statementsAst)
 
@@ -407,17 +352,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
   }
 
   private[statements] def astForThrow(stmt: ThrowStmt): Ast = {
-    val throwNode = NewCall()
-      .name("<operator>.throw")
-      .methodFullName("<operator>.throw")
-      .lineNumber(line(stmt))
-      .columnNumber(column(stmt))
-      .code(code(stmt))
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-
-    val args = astsForExpression(stmt.getExpression, ExpectedType.empty)
-
-    callAst(throwNode, args)
+    throwAst(stmt, astsForExpression(stmt.getExpression, ExpectedType.empty))
   }
 
   private[statements] def astForCatchClause(catchClause: CatchClause): Ast = {
@@ -425,10 +360,11 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
   }
 
   private[statements] def astsForTry(stmt: TryStmt): Seq[Ast] = {
-    val tryNode   = controlStructureNode(stmt, ControlStructureTypes.TRY, "try")
+    // Need to wrap the try in a block scope to ensure correct resources handling
+    scope.pushBlockScope()
     val resources = stmt.getResources.asScala.flatMap(astsForExpression(_, expectedType = ExpectedType.empty)).toList
 
-    val tryAst = astForBlockStatement(stmt.getTryBlock, codeStr = "try")
+    val tryAst    = astForBlockStatement(stmt.getTryBlock, codeStr = "try")
     val catchAsts = stmt.getCatchClauses.asScala.toList.map { catchClause =>
       val catchNode = controlStructureNode(catchClause, ControlStructureTypes.CATCH, "catch")
       Ast(catchNode).withChild(astForCatchClause(catchClause))
@@ -437,7 +373,8 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
       val finallyNode = controlStructureNode(finallyBlock, ControlStructureTypes.FINALLY, "finally")
       Ast(finallyNode).withChild(astForBlockStatement(finallyBlock, "finally"))
     }
-    val controlStructureAst = tryCatchAst(tryNode, tryAst, catchAsts, finallyAst)
+    val controlStructureAst = tryCatchAst(stmt, tryAst, catchAsts, finallyAst, Some("try"))
+    scope.popBlockScope()
     resources.appended(controlStructureAst)
   }
 }

@@ -23,8 +23,21 @@ object Defines {
   val GlobalNamespace: String   = NamespaceTraversal.globalNamespaceName
   val OperatorsNew: String      = "<operator>.new" // TODO: place "<operator>.new" into the schema
 
-  val JsTypes: List[String] =
-    List(
+  // EJS <%= %> escaped output, modeled as a call for sink detection.
+  // Same as the actual EJS compiler output:
+  // https://github.com/mde/ejs/blob/2c41365ca042a70978e5795adc05fbb8b35fb013/lib/esm/ejs.js#L878
+  val EscapedOutputName: String = "escapeFn"
+
+  // EJS <%- %> unescaped (raw) output, modeled as a call for sink detection.
+  // Same as the actual EJS compiler output:
+  // https://github.com/mde/ejs/blob/2c41365ca042a70978e5795adc05fbb8b35fb013/lib/esm/ejs.js#L586
+  val UnescapedOutputName: String = "__append"
+
+  // first two bytes of an EJS output tag in the original source
+  val EjsOutputTagPrefix: String = "<%"
+
+  val JsTypes: Set[String] =
+    Set(
       Any,
       Array,
       Number,

@@ -123,7 +123,7 @@ class TaskCreator(context: EngineContext) {
               }
             } else {
               returnStatements.map { returnStatement =>
-                val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
+                val newPath   = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
                 val taskStack =
                   result.taskStack :+ TaskFingerprint(returnStatement, call :: result.callSiteStack, callDepth + 1)
                 ReachableByTask(taskStack, newPath)
@@ -160,7 +160,7 @@ class TaskCreator(context: EngineContext) {
           methodReturns.flatMap { methodReturn =>
             val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
             returnStatements.map { returnStatement =>
-              val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
+              val newPath   = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
               val taskStack =
                 result.taskStack :+ TaskFingerprint(returnStatement, result.callSiteStack, callDepth + 1)
               ReachableByTask(taskStack, newPath)

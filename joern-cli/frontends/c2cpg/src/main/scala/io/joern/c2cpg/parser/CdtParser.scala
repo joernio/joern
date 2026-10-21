@@ -1,17 +1,16 @@
 package io.joern.c2cpg.parser
 
 import io.joern.c2cpg.Config
-import io.joern.c2cpg.astcreation.CGlobal
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CompilationDatabase
+import io.joern.c2cpg.passes.AstCreationPass
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.utils.IOUtils
-import org.eclipse.cdt.core.dom.ast.{IASTPreprocessorStatement, IASTTranslationUnit}
 import org.eclipse.cdt.core.dom.ast.gnu.c.GCCLanguage
 import org.eclipse.cdt.core.dom.ast.gnu.cpp.GPPLanguage
+import org.eclipse.cdt.core.dom.ast.{IASTPreprocessorStatement, IASTTranslationUnit}
 import org.eclipse.cdt.core.model.ILanguage
-import org.eclipse.cdt.core.parser.{DefaultLogService, FileContent, ScannerInfo}
+import org.eclipse.cdt.core.parser.{DefaultLogService, FileContent, IncludeFileContentProvider, ScannerInfo}
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Path, Paths}
@@ -25,6 +24,40 @@ object CdtParser {
 
   enum HeaderFileParserLanguage {
     case Unknown, C, Cpp, Both
+  }
+
+  /** CDT's preprocessor keeps its built-in macros (`__STDC_VERSION__`, `__STDC_HOSTED__`, `__cplusplus`,
+    * `__CDT_PARSER__`) as static `ObjectStyleMacro`s shared by every parser in the JVM. `ObjectStyleMacro.getTokens`
+    * stores a new, empty token list in the shared object and then lexes the value into whatever list the object holds.
+    * When parsers on several threads expand a macro for the first time together, one can be handed the empty list, two
+    * can lex into the same list and leave the value doubled for the rest of the run, or one can fail with a
+    * NullPointerException. An `#if` on the macro then evaluates differently from run to run, and the code it guards is
+    * in some graphs and not in others. Expanding each one here, when a parser is created and before any file is parsed
+    * in parallel, leaves them filled. Once filled, a later call does not change them; it costs two parses of a two-line
+    * snippet.
+    *
+    * @return
+    *   the names of the macros the two parses expanded
+    */
+  def expandBuiltinMacros(): Set[String] = {
+    val code = "#if __STDC_VERSION__ + __STDC_HOSTED__ + __CDT_PARSER__ + __cplusplus\n#endif\n".toCharArray
+    Seq(GCCLanguage.getDefault, GPPLanguage.getDefault).flatMap { lang =>
+      try {
+        val translationUnit = lang.getASTTranslationUnit(
+          FileContent.create("<builtin-macros>", true, code),
+          new ScannerInfo(),
+          IncludeFileContentProvider.getEmptyFilesProvider,
+          null,
+          0,
+          new DefaultLogService
+        )
+        translationUnit.getMacroExpansions.toSeq.map(_.getMacroReference.toString)
+      } catch {
+        case NonFatal(e) =>
+          logger.debug("Expanding CDT's built-in macros failed", e)
+          Seq.empty
+      }
+    }.toSet
   }
 
   private def readFileAsFileContent(file: Path, lines: Option[Array[Char]] = None): FileContent = {
@@ -45,15 +78,19 @@ object CdtParser {
     *
     * @param path
     *   The path to the source file to be parsed
-    * @param global
-    *   The global object containing information about header file includes
+    * @param headerIncludes
+    *   Info about how to parse each header file
     * @param config
     *   The configuration settings
     * @return
     *   A sequence of (Path, ILanguage) pairs. For some header files, this may return both C and C++ parsers. Returns
     *   empty sequence for non-existent files.
     */
-  def languageMappingForSourceFile(path: Path, global: CGlobal, config: Config): Seq[(Path, ILanguage)] = {
+  def languageMappingForSourceFile(
+    path: Path,
+    headerIncludes: Map[String, HeaderFileParserLanguage],
+    config: Config
+  ): Seq[(Path, ILanguage)] = {
     if (!Files.isRegularFile(path)) {
       logger.warn(s"File '${path.toString}' does not exist. Check for broken symlinks!")
       return Seq.empty
@@ -63,10 +100,10 @@ object CdtParser {
       val code = IOUtils.readLinesInFile(path).mkString("\n")
       return Seq((path, createParseLanguage(path, code, config)))
     }
-    global.headerIncludes.get(filePath) match {
-      case null | HeaderFileParserLanguage.C => Seq((path, GCCLanguage.getDefault))
-      case HeaderFileParserLanguage.Cpp      => Seq((path, GPPLanguage.getDefault))
-      case _                                 => Seq((path, GCCLanguage.getDefault), (path, GPPLanguage.getDefault))
+    headerIncludes.get(filePath) match {
+      case None | Some(HeaderFileParserLanguage.C) => Seq((path, GCCLanguage.getDefault))
+      case Some(HeaderFileParserLanguage.Cpp)      => Seq((path, GPPLanguage.getDefault))
+      case _ => Seq((path, GCCLanguage.getDefault), (path, GPPLanguage.getDefault))
     }
   }
 
@@ -90,29 +127,36 @@ object CdtParser {
 
 }
 
-class CdtParser(
-  config: Config,
-  headerFileFinder: HeaderFileFinder,
-  compilationDatabase: Option[CompilationDatabase],
-  global: CGlobal
-) extends ParseProblemsLogger
+class CdtParser(config: Config, headerFileFinder: HeaderFileFinder, compilationDatabase: Option[CompilationDatabase])
+    extends ParseProblemsLogger
     with PreprocessorStatementsLogger {
 
   import io.joern.c2cpg.parser.CdtParser.*
 
+  // Parsers are created before the parallel parse starts; see `expandBuiltinMacros`.
+  expandBuiltinMacros()
+
   private val parserConfig = ParserConfig.fromConfig(config, compilationDatabase)
   private val log          = new DefaultLogService
 
-  private var opts: Int =
-    ILanguage.OPTION_NO_IMAGE_LOCATIONS | // performance optimization, allows the parser not to create image-locations
-      ILanguage.OPTION_SKIP_TRIVIAL_EXPRESSIONS_IN_AGGREGATE_INITIALIZERS // performance optimization, skips trivial expressions in aggregate initializers
-  // instructs the parser to skip function and method bodies
-  if (config.skipFunctionBodies) opts |= ILanguage.OPTION_SKIP_FUNCTION_BODIES
-  // enables parsing of code behind disabled preprocessor defines
-  if (config.compilationDatabaseFilename.isEmpty && config.defines.isEmpty) opts |= ILanguage.OPTION_PARSE_INACTIVE_CODE
+  private val opts: Int = {
+    var flags =
+      ILanguage.OPTION_NO_IMAGE_LOCATIONS | // performance optimization, allows the parser not to create image-locations
+        ILanguage.OPTION_SKIP_TRIVIAL_EXPRESSIONS_IN_AGGREGATE_INITIALIZERS // performance optimization, skips trivial expressions in aggregate initializers
+    // instructs the parser to skip function and method bodies
+    if (config.skipFunctionBodies) flags |= ILanguage.OPTION_SKIP_FUNCTION_BODIES
+    // enables parsing of code behind disabled preprocessor defines
+    if (config.compilationDatabaseFilename.isEmpty && config.defines.isEmpty)
+      flags |= ILanguage.OPTION_PARSE_INACTIVE_CODE
+    flags
+  }
 
-  def preprocessorStatements(file: Path, language: ILanguage): Iterable[IASTPreprocessorStatement] = {
-    parse(file, language).map(t => preprocessorStatements(t)).getOrElse(Iterable.empty)
+  def preprocessorStatements(
+    file: Path,
+    language: ILanguage,
+    accumulator: AstCreationPass.Accumulator
+  ): Iterable[IASTPreprocessorStatement] = {
+    parse(file, language, accumulator).map(t => preprocessorStatements(t)).getOrElse(Iterable.empty)
   }
 
   private def createScannerInfo(file: Path): ScannerInfo = {
@@ -129,12 +173,12 @@ class CdtParser(
     )
   }
 
-  def parse(file: Path, language: ILanguage): Option[IASTTranslationUnit] = {
-    handleParseResult(file, parseInternal(file, language))
+  def parse(file: Path, language: ILanguage, accumulator: AstCreationPass.Accumulator): Option[IASTTranslationUnit] = {
+    handleParseResult(file, parseInternal(file, language, accumulator))
   }
 
-  def parse(code: String, file: Path): Option[IASTTranslationUnit] = {
-    handleParseResult(file, parseInternal(code, file))
+  def parse(code: String, file: Path, accumulator: AstCreationPass.Accumulator): Option[IASTTranslationUnit] = {
+    handleParseResult(file, parseInternal(code, file, accumulator))
   }
 
   private def handleParseResult(file: Path, result: ParseResult): Option[IASTTranslationUnit] = {
@@ -150,22 +194,27 @@ class CdtParser(
     }
   }
 
-  private def prepareAndParse(file: Path, lang: ILanguage, fileContent: FileContent): ParseResult = {
+  private def prepareAndParse(
+    file: Path,
+    lang: ILanguage,
+    fileContent: FileContent,
+    accumulator: AstCreationPass.Accumulator
+  ): ParseResult = {
     val relativeFilePath    = SourceFiles.toRelativePath(file.toString, config.inputPath)
-    val fileContentProvider = new CustomFileContentProvider(headerFileFinder, file.toString, global)
+    val fileContentProvider = new CustomFileContentProvider(headerFileFinder, file.toString, accumulator)
     val scannerInfo         = createScannerInfo(file)
     safeParseInternal(fileContent, scannerInfo, fileContentProvider, lang, relativeFilePath)
   }
 
-  private def parseInternal(file: Path, lang: ILanguage): ParseResult = {
+  private def parseInternal(file: Path, lang: ILanguage, accumulator: AstCreationPass.Accumulator): ParseResult = {
     val fileContent = readFileAsFileContent(file)
-    prepareAndParse(file, lang, fileContent)
+    prepareAndParse(file, lang, fileContent, accumulator)
   }
 
-  private def parseInternal(code: String, file: Path): ParseResult = {
+  private def parseInternal(code: String, file: Path, accumulator: AstCreationPass.Accumulator): ParseResult = {
     val lang        = CdtParser.createParseLanguage(file, code, config)
     val fileContent = FileContent.create(file.toString, true, code.toCharArray)
-    prepareAndParse(file, lang, fileContent)
+    prepareAndParse(file, lang, fileContent, accumulator)
   }
 
   private def safeParseInternal(
@@ -183,8 +232,7 @@ class CdtParser(
     } catch {
       case u: UnsupportedClassVersionError =>
         logger.error("c2cpg requires at least JRE-17 to run. Please check your Java Runtime Environment!", u)
-        System.exit(1)
-        ParseResult(None, failure = Option(u)) // return value to make the compiler happy
+        scala.sys.exit(1)
       case s: StackOverflowError =>
         /**   - Eclipse CDT’s C/C++ parser is heavily recursive (recursive-descent parsing, macro expansion, template
           *     instantiation, deep include chains). For certain real-world inputs this can create extremely deep call

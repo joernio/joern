@@ -1,19 +1,17 @@
 package io.joern.joerncli
 
 import io.joern.console.scan.{ScanPass, outputFindings}
-import io.joern.console.{BridgeBase, DefaultArgumentProvider, Query, QueryDatabase}
+import io.joern.console.{BridgeBase, DefaultArgumentProvider, Query, QueryDatabase, QueryJsonSerialization}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.{NoSemantics, Semantics}
 import io.joern.joerncli.JoernScan.getQueriesFromQueryDb
 import io.joern.joerncli.Scan.{allTag, defaultTag}
 import io.joern.joerncli.console.ReplBridge
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder, locationCreator}
+import io.shiftleft.semanticcpg.language.locationCreator
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
-import org.json4s.native.Serialization
-import org.json4s.{Formats, NoTypeHints}
 import scopt.OptionParser
 
 import java.nio.file.{Files, Path, Paths}
@@ -49,8 +47,9 @@ object JoernScan extends BridgeBase {
 
   def main(args: Array[String]): Unit = {
     val (scanArgs, frontendArgs) = CpgBasedTool.splitArgs(args)
-    optionParser.parse(scanArgs, JoernScanConfig()).foreach { config =>
-      run(config, frontendArgs)
+    optionParser.parse(scanArgs, JoernScanConfig()) match {
+      case Some(config) => run(config, frontendArgs)
+      case None         => System.exit(1)
     }
   }
 
@@ -133,10 +132,9 @@ object JoernScan extends BridgeBase {
 
   private def dumpQueriesAsJson(outFileName: String): Unit = {
     implicit val engineContext: EngineContext = EngineContext(NoSemantics)
-    implicit val formats: AnyRef & Formats    = Serialization.formats(NoTypeHints)
     val queryDb                               = new QueryDatabase(new JoernDefaultArgumentProvider(0))
     val outFile                               = Paths.get(outFileName)
-    Files.writeString(outFile, Serialization.write(queryDb.allQueries))
+    Files.writeString(outFile, QueryJsonSerialization.write(queryDb.allQueries))
     println(s"Queries written to: $outFileName")
   }
 
@@ -154,7 +152,7 @@ object JoernScan extends BridgeBase {
   private def runScanPlugin(config: JoernScanConfig, frontendArgs: List[String]): Unit = {
     if (config.src == "") {
       println(optionParser.usage)
-      return
+      System.exit(1)
     }
 
     if (queryNames().isEmpty) {
@@ -174,7 +172,10 @@ object JoernScan extends BridgeBase {
         overwrite = config.overwrite,
         store = config.store,
         language = config.language,
-        frontendArgs = frontendArgs.toArray
+        frontendArgs = frontendArgs.toArray,
+        scanMaxCallDepth = Some(Scan.defaultOpts.maxCallDepth),
+        scanScriptNames = Scan.defaultOpts.names,
+        scanTagNames = Scan.defaultOpts.tags
       )
     run(shellConfig)
     println(s"Run `joern --for-input-path ${config.src}` to explore interactively")
@@ -263,12 +264,17 @@ class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends 
   override val description: String = Scan.description
 
   override def create(context: LayerCreatorContext): Unit = {
-    val allQueries = getQueriesFromQueryDb(new JoernDefaultArgumentProvider(options.maxCallDepth))
+    val maxCallDepth =
+      if (options.maxCallDepth == 2 && Scan.defaultOpts.maxCallDepth != 2) Scan.defaultOpts.maxCallDepth
+      else options.maxCallDepth
+    val allQueries = getQueriesFromQueryDb(new JoernDefaultArgumentProvider(maxCallDepth))
     if (allQueries.isEmpty) {
       println("No queries found, you probably forgot to install a query database.")
       return
     }
-    val queriesAfterFilter = filteredQueries(allQueries, options.names, options.tags)
+    val names              = if (options.names.isEmpty) Scan.defaultOpts.names else options.names
+    val tags               = if (options.tags.isEmpty) Scan.defaultOpts.tags else options.tags
+    val queriesAfterFilter = filteredQueries(allQueries, names, tags)
     if (queriesAfterFilter.isEmpty) {
       println("No queries matched current filter selection (total number of queries: `" + allQueries.length + "`)")
       return

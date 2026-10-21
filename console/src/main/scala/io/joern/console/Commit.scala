@@ -21,7 +21,7 @@ class Commit(opts: CommitOptions) extends LayerCreator {
 
   override def create(context: LayerCreatorContext): Unit = {
     val pass: CpgPass = new CpgPass(context.cpg) {
-      override val name = "commit"
+      override val name                                 = "commit"
       override def run(builder: DiffGraphBuilder): Unit = {
         builder.absorb(opts.diffGraphBuilder)
       }

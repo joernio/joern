@@ -11,7 +11,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class MethodDecoratorPassTests extends AnyWordSpec with Matchers {
   "MethodDecoratorTest" in EmptyGraphFixture { graph =>
-    val method = graph.addNode(NewMethod())
+    val method      = graph.addNode(NewMethod())
     val parameterIn = graph.addNode(
       NewMethodParameterIn()
         .code("p1")

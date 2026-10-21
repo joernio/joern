@@ -35,9 +35,9 @@ class Decompiler(classFile: List[Path]) {
 
     override def getSink[T](sinkType: SinkType, sinkClass: SinkClass): OutputSinkFactory.Sink[T] = new Sink[T]() {
       override def write(s: T): Unit = {
-        sinkType match
+        sinkType match {
           case OutputSinkFactory.SinkType.JAVA =>
-            s match
+            s match {
               case x: Decompiled =>
                 val className     = x.getClassName
                 val packageName   = x.getPackageName
@@ -47,12 +47,14 @@ class Decompiler(classFile: List[Path]) {
                 classToDecompiledSource.put(classFullName, x.getJava)
               case _ =>
                 logger.error(s"Unhandled decompilation type ${s.getClass}")
+            }
           case OutputSinkFactory.SinkType.PROGRESS =>
             val className = s.toString.split(" ").last
             logger.debug(s"Decompiling class '$className'")
           case OutputSinkFactory.SinkType.EXCEPTION =>
             logger.error(s.toString)
           case _ => // ignore
+        }
       }
     }
   }

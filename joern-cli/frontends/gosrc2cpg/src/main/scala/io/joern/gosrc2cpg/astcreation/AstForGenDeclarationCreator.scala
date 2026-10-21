@@ -21,11 +21,12 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
         specArr
           .map(createParserNodeInfo)
           .flatMap { genDeclNode =>
-            genDeclNode.node match
+            genDeclNode.node match {
               case ImportSpec                     => astForImport(genDeclNode)
               case TypeSpec                       => astForTypeSpec(genDeclNode)
               case ValueSpec if !globalStatements => astForValueSpec(genDeclNode, globalStatements = globalStatements)
               case _                              => Seq[Ast]()
+            }
           }
           .toSeq
       case _ =>
@@ -42,13 +43,14 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
   }
 
   protected def astForValueSpec(valueSpec: ParserNodeInfo, globalStatements: Boolean = false): Seq[Ast] = {
-    val typeFullName = Try(valueSpec.json(ParserKeys.Type)) match
+    val typeFullName = Try(valueSpec.json(ParserKeys.Type)) match {
       case Success(typeJson) =>
         val (typeFullName, _, _, _) = processTypeInfo(createParserNodeInfo(typeJson))
         Some(typeFullName)
       case _ => None
+    }
 
-    Try(valueSpec.json(ParserKeys.Values).arr.toList) match
+    Try(valueSpec.json(ParserKeys.Values).arr.toList) match {
       case Success(_) =>
         val (assCallAsts, localAsts) =
           (valueSpec.json(ParserKeys.Names).arr.toList zip valueSpec.json(ParserKeys.Values).arr.toList)
@@ -57,14 +59,14 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
               astForAssignmentCallNode(lhsParserNode, rhsParserNode, typeFullName, valueSpec.code, globalStatements)
             }
             .unzip
-        if globalStatements then Seq.empty else localAsts ++: assCallAsts
+        if (globalStatements) Seq.empty else localAsts ++: assCallAsts
       case _ =>
         valueSpec
           .json(ParserKeys.Names)
           .arr
           .flatMap { parserNode =>
             val localParserNode = createParserNodeInfo(parserNode)
-            if globalStatements then {
+            if (globalStatements) {
               val variableName = localParserNode.json(ParserKeys.Name).str
               if (goGlobal.checkForDependencyFlags(variableName)) {
                 // While processing the dependencies code ignoring package level global variables starting with lower case letter
@@ -82,7 +84,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
             }
           }
           .toSeq
-
+    }
   }
 
   protected def astForAssignmentCallNode(
@@ -105,7 +107,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
       val localAst  = astForLocalNode(lhsParserNode, Some(rhsTypeFullName))
       val lhsAst    = astForNode(lhsParserNode)
       val arguments = lhsAst ++: rhsAst
-      val cNode = callNode(
+      val cNode     = callNode(
         rhsParserNode,
         code,
         Operators.assignment,
@@ -123,21 +125,21 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
     lhsParserNode: ParserNodeInfo,
     rhsAst: Option[Seq[Ast]] = None
   ): Unit = {
-    val name = lhsParserNode.json(ParserKeys.Name).str
+    val name      = lhsParserNode.json(ParserKeys.Name).str
     val memberAst = Ast(
       memberNode(lhsParserNode, name, lhsParserNode.code, typeFullName)
         .astParentType(NodeTypes.TYPE_DECL)
         .astParentFullName(fullyQualifiedPackage)
     )
     Ast.storeInDiffGraph(memberAst, diffGraph)
-    rhsAst match
+    rhsAst match {
       case Some(rhsSeqAst) if !goGlobal.processingDependencies =>
         // Add this AST to be processed in PackageCtorCreationPass only for main source code. Ignore it while processing dependency code.
         // Only in case rhs ast is present then the respective variable or constant will be added as part
         // of package level initializer/constructor statement
         val lhsAst    = astForPackageGlobalFieldAccess(typeFullName, name, lhsParserNode)
         val arguments = Seq(lhsAst) ++: rhsSeqAst
-        val cNode = callNode(
+        val cNode     = callNode(
           lhsParserNode,
           lhsParserNode.code,
           Operators.assignment,
@@ -151,12 +153,12 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
           PackageMemberAst(callAst(cNode, arguments), relPathFileName)
         )
       case _ =>
-
+    }
   }
 
-  private def astForLocalNode(localParserNode: ParserNodeInfo, typeFullName: Option[String]): Ast = {
+  protected def astForLocalNode(localParserNode: ParserNodeInfo, typeFullName: Option[String]): Ast = {
     val name = localParserNode.json(ParserKeys.Name).str
-    if name != "_" then {
+    if (name != "_") {
       val typeFullNameStr = typeFullName.getOrElse(Defines.anyTypeName)
       val node            = localNode(localParserNode, name, localParserNode.code, typeFullNameStr)
       scope.addToScope(name, (node, typeFullNameStr))

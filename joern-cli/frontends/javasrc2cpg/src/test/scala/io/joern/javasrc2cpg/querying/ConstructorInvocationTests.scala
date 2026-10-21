@@ -137,7 +137,7 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
       |}
       |""".stripMargin)
     "create the correct Ast for the constructor" in {
-      fooCpg.typeDecl.name("Foo").method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
+      inside(fooCpg.typeDecl.name("Foo").method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l) {
         case List(cons: Method) =>
           cons.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
           cons.signature shouldBe "void(int)"
@@ -151,9 +151,6 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
           otherParam.name shouldBe "x"
           otherParam.typeFullName shouldBe "int"
           otherParam.dynamicTypeHintFullName shouldBe Seq()
-
-        case res =>
-          fail(s"Expected single Foo constructor, but got $res")
       }
     }
   }
@@ -227,7 +224,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
 
   "it should create correct method nodes for constructors" in {
 
-    cpg.typeDecl.name("Bar").method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
+    inside(cpg.typeDecl.name("Bar").method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l) {
       case List(cons1: Method, cons2: Method) =>
         cons1.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
         cons1.signature shouldBe "void(int)"
@@ -243,9 +240,6 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         cons2.parameter.index(0).head.name shouldBe "this"
         cons2.parameter.index(1).head.name shouldBe "x"
         cons2.parameter.index(2).head.name shouldBe "y"
-
-      case res =>
-        fail(s"Expected 2 Bar constructors, but got $res")
     }
   }
 
@@ -258,239 +252,225 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
   }
 
   "it should create joint `alloc` and `init` calls for a constructor invocation in a vardecl" in {
-    cpg.typeDecl.name("Bar").method.name("test1").l match {
-      case List(method) =>
-        val List(_: Local, assign: Call, init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
+    inside(cpg.typeDecl.name("Bar").method.name("test1").l) { case List(method) =>
+      val List(_: Local, assign: Call, init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
 
-        assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
-        assign.name shouldBe Operators.assignment
-        val alloc = assign.argument(2).asInstanceOf[Call]
-        alloc.name shouldBe "<operator>.alloc"
-        alloc.code shouldBe "new Bar(4, 2)"
-        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
-        alloc.methodFullName shouldBe "<operator>.alloc"
-        alloc.typeFullName shouldBe "Bar"
-        alloc.argument.size shouldBe 0
+      assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
+      assign.name shouldBe Operators.assignment
+      val alloc = assign.argument(2).asInstanceOf[Call]
+      alloc.name shouldBe "<operator>.alloc"
+      alloc.code shouldBe "new Bar(4, 2)"
+      alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
+      alloc.methodFullName shouldBe "<operator>.alloc"
+      alloc.typeFullName shouldBe "Bar"
+      alloc.argument.size shouldBe 0
 
-        init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
-        init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
-        init._methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
-        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
-        init.typeFullName shouldBe "void"
-        init.signature shouldBe "void(int,int)"
-        init.code shouldBe "new Bar(4, 2)"
+      init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
+      init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
+      init._methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
+      init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
+      init.typeFullName shouldBe "void"
+      init.signature shouldBe "void(int,int)"
+      init.code shouldBe "new Bar(4, 2)"
 
-        init.argument.size shouldBe 3
-        val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l: @unchecked
-        obj.order shouldBe 1
-        obj.argumentIndex shouldBe 0
-        obj.name shouldBe "b"
-        obj.typeFullName shouldBe "Bar"
-        obj.code shouldBe "b"
-        initArg1.code shouldBe "4"
-        initArg1.order shouldBe 2
-        initArg1.argumentIndex shouldBe 1
-        initArg2.code shouldBe "2"
-        initArg2.order shouldBe 3
-        initArg2.argumentIndex shouldBe 2
-
-      case res => fail(s"Expected main method in Bar but found $res")
+      init.argument.size shouldBe 3
+      val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l: @unchecked
+      obj.order shouldBe 1
+      obj.argumentIndex shouldBe 0
+      obj.name shouldBe "b"
+      obj.typeFullName shouldBe "Bar"
+      obj.code shouldBe "b"
+      initArg1.code shouldBe "4"
+      initArg1.order shouldBe 2
+      initArg1.argumentIndex shouldBe 1
+      initArg2.code shouldBe "2"
+      initArg2.order shouldBe 3
+      initArg2.argumentIndex shouldBe 2
     }
   }
 
   "it should create joint `alloc` and `init` calls for a constructor invocation in an assignment" in {
-    cpg.typeDecl.name("Bar").method.name("test2").l match {
-      case List(method) =>
-        val List(assign: Call, init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
+    inside(cpg.typeDecl.name("Bar").method.name("test2").l) { case List(method) =>
+      val List(assign: Call, init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
 
-        assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
-        assign.name shouldBe Operators.assignment
-        val alloc = assign.argument(2).asInstanceOf[Call]
-        alloc.name shouldBe "<operator>.alloc"
-        alloc.code shouldBe "new Bar(4, 2)"
-        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
-        alloc.methodFullName shouldBe "<operator>.alloc"
-        alloc.typeFullName shouldBe "Bar"
-        alloc.argument.size shouldBe 0
+      assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
+      assign.name shouldBe Operators.assignment
+      val alloc = assign.argument(2).asInstanceOf[Call]
+      alloc.name shouldBe "<operator>.alloc"
+      alloc.code shouldBe "new Bar(4, 2)"
+      alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
+      alloc.methodFullName shouldBe "<operator>.alloc"
+      alloc.typeFullName shouldBe "Bar"
+      alloc.argument.size shouldBe 0
 
-        init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
-        init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
-        init._methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
-        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
-        init.typeFullName shouldBe "void"
-        init.signature shouldBe "void(int,int)"
-        init.code shouldBe "new Bar(4, 2)"
+      init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
+      init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
+      init._methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
+      init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
+      init.typeFullName shouldBe "void"
+      init.signature shouldBe "void(int,int)"
+      init.code shouldBe "new Bar(4, 2)"
 
-        init.argument.size shouldBe 3
-        val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l: @unchecked
-        obj.order shouldBe 1
-        obj.argumentIndex shouldBe 0
-        obj.name shouldBe "b"
-        obj.typeFullName shouldBe "Bar"
-        obj.code shouldBe "b"
-        initArg1.code shouldBe "4"
-        initArg1.order shouldBe 2
-        initArg1.argumentIndex shouldBe 1
-        initArg2.code shouldBe "2"
-        initArg2.order shouldBe 3
-        initArg2.argumentIndex shouldBe 2
-
-      case res => fail(s"Expected main method in Bar but found $res")
+      init.argument.size shouldBe 3
+      val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l: @unchecked
+      obj.order shouldBe 1
+      obj.argumentIndex shouldBe 0
+      obj.name shouldBe "b"
+      obj.typeFullName shouldBe "Bar"
+      obj.code shouldBe "b"
+      initArg1.code shouldBe "4"
+      initArg1.order shouldBe 2
+      initArg1.argumentIndex shouldBe 1
+      initArg2.code shouldBe "2"
+      initArg2.order shouldBe 3
+      initArg2.argumentIndex shouldBe 2
     }
   }
 
   "it should create `alloc` and `init` calls in a block for constructor invocations not in assignments" in {
-    cpg.typeDecl.name("Bar").method.name("bar").l match {
-      case List(method) =>
-        val idCall                                                        = method.call.name("id").head
-        val consBlock                                                     = idCall.argument(1).asInstanceOf[Block]
-        val List(local: Local, assign: Call, init: Call, ret: Identifier) = consBlock.astChildren.l: @unchecked
+    inside(cpg.typeDecl.name("Bar").method.name("bar").l) { case List(method) =>
+      val idCall                                                        = method.call.name("id").head
+      val consBlock                                                     = idCall.argument(1).asInstanceOf[Block]
+      val List(local: Local, assign: Call, init: Call, ret: Identifier) = consBlock.astChildren.l: @unchecked
 
-        local.name shouldBe "$obj0"
-        local.typeFullName shouldBe "Bar"
-        local.code shouldBe "$obj0"
+      local.name shouldBe "$obj0"
+      local.typeFullName shouldBe "Bar"
+      local.code shouldBe "$obj0"
 
-        val List(temp: Identifier, alloc: Call) = assign.argument.l: @unchecked
-        temp.name shouldBe "$obj0"
-        temp.typeFullName shouldBe "Bar"
-        temp.order shouldBe 1
-        temp.argumentIndex shouldBe 1
-        temp.code shouldBe "$obj0"
+      val List(temp: Identifier, alloc: Call) = assign.argument.l: @unchecked
+      temp.name shouldBe "$obj0"
+      temp.typeFullName shouldBe "Bar"
+      temp.order shouldBe 1
+      temp.argumentIndex shouldBe 1
+      temp.code shouldBe "$obj0"
 
-        alloc.name shouldBe "<operator>.alloc"
-        alloc.methodFullName shouldBe "<operator>.alloc"
-        alloc.order shouldBe 2
-        alloc.argumentIndex shouldBe 2
-        alloc.code shouldBe "new Bar(42)"
-        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
-        alloc.typeFullName shouldBe "Bar"
-        alloc.argument.size shouldBe 0
+      alloc.name shouldBe "<operator>.alloc"
+      alloc.methodFullName shouldBe "<operator>.alloc"
+      alloc.order shouldBe 2
+      alloc.argumentIndex shouldBe 2
+      alloc.code shouldBe "new Bar(42)"
+      alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
+      alloc.typeFullName shouldBe "Bar"
+      alloc.argument.size shouldBe 0
 
-        init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
-        init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
-        init._methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
-        init.signature shouldBe "void(int)"
-        init.code shouldBe "new Bar(42)"
-        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
+      init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
+      init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
+      init._methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
+      init.signature shouldBe "void(int)"
+      init.code shouldBe "new Bar(42)"
+      init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
 
-        init.argument.size shouldBe 2
-        val List(obj: Identifier, initArg1: Literal) = init.argument.l: @unchecked
-        obj.order shouldBe 1
-        obj.argumentIndex shouldBe 0
-        obj.name shouldBe "$obj0"
-        obj.typeFullName shouldBe "Bar"
+      init.argument.size shouldBe 2
+      val List(obj: Identifier, initArg1: Literal) = init.argument.l: @unchecked
+      obj.order shouldBe 1
+      obj.argumentIndex shouldBe 0
+      obj.name shouldBe "$obj0"
+      obj.typeFullName shouldBe "Bar"
 
-        initArg1.code shouldBe "42"
-        initArg1.order shouldBe 2
-        initArg1.argumentIndex shouldBe 1
-
-      case res => fail(s"Expected method bar in Bar but found $res")
+      initArg1.code shouldBe "42"
+      initArg1.order shouldBe 2
+      initArg1.argumentIndex shouldBe 1
     }
   }
 
   "it should create `alloc` and `init` calls in a block for complex assignments" in {
-    cpg.typeDecl.name("Bar").method.name("test3").l match {
-      case List(method) =>
-        val assignCall = method.call.nameExact("<operator>.assignment").head
-        val consBlock  = assignCall.argument(2).asInstanceOf[Block]
-        val List(local: Local, assign: Call, init: Call, ret: Identifier) = consBlock.astChildren.l: @unchecked
+    inside(cpg.typeDecl.name("Bar").method.name("test3").l) { case List(method) =>
+      val assignCall = method.call.nameExact("<operator>.assignment").head
+      val consBlock  = assignCall.argument(2).asInstanceOf[Block]
+      val List(local: Local, assign: Call, init: Call, ret: Identifier) = consBlock.astChildren.l: @unchecked
 
-        local.name shouldBe "$obj1"
-        local.typeFullName shouldBe "Bar"
-        local.code shouldBe "$obj1"
+      local.name shouldBe "$obj1"
+      local.typeFullName shouldBe "Bar"
+      local.code shouldBe "$obj1"
 
-        val List(temp: Identifier, alloc: Call) = assign.argument.l: @unchecked
-        temp.name shouldBe "$obj1"
-        temp.typeFullName shouldBe "Bar"
-        temp.order shouldBe 1
-        temp.argumentIndex shouldBe 1
-        temp.code shouldBe "$obj1"
+      val List(temp: Identifier, alloc: Call) = assign.argument.l: @unchecked
+      temp.name shouldBe "$obj1"
+      temp.typeFullName shouldBe "Bar"
+      temp.order shouldBe 1
+      temp.argumentIndex shouldBe 1
+      temp.code shouldBe "$obj1"
 
-        alloc.name shouldBe "<operator>.alloc"
-        alloc.methodFullName shouldBe "<operator>.alloc"
-        alloc.order shouldBe 2
-        alloc.argumentIndex shouldBe 2
-        alloc.code shouldBe "new Bar(42)"
-        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
-        alloc.typeFullName shouldBe "Bar"
-        alloc.argument.size shouldBe 0
+      alloc.name shouldBe "<operator>.alloc"
+      alloc.methodFullName shouldBe "<operator>.alloc"
+      alloc.order shouldBe 2
+      alloc.argumentIndex shouldBe 2
+      alloc.code shouldBe "new Bar(42)"
+      alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
+      alloc.typeFullName shouldBe "Bar"
+      alloc.argument.size shouldBe 0
 
-        init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
-        init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
-        init._methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
-        init.signature shouldBe "void(int)"
-        init.code shouldBe "new Bar(42)"
-        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
+      init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
+      init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
+      init._methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
+      init.signature shouldBe "void(int)"
+      init.code shouldBe "new Bar(42)"
+      init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
 
-        init.argument.size shouldBe 2
-        val List(obj: Identifier, initArg1: Literal) = init.argument.l: @unchecked
-        obj.order shouldBe 1
-        obj.argumentIndex shouldBe 0
-        obj.name shouldBe "$obj1"
-        obj.typeFullName shouldBe "Bar"
+      init.argument.size shouldBe 2
+      val List(obj: Identifier, initArg1: Literal) = init.argument.l: @unchecked
+      obj.order shouldBe 1
+      obj.argumentIndex shouldBe 0
+      obj.name shouldBe "$obj1"
+      obj.typeFullName shouldBe "Bar"
 
-        initArg1.code shouldBe "42"
-        initArg1.order shouldBe 2
-        initArg1.argumentIndex shouldBe 1
-
-      case res => fail(s"Expected method test3 in Bar but found $res")
+      initArg1.code shouldBe "42"
+      initArg1.order shouldBe 2
+      initArg1.argumentIndex shouldBe 1
     }
   }
 
   "it should create only `init` call for direct invocation using `this`" in {
-    cpg.typeDecl
-      .name("Bar")
-      .method
-      .fullNameExact(s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)")
-      .l match {
-      case List(method) =>
-        val List(init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
-        init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
-        init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
-        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
-        init.typeFullName shouldBe "void"
-        init.signature shouldBe "void(int)"
+    inside(
+      cpg.typeDecl
+        .name("Bar")
+        .method
+        .fullNameExact(s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)")
+        .l
+    ) { case List(method) =>
+      val List(init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
+      init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
+      init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
+      init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
+      init.typeFullName shouldBe "void"
+      init.signature shouldBe "void(int)"
 
-        val List(obj: Identifier, initArg1: Call) = init.argument.l: @unchecked
-        obj.name shouldBe "this"
-        obj.order shouldBe 1
-        obj.argumentIndex shouldBe 0
-        obj.typeFullName shouldBe "Bar"
+      val List(obj: Identifier, initArg1: Call) = init.argument.l: @unchecked
+      obj.name shouldBe "this"
+      obj.order shouldBe 1
+      obj.argumentIndex shouldBe 0
+      obj.typeFullName shouldBe "Bar"
 
-        initArg1.code shouldBe "x + y"
-        initArg1.order shouldBe 2
-        initArg1.argumentIndex shouldBe 1
-
-      case res => fail(s"Expected Bar constructor but found $res")
+      initArg1.code shouldBe "x + y"
+      initArg1.order shouldBe 2
+      initArg1.argumentIndex shouldBe 1
     }
   }
 
   "it should create only `init` call for direct invocation using `super`" in {
-    cpg.typeDecl
-      .name("Bar")
-      .method
-      .fullNameExact(s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)")
-      .l match {
-      case List(method) =>
-        val List(init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
-        init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
-        init.methodFullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
-        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
-        init.typeFullName shouldBe "void"
-        init.signature shouldBe "void(int)"
+    inside(
+      cpg.typeDecl
+        .name("Bar")
+        .method
+        .fullNameExact(s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)")
+        .l
+    ) { case List(method) =>
+      val List(init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
+      init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
+      init.methodFullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
+      init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
+      init.typeFullName shouldBe "void"
+      init.signature shouldBe "void(int)"
 
-        val List(obj: Identifier, initArg: Identifier) = init.argument.l: @unchecked
-        obj.name shouldBe "this"
-        obj.typeFullName shouldBe "Foo"
-        obj.argumentIndex shouldBe 0
-        obj.order shouldBe 1
-        obj.code shouldBe "this"
+      val List(obj: Identifier, initArg: Identifier) = init.argument.l: @unchecked
+      obj.name shouldBe "this"
+      obj.typeFullName shouldBe "Foo"
+      obj.argumentIndex shouldBe 0
+      obj.order shouldBe 1
+      obj.code shouldBe "this"
 
-        initArg.code shouldBe "x"
-        initArg.order shouldBe 2
-        initArg.argumentIndex shouldBe 1
-
-      case res => fail(s"Expected Bar constructor but found $res")
+      initArg.code shouldBe "x"
+      initArg.order shouldBe 2
+      initArg.argumentIndex shouldBe 1
     }
   }
 }

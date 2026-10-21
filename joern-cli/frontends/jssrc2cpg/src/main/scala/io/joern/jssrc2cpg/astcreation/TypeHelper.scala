@@ -8,9 +8,10 @@ import java.util.regex.Pattern
 
 trait TypeHelper { this: AstCreator =>
 
-  private val TypeAnnotationKey = "typeAnnotation"
-  private val ReturnTypeKey     = "returnType"
-  private val ImportMatcher     = Pattern.compile("(typeof )?import\\([\"'](.*)[\"']\\)")
+  private val TypeAnnotationKey   = "typeAnnotation"
+  private val ReturnTypeKey       = "returnType"
+  private val ImportMatcher       = Pattern.compile("(typeof )?import\\([\"'](.*)[\"']\\)")
+  private val ArrayReplacePattern = ":[^,.]+\\[]".r
 
   private val TypeReplacements = Map(
     " any"       -> s" ${Defines.Any}",
@@ -28,9 +29,9 @@ trait TypeHelper { this: AstCreator =>
   )
 
   protected def isPlainTypeAlias(alias: BabelNodeInfo): Boolean = if (hasKey(alias.json, "right")) {
-    createBabelNodeInfo(alias.json("right")).node.toString == TSTypeReference.toString
+    nodeTypeOf(alias.json("right")) == TSTypeReference
   } else {
-    createBabelNodeInfo(alias.json("typeAnnotation")).node.toString == TSTypeReference.toString
+    nodeTypeOf(alias.json("typeAnnotation")) == TSTypeReference
   }
 
   private def typeForFlowType(flowType: BabelNodeInfo): String = flowType.node match {
@@ -44,7 +45,7 @@ trait TypeHelper { this: AstCreator =>
     case BooleanLiteralTypeAnnotation => code(flowType.json)
     case NullLiteralTypeAnnotation    => code(flowType.json)
     case StringLiteralTypeAnnotation  => code(flowType.json)
-    case GenericTypeAnnotation =>
+    case GenericTypeAnnotation        =>
       code(flowType.json("id")) match {
         case tpe if isNumberType(tpe) => Defines.Number
         case tpe if isStringType(tpe) => Defines.String
@@ -68,7 +69,7 @@ trait TypeHelper { this: AstCreator =>
     case TSUndefinedKeyword => Defines.Undefined
     case TSNeverKeyword     => Defines.Never
     case TSIntrinsicKeyword => code(tsType.json)
-    case TSTypeReference =>
+    case TSTypeReference    =>
       code(tsType.json) match {
         case tpe if isNumberType(tpe) => Defines.Number
         case tpe if isStringType(tpe) => Defines.String
@@ -96,35 +97,40 @@ trait TypeHelper { this: AstCreator =>
 
   private def typeFromTypeMap(node: BabelNodeInfo): String =
     range(node.json).flatMap(parserResult.typeMap.get) match {
-      case Some(value) if value == "any"                         => Defines.Any
-      case Some(value) if value == "boolean"                     => Defines.Boolean
-      case Some(value) if value == "null"                        => Defines.Null
-      case Some(value) if isStringType(value)                    => Defines.String
-      case Some(value) if isNumberType(value)                    => Defines.Number
-      case Some(value) if ImportMatcher.matcher(value).matches() => importToModule(value)
-      case Some(value)                                           => value
-      case None                                                  => Defines.Any
+      case Some(value) if value == "any"      => Defines.Any
+      case Some(value) if value == "boolean"  => Defines.Boolean
+      case Some(value) if value == "null"     => Defines.Null
+      case Some(value) if isStringType(value) => Defines.String
+      case Some(value) if isNumberType(value) => Defines.Number
+      case Some(value)                        =>
+        val matcher = ImportMatcher.matcher(value)
+        if (matcher.matches()) importToModule(value, matcher) else value
+      case None => Defines.Any
     }
 
-  private def importToModule(value: String): String = {
-    val matcher = ImportMatcher.matcher(value)
+  private def importToModule(value: String, matcher: java.util.regex.Matcher): String =
     this.rootTypeDecl.headOption match {
       case Some(typeDecl)            => typeDecl.fullName
       case None if matcher.matches() => matcher.group(2).stripSuffix(".js").concat(s".js:${Defines.Program}")
       case None                      => value
     }
-  }
 
   protected def typeFor(node: BabelNodeInfo): String = {
     val tpe = Seq(TypeAnnotationKey, ReturnTypeKey).find(hasKey(node.json, _)) match {
       case Some(key) => typeForTypeAnnotation(createBabelNodeInfo(node.json(key)))
       case None      => typeFromTypeMap(node)
     }
-    val tpeWithTypeReplacements = TypeReplacements.foldLeft(tpe) { case (typeStr, (m, r)) => typeStr.replace(m, r) }
+    // Every replacement key contains a space or a '{'; if the type has neither, none of them can match, so we can skip
+    // the twelve String.contains scans entirely.
+    val tpeWithTypeReplacements = if (tpe.indexOf(' ') >= 0 || tpe.indexOf('{') >= 0) {
+      TypeReplacements.foldLeft(tpe) { case (typeStr, (searchStr, replacement)) =>
+        if (typeStr.contains(searchStr)) typeStr.replace(searchStr, replacement) else typeStr
+      }
+    } else tpe
     val tpeWithArrayReplacements = if (tpeWithTypeReplacements.endsWith("[]")) {
       Defines.Array
     } else {
-      tpeWithTypeReplacements.replaceAll(":[^,.]+\\[]", s": ${Defines.Array}")
+      ArrayReplacePattern.replaceAllIn(tpeWithTypeReplacements, s": ${Defines.Array}")
     }
     if (!tpeWithArrayReplacements.contains("{") && !tpe.contains("(")) {
       registerType(tpeWithArrayReplacements)
@@ -134,7 +140,7 @@ trait TypeHelper { this: AstCreator =>
 
   protected def typeHintForThisExpression(node: Option[BabelNodeInfo] = None): Seq[String] = {
     dynamicInstanceTypeStack.headOption match {
-      case Some(tpe) => Seq(tpe)
+      case Some(tpe)              => Seq(tpe)
       case None if node.isDefined =>
         typeFor(node.get) match {
           case tpe if tpe != Defines.Any && tpe != "this" => if (Defines.isBuiltinType(tpe)) Seq(tpe) else Seq.empty

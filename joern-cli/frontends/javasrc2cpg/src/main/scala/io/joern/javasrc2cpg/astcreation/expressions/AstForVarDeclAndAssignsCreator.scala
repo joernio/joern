@@ -49,7 +49,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
       case Operator.UNSIGNED_RIGHT_SHIFT => Operators.assignmentLogicalShiftRight
     }
 
-    val maybeResolvedType = Try(expr.getTarget.calculateResolvedType()).toOption
+    val maybeResolvedType       = Try(expr.getTarget.calculateResolvedType()).toOption
     val expectedInitializerType = maybeResolvedType
       .map { resolvedType =>
         ExpectedType(typeInfoCalc.fullName(resolvedType), Some(resolvedType))
@@ -130,7 +130,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
       case _                                   => typeFullNameWithoutArgs
     }
 
-    val originalName = variableDeclarator.getNameAsString
+    val originalName                = variableDeclarator.getNameAsString
     val declarationNodeFromPatterns =
       scope.getHoistedPatternLocals.find(local => local.name == originalName && local.typeFullName == typeFullName)
     val declarationNode: Option[NewVariableNode] =
@@ -145,7 +145,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
         val localCode   = s"${declaratorType.map(_.toString).getOrElse("")} ${mangledName}"
 
         val genericSignature = binarySignatureCalculator.variableBinarySignature(variableDeclarator.getType)
-        val local =
+        val local            =
           localNode(originNode, mangledName, localCode, typeFullName, genericSignature = Option(genericSignature))
 
         scope.enclosingBlock.foreach(_.addLocal(local, originalName))
@@ -176,7 +176,6 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
         }
 
         val assignmentAsts = variableDeclarator.getInitializer.toScala.toList.flatMap { initializer =>
-
           val expectedType =
             tryWithSafeStackOverflow(
               symbolSolver.toResolvedType(variableDeclarator.getType, classOf[ResolvedType])
@@ -219,7 +218,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
 
     target.rootType.foreach(assignmentNode.typeFullName(_))
 
-    val isSimpleAssign = (operatorName == Operators.assignment)
+    val isSimpleAssign     = (operatorName == Operators.assignment)
     val isVarOrFieldAssign = target.root.exists {
       case _: NewIdentifier => true
       case call: NewCall    => call.methodFullName == Operators.fieldAccess

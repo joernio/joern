@@ -1,11 +1,16 @@
-name := "macros"
+lazy val macros = (project in file("."))
+  .dependsOn(
+    Projects.semanticcpg % Test,
+    Projects.linterRules % ScalafixConfig
+  )
+  .enablePlugins(JavaAppPackaging)
+  .settings(
+    name := "macros",
 
-dependsOn(Projects.semanticcpg % Test, Projects.linterRules % ScalafixConfig)
-
-libraryDependencies ++= Seq(
-  "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
-  "net.oneandone.reflections8" % "reflections8"      % "0.11.7",
-  "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test
-)
-
-enablePlugins(JavaAppPackaging)
+    libraryDependencies ++= Seq(
+      "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
+      "net.oneandone.reflections8" % "reflections8"      % "0.11.7",
+      "com.lihaoyi"               %% "upickle"           % Versions.upickle,
+      "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test
+    )
+  )

@@ -2,15 +2,16 @@ package io.joern.php2cpg.parser
 
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain.PhpFile
+import io.joern.x2cpg.utils.JoernRunfilesLocator
 import io.shiftleft.semanticcpg.utils.FileUtil.*
-import io.shiftleft.semanticcpg.utils.{ExternalCommand, ExternalCommandResult, FileUtil}
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Path, Paths}
 import java.util.regex.Pattern
 import scala.collection.mutable
 import scala.io.Source
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success, Try, Using}
 
 private[php2cpg] case class PhpParseResult(fileName: String, parseResult: Option[PhpFile], infoLines: String)
 
@@ -42,7 +43,7 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
       .logIfFailed()
       .successOption
       .map { stdOut =>
-        val asJson = linesToJsonValues(stdOut)
+        val asJson    = linesToJsonValues(stdOut)
         val asPhpFile = asJson.map { case (filename, jsonObjectOption, infoLines) =>
           (filename, jsonToPhpFile(jsonObjectOption, filename), infoLines)
         }
@@ -58,9 +59,10 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
     val phpFile = jsonObject.flatMap { jsonObject =>
       Try(Domain.fromJson(jsonObject)) match {
         case Success(phpFile) =>
+          logger.debug(s"Processed '$filename'")
           Some(phpFile)
         case Failure(e) =>
-          logger.error(s"Failed to generate intermediate AST for $filename", e)
+          logger.warn(s"Failed to process '$filename'", e)
           None
       }
     }
@@ -84,11 +86,11 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
       case Success(option) =>
         result.append((filename, option, infoLines.mkString))
         if (option.isEmpty) {
-          logger.error(s"Parsing json string for $filename resulted in null return value")
+          logger.warn(s"Failed to process '$filename': null result from parser")
         }
       case Failure(exception) =>
         result.append((filename, None, infoLines.mkString))
-        logger.error(s"Parsing json string for $filename failed with exception", exception)
+        logger.warn(s"Failed to process '$filename'", exception)
     }
 
     result
@@ -115,7 +117,7 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
     var mode    = PARSE_MODE.SKIP_TRAILER
     val linesIt = lines.iterator
     while (linesIt.hasNext) {
-      val line = linesIt.next
+      val line = linesIt.next()
       mode match {
         case PARSE_MODE.PARSE_INFO =>
           if (line != "==> JSON dump:") {
@@ -163,20 +165,14 @@ object PhpParser {
   private val logger             = LoggerFactory.getLogger(this.getClass)
   private val PhpParserBinEnvVar = "PHP_PARSER_BIN"
 
-  private def defaultPhpIni: String = {
-    val iniContents = Source.fromResource("php.ini").getLines().mkString(System.lineSeparator())
-    val tmpIni      = FileUtil.newTemporaryFile(suffix = "-php.ini")
-    FileUtil.deleteOnExit(tmpIni)
-    Files.writeString(tmpIni, iniContents)
-    tmpIni.absolutePathAsString
-  }
-
   private def defaultPhpParserBin: String = {
-    val packagePath = Paths.get(this.getClass.getProtectionDomain.getCodeSource.getLocation.toURI)
-    ExternalCommand
-      .executableDir(packagePath)
-      .resolve("php-parser/php-parser.php")
-      .toString
+    JoernRunfilesLocator.resolve("php-parser/file/downloaded").getOrElse {
+      val packagePath = Paths.get(this.getClass.getProtectionDomain.getCodeSource.getLocation.toURI)
+      ExternalCommand
+        .executableDir(packagePath)
+        .resolve("php-parser/php-parser.php")
+        .toString
+    }
   }
 
   private def configOverrideOrDefaultPath(
@@ -195,7 +191,7 @@ object PhpParser {
 
     Paths.get(pathString) match {
       case file if Files.exists(file) && Files.isRegularFile(file) => Some(file.absolutePathAsString)
-      case _ =>
+      case _                                                       =>
         logger.error(s"Invalid path for $identifier: $pathString")
         None
     }
@@ -206,14 +202,34 @@ object PhpParser {
     configOverrideOrDefaultPath("PhpParserBin", phpParserPathOverride, defaultPhpParserBin)
   }
 
-  private def maybePhpIniPath(config: Config): Option[String] = {
-    configOverrideOrDefaultPath("PhpIni", config.phpIni, defaultPhpIni)
+  private def getParser(config: Config, phpIniPath: String): Option[PhpParser] = {
+    maybePhpParserPath(config).map(phpParserPath => new PhpParser(phpParserPath, phpIniPath, config.disableFileContent))
   }
 
-  def getParser(config: Config): Option[PhpParser] = {
-    for (
-      phpParserPath <- maybePhpParserPath(config);
-      phpIniPath    <- maybePhpIniPath(config)
-    ) yield new PhpParser(phpParserPath, phpIniPath, config.disableFileContent)
+  private def validateIniPath(userProvidedIni: String): Option[String] = {
+    Paths.get(userProvidedIni) match {
+      case file if Files.exists(file) && Files.isRegularFile(file) => Some(file.absolutePathAsString)
+      case _                                                       =>
+        logger.error(s"Invalid path for PhpIni: $userProvidedIni")
+        None
+    }
+  }
+
+  def withParser[T](config: Config)(f: Option[PhpParser] => T): T = {
+    config.phpIni match {
+      case Some(userProvidedIni) if userProvidedIni.nonEmpty =>
+        val parserOption = validateIniPath(userProvidedIni).flatMap(validatedPath => getParser(config, validatedPath))
+
+        f(parserOption)
+      case _ =>
+        FileUtil.usingTemporaryFile(suffix = "-php.ini") { tmpIni =>
+          val iniContents = Using(Source.fromResource("php.ini"))(_.getLines().mkString(System.lineSeparator()))
+            .getOrElse("")
+          Files.writeString(tmpIni, iniContents)
+          val parserOption = getParser(config, tmpIni.absolutePathAsString)
+
+          f(parserOption)
+        }
+    }
   }
 }

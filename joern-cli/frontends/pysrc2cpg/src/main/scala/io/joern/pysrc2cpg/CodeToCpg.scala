@@ -2,6 +2,7 @@ package io.joern.pysrc2cpg
 
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.joern.pysrc2cpg.PythonVersion.PythonV2AndV3
 import io.joern.pysrc2cpg.Py2Cpg.InputProvider
 import io.joern.pythonparser.PyParser
 import io.joern.x2cpg.ValidationMode
@@ -30,6 +31,7 @@ class CodeToCpg(
       astVisitor.convert(astRoot)
 
       diffGraph.absorb(astVisitor.createAst())
+      logger.debug(s"Processed '${inputPair.relFileName}'")
     } catch {
       case exception: Throwable =>
         val lineBreakWasCorrected = lineBreakCorrectedCode != inputPair.content
@@ -54,10 +56,7 @@ class CodeToCpg(
     val nodeBuilder = new NodeBuilder(diffGraph)
     nodeBuilder.fileNode(relFileName, contentOption)
 
-    logger.warn(
-      s"Failed to convert${if (lineBreakWasCorrected) " line break corrected " else " "}file ${relFileName}",
-      exception
-    )
+    logger.warn(s"Failed to process '$relFileName'", exception)
   }
 }
 

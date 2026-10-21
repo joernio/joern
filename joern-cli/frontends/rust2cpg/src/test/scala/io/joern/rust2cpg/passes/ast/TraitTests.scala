@@ -1,0 +1,170 @@
+package io.joern.rust2cpg.passes.ast
+
+import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes}
+import io.shiftleft.semanticcpg.language.*
+
+class TraitTests extends Rust2CpgSuite(noSysRoot = true) {
+
+  "a top-level trait" should {
+    val cpg = code("""
+        |trait Foo {
+        |  fn a(&self);
+        |  fn b(&self) -> i32 { 4 }
+        |}
+        |""".stripMargin)
+
+    "have a crate-prefixed fullName TYPE_DECL" in {
+      cpg.typeDecl.nameExact("Foo").fullName.l shouldBe List("rust2cpgtest::Foo")
+    }
+
+    "have the fullName as genericSignature" in {
+      cpg.typeDecl.nameExact("Foo").genericSignature.l shouldBe List("rust2cpgtest::Foo")
+    }
+
+    "lower each as an AST child of the corresponding TYPE_DECL" in {
+      cpg.typeDecl.nameExact("Foo").method.fullName.sorted.l shouldBe List(
+        "rust2cpgtest::Foo::a",
+        "rust2cpgtest::Foo::b"
+      )
+    }
+
+    "have correct self properties" in {
+      inside(cpg.method.nameExact("a").parameter.nameExact("self").l) { case self :: Nil =>
+        self.index shouldBe 0
+        self.order shouldBe 0
+        self.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
+        self.typeFullName shouldBe "&rust2cpgtest::Foo"
+      }
+    }
+
+    "have correct return typeFullName" in {
+      cpg.method.nameExact("a").methodReturn.typeFullName.l shouldBe List("()")
+      cpg.method.nameExact("b").methodReturn.typeFullName.l shouldBe List("i32")
+    }
+
+    "have a virtual modifiers" in {
+      cpg.method.nameExact("a").modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL)
+      cpg.method.nameExact("b").modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL)
+    }
+
+    "lower the method without a body" in {
+      cpg.method.nameExact("a").block.astChildren shouldBe empty
+    }
+
+    "lower the method with a body" in {
+      cpg.method.nameExact("b").block.astChildren.isReturn.code.l shouldBe List("4")
+    }
+
+    "create binding nodes for each method" in {
+      inside(cpg.typeDecl.nameExact("Foo").methodBinding.sortBy(_.name).l) { case bindingA :: bindingB :: Nil =>
+        bindingA.name shouldBe "a"
+        bindingA.signature shouldBe "rust2cpgtest::Foo"
+        bindingA.methodFullName shouldBe "rust2cpgtest::Foo::a"
+
+        bindingB.name shouldBe "b"
+        bindingB.signature shouldBe "rust2cpgtest::Foo"
+        bindingB.methodFullName shouldBe "rust2cpgtest::Foo::b"
+      }
+    }
+  }
+
+  "a trait associated function without a receiver" should {
+    val cpg = code("""
+        |trait Foo {
+        |  fn new() -> Self;
+        |}
+        |""".stripMargin)
+
+    "have no parameters" in {
+      cpg.method.nameExact("new").parameter shouldBe empty
+    }
+
+    "have correct return typeFullName" in {
+      cpg.method.nameExact("new").methodReturn.typeFullName.l shouldBe List("rust2cpgtest::Foo")
+    }
+  }
+
+  "trait with an associated type" should {
+    val cpg = code("""
+        |trait Foo {
+        | type Item;
+        | fn get(&self) -> <Self as Foo>::Item;
+        |}
+        |fn run<Bar: Foo>(value: <Bar as Foo>::Item) {}
+        |""".stripMargin)
+
+    "have correct typeDecl fullName" in {
+      cpg.typeDecl.nameExact("Foo").fullName.l shouldBe List("rust2cpgtest::Foo")
+    }
+
+    "have correct methodReturn fullName" in {
+      cpg.method.nameExact("get").methodReturn.typeFullName.l shouldBe List("rust2cpgtest::Foo::Item")
+    }
+
+    "have correct parameter typeFullName" in {
+      inside(cpg.method.nameExact("run").parameter.l) { case param :: Nil =>
+        param.name shouldBe "value"
+        param.typeFullName shouldBe "rust2cpgtest::Foo::Item"
+      }
+    }
+  }
+
+  "const in a trait" should {
+    val cpg = code("""
+        |trait Foo {
+        |  const MAX: usize;
+        |  const MIN: usize = 0;
+        |}
+        |""".stripMargin)
+
+    "have correct members" in {
+      inside(cpg.typeDecl.nameExact("Foo").member.sortBy(_.name).l) { case max :: min :: Nil =>
+        max.name shouldBe "MAX"
+        max.code shouldBe "const MAX: usize;"
+        max.typeFullName shouldBe "usize"
+
+        min.name shouldBe "MIN"
+        min.code shouldBe "const MIN: usize = 0;"
+        min.typeFullName shouldBe "usize"
+      }
+    }
+  }
+
+  "an empty trait" should {
+    val cpg = code("trait Empty {}")
+
+    "have a crate-prefixed fullName TYPE_DECL" in {
+      cpg.typeDecl.nameExact("Empty").fullName.l shouldBe List("rust2cpgtest::Empty")
+    }
+
+    "have no methods" in {
+      cpg.typeDecl.nameExact("Empty").method shouldBe empty
+    }
+  }
+
+  "same-named traits in anonymous consts" should {
+    val cpg = code("""
+        |const _: () = {
+        |  trait Must {}
+        |  impl Must for i32 {}
+        |};
+        |const _: () = {
+        |  trait Must {}
+        |  impl Must for i64 {}
+        |};
+        |""".stripMargin)
+
+    "have correct fullNames" in {
+      cpg.typeDecl.nameExact("Must").sortBy(_.lineNumber).fullName.l shouldBe List(
+        "rust2cpgtest::Must#1",
+        "rust2cpgtest::Must#2"
+      )
+    }
+
+    "have correct impl fullNames" in {
+      cpg.typeDecl.name("i32").fullName.l shouldBe List("<i32 as rust2cpgtest::Must#1>")
+      cpg.typeDecl.name("i64").fullName.l shouldBe List("<i64 as rust2cpgtest::Must#2>")
+    }
+  }
+}

@@ -20,8 +20,8 @@ class PrivateKeyFilePass(cpg: Cpg, config: Config, report: Report = new Report()
     Seq("Content omitted for security reasons.")
 
   override def generateParts(): Array[Path] =
-    configFiles(config, selectedExtensions).toArray.filter(p =>
-      IOUtils.readLinesInFile(p).exists(PrivateKeyRegex.matches)
-    )
+    configFiles(config, selectedExtensions)
+      .filter(filePath => IOUtils.readLinesInFile(filePath).exists(PrivateKeyRegex.matches))
+      .toArray
 
 }

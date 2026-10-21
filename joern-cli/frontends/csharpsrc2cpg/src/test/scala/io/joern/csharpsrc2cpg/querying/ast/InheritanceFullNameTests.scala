@@ -22,19 +22,15 @@ class InheritanceFullNameTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "resolve full names for classes with inheritance" in {
-      inside(cpg.typeDecl.nameExact("Bar").l) {
-        case bar :: Nil =>
-          bar.fullName shouldBe "HelloWorld.Bar"
-          bar.inheritsFromTypeFullName shouldBe Seq("HelloWorld.Foo")
-        case _ => fail("No class named `Bar` found")
+      inside(cpg.typeDecl.nameExact("Bar").l) { case bar :: Nil =>
+        bar.fullName shouldBe "HelloWorld.Bar"
+        bar.inheritsFromTypeFullName shouldBe Seq("HelloWorld.Foo")
       }
     }
 
     "resolve identifier full names instantiated from the class" in {
-      inside(cpg.identifier.nameExact("b").l) {
-        case b :: Nil =>
-          b.typeFullName shouldBe "HelloWorld.Bar"
-        case _ => fail("No identifier named `b` found")
+      inside(cpg.identifier.nameExact("b").l) { case b :: Nil =>
+        b.typeFullName shouldBe "HelloWorld.Bar"
       }
     }
   }
@@ -60,28 +56,22 @@ class InheritanceFullNameTests extends CSharpCode2CpgFixture {
         qux.fullName shouldBe "HelloWorld.Qux"
         qux.inheritsFromTypeFullName shouldBe Seq("HelloWorld.Foo")
 
-        inside(qux.astChildren.isMethod.l) {
-          case bazz :: Nil =>
-            bazz.fullName shouldBe "HelloWorld.Qux.bazz:System.Void()"
-            qux.fullName shouldBe "HelloWorld.Qux"
-            qux.inheritsFromTypeFullName shouldBe Seq("HelloWorld.Foo")
+        inside(qux.astChildren.isMethod.l) { case bazz :: Nil =>
+          bazz.fullName shouldBe "HelloWorld.Qux.bazz:System.Void()"
+          qux.fullName shouldBe "HelloWorld.Qux"
+          qux.inheritsFromTypeFullName shouldBe Seq("HelloWorld.Foo")
 
-            inside(qux.astChildren.isMethod.l) {
-              case bazz :: Nil =>
-                bazz.fullName shouldBe "HelloWorld.Qux.bazz:System.Void()"
-              case _ => fail("There is no method named `baz` under `Qux` interface,")
-            }
-          case _ => fail("There is no interface named `Qux`")
+          inside(qux.astChildren.isMethod.l) { case bazz :: Nil =>
+            bazz.fullName shouldBe "HelloWorld.Qux.bazz:System.Void()"
+          }
         }
       }
     }
 
     "resolve fullName and inheritanceTypeFullName for class inheriting from interfaces" in {
-      inside(cpg.typeDecl.nameExact("Fred").l) {
-        case fred :: Nil =>
-          fred.fullName shouldBe "HelloWorld.Fred"
-          fred.inheritsFromTypeFullName shouldBe Seq("HelloWorld.Qux")
-        case _ => fail("No class named `Fred`")
+      inside(cpg.typeDecl.nameExact("Fred").l) { case fred :: Nil =>
+        fred.fullName shouldBe "HelloWorld.Fred"
+        fred.inheritsFromTypeFullName shouldBe Seq("HelloWorld.Qux")
       }
     }
 
@@ -103,11 +93,9 @@ class InheritanceFullNameTests extends CSharpCode2CpgFixture {
           |""".stripMargin)
 
       "resolve fullName and inheritanceFromTypeFullName values" in {
-        inside(cpg.typeDecl.nameExact("Rectangle").l) {
-          case rectangle :: Nil =>
-            rectangle.fullName shouldBe "HelloWorld.Rectangle"
-            rectangle.inheritsFromTypeFullName shouldBe Seq("HelloWorld.IShape", "HelloWorld.IColor")
-          case _ => fail("No class named `Fred`")
+        inside(cpg.typeDecl.nameExact("Rectangle").l) { case rectangle :: Nil =>
+          rectangle.fullName shouldBe "HelloWorld.Rectangle"
+          rectangle.inheritsFromTypeFullName shouldBe Seq("HelloWorld.IShape", "HelloWorld.IColor")
         }
       }
     }

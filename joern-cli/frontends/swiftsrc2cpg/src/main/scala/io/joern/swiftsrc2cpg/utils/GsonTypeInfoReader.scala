@@ -1,7 +1,7 @@
 package io.joern.swiftsrc2cpg.utils
 
 import com.google.gson.stream.{JsonReader, JsonToken}
-import com.google.gson.{JsonArray, JsonObject, JsonParser, Strictness}
+import com.google.gson.Strictness
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.TypeInfo
 
 import java.io.Reader
@@ -13,11 +13,13 @@ import scala.collection.mutable
   */
 object GsonTypeInfoReader {
 
-  /** Field names that can contain decl fullnames in the Swift AST */
-  private val DeclFullnameFieldNames = Set("usr", "decl_usr")
-
-  /** Field names that can contain type fullnames in the Swift AST */
-  private val TypeFullnameFieldNames = Set("type", "type_usr", "result", "interface_type")
+  /** Child object/array field names actually accessed by `extractTypeInfo` and its helpers (`range`,
+    * `declFromCallExpr`, `resultFromReturnStmt`, `declFromMemberRefExpr`, `conformancesFromNode`,
+    * `superClassesFromNode`). Children with names outside this set are still recursed for side effects but not retained
+    * on the parent node, avoiding retention of large irrelevant subtrees.
+    */
+  private val RelevantChildFieldNames =
+    Set("range", "fn", "decl", "sub_expr", "result", "inherits", "conformances", "attrs")
 
   /** AST node kinds that require special handling.
     *
@@ -31,181 +33,334 @@ object GsonTypeInfoReader {
     val CallExpr               = "call_expr"
     val ReturnStmt             = "return_stmt"
     val DotCallExpr            = "dot_syntax_call_expr"
+    val ConstructorRefCallExpr = "constructor_ref_call_expr"
+    val Argument               = "argument"
+    val ArgumentList           = "argument_list"
+    val TypeExpr               = "type_expr"
   }
 
-  /** Safely retrieves a string property from a JsonObject.
+  /** Minimal mutable node model used while token-streaming JSON with JsonReader.
     *
-    * @param obj
-    *   The JSON object to extract from
-    * @param propertyName
-    *   The name of the property to extract
-    * @return
-    *   Some(value) if property exists and is a primitive, None otherwise
-    */
-  private def safePropertyValue(obj: JsonObject, propertyName: String): Option[String] = {
-    Option.when(obj.has(propertyName) && obj.get(propertyName).isJsonPrimitive)(obj.get(propertyName).getAsString)
-  }
-
-  /** Safely retrieves a JsonObject property.
+    * This avoids Gson DOM allocations while retaining only fields needed for TypeInfo extraction.
     *
-    * @param obj
-    *   The JSON object to extract from
-    * @param propertyName
-    *   The name of the property to extract
-    * @return
-    *   Some(jsonObject) if property exists and is an object, None otherwise
-    */
-  private def safePropertyObject(obj: JsonObject, propertyName: String): Option[JsonObject] = {
-    Option.when(obj.has(propertyName) && obj.get(propertyName).isJsonObject)(obj.get(propertyName).getAsJsonObject)
-  }
-
-  /** Extracts the source range from a JSON object.
+    * '''Performance note on nullable fields:''' This class intentionally uses `null` instead of `Option[T]` for
+    * performance reasons. Swift compiler JSON output can be large (hundreds of MB), creating thousands of AstNode
+    * instances during streaming parsing. Using `Option[T]` for ~20 fields per node would:
+    *   - Add ~20 object allocations per AstNode (one `Some`/`None` per field)
+    *   - Increase GC pressure significantly during bulk parsing
+    *   - Add pattern-matching overhead on every field access
     *
-    * @param obj
-    *   The JSON object containing a range property
-    * @return
-    *   A tuple of (start, end) positions
+    * Safety is maintained by:
+    *   - This class is `private` to this object - no external access
+    *   - All field access goes through null-safe wrappers (`Option(field)`) or explicit null checks
+    *   - Fields are only set during parsing and read once during `extractTypeInfo`
+    *
+    * This is a conscious trade-off: performance optimization in a hot path at the cost of idiomatic Scala.
     */
-  private def range(obj: JsonObject): (Int, Int) = {
-    val rangeObj = obj.get("range").getAsJsonObject
-    val start    = rangeObj.get("start").getAsInt
-    val end      = rangeObj.get("end").getAsInt
+  private final class AstNode {
+    var kind: String                                = null
+    var start: Int                                  = -1
+    var end: Int                                    = -1
+    var rangeNode: AstNode                          = null
+    var attrs: mutable.ArrayBuffer[AstNode]         = null
+    var fn: AstNode                                 = null
+    var decl: AstNode                               = null
+    var subExpr: AstNode                            = null
+    var resultObj: AstNode                          = null
+    var inheritsObj: AstNode                        = null
+    var inheritsLegacy: mutable.ArrayBuffer[String] = null
+    var conformances: mutable.ArrayBuffer[AstNode]  = null
+    var typeValue: String                           = null
+    var typeUsr: String                             = null
+    var resultValue: String                         = null
+    var interfaceType: String                       = null
+    var extendedType: String                        = null
+    var usr: String                                 = null
+    var declUsr: String                             = null
+    var protocol: String                            = null
+    var superclassType: String                      = null
+    var receiverIsType: Boolean                     = false
+    var baseName: String                            = null
+    var isImplicit: Boolean                         = false
 
-    // no adjustment needed for zero-length ranges, e.g., for member accesses:
-    if (start == end) return (start, end)
-
-    val endOffset = astNodeKind(obj) match {
-      case NodeKinds.DotCallExpr => 3 // offsets are off by 2 from SwiftParser for simple dot calls
-      case _                     => 1
+    def hasTypeOrDeclInfo: Boolean = {
+      typeValue != null || typeUsr != null || resultValue != null || interfaceType != null || extendedType != null ||
+      usr != null || declUsr != null || protocol != null || superclassType != null ||
+      // Also check for child objects that contain type/decl info (e.g., resultObj in return_stmt, fn/decl in call_expr)
+      resultObj != null || fn != null || decl != null
     }
-    val startWithModifiers = obj match {
-      case _ if obj.has("attrs") =>
-        /** Handles cases where attributes modify the start position of the range. For example, in the presence of
-          * attributes like `@escaping` or for access modifiers like `static` the start position may need to be adjusted
-          * to account for the attribute's position because swift-parser does include attributes in the range of the
-          * associated declaration while swiftc does not.
-          */
-        safeRange(obj.getAsJsonArray("attrs").get(0).getAsJsonObject) match {
-          case Some((s, e)) if s < start => s
-          case _                         => start
+  }
+
+  private def safeRange(node: AstNode): Option[(Int, Int)] = {
+    Option(node.rangeNode)
+      .filter(r => r.start > -1 && r.end > -1)
+      .map { rangeObj =>
+        val start = rangeObj.start
+        val end   = rangeObj.end
+
+        // no adjustment needed for zero-length ranges, e.g., for member accesses:
+        if (start == end) {
+          (start, end)
+        } else {
+          val endOffset = node.kind match {
+            case NodeKinds.DotCallExpr => 3 // offsets are off by 2 from SwiftParser for simple dot calls
+            case _                     => 1
+          }
+
+          /** Handles cases where attributes modify the start position of the range. For example, in the presence of
+            * attributes like `@escaping` or for access modifiers like `static` the start position may need to be
+            * adjusted to account for the attribute's position because swift-parser does include attributes in the range
+            * of the associated declaration while swiftc does not.
+            */
+          val startWithModifiers = Option(node.attrs)
+            .flatMap(_.collectFirst(Function.unlift(attr => safeRange(attr))))
+            .map {
+              case (s, _) if s < start => s
+              case _                   => start
+            }
+            .getOrElse(start)
+
+          (startWithModifiers, end + endOffset)
         }
-      case _ => start
-    }
-    (startWithModifiers, end + endOffset)
+      }
   }
 
-  /** Safely extracts the source range from a JSON object.
-    *
-    * @param obj
-    *   The JSON object to extract range information from
-    * @return
-    *   Some((start, end)) if the range property exists, None otherwise
-    */
-  private def safeRange(obj: JsonObject): Option[(Int, Int)] = {
-    Option.when(obj.has("range"))(range(obj))
+  private def qualifies(node: AstNode): Boolean = {
+    safeRange(node).isDefined && node.hasTypeOrDeclInfo
   }
 
-  /** Determines if a JSON object contains useful type or decl fullname information.
-    *
-    * @param obj
-    *   The JSON object to check
-    * @return
-    *   true if the object contains type or decl fullname information, false otherwise
-    */
-  private def qualifies(obj: JsonObject): Boolean = {
-    obj.has("range") && (TypeFullnameFieldNames.exists(obj.has) || DeclFullnameFieldNames.exists(obj.has))
-  }
+  private val MatchOperator = "~="
 
-  /** Determines if a JSON object represents a parameter in the Swift AST.
-    *
-    * @param obj
-    *   The JSON object to check
-    * @return
-    *   true if the object is a parameter with type or declaration information, false otherwise
-    */
-  private def isParameter(obj: JsonObject): Boolean = {
-    safePropertyValue(obj, "_kind").contains("parameter") &&
-    (TypeFullnameFieldNames.exists(obj.has) || DeclFullnameFieldNames.exists(obj.has))
-  }
-
-  /** Gets the AST node kind from a JSON object.
-    *
-    * @param obj
-    *   The JSON object representing an AST node
-    * @return
-    *   The kind of the AST node as a string
-    */
-  private def astNodeKind(obj: JsonObject): String = {
-    obj.get("_kind").getAsString
-  }
-
-  /** Recursively traverses a call expression to find its declaration.
-    *
-    * @param obj
-    *   The JSON object representing a call expression
-    * @return
-    *   The JSON object representing the declaration
-    */
+  /** Checks for a reference to the `~=` operator, possibly wrapped into implicit function conversions. */
   @tailrec
-  private def declFromCallExpr(obj: JsonObject): JsonObject = {
-    safePropertyObject(obj, "fn") match {
-      case Some(fn) =>
-        astNodeKind(fn) match {
-          case NodeKinds.DeclRefExpr            => fn.getAsJsonObject("decl")
-          case NodeKinds.FunctionConversionExpr => fn.getAsJsonObject("sub_expr").getAsJsonObject("decl")
-          case other if other.endsWith("_expr") => declFromCallExpr(fn)
-          case _                                => obj
-        }
-      case None => obj
-    }
+  private def isMatchOperatorRef(node: AstNode): Boolean = {
+    if (node == null) false
+    else if (node.kind == NodeKinds.DeclRefExpr) node.decl != null && node.decl.baseName == MatchOperator
+    else if (node.kind == NodeKinds.FunctionConversionExpr) isMatchOperatorRef(node.subExpr)
+    else false
   }
 
-  /** Extracts result object from a return statement.
-    *
-    * @param obj
-    *   The JSON object representing a return statement
-    * @return
-    *   The JSON object representing the result or the original object if result not found
+  /** Checks for nodes the compiler synthesizes to desugar expression patterns, e.g. for `case 1:` it generates the
+    * implicit call `1 ~= $match`. These nodes carry the range of the pattern expression, and thereby shadow its own
+    * type info with the type of the `~=` function, its `Bool` result, and the `$match` placeholder.
     */
-  private def resultFromReturnStmt(obj: JsonObject): JsonObject = {
-    safePropertyObject(obj, "result") match {
-      case Some(resultObj) => resultObj
-      case None            => obj
+  private def isSyntheticPatternMatch(node: AstNode): Boolean = node.kind match {
+    case NodeKinds.DeclRefExpr =>
+      node.decl != null && node.decl.baseName == "$match" || node.isImplicit && isMatchOperatorRef(node)
+    case NodeKinds.FunctionConversionExpr => node.isImplicit && isMatchOperatorRef(node)
+    case kind if kind.endsWith("_expr")   => node.isImplicit && isMatchOperatorRef(node.fn)
+    case _                                => false
+  }
+
+  private def isParameter(node: AstNode): Boolean = {
+    node.kind == "parameter" && node.hasTypeOrDeclInfo
+  }
+
+  @tailrec
+  private def declFromCallExpr(node: AstNode): AstNode = {
+    val fn = node.fn
+    if (fn == null) {
+      node
+    } else {
+      fn.kind match {
+        case NodeKinds.DeclRefExpr            => Option(fn.decl).getOrElse(node)
+        case NodeKinds.FunctionConversionExpr => Option(fn.subExpr).flatMap(s => Option(s.decl)).getOrElse(node)
+        case other if other != null && other.endsWith("_expr") =>
+          declFromCallExpr(fn)
+        case _ => node
+      }
     }
   }
 
-  /** Extracts declaration from a member reference expression.
-    *
-    * @param obj
-    *   The JSON object representing a member reference expression
-    * @return
-    *   The JSON object representing the declaration or the original object if result not found
-    */
-  private def declFromMemberRefExpr(obj: JsonObject): JsonObject = {
-    safePropertyObject(obj, "decl") match {
-      case Some(decl) if astNodeKind(decl) == NodeKinds.DeclRef => decl
-      case _                                                    => obj
+  /** Follows the `fn` chain of a call to the node that carries the implicit receiver argument. */
+  @tailrec
+  private def isCallOnType(node: AstNode): Boolean = {
+    node.kind match {
+      case NodeKinds.DotCallExpr | NodeKinds.ConstructorRefCallExpr             => node.receiverIsType
+      case other if other != null && other.endsWith("_expr") && node.fn != null => isCallOnType(node.fn)
+      case _                                                                    => false
     }
   }
 
-  /** Collects type information from Swift AST JSON.
+  private def resultFromReturnStmt(node: AstNode): AstNode = Option(node.resultObj).getOrElse(node)
+
+  private def declFromMemberRefExpr(node: AstNode): AstNode = {
+    Option(node.decl).filter(_.kind == NodeKinds.DeclRef).getOrElse(node)
+  }
+
+  /** Until swiftc 6.1.x `inherits` is a plain JSON array storing the mangled fullNames directly */
+  private def superClassesFromNodeLegacy(node: AstNode): Seq[String] = {
+    Option(node.inheritsLegacy).map(_.toSeq).getOrElse(Seq.empty)
+  }
+
+  /** Starting with swiftc 6.2.x `inherits` is an actual JSON object */
+  private def superClassesFromNode(node: AstNode): Seq[String] = {
+    Option(node.inheritsObj).flatMap(n => Option(n.superclassType)).toSeq
+  }
+
+  /** Starting with swiftc 6.2.x `inherits` is an actual JSON object */
+  private def conformancesFromNode(node: AstNode): Seq[String] = {
+    Option(node.inheritsObj)
+      .flatMap(inh => Option(inh.conformances))
+      .map(_.flatMap(c => Option(c.protocol)).toSeq)
+      .getOrElse(Seq.empty)
+  }
+
+  private def declFullNameFromNode(node: AstNode, declNode: AstNode): Option[String] = {
+    Option(node.usr).orElse(Option(declNode.declUsr))
+  }
+
+  private def typeFullNameFromNode(node: AstNode): Option[String] = {
+    Option(node.typeValue)
+      .orElse(Option(node.typeUsr))
+      .orElse(Option(node.resultValue))
+      .orElse(Option(node.interfaceType))
+      .orElse(Option(node.extendedType))
+  }
+
+  private def isInBuildFolder(filename: String): Boolean = {
+    filename.contains("/.build/") || filename.contains("\\.build\\") || filename.contains("/Build/")
+  }
+
+  /** Collects type information from Swift AST JSON, emitting each `TypeInfo` via the provided callback as it is
+    * discovered during streaming token-by-token parsing. No intermediate collection is built.
     *
     * @param reader
     *   The reader providing the JSON input
-    * @return
-    *   A set of TypeInfo objects extracted from the JSON
+    * @param emit
+    *   Called once for each `TypeInfo` extracted from the JSON stream
     */
-  def collectTypeInfo(reader: Reader): Set[TypeInfo] = {
-    val found        = mutable.HashSet.empty[TypeInfo]
+  def collectTypeInfo(reader: Reader, emit: TypeInfo => Unit): Unit = {
     val jsonReader   = new JsonReader(reader)
     var filename     = ""
     var currentRange = Option.empty[(Int, Int)]
 
+    // The chain of AST nodes currently being parsed (outermost first), used to find the parents of a `type_expr`.
+    val nodeStack = mutable.ArrayBuffer.empty[AstNode]
+
+    /** Marks the call node if the given, completely parsed `type_expr` is its implicit receiver. */
+    def markReceiverIsType(): Unit = {
+      val size = nodeStack.size
+      if (size >= 3) {
+        val argument     = nodeStack(size - 1)
+        val argumentList = nodeStack(size - 2)
+        val call         = nodeStack(size - 3)
+        if (argument.kind == NodeKinds.Argument && argumentList.kind == NodeKinds.ArgumentList) {
+          call.kind match {
+            case NodeKinds.DotCallExpr | NodeKinds.ConstructorRefCallExpr => call.receiverIsType = true
+            case _                                                        =>
+          }
+        }
+      }
+    }
+
     // Configure reader for better performance
     jsonReader.setStrictness(Strictness.LENIENT)
 
-    def parseObject(): JsonObject = {
-      val obj         = new JsonObject
+    def readPrimitiveAsString(): Option[String] = {
+      jsonReader.peek() match {
+        case JsonToken.STRING  => Some(jsonReader.nextString())
+        case JsonToken.NUMBER  => Some(jsonReader.nextString())
+        case JsonToken.BOOLEAN => Some(jsonReader.nextBoolean().toString)
+        case JsonToken.NULL    =>
+          jsonReader.nextNull()
+          None
+        case _ =>
+          jsonReader.skipValue()
+          None
+      }
+    }
+
+    def readPrimitiveAsInt(): Option[Int] = {
+      jsonReader.peek() match {
+        case JsonToken.NUMBER =>
+          Some(jsonReader.nextInt())
+        case _ =>
+          jsonReader.skipValue()
+          None
+      }
+    }
+
+    def addChild(parent: AstNode, name: String, child: AstNode): Unit = name match {
+      case "range"    => parent.rangeNode = child
+      case "fn"       => parent.fn = child
+      case "decl"     => parent.decl = child
+      case "sub_expr" => parent.subExpr = child
+      case "result"   => parent.resultObj = child
+      case "inherits" => parent.inheritsObj = child
+      case _          =>
+    }
+
+    def addChildFromArray(parent: AstNode, name: String, child: AstNode): Unit = name match {
+      case "attrs" =>
+        if (parent.attrs == null) parent.attrs = mutable.ArrayBuffer.empty[AstNode]
+        parent.attrs += child
+      case "conformances" =>
+        if (parent.conformances == null) parent.conformances = mutable.ArrayBuffer.empty[AstNode]
+        parent.conformances += child
+      case _ =>
+    }
+
+    def extractTypeInfo(node: AstNode, filename: String, rangeOpt: Option[(Int, Int)]): Unit = {
+      val nodeKind     = node.kind
+      val maybeRange   = rangeOpt.orElse(safeRange(node))
+      lazy val declObj = nodeKind match {
+        case kind if kind.endsWith(NodeKinds.CallExpr) => declFromCallExpr(node)
+        case NodeKinds.MemberRefExpr                   => declFromMemberRefExpr(node)
+        case _                                         => node
+      }
+
+      val typeObj = nodeKind match {
+        case NodeKinds.ReturnStmt => resultFromReturnStmt(node)
+        case _                    => node
+      }
+
+      val typeFullName    = typeFullNameFromNode(typeObj)
+      val declFullName    = declFullNameFromNode(node, declObj)
+      val conformances    = conformancesFromNode(node)
+      val superClassTypes = superClassesFromNode(node) ++ superClassesFromNodeLegacy(node)
+
+      maybeRange.foreach { range_ =>
+        val isStaticCall = nodeKind.endsWith(NodeKinds.CallExpr) && isCallOnType(node)
+        emit(
+          TypeInfo(
+            filename,
+            range_,
+            typeFullName,
+            declFullName,
+            superClassTypes ++ conformances,
+            nodeKind,
+            isStaticCall
+          )
+        )
+      }
+    }
+
+    def parseArray(parent: AstNode, fieldName: String): Unit = {
+      jsonReader.beginArray()
+      while (jsonReader.hasNext) {
+        jsonReader.peek() match {
+          case JsonToken.BEGIN_OBJECT =>
+            val child = parseObject()
+            if (RelevantChildFieldNames.contains(fieldName)) {
+              addChildFromArray(parent, fieldName, child)
+            }
+          case JsonToken.BEGIN_ARRAY =>
+            parseArray(parent, fieldName)
+          case JsonToken.STRING if fieldName == "inherits" =>
+            val value = jsonReader.nextString()
+            if (parent.inheritsLegacy == null) parent.inheritsLegacy = mutable.ArrayBuffer.empty[String]
+            parent.inheritsLegacy += value
+          case _ =>
+            jsonReader.skipValue()
+        }
+      }
+      jsonReader.endArray()
+    }
+
+    def parseObject(): AstNode = {
+      val node = new AstNode
+      nodeStack += node
       var hasKind     = false
       var isFromBuild = false
 
@@ -215,95 +370,81 @@ object GsonTypeInfoReader {
 
         if (name == "_kind") {
           hasKind = true
-          val value = JsonParser.parseReader(jsonReader)
-          obj.add(name, value)
+          node.kind = readPrimitiveAsString().orNull
         } else if (name == "filename") {
-          filename = JsonParser.parseReader(jsonReader).getAsString
-          isFromBuild = filename.contains("/.build/") || filename.contains("\\.build\\")
+          filename = readPrimitiveAsString().orNull
+          isFromBuild = filename != null && isInBuildFolder(filename)
         } else {
-          jsonReader.peek() match {
+          val fieldWasScalar = jsonReader.peek() match {
             case JsonToken.BEGIN_OBJECT if hasKind && !isFromBuild =>
-              obj.add(name, parseObject())
+              val child = parseObject()
+              if (RelevantChildFieldNames.contains(name)) {
+                addChild(node, name, child)
+              }
+              false
             case JsonToken.BEGIN_OBJECT =>
               // don't descend
               jsonReader.skipValue()
+              false
             case JsonToken.BEGIN_ARRAY if hasKind && !isFromBuild =>
-              obj.add(name, parseArray())
+              parseArray(node, name)
+              false
             case JsonToken.BEGIN_ARRAY =>
               // don't descend
               jsonReader.skipValue()
+              false
             case _ =>
-              if (
-                name == "start" || name == "end" ||
-                TypeFullnameFieldNames.contains(name) ||
-                DeclFullnameFieldNames.contains(name)
-              ) {
-                val value = JsonParser.parseReader(jsonReader)
-                obj.add(name, value)
-              } else jsonReader.skipValue()
+              name match {
+                case "start" =>
+                  node.start = readPrimitiveAsInt().getOrElse(-1)
+                case "end" =>
+                  node.end = readPrimitiveAsInt().getOrElse(-1)
+                case "type" =>
+                  node.typeValue = readPrimitiveAsString().orNull
+                case "type_usr" =>
+                  node.typeUsr = readPrimitiveAsString().orNull
+                case "result" =>
+                  node.resultValue = readPrimitiveAsString().orNull
+                case "interface_type" =>
+                  node.interfaceType = readPrimitiveAsString().orNull
+                case "extended_type" =>
+                  node.extendedType = readPrimitiveAsString().orNull
+                case "usr" =>
+                  node.usr = readPrimitiveAsString().orNull
+                case "decl_usr" =>
+                  node.declUsr = readPrimitiveAsString().orNull
+                case "protocol" =>
+                  node.protocol = readPrimitiveAsString().orNull
+                case "superclass_type" =>
+                  node.superclassType = readPrimitiveAsString().orNull
+                case "base_name" =>
+                  node.baseName = readPrimitiveAsString().orNull
+                case "implicit" =>
+                  node.isImplicit = readPrimitiveAsString().contains("true")
+                case _ =>
+                  jsonReader.skipValue()
+              }
+              true
           }
-          currentRange = safeRange(obj).orElse(currentRange)
+          // `safeRange` reads only the node's `range` child, `_kind` and `attrs` — never the scalar fields set
+          // above. Recomputing it after a scalar field would always yield the same value, so only refresh the
+          // running range after structural (object/array) fields.
+          if (!fieldWasScalar) currentRange = safeRange(node).orElse(currentRange)
         }
       }
       jsonReader.endObject()
 
-      if (qualifies(obj)) {
-        extractTypeInfo(obj, filename, None)
-      } else if (isParameter(obj)) {
-        extractTypeInfo(obj, filename, currentRange)
-      }
-      obj
-    }
+      nodeStack.remove(nodeStack.size - 1)
+      if (node.kind == NodeKinds.TypeExpr) markReceiverIsType()
 
-    /** Extracts type information from an AST node and adds it to the result set.
-      *
-      * @param obj
-      *   The JSON object representing an AST node
-      * @param filename
-      *   The source file name
-      */
-    def extractTypeInfo(obj: JsonObject, filename: String, rangeOpt: Option[(Int, Int)]): Unit = {
-      val nodeKind = astNodeKind(obj)
-      val range_   = rangeOpt.getOrElse(range(obj))
-
-      lazy val declObj = nodeKind match {
-        case kind if kind.endsWith(NodeKinds.CallExpr) => declFromCallExpr(obj)
-        case NodeKinds.MemberRefExpr                   => declFromMemberRefExpr(obj)
-        case _                                         => obj
-      }
-
-      val typeObj = nodeKind match {
-        case NodeKinds.ReturnStmt => resultFromReturnStmt(obj)
-        case _                    => obj
-      }
-
-      val typeFullname = safePropertyValue(typeObj, "type")
-        .orElse(safePropertyValue(typeObj, "type_usr"))
-        .orElse(safePropertyValue(typeObj, "result"))
-        .orElse(safePropertyValue(typeObj, "interface_type"))
-
-      val declFullname = safePropertyValue(obj, "usr").orElse(safePropertyValue(declObj, "decl_usr"))
-
-      found.add(TypeInfo(filename, range_, typeFullname, declFullname, nodeKind))
-    }
-
-    /** Parses a JSON array.
-      *
-      * @return
-      *   The parsed JsonArray
-      */
-    def parseArray(): JsonArray = {
-      val arr = new JsonArray
-      jsonReader.beginArray()
-      while (jsonReader.hasNext) {
-        jsonReader.peek() match {
-          case JsonToken.BEGIN_OBJECT => arr.add(parseObject())
-          case JsonToken.BEGIN_ARRAY  => arr.add(parseArray())
-          case _                      => jsonReader.skipValue()
+      if (!isFromBuild && node.kind != null) {
+        if (qualifies(node) && !isSyntheticPatternMatch(node)) {
+          extractTypeInfo(node, filename, None)
+        } else if (isParameter(node)) {
+          extractTypeInfo(node, filename, currentRange)
         }
       }
-      jsonReader.endArray()
-      arr
+      node
     }
 
     var shouldTerminate = false
@@ -311,12 +452,13 @@ object GsonTypeInfoReader {
       // Start parsing based on the root element type
       jsonReader.peek() match {
         case JsonToken.BEGIN_OBJECT => parseObject()
-        case JsonToken.BEGIN_ARRAY  => parseArray()
-        case _                      => shouldTerminate = true
+        case JsonToken.BEGIN_ARRAY  =>
+          val sinkNode = new AstNode
+          parseArray(sinkNode, "")
+        case _ => shouldTerminate = true
       }
     }
 
     jsonReader.close()
-    found.toSet
   }
 }

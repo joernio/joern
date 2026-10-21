@@ -30,7 +30,7 @@ class ConditionalsTests extends GoCodeToCpgSuite {
           cndNode.code shouldBe "x > 0"
 
         }
-        controlStruct.whenTrue.assignment.code.l shouldBe List("y = 0")
+        controlStruct.whenTrue.isBlock.astChildren.isCall.isAssignment.code.l shouldBe List("y = 0")
       }
     }
 
@@ -47,20 +47,18 @@ class ConditionalsTests extends GoCodeToCpgSuite {
           |  }
           |}
       """.stripMargin)
-      inside(cpg.method.name("method").controlStructure.l) { case List(ifStmt, elseStmt) =>
+      inside(cpg.method.name("method").controlStructure.l) { case List(ifStmt) =>
         ifStmt.controlStructureType shouldBe ControlStructureTypes.IF
         ifStmt.code shouldBe "if (x > 0)"
-        elseStmt.controlStructureType shouldBe ControlStructureTypes.ELSE
-        elseStmt.code shouldBe "else"
 
         inside(ifStmt.condition.l) { case List(cndNode) =>
           cndNode.code shouldBe "x > 0"
         }
 
-        ifStmt.whenTrue.assignment
+        ifStmt.whenTrue.isBlock.astChildren.isCall.isAssignment
           .map(x => (x.target.code, x.source.code))
           .headOption shouldBe Some(("y", "0"))
-        ifStmt.whenFalse.assignment
+        ifStmt.whenFalse.isBlock.astChildren.isCall.isAssignment
           .map(x => (x.target.code, x.source.code))
           .headOption shouldBe Some(("y", "1"))
       }

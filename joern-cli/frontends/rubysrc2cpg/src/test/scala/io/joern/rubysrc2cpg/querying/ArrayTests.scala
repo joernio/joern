@@ -13,6 +13,7 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
 
+@scala.annotation.nowarn("cat=deprecation")
 class ArrayTests extends RubyCode2CpgFixture {
 
   "`[]` is represented by an alloc constructor call" in {
@@ -171,20 +172,16 @@ class ArrayTests extends RubyCode2CpgFixture {
         |x = Array [1, 2, 3]
         |""".stripMargin)
 
-    inside(cpg.call.nameExact("[]").l) {
-      case bracketCall :: Nil =>
-        bracketCall.name shouldBe "[]"
-        bracketCall.methodFullName shouldBe s"${Defines.prefixAsCoreType("Array")}.[]"
-        bracketCall.typeFullName shouldBe Defines.prefixAsCoreType("Array")
+    inside(cpg.call.nameExact("[]").l) { case bracketCall :: Nil =>
+      bracketCall.name shouldBe "[]"
+      bracketCall.methodFullName shouldBe s"${Defines.prefixAsCoreType("Array")}.[]"
+      bracketCall.typeFullName shouldBe Defines.prefixAsCoreType("Array")
 
-        inside(bracketCall.argument.l) {
-          case _ :: one :: two :: three :: Nil =>
-            one.code shouldBe "1"
-            two.code shouldBe "2"
-            three.code shouldBe "3"
-          case xs => fail(s"Expected 3 literals under the array initializer, instead got [${xs.code.mkString(", ")}]")
-        }
-      case xs => fail(s"Expected a single array initializer call ([]), instead got [${xs.code.mkString(", ")}]")
+      inside(bracketCall.argument.l) { case _ :: one :: two :: three :: Nil =>
+        one.code shouldBe "1"
+        two.code shouldBe "2"
+        three.code shouldBe "3"
+      }
     }
 
   }
@@ -221,14 +218,12 @@ class ArrayTests extends RubyCode2CpgFixture {
   "shift-left operator interpreted as a call (append)" in {
     val cpg = code("[1, 2, 3] << 4")
 
-    inside(cpg.call("<<").headOption) {
-      case Some(append) =>
-        append.name shouldBe "<<"
-        append.methodFullName shouldBe XDefines.DynamicCallUnknownFullName
-        append.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-        append.argument(0).code shouldBe "[1, 2, 3]"
-        append.argument(1).code shouldBe "4"
-      case None => fail(s"Expected call `<<`")
+    inside(cpg.call("<<").headOption) { case Some(append) =>
+      append.name shouldBe "<<"
+      append.methodFullName shouldBe XDefines.DynamicCallUnknownFullName
+      append.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      append.argument(0).code shouldBe "[1, 2, 3]"
+      append.argument(1).code shouldBe "4"
     }
   }
 
@@ -300,6 +295,24 @@ class ArrayTests extends RubyCode2CpgFixture {
           hashLiteralArg.astChildren.isCall.name(Operators.assignment).l: @unchecked
         val List(_: Identifier, hashInitCall: Call) = hashInitAssignment.argument.l: @unchecked
         hashInitCall.methodFullName shouldBe RubyOperators.hashInitializer
+    }
+  }
+
+  "an array literal should not produce cross-scope REF edges when the enclosing type has a bodyMemberCall" in {
+    val cpg = code("""
+        |module M
+        |  extend A::B
+        |  def foo
+        |    %w(a b)
+        |  end
+        |end
+        |""".stripMargin)
+    cpg.identifier.filter(_.name.startsWith("<tmp-")).foreach { id =>
+      id.refOut.collectAll[Local].foreach { local =>
+        withClue(s"'${id.name}' should not ref a local in a different method: ") {
+          local.method.next().fullName shouldBe id.method.fullName
+        }
+      }
     }
   }
 }

@@ -2,30 +2,27 @@ package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.parser.HeaderFileFinder
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.AstCreatorBase
-import io.joern.x2cpg.ValidationMode
+import io.joern.c2cpg.passes.AstCreationPass
+import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
-import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, NodeTypes}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import org.eclipse.cdt.core.dom.ast.IASTNode
-import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-
-import scala.collection.mutable
+import org.eclipse.cdt.core.dom.ast.{IASTNode, IASTTranslationUnit}
+import org.slf4j.{Logger, LoggerFactory}
 
 /** Translates the Eclipse CDT AST into a CPG AST. */
 class AstCreator(
   val filename: String,
-  val global: CGlobal,
+  val accumulator: AstCreationPass.Accumulator,
   val config: Config,
   val cdtAst: IASTTranslationUnit,
-  val headerFileFinder: HeaderFileFinder
-) extends AstCreatorBase[IASTNode, AstCreator](filename)(config.schemaValidation)
+  val headerFileFinder: HeaderFileFinder,
+  val languageSuffix: String = ""
+)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase[IASTNode, AstCreator](filename)
     with AstForTypesCreator
     with AstForFunctionsCreator
     with AstForPrimitivesCreator
@@ -36,8 +33,6 @@ class AstCreator(
     with FullNameProvider
     with TypeNameProvider
     with MacroHandler {
-
-  protected implicit val schemaValidation: ValidationMode = config.schemaValidation
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 
@@ -60,7 +55,9 @@ class AstCreator(
   }
 
   private def astForTranslationUnit(iASTTranslationUnit: IASTTranslationUnit): Ast = {
-    val namespaceBlock = globalNamespaceBlock()
+    val namespaceBlock               = globalNamespaceBlock()
+    val fakeMethodFullNameWithSuffix = s"${namespaceBlock.fullName}$languageSuffix"
+    namespaceBlock.fullName(fakeMethodFullNameWithSuffix)
     methodAstParentStack.push(namespaceBlock)
     val translationUnitAst =
       astInFakeMethod(namespaceBlock.fullName, fileName(iASTTranslationUnit), iASTTranslationUnit)
@@ -87,7 +84,7 @@ class AstCreator(
 
     val blockNode_ = blockNode(iASTTranslationUnit)
     scope.pushNewMethodScope(fakeGlobalMethod.fullName, fakeGlobalMethod.name, blockNode_, None)
-    val declsAsts = allDecls.flatMap(astsForDeclaration)
+    val declsAsts = allDecls.flatMap(d => astsForDeclaration(d))
 
     val methodReturn = methodReturnNode(iASTTranslationUnit, Defines.Any)
     Ast(fakeGlobalTypeDecl).withChild(
@@ -108,26 +105,22 @@ class AstCreator(
   }
 
   protected def column(node: IASTNode): Option[Int] = {
-    nodeOffsets(node).map { case (startOffset, _) =>
+    unadjustedOffset(node).map { case (startOffset, _) =>
       offsetToColumn(startOffset)
     }
   }
 
-  private def nodeOffsets(node: IASTNode): Option[(Int, Int)] = {
-    for {
-      startOffset <- nullSafeFileLocation(node).map(l => l.getNodeOffset)
-      endOffset   <- nullSafeFileLocation(node).map(l => l.getNodeOffset + l.getNodeLength)
-    } yield (startOffset, endOffset)
-  }
-
   protected def columnEnd(node: IASTNode): Option[Int] = {
-    nodeOffsets(node).map { case (_, endOffset) =>
+    unadjustedOffset(node).map { case (_, endOffset) =>
       offsetToColumn(endOffset - 1)
     }
   }
 
-  override protected def offset(node: IASTNode): Option[(Int, Int)] = {
-    Option.when(!config.disableFileContent) { nodeOffsets(node) }.flatten
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] =
+    Option.unless(config.disableFileContent)(OffsetUtils.OffsetSourceType.Utf_16)
+
+  override protected def unadjustedOffset(node: IASTNode): Option[(Int, Int)] = {
+    nullSafeFileLocation(node).map(loc => (loc.getNodeOffset, loc.getNodeOffset + loc.getNodeLength))
   }
 
 }

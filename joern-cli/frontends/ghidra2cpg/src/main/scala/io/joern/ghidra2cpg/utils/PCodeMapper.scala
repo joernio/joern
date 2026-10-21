@@ -9,7 +9,7 @@ import io.joern.ghidra2cpg.Types
 import io.joern.ghidra2cpg.utils.Utils.*
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNodeNew
-import org.slf4j.LoggerFactory
+import org.apache.logging.log4j.LogManager
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
 import scala.jdk.CollectionConverters.*
@@ -25,7 +25,7 @@ class PCodeMapper(
   highFunction: HighFunction,
   address2Literal: Map[Long, String]
 ) {
-  private val logger = LoggerFactory.getLogger(getClass)
+  private val logger                  = LogManager.getLogger(getClass)
   private val pcodeOps: List[PcodeOp] =
     nativeInstruction.getPcode().toList
 
@@ -221,7 +221,7 @@ class PCodeMapper(
       case INT_MULT | FLOAT_MULT =>
         handleTwoArguments(instruction, callNode, pcodeAst, "*", "<operator>.multiplication")
       case MULTIEQUAL | INDIRECT | PIECE => // not handled
-      case INT_XOR =>
+      case INT_XOR                       =>
         handleTwoArguments(instruction, callNode, pcodeAst, "^", "<operator>.xor")
       case INT_OR =>
         handleTwoArguments(instruction, callNode, pcodeAst, "^", "<operator>.xor")
@@ -244,7 +244,7 @@ class PCodeMapper(
       // TODO add more pcode ops like CALL.*
       case BRANCH | BRANCHIND | CBRANCH =>
         val destination = resolveVarNode(pcodeOp.getInputs.head, 1)
-        val callNode = createCallNode(
+        val callNode    = createCallNode(
           nativeInstruction.toString,
           "<operator>.goto",
           nativeInstruction.getMinAddress.getOffsetAsBigInteger.intValue
@@ -303,8 +303,6 @@ class PCodeMapper(
         handleSingleArgument(pcodeOp, "<operator>.cast", pcodeOp.getMnemonic)
       case CPOOLREF =>
         handleSingleArgument(pcodeOp, "<operator>.cpoolref", pcodeOp.getMnemonic)
-      case EXTRACT =>
-        handleSingleArgument(pcodeOp, "<operator>.extract", pcodeOp.getMnemonic)
       case FLOAT_ABS =>
         handleSingleArgument(pcodeOp, "<operator>.abs", pcodeOp.getMnemonic)
       case FLOAT_CEIL =>

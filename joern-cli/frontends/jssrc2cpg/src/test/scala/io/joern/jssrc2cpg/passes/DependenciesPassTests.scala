@@ -25,7 +25,7 @@ class DependenciesPassTests extends JsSrc2CpgSuite {
 
     "ignore package.json without any useful content" in {
       FileUtil.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
-        val json = dir / PackageJsonParser.PackageJsonFilename
+        val json    = dir / PackageJsonParser.PackageJsonFilename
         val content = """
                         |{
                         |  "name": "something",

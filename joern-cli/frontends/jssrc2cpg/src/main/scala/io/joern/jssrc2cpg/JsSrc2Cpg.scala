@@ -1,11 +1,9 @@
 package io.joern.jssrc2cpg
 
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.jssrc2cpg.passes.*
 import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
-import io.joern.x2cpg.frontendspecific.jssrc2cpg.postProcessingPasses
 import io.joern.x2cpg.passes.callgraph.{MethodRefLinker, NaiveCallLinker}
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.utils.{HashUtil, Report}
@@ -26,7 +24,7 @@ class JsSrc2Cpg extends X2CpgFrontend {
       FileUtil.usingTemporaryDirectory("jssrc2cpgOut") { tmpDir =>
         val report       = new Report()
         val astGenResult = new AstGenRunner(config).execute(tmpDir)
-        val hash         = HashUtil.sha256(astGenResult.parsedFiles.map { case (_, file) => Paths.get(file) })
+        val hash         = HashUtil.sha256(astGenResult.parsedFiles.map(Paths.get(_)))
 
         val astCreationPass = new AstCreationPass(cpg, astGenResult, config, report)(config.schemaValidation)
         astCreationPass.createAndApply()
@@ -40,17 +38,6 @@ class JsSrc2Cpg extends X2CpgFrontend {
 
         report.print()
       }
-    }
-  }
-
-  // This method is intended for internal use only and may be removed at any time.
-  def createCpgWithAllOverlays(config: Config): Try[Cpg] = {
-    val maybeCpg = createCpgWithOverlays(config)
-    maybeCpg.map { cpg =>
-      new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
-      val typeRecoveryConfig = XTypeRecoveryConfig(config.typePropagationIterations, !config.disableDummyTypes)
-      postProcessingPasses(cpg, typeRecoveryConfig).foreach(_.createAndApply())
-      cpg
     }
   }
 

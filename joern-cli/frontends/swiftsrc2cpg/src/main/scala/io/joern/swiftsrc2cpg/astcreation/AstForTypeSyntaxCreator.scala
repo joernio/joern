@@ -22,6 +22,10 @@ trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(typeDeclForTypeSyntax(node))
   }
 
+  private def astForInlineArrayTypeSyntax(node: InlineArrayTypeSyntax): Ast = {
+    Ast(typeDeclForTypeSyntax(node))
+  }
+
   private def astForAttributedTypeSyntax(node: AttributedTypeSyntax): Ast = {
     astForTypeSyntax(node.baseType)
   }
@@ -43,10 +47,10 @@ trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForIdentifierTypeSyntax(node: IdentifierTypeSyntax): Ast = {
-    val nodeCode = code(node)
+    val nodeCode                      = code(node)
     val (typeFullName, possibleTypes) = fullnameProvider.typeFullname(node) match {
       case Some(tpe) => (tpe, Seq.empty)
-      case None =>
+      case None      =>
         val tpe = AstCreatorHelper.cleanType(nodeCode) match {
           case value if Defines.SwiftTypes.contains(value) => value
           case _                                           => Defines.Any
@@ -108,6 +112,7 @@ trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     case node: FunctionTypeSyntax                    => astForFunctionTypeSyntax(node)
     case node: IdentifierTypeSyntax                  => astForIdentifierTypeSyntax(node)
     case node: ImplicitlyUnwrappedOptionalTypeSyntax => astForImplicitlyUnwrappedOptionalTypeSyntax(node)
+    case node: InlineArrayTypeSyntax                 => astForInlineArrayTypeSyntax(node)
     case node: MemberTypeSyntax                      => astForMemberTypeSyntax(node)
     case node: MetatypeTypeSyntax                    => astForMetatypeTypeSyntax(node)
     case node: MissingTypeSyntax                     => astForMissingTypeSyntax(node)

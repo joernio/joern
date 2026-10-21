@@ -1,7 +1,6 @@
 package io.joern.c2cpg.parser
 
-import org.eclipse.cdt.core.dom.ast.IASTProblem
-import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit
+import org.eclipse.cdt.core.dom.ast.{IASTProblem, IASTTranslationUnit}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.CPPVisitor
 import org.slf4j.LoggerFactory
 

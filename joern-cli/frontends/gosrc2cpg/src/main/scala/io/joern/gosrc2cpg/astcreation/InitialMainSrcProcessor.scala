@@ -4,11 +4,12 @@ import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewNamespaceBlock}
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import ujson.{Arr, Obj, Value}
 
 import java.io.File
+import scala.util.control.NonFatal
 
 trait InitialMainSrcProcessor(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -25,14 +26,14 @@ trait InitialMainSrcProcessor(implicit withSchemaValidation: ValidationMode) { t
       // NOTE: For dependencies we are just caching the global variables Types.
       processPackageLevelGlobalVariablesAndConstants(parserResult.json)
     } catch {
-      case ex: Exception =>
+      case NonFatal(ex) =>
         logger.warn(s"Error: While processing - ${parserResult.fullPath}", ex)
     }
     diffGraph
   }
 
   private def astForPackage(rootNode: ParserNodeInfo): Ast = {
-    val pathTokens = relPathFileName.split(fileSeparateorPattern)
+    val pathTokens        = relPathFileName.split(fileSeparateorPattern)
     val packageFolderPath = if (pathTokens.nonEmpty && pathTokens.size > 1) {
       s"${File.separator}${pathTokens.dropRight(1).mkString(File.separator)}"
     } else {
@@ -45,7 +46,8 @@ trait InitialMainSrcProcessor(implicit withSchemaValidation: ValidationMode) { t
       .filename(packageFolderPath)
     val fakePackageTypeDecl =
       typeDeclNode(rootNode, fullyQualifiedPackage, fullyQualifiedPackage, packageFolderPath, fullyQualifiedPackage)
-    Ast(namespaceBlock).withChild(Ast(fakePackageTypeDecl))
+    val fileNode = NewFile().name(relPathFileName).order(0)
+    Ast(fileNode).withChild(Ast(namespaceBlock).withChild(Ast(fakePackageTypeDecl)))
   }
 
   private def identifyUserPackagesFromImports(spec: Value): Unit = {

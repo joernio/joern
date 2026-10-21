@@ -18,18 +18,29 @@ of the build process. To build jssrc2cpg issue the command `sbt stage`.
 
 ## JS/TS AST Generation
 
-jssrc2cpg uses [joernio/astgen](https://github.com/joernio/astgen) under the hood.
-Native binaries for Linux, macOS, and Windows are generated as described [here](https://github.com/joernio/astgen#building).
+jssrc2cpg uses [joernio/astgen-monorepo](https://github.com/joernio/astgen-monorepo/tree/main/javascript-astgen) under the hood.
+Native binaries for Linux, macOS, and Windows are generated as described [here](https://github.com/joernio/astgen-monorepo/tree/main/javascript-astgen#building).
 To build your own native binaries run the following commands:
 
 ```shell script
-git clone https://github.com/joernio/astgen.git
-cd astgen
-yarn install
+git clone https://github.com/joernio/astgen-monorepo.git
+cd astgen-monorepo/javascript-astgen
+bun install
+bun run binary
 ```
-(requires `yarn`).
+(requires `bun`).
 
-Copy the resulting `astgen-linux`, `astgen-macos`, `astgen-macos-arm`, and `astgen-win.exe` to `joern/joern-cli/frontends/jssrc2cpg/bin/astgen`.
+Copy the resulting `astgen-linux`, `astgen-linux-arm`, `astgen-macos`, `astgen-macos-arm`, `astgen-win.exe`, and `astgen-win-arm.exe` to `joern/joern-cli/frontends/jssrc2cpg/bin/astgen`.
+
+### Binary Resolution Order
+
+At runtime jssrc2cpg locates the `astgen` binary in this order:
+
+1. The `ASTGEN_BIN` environment variable, if set. May point at the binary itself or at a directory containing it.
+2. An `astgen` binary on the system `PATH`.
+3. The bundled binary at `bin/astgen/`, which is downloaded automatically by the build.
+
+Each candidate is probed via `astgen --version` and skipped if it does not pass the version check.
 
 ## Running
 

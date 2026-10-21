@@ -1,0 +1,2332 @@
+package io.joern.rust2cpg.astcreation
+
+import io.joern.rust2cpg.astcreation.RustFullNames.PathSep
+import io.joern.rust2cpg.parser.RustNodeSyntax.*
+import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
+import io.joern.x2cpg.{Ast, Defines, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  ExpressionNew,
+  NewFile,
+  NewImport,
+  NewMethod,
+  NewModifier,
+  NewNamespaceBlock,
+  NewTypeDecl
+}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, ModifierTypes, Operators}
+import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
+import io.joern.rust2cpg.parser.RustNodeSyntaxExtensions.*
+
+import scala.annotation.tailrec
+
+trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+
+  // SourceFile =
+  //  '#shebang'?
+  //  '#frontmatter'?
+  //  Attr*
+  //  Item*
+  protected def visitSourceFile(sourceFile: SourceFile): Ast = {
+    val fileNode = NewFile().name(parseResult.filename).order(0)
+    Option.unless(config.disableFileContent)(parseResult.fileContent).foreach(fileNode.content(_))
+
+    val namespaceBlockNode = globalNamespaceBlockNode()
+    val globalMethodAst    = astInFakeMethod(sourceFile, namespaceBlockNode)
+
+    Ast(fileNode).withChild(Ast(namespaceBlockNode).withChild(globalMethodAst))
+  }
+
+  private def astInFakeMethod(sourceFile: SourceFile, namespaceBlockNode: NewNamespaceBlock): Ast = {
+    val method = globalFakeMethodNode(sourceFile, namespaceBlockNode)
+
+    contextStack.pushNamespace(namespaceBlockNode)
+    contextStack.pushGlobalMethod(method)
+    val itemAsts = visitModuleItems(sourceFile, sourceFile.item)
+    contextStack.pop()
+    contextStack.pop()
+
+    val block        = blockNode(sourceFile)
+    val methodReturn = methodReturnNode(sourceFile, "()")
+    val modifiers    = Seq(modifierNode(sourceFile, ModifierTypes.MODULE))
+    methodAst(method, parameters = Nil, body = Ast(block).withChildren(itemAsts), methodReturn, modifiers)
+  }
+
+  private def visitItem(item: Item): Seq[Ast] = {
+    // macro-annotated items that were macro-expanded no longer have their original ast (because the proc-macro
+    // expansion replaces it). Only their `macroExpansion` sub-ast is then valid.
+    item.macroExpansion match {
+      case Some(macroItems: MacroItems) => withMacroCall(item) { visitMacroItems(macroItems) }
+      case Some(other)                  => notHandledYet(other) :: Nil
+      case None                         =>
+        item match {
+          case const: Const             => visitConst(const)
+          case enum_ : Enum             => visitEnum(enum_) :: Nil
+          case x: ExternBlock           => notHandledYet(x) :: Nil
+          case externCrate: ExternCrate => visitExternCrate(externCrate) :: Nil
+          case fn: Fn                   => visitFn(fn) :: Nil
+          case impl: Impl               => visitImpl(impl)
+          case macroCall: MacroCall     => visitMacroCall(macroCall)
+          case macroRules: MacroRules   => visitMacroRules(macroRules)
+          case macroDef: MacroDef       => visitMacroDef(macroDef)
+          case module: Module           => visitModule(module)
+          case static: Static           => visitStatic(static)
+          case struct: Struct           => visitStruct(struct)
+          case trait_ : Trait           => visitTrait(trait_) :: Nil
+          case typeAlias: TypeAlias     => visitTypeAlias(typeAlias) :: Nil
+          case x: Union                 => notHandledYet(x) :: Nil
+          case use: Use                 => visitUse(use)
+          case x: AsmExpr               => notHandledYet(x) :: Nil
+        }
+    }
+  }
+
+  private def visitStmt(stmt: Stmt): Seq[Ast] = stmt match {
+    case exprStmt: ExprStmt => visitExprStmt(exprStmt)
+    case item: Item         => visitItem(item)
+    case letStmt: LetStmt   => visitLetStmt(letStmt)
+  }
+
+  // ExprStmt =
+  //  Expr ';'?
+  private def visitExprStmt(exprStmt: ExprStmt): Seq[Ast] = exprStmt.expr match {
+    // MacroExprs in this context may expand into multiple statements, which
+    // should be flattened into the enclosing block.
+    case macroExpr: MacroExpr => visitMacroCall(macroExpr.macroCall)
+    case expr                 => visitExpr(expr) :: Nil
+  }
+
+  private def visitExpr(expr: Expr): Ast = {
+    val adjustments = expr.adjustments.getOrElse(Nil)
+    val exprAst     = dispatchVisitExpr(expr)
+    adjustments.foldLeft(exprAst)(lowerAdjustment(expr, _, _))
+  }
+
+  private def dispatchVisitExpr(expr: Expr): Ast = expr match {
+    case arrayExpr: ArrayExpr           => visitArrayExpr(arrayExpr)
+    case x: AsmExpr                     => notHandledYet(x)
+    case awaitExpr: AwaitExpr           => visitAwaitExpr(awaitExpr)
+    case binExpr: BinExpr               => visitBinExpr(binExpr)
+    case blockExpr: BlockExpr           => visitBlockExpr(blockExpr)
+    case breakExpr: BreakExpr           => visitBreakExpr(breakExpr)
+    case callExpr: CallExpr             => visitCallExpr(callExpr)
+    case castExpr: CastExpr             => visitCastExpr(castExpr)
+    case closureExpr: ClosureExpr       => visitClosureExpr(closureExpr)
+    case continueExpr: ContinueExpr     => visitContinueExpr(continueExpr)
+    case fieldExpr: FieldExpr           => visitFieldExpr(fieldExpr)
+    case forExpr: ForExpr               => visitForExpr(forExpr)
+    case formatArgsExpr: FormatArgsExpr => visitFormatArgsExpr(formatArgsExpr)
+    case ifExpr: IfExpr                 => visitIfExpr(ifExpr, visitExpr)
+    case indexExpr: IndexExpr           => visitIndexExpr(indexExpr)
+    case literal: Literal               => visitLiteral(literal)
+    case loopExpr: LoopExpr             => visitLoopExpr(loopExpr)
+    case macroExpr: MacroExpr           => visitMacroExpr(macroExpr)
+    case matchExpr: MatchExpr           => visitMatchExpr(matchExpr, visitExpr)
+    case methodCallExpr: MethodCallExpr => visitMethodCallExpr(methodCallExpr)
+    case x: OffsetOfExpr                => notHandledYet(x)
+    case expr: ParenExpr                => visitExpr(expr.expr)
+    case pathExpr: PathExpr             => visitPathExpr(pathExpr)
+    case prefixExpr: PrefixExpr         => visitPrefixExpr(prefixExpr)
+    case rangeExpr: RangeExpr           => visitRangeExpr(rangeExpr)
+    case recordExpr: RecordExpr         => visitRecordExpr(recordExpr)
+    case refExpr: RefExpr               => visitRefExpr(refExpr)
+    case returnExpr: ReturnExpr         => visitReturnExpr(returnExpr)
+    case x: BecomeExpr                  => notHandledYet(x)
+    case tryExpr: TryExpr               => visitTryExpr(tryExpr)
+    case tupleExpr: TupleExpr           => visitTupleExpr(tupleExpr)
+    case whileExpr: WhileExpr           => visitWhileExpr(whileExpr)
+    case x: YieldExpr                   => notHandledYet(x)
+    case x: YeetExpr                    => notHandledYet(x)
+    case x: LetExpr                     => notHandledYet(x)
+    case x: UnderscoreExpr              => notHandledYet(x)
+  }
+
+  private def lowerAdjustment(expr: Expr, exprAst: Ast, adjustment: Adjustment) = adjustment match {
+    case deref: Deref                     => lowerDerefAdjustment(expr, exprAst, deref)
+    case borrow: Borrow                   => lowerBorrowAdjustment(expr, exprAst, borrow)
+    case cast: Cast                       => lowerCastAdjustment(expr, exprAst, cast)
+    case overloadedDeref: OverloadedDeref => lowerOverloadedDerefAdjustment(expr, exprAst, overloadedDeref)
+  }
+
+  private def lowerDerefAdjustment(expr: Expr, exprAst: Ast, deref: Deref) = {
+    val exprCode     = exprAst.rootCodeOrEmpty
+    val typeFullName = deref.target
+    callAst(operatorCallNode(expr, s"*$exprCode", Operators.indirection, Some(typeFullName)), Seq(exprAst))
+  }
+
+  private def lowerBorrowAdjustment(expr: Expr, exprAst: Ast, borrow: Borrow) = {
+    val exprCode     = exprAst.rootCodeOrEmpty
+    val typeFullName = borrow.target
+    callAst(operatorCallNode(expr, s"&$exprCode", Operators.addressOf, Some(typeFullName)), Seq(exprAst))
+  }
+
+  private def lowerCastAdjustment(expr: Expr, exprAst: Ast, cast: Cast) = {
+    val exprCode     = exprAst.rootCodeOrEmpty
+    val typeFullName = cast.target
+    val castNode     = operatorCallNode(expr, s"$exprCode as $typeFullName", Operators.cast, Some(typeFullName))
+
+    // When we implicitly cast to a trait object, we lose the original concrete type.
+    // Save it as a dynamic type hint, to help with dynamic dispatch calls.
+    if (isTraitObject(typeFullName) && !isTraitObject(cast.source)) {
+      castNode.dynamicTypeHintFullName(Seq(stripReference(cast.source)))
+    }
+
+    val typeRefAst = Ast(typeRefNode(expr, typeFullName, typeFullName))
+    callAst(castNode, Seq(typeRefAst, exprAst))
+  }
+
+  private def lowerOverloadedDerefAdjustment(expr: Expr, exprAst: Ast, overloadedDeref: OverloadedDeref) = {
+    val exprCode     = exprAst.rootCodeOrEmpty
+    val typeFullName = overloadedDeref.target
+    overloadedDeref.methodFullName match {
+      case Some(methodFullName) =>
+        val name = methodFullName.split(RustFullNames.PathSep).last
+        val call =
+          callNode(
+            expr,
+            s"$exprCode.$name()",
+            name,
+            methodFullName,
+            DispatchTypes.STATIC_DISPATCH,
+            None,
+            Some(typeFullName)
+          )
+        callAst(call, arguments = Nil, base = Some(exprAst))
+      case None =>
+        callAst(operatorCallNode(expr, s"*$exprCode", Operators.indirection, Some(typeFullName)), Seq(exprAst))
+    }
+  }
+
+  private def visitType(typ: Type): Ast = typ match {
+    case x: ArrayType     => notHandledYet(x)
+    case x: DynTraitType  => notHandledYet(x)
+    case x: FnPtrType     => notHandledYet(x)
+    case x: ForType       => notHandledYet(x)
+    case x: ImplTraitType => notHandledYet(x)
+    case x: InferType     => notHandledYet(x)
+    case x: MacroType     => notHandledYet(x)
+    case x: NeverType     => notHandledYet(x)
+    case x: ParenType     => notHandledYet(x)
+    case x: PathType      => notHandledYet(x)
+    case x: PtrType       => notHandledYet(x)
+    case x: RefType       => notHandledYet(x)
+    case x: SliceType     => notHandledYet(x)
+    case x: TupleType     => notHandledYet(x)
+  }
+
+  // Module =
+  //  Attr* Visibility?
+  //  'mod' Name (ItemList | ';')
+  private def visitModule(module: Module): Seq[Ast] = {
+    module.itemList match {
+      case None =>
+        // It's a forward declaration for which we don't have an AST use.
+        Nil
+      case Some(itemList) =>
+        // NB: two same-named `mod foo {}` declarations in the same file are not valid, e.g.
+        // ```
+        // mod foo {...}
+        // ...
+        // mod foo {...}
+        // ```
+        // So we don't need to disambiguate its occurrence like in other languages.
+        val namespaceBlock = moduleNamespaceBlockNode(module)
+        contextStack.pushNamespace(namespaceBlock)
+        val itemAsts = visitModuleItems(module, itemList.item)
+        contextStack.pop()
+        Ast(namespaceBlock).withChildren(itemAsts) :: Nil
+    }
+  }
+
+  // Besides visiting items, if there are module-level consts/statics, declare them in synthetic
+  // typeDecl (same fullName as the module) so that their usages have a def site.
+  private def visitModuleItems(node: RustNode, items: Seq[Item]): Seq[Ast] = {
+    val itemAsts   = items.flatMap(visitItem)
+    val memberAsts = items.flatMap {
+      case const: Const   => memberForConst(const)
+      case static: Static => memberForStatic(static) :: Nil
+      case _              => Nil
+    }
+    if (memberAsts.isEmpty) {
+      itemAsts
+    } else {
+      itemAsts :+ Ast(moduleTypeDeclNode(node)).withChildren(memberAsts)
+    }
+  }
+
+  private def memberForConst(const: Const): Option[Ast] = {
+    const.name.flatMap(_.identToken).map { identToken =>
+      Ast(memberNode(const, code(identToken), code(const), typeFullNameForType(const.typ)))
+    }
+  }
+
+  private def memberForStatic(static: Static): Ast = {
+    Ast(memberNode(static, code(static.name), code(static), typeFullNameForType(static.typ)))
+  }
+
+  // Const =
+  //  Attr* Visibility?
+  //  'default'?
+  //  'const' (Name | '_') GenericParamList? ':' Type
+  //  ('=' body:Expr)?
+  //  WhereClause? ';'
+  private def visitConst(const: Const): Seq[Ast] = {
+    (const.name.flatMap(_.identToken), const.underscoreToken, const.expr) match {
+      case (Some(identToken), None, Some(rhsExpr)) =>
+        val typeFullName = typeFullNameForType(const.typ)
+        lowerIdentifierDecl(identToken, code(identToken), visitRhsExpr(rhsExpr), typeFullName, code(const))
+      case (None, Some(underscoreToken), Some(rhsExpr)) =>
+        val tmpName      = contextStack.nextTmpName()
+        val typeFullName = typeFullNameForType(const.typ)
+        lowerIdentifierDecl(underscoreToken, tmpName, visitRhsExpr(rhsExpr), typeFullName, code(const))
+      case _ => notHandledYet(const) :: Nil
+    }
+  }
+
+  // Static =
+  //  Attr* Visibility?
+  //  'unsafe'? 'safe'? 'static' 'mut'? Name ':' Type
+  //  ('=' Expr)? ';'
+  private def visitStatic(static: Static): Seq[Ast] = {
+    (static.name.identToken, static.expr) match {
+      case (Some(identToken), Some(rhsExpr)) =>
+        val typeFullName = typeFullNameForType(static.typ)
+        lowerIdentifierDecl(identToken, code(identToken), visitRhsExpr(rhsExpr), typeFullName, code(static))
+      case _ => notHandledYet(static) :: Nil
+    }
+  }
+
+  // LetStmt =
+  //  Attr* 'super'? 'let' Pat (':' Type)?
+  //  '=' initializer:Expr?
+  //  LetElse?
+  //  ';'
+  private def visitLetStmt(letStmt: LetStmt): Seq[Ast] = {
+    val bindings = collectPatternBindings(letStmt.pat)
+    (letStmt.expr, letStmt.letElse) match {
+      case (None, _)                      => createLocalsForBindings(bindings)
+      case (Some(rhsExpr), Some(letElse)) => lowerLetElse(letStmt, rhsExpr, letElse, bindings)
+      case (Some(rhsExpr), None)          =>
+        // When there are 2+ bindings in the pattern, e.g. `let (x,y) = e`, assign the RHS to a tmp variable
+        // and use that variable to create each binding, e.g. `tmp = e; x = tmp.0; y = tmp.1` .
+        // If there's only 1 binding, it's a regular variable declaration, so no need hoist.
+        // If there are no bindings, e.g. `let _ = foo();`, we still assign the RHS to a tmp variable.
+        if (bindings.length == 1) {
+          val rhsAst      = visitRhsExpr(rhsExpr)
+          val localAsts   = createLocalsForBindings(bindings)
+          val assignments = createAssignmentsForPattern(letStmt.pat, () => rhsAst, Some(code(letStmt)))
+          localAsts ++ assignments
+        } else {
+          val tmpName       = contextStack.nextTmpName()
+          val rhsAst        = visitRhsExpr(rhsExpr)
+          val typeFullName  = letStmt.typ.map(typeFullNameForType).orElse(rhsAst.rootType).getOrElse(Defines.Any)
+          val tmpLocalAst   = localAst(letStmt, tmpName, tmpName, typeFullName)
+          val mkTmpIdentAst = () => identifierAst(letStmt, tmpName, tmpName, typeFullName)
+
+          val tmpAssignAst =
+            callAst(assignmentNode(letStmt, s"$tmpName = ${code(rhsExpr)}"), Seq(mkTmpIdentAst(), rhsAst))
+          val localAsts   = createLocalsForBindings(bindings)
+          val assignments = createAssignmentsForPattern(letStmt.pat, mkTmpIdentAst)
+
+          (tmpLocalAst +: localAsts) ++ (tmpAssignAst +: assignments)
+        }
+    }
+  }
+
+  // `let pat = expr else { body };` becomes:
+  // LOCAL tmp
+  // <createLocalsForBindings(pat)>
+  // tmp = expr
+  // IF (UNKNOWN) {
+  //  <createAssignmentsForPattern(pat, tmp)>
+  // }
+  // ELSE {
+  //  body
+  // }
+  private def lowerLetElse(
+    letStmt: LetStmt,
+    rhsExpr: Expr,
+    letElse: LetElse,
+    bindings: Seq[(IdentToken, String)]
+  ): Seq[Ast] = {
+    val tmpName       = contextStack.nextTmpName()
+    val rhsAst        = visitRhsExpr(rhsExpr)
+    val typeFullName  = letStmt.typ.map(typeFullNameForType).orElse(rhsAst.rootType).getOrElse(Defines.Any)
+    val tmpLocalAst   = localAst(letStmt, tmpName, tmpName, typeFullName)
+    val mkTmpIdentAst = () => identifierAst(letStmt, tmpName, tmpName, typeFullName)
+
+    val tmpAssignAst =
+      callAst(assignmentNode(letStmt, s"$tmpName = ${code(rhsExpr)}"), Seq(mkTmpIdentAst(), rhsAst))
+    val elseAst      = visitBlockExpr(letElse.blockExpr)
+    val localAsts    = createLocalsForBindings(bindings)
+    val assignments  = createAssignmentsForPattern(letStmt.pat, mkTmpIdentAst)
+    val conditionAst = Ast(unknownNode(letStmt.pat, code(letStmt.pat)))
+    val thenAst      = blockAst(blockNode(letStmt.pat), assignments.toList)
+    val ifAst        = ifThenElseAst(letStmt, Some(conditionAst), thenAst, Some(elseAst))
+
+    (tmpLocalAst +: localAsts) :+ tmpAssignAst :+ ifAst
+  }
+
+  private def createLocalsForBindings(bindings: Seq[(IdentToken, String)]): Seq[Ast] = {
+    bindings.map { case (identToken, typeFullName) =>
+      val name = code(identToken)
+      localAst(identToken, name, name, typeFullName)
+    }
+  }
+
+  @tailrec
+  private def createAssignmentsForPattern(
+    pat: Pat,
+    mkSourceAst: () => Ast,
+    codeOverride: Option[String] = None
+  ): Seq[Ast] = {
+    pat match {
+      case identPat: IdentPat =>
+        if (identPat.isPath.isDefined) {
+          Nil
+        } else {
+          createAssignmentsForIdentPattern(identPat, mkSourceAst, codeOverride)
+        }
+      case parenPat: ParenPat             => createAssignmentsForPattern(parenPat.pat, mkSourceAst, codeOverride)
+      case recordPat: RecordPat           => createAssignmentsForRecordPattern(recordPat, mkSourceAst)
+      case tuplePat: TuplePat             => createAssignmentsForTuplePattern(tuplePat, mkSourceAst)
+      case tupleStructPat: TupleStructPat => createAssignmentsForTupleStructPattern(tupleStructPat, mkSourceAst)
+      case slicePat: SlicePat             => createAssignmentsForSlicePattern(slicePat, mkSourceAst)
+      case wildcardPat: WildcardPat       => Nil
+      case literalPat: LiteralPat         => Nil
+      case rangePat: RangePat             => Nil
+      case pathPat: PathPat               => Nil
+      case refPat: RefPat                 => createAssignmentsForRefPattern(refPat, mkSourceAst)
+      case orPat: OrPat                   => createAssignmentsForOrPattern(orPat, mkSourceAst)
+      case macroPat: MacroPat             =>
+        macroPat.macroCall.macroExpansion match {
+          case Some(pat: Pat) => createAssignmentsForPattern(pat, mkSourceAst, codeOverride)
+          case _              => macroNotExpanded(macroPat.macroCall) :: Nil
+        }
+      case _ => notHandledYet(pat) :: Nil
+    }
+  }
+
+  private def createAssignmentsForTuplePattern(tuplePat: TuplePat, mkSourceAst: () => Ast): Seq[Ast] = {
+    createAssignmentsForTupleElements(tuplePat, tuplePat.pat, tuplePat.totalElements, mkSourceAst)
+  }
+
+  private def createAssignmentsForTupleStructPattern(
+    tupleStructPat: TupleStructPat,
+    mkSourceAst: () => Ast
+  ): Seq[Ast] = {
+    createAssignmentsForTupleElements(
+      tupleStructPat,
+      tupleStructPat.pat,
+      totalElements = None,
+      () => castIfNecessary(tupleStructPat.path, mkSourceAst())
+    )
+  }
+
+  // Enum variants in rust have the enum type, e.g. in `enum A { B }` the expression `A::B` has type `A`.
+  // We however lower variants as their own TypeDecl, so in order for member accesses to be meaningful, we should
+  // cast to the variant's TypeDecl before.
+  private def castIfNecessary(path: Path, sourceAst: Ast): Ast = {
+    val patternType = typeFullNameForPath(path)
+    if (patternType == Defines.Any || sourceAst.rootType.contains(patternType)) {
+      sourceAst
+    } else {
+      val castCode   = s"(${sourceAst.rootCodeOrEmpty} as $patternType)"
+      val castNode   = operatorCallNode(path, castCode, Operators.cast, Some(patternType))
+      val typeRefAst = Ast(typeRefNode(path, code(path), patternType))
+      callAst(castNode, Seq(typeRefAst, sourceAst))
+    }
+  }
+
+  private def createAssignmentsForTupleElements(
+    pat: Pat,
+    elements: Seq[Pat],
+    totalElements: Option[Int],
+    mkSourceAst: () => Ast
+  ): Seq[Ast] = {
+    val (prefix, fromRest) = elements.span(!_.isInstanceOf[RestPat])
+    val suffix             = fromRest.drop(1)
+    val suffixWithIndex    = totalElements match {
+      case Some(total) =>
+        suffix.zipWithIndex.map { case (element, offset) => (element, total - suffix.length + offset) }
+      case None => Nil
+    }
+    val assignments = (prefix.zipWithIndex ++ suffixWithIndex).flatMap { case (element, index) =>
+      val fieldName            = index.toString
+      val fieldType            = typeFullNameForPat(element)
+      def mkFieldAccess(): Ast = {
+        val sourceAst       = mkSourceAst()
+        val fieldAccessCode = s"${sourceAst.rootCodeOrEmpty}.$fieldName"
+        fieldAccessAst(element, element, sourceAst, fieldAccessCode, fieldName, fieldType)
+      }
+      createAssignmentsForPattern(element, mkFieldAccess)
+    }
+    val bindingsAfterRest = suffix.flatMap(collectPatternBindings)
+    if (bindingsAfterRest.isEmpty || suffixWithIndex.nonEmpty) {
+      assignments
+    } else {
+      // warn if at least 1 pattern didn't get an assignment.
+      assignments :+ notHandledYet(pat)
+    }
+  }
+
+  // TODO(rust_ast_gen): need type and size on the patterns.
+  private def createAssignmentsForSlicePattern(slicePat: SlicePat, mkSourceAst: () => Ast): Seq[Ast] = {
+    val (prefix, fromRest) = slicePat.pat.span(!matchesRest(_))
+    val assignments        = prefix.zipWithIndex.flatMap { case (element, index) =>
+      val elementType          = typeFullNameForPat(element)
+      def mkIndexAccess(): Ast = {
+        val sourceAst       = mkSourceAst()
+        val indexAccessCode = s"${sourceAst.rootCodeOrEmpty}[$index]"
+        val indexAst        = Ast(literalNode(element, index.toString, "usize"))
+        val callNode        = operatorCallNode(element, indexAccessCode, Operators.indexAccess, Some(elementType))
+        callAst(callNode, Seq(sourceAst, indexAst))
+      }
+      createAssignmentsForPattern(element, mkIndexAccess)
+    }
+    val bindingsFromRest = fromRest.flatMap(collectPatternBindings)
+    if (bindingsFromRest.isEmpty) {
+      assignments
+    } else {
+      assignments :+ notHandledYet(slicePat)
+    }
+  }
+
+  private def matchesRest(pat: Pat): Boolean = pat match {
+    case identPat: IdentPat => identPat.pat.exists(matchesRest)
+    case _: RestPat         => true
+    case _                  => false
+  }
+
+  private def createAssignmentsForRecordPattern(recordPat: RecordPat, mkSourceAst: () => Ast): Seq[Ast] = {
+    recordPat.recordPatFieldList.recordPatField.flatMap { field =>
+      fieldNameForRecordPatField(field) match {
+        case Some(fieldName) =>
+          val fieldType          = typeFullNameForPat(field.pat)
+          def fieldAccess(): Ast = {
+            val sourceAst  = castIfNecessary(recordPat.path, mkSourceAst())
+            val accessCode = s"${sourceAst.rootCodeOrEmpty}.$fieldName"
+            fieldAccessAst(field, field, sourceAst, accessCode, fieldName, fieldType)
+          }
+          createAssignmentsForPattern(field.pat, fieldAccess)
+        case None => notHandledYet(field) :: Nil
+      }
+    }
+  }
+
+  private def fieldNameForRecordPatField(field: RecordPatField): Option[String] = {
+    field.nameRef match {
+      case Some(nameRef) => Some(code(nameRef))
+      case None          =>
+        field.pat match {
+          case identPat: IdentPat => identPat.name.identToken.map(code)
+          case _                  => None
+        }
+    }
+  }
+
+  private def createAssignmentsForIdentPattern(
+    identPat: IdentPat,
+    mkSourceAst: () => Ast,
+    codeOverride: Option[String] = None
+  ): Seq[Ast] = {
+    identPat.name.identToken match {
+      case Some(identToken) =>
+        val lhsName      = code(identToken)
+        val typeFullName = typeFullNameForIdentPat(identPat)
+        val identAst     = identifierAst(identToken, lhsName, lhsName, typeFullName)
+        val hasRef       = identPat.refKwToken.isDefined
+        val rhsAst       = if (hasRef) {
+          val sourceAst = mkSourceAst()
+          val refCode   = s"&${sourceAst.rootCodeOrEmpty}"
+          callAst(operatorCallNode(identPat, refCode, Operators.addressOf, Some(typeFullName)), Seq(sourceAst))
+        } else {
+          mkSourceAst()
+        }
+        val assignCode = codeOverride.getOrElse(s"$lhsName = ${rhsAst.rootCodeOrEmpty}")
+        val assignAst  = callAst(assignmentNode(identToken, assignCode), Seq(identAst, rhsAst))
+        assignAst +: identPat.pat.toList.flatMap(createAssignmentsForPattern(_, mkSourceAst))
+      case None => notHandledYet(identPat) :: Nil
+    }
+  }
+
+  private def createAssignmentsForRefPattern(refPat: RefPat, mkSourceAst: () => Ast): Seq[Ast] = {
+    def mkIndirection(): Ast = {
+      val sourceAst    = mkSourceAst()
+      val derefCode    = s"*${sourceAst.rootCodeOrEmpty}"
+      val typeFullName = typeFullNameForPat(refPat.pat)
+      callAst(operatorCallNode(refPat.pat, derefCode, Operators.indirection, Some(typeFullName)), Seq(sourceAst))
+    }
+    createAssignmentsForPattern(refPat.pat, mkIndirection)
+  }
+
+  private def createAssignmentsForOrPattern(orPat: OrPat, mkSourceAst: () => Ast): Seq[Ast] = {
+    if (collectPatternBindings(orPat).isEmpty) {
+      Nil
+    } else {
+      val sourceAst     = mkSourceAst()
+      val tmpName       = contextStack.nextTmpName()
+      val typeFullName  = sourceAst.rootType.getOrElse(Defines.Any)
+      val tmpLocalAst   = localAst(orPat, tmpName, tmpName, typeFullName)
+      val mkTmpIdentAst = () => identifierAst(orPat, tmpName, tmpName, typeFullName)
+
+      val tmpAssignAst =
+        callAst(assignmentNode(orPat, s"$tmpName = ${sourceAst.rootCodeOrEmpty}"), Seq(mkTmpIdentAst(), sourceAst))
+
+      def mkBranchAst(pat: Pat): Ast = {
+        blockAst(blockNode(pat), createAssignmentsForPattern(pat, mkTmpIdentAst).toList)
+      }
+
+      val branchesAst = orPat.pat.foldRight(Option.empty[Ast]) { (pat, elseAst) =>
+        val conditionAst = Ast(unknownNode(pat, code(pat)))
+        Some(ifThenElseAst(pat, Some(conditionAst), mkBranchAst(pat), elseAst))
+      }
+
+      tmpLocalAst +: tmpAssignAst +: branchesAst.toList
+    }
+  }
+
+  private def collectPatternBindings(pat: Pat): Seq[(IdentToken, String)] = pat match {
+    case boxPat: BoxPat               => collectPatternBindings(boxPat.pat)
+    case constBlockPat: ConstBlockPat => Nil
+    case derefPat: DerefPat           => collectPatternBindings(derefPat.pat)
+    case identPat: IdentPat           =>
+      if (identPat.isPath.isDefined) {
+        Nil
+      } else {
+        val nameBindings = identPat.name.identToken.toList.map(ident => (ident, typeFullNameForIdentPat(identPat)))
+        val patBindings  = identPat.pat.toList.flatMap(collectPatternBindings)
+        nameBindings ++ patBindings
+      }
+    case literalPat: LiteralPat => Nil
+    case macroPat: MacroPat     =>
+      macroPat.macroCall.macroExpansion match {
+        case Some(pat: Pat) => collectPatternBindings(pat)
+        case _              => Nil
+      }
+    case orPat: OrPat         => orPat.pat.headOption.map(collectPatternBindings).getOrElse(Nil)
+    case parenPat: ParenPat   => collectPatternBindings(parenPat.pat)
+    case pathPat: PathPat     => Nil
+    case rangePat: RangePat   => Nil
+    case recordPat: RecordPat =>
+      recordPat.recordPatFieldList.recordPatField.flatMap(field => collectPatternBindings(field.pat))
+    case refPat: RefPat                 => collectPatternBindings(refPat.pat)
+    case restPat: RestPat               => Nil
+    case slicePat: SlicePat             => slicePat.pat.flatMap(collectPatternBindings)
+    case tuplePat: TuplePat             => tuplePat.pat.flatMap(collectPatternBindings)
+    case tupleStructPat: TupleStructPat => tupleStructPat.pat.flatMap(collectPatternBindings)
+    case wildcardPat: WildcardPat       => Nil
+  }
+
+  // Creates:
+  // - LOCAL (lhsToken) with given typeFullName
+  // - CALL (assignment) for lhsToken = rhsAst
+  private def lowerIdentifierDecl(
+    lhsToken: RustToken,
+    lhsName: String,
+    rhsAst: Ast,
+    typeFullName: String,
+    declCode: String
+  ): Seq[Ast] = {
+    val local         = localAst(lhsToken, lhsName, lhsName, typeFullName)
+    val lhsAst        = identifierAst(lhsToken, lhsName, lhsName, typeFullName)
+    val assignmentAst = callAst(assignmentNode(lhsToken, declCode), Seq(lhsAst, rhsAst))
+
+    Seq(local, assignmentAst)
+  }
+
+  // Name =
+  //  '#ident' | 'self'
+  private def visitName(name: Name): Ast = {
+    name.identToken match {
+      case None             => notHandledYet(name)
+      case Some(identToken) => Ast()
+    }
+  }
+
+  private def visitLiteral(lit: Literal): Ast = {
+    val typeFullName = typeFullNameForLiteral(lit)
+    Ast(literalNode(lit, code(lit), typeFullName))
+  }
+
+  // Fn =
+  // Attr* Visibility?
+  // 'default'? 'const'? 'async'? 'gen'? 'unsafe'? 'safe'? Abi?
+  // 'fn' Name GenericParamList? ParamList RetType? WhereClause?
+  // (body:BlockExpr | ';')
+  private def visitFn(fn: Fn): Ast = {
+    val name            = code(fn.name)
+    val fullName        = fn.methodFullName.getOrElse(composeRustFullName(name))
+    val method          = methodNode(node = fn, name = name).fullName(fullName)
+    val retTypeFullName = fn.retType.map(_.typ).map(typeFullNameForType).getOrElse("()")
+    val methodRet       = methodReturnNode(fn, retTypeFullName)
+    val methodMods      = Seq[NewModifier]()
+    val attributes      = fn.attr.map(visitAttr)
+
+    contextStack.pushMethod(method)
+    val (paramAsts, paramAssignmentAsts) = lowerParamList(fn.paramList)
+    val bodyAst                          = fn.blockExpr
+      .map(lowerFnBody(_, paramAssignmentAsts))
+      .getOrElse(blockAst(blockNode(fn), paramAssignmentAsts.toList))
+    contextStack.pop()
+
+    methodAstWithAnnotations(
+      method = method,
+      parameters = paramAsts,
+      body = bodyAst,
+      methodReturn = methodRet,
+      modifiers = methodMods,
+      annotations = attributes
+    )
+  }
+
+  // Creates:
+  // BLOCK {
+  //   <preStmts>
+  //   <stmts>
+  //   RETURN (expr) // if (expr) exists
+  // }
+  private def lowerFnBody(blockExpr: BlockExpr, preStmts: Seq[Ast]): Ast = {
+    val stmtAsts   = blockExpr.stmtList.stmt.flatMap(visitStmt)
+    val retExprAst = blockExpr.stmtList.expr.map(lowerReturnExpr).toList
+    Ast(blockNode(blockExpr)).withChildren(preStmts ++ stmtAsts ++ retExprAst)
+  }
+
+  // Creates:
+  // RETURN expr
+  private def lowerReturnExpr(expr: Expr): Ast = {
+    val exprAst = visitRhsExpr(expr)
+    val ret     = returnNode(expr, code(expr))
+    returnAst(ret, Seq(exprAst))
+  }
+
+  // Impl =
+  //  Attr* Visibility?
+  //  'default'? 'unsafe'?
+  //  'impl' GenericParamList? ('const'? '!'? Type 'for')? Type WhereClause?
+  //  AssocItemList
+  private def visitImpl(impl: Impl): Seq[Ast] = {
+    if (impl.forKwToken.isDefined && hasResolvedTrait(impl)) {
+      lowerImplFor(impl) :: Nil
+    } else {
+      lowerInherentImplAsDetachedAst(impl)
+      Nil
+    }
+  }
+
+  private def hasResolvedTrait(impl: Impl): Boolean = {
+    impl.typ.headOption.exists(typeFullNameForType(_) != Defines.Any)
+  }
+
+  // There can be at most one `impl X for Y` (for some X, Y) in the same file/project.
+  // TODO: lower the RHS of assoc const.
+  private def lowerImplFor(impl: Impl): Ast = {
+    impl.typ match {
+      case implTrait :: implType :: Nil =>
+        val typeDecl = typeDeclForTraitImpl(impl, implTrait, implType)
+        contextStack.pushTypeDecl(typeDecl)
+        val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn => fn }.flatMap(visitAssocFn).map {
+          _.withChild(Ast(NewModifier().modifierType(ModifierTypes.VIRTUAL)))
+        }
+        val constMemberAsts = impl.assocItemList.assocItem.collect {
+          case const: Const if const.name.isDefined =>
+            Ast(memberForAssocConst(const)).withChildren(const.attr.map(visitAttr))
+        }
+        contextStack.pop()
+        val attributes = impl.attr.map(visitAttr)
+        addDetachedBindingAsts(typeDecl, methodAsts, signature = typeFullNameForType(implTrait))
+        Ast(typeDecl).withChildren(methodAsts ++ attributes ++ constMemberAsts)
+      case _ => notHandledYet(impl)
+    }
+  }
+
+  // There can be multiple `impl X` in the same file/project, so we lower their
+  // items as detached Asts. The AstLinker pass shall later create the appropriate Ast edges.
+  // TODO: lower the RHS of assoc const.
+  private def lowerInherentImplAsDetachedAst(impl: Impl): Unit = {
+    contextStack.pushTypeDecl(typeDeclForImpl(impl))
+    val itemAsts = impl.assocItemList.assocItem.collect {
+      case fn: Fn                               => visitAssocFn(fn)
+      case const: Const if const.name.isDefined =>
+        Ast(memberForAssocConst(const)).withChildren(const.attr.map(visitAttr)) :: Nil
+    }
+    contextStack.pop()
+    itemAsts.flatten.foreach(addDetachedAst)
+  }
+
+  private def visitAssocFn(fn: Fn): Seq[Ast] = {
+    fn.macroExpansion match {
+      case Some(macroItems: MacroItems) =>
+        withMacroCall(fn) { macroItems.item.collect { case fn: Fn => fn }.flatMap(visitAssocFn) }
+      case Some(other) => notHandledYet(other) :: Nil
+      case None        => visitFn(fn) :: Nil
+    }
+  }
+
+  // Trait =
+  //  Attr* Visibility?
+  //  'unsafe'? 'auto'?
+  //  ImplRestriction?
+  //  'trait' Name GenericParamList?
+  //  (((':' TypeBoundList?)? WhereClause? AssocItemList) |
+  //  ('=' TypeBoundList? WhereClause? ';'))
+  // TODO: lower the RHS of assoc const.
+  private def visitTrait(trait_ : Trait): Ast = {
+    val name     = code(trait_.name)
+    val fullName = typeFullNameForTrait(trait_)
+    val typeDecl = typeDeclNode(
+      node = trait_,
+      name = name,
+      fullName = fullName,
+      filename = parseResult.filename,
+      code = code(trait_),
+      genericSignature = Some(fullName)
+    )
+    contextStack.pushTypeDecl(typeDecl)
+    val methodAsts =
+      trait_.assocItemList.toSeq.flatMap(_.assocItem).collect { case fn: Fn => fn }.flatMap(visitAssocFn).map {
+        _.withChild(Ast(NewModifier().modifierType(ModifierTypes.VIRTUAL)))
+      }
+    val constMemberAsts = trait_.assocItemList.toSeq.flatMap(_.assocItem).collect {
+      case const: Const if const.name.isDefined =>
+        Ast(memberForAssocConst(const)).withChildren(const.attr.map(visitAttr))
+    }
+    contextStack.pop()
+    val attributes = trait_.attr.map(visitAttr)
+    addDetachedBindingAsts(typeDecl, methodAsts, signature = fullName)
+    Ast(typeDecl).withChildren(methodAsts).withChildren(attributes).withChildren(constMemberAsts)
+  }
+
+  // BlockExpr =
+  //  Attr* Label? (TryBlockModifier | 'unsafe' | ('async' 'move'?) | ('gen' 'move'?) | 'const') StmtList
+  private def visitBlockExpr(blockExpr: BlockExpr, lowerTail: Expr => Ast = visitExpr): Ast = {
+    contextStack.pushBlock()
+    val stmts = visitStmtList(blockExpr.stmtList, lowerTail)
+    contextStack.pop()
+    val block = blockNode(blockExpr)
+    Ast(block).withChildren(stmts)
+  }
+
+  // ReturnExpr =
+  //  Attr* 'return' Expr?
+  private def visitReturnExpr(returnExpr: ReturnExpr): Ast = {
+    val ret     = returnNode(returnExpr, code(returnExpr))
+    val exprAst = returnExpr.expr.map(visitRhsExpr)
+    returnAst(ret, exprAst.toList)
+  }
+
+  // CallExpr =
+  //  Attr* Expr ArgList
+  private def visitCallExpr(callExpr: CallExpr): Ast = {
+    callExpr.expr match {
+      case pathExpr: PathExpr => lowerPathExprCall(callExpr, pathExpr)
+      case _                  => notHandledYet(callExpr)
+    }
+  }
+
+  private def lowerPathExprCall(callExpr: CallExpr, pathExpr: PathExpr): Ast = {
+    pathExpr.path.pathSegment.nameRef match {
+      case Some(nameRef) =>
+        val name           = code(nameRef)
+        val methodFullName =
+          methodFullNameForCallExpr(callExpr, viewPathAsSequenceOfNameRefs(pathExpr.path).getOrElse(Nil), name)
+        val typeFullName          = typeFullNameForExpr(callExpr)
+        val args                  = callExpr.argList.expr.map(visitExpr)
+        val hasSelfReceiver       = callExpr.hasSelfReceiver.isDefined && args.nonEmpty
+        val (dispatch, signature) =
+          if (hasSelfReceiver && args.head.rootType.exists(isTraitObject)) {
+            // TODO: avoid this trait name extraction from the methodFullName
+            (DispatchTypes.DYNAMIC_DISPATCH, Some(methodFullName.split(PathSep).dropRight(1).mkString(PathSep)))
+          } else { (DispatchTypes.STATIC_DISPATCH, None) }
+        val call =
+          callNode(callExpr, code(callExpr), name, methodFullName, dispatch, signature, Some(typeFullName))
+        if (hasSelfReceiver) {
+          callAst(call, args.tail, base = Some(args.head))
+        } else {
+          callAst(call, args)
+        }
+      case None => notHandledYet(callExpr)
+    }
+  }
+
+  private def viewExprAsNameRef(expr: Expr): Option[NameRef] = {
+    viewExprAsPathExpr(expr).filter(_.sizeIs == 1).flatMap(_.headOption)
+  }
+
+  private def viewExprAsPathExpr(expr: Expr): Option[Seq[NameRef]] = expr match {
+    case pathExpr: PathExpr => viewPathAsSequenceOfNameRefs(pathExpr.path)
+    case _                  => None
+  }
+
+  private def viewPathAsSequenceOfNameRefs(path: Path): Option[Seq[NameRef]] = {
+    path.pathSegment.nameRef.flatMap { nameRef =>
+      path.path match {
+        case Some(qualifier) => viewPathAsSequenceOfNameRefs(qualifier).map(_ :+ nameRef)
+        case None            => Some(nameRef :: Nil)
+      }
+    }
+  }
+
+  // ArgList =
+  //  '(' args:(Expr (',' Expr)* ','?)? ')'
+  private def visitArgList(argList: ArgList): Ast = {
+    notHandledYet(argList)
+  }
+
+  // StmtList =
+  //  '{'
+  //    Attr*
+  //    statements:Stmt*
+  //    tail_expr:Expr?
+  //  '}'
+  private def visitStmtList(stmtList: StmtList, lowerTail: Expr => Ast = visitExpr): Seq[Ast] = {
+    val stmtAsts    = stmtList.stmt.flatMap(visitStmt)
+    val tailExprAst = stmtList.expr.map(lowerTail).toList
+    stmtAsts ++ tailExprAst
+  }
+
+  // ParamList =
+  //  '('(
+  //    SelfParam
+  //  | (SelfParam ',')? (Param (',' Param)* ','?)?
+  //  )')'
+  // | '|' (Param (',' Param)* ','?)? '|'
+  private def lowerParamList(paramList: ParamList): (paramAsts: Seq[Ast], paramAssignmentAsts: Seq[Ast]) = {
+    val selfParamAst                     = paramList.selfParam.map(visitSelfParam).toList
+    val (paramAsts, paramAssignmentAsts) = paramList.param.zipWithIndex.map { case (param, paramIdx) =>
+      val (paramName, paramPattern) = param.pat match {
+        // The parameter name for non-identifier patterns could just as well always be nextTempName.
+        // We only tweak it for query purposes, i.e. to not find it odd to see a "<tmp>0" when the parameter
+        // was e.g. "Json(value)".
+        case Some(identPat: IdentPat) if identPat.refKwToken.isEmpty => (code(identPat.name), identPat.pat)
+        case Some(pat) if collectPatternBindings(pat).nonEmpty       => (code(pat), Some(pat))
+        case pat                                                     => (contextStack.nextTmpName(), pat)
+      }
+      val attributes   = param.attr.map(visitAttr)
+      val typeFullName = typeFullNameForParam(param)
+      val paramNode    = parameterInNode(
+        node = param,
+        name = paramName,
+        code = code(param),
+        index = paramIdx + 1,
+        isVariadic = false,
+        evaluationStrategy = EvaluationStrategies.BY_SHARING,
+        typeFullName = typeFullName
+      )
+      contextStack.declareParameter(paramNode)
+
+      val patternAssignmentAsts = paramPattern.toList.flatMap { pat =>
+        val mkParamIdentAst = () => identifierAst(pat, paramName, paramName, typeFullName)
+        createLocalsForBindings(collectPatternBindings(pat)) ++ createAssignmentsForPattern(pat, mkParamIdentAst)
+      }
+      (Ast(paramNode).withChildren(attributes), patternAssignmentAsts)
+    }.unzip
+
+    (selfParamAst ++ paramAsts, paramAssignmentAsts.flatten)
+  }
+
+  // SelfParam =
+  //  Attr* ( ('&' Lifetime?)? 'mut'? Name | 'mut'? Name ':' Type )
+  private def visitSelfParam(selfParam: SelfParam): Ast = {
+    val attributes         = selfParam.attr.map(visitAttr)
+    val typeFullName       = typeFullNameForSelfParam(selfParam)
+    val evaluationStrategy =
+      if (selfParam.ampToken.isDefined) EvaluationStrategies.BY_SHARING else EvaluationStrategies.BY_VALUE
+    val paramNode = parameterInNode(
+      node = selfParam,
+      name = code(selfParam.name),
+      code = code(selfParam),
+      index = 0,
+      isVariadic = false,
+      evaluationStrategy = evaluationStrategy,
+      typeFullName = typeFullName
+    )
+    contextStack.declareParameter(paramNode)
+    Ast(paramNode).withChildren(attributes)
+  }
+
+  // PathExpr =
+  //  Attr* Path
+  private def visitPathExpr(pathExpr: PathExpr): Ast = {
+    // A path has `methodFullName` if it denotes a method reference, or `ctorTypeFullName` if it denotes a unit
+    // constructor. Otherwise, it's some other identifier.
+    (pathExpr.methodFullName, pathExpr.ctorTypeFullName) match {
+      case (Some(methodFullName), _)   => Ast(methodRefNode(pathExpr, code(pathExpr), methodFullName, methodFullName))
+      case (_, Some(ctorTypeFullName)) => unitCtorCallAst(pathExpr, ctorTypeFullName)
+      case _                           => visitPath(pathExpr.path, pathExpr.ownerFullName)
+    }
+  }
+
+  // Path =
+  //  (qualifier:Path '::')? segment:PathSegment
+  private def visitPath(path: Path, ownerFullName: Option[String]): Ast = {
+    (path.path, ownerFullName) match {
+      case (Some(qualifier), _)        => lowerQualifiedPath(path, qualifier, ownerFullName)
+      case (None, Some(ownerFullName)) => lowerUnqualifiedPath(path, ownerFullName)
+      case (None, None)                => visitPathSegment(path.pathSegment)
+    }
+  }
+
+  private def lowerUnqualifiedPath(path: Path, ownerFullName: String): Ast = {
+    val typeRefAst = Ast(typeRefNode(path, ownerFullName, ownerFullName))
+    val fieldName  = code(path.pathSegment)
+    fieldAccessAst(path, path.pathSegment, typeRefAst, code(path), fieldName, typeFullNameForPath(path))
+  }
+
+  // TODO: `<Foo as Bar>::baz`, etc.
+  private def lowerQualifiedPath(path: Path, qualifier: Path, ownerFullName: Option[String]): Ast = {
+    ownerFullName.orElse(qualifier.pathSegment.nameRef.flatMap(_.typeFullName)) match {
+      case Some(qualifierFullName) =>
+        val typeRefAst = Ast(typeRefNode(qualifier, code(qualifier), qualifierFullName))
+        val fieldName  = code(path.pathSegment)
+        fieldAccessAst(path, path.pathSegment, typeRefAst, code(path), fieldName, typeFullNameForPath(path))
+      case None => notHandledYet(path)
+    }
+  }
+
+  // PathSegment =
+  //  '::'? NameRef
+  // | NameRef GenericArgList?
+  // | NameRef ParenthesizedArgList RetType?
+  // | NameRef ReturnTypeSyntax
+  // | TypeAnchor
+  private def visitPathSegment(pathSegment: PathSegment): Ast = {
+    pathSegment.nameRef match {
+      case Some(nameRef) => visitNameRef(nameRef)
+      case None          => notHandledYet(pathSegment)
+    }
+  }
+
+  // NameRef =
+  //  '#ident' | '@int_number' | 'self' | 'super' | 'crate' | 'Self'
+  private def visitNameRef(nameRef: NameRef): Ast = {
+    nameRef.token match {
+      case Some(ident: IdentToken) =>
+        identifierAst(nameRef, code(ident), code(nameRef), typeFullNameForNameRef(nameRef))
+      case Some(selfKw: SelfKwToken) =>
+        identifierAst(nameRef, code(selfKw), code(nameRef), typeFullNameForNameRef(nameRef))
+      case _ => notHandledYet(nameRef)
+    }
+  }
+
+  // BinExpr =
+  //  Attr*
+  //  lhs:Expr
+  //  op:(
+  //    '||' | '&&'
+  //  | '==' | '!=' | '<=' | '>=' | '<' | '>'
+  //  | '+' | '*' | '-' | '/' | '%' | '<<' | '>>' | '^' | '|' | '&'
+  //  | '=' | '+=' | '/=' | '*=' | '%=' | '>>=' | '<<=' | '-=' | '|=' | '&=' | '^='
+  //  )
+  //  rhs:Expr
+  private def visitBinExpr(binExpr: BinExpr): Ast = {
+    operatorNameFor(binExpr) match {
+      case Some(opName) =>
+        val typeFullName  = typeFullNameForExpr(binExpr)
+        val callNode      = operatorCallNode(binExpr, code(binExpr), opName, Some(typeFullName))
+        val Seq(lhs, rhs) = binExpr.expr
+        val lhsAst        = visitExpr(lhs)
+        val rhsAst        = if (allAssignmentTypes.contains(opName)) visitRhsExpr(rhs) else visitExpr(rhs)
+        callAst(callNode, Seq(lhsAst, rhsAst))
+      case None => notHandledYet(binExpr)
+    }
+  }
+
+  // PrefixExpr =
+  //  Attr* op:('-' | '!' | '*') Expr
+  private def visitPrefixExpr(prefixExpr: PrefixExpr): Ast = {
+    operatorNameFor(prefixExpr) match {
+      case Some(opName) =>
+        val typeFullName = typeFullNameForExpr(prefixExpr)
+        val callNode     = operatorCallNode(prefixExpr, code(prefixExpr), opName, Some(typeFullName))
+        val exprAst      = visitExpr(prefixExpr.expr)
+        callAst(callNode, Seq(exprAst))
+      case None => notHandledYet(prefixExpr)
+    }
+  }
+
+  // RefExpr =
+  //  Attr* '&' ('raw' 'const' | 'raw' 'mut' | 'mut')? Expr
+  private def visitRefExpr(refExpr: RefExpr): Ast = {
+    val typeFullName = typeFullNameForExpr(refExpr)
+    val callNode     = operatorCallNode(refExpr, code(refExpr), Operators.addressOf, Some(typeFullName))
+    val exprAst      = visitExpr(refExpr.expr)
+    callAst(callNode, Seq(exprAst))
+  }
+
+  // IfExpr =
+  //  Attr* 'if' condition:Expr then_branch:BlockExpr
+  //  ('else' else_branch:(IfExpr | BlockExpr))?
+  private def visitIfExpr(ifExpr: IfExpr, lowerTail: Expr => Ast): Ast = {
+    ifExpr.expr match {
+      case letExpr: LetExpr =>
+        lowerIfLet(ifExpr, letExpr, lowerTail)
+      case binExpr: BinExpr if isLetChain(binExpr) =>
+        lowerIfLetChain(ifExpr, binExpr, lowerTail)
+      case condition =>
+        val conditionAst = visitExpr(condition)
+        val thenAst      = visitBlockExpr(ifExpr.thenBranch, lowerTail)
+        val elseAst      = ifExpr.elseBranch.map(lowerElseBranch(_, lowerTail))
+        ifThenElseAst(ifExpr, Some(conditionAst), thenAst, elseAst)
+    }
+  }
+
+  private def lowerElseBranch(elseBranch: IfExpr | BlockExpr, lowerTail: Expr => Ast): Ast = {
+    elseBranch match {
+      case elseIf: IfExpr       => visitIfExpr(elseIf, lowerTail)
+      case blockExpr: BlockExpr => visitBlockExpr(blockExpr, lowerTail)
+    }
+  }
+
+  private def visitRhsExpr(rhsExpr: Expr): Ast = rhsExpr match {
+    case ifExpr: IfExpr if ifExpr.elseBranch.isDefined => lowerIfWithResult(ifExpr)
+    case matchExpr: MatchExpr                          => lowerMatchWithResult(matchExpr)
+    case _                                             => visitExpr(rhsExpr)
+  }
+
+  // `if cond { then-stmts; then-tail } else { else-stmts; else-tail }` becomes:
+  // BLOCK {
+  //   LOCAL tmp
+  //   IF (cond) {
+  //    then-stmts
+  //    tmp = then-tail
+  //   } ELSE {
+  //    else-stmts
+  //    tmp = else-tail
+  //   }
+  //   tmp
+  // }
+  private def lowerIfWithResult(ifExpr: IfExpr): Ast = {
+    val tmpName        = contextStack.nextTmpName()
+    val typeFullName   = typeFullNameForExpr(ifExpr)
+    val tmpLocalAst    = localAst(ifExpr, tmpName, tmpName, typeFullName)
+    val mkTmpIdentAst  = () => identifierAst(ifExpr, tmpName, tmpName, typeFullName)
+    val mkTmpAssignAst = (tailExpr: Expr) =>
+      callAst(assignmentNode(tailExpr, s"$tmpName = ${code(tailExpr)}"), Seq(mkTmpIdentAst(), visitRhsExpr(tailExpr)))
+
+    val ifAst = visitIfExpr(ifExpr, mkTmpAssignAst)
+    blockAst(blockNode(ifExpr, code(ifExpr), typeFullName), tmpLocalAst :: ifAst :: mkTmpIdentAst() :: Nil)
+  }
+
+  // `match e { pat => { stmts; tail }, ... }` becomes:
+  // BLOCK {
+  //   LOCAL tmp
+  //   <visitMatchExpr(match e {...}, tmp = tail)>
+  //   tmp
+  // }
+  private def lowerMatchWithResult(matchExpr: MatchExpr): Ast = {
+    val tmpName        = contextStack.nextTmpName()
+    val typeFullName   = typeFullNameForExpr(matchExpr)
+    val tmpLocalAst    = localAst(matchExpr, tmpName, tmpName, typeFullName)
+    val mkTmpIdentAst  = () => identifierAst(matchExpr, tmpName, tmpName, typeFullName)
+    val mkTmpAssignAst = (tailExpr: Expr) =>
+      callAst(assignmentNode(tailExpr, s"$tmpName = ${code(tailExpr)}"), Seq(mkTmpIdentAst(), visitRhsExpr(tailExpr)))
+
+    val matchBlockAst = visitMatchExpr(matchExpr, mkTmpAssignAst)
+    blockAst(
+      blockNode(matchExpr, code(matchExpr), typeFullName),
+      tmpLocalAst :: matchBlockAst :: mkTmpIdentAst() :: Nil
+    )
+  }
+
+  // `if let pat = expr { body-then } else { body-else }` becomes:
+  // BLOCK {
+  //   LOCAL tmp
+  //   tmp = expr
+  //   IF (UNKNOWN) {
+  //     <createLocalsForBindings(pat)>
+  //     <createAssignmentsForPattern(pat, tmp)>
+  //     body-then
+  //   }
+  //   ELSE {
+  //     body-else
+  //   }
+  // }
+  private def lowerIfLet(ifExpr: IfExpr, letExpr: LetExpr, lowerTail: Expr => Ast): Ast = {
+    val tmpName       = contextStack.nextTmpName()
+    val exprAst       = visitRhsExpr(letExpr.expr)
+    val typeFullName  = exprAst.rootType.getOrElse(Defines.Any)
+    val tmpLocalAst   = localAst(letExpr, tmpName, tmpName, typeFullName)
+    val mkTmpIdentAst = () => identifierAst(letExpr, tmpName, tmpName, typeFullName)
+    val tmpAssignAst  =
+      callAst(assignmentNode(letExpr, s"$tmpName = ${code(letExpr.expr)}"), Seq(mkTmpIdentAst(), exprAst))
+
+    contextStack.pushBlock()
+    val localAsts   = createLocalsForBindings(collectPatternBindings(letExpr.pat))
+    val assignments = createAssignmentsForPattern(letExpr.pat, mkTmpIdentAst)
+    val bodyAsts    = visitStmtList(ifExpr.thenBranch.stmtList, lowerTail)
+    contextStack.pop()
+
+    val conditionAst = Ast(unknownNode(letExpr.pat, code(letExpr.pat)))
+    val thenAst      = blockAst(blockNode(ifExpr.thenBranch), (localAsts ++ assignments ++ bodyAsts).toList)
+    val elseAst      = ifExpr.elseBranch.map(lowerElseBranch(_, lowerTail))
+    val ifAst        = ifThenElseAst(ifExpr, Some(conditionAst), thenAst, elseAst)
+
+    blockAst(blockNode(ifExpr), List(tmpLocalAst, tmpAssignAst, ifAst))
+  }
+
+  // `if let pat1 = expr1 && let pat2 = expr2 { then } else { else }` becomes:
+  // BLOCK {
+  //   LOCAL tmp1
+  //   tmp1 = expr1
+  //   <createLocalsForBindings(pat1)>
+  //   <createAssignmentsForPattern(pat1, tmp1)>
+  //
+  //   LOCAL tmp2
+  //   tmp2 = expr2
+  //   <createLocalsForBindings(pat2)>
+  //   <createAssignmentsForPattern(pat2, tmp2)>
+  //
+  //   IF (UNKNOWN(pat1) && UNKNOWN(pat2)) {
+  //    then
+  //   }
+  //   ELSE {
+  //    else
+  //   }
+  // }
+  private def lowerIfLetChain(ifExpr: IfExpr, binExpr: BinExpr, lowerTail: Expr => Ast): Ast = {
+    contextStack.pushBlock()
+    val (bindingAsts, conditionAst) = lowerLetChain(binExpr)
+    val thenAst                     = visitBlockExpr(ifExpr.thenBranch, lowerTail)
+    contextStack.pop()
+
+    val elseAst = ifExpr.elseBranch.map(lowerElseBranch(_, lowerTail))
+    val ifAst   = ifThenElseAst(ifExpr, Some(conditionAst), thenAst, elseAst)
+
+    blockAst(blockNode(ifExpr), (bindingAsts :+ ifAst).toList)
+  }
+
+  private def isLetChain(binExpr: BinExpr): Boolean = {
+    binExpr.amp2Token.isDefined && binExpr.expr.exists {
+      case _: LetExpr    => true
+      case expr: BinExpr => isLetChain(expr)
+      case _             => false
+    }
+  }
+
+  private def lowerLetChain(expr: Expr): (bindingAsts: Seq[Ast], conditionAst: Ast) = {
+    expr match {
+      case letExpr: LetExpr =>
+        val tmpName      = contextStack.nextTmpName()
+        val rhsAst       = visitRhsExpr(letExpr.expr)
+        val typeFullName = rhsAst.rootType.getOrElse(Defines.Any)
+        val tmpLocalAst  = localAst(letExpr, tmpName, tmpName, typeFullName)
+        val mkTmpAst     = () => identifierAst(letExpr, tmpName, tmpName, typeFullName)
+        val tmpAssignAst =
+          callAst(assignmentNode(letExpr, s"$tmpName = ${code(letExpr.expr)}"), Seq(mkTmpAst(), rhsAst))
+        val localAsts    = createLocalsForBindings(collectPatternBindings(letExpr.pat))
+        val assignments  = createAssignmentsForPattern(letExpr.pat, mkTmpAst)
+        val conditionAst = Ast(unknownNode(letExpr.pat, code(letExpr.pat)))
+
+        (tmpLocalAst +: tmpAssignAst +: (localAsts ++ assignments), conditionAst)
+
+      case binExpr: BinExpr if isLetChain(binExpr) =>
+        val typeFullName  = typeFullNameForExpr(binExpr)
+        val callNode      = operatorCallNode(binExpr, code(binExpr), Operators.logicalAnd, Some(typeFullName))
+        val Seq(lhs, rhs) = binExpr.expr
+        val (lhsBindingAsts, lhsConditionAst) = lowerLetChain(lhs)
+        val (rhsBindingAsts, rhsConditionAst) = lowerLetChain(rhs)
+
+        (lhsBindingAsts ++ rhsBindingAsts, callAst(callNode, Seq(lhsConditionAst, rhsConditionAst)))
+
+      case condition =>
+        (Nil, visitExpr(condition))
+    }
+  }
+
+  // CastExpr =
+  //  Attr* Expr 'as' Type
+  private def visitCastExpr(castExpr: CastExpr): Ast = {
+    val typeFullName = typeFullNameForType(castExpr.typ)
+    val castNode     = operatorCallNode(castExpr, code(castExpr), Operators.cast, Some(typeFullName))
+    val typeRefAst   = Ast(typeRefNode(castExpr.typ, code(castExpr.typ), typeFullName))
+    val exprAst      = visitExpr(castExpr.expr)
+
+    callAst(castNode, Seq(typeRefAst, exprAst))
+  }
+
+  // WhileExpr =
+  //  Attr* Label? 'while' condition:Expr
+  //  loop_body:BlockExpr
+  private def visitWhileExpr(whileExpr: WhileExpr): Ast = {
+    whileExpr.expr match {
+      case letExpr: LetExpr =>
+        lowerWhileLet(whileExpr, letExpr)
+      case binExpr: BinExpr if isLetChain(binExpr) =>
+        lowerWhileLetChain(whileExpr, binExpr)
+      case condition =>
+        val conditionAst = visitExpr(condition)
+        val bodyAst      = visitBlockExpr(whileExpr.blockExpr)
+        whileAst(whileExpr, Some(conditionAst), Seq(bodyAst))
+    }
+  }
+
+  // `while let pat = expr { body }` becomes:
+  // WHILE (UNKNOWN) {
+  //   LOCAL tmp
+  //   tmp = expr
+  //   <createLocalsForBindings(pat)>
+  //   <createAssignmentsForPattern(pat, tmp)>
+  //   body
+  // }
+  private def lowerWhileLet(whileExpr: WhileExpr, letExpr: LetExpr): Ast = {
+    contextStack.pushBlock()
+    val tmpName       = contextStack.nextTmpName()
+    val exprAst       = visitRhsExpr(letExpr.expr)
+    val typeFullName  = exprAst.rootType.getOrElse(Defines.Any)
+    val tmpLocalAst   = localAst(letExpr, tmpName, tmpName, typeFullName)
+    val mkTmpIdentAst = () => identifierAst(letExpr, tmpName, tmpName, typeFullName)
+    val tmpAssignAst  =
+      callAst(assignmentNode(letExpr, s"$tmpName = ${code(letExpr.expr)}"), Seq(mkTmpIdentAst(), exprAst))
+
+    val localAsts   = createLocalsForBindings(collectPatternBindings(letExpr.pat))
+    val assignments = createAssignmentsForPattern(letExpr.pat, mkTmpIdentAst)
+    val bodyAsts    = visitStmtList(whileExpr.blockExpr.stmtList)
+    contextStack.pop()
+
+    val conditionAst = Ast(unknownNode(letExpr.pat, code(letExpr.pat)))
+    val bodyAst      = blockAst(
+      blockNode(whileExpr.blockExpr),
+      (tmpLocalAst +: tmpAssignAst +: (localAsts ++ assignments ++ bodyAsts)).toList
+    )
+    whileAst(whileExpr, Some(conditionAst), Seq(bodyAst))
+  }
+
+  // `while let pat1 = expr1 && let pat2 = expr2 { body }` becomes:
+  // WHILE (true) {
+  //   LOCAL tmp1
+  //   tmp1 = expr1
+  //   <createLocalsForBindings(pat1)>
+  //   <createAssignmentsForPattern(pat1, tmp1)>
+  //
+  //   LOCAL tmp2
+  //   tmp2 = expr2
+  //   <createLocalsForBindings(pat2)>
+  //   <createAssignmentsForPattern(pat2, tmp2)>
+  //
+  //   IF (UNKNOWN(pat1) && UNKNOWN(pat2)) {
+  //    body
+  //   }
+  //   ELSE {
+  //    break
+  //   }
+  // }
+  private def lowerWhileLetChain(whileExpr: WhileExpr, binExpr: BinExpr): Ast = {
+    contextStack.pushBlock()
+    val (bindingAsts, conditionAst) = lowerLetChain(binExpr)
+    val thenAst                     = visitBlockExpr(whileExpr.blockExpr)
+    contextStack.pop()
+
+    val elseAst = blockAst(blockNode(whileExpr), List(breakAst(whileExpr, "break")))
+    val ifAst   = ifThenElseAst(whileExpr, Some(conditionAst), thenAst, Some(elseAst))
+
+    val trueAst = Ast(literalNode(whileExpr.whileKwToken, "true", "bool"))
+    val bodyAst = blockAst(blockNode(whileExpr), (bindingAsts :+ ifAst).toList)
+    whileAst(whileExpr, Some(trueAst), Seq(bodyAst))
+  }
+
+  // LoopExpr =
+  //  Attr* Label? 'loop'
+  //  loop_body:BlockExpr
+  private def visitLoopExpr(loopExpr: LoopExpr): Ast = {
+    val conditionAst = Ast(literalNode(loopExpr.loopKwToken, "true", "bool"))
+    val bodyAst      = visitBlockExpr(loopExpr.blockExpr)
+    whileAst(loopExpr, Some(conditionAst), Seq(bodyAst))
+  }
+
+  // ForExpr =
+  //  Attr* Label? 'for' Pat 'in' iterable:Expr
+  //  loop_body:BlockExpr
+  //
+  // Lowering `for pat in y` as follows:
+  // BLOCK {
+  //   LOCAL tmp
+  //   tmp = y.into_iter()
+  //   WHILE (UNKNOWN) {
+  //     LOCAL tmp2
+  //     <createLocalsForBindings(pat)>
+  //     tmp2 = tmp.next()
+  //     <createAssignmentsForPattern(pat, tmp2)>
+  //     body
+  //   }
+  // }
+  // NB: the condition is currently UNKNOWN. A more faithful lowering would be:
+  // WHILE (TRUE) {
+  //  match tmp.next() {
+  //    Some(pat) => body
+  //    None      => break
+  //  }
+  private def visitForExpr(forExpr: ForExpr): Ast = {
+    val iterable     = forExpr.expr
+    val tmpName      = contextStack.nextTmpName()
+    val tmpLocalAst  = localAst(iterable, tmpName, tmpName, Defines.Any)
+    val typeFullName = typeFullNameForPat(forExpr.pat)
+
+    // tmp = y.into_iter()
+    val intoIterAssignAst = {
+      val intoIterName = "into_iter"
+      val receiverAst  = visitExpr(iterable)
+      val intoIterCode = s"${receiverAst.rootCodeOrEmpty}.$intoIterName()"
+      val intoIterCall = callNode(
+        node = iterable,
+        code = intoIterCode,
+        name = intoIterName,
+        methodFullName = combineRustFullName(Defines.UnresolvedNamespace, intoIterName),
+        dispatchType = DispatchTypes.STATIC_DISPATCH,
+        signature = None,
+        // TODO(rust_ast_gen): include what would be the type for this into_iter() call.
+        typeFullName = Some(Defines.Any)
+      )
+      val tmpIdentAst = identifierAst(iterable, tmpName, tmpName, Defines.Any)
+      callAst(
+        assignmentNode(iterable, s"$tmpName = $intoIterCode"),
+        Seq(tmpIdentAst, callAst(intoIterCall, Seq.empty, base = Some(receiverAst)))
+      )
+    }
+
+    // tmp.next()
+    def mkNextAst(): Ast = {
+      val nextName         = "next"
+      val nextTypeFullName = typeFullName match {
+        case Defines.Any => Defines.Any
+        case other       => s"core::option::Option<$other>"
+      }
+      val nextCall = callNode(
+        node = forExpr.pat,
+        code = s"$tmpName.$nextName()",
+        name = nextName,
+        methodFullName = combineRustFullName(Defines.UnresolvedNamespace, nextName),
+        dispatchType = DispatchTypes.STATIC_DISPATCH,
+        signature = None,
+        typeFullName = Some(nextTypeFullName)
+      )
+      callAst(nextCall, Seq.empty, base = Some(identifierAst(forExpr.pat, tmpName, tmpName, Defines.Any)))
+    }
+
+    contextStack.pushBlock()
+    val bindings    = collectPatternBindings(forExpr.pat)
+    val localAsts   = createLocalsForBindings(bindings)
+    val bindingAsts = if (bindings.length == 1) {
+      localAsts ++ createAssignmentsForPattern(forExpr.pat, mkNextAst)
+    } else {
+      val itemName       = contextStack.nextTmpName()
+      val itemLocalAst   = localAst(forExpr.pat, itemName, itemName, typeFullName)
+      val mkItemIdentAst = () => identifierAst(forExpr.pat, itemName, itemName, typeFullName)
+      val nextAst        = mkNextAst()
+      val itemAssignAst  =
+        callAst(assignmentNode(forExpr.pat, s"$itemName = ${nextAst.rootCodeOrEmpty}"), Seq(mkItemIdentAst(), nextAst))
+      val assignments = createAssignmentsForPattern(forExpr.pat, mkItemIdentAst)
+
+      (itemLocalAst +: localAsts) ++ (itemAssignAst +: assignments)
+    }
+
+    val stmts = visitStmtList(forExpr.blockExpr.stmtList)
+    contextStack.pop()
+    val bodyAst      = Ast(blockNode(forExpr.blockExpr)).withChildren(bindingAsts ++ stmts)
+    val conditionAst = Ast(unknownNode(forExpr, code(forExpr)))
+    val whileLoopAst = whileAst(forExpr, Some(conditionAst), Seq(bodyAst))
+
+    Ast(blockNode(forExpr)).withChildren(Seq(tmpLocalAst, intoIterAssignAst, whileLoopAst))
+  }
+
+  // ContinueExpr =
+  //  Attr* 'continue' Lifetime?
+  private def visitContinueExpr(continueExpr: ContinueExpr): Ast = {
+    continueAst(continueExpr, code(continueExpr))
+  }
+
+  // BreakExpr =
+  //  Attr* 'break' Lifetime? Expr?
+  private def visitBreakExpr(breakExpr: BreakExpr): Ast = {
+    // TODO: break expr is meant to return expr
+    breakAst(breakExpr, code(breakExpr))
+  }
+
+  // IndexExpr =
+  //  Attr* base:Expr '[' index:Expr ']'
+  private def visitIndexExpr(indexExpr: IndexExpr): Ast = {
+    val typeFullName = typeFullNameForExpr(indexExpr)
+    val callNode     = operatorCallNode(indexExpr, code(indexExpr), Operators.indexAccess, Some(typeFullName))
+    val baseAst      = visitExpr(indexExpr.base)
+    val indexAst     = visitExpr(indexExpr.index)
+    callAst(callNode, Seq(baseAst, indexAst))
+  }
+
+  // TupleExpr =
+  //  Attr* '(' (Expr (',' Expr)* ','?)? ')'
+  private def visitTupleExpr(tupleExpr: TupleExpr): Ast = {
+    if (tupleExpr.expr.isEmpty) {
+      Ast(literalNode(tupleExpr, code(tupleExpr), "()"))
+    } else {
+      val typeFullName = typeFullNameForTupleExpr(tupleExpr)
+      val callNode     = operatorCallNode(tupleExpr, code(tupleExpr), RustOperators.tupleLiteral, Some(typeFullName))
+      val argAsts      = tupleExpr.expr.map(visitExpr)
+      callAst(callNode, argAsts)
+    }
+  }
+
+  // RecordExpr =
+  //  Attr* Path RecordExprFieldList
+  private def visitRecordExpr(recordExpr: RecordExpr): Ast = {
+    recordExpr.recordExprFieldList.expr match {
+      case None       => recordCtorCallAst(recordExpr)
+      case Some(base) => recordCtorCallWithSpreadAst(recordExpr, base)
+    }
+  }
+
+  // Lowers a record expression e.g. `Foo { x: 1, y: 2 }` as follows:
+  // BLOCK
+  //   LOCAL tmp
+  //   tmp = <operator>.alloc
+  //   Foo::<init>(tmp, x:1, y:2)
+  //   tmp
+  private def recordCtorCallAst(recordExpr: RecordExpr): Ast = {
+    val structType       = typeFullNameForExpr(recordExpr)
+    val ctorTypeFullName = recordExpr.methodFullName.getOrElse(structType)
+    val tmpName          = contextStack.nextTmpName()
+
+    allocBlockAst(recordExpr, tmpName, structType) { mkTmp =>
+      val initCall = callNode(
+        recordExpr,
+        code(recordExpr),
+        Defines.ConstructorMethodName,
+        combineRustFullName(ctorTypeFullName, Defines.ConstructorMethodName),
+        DispatchTypes.STATIC_DISPATCH,
+        None,
+        Some("()")
+      )
+
+      val fieldArgs = recordExpr.recordExprFieldList.recordExprField.map { field =>
+        val fieldName = field.nameRef.orElse(viewExprAsNameRef(field.expr)).map(code)
+        val argAst    = visitExpr(field.expr)
+        argAst.root.foreach { case expr: ExpressionNew => expr.argumentName(fieldName) }
+        argAst
+      }
+      callAst(initCall, fieldArgs, base = Some(mkTmp(recordExpr))) :: Nil
+    }
+  }
+
+  // Lowers a spread record expression e.g. `Foo { x: 1, ..base }` as follows:
+  // BLOCK
+  //   LOCAL tmp
+  //   tmp = <operator>.alloc
+  //   tmp = base
+  //   tmp.x = y
+  //   tmp
+  private def recordCtorCallWithSpreadAst(recordExpr: RecordExpr, base: Expr): Ast = {
+    val structType = typeFullNameForExpr(recordExpr)
+    val tmpName    = contextStack.nextTmpName()
+
+    allocBlockAst(recordExpr, tmpName, structType) { mkTmp =>
+      // tmp = base
+      val spreadAssignAst = {
+        val tmpAst = mkTmp(recordExpr)
+        callAst(assignmentNode(recordExpr, s"$tmpName = ${code(base)}"), Seq(tmpAst, visitExpr(base)))
+      }
+
+      // tmp.x = 1; etc.
+      val fieldAssignAsts = recordExpr.recordExprFieldList.recordExprField.map { field =>
+        val fieldNameRef = field.nameRef.orElse(viewExprAsNameRef(field.expr)).get
+        val fieldName    = code(fieldNameRef)
+        val fieldType    = typeFullNameForExpr(field.expr)
+        val baseAst      = mkTmp(field)
+        val lhs = fieldAccessAst(fieldNameRef, fieldNameRef, baseAst, s"$tmpName.$fieldName", fieldName, fieldType)
+        callAst(assignmentNode(field, s"$tmpName.$fieldName = ${code(field.expr)}"), Seq(lhs, visitExpr(field.expr)))
+      }
+
+      spreadAssignAst +: fieldAssignAsts
+    }
+  }
+
+  // BLOCK
+  //  LOCAL "tmp"
+  //  tmp = <operator>.alloc
+  //  <body>
+  //  tmp
+  // The extra RustNode => Ast in <body> is an helper to create tmpName identifier nodes.
+  private def allocBlockAst(node: RustNode, tmpName: String, typeFullName: String)(
+    body: (RustNode => Ast) => Seq[Ast]
+  ): Ast = {
+    contextStack.pushBlock()
+
+    // LOCAL tmp
+    val localAst_ = localAst(node, tmpName, tmpName, typeFullName)
+
+    def mkTmpIdent(node: RustNode): Ast = {
+      identifierAst(node, tmpName, tmpName, typeFullName)
+    }
+
+    // tmp = <operator>.alloc
+    val allocAssignAst = {
+      val tmpAst    = mkTmpIdent(node)
+      val allocCall = operatorCallNode(node, Operators.alloc, Operators.alloc, Some(typeFullName))
+      callAst(assignmentNode(node, s"$tmpName = ${Operators.alloc}"), Seq(tmpAst, Ast(allocCall)))
+    }
+
+    // <body>
+    val bodyAst = body(mkTmpIdent)
+
+    // tmp
+    val retAst = mkTmpIdent(node)
+
+    // BLOCK { ... }
+    val block    = blockNode(node, code(node), typeFullName)
+    val blockAst = Ast(block).withChildren(Seq(localAst_, allocAssignAst) ++ bodyAst ++ Seq(retAst))
+
+    contextStack.pop()
+    blockAst
+  }
+
+  // ArrayExpr =
+  //  Attr* '[' (
+  //    (Expr (',' Expr)* ','?)?
+  //  | Expr ';' Expr
+  //  )']'
+  private def visitArrayExpr(arrayExpr: ArrayExpr): Ast = {
+    val isRepeatForm = arrayExpr.semicolonToken.isDefined
+    if (isRepeatForm) {
+      lowerRepeatInArrayExpr(arrayExpr)
+    } else {
+      lowerArrayInitializerExpr(arrayExpr)
+    }
+  }
+
+  private def lowerArrayInitializerExpr(arrayExpr: ArrayExpr): Ast = {
+    val typeFullName = typeFullNameForExpr(arrayExpr)
+    val callNode     = operatorCallNode(arrayExpr, code(arrayExpr), Operators.arrayInitializer, Some(typeFullName))
+    callAst(callNode, arrayExpr.expr.map(visitExpr))
+  }
+
+  private def lowerRepeatInArrayExpr(arrayExpr: ArrayExpr): Ast = {
+    val typeFullName = typeFullNameForExpr(arrayExpr)
+    val callNode     = operatorCallNode(arrayExpr, code(arrayExpr), RustOperators.repeatInArray, Some(typeFullName))
+    val Seq(value, count) = arrayExpr.expr
+    val valueAst          = visitExpr(value)
+    val countAst          = count match {
+      case underscoreExpr: UnderscoreExpr =>
+        Ast(literalNode(underscoreExpr, code(underscoreExpr), typeFullNameForExpr(underscoreExpr)))
+      case other =>
+        visitExpr(other)
+    }
+    callAst(callNode, Seq(valueAst, countAst))
+  }
+
+  // FieldExpr =
+  //  Attr* Expr '.' NameRef
+  private def visitFieldExpr(fieldExpr: FieldExpr): Ast = {
+    val baseAst      = visitExpr(fieldExpr.expr)
+    val typeFullName = typeFullNameForExpr(fieldExpr)
+    val nameRef      = fieldExpr.nameRef
+    val fieldName    = code(nameRef)
+    fieldAccessAst(fieldExpr, nameRef, baseAst, code(fieldExpr), fieldName, typeFullName)
+  }
+
+  // MethodCallExpr =
+  //  Attr* receiver:Expr '.' NameRef GenericArgList? ArgList
+  private def visitMethodCallExpr(methodCallExpr: MethodCallExpr): Ast = {
+    val methodName            = code(methodCallExpr.nameRef)
+    val methodFullName        = methodFullNameForMethodCallExpr(methodCallExpr)
+    val typeFullName          = typeFullNameForExpr(methodCallExpr)
+    val receiverAst           = visitExpr(methodCallExpr.expr)
+    val (dispatch, signature) = if (receiverAst.rootType.exists(isTraitObject)) {
+      // TODO: avoid this trait name extraction from the methodFullName
+      (DispatchTypes.DYNAMIC_DISPATCH, Some(methodFullName.split(PathSep).dropRight(1).mkString(PathSep)))
+    } else { (DispatchTypes.STATIC_DISPATCH, None) }
+    val call =
+      callNode(
+        methodCallExpr,
+        code(methodCallExpr),
+        methodName,
+        methodFullName,
+        dispatch,
+        signature,
+        Some(typeFullName)
+      )
+    val args = methodCallExpr.argList.expr.map(visitExpr)
+    callAst(call, args, base = Some(receiverAst))
+  }
+
+  // Currently, only `dyn` are considered dynamically dispatched. We may want to extend rust_ast_gen with semantic
+  // information later.
+  private def isTraitObject(typeFullName: String): Boolean = {
+    stripReference(typeFullName).startsWith("dyn ")
+  }
+
+  private def stripReference(typeFullName: String): String = {
+    typeFullName.stripPrefix("&").stripPrefix("mut ")
+  }
+
+  // AwaitExpr =
+  //  Attr* Expr '.' 'await'
+  private def visitAwaitExpr(awaitExpr: AwaitExpr): Ast = {
+    val typeFullName = typeFullNameForExpr(awaitExpr)
+    val callNode     = operatorCallNode(awaitExpr, code(awaitExpr), RustOperators.await, Some(typeFullName))
+    val exprAst      = visitExpr(awaitExpr.expr)
+    callAst(callNode, Seq(exprAst))
+  }
+
+  // TryExpr =
+  //  Attr* Expr '?'
+  private def visitTryExpr(tryExpr: TryExpr): Ast = {
+    val typeFullName = typeFullNameForExpr(tryExpr)
+    val callNode     = operatorCallNode(tryExpr, code(tryExpr), RustOperators.tryUnwrap, Some(typeFullName))
+    val exprAst      = visitExpr(tryExpr.expr)
+    callAst(callNode, Seq(exprAst))
+  }
+
+  // Enum =
+  //  Attr* Visibility?
+  //  'enum' Name GenericParamList? WhereClause?
+  //  VariantList
+  private def visitEnum(enum_ : Enum): Ast = {
+    val implementedTraits = enum_.implementedTraits.getOrElse(Nil)
+    val enumFullName      = typeFullNameForEnum(enum_)
+    val inheritsFrom      = implementedTraits.map(traitFullName => s"<$enumFullName as $traitFullName>")
+    val typeDecl          = typeDeclForEnum(enum_, inheritsFrom)
+    val attributes        = enum_.attr.map(visitAttr)
+
+    contextStack.pushTypeDecl(typeDecl)
+    val variantAsts = enum_.variantList.variant.flatMap(lowerVariant(_, typeDecl.fullName))
+    contextStack.pop()
+
+    Ast(typeDecl).withChildren(variantAsts).withChildren(attributes)
+  }
+
+  // Variant =
+  //  Attr* Visibility?
+  //  Name FieldList? ('=' ConstArg)?
+  private def lowerVariant(variant: Variant, enumFullName: String): Seq[Ast] = variant.fieldList match {
+    case None                                   => lowerUnitVariant(variant, enumFullName) :: Nil
+    case Some(recordFieldList: RecordFieldList) => lowerRecordVariant(variant, enumFullName, recordFieldList) :: Nil
+    case Some(tupleFieldList: TupleFieldList)   => lowerTupleVariant(variant, enumFullName, tupleFieldList)
+  }
+
+  private def lowerUnitVariant(variant: Variant, enumFullName: String): Ast = {
+    val typeDecl   = typeDeclForVariant(variant, enumFullName)
+    val attributes = variant.attr.map(visitAttr)
+
+    contextStack.pushTypeDecl(typeDecl)
+    val ctorAst = structCtorMethodAst(variant, typeDecl, Nil)
+    contextStack.pop()
+
+    Ast(typeDecl).withChild(ctorAst).withChildren(attributes)
+  }
+
+  private def lowerRecordVariant(variant: Variant, enumFullName: String, recordFieldList: RecordFieldList): Ast = {
+    val typeDecl   = typeDeclForVariant(variant, enumFullName)
+    val attributes = variant.attr.map(visitAttr)
+
+    contextStack.pushTypeDecl(typeDecl)
+    val ctorAst = structCtorMethodAst(variant, typeDecl, recordFieldData(recordFieldList))
+    contextStack.pop()
+
+    Ast(typeDecl)
+      .withChildren(visitRecordFieldList(recordFieldList) :+ ctorAst)
+      .withChildren(attributes)
+  }
+
+  private def lowerTupleVariant(variant: Variant, enumFullName: String, tupleFieldList: TupleFieldList): Seq[Ast] = {
+    val typeDecl     = typeDeclForVariant(variant, enumFullName)
+    val fields       = tupleStructFieldData(tupleFieldList)
+    val ctorFullName = variant.methodFullName.getOrElse(typeDecl.fullName)
+    val attributes   = variant.attr.map(visitAttr)
+
+    contextStack.pushTypeDecl(typeDecl)
+    val ctorAst = structCtorMethodAst(variant, typeDecl, fields)
+    contextStack.pop()
+
+    val typeDeclAst =
+      Ast(typeDecl)
+        .withChildren(visitTupleFieldList(tupleFieldList) :+ ctorAst)
+        .withChildren(attributes)
+    val ctorWrapperAst = tupleStructCtorWrapperAst(variant, typeDecl, ctorFullName, enumFullName, fields)
+
+    Seq(typeDeclAst, ctorWrapperAst)
+  }
+
+  // Struct =
+  //  Attr* Visibility?
+  //  'struct' Name GenericParamList? (
+  //    WhereClause? (RecordFieldList | ';')
+  //  | TupleFieldList WhereClause? ';'
+  //  )
+  private def visitStruct(struct: Struct): Seq[Ast] = {
+    (struct.recordFieldList, struct.tupleFieldList) match {
+      case (Some(recordFieldList), _)   => lowerRecordStruct(struct, recordFieldList) :: Nil
+      case (None, Some(tupleFieldList)) => lowerTupleStruct(struct, tupleFieldList)
+      case (None, None)                 => lowerUnitStruct(struct) :: Nil
+    }
+  }
+
+  // `struct Foo;` becomes:
+  // TYPE_DECL Foo
+  //   CONSTRUCTOR <init>(self: Foo) -> () {}
+  private def lowerUnitStruct(struct: Struct): Ast = {
+    val implementedTraits = struct.implementedTraits.getOrElse(Nil)
+    val structFullName    = typeFullNameForStruct(struct)
+    val inheritsFrom      = implementedTraits.map(traitFullName => s"<$structFullName as $traitFullName>")
+    val typeDecl          = typeDeclForStruct(struct, inheritsFrom)
+    val attributes        = struct.attr.map(visitAttr)
+
+    contextStack.pushTypeDecl(typeDecl)
+    val ctorAst = structCtorMethodAst(struct, typeDecl, Nil)
+    contextStack.pop()
+
+    Ast(typeDecl).withChild(ctorAst).withChildren(attributes)
+  }
+
+  // `struct Foo { x: T, ... }` becomes:
+  // TYPE_DECL Foo
+  //   MEMBER x: T
+  //   ...
+  //   CONSTRUCTOR <init>(self: Foo, x: T, ...) -> () {
+  //     self.x = x
+  //     ...
+  //   }
+  private def lowerRecordStruct(struct: Struct, recordFieldList: RecordFieldList): Ast = {
+    val implementedTraits = struct.implementedTraits.getOrElse(Nil)
+    val structFullName    = typeFullNameForStruct(struct)
+    val inheritsFrom      = implementedTraits.map(traitFullName => s"<$structFullName as $traitFullName>")
+    val typeDecl          = typeDeclForStruct(struct, inheritsFrom)
+    val attributes        = struct.attr.map(visitAttr)
+
+    contextStack.pushTypeDecl(typeDecl)
+    val ctorAst = structCtorMethodAst(struct, typeDecl, recordFieldData(recordFieldList))
+    contextStack.pop()
+
+    Ast(typeDecl)
+      .withChildren(visitRecordFieldList(recordFieldList) :+ ctorAst)
+      .withChildren(attributes)
+  }
+
+  // `struct Foo(T1, T2, ...);` becomes:
+  //  TYPE_DECL Foo
+  //    MEMBER 0: T1
+  //    MEMBER 1: T2
+  //    ...
+  //    CONSTRUCTOR <init>(self: Foo, 0: T1, 1: T2, ...)` -> () {
+  //      self.0 = 0
+  //      self.1 = 1
+  //      ...
+  //    }
+  //  METHOD Foo(0: T1, 1: T2, ...) -> Foo {
+  //    LOCAL tmp
+  //    tmp = <operator>.alloc
+  //    Foo::<init>(tmp, 0, 1)
+  //    return tmp
+  //  }
+  // NB: tuple struct literals, e.g. `Foo(1, 2)`, are regular calls, hence the extra method.
+  private def lowerTupleStruct(struct: Struct, tupleFieldList: TupleFieldList): Seq[Ast] = {
+    val implementedTraits = struct.implementedTraits.getOrElse(Nil)
+    val structFullName    = typeFullNameForStruct(struct)
+    val inheritsFrom      = implementedTraits.map(traitFullName => s"<$structFullName as $traitFullName>")
+    val typeDecl          = typeDeclForStruct(struct, inheritsFrom)
+    val fields            = tupleStructFieldData(tupleFieldList)
+    val attributes        = struct.attr.map(visitAttr)
+
+    contextStack.pushTypeDecl(typeDecl)
+    val ctorAst = structCtorMethodAst(struct, typeDecl, fields)
+    contextStack.pop()
+
+    val typeDeclAst =
+      Ast(typeDecl)
+        .withChildren(visitTupleFieldList(tupleFieldList) :+ ctorAst)
+        .withChildren(attributes)
+    val ctorWrapperAst = tupleStructCtorWrapperAst(
+      struct,
+      typeDecl,
+      struct.methodFullName.getOrElse(composeRustFullName(typeDecl.name)),
+      typeDecl.fullName,
+      fields
+    )
+
+    Seq(typeDeclAst, ctorWrapperAst)
+  }
+
+  private def tupleStructCtorWrapperAst(
+    node: VariantDef,
+    typeDecl: NewTypeDecl,
+    fullName: String,
+    returnTypeFullName: String,
+    fields: Seq[(node: RustNode, name: String, typ: String)]
+  ): Ast = {
+    val fnName = typeDecl.name
+    val method = methodNode(node, fnName).code(fnName).fullName(fullName)
+
+    contextStack.pushMethod(method)
+    val tmpName = contextStack.nextTmpName()
+
+    val fieldParams = fields.zipWithIndex.map { case (fieldData, index) =>
+      parameterInNode(
+        node = fieldData.node,
+        name = fieldData.name,
+        code = fieldData.name,
+        index = index + 1,
+        isVariadic = false,
+        evaluationStrategy = EvaluationStrategies.BY_SHARING,
+        typeFullName = fieldData.typ
+      )
+    }
+
+    val local = localNode(node, tmpName, tmpName, typeDecl.fullName)
+
+    // tmp = <operator>.alloc
+    val allocAssignAst = {
+      val allocCall   = operatorCallNode(node, Operators.alloc, Operators.alloc, Some(typeDecl.fullName))
+      val tmpIdentAst = Ast(identifierNode(node, tmpName, tmpName, typeDecl.fullName))
+      callAst(assignmentNode(node, s"$tmpName = ${Operators.alloc}"), Seq(tmpIdentAst, Ast(allocCall)))
+    }
+
+    // Foo::<init>(tmp, 0, 1, ...)
+    val initCallAst = {
+      val initName = Defines.ConstructorMethodName
+      val initCode = s"$fnName::$initName(${(tmpName +: fields.map(_.name)).mkString(", ")})"
+      val initCall = callNode(
+        node = node,
+        code = initCode,
+        name = initName,
+        methodFullName = combineRustFullName(typeDecl.fullName, initName),
+        dispatchType = DispatchTypes.STATIC_DISPATCH,
+        signature = None,
+        typeFullName = Some("()")
+      )
+      val tmpIdentAst = Ast(identifierNode(node, tmpName, tmpName, typeDecl.fullName))
+      val fieldArgs   = fields.map { fieldData =>
+        Ast(identifierNode(fieldData.node, fieldData.name, fieldData.name, fieldData.typ))
+      }
+
+      callAst(initCall, fieldArgs, base = Some(tmpIdentAst))
+    }
+
+    // return tmp
+    val retAst = returnAst(
+      returnNode(node, s"return $tmpName"),
+      Seq(Ast(identifierNode(node, tmpName, tmpName, typeDecl.fullName)))
+    )
+
+    val bodyAst = blockAst(blockNode(node), List(Ast(local), allocAssignAst, initCallAst, retAst))
+    contextStack.pop()
+
+    methodAst(method, fieldParams.map(Ast(_)), bodyAst, methodReturnNode(node, returnTypeFullName))
+  }
+
+  private def tupleStructFieldData(tupleFieldList: TupleFieldList): Seq[(node: RustNode, name: String, typ: String)] = {
+    tupleFieldList.tupleField.zipWithIndex.map { case (field, index) =>
+      (node = field, name = index.toString, typ = typeFullNameForType(field.typ))
+    }
+  }
+
+  private def recordFieldData(recordFieldList: RecordFieldList): Seq[(node: RustNode, name: String, typ: String)] = {
+    recordFieldList.recordField.map { field =>
+      (node = field, name = code(field.name), typ = typeFullNameForType(field.typ))
+    }
+  }
+
+  private def structCtorMethodAst(
+    node: VariantDef,
+    typeDecl: NewTypeDecl,
+    fields: Seq[(node: RustNode, name: String, typ: String)]
+  ): Ast = {
+    val selfName  = "self"
+    val method    = methodNode(node, Defines.ConstructorMethodName).code(Defines.ConstructorMethodName)
+    val selfParam = parameterInNode(
+      node = node,
+      name = selfName,
+      code = selfName,
+      index = 0,
+      isVariadic = false,
+      evaluationStrategy = EvaluationStrategies.BY_SHARING,
+      typeFullName = typeDecl.fullName
+    )
+    val fieldParams = fields.zipWithIndex.map { case (fieldData, idx) =>
+      parameterInNode(
+        node = fieldData.node,
+        name = fieldData.name,
+        code = fieldData.name,
+        index = idx + 1,
+        isVariadic = false,
+        evaluationStrategy = EvaluationStrategies.BY_SHARING,
+        typeFullName = fieldData.typ
+      )
+    }
+
+    // self.x = x; etc.
+    val fieldAssignAsts = fields.zip(fieldParams).map { case (fieldData, fieldParam) =>
+      val selfAst = identifierAst(fieldData.node, selfName, selfName, typeDecl.fullName)
+      val lhs     = fieldAccessAst(
+        fieldData.node,
+        fieldData.node,
+        selfAst,
+        s"$selfName.${fieldData.name}",
+        fieldData.name,
+        fieldData.typ
+      )
+      val rhs = identifierAst(fieldData.node, fieldData.name, fieldData.name, fieldData.typ)
+      callAst(assignmentNode(fieldData.node, s"$selfName.${fieldData.name} = ${fieldData.name}"), Seq(lhs, rhs))
+    }
+
+    val paramAsts = (selfParam +: fieldParams).map(Ast(_))
+    val bodyAst   = blockAst(blockNode(node), fieldAssignAsts.toList)
+    methodAst(
+      method = method,
+      parameters = paramAsts,
+      body = bodyAst,
+      methodReturn = methodReturnNode(node, "()"),
+      modifiers = Seq(modifierNode(node, ModifierTypes.CONSTRUCTOR))
+    )
+  }
+
+  // RecordFieldList =
+  // '{' fields:(RecordField (',' RecordField)* ','?)? '}'
+  private def visitRecordFieldList(recordFieldList: RecordFieldList): Seq[Ast] = {
+    recordFieldList.recordField.map(visitRecordField)
+  }
+
+  // RecordField =
+  //  Attr* Visibility? 'unsafe'?
+  //  Name ':' Type ('=' default_val:ConstArg)?
+  private def visitRecordField(recordField: RecordField): Ast = {
+    val attributes = recordField.attr.map(visitAttr)
+    Ast(memberNode(recordField, code(recordField.name), code(recordField), typeFullNameForType(recordField.typ)))
+      .withChildren(attributes)
+  }
+
+  // TupleFieldList =
+  //  '(' fields:(TupleField (',' TupleField)* ','?)? ')'
+  private def visitTupleFieldList(tupleFieldList: TupleFieldList): Seq[Ast] = {
+    tupleFieldList.tupleField.zipWithIndex.map { case (tupleField, index) => visitTupleField(tupleField, index) }
+  }
+
+  // TupleField =
+  //  Attr* Visibility?
+  //  Type
+  private def visitTupleField(tupleField: TupleField, index: Int): Ast = {
+    val attributes = tupleField.attr.map(visitAttr)
+    Ast(memberNode(tupleField, index.toString, code(tupleField), typeFullNameForType(tupleField.typ)))
+      .withChildren(attributes)
+  }
+
+  // Nil on purpose: we don't have a suitable CPG representation for macro declarations.
+  // Instead, we rely on rust_ast_gen to expand them and we inline their expansion while visiting MacroCalls.
+  private def visitMacroRules(macroRules: MacroRules): Seq[Ast] = Nil
+  private def visitMacroDef(macroDef: MacroDef): Seq[Ast]       = Nil
+
+  // MacroExpr =
+  //  MacroCall
+  private def visitMacroExpr(macroExpr: MacroExpr): Ast = {
+    visitMacroCall(macroExpr.macroCall) match {
+      case Nil            => macroNotExpanded(macroExpr.macroCall)
+      case exprAst :: Nil => exprAst
+      case asts => blockAst(blockNode(macroExpr, code(macroExpr), typeFullNameForExpr(macroExpr)), asts.toList)
+    }
+  }
+
+  // MacroCall =
+  //  Attr* Path '!' TokenTree ';'?
+  private def visitMacroCall(macroCall: MacroCall): Seq[Ast] = {
+    withMacroCall(macroCall) {
+      macroCall.macroExpansion match {
+        case None                         => macroNotExpanded(macroCall) :: Nil
+        case Some(macroItems: MacroItems) => visitMacroItems(macroItems)
+        case Some(macroStmts: MacroStmts) => visitMacroStmts(macroStmts)
+        case Some(expr: Expr)             => visitExpr(expr) :: Nil
+        case Some(other)                  => notHandledYet(other) :: Nil
+      }
+    }
+  }
+
+  // MacroStmts =
+  //  statements:Stmt*
+  //  Expr?
+  private def visitMacroStmts(macroStmts: MacroStmts): Seq[Ast] = {
+    val stmtAsts = macroStmts.stmt.flatMap(visitStmt)
+
+    // When the tail expr is itself another macro call, expand and inline it.
+    val tailExprAst = macroStmts.expr.toList.flatMap {
+      case macroExpr: MacroExpr => visitMacroCall(macroExpr.macroCall)
+      case expr                 => visitExpr(expr) :: Nil
+    }
+
+    stmtAsts ++ tailExprAst
+  }
+
+  // MacroItems =
+  //  Item*
+  private def visitMacroItems(macroItems: MacroItems): Seq[Ast] = {
+    macroItems.item.flatMap(visitItem)
+  }
+
+  // FormatArgsExpr =
+  //  Attr* 'builtin' '#' 'format_args' '('
+  //  template:Expr
+  //  (',' args:(FormatArgsArg (',' FormatArgsArg)* ','?)? )?
+  //  ')'
+  // The result of expanding `format!("...", args...)`.
+  // Lowered as formatString("...", formattedValue(arg0), ..., formattedValue(arg_n)).
+  private def visitFormatArgsExpr(formatArgsExpr: FormatArgsExpr): Ast = {
+    val typeFullName = typeFullNameForExpr(formatArgsExpr)
+    val callNode    = operatorCallNode(formatArgsExpr, code(formatArgsExpr), Operators.formatString, Some(typeFullName))
+    val templateAst = visitExpr(formatArgsExpr.expr)
+    val argAsts     = formatArgsExpr.formatArgsArg.map(visitFormatArgsArg)
+
+    callAst(callNode, templateAst +: argAsts)
+  }
+
+  // FormatArgsArg =
+  //  arg_name:FormatArgsArgName? Expr
+  private def visitFormatArgsArg(formatArgsArg: FormatArgsArg): Ast = {
+    val typeFullName = typeFullNameForExpr(formatArgsArg.expr)
+    val callNode = operatorCallNode(formatArgsArg, code(formatArgsArg), Operators.formattedValue, Some(typeFullName))
+    val argAst   = visitExpr(formatArgsArg.expr)
+    val specAst  = formatArgsArg.formatSpec.map(literalNode(formatArgsArg, _, "&str")).map(Ast(_))
+
+    callAst(callNode, argAst +: specAst.toSeq)
+  }
+
+  // RangeExpr =
+  //  Attr* start:Expr? op:('..' | '..=') end:Expr?
+  private def visitRangeExpr(rangeExpr: RangeExpr): Ast = {
+    (rangeExpr.start, rangeExpr.end, rangeExpr.isInclusive) match {
+      // NB: RangeInclusive (a..=b) has private start/end fields + a `new` constructor, whereas
+      // the remaining ranges have no constructor but public start/end fields. Hence the special
+      // treatment here.
+      case (Some(start), Some(end), true) =>
+        // TODO(rust_ast_gen) matches the stdlib type, but it ideally would come from rust_ast_gen.
+        val methodFullName = "core::ops::range::RangeInclusive<Idx>::new"
+        val call           = callNode(
+          rangeExpr,
+          code(rangeExpr),
+          "new",
+          methodFullName,
+          DispatchTypes.STATIC_DISPATCH,
+          None,
+          Some(typeFullNameForExpr(rangeExpr))
+        )
+        callAst(call, Seq(visitRhsExpr(start), visitRhsExpr(end)))
+      case (start, end, _) =>
+        val rangeType = typeFullNameForExpr(rangeExpr)
+        val tmpName   = contextStack.nextTmpName()
+        allocBlockAst(rangeExpr, tmpName, rangeType) { mktmpIdent =>
+          def mkAssign(fieldName: String, expr: Expr): Ast = {
+            val fieldType = typeFullNameForExpr(expr)
+            val lhs       = fieldAccessAst(expr, expr, mktmpIdent(expr), s"$tmpName.$fieldName", fieldName, fieldType)
+            callAst(assignmentNode(expr, s"$tmpName.$fieldName = ${code(expr)}"), Seq(lhs, visitRhsExpr(expr)))
+          }
+          (start.map(mkAssign("start", _)) ++ end.map(mkAssign("end", _))).toSeq
+        }
+    }
+  }
+
+  // MatchExpr =
+  //  Attr* 'match' Expr MatchArmList
+  //
+  // `match e { pat => body, ... }` becomes:
+  //
+  // BLOCK {
+  //  LOCAL tmp
+  //  tmp = e
+  //  MATCH (tmp) {
+  //    JUMP_TARGET
+  //    BLOCK {
+  //      <createLocalsForBindings(pat)>
+  //      <createAssignmentsForPattern(pat, tmp)>
+  //      body
+  //    }
+  //    ...
+  //  }
+  // }
+  private def visitMatchExpr(matchExpr: MatchExpr, lowerTail: Expr => Ast): Ast = {
+    val mkSourceAst = () => visitExpr(matchExpr.expr)
+    // When it's already an identifier, we don't need to assign it a fresh tmp.
+    if (isIdentifierWithoutAdjustments(matchExpr.expr)) {
+      val armAsts      = matchExpr.matchArmList.matchArm.flatMap(lowerMatchArm(_, mkSourceAst, lowerTail))
+      val matchBodyAst = blockAst(blockNode(matchExpr.matchArmList), armAsts.toList)
+      val matchExprAst = matchAst(matchExpr, Some(mkSourceAst()), Seq(matchBodyAst))
+      Ast(blockNode(matchExpr)).withChild(matchExprAst)
+    } else {
+      val tmpName       = contextStack.nextTmpName()
+      val typeFullName  = typeFullNameForExpr(matchExpr.expr)
+      val tmpLocalAst   = Ast(localNode(matchExpr.expr, tmpName, tmpName, typeFullName))
+      val mkTmpIdentAst = () => Ast(identifierNode(matchExpr.expr, tmpName, tmpName, typeFullName))
+      val tmpAssignAst  = callAst(
+        assignmentNode(matchExpr.expr, s"$tmpName = ${code(matchExpr.expr)}"),
+        Seq(mkTmpIdentAst(), mkSourceAst())
+      )
+      val armAsts      = matchExpr.matchArmList.matchArm.flatMap(lowerMatchArm(_, mkTmpIdentAst, lowerTail))
+      val matchBodyAst = blockAst(blockNode(matchExpr.matchArmList), armAsts.toList)
+      val matchExprAst = matchAst(matchExpr, Some(mkTmpIdentAst()), Seq(matchBodyAst))
+      Ast(blockNode(matchExpr)).withChildren(Seq(tmpLocalAst, tmpAssignAst, matchExprAst))
+    }
+  }
+
+  private def isIdentifierWithoutAdjustments(expr: Expr): Boolean = expr match {
+    case pathExpr: PathExpr => pathExpr.path.path.isEmpty && pathExpr.adjustments.forall(_.isEmpty)
+    case _                  => false
+  }
+
+  private def lowerMatchArm(matchArm: MatchArm, mkSourceAst: () => Ast, lowerTail: Expr => Ast): Seq[Ast] = {
+    contextStack.pushBlock()
+    val bindingAsts = createLocalsForBindings(collectPatternBindings(matchArm.pat)) ++ createAssignmentsForPattern(
+      matchArm.pat,
+      mkSourceAst
+    )
+    val mkArmBodyAst = () =>
+      matchArm.expr match {
+        case blockExpr: BlockExpr => visitBlockExpr(blockExpr, lowerTail)
+        case expr: Expr           => lowerTail(expr)
+      }
+    val bodyAsts = matchArm.matchGuard match {
+      case Some(matchGuard) =>
+        val (guardBindingAsts, conditionAst) = lowerLetChain(matchGuard.expr)
+        guardBindingAsts :+ ifThenElseAst(matchGuard, Some(conditionAst), mkArmBodyAst(), None)
+      case None =>
+        mkArmBodyAst() :: Nil
+    }
+    contextStack.pop()
+    val caseCode = matchArm.matchGuard match {
+      case Some(matchGuard) => s"${code(matchArm.pat)} ${code(matchGuard)}"
+      case None             => code(matchArm.pat)
+    }
+    val matchArmBlock = blockAst(blockNode(matchArm), (bindingAsts ++ bodyAsts).toList)
+    val jumpTargetAst = Ast(jumpTargetNode(matchArm.pat, s"case $caseCode", caseCode))
+    Seq(jumpTargetAst, matchArmBlock)
+  }
+
+  // ClosureExpr =
+  //  Attr* ForBinder? 'const'? 'static'? 'async'? 'gen'? 'move'?  ParamList RetType?
+  //  body:Expr
+  private def visitClosureExpr(closureExpr: ClosureExpr): Ast = {
+    val closureName = nextClosureName()
+    val method      = methodNode(closureExpr, closureName)
+
+    contextStack.pushMethod(method)
+    lowerClosureExprAsDetachedAst(closureExpr, method)
+    val methodRefAst = Ast(methodRefNode(closureExpr, code(closureExpr), method.fullName, method.fullName))
+    contextStack.pop()
+
+    methodRefAst
+  }
+
+  private def lowerClosureExprAsDetachedAst(closureExpr: ClosureExpr, method: NewMethod): Unit = {
+    val attributes                       = closureExpr.attr.map(visitAttr)
+    val (paramAsts, paramAssignmentAsts) = lowerParamList(closureExpr.paramList)
+    val bodyAst                          = closureExpr.expr match {
+      case blockExpr: BlockExpr => lowerFnBody(blockExpr, paramAssignmentAsts)
+      case expr                 => Ast(blockNode(expr)).withChildren(paramAssignmentAsts :+ lowerReturnExpr(expr))
+    }
+    val retTypeFullName = closureExpr.retType match {
+      case None          => typeFullNameForExpr(closureExpr.expr)
+      case Some(retType) => typeFullNameForType(retType.typ)
+    }
+    val methodRet = methodReturnNode(closureExpr, retTypeFullName)
+    val modifiers = Seq(ModifierTypes.VIRTUAL, ModifierTypes.LAMBDA).map(modifierNode(closureExpr, _))
+    addDetachedAst(methodAstWithAnnotations(method, paramAsts, bodyAst, methodRet, modifiers, attributes))
+  }
+
+  // Use =
+  //  Attr* Visibility?
+  //  'use' UseTree ';'
+  //
+  // UseTree =
+  //  (Path? '::')? ('*' | UseTreeList)
+  // | Path Rename?
+  //
+  // UseTreeList =
+  //  '{' (UseTree (',' UseTree)* ','?)? '}'
+  private def visitUse(use: Use): Seq[Ast] = {
+    lowerUse(use, use.useTree, Nil).map(Ast(_))
+  }
+
+  private def lowerUse(use: Use, tree: UseTree, prefix: Seq[Path]): Seq[NewImport] = {
+    val path = prefix ++ tree.path
+    tree.useTreeList match {
+      case Some(useTreeList)                => useTreeList.useTree.flatMap(lowerUse(use, _, path))
+      case None if tree.starToken.isDefined => lowerWildcardImport(use, path).toList
+      case None                             => lowerNamedImport(use, path, tree.rename).toList
+    }
+  }
+
+  private def lowerWildcardImport(use: Use, prefix: Seq[Path]): Option[NewImport] = {
+    if (prefix.isEmpty) {
+      None
+    } else {
+      Some(mkImport(use, prefix, "*", isWildcard = true))
+    }
+  }
+
+  private def lowerNamedImport(use: Use, prefix: Seq[Path], alias: Option[Rename]): Option[NewImport] = {
+    prefix.lastOption.flatMap { last =>
+      code(last.pathSegment) match {
+        // `use a::b::{self}` means `use a::b as b`
+        case "self" => lowerNamedImport(use, prefix.init ++ last.path, alias)
+        case name   =>
+          val renamedAs = alias.flatMap(rename => rename.name.orElse(rename.underscoreToken)).map(code)
+          Some(mkImport(use, prefix, renamedAs.getOrElse(name)))
+      }
+    }
+  }
+
+  private def mkImport(use: Use, path: Seq[Path], importedAs: String, isWildcard: Boolean = false): NewImport = {
+    newImportNode(code(use), path.map(code).mkString(PathSep), importedAs, use, isWildcard = isWildcard)
+  }
+
+  // ExternCrate =
+  //  Attr* Visibility?
+  //  'extern' 'crate' NameRef Rename? ';'
+  private def visitExternCrate(externCrate: ExternCrate): Ast = {
+    val name      = code(externCrate.nameRef)
+    val renamedAs = externCrate.rename.flatMap(rename => rename.name.orElse(rename.underscoreToken)).map(code)
+    Ast(newImportNode(code(externCrate), name, renamedAs.getOrElse(name), externCrate))
+  }
+
+  // Attr =
+  //  '#' '!'? '[' Meta ']'
+  private def visitAttr(attr: Attr): Ast = {
+    val path = attr.meta match {
+      case pathMeta: PathMeta           => code(pathMeta.path)
+      case keyValueMeta: KeyValueMeta   => code(keyValueMeta.path)
+      case tokenTreeMeta: TokenTreeMeta => code(tokenTreeMeta.path)
+      case cfgMeta: CfgMeta             => code(cfgMeta.cfgKwToken)
+      case cfgAttrMeta: CfgAttrMeta     => code(cfgAttrMeta.cfgAttrKwToken)
+      case unsafeMeta: UnsafeMeta       => code(unsafeMeta.unsafeKwToken)
+    }
+    val name     = path.split(PathSep).lastOption.getOrElse(path)
+    val fullName = path
+    Ast(annotationNode(attr, code(attr), name, fullName))
+  }
+
+  // TypeAlias =
+  //  Attr* Visibility?
+  //  'default'?
+  //  'type' Name GenericParamList? (':' TypeBoundList?)? WhereClause?
+  //  ('=' Type)? ';'
+  private def visitTypeAlias(typeAlias: TypeAlias): Ast = {
+    val typeDecl   = typeDeclForTypeAlias(typeAlias)
+    val attributes = typeAlias.attr.map(visitAttr)
+    Ast(typeDecl).withChildren(attributes)
+  }
+
+  // Lowers a unit struct constructor e.g. `Foo` as follows:
+  // BLOCK
+  //   LOCAL tmp
+  //   tmp = <operator>.alloc
+  //   Foo::<init>(tmp)
+  //   tmp
+  private def unitCtorCallAst(pathExpr: PathExpr, ctorTypeFullName: String): Ast = {
+    val typeFullName = typeFullNameForExpr(pathExpr)
+    val tmpName      = contextStack.nextTmpName()
+
+    allocBlockAst(pathExpr, tmpName, typeFullName) { mkTmp =>
+      val initCall = callNode(
+        pathExpr,
+        code(pathExpr),
+        Defines.ConstructorMethodName,
+        combineRustFullName(ctorTypeFullName, Defines.ConstructorMethodName),
+        DispatchTypes.STATIC_DISPATCH,
+        None,
+        Some("()")
+      )
+      callAst(initCall, Nil, base = Some(mkTmp(pathExpr))) :: Nil
+    }
+  }
+}

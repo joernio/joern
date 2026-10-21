@@ -10,6 +10,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, ClosureBindi
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
+@scala.annotation.nowarn("cat=deprecation")
 class OperatorTests extends PhpCode2CpgFixture {
 
   val filenameKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
@@ -689,15 +690,12 @@ class OperatorTests extends PhpCode2CpgFixture {
       | global $a, $$a;
       |}
       |""".stripMargin)
-    inside(cpg.method.name("foo").local.l) {
-      case memA :: Nil => memA.name shouldBe "a"
-      case xs          => fail(s"Expected one member, got ${xs.name.mkString(",")}")
+    inside(cpg.method.name("foo").local.l) { case memA :: Nil =>
+      memA.name shouldBe "a"
     }
-    inside(cpg.all.collectAll[ClosureBinding].l) {
-      case bindA :: Nil =>
-        bindA.closureBindingId shouldBe Some("Test0.php:foo:a")
-        bindA._localViaRefOut.name.l shouldBe List("a")
-      case xs => fail(s"Expected one binding, got ${xs.closureBindingId.mkString(",")}")
+    inside(cpg.all.collectAll[ClosureBinding].l) { case bindA :: Nil =>
+      bindA.closureBindingId shouldBe Some("Test0.php:foo:a")
+      bindA._localViaRefOut.name.l shouldBe List("a")
     }
   }
 

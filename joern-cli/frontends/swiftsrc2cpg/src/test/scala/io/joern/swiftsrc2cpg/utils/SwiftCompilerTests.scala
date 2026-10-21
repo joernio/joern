@@ -47,8 +47,6 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
 
     private val HelloWorldSwiftContent =
       """
-        |import Foundation
-        |
         |public class HelloWorld {
         |
         |	private let greeting: String = "Hello World"
@@ -88,7 +86,6 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
 
     private val MainSwiftContent: String =
       """
-        |import Foundation
         |import SwiftHelloWorldLib
         |
         |@main
@@ -261,7 +258,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         "HelloWorldSwift.swift",
         "class_decl",
         (20, 237),
-        Some("SwiftHelloWorldLib.HelloWorld"),
+        Some("SwiftHelloWorldLib.HelloWorld.Type"),
         Some("SwiftHelloWorldLib.HelloWorld")
       ),
       (
@@ -360,9 +357,9 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       ("HelloWorldSwift.swift", "string_literal_expr", (123, 123), Some("Swift.String"), None),
       ("HelloWorldSwift.swift", "string_literal_expr", (206, 206), Some("Swift.String"), None),
       ("HelloWorldSwift.swift", "string_literal_expr", (79, 79), Some("Swift.String"), None),
-      ("HelloWorldSwift.swift", "type_expr", (204, 204), Some("Swift.String"), None),
-      ("HelloWorldSwift.swift", "type_expr", (215, 215), Some("Swift.String"), None),
-      ("HelloWorldSwift.swift", "type_expr", (222, 222), Some("Swift.String"), None),
+      ("HelloWorldSwift.swift", "type_expr", (204, 204), Some("Swift.String.Type"), None),
+      ("HelloWorldSwift.swift", "type_expr", (215, 215), Some("Swift.String.Type"), None),
+      ("HelloWorldSwift.swift", "type_expr", (222, 222), Some("Swift.String.Type"), None),
       (
         "HelloWorldSwift.swift",
         "var_decl",
@@ -441,8 +438,8 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       ),
       ("Main.swift", "return_stmt", (46, 46), Some("Swift.Void"), None),
       ("Main.swift", "string_literal_expr", (147, 147), Some("Swift.String"), None),
-      ("Main.swift", "struct_decl", (46, 158), Some("SwiftHelloWorld.Main"), Some("SwiftHelloWorld.Main")),
-      ("Main.swift", "type_expr", (112, 112), Some("SwiftHelloWorldLib.HelloWorld"), None),
+      ("Main.swift", "struct_decl", (46, 158), Some("SwiftHelloWorld.Main.Type"), Some("SwiftHelloWorld.Main")),
+      ("Main.swift", "type_expr", (112, 112), Some("SwiftHelloWorldLib.HelloWorld.Type"), None),
       ("Main.swift", "var_decl", (102, 102), Some("SwiftHelloWorldLib.HelloWorld"), None)
     )
 
@@ -536,7 +533,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
     "generate mapping from Json with split correctly" in {
       val mapping  = new MutableSwiftTypeMapping
       val provider = new SwiftTypesProvider(Config().withInputPath("."), Nil)
-      val input =
+      val input    =
         s"${SwiftCompilerTestsFixture.JsonStringHelloWorldSwift}${SwiftCompilerTestsFixture.JsonStringMain}Error: some error foo"
       provider.mappingFromJson(input, mapping)
       toResultList(mapping) shouldBe SwiftCompilerTestsFixture.ExpectedMapping
@@ -581,57 +578,57 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
           mainMappings should contain(
             (
               "call_expr",
-              (112, 124),
+              (94, 106),
               Some("SwiftHelloWorldLib.HelloWorld"),
               Some("SwiftHelloWorldLib.HelloWorld.init()->SwiftHelloWorldLib.HelloWorld")
             )
           )
           mainMappings should contain(
-            ("call_expr", (127, 152), Some("()"), Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()"))
+            ("call_expr", (109, 134), Some("()"), Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()"))
           )
           mainMappings should contain(
             (
               "constructor_ref_call_expr",
-              (112, 112),
+              (94, 94),
               Some("()->SwiftHelloWorldLib.HelloWorld"),
               Some("SwiftHelloWorldLib.HelloWorld.init()->SwiftHelloWorldLib.HelloWorld")
             )
           )
           mainMappings should contain oneElementOf List(
-            ("func_decl", (67, 155), Some("Swift.Void"), Some("SwiftHelloWorld.Main.main()->()")),
+            ("func_decl", (49, 137), Some("Swift.Void"), Some("SwiftHelloWorld.Main.main()->()")),
             // TODO: in preparation for Swift 6.2.x migration, Void changed to () just like in the function signature
-            ("func_decl", (67, 155), Some("()"), Some("SwiftHelloWorld.Main.main()->()"))
+            ("func_decl", (49, 137), Some("()"), Some("SwiftHelloWorld.Main.main()->()"))
           )
-          mainMappings should contain(("var_decl", (102, 102), Some("SwiftHelloWorldLib.HelloWorld"), None))
+          mainMappings should contain(("var_decl", (84, 84), Some("SwiftHelloWorldLib.HelloWorld"), None))
 
           helloWorldMappings should contain(
             (
               "accessor_decl",
-              (106, 106),
+              (87, 87),
               Some("Swift.String"),
               Some("SwiftHelloWorldLib.HelloWorld.suffix.getter:Swift.String")
             )
           )
 
           helloWorldMappings should contain(
-            ("accessor_decl", (225, 310), Some("()"), Some("SwiftHelloWorldLib.HelloWorld.members.setter:Swift.Int"))
+            ("accessor_decl", (206, 291), Some("()"), Some("SwiftHelloWorldLib.HelloWorld.members.setter:Swift.Int"))
           )
 
           helloWorldMappings should contain(
-            ("class_decl", (20, 497), Some("SwiftHelloWorldLib.HelloWorld"), Some("SwiftHelloWorldLib.HelloWorld"))
+            ("class_decl", (1, 478), Some("SwiftHelloWorldLib.HelloWorld.Type"), Some("SwiftHelloWorldLib.HelloWorld"))
           )
 
           helloWorldMappings should contain oneElementOf List(
             // TODO: in preparation for Swift 6.2.x migration, modifiers are actually honored in constructor decl positions
             (
               "constructor_decl",
-              (374, 405),
+              (355, 386),
               Some("(SwiftHelloWorldLib.HelloWorld.Type)->()->SwiftHelloWorldLib.HelloWorld"),
               Some("SwiftHelloWorldLib.HelloWorld.init()->SwiftHelloWorldLib.HelloWorld")
             ),
             (
               "constructor_decl",
-              (381, 405),
+              (362, 386),
               Some("(SwiftHelloWorldLib.HelloWorld.Type)->()->SwiftHelloWorldLib.HelloWorld"),
               Some("SwiftHelloWorldLib.HelloWorld.init()->SwiftHelloWorldLib.HelloWorld")
             )
@@ -639,13 +636,13 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
 
           helloWorldMappings should contain oneElementOf List(
             // TODO: in preparation for Swift 6.2.x migration, modifiers are actually honored in func decl positions
-            ("func_decl", (408, 494), Some("()"), Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()")),
-            ("func_decl", (415, 494), Some("()"), Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()"))
+            ("func_decl", (389, 475), Some("()"), Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()")),
+            ("func_decl", (396, 475), Some("()"), Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()"))
           )
           helloWorldMappings should contain(
             (
               "member_ref_expr",
-              (455, 455),
+              (436, 436),
               Some("Swift.String"),
               Some("SwiftHelloWorldLib.HelloWorld.greeting:Swift.String")
             )
@@ -653,16 +650,16 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
           helloWorldMappings should contain(
             (
               "member_ref_expr",
-              (484, 484),
+              (465, 465),
               Some("Swift.String"),
               Some("SwiftHelloWorldLib.HelloWorld.suffix:Swift.String")
             )
           )
           helloWorldMappings should contain(
-            ("var_decl", (60, 60), Some("Swift.String"), Some("SwiftHelloWorldLib.HelloWorld.greeting:Swift.String"))
+            ("var_decl", (41, 41), Some("Swift.String"), Some("SwiftHelloWorldLib.HelloWorld.greeting:Swift.String"))
           )
           helloWorldMappings should contain(
-            ("var_decl", (106, 106), Some("Swift.String"), Some("SwiftHelloWorldLib.HelloWorld.suffix:Swift.String"))
+            ("var_decl", (87, 87), Some("Swift.String"), Some("SwiftHelloWorldLib.HelloWorld.suffix:Swift.String"))
           )
         case None =>
           fail("Can't build the SwiftTypesProvider")

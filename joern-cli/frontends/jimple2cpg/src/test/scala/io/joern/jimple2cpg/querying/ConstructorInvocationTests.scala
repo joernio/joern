@@ -97,7 +97,7 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
   "it should create joint `alloc` and `init` calls for a constructor invocation in a vardecl" in {
     cpg.typeDecl.name("Bar").method.name("test1").l match {
       case List(method) =>
-        val List(_: Local, _: Local, assign: Call, init: Call, _: Call, _: Return) =
+        val List(_: Local, assign: Call, init: Call, _: Return) =
           method.astChildren.isBlock.astChildren.l: @unchecked
 
         assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
@@ -134,7 +134,7 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
   "it should create joint `alloc` and `init` calls for a constructor invocation in an assignment" in {
     cpg.typeDecl.name("Bar").method.name("test2").l match {
       case List(method) =>
-        val List(_: Local, _: Local, assign: Call, init: Call, _: Call, _: Return) =
+        val List(assign: Call, init: Call, _: Return) =
           method.astChildren.isBlock.astChildren.l: @unchecked
 
         assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
@@ -153,14 +153,14 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int,int)"
-        init.code shouldBe "$stack1.Bar(4, 2)"
+        init.code shouldBe "b.Bar(4, 2)"
 
         init.argument.size shouldBe 3
         val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l: @unchecked
         obj.argumentIndex shouldBe 0
-        obj.name shouldBe "$stack1"
+        obj.name shouldBe "b"
         obj.typeFullName shouldBe "Bar"
-        obj.code shouldBe "$stack1"
+        obj.code shouldBe "b"
         initArg1.code shouldBe "4"
         initArg2.code shouldBe "2"
 
@@ -219,7 +219,7 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
         init.signature shouldBe "void(int)"
 
         val List(temp: Identifier, add: Call) = assignAddition.argument.l: @unchecked
-        temp.name shouldBe "$stack3"
+        temp.name shouldBe "x"
         temp.argumentIndex shouldBe 1
         temp.typeFullName shouldBe "int"
 
@@ -230,7 +230,7 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
         obj.argumentIndex shouldBe 0
         obj.typeFullName shouldBe "Bar"
 
-        additionResultPointer.code shouldBe "$stack3"
+        additionResultPointer.code shouldBe "x"
 
       case res => fail(s"Expected Bar constructor but found $res")
     }

@@ -17,7 +17,9 @@ case class LlvmCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
     runShellCommand(command, arguments).map(_ => outputPath)
   }
 
-  override def isAvailable: Boolean = rootPath.resolve("llvm2cpg.sh").toFile.exists()
+  override def isAvailable: Boolean = {
+    rootPath.resolve("llvm2cpg.sh").toFile.exists()
+  }
 
   override def isJvmBased = false
 }

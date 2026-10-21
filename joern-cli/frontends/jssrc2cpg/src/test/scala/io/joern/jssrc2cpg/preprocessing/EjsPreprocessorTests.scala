@@ -123,11 +123,11 @@ class EjsPreprocessorTests extends AnyWordSpec with Matchers {
         """
           |      
           |
-          |                user.name ;      
+          |            ap( user.name );     
           |
           |       foo.callWithWhitespaces() ;      
           |
-          |       foo.callUnescaped() ;      
+          |   ap( foo.callUnescaped() );     
           |
           |                           
           |   if (admin) {   
@@ -136,7 +136,7 @@ class EjsPreprocessorTests extends AnyWordSpec with Matchers {
           |
           |    
           |       friends.forEach(function(friend, index) {   
-          |                       index === 0 ? "first" : "" ;      friend.name === selected ? "selected" : "" ;       friend.name ;      
+          |                   ap( index === 0 ? "first" : "" ); ap( friend.name === selected ? "selected" : "" );  ap( friend.name );     
           |       });   
           |     
           |
@@ -148,6 +148,25 @@ class EjsPreprocessorTests extends AnyWordSpec with Matchers {
           |       
           |""".stripMargin
       new EjsPreprocessor().preprocess(code) shouldBe expectedCode
+    }
+
+    "wrap an escaped output tag in a fake call" in {
+      new EjsPreprocessor().preprocess("<%= user.name %>") shouldBe "ap( user.name );"
+    }
+
+    "wrap an unescaped output tag with trim-close in a fake call" in {
+      new EjsPreprocessor().preprocess("<%- foo.bar() -%>") shouldBe "ap( foo.bar() ); "
+    }
+
+    "wrap an output tag without surrounding spaces and keep length" in {
+      val input  = "<%=x%>"
+      val output = new EjsPreprocessor().preprocess(input)
+      output shouldBe "ap(x);"
+      output.length shouldBe input.length
+    }
+
+    "leave scriptlet control-flow tags unwrapped" in {
+      new EjsPreprocessor().preprocess("<% if (a) { %>") shouldBe "   if (a) {   "
     }
   }
 

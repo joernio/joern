@@ -114,11 +114,11 @@ object CSharpProgramSummary {
     CSharpProgramSummary(fromExternalJsons(paths))
 
   private def fromExternalJsons(paths: Set[String]): NamespaceToTypeMap = {
-    val jsonFiles = paths.flatMap(SourceFiles.determine(_, Set(".json"))(Seq.empty)).toList
+    val jsonFiles    = paths.flatMap(SourceFiles.determine(_, Set(".json"))(Seq.empty)).toList
     val inputStreams = jsonFiles.flatMap { path =>
       Try(java.io.FileInputStream(path)) match {
         case Success(stream) => Some(stream)
-        case Failure(exc) =>
+        case Failure(exc)    =>
           logger.warn(s"Unable to open file: $path", exc)
           None
       }
@@ -129,7 +129,7 @@ object CSharpProgramSummary {
       mutable.Map.empty
     } else {
       jsonToInitialMapping(loadAndMergeJsonStreams(inputStreams)) match {
-        case Success(mapping) => mapping
+        case Success(mapping)   => mapping
         case Failure(exception) =>
           logger.warn("Failed to parsed merged JSON streams", exception)
           mutable.Map.empty
@@ -155,14 +155,14 @@ object CSharpProgramSummary {
 
     val mergedJson = jsonObjects
       .reduceOption((prev, curr) => {
-        curr.keys.foreach(key => {
+        curr.keys.foreach { key =>
           prev.updateWith(key) {
             case Some(x) =>
               Option(x.arr.addAll(curr.get(key).get.arr))
             case None =>
               Option(curr.get(key).get.arr)
           }
-        })
+        }
         prev
       })
       .getOrElse(LinkedHashMap[String, ujson.Value]())
@@ -198,16 +198,16 @@ object CSharpProgramSummary {
           .fromResource(builtinDirectory)
           .getLines()
           .toList
-          .flatMap(u => {
+          .flatMap { u =>
             val basePath = s"$builtinDirectory/$u"
             Source
               .fromResource(basePath)
               .getLines()
               .toList
-              .map(p => {
+              .map { p =>
                 s"$basePath/$p"
-              })
-          })
+              }
+          }
     }
     if (resourcePaths.isEmpty) {
       logger.warn("No JSON files found.")

@@ -1,13 +1,13 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class BytesLiteralCpgTests extends AnyFreeSpec with Matchers {
-  lazy val cpg = Py2CpgTestContext.buildCpg("""b"123"""".stripMargin)
+class BytesLiteralCpgTests extends PySrc2CpgFixture with Matchers {
+  val cpg = code("""b"123"""".stripMargin)
 
   "test num literal node properties" in {
     val literal = cpg.literal.head

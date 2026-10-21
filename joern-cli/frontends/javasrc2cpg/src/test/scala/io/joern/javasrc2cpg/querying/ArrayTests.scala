@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
 
+@scala.annotation.nowarn("cat=deprecation")
 class ArrayTests extends JavaSrcCode2CpgFixture {
 
   "constant array initializer expressions" should {
@@ -18,19 +19,16 @@ class ArrayTests extends JavaSrcCode2CpgFixture {
                        |}
                        |""".stripMargin)
 
-      cpg.method.name("foo").assignment.argument.l match {
-        case List(target: Identifier, arrayInitializer: Call) =>
-          target.name shouldBe "xs"
-          target.code shouldBe "xs"
-          target.argumentIndex shouldBe 1
-          target.typeFullName shouldBe "int[]"
+      inside(cpg.method.name("foo").assignment.argument.l) { case List(target: Identifier, arrayInitializer: Call) =>
+        target.name shouldBe "xs"
+        target.code shouldBe "xs"
+        target.argumentIndex shouldBe 1
+        target.typeFullName shouldBe "int[]"
 
-          arrayInitializer.name shouldBe Operators.arrayInitializer
-          arrayInitializer.methodFullName shouldBe Operators.arrayInitializer
-          arrayInitializer.code shouldBe "new int[] { 1, 2, 3 }"
-          arrayInitializer.typeFullName shouldBe "int[]"
-
-        case result => fail(s"Expected array initializer assignment args but got $result")
+        arrayInitializer.name shouldBe Operators.arrayInitializer
+        arrayInitializer.methodFullName shouldBe Operators.arrayInitializer
+        arrayInitializer.code shouldBe "new int[] { 1, 2, 3 }"
+        arrayInitializer.typeFullName shouldBe "int[]"
       }
     }
     "take preference in combined declaration and initializations" in {
@@ -42,19 +40,16 @@ class ArrayTests extends JavaSrcCode2CpgFixture {
                        |}
                        |""".stripMargin)
 
-      cpg.method.name("foo").assignment.argument.l match {
-        case List(target: Identifier, arrayInitializer: Call) =>
-          target.name shouldBe "xs"
-          target.code shouldBe "xs"
-          target.argumentIndex shouldBe 1
-          target.typeFullName shouldBe "int[]"
+      inside(cpg.method.name("foo").assignment.argument.l) { case List(target: Identifier, arrayInitializer: Call) =>
+        target.name shouldBe "xs"
+        target.code shouldBe "xs"
+        target.argumentIndex shouldBe 1
+        target.typeFullName shouldBe "int[]"
 
-          arrayInitializer.name shouldBe Operators.arrayInitializer
-          arrayInitializer.methodFullName shouldBe Operators.arrayInitializer
-          arrayInitializer.code shouldBe "new int[] { 1, 2, 3 }"
-          arrayInitializer.typeFullName shouldBe "int[]"
-
-        case result => fail(s"Expected array initializer assignment args but got $result")
+        arrayInitializer.name shouldBe Operators.arrayInitializer
+        arrayInitializer.methodFullName shouldBe Operators.arrayInitializer
+        arrayInitializer.code shouldBe "new int[] { 1, 2, 3 }"
+        arrayInitializer.typeFullName shouldBe "int[]"
       }
     }
 
@@ -138,6 +133,29 @@ class ArrayTests extends JavaSrcCode2CpgFixture {
       identifier.name shouldBe "x"
       identifier.typeFullName shouldBe "int[]"
       index.code shouldBe "0"
+    }
+  }
+
+  "array length field access" should {
+    val cpg = code("""
+        |class Foo {
+        |  public void foo(String[] xs) {
+        |    int l = xs.length;
+        |  }
+        |}""".stripMargin)
+
+    "be represented as <operators>.sizeOf calls" in {
+      inside(cpg.assignment.argument.argumentIndex(2).l) { case List(sizeOfCall: Call) =>
+        sizeOfCall.name shouldBe Operators.sizeOf
+        sizeOfCall.code shouldBe "xs.length"
+        sizeOfCall.typeFullName shouldBe "int"
+
+        inside(sizeOfCall.argument.l) { case List(xsIdentifier: Identifier) =>
+          xsIdentifier.name shouldBe "xs"
+          xsIdentifier.typeFullName shouldBe "java.lang.String[]"
+          xsIdentifier.refsTo.l shouldBe cpg.method.name("foo").parameter.name("xs").l
+        }
+      }
     }
   }
 }

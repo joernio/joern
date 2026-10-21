@@ -66,39 +66,57 @@ Unit tests:
 ```bash
 sbt test
 ```
+(sbt 2.x runs tests incrementally, skipping ones that already passed on unchanged inputs;
+use `sbt testFull` to force a full run, e.g. to reproduce CI behavior.)
 
 Integration tests:
 ```bash
+# script/console tests that drive the real launchers (not part of `sbt test`; they need a staged c2cpg):
+sbt "c2cpg/stage ; integrationTests/test"
+
+# distribution tests:
 sbt joerncli/stage querydb/createDistribution
-python -m pip install requests pexpect # wexpect on Windows
+python -m pip install pexpect # wexpect on Windows
 python -u ./testDistro.py
 ```
+
+There is an experimental partial Bazel build setup. Check bazel.md for further details.
 
 ## Docker based execution
 
 ```
-docker run --rm -it -v /tmp:/tmp -v $(pwd):/app:rw -w /app -t ghcr.io/joernio/joern joern
+docker run --rm -it -v /tmp:/tmp -v $(pwd):/app:rw -w /app -t ghcr.io/joernio/joern:master joern
 ```
 
 To run joern in server mode:
 
 ```
-docker run --rm -it -v /tmp:/tmp -v $(pwd):/app:rw -w /app -t ghcr.io/joernio/joern joern --server
+docker run --rm -it -v /tmp:/tmp -v $(pwd):/app:rw -w /app -t ghcr.io/joernio/joern:master joern --server
 ```
 
 Almalinux 9 requires the CPU to support SSE4.2. For kvm64 VM use the Almalinux 8 version instead.
 ```
-docker run --rm -it -v /tmp:/tmp -v $(pwd):/app:rw -w /app -t ghcr.io/joernio/joern-alma8 joern
+docker run --rm -it -v /tmp:/tmp -v $(pwd):/app:rw -w /app -t ghcr.io/joernio/joern-alma8:master joern
 ```
 
 ## Releases
 A new release is [created automatically](.github/workflows/release.yml) once per day. Contributers can also manually run the [release workflow](https://github.com/joernio/joern/actions/workflows/release.yml) if they need the release sooner.
 
+Each release publishes platform-specific distribution zips:
+- `joern-cli-linux-x86_64.zip`
+- `joern-cli-linux-arm64.zip`
+- `joern-cli-macos-x86_64.zip`
+- `joern-cli-macos-arm64.zip`
+- `joern-cli-windows-x86_64.zip`
+- `joern-cli-windows-arm64.zip`
+
+`joern-install.sh` detects the current platform automatically and downloads the correct zip. Windows users should download the appropriate zip directly from the [releases page](https://github.com/joernio/joern/releases/latest) and extract it manually.
+
 ## Developers
 
 ### Contribution Guidelines
 
-Thank you for taking time to contribute to Joern! Here are a few guidelines to ensure your pull request will get merged as soon as possible:
+Thank you for taking time to contribute to Joern! The [Contributor's guide](contributing-docs/README.md) covers the architecture, development environment, coding style, tests and pull requests in detail. AI coding agents should start with [AGENTS.md](AGENTS.md). Here are a few guidelines to ensure your pull request will get merged as soon as possible:
 
 * Try to make use of the templates as far as possible, however they may not suit all needs. The minimum we would like to see is:
     - A title that briefly describes the change and purpose of the PR, preferably with the affected module in square brackets, e.g. `[javasrc2cpg] Addition Operator Fix`.

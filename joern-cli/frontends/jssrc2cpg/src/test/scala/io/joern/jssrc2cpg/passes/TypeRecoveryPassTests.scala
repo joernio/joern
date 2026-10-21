@@ -1,10 +1,10 @@
 package io.joern.jssrc2cpg.passes
 
+import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.importresolver.*
 
 class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
@@ -101,7 +101,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     val cpg = code("""
         |console.log("Hello world");
         |let x = Math.abs(-1);
-        |""".stripMargin)
+        |""".stripMargin).withConfig(Config().withTsTypes(true))
 
     "resolve 'print' and 'max' calls" in {
       val List(printCall) = cpg.call("log").l
@@ -109,8 +109,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
       val List(maxCall) = cpg.call("abs").l
       maxCall.methodFullName shouldBe "__ecma.Math:abs"
       val List(x) = cpg.identifier("x").l
-      // TODO: Ideally we would know the result of `abs` but this can be a future task
-      x.typeFullName shouldBe "__ecma.Math:abs:<returnValue>"
+      x.typeFullName shouldBe "__ecma.Number"
     }
 
   }
@@ -430,7 +429,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     )
 
     "have their calls from a field access structure successfully recovered" in {
-      cpg.identifier("_tmp_2").typeFullName.headOption shouldBe Option("@angular/common/http:HttpClient")
+      cpg.identifier("_tmp_0").typeFullName.headOption shouldBe Option("@angular/common/http:HttpClient")
       cpg.call("post").methodFullName.headOption shouldBe Option("@angular/common/http:HttpClient:post")
     }
 

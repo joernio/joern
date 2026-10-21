@@ -3,7 +3,7 @@ package io.joern.console.cpgcreation
 import io.joern.console.FrontendConfig
 import io.joern.x2cpg.frontendspecific.javasrc2cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.layers.LayerCreator
 
 import java.nio.file.Path
 import scala.util.Try
@@ -23,11 +23,8 @@ case class JavaSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends C
     runShellCommand(command.toString, arguments).map(_ => outputPath)
   }
 
-  override def applyPostProcessingPasses(cpg: Cpg): Cpg = {
-    if (enableTypeRecovery)
-      javasrc2cpg.typeRecoveryPasses(cpg, typeRecoveryConfig).foreach(_.createAndApply())
-    super.applyPostProcessingPasses(cpg)
-  }
+  override protected def postProcessingLayer: Option[LayerCreator] =
+    Option.when(enableTypeRecovery)(new javasrc2cpg.JavaPostProcessing(typeRecoveryConfig))
 
   override def isAvailable: Boolean =
     command.toFile.exists

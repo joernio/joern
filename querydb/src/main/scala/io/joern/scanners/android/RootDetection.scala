@@ -22,7 +22,7 @@ object RootDetection extends QueryBundle {
       score = 3,
       withStrRep({ cpg =>
         val superUserCheckPathSuffixes = List("Superuser.apk", "superuser.apk", "/su")
-        def pathsToSuperUserSuffixes =
+        def pathsToSuperUserSuffixes   =
           cpg.literal.filter(_.code.contains('/')).filter { node =>
             superUserCheckPathSuffixes.exists { ending =>
               node.code.stripSuffix("\"").stripSuffix("\'").endsWith(ending)

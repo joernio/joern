@@ -44,7 +44,7 @@ class SourceParser(
     // Need to store tokens for position information.
     fileIfExists(analysisFilename).flatMap { file =>
       val compilationUnit = parse(file, storeTokens = true)
-      val fileContent = Option
+      val fileContent     = Option
         .when(saveFileContent) {
           Try(IOUtils.readEntireFile(file))
             .orElse(Try(file.fileContent(Charset.defaultCharset())))
@@ -71,23 +71,22 @@ class SourceParser(
   private def parse(file: Path, storeTokens: Boolean): Option[CompilationUnit] = {
     val javaParserConfig =
       new ParserConfiguration()
-        .setLanguageLevel(LanguageLevel.BLEEDING_EDGE)
+        .setLanguageLevel(LanguageLevel.JAVA_25)
         .setStoreTokens(storeTokens)
     val parseResult = new JavaParser(javaParserConfig).parse(file)
 
     parseResult.getProblems.asScala.toList match {
-      case Nil => // Just carry on as usual
+      case Nil      => // Just carry on as usual
       case problems =>
-        logger.warn(s"Encountered problems while parsing file ${file.fileName}:")
-        problems.foreach { problem =>
-          logger.warn(s"- ${problem.getMessage}")
-        }
+        logger.warn(
+          s"Encountered problems while parsing '${file.fileName}': ${problems.map(_.getMessage).mkString("; ")}"
+        )
     }
 
     parseResult.getResult.toScala match {
       case Some(result) if result.getParsed == Parsedness.PARSED => Some(result)
-      case _ =>
-        logger.warn(s"Failed to parse file ${file.fileName}")
+      case _                                                     =>
+        logger.warn(s"Failed to process '${file.fileName}'")
         None
     }
   }
@@ -138,7 +137,7 @@ object SourceParser {
     checkExists(file)
   }
 
-  def apply(config: Config, filenamesOverride: Option[List[String]]): SourceParser = {
+  def apply(config: Config, filenamesOverride: Option[List[String]], dependencies: List[String] = Nil): SourceParser = {
     val inputPath = Path.of(config.inputPath)
 
     val fileInfo = filenamesOverride
@@ -156,8 +155,8 @@ object SourceParser {
     val usesLombok = fileInfo.exists(_.usesLombok)
 
     var dirToDelete: Option[Path] = None
-    lazy val delombokResult       = Delombok.run(inputPath, fileInfo, config.delombokJavaHome)
-    lazy val delombokDir = {
+    lazy val delombokResult       = Delombok.run(inputPath, fileInfo, config.delombokJavaHome, dependencies)
+    lazy val delombokDir          = {
       dirToDelete = Option.when(delombokResult.isDelombokedPath)(delombokResult.path)
       delombokResult.path
     }

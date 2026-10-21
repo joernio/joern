@@ -1,10 +1,8 @@
 package io.joern.dumpq
 
-import io.joern.console.{DefaultArgumentProvider, QueryDatabase}
+import io.joern.console.{DefaultArgumentProvider, QueryDatabase, QueryJsonSerialization}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.NoSemantics
-import org.json4s.{Formats, NoTypeHints}
-import org.json4s.native.Serialization
 
 import java.nio.file.{Files, Paths}
 import scala.util.Properties
@@ -17,11 +15,10 @@ object Main {
 
   def dumpQueries(): Unit = {
     implicit val engineContext: EngineContext = EngineContext(NoSemantics)
-    implicit val formats: Formats             = Serialization.formats(NoTypeHints)
     val queryDb                               = new QueryDatabase(new JoernDefaultArgumentProvider(0))
     // TODO allow specifying file from the outside
     val outFileName = Paths.get(Properties.tmpDir, "querydb.json")
-    Files.writeString(outFileName, Serialization.write(queryDb.allQueries))
+    Files.writeString(outFileName, QueryJsonSerialization.write(queryDb.allQueries))
     println(s"Queries written to: ${outFileName.toAbsolutePath.toString}")
   }
 

@@ -1,6 +1,7 @@
 package io.joern.php2cpg.astcreation
 
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
+import io.joern.php2cpg.parser.Domain
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.utils.TypeScope
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
@@ -14,19 +15,12 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewTypeDecl,
   NewTypeRef
 }
-import io.shiftleft.codepropertygraph.generated.{
-  DispatchTypes,
-  EdgeTypes,
-  ModifierTypes,
-  NodeTypes,
-  Operators,
-  PropertyDefaults
-}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astForClassLikeStmt(stmt: PhpClassLikeStmt): List[Ast] = {
+  protected def astForClassLikeStmt(stmt: PhpClassLikeStmt): Ast = {
     val (staticStmts, dynamicStmts) = stmt.stmts.partition {
       case x: PhpPropertyStmt if x.modifiers.contains(ModifierTypes.STATIC) => true
       case x: PhpMethodDecl if x.modifiers.contains(ModifierTypes.STATIC)   => true
@@ -35,9 +29,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
 
     stmt.name match {
-      case None => astForAnonymousClass(stmt, dynamicStmts, staticStmts) :: Nil
+      case None                                           => astForAnonymousClass(stmt, dynamicStmts, staticStmts)
       case Some(name) if name.name.contains("anon-class") =>
-        astForAnonymousClass(stmt, dynamicStmts, staticStmts) :: Nil
+        astForAnonymousClass(stmt, dynamicStmts, staticStmts)
       case Some(name) => astForNamedClass(stmt, name, dynamicStmts, staticStmts)
     }
   }
@@ -46,9 +40,19 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val inheritsFrom = (stmt.extendsNames ++ stmt.implementedInterfaces).map(_.name)
     val code         = codeForClassStmt(stmt, name)
 
-    val fullName = globalNamespace.fullName
+    val fullName                           = globalNamespace.fullName
+    val (astParentType, astParentFullName) = getAstParentInfo
 
-    val typeDecl = typeDeclNode(stmt, name.name, fullName, relativeFileName, code, inherits = inheritsFrom)
+    val typeDecl = typeDeclNode(
+      node = stmt,
+      name = name.name,
+      fullName = fullName,
+      filename = relativeFileName,
+      code = code,
+      astParentType = astParentType,
+      astParentFullName = astParentFullName,
+      inherits = inheritsFrom
+    )
     val createDefaultConstructor = stmt.hasConstructor
 
     scope.pushNewScope(TypeScope(typeDecl, fullName))
@@ -68,20 +72,16 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   ): Ast = {
     val useTraitNames = dynamicStmts.collect { case x: PhpTraitUseStmt => x }.flatMap(_.traits)
     val inheritsFrom  = (stmt.extendsNames ++ useTraitNames ++ stmt.implementedInterfaces).map(_.name)
-    val inheritsFromMeta =
-      (stmt.extendsNames ++ useTraitNames ++ stmt.implementedInterfaces).map(name =>
-        s"${name.name}$MetaTypeDeclExtension"
-      )
 
     val className = stmt.name match {
       case Some(name) => name.name
       case None       => this.scope.getNewClassTmp
     }
 
-    val classFullName             = prependNamespacePrefix(className)
-    val metaTypeDeclClassFullName = s"${classFullName}$MetaTypeDeclExtension"
+    val classFullName = prependNamespacePrefix(className)
 
-    val code = codeForClassStmt(stmt, PhpNameExpr(className, stmt.attributes))
+    val code                               = codeForClassStmt(stmt, PhpNameExpr(className, stmt.attributes))
+    val (astParentType, astParentFullName) = getAstParentInfo
 
     val typeDeclTemp = typeDeclNode(
       node = stmt,
@@ -89,17 +89,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       fullName = classFullName,
       filename = relativeFileName,
       code = code,
+      astParentType = astParentType,
+      astParentFullName = astParentFullName,
       inherits = inheritsFrom,
-      alias = None
-    )
-
-    val metaTypeDecl = typeDeclNode(
-      node = stmt,
-      name = s"${className}$MetaTypeDeclExtension",
-      fullName = metaTypeDeclClassFullName,
-      filename = relativeFileName,
-      code = code,
-      inherits = inheritsFromMeta,
       alias = None
     )
 
@@ -111,23 +103,15 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val modifiers      = stmt.modifiers.map(modifierNode(stmt, _)).map(Ast(_))
     val annotationAsts = stmt.attributeGroups.flatMap(astForAttributeGroup)
 
+    val staticClassConsts = staticStmts.collect { case cs: PhpConstStmt => cs }.flatMap(astsForConstStmt)
+    val staticProperties  = staticStmts.collect { case cp: PhpPropertyStmt => cp }.flatMap(astsForPropertyStmt)
+    val staticMethodStmts = staticStmts.collect { case mp: PhpMethodDecl => mp }.map(astForMethodDecl(_))
+
+    val clinitAst = astForStaticAndConstInits(stmt)
+
     scope.popScope()
 
-    (scope.surroundingAstLabel, scope.surroundingScopeFullName) match {
-      case (Some(astLabel), Some(sfn)) =>
-        metaTypeDecl.astParentType(astLabel)
-        metaTypeDecl.astParentFullName(sfn)
-      case _ =>
-        logger.warn(
-          s"Expected values for `surroundingAstLabel` and `surroundingScopeFullName` in `astForAnonymousClass`"
-        )
-    }
-
-    scope.pushNewScope(TypeScope(metaTypeDecl, metaTypeDeclClassFullName))
-    val metaTypeDeclAst = astForMetaTypeDecl(stmt, staticStmts, metaTypeDecl)
-    scope.popScope()
-
-    if scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL) then {
+    if (scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)) {
       val typeDeclMember = NewMember()
         .name(className)
         .code(className)
@@ -138,29 +122,23 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         typeDeclMember.astParentType(NodeTypes.TYPE_DECL)
       }
 
-      val metaTypeDeclMember = NewMember()
-        .name(s"${className}$MetaTypeDeclExtension")
-        .code(s"${className}$MetaTypeDeclExtension")
-        .dynamicTypeHintFullName(Seq(s"${classFullName}${MetaTypeDeclExtension}"))
-
-      scope.getEnclosingTypeDeclTypeFullName.foreach { tfn =>
-        metaTypeDeclMember.astParentFullName(s"$tfn$MetaTypeDeclExtension")
-        metaTypeDeclMember.astParentType(NodeTypes.TYPE_DECL)
-      }
-
       diffGraph.addNode(typeDeclMember)
-      diffGraph.addNode(metaTypeDeclMember)
     }
 
-    val prefixAst = createTypeRefPointer(typeDeclTemp)
+    val prefixAst   = createTypeRefPointer(typeDeclTemp)
+    val allChildren = List(
+      modifiers,
+      bodyStmts,
+      annotationAsts,
+      staticClassConsts,
+      staticProperties,
+      staticMethodStmts,
+      clinitAst
+    ).flatten
     val typeDeclAst = Ast(typeDeclTemp)
-      .withChildren(modifiers)
-      .withChildren(bodyStmts)
-      .withChildren(annotationAsts)
+      .withChildren(allChildren)
 
     Ast.storeInDiffGraph(typeDeclAst, diffGraph)
-    Ast.storeInDiffGraph(metaTypeDeclAst, diffGraph)
-
     prefixAst
   }
 
@@ -210,7 +188,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     name: PhpNameExpr,
     dynamicStmts: List[PhpStmt],
     staticStmts: List[PhpStmt]
-  ): List[Ast] = {
+  ): Ast = {
     /*
      the `use <trait>` can be used anywhere in a class definition, but the method is available to be called in any function in the class so we find all the traits before processing the rest of the class.
      In the below sample, if we execute `(Foo.new())->foo()` it executes the `traitFunc` even though the `use <trait>` is after the `foo` method
@@ -228,11 +206,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
      */
     val useTraitNames = dynamicStmts.collect { case x: PhpTraitUseStmt => x }.flatMap(_.traits)
     val inheritsFrom  = (stmt.extendsNames ++ useTraitNames ++ stmt.implementedInterfaces).map(_.name)
-    val inheritsFromMeta =
-      (stmt.extendsNames ++ useTraitNames ++ stmt.implementedInterfaces).map(name =>
-        s"${name.name}$MetaTypeDeclExtension"
-      )
-    val code = codeForClassStmt(stmt, name)
+    val code          = codeForClassStmt(stmt, name)
 
     val (dedupedName, fullName) =
       if (name.name == NamespaceTraversal.globalNamespaceName)
@@ -242,16 +216,17 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         (name.name, prependNamespacePrefix(dedupClassName))
       }
 
-    val metaTypeDeclFullName = s"$fullName$MetaTypeDeclExtension"
+    val (astParentType, astParentFullName) = getAstParentInfo
 
-    val typeDecl = typeDeclNode(stmt, dedupedName, fullName, relativeFileName, code, inherits = inheritsFrom)
-    val metaTypeDeclNode = typeDeclNode(
-      stmt,
-      s"$dedupedName$MetaTypeDeclExtension",
-      metaTypeDeclFullName,
-      relativeFileName,
-      code,
-      inherits = inheritsFromMeta
+    val typeDecl = typeDeclNode(
+      node = stmt,
+      name = dedupedName,
+      fullName = fullName,
+      filename = relativeFileName,
+      code = code,
+      astParentType = astParentType,
+      astParentFullName = astParentFullName,
+      inherits = inheritsFrom
     )
 
     // Add this to scope for symbol resolution
@@ -261,44 +236,22 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     scope.pushNewScope(TypeScope(typeDecl, fullName))
 
-    val bodyStmts      = astsForClassLikeBody(stmt, dynamicStmts, createDefaultConstructor, Option(typeDecl))
-    val modifiers      = stmt.modifiers.map(modifierNode(stmt, _)).map(Ast(_))
+    val bodyStmts = astsForClassLikeBody(stmt, staticStmts ++ dynamicStmts, createDefaultConstructor, Option(typeDecl))
+    val modifiers = stmt.modifiers.map(modifierNode(stmt, _)).map(Ast(_))
     val annotationAsts = stmt.attributeGroups.flatMap(astForAttributeGroup)
+    val clinitAst      = astForStaticAndConstInits(stmt).toList
 
     // This needs to be carried over for enums
-    val staticConsts = if (stmt.classLikeType == ClassLikeTypes.Enum) {
-      scope.getConstAndStaticInits
-    } else {
-      List.empty
-    }
-
-    scope.popScope()
-
-    val classTypeDeclAst = Ast(typeDecl).withChildren(modifiers).withChildren(bodyStmts).withChildren(annotationAsts)
-
-    scope.pushNewScope(TypeScope(metaTypeDeclNode, metaTypeDeclFullName))
+    val staticConsts = if (stmt.classLikeType == ClassLikeTypes.Enum) scope.getConstAndStaticInits else List.empty
 
     staticConsts.foreach(init => scope.addConstOrStaticInitToScope(init.originNode, init.memberNode, init.value))
-    val metaTypeDeclAst = astForMetaTypeDecl(stmt, staticStmts, metaTypeDeclNode)
+
     scope.popScope()
 
-    List(classTypeDeclAst, metaTypeDeclAst)
-  }
+    val classTypeDeclAst =
+      Ast(typeDecl).withChildren(modifiers).withChildren(bodyStmts).withChildren(annotationAsts).withChildren(clinitAst)
 
-  private def astForMetaTypeDecl(
-    stmt: PhpClassLikeStmt,
-    staticStmts: List[PhpStmt],
-    metaTypeDeclNode: NewTypeDecl
-  ): Ast = {
-    val classConsts = staticStmts.collect { case cs: PhpConstStmt => cs }.flatMap(astsForConstStmt)
-    val properties  = staticStmts.collect { case cp: PhpPropertyStmt => cp }.flatMap(astsForPropertyStmt)
-    val methodStmts = staticStmts.collect { case mp: PhpMethodDecl => mp }.map(astForMethodDecl(_))
-
-    val clinitAst = astForStaticAndConstInits(stmt)
-
-    val metaTypeDeclBodyStmts = List(classConsts, properties, methodStmts, clinitAst).flatten
-
-    Ast(metaTypeDeclNode).withChildren(metaTypeDeclBodyStmts)
+    classTypeDeclAst
   }
 
   protected def astsForClassLikeBody(
@@ -332,16 +285,16 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val anonymousMethodAsts = scope.getAndClearAnonymousMethods
 
-    val bindings = typeDecl match {
-      case Some(typeDecl) =>
-        (anonymousMethodAsts ++ otherBodyStmts).flatMap(_.root).collect { case method: NewMethod =>
+    // Add method bindings
+    typeDecl match {
+      case Some(td) if td.name != Domain.GlobalName =>
+        otherBodyStmts.flatMap(_.root).collect { case method: NewMethod =>
           val bindingNode = NewBinding().name(method.name).signature("")
           diffGraph.addNode(bindingNode)
-          diffGraph.addEdge(typeDecl, bindingNode, EdgeTypes.BINDS)
+          diffGraph.addEdge(td, bindingNode, EdgeTypes.BINDS)
           diffGraph.addEdge(bindingNode, method, EdgeTypes.REF)
         }
-
-      case None => Nil
+      case _ => // do nothing
     }
 
     List(classConsts, properties, constructorAst, anonymousMethodAsts, otherBodyStmts).flatten
@@ -391,7 +344,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val modifierAsts = modifiers.map(modifierNode(stmt, _)).map(Ast(_))
 
       val name = varDecl.name.name
-      val ast = if (modifiers.contains(ModifierTypes.STATIC)) {
+      val ast  = if (modifiers.contains(ModifierTypes.STATIC)) {
         // A static member belongs to a class, not an instance
         val memberCode = s"static $$$name"
         astForConstOrStaticOrFieldValue(stmt, name, memberCode, varDecl.defaultValue, scope.addConstOrStaticInitToScope)

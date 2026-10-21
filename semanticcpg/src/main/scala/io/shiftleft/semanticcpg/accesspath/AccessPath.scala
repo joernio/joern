@@ -123,7 +123,7 @@ case class AccessPath(elements: Elements, exclusions: Seq[Elements]) {
     }
   }
 
-  def matchAndDiff(other: Elements): (MatchResult.MatchResult, Elements) = {
+  def matchAndDiff(other: Elements): (MatchResult, Elements) = {
     val thisTail  = elements.invertibleTailLength
     val otherTail = other.invertibleTailLength
     val thisHead  = elements.elements.length - thisTail
@@ -148,8 +148,8 @@ case class AccessPath(elements: Elements, exclusions: Seq[Elements]) {
 
     /** We now try to greedily match more elements. We know that one of the two paths will only contain invertible
       * elements. The issue is the following: prefix <1> & x prefix <?> & With greedy matching, we end up with a diff:
-      * x. If we just did the invert-append algorithm, we would end up with a less precise diff: * <?> <1> & x == * <?>
-      * & x.
+      *   x. If we just did the invert-append algorithm, we would end up with a less precise diff: * <?> <1> & x == *
+      *      <?> & x.
       */
     val minlen = scala.math.min(elements.elements.length, other.elements.length)
     while (!done && idx < minlen) {
@@ -196,7 +196,7 @@ case class AccessPath(elements: Elements, exclusions: Seq[Elements]) {
 
   private def truncateExclusions(compareExclusion: Elements): AccessPath = {
     if (exclusions.isEmpty) return this
-    val size = compareExclusion.elements.length
+    val size          = compareExclusion.elements.length
     val newExclusions =
       exclusions
         .filter(_.elements.startsWith(compareExclusion.elements))
@@ -221,11 +221,9 @@ case class AccessPath(elements: Elements, exclusions: Seq[Elements]) {
 
 }
 
-sealed trait MatchResult
-object MatchResult extends Enumeration {
-  type MatchResult = Value
-  val NO_MATCH, EXACT_MATCH, VARIABLE_EXACT_MATCH, PREFIX_MATCH, VARIABLE_PREFIX_MATCH, EXTENDED_MATCH,
-    VARIABLE_EXTENDED_MATCH = Value
+enum MatchResult {
+  case NO_MATCH, EXACT_MATCH, VARIABLE_EXACT_MATCH, PREFIX_MATCH, VARIABLE_PREFIX_MATCH, EXTENDED_MATCH,
+    VARIABLE_EXTENDED_MATCH
 }
 
 /** Result of `matchFull` comparison
@@ -338,7 +336,7 @@ object Elements {
                 if (newShift != 0) elems(idxLeft) = PointerShift(newShift)
                 else idxLeft -= 1
               case (VariablePointerShift, _: PointerShift) | (VariablePointerShift, VariablePointerShift) =>
-              case (_: PointerShift, VariablePointerShift) =>
+              case (_: PointerShift, VariablePointerShift)                                                =>
                 elems(idxLeft) = VariablePointerShift
               case (AddressOf, IndirectionAccess) =>
                 idxLeft -= 1

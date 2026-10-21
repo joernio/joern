@@ -31,12 +31,12 @@ class ResolvedImportAsTagTraversal(steps: Iterator[Tag]) extends AnyVal {
 
   @Doc(info = "Parses these tags as EvaluatedImport classes")
   def _toEvaluatedImport: Iterator[EvaluatedImport] = {
-    steps.flatMap(_._toEvaluatedImport)
+    steps.dedupBy(tag => (tag.name, tag.value, tag._taggedByIn.headOption)).flatMap(_._toEvaluatedImport)
   }
 
   @Doc(info = "If these tags represent resolved imports, will attempt to find the CPG entities referred to")
   def resolvedEntity: Iterator[AstNode] = {
-    steps.flatMap(_.resolvedEntity)
+    steps.dedupBy(tag => (tag.name, tag.value, tag._taggedByIn.headOption)).flatMap(_.resolvedEntity)
   }
 
 }

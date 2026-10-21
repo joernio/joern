@@ -11,8 +11,11 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
 
   protected def astForListSyntaxChildren(node: SwiftNode, children: Seq[SwiftNode]): Ast = {
     children.toList match {
-      case Nil         => Ast()
-      case head :: Nil => astForNode(head)
+      case Nil =>
+        val blockNode_ = blockNode(node, PropertyDefaults.Code, Defines.Any)
+        blockAst(blockNode_, List.empty)
+      case head :: Nil =>
+        astForNode(head)
       case elements =>
         val blockNode_ = blockNode(node, PropertyDefaults.Code, Defines.Any)
         scope.pushNewBlockScope(blockNode_)
@@ -50,13 +53,10 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   )
 
   private def astForCodeBlockItemListSyntax(node: CodeBlockItemListSyntax): Ast = {
-    astForListSyntaxChildren(
-      node,
-      node.children.sortBy {
-        case item if item.item.isInstanceOf[ExtensionDeclSyntax] => 2
-        case _                                                   => 1
-      }
-    )
+    // Extension declarations are processed after all other items. `partition` keeps the original order within
+    // each group.
+    val (extensions, others) = node.children.partition(_.item.isInstanceOf[ExtensionDeclSyntax])
+    astForListSyntaxChildren(node, others ++ extensions)
   }
 
   private def astForCompositionTypeElementListSyntax(node: CompositionTypeElementListSyntax): Ast = notHandledYet(node)
@@ -136,7 +136,7 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   private def createAstForStringLiteralSegmentListSyntax(node: SwiftNode, children: Seq[SwiftNode]): Ast = {
     children match {
       case child :: Nil => astForNode(child)
-      case children =>
+      case children     =>
         val tpe              = Defines.String
         val op               = Operators.formatString
         val stringFormatCall = createStaticCallNode(node, code(node), op, op, tpe)
@@ -157,7 +157,7 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
     val blockNode_ = blockNode(node, PropertyDefaults.Code, Defines.Any)
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
-    val asts = node.children.toList.flatMap(astsForSwitchCase)
+    val asts = node.children.toList.flatMap(astsForSwitchCase(_, None))
     localAstParentStack.pop()
     scope.popScope()
     blockAst(blockNode_, asts)

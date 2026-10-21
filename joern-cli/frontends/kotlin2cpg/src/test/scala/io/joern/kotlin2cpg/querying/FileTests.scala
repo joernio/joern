@@ -30,7 +30,7 @@ class FileTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
 
     "should allow traversing from file to its namespace blocks" in {
-      cpg.file.nameNot(FileTraversal.UNKNOWN).namespaceBlock.name.toSet shouldBe Set("bar")
+      cpg.file.nameNot(FileTraversal.UNKNOWN).namespaceBlock.name.toSet shouldBe Set("mypkg.bar")
     }
 
     "should allow traversing from file to its methods" in {

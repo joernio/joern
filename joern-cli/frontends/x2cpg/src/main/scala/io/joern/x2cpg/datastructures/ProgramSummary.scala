@@ -67,7 +67,11 @@ object ProgramSummary {
         .map { case (namespace, typMap) =>
           val dedupedTypes = mutable.Set.from(
             typMap
-              .map { case (name, ts) => name -> ts.reduce((u, v) => (u + v).asInstanceOf[T]) }
+              .map { case (name, ts) =>
+                // `+` prefers the left-hand side, so fix the order in which duplicates are combined
+                val orderedTs = if (ts.sizeIs > 1) ts.toSeq.sortBy(_.toString) else ts.toSeq
+                name -> orderedTs.reduce((merged, next) => (merged + next).asInstanceOf[T])
+              }
               .values
               .toSet
           )
@@ -186,7 +190,7 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     *   the field/object property/module variable's meta data.
     */
   def tryResolveFieldAccess(fieldName: String, typeFullName: Option[String] = None): Option[F] = typeFullName match {
-    case None => membersInScope.collectFirst { case f: FieldLike if f.name == fieldName => f.asInstanceOf[F] }
+    case None      => membersInScope.collectFirst { case f: FieldLike if f.name == fieldName => f.asInstanceOf[F] }
     case Some(tfn) =>
       tryResolveTypeReference(tfn).flatMap { t =>
         t.fields.find { f => f.name == fieldName }
@@ -222,7 +226,7 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     val matchingTypes   = summary.matchingTypes(typeOrModule)
     val matchingMembers = matchingTypes.flatMap(t => t.fields ++ t.methods)
     memberNames match {
-      case Nil => membersInScope.addAll(matchingMembers)
+      case Nil   => membersInScope.addAll(matchingMembers)
       case names =>
         val nameSet         = names.toSet // Cast to set for O(1) membership query
         val filteredMembers = matchingMembers.filter(member => nameSet.contains(member.name))

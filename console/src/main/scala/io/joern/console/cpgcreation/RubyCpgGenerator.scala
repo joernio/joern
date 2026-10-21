@@ -1,14 +1,17 @@
 package io.joern.console.cpgcreation
 
 import io.joern.console.FrontendConfig
-import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg
+import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
+import io.shiftleft.semanticcpg.layers.LayerCreator
 
 import java.nio.file.Path
 import scala.util.Try
 
 case class RubyCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
   private lazy val command: Path = if (isWin) rootPath.resolve("rubysrc2cpg.bat") else rootPath.resolve("rubysrc2cpg")
+  private lazy val cmdLineArgs   = config.cmdLineParams.toSeq
+  private lazy val typeRecoveryConfig = XTypeRecoveryConfig.parse(cmdLineArgs)
 
   override def generate(inputPath: String, outputPath: String): Try[String] = {
     val arguments = List(inputPath) ++ Seq("-o", outputPath) ++ config.cmdLineParams
@@ -20,10 +23,7 @@ case class RubyCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
 
   override def isJvmBased = true
 
-  override def applyPostProcessingPasses(cpg: Cpg): Cpg = {
-    val rubyConfig = Config()
-    RubySrc2Cpg.postProcessingPasses(cpg, rubyConfig).foreach(_.createAndApply())
-    cpg
-  }
+  override protected def postProcessingLayer: Option[LayerCreator] =
+    Some(new rubysrc2cpg.RubyPostProcessing(typeRecoveryConfig))
 
 }

@@ -24,7 +24,7 @@ case class NodeTypeInfo(
   isField: Boolean = false,
   isStatic: Boolean = false
 )
-class Scope(implicit val withSchemaValidation: ValidationMode, val disableTypeFallback: Boolean) {
+class Scope(implicit withSchemaValidation: ValidationMode, disableTypeFallback: Boolean) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   private var scopeStack: List[JavaScopeElement] = Nil
@@ -48,7 +48,7 @@ class Scope(implicit val withSchemaValidation: ValidationMode, val disableTypeFa
     methodNames: Set[String] = Set.empty,
     recordParameters: List[Parameter] = Nil
   ): Unit = {
-    val captures = getCapturesForNewScope(isStatic)
+    val captures       = getCapturesForNewScope(isStatic)
     val outerClassType = scopeStack.takeUntil(_.isInstanceOf[TypeDeclScope]) match {
       case Nil => None
 
@@ -133,6 +133,18 @@ class Scope(implicit val withSchemaValidation: ValidationMode, val disableTypeFa
 
   def addWildcardImport(prefix: String): Unit = {
     scopeStack.head.addWildcardImport(prefix)
+  }
+
+  def addStaticImport(memberName: String, declaringTypeFullName: String): Unit = {
+    enclosingNamespace.foreach(_.addStaticImport(memberName, declaringTypeFullName))
+  }
+
+  def addStaticWildcardImport(declaringTypeFullName: String): Unit = {
+    enclosingNamespace.foreach(_.addStaticWildcardImport(declaringTypeFullName))
+  }
+
+  def lookupStaticImport(memberName: String): Option[String] = {
+    enclosingNamespace.flatMap(_.lookupStaticImport(memberName))
   }
 
   def addDeclBinding(name: String, declBindingInfo: JavaparserBindingDeclType): Unit = {
@@ -419,7 +431,7 @@ object Scope {
     // TODO: Refactor and remove this
     def asNodeInfoOption: Option[NodeTypeInfo] = None
   }
-  case object NotInScope extends VariableLookupResult
+  case object NotInScope                              extends VariableLookupResult
   sealed trait FoundVariable(variable: ScopeVariable) extends VariableLookupResult {
     override val typeFullName: Option[String]          = Some(variable.typeFullName)
     override val variableNode: Option[NewVariableNode] = Some(variable.node)

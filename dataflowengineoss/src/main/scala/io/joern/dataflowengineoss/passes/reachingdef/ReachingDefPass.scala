@@ -37,7 +37,7 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000)(implicit s: 
     * were are dealing with in total. If a threshold is reached, we bail out instead, leaving reaching definitions
     * uncalculated for the method in question. Users can increase the threshold if desired.
     */
-  private def shouldBailOut(method: Method, problem: DataFlowProblem[StoredNode, mutable.BitSet]): Boolean = {
+  private def shouldBailOut(method: Method, problem: DataFlowProblem[CfgNode, mutable.BitSet]): Boolean = {
     val transferFunction = problem.transferFunction.asInstanceOf[ReachingDefTransferFunction]
     // For each node, the `gen` map contains the list of definitions it generates
     // We add up the sizes of these lists to obtain the total number of definitions

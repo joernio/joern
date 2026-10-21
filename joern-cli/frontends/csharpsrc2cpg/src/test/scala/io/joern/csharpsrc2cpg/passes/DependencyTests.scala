@@ -45,23 +45,21 @@ class DependencyTests extends CSharpCode2CpgFixture {
     )
 
     "have the package references persisted with versions" in {
-      inside(cpg.dependency.l) {
-        case commandLineParser :: newtonsoftJson :: codeAnalysis :: cecil :: json :: Nil =>
-          commandLineParser.name shouldBe "CommandLineParser"
-          commandLineParser.version shouldBe "2.9.1"
+      inside(cpg.dependency.l) { case commandLineParser :: newtonsoftJson :: codeAnalysis :: cecil :: json :: Nil =>
+        commandLineParser.name shouldBe "CommandLineParser"
+        commandLineParser.version shouldBe "2.9.1"
 
-          newtonsoftJson.name shouldBe "Microsoft.AspNetCore.Mvc.NewtonsoftJson"
-          newtonsoftJson.version shouldBe "3.0.0"
+        newtonsoftJson.name shouldBe "Microsoft.AspNetCore.Mvc.NewtonsoftJson"
+        newtonsoftJson.version shouldBe "3.0.0"
 
-          codeAnalysis.name shouldBe "Microsoft.CodeAnalysis"
-          codeAnalysis.version shouldBe "4.8.0"
+        codeAnalysis.name shouldBe "Microsoft.CodeAnalysis"
+        codeAnalysis.version shouldBe "4.8.0"
 
-          cecil.name shouldBe "Mono.Cecil"
-          cecil.version shouldBe "0.11.5"
+        cecil.name shouldBe "Mono.Cecil"
+        cecil.version shouldBe "0.11.5"
 
-          json.name shouldBe "Newtonsoft.Json"
-          json.version shouldBe "13.0.3"
-        case xs => fail(s"Expected exactly 5 dependencies, instead got [${xs.name.mkString(",")}]")
+        json.name shouldBe "Newtonsoft.Json"
+        json.version shouldBe "13.0.3"
       }
     }
 
@@ -95,11 +93,8 @@ class DependencyTests extends CSharpCode2CpgFixture {
       .withConfig(Config().withDownloadDependencies(true))
 
     "resolve the call from the local builtins, as the specified dependency would not successfully download" in {
-      inside(cpg.call("Entity").headOption) {
-        case Some(entity) =>
-          entity.methodFullName shouldBe "Microsoft.EntityFrameworkCore.ModelBuilder.Entity:Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder(System.String)"
-        case None =>
-          fail("Expected a call node for `Entity`")
+      inside(cpg.call("Entity").headOption) { case Some(entity) =>
+        entity.methodFullName shouldBe "Microsoft.EntityFrameworkCore.ModelBuilder.Entity:Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder(System.String)"
       }
     }
   }
@@ -128,9 +123,8 @@ class DependencyTests extends CSharpCode2CpgFixture {
         .moreCode(csProj, "Foo.csproj")
         .withConfig(Config().withUseBuiltinSummaries(false).withDownloadDependencies(false))
       "not resolve the call since there are no type summaries available for it" in {
-        inside(cpg.call("Entity").headOption) {
-          case Some(entity) => entity.methodFullName shouldBe "ModelBuilder.Entity:<unresolvedSignature>"
-          case None         => fail("Expected call node for `Entity`")
+        inside(cpg.call("Entity").headOption) { case Some(entity) =>
+          entity.methodFullName shouldBe "ModelBuilder.Entity:<unresolvedSignature>"
         }
       }
     }
@@ -140,10 +134,8 @@ class DependencyTests extends CSharpCode2CpgFixture {
         .moreCode(csProj, "Foo.csproj")
         .withConfig(Config().withUseBuiltinSummaries(false).withDownloadDependencies(true))
       "resolve the call since the dependency shall be downloaded and a type summary for it be built" in {
-        inside(cpg.call("Entity").headOption) {
-          case Some(entity) =>
-            entity.methodFullName shouldBe "Microsoft.EntityFrameworkCore.ModelBuilder.Entity:Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder(System.String)"
-          case None => fail("Expected call node for `Entity`")
+        inside(cpg.call("Entity").headOption) { case Some(entity) =>
+          entity.methodFullName shouldBe "Microsoft.EntityFrameworkCore.ModelBuilder.Entity:Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder(System.String)"
         }
       }
     }
@@ -161,10 +153,8 @@ class DependencyTests extends CSharpCode2CpgFixture {
         )
 
       "resolve the call since its summary can be found in the provided directory" in {
-        inside(cpg.call("Entity").headOption) {
-          case Some(entity) =>
-            entity.methodFullName shouldBe "Microsoft.EntityFrameworkCore.ModelBuilder.Entity:Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder(System.String)"
-          case None => fail("Expected call node for `Entity`")
+        inside(cpg.call("Entity").headOption) { case Some(entity) =>
+          entity.methodFullName shouldBe "Microsoft.EntityFrameworkCore.ModelBuilder.Entity:Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder(System.String)"
         }
       }
 
@@ -198,11 +188,9 @@ class DependencyTests extends CSharpCode2CpgFixture {
       )
 
     "have the package references persisted with versions" in {
-      inside(cpg.dependency.l) {
-        case msbuild :: Nil =>
-          msbuild.name shouldBe "coverlet.msbuild"
-          msbuild.version shouldBe "3.2.0"
-        case xs => fail(s"Expected exactly 1 dependencies, instead got [${xs.name.mkString(",")}]")
+      inside(cpg.dependency.l) { case msbuild :: Nil =>
+        msbuild.name shouldBe "coverlet.msbuild"
+        msbuild.version shouldBe "3.2.0"
       }
     }
 

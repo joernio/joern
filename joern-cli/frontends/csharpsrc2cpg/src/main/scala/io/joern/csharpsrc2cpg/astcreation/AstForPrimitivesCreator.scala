@@ -11,7 +11,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForIdentifier(ident: DotNetNodeInfo, typeFullName: String = Defines.Any): Ast = {
     val identifierName = nameFromNode(ident)
-    if identifierName != "_" then {
+    if (identifierName != "_") {
       scope.lookupVariable(identifierName) match {
         case Some(variable: DeclarationNew) =>
           val node = identifierFromDecl(variable, Option(ident))
@@ -41,7 +41,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astForFieldIdentifier(baseTypeFullName: String, baseIdentifierName: String, field: FieldDecl) = {
     val fieldAccess =
       operatorCallNode(field.node, field.node.code, Operators.fieldAccess, Some(field.typeFullName))
-    val identifierAst = Ast(identifierNode(field.node, baseIdentifierName, baseIdentifierName, baseTypeFullName))
+    val identifierAst   = Ast(identifierNode(field.node, baseIdentifierName, baseIdentifierName, baseTypeFullName))
     val fieldIdentifier = Ast(
       NewFieldIdentifier()
         .code(field.name)

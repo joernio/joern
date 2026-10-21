@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
 
+@scala.annotation.nowarn("cat=deprecation")
 class CaseTests extends RubyCode2CpgFixture {
 
   "`case x ... end` should be represented with if-else chain and multiple match expressions should be or-ed together" in {
@@ -33,7 +34,7 @@ class CaseTests extends RubyCode2CpgFixture {
 
     val headIf @ List(_)           = block.astChildren.isControlStructure.l
     val ifStmts @ List(_, _, _, _) = headIf.repeat(_.astChildren.order(3).astChildren.isControlStructure)(_.emit).l
-    val conds: List[List[String]] = ifStmts.condition.map { cond =>
+    val conds: List[List[String]]  = ifStmts.condition.map { cond =>
       val orConds = List(cond)
         .repeat(_.isCall.where(_.name(Operators.logicalOr)).argument)(
           _.emit(_.whereNot(_.isCall.name(Operators.logicalOr)))
@@ -74,7 +75,7 @@ class CaseTests extends RubyCode2CpgFixture {
 
     val headIf @ List(_)           = block.astChildren.isControlStructure.l
     val ifStmts @ List(_, _, _, _) = headIf.repeat(_.astChildren.order(3).astChildren.isControlStructure)(_.emit).l;
-    val conds: List[List[String]] = ifStmts.condition.map { cond =>
+    val conds: List[List[String]]  = ifStmts.condition.map { cond =>
       val orConds = List(cond)
         .repeat(_.isCall.where(_.name(Operators.logicalOr)).argument)(
           _.emit(_.whereNot(_.isCall.name(Operators.logicalOr)))
@@ -162,9 +163,8 @@ class CaseTests extends RubyCode2CpgFixture {
                      |        end
                      |end""".stripMargin)
 
-    val List(_, resultLocal, notResultLocal) = cpg.method.name("class_for").block.astChildren.isLocal.l
-    resultLocal.name shouldBe "result"
-    notResultLocal.name shouldBe "notResult"
+    val locals = cpg.method.name("class_for").block.astChildren.isLocal.l
+    locals.map(_.name).toSet shouldBe Set("<tmp-0>", "<tmp-2>", "result", "notResult")
 
     val block @ List(_) = cpg.method.name("class_for").block.astChildren.isBlock.l
 
@@ -172,7 +172,17 @@ class CaseTests extends RubyCode2CpgFixture {
     val List(lhs, rhs) = assign.argument.l
 
     lhs.start.isIdentifier.name.l shouldBe List("<tmp-0>")
-    rhs.start.isBlock.code.l shouldBe List("[type, location]") // where the array lowering happens
+    rhs.start.isBlock.code.l shouldBe List("[type, location]")
+
+    inside(rhs.start.isBlock.astChildren.isCall.name(Operators.assignment).l) {
+      case arrayInit :: elem0 :: elem1 :: Nil =>
+        arrayInit.code shouldBe "[type, location]"
+        inside(arrayInit.argument.l) { case (initLhs: Identifier) :: _ :: Nil =>
+          initLhs.name shouldBe "<tmp-2>"
+        }
+        elem0.code shouldBe "<tmp-2>[0] = type"
+        elem1.code shouldBe "<tmp-2>[1] = location"
+    }
 
     val headIf @ List(_)     = block.astChildren.isControlStructure.l
     val ifStmts @ List(_, _) = headIf.repeat(_.astChildren.order(3).astChildren.isControlStructure)(_.emit).l;
@@ -200,24 +210,41 @@ class CaseTests extends RubyCode2CpgFixture {
 
     inside(ifStmts.whenTrue.isBlock.astChildren.isCall.name(Operators.assignment).l) {
       case resultMatchAssignment :: notResultMatchAssignment :: Nil =>
-        inside(resultMatchAssignment.argument.l) {
-          case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-            lhs.name shouldBe "result"
+        inside(resultMatchAssignment.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "result"
 
-            rhs.methodFullName shouldBe Operators.indexAccess
-            rhs.code shouldBe s"<tmp-0>[1]"
-          case xs => fail(s"Expected lhs and rhs, got [${xs.code.mkString(",")}]")
+          rhs.methodFullName shouldBe Operators.indexAccess
+          rhs.code shouldBe s"<tmp-0>[1]"
         }
 
-        inside(notResultMatchAssignment.argument.l) {
-          case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-            lhs.name shouldBe "notResult"
+        inside(notResultMatchAssignment.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "notResult"
 
-            rhs.methodFullName shouldBe Operators.indexAccess
-            rhs.code shouldBe s"<tmp-0>[1]"
-          case xs => fail(s"Expected lhs and rhs, got [${xs.code.mkString(",")}]")
+          rhs.methodFullName shouldBe Operators.indexAccess
+          rhs.code shouldBe s"<tmp-0>[1]"
         }
-      case _ => fail(s"Expected two true branches")
+    }
+  }
+
+  "a case expression should not produce cross-scope REF edges when the enclosing type has a bodyMemberCall" in {
+    val cpg = code("""
+        |module M
+        |  extend A::B
+        |  def foo
+        |    items.each do |x|
+        |      case x
+        |      when "a" then 1
+        |      end
+        |    end
+        |  end
+        |end
+        |""".stripMargin)
+    cpg.identifier.filter(_.name.startsWith("<tmp-")).foreach { id =>
+      id.refOut.collectAll[Local].foreach { local =>
+        withClue(s"'${id.name}' should not ref a local in a different method: ") {
+          local.method.next().fullName shouldBe id.method.fullName
+        }
+      }
     }
   }
 }

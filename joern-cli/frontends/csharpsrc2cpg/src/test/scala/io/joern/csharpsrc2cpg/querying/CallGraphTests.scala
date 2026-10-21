@@ -39,12 +39,10 @@ class CallGraphTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "correctly resolve a dynamic dispatch to method `A` with an explicit receiver" in {
-      inside(cpg.call.nameExact("A").where(_.method.nameExact("Main")).l) {
-        case call :: Nil =>
-          call.methodFullName shouldBe "Foo.Bar.A:System.Int32(System.Int32)"
-          call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-          call.callee.fullName.headOption shouldBe Option("Foo.Bar.A:System.Int32(System.Int32)")
-        case xs => fail(s"Expected one `A` call, got [${xs.code.mkString(",")}]")
+      inside(cpg.call.nameExact("A").where(_.method.nameExact("Main")).l) { case call :: Nil =>
+        call.methodFullName shouldBe "Foo.Bar.A:System.Int32(System.Int32)"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.callee.fullName.headOption shouldBe Option("Foo.Bar.A:System.Int32(System.Int32)")
       }
     }
 
@@ -54,7 +52,6 @@ class CallGraphTests extends CSharpCode2CpgFixture {
           explicitB.methodFullName shouldBe "Foo.Bar.B:System.Int32(System.Int32)"
           explicitB.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
           explicitB.callee.fullName.headOption shouldBe Option("Foo.Bar.B:System.Int32(System.Int32)")
-        case xs => fail(s"Expected two `B` calls, got [${xs.code.mkString(",")}]")
       }
     }
 
@@ -64,17 +61,14 @@ class CallGraphTests extends CSharpCode2CpgFixture {
           implicitB.methodFullName shouldBe "Foo.Bar.B:System.Int32(System.Int32)"
           implicitB.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
           implicitB.callee.fullName.headOption shouldBe Option("Foo.Bar.B:System.Int32(System.Int32)")
-        case xs => fail(s"Expected two `B` calls, got [${xs.code.mkString(",")}]")
       }
     }
 
     "correctly resolve a dynamic dispatch to method `A` with an implicit receiver" in {
-      inside(cpg.call.nameExact("A").where(_.method.nameExact("Run")).l) {
-        case call :: Nil =>
-          call.methodFullName shouldBe "Foo.Bar.A:System.Int32(System.Int32)"
-          call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-          call.callee.fullName.headOption shouldBe Option("Foo.Bar.A:System.Int32(System.Int32)")
-        case xs => fail(s"Expected one `A` call, got [${xs.code.mkString(",")}]")
+      inside(cpg.call.nameExact("A").where(_.method.nameExact("Run")).l) { case call :: Nil =>
+        call.methodFullName shouldBe "Foo.Bar.A:System.Int32(System.Int32)"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.callee.fullName.headOption shouldBe Option("Foo.Bar.A:System.Int32(System.Int32)")
       }
     }
 

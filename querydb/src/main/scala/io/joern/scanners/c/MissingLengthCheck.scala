@@ -15,6 +15,7 @@ object MissingLengthCheck extends QueryBundle {
   implicit val resolver: ICallResolver = NoResolve
 
   @q
+  @scala.annotation.nowarn("cat=deprecation")
   def constantArrayAccessNoCheck()(implicit context: EngineContext): Query =
     Query.make(
       name = "constant-array-access-no-check",

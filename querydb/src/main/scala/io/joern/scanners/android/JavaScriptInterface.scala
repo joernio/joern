@@ -32,7 +32,7 @@ object JavaScriptInterface extends QueryBundle {
               callNode.method.literal.filter(_.code.stripPrefix("\"").stripSuffix("\"").startsWith("http:"))
             callNode.argument.reachableBy(httpLiterals).nonEmpty
           })
-        val appUsesCleartextTraffic = cpg.appManifest.usesCleartextTraffic.nonEmpty
+        val appUsesCleartextTraffic           = cpg.appManifest.usesCleartextTraffic.nonEmpty
         def exposedJavaScriptInterfaceObjects =
           if (appUsesCleartextTraffic) webViewsWithInsecureLoadUrlCalls.addJavascriptInterfaceCalls.argument(1)
           else Iterator.empty

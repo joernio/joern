@@ -28,7 +28,7 @@ RUN microdnf install -y gcc git-core php php-cli python3 python3-devel pcre2 whi
     && ./joern-install.sh \
     && useradd -ms /bin/bash joern \
     && chown -R joern:joern /opt/joern \
-    && rm /joern-cli.zip /joern-install.sh \
+    && rm /joern-cli-*.zip /joern-install.sh \
     && rm -rf /var/cache/yum \
     && microdnf clean all
 

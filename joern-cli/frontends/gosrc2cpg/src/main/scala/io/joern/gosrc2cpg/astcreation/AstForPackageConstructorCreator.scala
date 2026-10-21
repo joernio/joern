@@ -5,6 +5,7 @@ import io.joern.gosrc2cpg.parser.ParserAst.Unknown
 import io.joern.gosrc2cpg.parser.ParserNodeInfo
 import io.joern.x2cpg.astgen.{AstGenNodeBuilder, BaseNodeInfo}
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, Defines as XDefines}
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import org.apache.commons.lang3.StringUtils
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
@@ -16,6 +17,10 @@ class AstForPackageConstructorCreator(val pacakgePath: String, statements: Set[P
   withSchemaValidation: ValidationMode
 ) extends AstCreatorBase[BaseNodeInfo[?], AstForPackageConstructorCreator](pacakgePath)
     with AstGenNodeBuilder[AstForPackageConstructorCreator] {
+
+  override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] = AstCreator.offsetSource
+
+  override protected def unadjustedOffset(node: BaseNodeInfo[?]): Option[(Int, Int)] = AstCreator.unadjustedOffset(node)
 
   override def createAst(): DiffGraphBuilder = {
     val name       = StringUtils.normalizeSpace(s"$pacakgePath${XDefines.StaticInitMethodName}")

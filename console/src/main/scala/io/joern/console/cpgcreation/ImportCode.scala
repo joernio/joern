@@ -34,14 +34,16 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
     */
   def apply(inputPath: String, projectName: String = "", language: String = ""): Cpg = {
     checkInputPath(inputPath)
+    val errHint =
+      "To get an overview of all available language modules, try `importCode`.\nTo choose a specific language, try `importCode.<language>`."
     if (language != "") {
       generatorFactory.forLanguage(language) match {
-        case None           => throw new ConsoleException(s"No CPG generator exists for language: $language")
+        case None           => throw new ConsoleException(s"No CPG generator exists for language: $language\n$errHint")
         case Some(frontend) => apply(frontend, inputPath, projectName)
       }
     } else {
       generatorFactory.forCodeAt(inputPath) match {
-        case None           => throw new ConsoleException(s"No suitable CPG generator found for: $inputPath")
+        case None           => throw new ConsoleException(s"No suitable CPG generator found for: $inputPath\n$errHint")
         case Some(frontend) => apply(frontend, inputPath, projectName)
       }
     }
@@ -50,7 +52,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
   def c: SourceBasedFrontend    = new CFrontend("c")
   def cpp: SourceBasedFrontend  = new CFrontend("cpp", extension = "cpp")
   def java: SourceBasedFrontend = new SourceBasedFrontend("java", Languages.JAVASRC, "Java Source Frontend", "java")
-  def jvm: Frontend =
+  def jvm: Frontend             =
     new BinaryFrontend("jvm", Languages.JAVA, "Java/Dalvik Bytecode Frontend (based on SOOT's jimple)")
   def ghidra: Frontend = new BinaryFrontend("ghidra", Languages.GHIDRA, "ghidra reverse engineering frontend")
   def kotlin: SourceBasedFrontend =
@@ -64,12 +66,14 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
     new JsFrontend("jssrc", Languages.JSSRC, "Javascript/Typescript Source Frontend based on astgen", "js")
   def swiftsrc: SourceBasedFrontend =
     new SwiftSrcFrontend("swiftsrc", Languages.SWIFTSRC, "Swift Source Frontend based on swiftastgen", "swift")
-  def csharp: Frontend = new BinaryFrontend("csharp", Languages.CSHARP, "C# Source Frontend (Roslyn)")
+  def csharp: Frontend               = new BinaryFrontend("csharp", Languages.CSHARP, "C# Source Frontend (Roslyn)")
   def csharpsrc: SourceBasedFrontend =
     new SourceBasedFrontend("csharpsrc", Languages.CSHARPSRC, "C# Source Frontend based on DotNetAstGen", "cs")
   def llvm: Frontend            = new BinaryFrontend("llvm", Languages.LLVM, "LLVM Bitcode Frontend")
   def php: SourceBasedFrontend  = new SourceBasedFrontend("php", Languages.PHP, "PHP source frontend", "php")
   def ruby: SourceBasedFrontend = SourceBasedFrontend("ruby", Languages.RUBYSRC, "Ruby source frontend", "rb")
+  def rust: RustFrontend        = new RustFrontend()
+  def abap: SourceBasedFrontend = new SourceBasedFrontend("abap", Languages.ABAP, "ABAP Source Frontend", "abap")
 
   private def allFrontends: List[Frontend] =
     List(
@@ -88,7 +92,9 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
       python,
       csharp,
       ruby,
-      csharpsrc
+      csharpsrc,
+      abap,
+      rust
     )
 
   // this is only abstract to force people adding frontends to make a decision whether the frontend consumes binaries or source
@@ -100,8 +106,9 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
       config: FrontendConfig,
       rootPath: Path,
       args: List[String]
-    ): Option[CpgGenerator] =
+    ): Option[CpgGenerator] = {
       io.joern.console.cpgcreation.cpgGeneratorForLanguage(language, config, rootPath, args)
+    }
 
     def isAvailable: Boolean =
       cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath, args = Nil).exists(_.isAvailable)
@@ -172,31 +179,51 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
   class CFrontend(name: String, extension: String = "c")
       extends SourceBasedFrontend(name, Languages.NEWC, "Eclipse CDT Based Frontend for C/C++", extension)
 
-  private def withCodeInTmpFile(str: String, filename: String)(f: Path => Cpg): Try[Cpg] = {
-    val dir = Files.createTempDirectory("console")
-
-    val result = Try {
-      Files.writeString((dir / filename), str)
-      f(dir)
+  class RustFrontend extends SourceBasedFrontend("rust", Languages.RUST, "Rust Source Frontend", "rs") {
+    override def fromString(str: String, args: List[String] = List()): Cpg = {
+      fromStringWithExtraDeps(str, Nil, args)
     }
 
-    FileUtil.deleteOnExit(dir, swallowIOExceptions = true)
-    result
+    def fromStringWithExtraDeps(
+      str: String,
+      extraDeps: collection.Seq[String],
+      args: collection.Seq[String] = Nil
+    ): Cpg = {
+      FileUtil.usingTemporaryDirectory("console") { dir =>
+        Files.writeString(
+          dir / "Cargo.toml",
+          s"""[package]
+             |name = "importCode"
+             |version = "0.1.0"
+             |edition = "2021"
+             |
+             |
+             |[dependencies]
+             |${extraDeps.mkString("\n")}
+             |""".stripMargin
+        )
+        Files.createDirectory(dir / "src")
+        Files.writeString(dir / "src" / "lib.rs", str)
+        super.apply(dir.toString, args = args.toList)
+      }
+    }
+  }
+
+  private def withCodeInTmpFile(str: String, filename: String)(callback: Path => Cpg): Try[Cpg] = {
+    FileUtil.usingTemporaryDirectory("console") { dir =>
+      Try {
+        Files.writeString((dir / filename), str)
+        callback(dir)
+      }
+    }
   }
 
   private def withFileInTmpFile(inputPath: String)(f: Path => Cpg): Try[Cpg] = {
-    val dir = Files.createTempDirectory("console")
-
-    try {
-      val result = Try {
+    FileUtil.usingTemporaryDirectory("console") { dir =>
+      Try {
         Paths.get(inputPath).copyToDirectory(dir)
         f(dir)
       }
-
-      result
-    } finally {
-      // Always attempt to clean up, regardless of success or failure
-      FileUtil.deleteOnExit(dir)
     }
   }
 

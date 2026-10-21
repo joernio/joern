@@ -1,12 +1,12 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class TryCpgTests extends AnyFreeSpec with Matchers {
-  private val cpg = Py2CpgTestContext.buildCpg("""
+class TryCpgTests extends PySrc2CpgFixture with Matchers {
+  private val cpg = code("""
       |def divide(x, y):
       |  try:
       |    result = x / y
@@ -36,5 +36,12 @@ class TryCpgTests extends AnyFreeSpec with Matchers {
     val List(finallyBlock) = tryNode.astChildren.isControlStructure.isFinally.l
     finallyBlock.order shouldBe 5
     finallyBlock.ast.isCall.code.l shouldBe List("""print("executing finally clause")""")
+  }
+
+  "connect try, catch and finally via explicit body edges" in {
+    val List(tryNode) = cpg.tryBlock.l
+    tryNode.tryBodyOut.code.l shouldBe List("result = x / y")
+    tryNode.catchBodyOut.code.sorted.l shouldBe List("""print("division by zero!")""", """print("other error")""")
+    tryNode.finallyBodyOut.code.l shouldBe List("""print("executing finally clause")""")
   }
 }

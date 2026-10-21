@@ -8,6 +8,7 @@ import java.util.zip.{ZipEntry, ZipFile}
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters.*
 import scala.util.Using
+import scala.util.control.NonFatal
 
 object FileUtil {
   def currentWorkingDirectory: Path = Paths.get("").toAbsolutePath.normalize()
@@ -37,7 +38,7 @@ object FileUtil {
       try {
         delete(file, swallowIoExceptions = true)
       } catch {
-        case _: Exception => // Ensure we don't throw from finally
+        case NonFatal(_) => // Ensure we don't throw from finally
       }
     }
   }
@@ -178,21 +179,22 @@ object FileUtil {
       zipFilter: ZipEntry => Boolean = _ => true,
       bufferSize: Int = 8192
     ): destination.type = {
-      Using.Manager { use =>
-        val zipFile = use(new ZipFile(p.absolutePathAsString, Charset.defaultCharset()))
+      Using.resource(new ZipFile(p.absolutePathAsString, Charset.defaultCharset())) { zipFile =>
         val entries = zipFile.entries().asScala.filter(zipFilter)
 
         entries.foreach { entry =>
           val entryName = entry.getName.replace("\\", "/")
-          val child = (destination / entryName).createWithParentsIfNotExists(
+          val child     = (destination / entryName).createWithParentsIfNotExists(
             asDirectory = entry.isDirectory,
             createParents = true
           )
 
           if (!entry.isDirectory) {
-            val zipStream    = use(zipFile.getInputStream(entry))
-            val outputStream = use(Files.newOutputStream(child))
-            pipeTo(zipStream, outputStream, Array.ofDim[Byte](bufferSize))
+            Using.resource(zipFile.getInputStream(entry)) { zipStream =>
+              Using.resource(Files.newOutputStream(child)) { outputStream =>
+                pipeTo(zipStream, outputStream, Array.ofDim[Byte](bufferSize))
+              }
+            }
           }
         }
       }
@@ -239,7 +241,7 @@ object FileUtil {
     def extension(includeDot: Boolean = true): Option[String] = {
       if (hasExtension) {
         val idx    = p.fileName.lastIndexOf(".")
-        val dotIdx = if includeDot then idx else idx + 1
+        val dotIdx = if (includeDot) idx else idx + 1
         Some(p.fileName.substring(dotIdx).toLowerCase)
       } else {
         None

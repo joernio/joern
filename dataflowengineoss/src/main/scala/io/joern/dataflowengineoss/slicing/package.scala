@@ -237,8 +237,7 @@ package object slicing {
     lineNumber: Option[Int] = None,
     columnNumber: Option[Int] = None,
     label: String = "LOCAL"
-  ) extends DefComponent
-      derives ReadWriter
+  ) extends DefComponent derives ReadWriter
 
   /** Represents a literal.
     */
@@ -248,8 +247,7 @@ package object slicing {
     lineNumber: Option[Int] = None,
     columnNumber: Option[Int] = None,
     label: String = "LITERAL"
-  ) extends DefComponent
-      derives ReadWriter
+  ) extends DefComponent derives ReadWriter
 
   /** Represents data introduced via a parameter.
     *
@@ -263,8 +261,7 @@ package object slicing {
     lineNumber: Option[Int] = None,
     columnNumber: Option[Int] = None,
     label: String = "PARAM"
-  ) extends DefComponent
-      derives ReadWriter {
+  ) extends DefComponent derives ReadWriter {
     override def toString: String = super.toString + s" @ pos #$position"
   }
 
@@ -280,9 +277,8 @@ package object slicing {
     lineNumber: Option[Int] = None,
     columnNumber: Option[Int] = None,
     label: String = "CALL"
-  ) extends DefComponent
-      derives ReadWriter {
-    override def toString: String = super.toString + resolvedMethod.map(s => s" @ $s").getOrElse("")
+  ) extends DefComponent derives ReadWriter {
+    override def toString: String = super.toString + resolvedMethod.map(resolved => s" @ $resolved").getOrElse("")
   }
 
   /** Represents data introduced by an unhandled data structure.
@@ -293,8 +289,7 @@ package object slicing {
     lineNumber: Option[Int] = None,
     columnNumber: Option[Int] = None,
     label: String = "UNKNOWN"
-  ) extends DefComponent
-      derives ReadWriter
+  ) extends DefComponent derives ReadWriter
 
   // The following encoders make sure the object does follow ClassName: { properties ... } format but instead
   // is just { properties }. This makes it less automatically serializable but we have `label` to encode classes.
@@ -334,7 +329,7 @@ package object slicing {
     def fromNode(node: StoredNode, typeMap: Map[String, String] = Map.empty[String, String]): DefComponent = {
       val typeFullNameProperty             = node.propertyOption(Properties.TypeFullName).getOrElse("ANY")
       val dynamicTypeHintFullNamesProperty = node.property(Properties.DynamicTypeHintFullName)
-      val nodeType = (typeFullNameProperty +: dynamicTypeHintFullNamesProperty)
+      val nodeType                         = (typeFullNameProperty +: dynamicTypeHintFullNamesProperty)
         .filterNot(_.matches("(ANY|UNKNOWN)"))
         .headOption
         .getOrElse("ANY")
@@ -342,7 +337,7 @@ package object slicing {
       val lineNumber   = node.propertyOption(Properties.LineNumber)
       val columnNumber = node.propertyOption(Properties.ColumnNumber)
       node match {
-        case x: MethodParameterIn => ParamDef(x.name, typeFullName, x.index, lineNumber, columnNumber)
+        case x: MethodParameterIn                 => ParamDef(x.name, typeFullName, x.index, lineNumber, columnNumber)
         case x: Call if x.code.startsWith("new ") =>
           val typeName = x.code.stripPrefix("new ").takeWhile(!_.equals('('))
           CallDef(
@@ -360,7 +355,7 @@ package object slicing {
         case x: Local      => LocalDef(x.name, typeFullName, lineNumber, columnNumber)
         case x: Literal    => LiteralDef(x.code, typeFullName, lineNumber, columnNumber)
         case x: Member     => LocalDef(x.name, typeFullName, lineNumber, columnNumber)
-        case x: AstNode =>
+        case x: AstNode    =>
           logger.warn(s"Unhandled conversion from node type ${x.label} to DefComponent")
           UnknownDef(x.code, typeFullName, lineNumber, columnNumber)
       }
@@ -399,8 +394,7 @@ package object slicing {
     returnType: String,
     lineNumber: Option[Int] = None,
     columnNumber: Option[Int] = None
-  ) extends UsedCall(callName, resolvedMethod, paramTypes, returnType, lineNumber, columnNumber)
-      derives ReadWriter
+  ) extends UsedCall(callName, resolvedMethod, paramTypes, returnType, lineNumber, columnNumber) derives ReadWriter
 
   /** Extends observed call with a specific argument in mind.
     *

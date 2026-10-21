@@ -2,7 +2,6 @@ package io.shiftleft.semanticcpg.sarif.v2_1_0
 
 import io.shiftleft.semanticcpg.sarif.SarifSchema
 import io.shiftleft.semanticcpg.sarif.SarifSchema.Location
-import org.json4s.{CustomSerializer, Extraction}
 
 import java.net.URI
 

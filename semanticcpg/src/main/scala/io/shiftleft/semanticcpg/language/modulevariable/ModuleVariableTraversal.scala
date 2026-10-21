@@ -12,21 +12,25 @@ class ModuleVariableTraversal(traversal: Iterator[OpNodes.ModuleVariable]) exten
 
   @Doc(info = "All assignments where the module variables in this traversal are the target across the program")
   def definitions: Iterator[Assignment] = traversal.references.flatMap {
-    case x: Identifier      => x.start.inAssignment.filter(_.target == x)
-    case x: FieldIdentifier => x.inAssignment.filter(_.target.contains(x.inFieldAccess))
+    case ident @ Identifier(argumentIndex = 1) => ident.inCall.isAssignment
+    case ident: Identifier                     => Iterator.empty
+    case field: FieldIdentifier                =>
+      field.inCall.repeat(_.inCall)(_.whilst(_.isFieldAccess.argumentIndex(1))).isAssignment
   }
 
   @Doc(info = "Calls this module variable invokes across the program")
-  def invokingCalls: Iterator[Call] =
+  def invokingCalls: Iterator[Call] = {
     traversal.references
       .flatMap {
-        case x: Identifier      => x :: Nil
-        case x: FieldIdentifier => x.fieldAccess
+        case ident: Identifier      => Iterator.single(ident)
+        case field: FieldIdentifier =>
+          field.inCall.repeat[Call](_.inCall)(_.whilst(_.isFieldAccess.argumentIndex(1)))
       }
       .argumentIndexLte(1)
       .inCall
       .dedup
       .iterator
+  }
 
   @Doc(info =
     "References of this module variable across the codebase, as either identifiers or field identifiers, depending on" +
@@ -34,12 +38,12 @@ class ModuleVariableTraversal(traversal: Iterator[OpNodes.ModuleVariable]) exten
   )
   def references: Iterator[Identifier | FieldIdentifier] = {
     val variables = traversal.toList
-    variables.headOption.map(node => Cpg(node.graph)) match
+    variables.headOption.map(node => Cpg(node.graph)) match {
       case Some(cpg) =>
         val modules       = cpg.method.isModule.l
         val variableNames = variables.name.toSet
         val immediateRef  = variables.referencingIdentifiers
-        val externalRefs = modules.call
+        val externalRefs  = modules.call
           .where(_.referencedImports)
           .flatMap { call =>
             val module = call.method
@@ -52,11 +56,12 @@ class ModuleVariableTraversal(traversal: Iterator[OpNodes.ModuleVariable]) exten
               }
               .flatMap { case (alias, _) =>
                 module.local.nameExact(alias).referencingIdentifiers ++
-                  module.fieldAccess.fieldIdentifier.canonicalNameExact(alias)
+                  module.call.isFieldAccess.fieldIdentifier.canonicalNameExact(alias)
               }
           }
         (immediateRef ++ externalRefs).collectAll[Identifier | FieldIdentifier]
       case None => Iterator.empty
+    }
   }
 
   private def extractAliasNodePair(i: Import): Seq[(String, AstNode)] = {
@@ -80,9 +85,10 @@ class ModuleVariableTraversal(traversal: Iterator[OpNodes.ModuleVariable]) exten
     val variables          = traversal.toList
     lazy val moduleNames   = variables.method.isModule.fullName.dedup.toSeq
     lazy val variableNames = variables.name.toSeq
-    variables.headOption.map(node => Cpg(node.graph)) match
+    variables.headOption.map(node => Cpg(node.graph)) match {
       case Some(cpg) => cpg.typeDecl.fullNameExact(moduleNames*).member.nameExact(variableNames*)
       case None      => Iterator.empty
+    }
   }
 
 }

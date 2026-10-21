@@ -1,12 +1,12 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
+import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, MethodRef}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{ControlStructure, Identifier, MethodRef}
 import io.shiftleft.semanticcpg.language.*
 
-class JsClassesAstCreationPassTests extends AstJsSrc2CpgSuite {
+class JsClassesAstCreationPassTests extends JsSrc2CpgSuite {
 
   "AST generation for JS classes" should {
 
@@ -142,13 +142,13 @@ class JsClassesAstCreationPassTests extends AstJsSrc2CpgSuite {
       d.code shouldBe "static d"
 
       val List(clInitMethod)         = classATypeDecl.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l
-      val List(cInitCall, dInitCall) = clInitMethod.block.assignment.l
+      val List(cInitCall, dInitCall) = clInitMethod.block.astChildren.isCall.isAssignment.l
       cInitCall.code shouldBe "static c = true"
       dInitCall.code shouldBe "this.d = false"
 
       val List(constructor) =
         cpg.typeDecl.nameExact("ClassA").method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l
-      val List(aInitCall, bInitCall, eInitCall, fInitCall, gCall) = constructor.block.assignment.l
+      val List(aInitCall, bInitCall, eInitCall, fInitCall, gCall) = constructor.block.astChildren.isCall.isAssignment.l
       aInitCall.code shouldBe "a = 1"
       bInitCall.code shouldBe """b = "foo""""
       eInitCall.code shouldBe "this.e = param1"
@@ -314,11 +314,12 @@ class JsClassesAstCreationPassTests extends AstJsSrc2CpgSuite {
     "have correct structure for throw new exceptions" in {
       val cpg             = code("function foo() { throw new Foo(); }")
       val List(fooBlock)  = cpg.method.nameExact("foo").astChildren.isBlock.l
-      val List(throwCall) = fooBlock.astChildren.isCall.codeExact("throw new Foo();").l
-      throwCall.name shouldBe "<operator>.throw"
+      val List(throwNode) = fooBlock.astChildren.isControlStructure.codeExact("throw new Foo();").l
+      throwNode.controlStructureType shouldBe ControlStructureTypes.THROW
 
-      val List(newCallBlock) = throwCall.astChildren.isBlock.codeExact("new Foo()").l
-      val tmpName            = "_tmp_0"
+      val List(newCallBlock) = throwNode.astChildren.isBlock.codeExact("new Foo()").l
+      throwNode.argumentOut.l shouldBe List(newCallBlock)
+      val tmpName = "_tmp_0"
 
       val List(localTmp) = newCallBlock.astChildren.isLocal.l
       localTmp.name shouldBe tmpName

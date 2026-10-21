@@ -2,6 +2,7 @@ package io.joern.kotlin2cpg
 
 import io.joern.kotlin2cpg.Frontend.*
 import io.joern.x2cpg.{DependencyDownloadConfig, X2CpgConfig, X2CpgMain}
+import io.joern.x2cpg.utils.dependency.DependencyResolverV2
 import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import scopt.OParser
 
@@ -16,6 +17,7 @@ final case class Config(
   includeJavaSourceFiles: Boolean = false,
   generateNodesForDependencies: Boolean = false,
   downloadDependencies: Boolean = false,
+  enableDependencyResolverV2: Boolean = false,
   keepTypeArguments: Boolean = false,
   override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig()
 ) extends X2CpgConfig[Config]
@@ -56,6 +58,12 @@ final case class Config(
     this.copy(downloadDependencies = value)
   }
 
+  def withEnableDependencyResolverV2(value: Boolean): Config = {
+    // If v2 is enabled (value == true), also enable downloadDependencies to avoid having to specify
+    // 2 separate flags, otherwise leave downloadDependencies unchanged.
+    this.copy(enableDependencyResolverV2 = value, downloadDependencies = downloadDependencies || value)
+  }
+
   def withKeepTypeArguments(value: Boolean): Config = {
     copy(keepTypeArguments = value)
   }
@@ -93,6 +101,12 @@ private object Frontend {
         .text("Generate nodes for the dependencies of the target project")
         .action((_, c) => c.withGenerateNodesForDependencies(true)),
       DependencyDownloadConfig.parserOptions,
+      opt[Unit]("enable-dependency-resolver-v2")
+        .text(
+          "use the new (experimental) dependency resolver pipeline; can also be enabled via the " +
+            s"${DependencyResolverV2.EnableEnvVar} environment variable."
+        )
+        .action((_, conf) => conf.withEnableDependencyResolverV2(true)),
       opt[Unit]("keep-type-arguments")
         .hidden()
         .action((_, c) => c.withKeepTypeArguments(true))

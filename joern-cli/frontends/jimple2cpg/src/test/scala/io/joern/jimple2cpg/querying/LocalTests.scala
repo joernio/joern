@@ -16,32 +16,32 @@ class LocalTests extends JimpleCode2CpgFixture {
       |     Integer y = null;
       |     x = 1;
       |     y = new Integer(x);
-      |     return y;
+      |     return x + y;
       |   }
       | }
       |""".stripMargin).cpg
 
   "should contain locals `x` and `y` with correct fields set" in {
-    val List(x: Local) = cpg.local("\\$stack3").l
+    val List(x: Local) = cpg.local("\\$stack4").l
     val List(y: Local) = cpg.local("y").l
-    x.name shouldBe "$stack3"
-    x.code shouldBe "java.lang.Integer $stack3"
-    x.typeFullName shouldBe "java.lang.Integer"
-    x.order shouldBe 1
+    x.name shouldBe "$stack4"
+    x.code shouldBe "int $stack4"
+    x.typeFullName shouldBe "int"
+    x.order shouldBe 2
 
     y.name shouldBe "y"
     y.code shouldBe "java.lang.Integer y"
     y.typeFullName shouldBe "java.lang.Integer"
-    y.order shouldBe 2
+    y.order shouldBe 1
   }
 
   "should allow traversing from local to identifier" in {
     val ys = cpg.local.nameExact("y").referencingIdentifiers.l
-    ys.size shouldBe 2
+    ys.size shouldBe 5
     ys.head.name shouldBe "y"
-    val xs = cpg.local.nameExact("$stack3").referencingIdentifiers.l
-    xs.size shouldBe 3
-    xs.head.name shouldBe "$stack3"
+    val xs = cpg.local.nameExact("$stack4").referencingIdentifiers.l
+    xs.size shouldBe 4
+    xs.head.name shouldBe "$stack4"
   }
 
 }

@@ -2,13 +2,13 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-class AsyncSyntaxTests extends AstSwiftSrc2CpgSuite {
+class AsyncSyntaxTests extends SwiftSrc2CpgSuite {
 
   "AsyncSyntaxTests" should {
 
@@ -47,11 +47,16 @@ class AsyncSyntaxTests extends AstSwiftSrc2CpgSuite {
       cpg.typeDecl.fullNameExact("Test0.swift:<global>.<Swift.Function>2").size shouldBe 1
     }
 
-    "testAsyncSyntax3" ignore {
+    "testAsyncSyntax3" in {
       val cpg = code("""
         |let _ = [() async -> ()]()
         |let _ = [() async throws -> ()]()""".stripMargin)
-      ???
+      val asyncCalls = cpg.call.code(".*\\(\\)$").nameNot(Operators.assignment).code.l
+      asyncCalls should contain allOf ("[() async -> ()]()", "[() async throws -> ()]()")
+      cpg.call.nameExact(Operators.arrayInitializer).code.l should contain allOf (
+        "[() async -> ()]",
+        "[() async throws -> ()]"
+      )
     }
 
     "testAsyncSyntax4" in {
@@ -75,7 +80,7 @@ class AsyncSyntaxTests extends AstSwiftSrc2CpgSuite {
       f3.fullName shouldBe "Test0.swift:<global>.<lambda>2:()->ANY"
     }
 
-    "testAsyncSyntax6" ignore {
+    "testAsyncSyntax6" in {
       val cpg = code("""
         |func testAwait() async {
         |  let _ = await asyncGlobal1()

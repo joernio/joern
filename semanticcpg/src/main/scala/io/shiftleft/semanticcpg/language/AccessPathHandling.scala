@@ -41,8 +41,8 @@ object AccessPathHandling {
         memberAccess
           .argumentOption(2)
           .collect {
-            case node: Literal    => ConstantAccess(node.code)
-            case node: Identifier => ConstantAccess(node.name)
+            case node: Literal                                            => ConstantAccess(node.code)
+            case node: Identifier                                         => ConstantAccess(node.name)
             case other if other.propertyOption(Properties.Name).isDefined =>
               val properties = other.propertiesMap
               logger.warn(s"unexpected/deprecated node encountered: $other with properties: $properties")
@@ -92,7 +92,7 @@ object AccessPathHandling {
             s" In method ${memberAccess.method.fullName}"
         )
         VariableAccess
-      case Some(literal: Literal) => ConstantAccess(literal.code)
+      case Some(literal: Literal)                 => ConstantAccess(literal.code)
       case Some(fieldIdentifier: FieldIdentifier) =>
         ConstantAccess(fieldIdentifier.canonicalName)
       case Some(identifier: Identifier) =>
@@ -113,7 +113,7 @@ object AccessPathHandling {
             s" In method ${memberAccess.method.fullName}"
         )
         VariableAccess
-      case Some(literal: Literal) => ConstantAccess(literal.code)
+      case Some(literal: Literal)                 => ConstantAccess(literal.code)
       case Some(fieldIdentifier: FieldIdentifier) =>
         ConstantAccess(fieldIdentifier.canonicalName)
       case _ => VariableAccess

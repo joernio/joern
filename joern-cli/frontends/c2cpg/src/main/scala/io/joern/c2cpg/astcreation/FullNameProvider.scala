@@ -17,17 +17,18 @@ object FullNameProvider {
 
   type MethodLike = IASTFunctionDeclarator | IASTFunctionDefinition | ICPPASTLambdaExpression
 
-  private val TagsToKeepInFullName = List(
+  private val TagsToKeepInFullName = Set(
     "<anonymous>",
+    "<const>",
+    "<duplicate>",
+    "<enum>",
+    "<extension>",
+    "<global>",
     "<iterator>",
     "<lambda>",
-    "<global>",
     "<param>",
-    "<const>",
-    "<alias>",
-    "<type>",
-    "<enum>",
-    "<tmp>"
+    "<tmp>",
+    "<type>"
   )
 
   /** Removes template type parameters from qualified names while preserving special tags.
@@ -76,6 +77,31 @@ object FullNameProvider {
     }
   }
 
+  /** Removes the `operator` keyword from the name of a C++ overloaded operator or conversion function.
+    *
+    * Declarations are named without the keyword, so call sites have to use the same spelling for `CALL.methodFullName`
+    * to be able to equal `METHOD.fullName`.
+    *
+    * Examples:
+    * {{{
+    *  replaceOperator("operator ()") == "()"
+    *  replaceOperator("operator []") == "[]"
+    *  replaceOperator("operator Kind") == "Kind"
+    * }}}
+    *
+    * @param input
+    *   The input string that may contain the `operator` keyword
+    * @return
+    *   The string with the `operator` keyword removed
+    */
+  def replaceOperator(input: String): String = {
+    input
+      .replace("operator class ", "")
+      .replace("operator enum ", "")
+      .replace("operator struct ", "")
+      .replace("operator ", "")
+  }
+
   final case class MethodFullNameInfo(name: String, fullName: String, signature: String, returnType: String)
 
   final case class TypeFullNameInfo(name: String, fullName: String)
@@ -87,9 +113,11 @@ trait FullNameProvider { this: AstCreator =>
 
   protected def replaceQualifiedNameSeparator(name: String): String = {
     if (name.isEmpty || name == Defines.Any || name == Defines.Void) return name
-    val normalizedName = StringUtils.normalizeSpace(name)
-    normalizedName.replace(Defines.QualifiedNameSeparator, ".").stripPrefix(".")
+    StringUtils.normalizeSpace(name).replace(Defines.QualifiedNameSeparator, ".").stripPrefix(".")
   }
+
+  protected def applyQualifiedNameSeparator(normalizedName: String): String =
+    normalizedName.replace(Defines.QualifiedNameSeparator, ".").stripPrefix(".")
 
   protected def methodFullNameInfo(methodLike: MethodLike): MethodFullNameInfo = {
     val name_             = shortName(methodLike)
@@ -108,7 +136,6 @@ trait FullNameProvider { this: AstCreator =>
       case d: CPPASTIdExpression              => shortNameForCPPASTIdExpression(d)
       case u: IASTUnaryExpression             => shortName(u.getOperand)
       case c: IASTFunctionCallExpression      => shortName(c.getFunctionNameExpression)
-      case a: ICPPASTNamespaceAlias           => shortName(a.getAlias)
       case d: IASTIdExpression                => shortName(d.getName)
       case m: IASTPreprocessorMacroDefinition => shortName(m.getName)
       case n: ICPPASTNamespaceDefinition      => shortName(n.getName)
@@ -131,7 +158,6 @@ trait FullNameProvider { this: AstCreator =>
       case None =>
         val qualifiedName = node match {
           case _: IASTTranslationUnit                            => ""
-          case alias: ICPPASTNamespaceAlias                      => fullNameForICPPASTNamespaceAlias(alias)
           case aliasDecl: ICPPASTAliasDeclaration                => fullNameForICPPASTAliasDeclaration(aliasDecl)
           case namespace: ICPPASTNamespaceDefinition             => fullNameForICPPASTNamespaceDefinition(namespace)
           case compType: IASTCompositeTypeSpecifier              => fullNameForIASTCompositeTypeSpecifier(compType)
@@ -184,17 +210,13 @@ trait FullNameProvider { this: AstCreator =>
     Try(ASTStringUtil.getQualifiedName(qfn)).getOrElse(nextClosureName())
   }
 
-  private def fullNameForICPPASTNamespaceAlias(alias: ICPPASTNamespaceAlias): String = {
-    ASTStringUtil.getQualifiedName(alias.getMappingName)
-  }
-
   private def fullNameForICPPASTAliasDeclaration(alias: ICPPASTAliasDeclaration): String = {
     ASTStringUtil.getQualifiedName(alias.getAlias)
   }
 
   private def fullNameForICPPASTLambdaExpression(): String = {
     val globalFullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
-    val fullName = scope.computeScopePath match {
+    val fullName       = scope.computeScopePath match {
       case ""    => ""
       case other => s".$other"
     }
@@ -211,7 +233,7 @@ trait FullNameProvider { this: AstCreator =>
     signature: String,
     methodLike: MethodLike
   ): String = {
-    fullName match {
+    fullName.stripSuffix(".") match {
       case f if methodLike.isInstanceOf[ICPPASTLambdaExpression] && (f.contains("[") || f.contains("{")) =>
         s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature"
       case f if methodLike.isInstanceOf[ICPPASTLambdaExpression] && f.isEmpty =>
@@ -231,7 +253,7 @@ trait FullNameProvider { this: AstCreator =>
 
   private def parameterListSignature(func: IASTNode): String = {
     val parameter = parameters(func)
-    val elements = parameter.map {
+    val elements  = parameter.map {
       case p: IASTParameterDeclaration => typeForDeclSpecifier(p.getDeclSpecifier)
       case other                       => typeForDeclSpecifier(other)
     }
@@ -275,14 +297,6 @@ trait FullNameProvider { this: AstCreator =>
     }
   }
 
-  private def replaceOperator(name: String): String = {
-    name
-      .replace("operator class ", "")
-      .replace("operator enum ", "")
-      .replace("operator struct ", "")
-      .replace("operator ", "")
-  }
-
   @tailrec
   private def isConst(node: IASTNode): Boolean = {
     node match {
@@ -301,6 +315,13 @@ trait FullNameProvider { this: AstCreator =>
 
   }
 
+  protected def bindsToConstructor(funcDecl: IASTFunctionDeclarator): Boolean = {
+    safeGetBinding(funcDecl.getName) match {
+      case Some(_: ICPPConstructor) => true
+      case _                        => bindsToConstructor(funcDecl.getName)
+    }
+  }
+
   protected def bindsToConstructor(name: IASTName): Boolean = {
     val fullName_ = ASTStringUtil.getQualifiedName(name)
     val name_     = ASTStringUtil.getSimpleName(name)
@@ -316,9 +337,9 @@ trait FullNameProvider { this: AstCreator =>
           case Some(evalBinding: EvalBinding) =>
             evalBinding.getBinding match {
               case f: CPPFunction if f.getDeclarations != null =>
-                Option(f.getDeclarations.headOption.map(n => s"${fullName(n)}").getOrElse(f.getName))
+                Option(f.getDeclarations.headOption.map(decl => fullName(decl)).getOrElse(f.getName))
               case f: CPPFunction if f.getDefinition != null =>
-                Option(s"${fullName(f.getDefinition)}")
+                Option(fullName(f.getDefinition))
               case other =>
                 Option(other.getName)
             }
@@ -328,7 +349,7 @@ trait FullNameProvider { this: AstCreator =>
         safeGetBinding(declarator.getName) match {
           case Some(function: ICPPFunction) if declarator.getName.isInstanceOf[ICPPASTConversionName] =>
             val tpe        = cleanType(typeFor(declarator.getName.asInstanceOf[ICPPASTConversionName].getTypeId))
-            val returnType = cleanType(safeGetType(function.getType.getReturnType))
+            val returnType = cleanType(safeCdtCall(safeGetType(function.getType.getReturnType)).getOrElse(Defines.Any))
             val fullNameNoSig = replaceQualifiedNameSeparator(
               function.getQualifiedName.takeWhile(!_.startsWith("operator ")).mkString(".")
             )
@@ -348,12 +369,16 @@ trait FullNameProvider { this: AstCreator =>
             Option(fn)
           case Some(function: ICPPFunction) =>
             val fullNameNoSig = replaceQualifiedNameSeparator(replaceOperator(function.getQualifiedName.mkString(".")))
-            val fn = if (function.isExternC) {
+            // For plain extern "C" free functions, use just the unqualified name (C linkage,
+            // no mangling). However, class methods inside extern "C" blocks (ICPPMethod) must
+            // retain their qualified name and signature. Otherwise overloaded operators like
+            // operator[](int) and operator[](const char*) collapse to the same fullName "[]".
+            val fn = if (function.isExternC && !function.isInstanceOf[ICPPMethod]) {
               replaceOperator(function.getName)
             } else {
               val returnTpe = declarator.getParent match {
                 case definition: ICPPASTFunctionDefinition if !bindsToConstructor(definition) => returnType(definition)
-                case _ => safeGetType(function.getType.getReturnType)
+                case _ => safeCdtCall(safeGetType(function.getType.getReturnType)).getOrElse(Defines.Any)
               }
               val sig = signature(cleanType(returnTpe), declarator)
               s"${stripTemplateTags(fullNameNoSig)}:$sig"
@@ -361,8 +386,10 @@ trait FullNameProvider { this: AstCreator =>
             Option(fn)
           case Some(x @ (_: ICPPField | _: CPPVariable)) =>
             val fullNameNoSig = replaceQualifiedNameSeparator(x.getQualifiedName.mkString("."))
-            val fn = if (x.isExternC) { x.getName }
-            else { s"${stripTemplateTags(fullNameNoSig)}:${cleanType(safeGetType(x.getType))}" }
+            val fn            = if (x.isExternC) { x.getName }
+            else {
+              s"${stripTemplateTags(fullNameNoSig)}:${cleanType(safeCdtCall(safeGetType(x.getType)).getOrElse(Defines.Any))}"
+            }
             Option(fn)
           case Some(_: IProblemBinding) if bindsToConstructor(declarator.getName) =>
             val fullNameNoSig = replaceQualifiedNameSeparator(
@@ -374,7 +401,7 @@ trait FullNameProvider { this: AstCreator =>
           case Some(_: IProblemBinding) =>
             val fullNameNoSig = replaceOperator(ASTStringUtil.getQualifiedName(declarator.getName))
             val fixedFullName = replaceQualifiedNameSeparator(fullNameNoSig)
-            val returnTpe = declarator.getParent match {
+            val returnTpe     = declarator.getParent match {
               case definition: ICPPASTFunctionDefinition if !bindsToConstructor(definition) => returnType(definition)
               case _                                                                        => returnType(declarator)
             }

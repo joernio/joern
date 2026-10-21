@@ -49,7 +49,7 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
 
   private def testWithArguments(exclude: Seq[String], excludeRegex: String, expectedFiles: Set[String]): Unit = {
     FileUtil.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
-      val cpg = newEmptyCpg()
+      val cpg    = newEmptyCpg()
       val config = Config(tsTypes = false)
         .withInputPath(projectUnderTest.toString)
         .withOutputPath(tmpDir.toString)
@@ -147,6 +147,24 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
       s"$statement" in testWithArguments(exclude, excludeRegex, result)
     }
 
+  }
+
+  "Forwarding --exclude-regex to astgen" should {
+    "prevent the binary from emitting a JSON for an excluded file" in {
+      // Verifies that the regex actually reaches the binary: post-filtering in
+      // execute() would also drop the file from the CPG, so we inspect the raw
+      // astgen output directory directly.
+      FileUtil.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
+        val config = Config()
+          .withInputPath(projectUnderTest.toString)
+          .withOutputPath(tmpDir.toString)
+          .withIgnoredFilesRegex(".*index\\..*")
+        new AstGenRunner(config).execute(tmpDir)
+        val emittedJsons = tmpDir.listFiles().map(_.getFileName.toString).toSet
+        emittedJsons should not contain "index.js.json"
+        emittedJsons should contain("a.js.json")
+      }
+    }
   }
 
 }
