@@ -632,7 +632,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         baseTypes
       } else if (existingMembers.isEmpty) {
         // If not available, use a dummy variable that can be useful for call matching
-        baseTypes.map(t => XTypeRecovery.dummyMemberType(t, fieldName, pathSep))
+        baseTypes.map(baseType => XTypeRecovery.dummyMemberType(baseType, fieldName, pathSep))
       } else {
         Set.empty
       }
@@ -1080,16 +1080,16 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       (firstAccess, fieldNames) <- unpackFieldAccessChain(receiver) if fieldNames.nonEmpty
     } {
       val instanceTypes = fieldNames.init.foldLeft(getFieldLoadTypes(firstAccess)) { (types, field) =>
-        types.flatMap { t =>
-          val memberTypes = typeDeclIterator(t).member
+        types.flatMap { baseType =>
+          val memberTypes = typeDeclIterator(baseType).member
             .nameExact(field)
-            .flatMap(m => m.typeFullName +: (m.dynamicTypeHintFullName ++ m.possibleTypes))
+            .flatMap(member => member.typeFullName +: (member.dynamicTypeHintFullName ++ member.possibleTypes))
             .filterNot(_ == "ANY")
             .toSet
-          lazy val knownTypes = symbolTable.get(LocalVar(s"$t$pathSep$field"))
+          lazy val knownTypes = symbolTable.get(LocalVar(s"$baseType$pathSep$field"))
           if (memberTypes.nonEmpty) memberTypes
           else if (knownTypes.nonEmpty) knownTypes
-          else Set(XTypeRecovery.dummyMemberType(t, field, pathSep))
+          else Set(XTypeRecovery.dummyMemberType(baseType, field, pathSep))
         }
       }
       persistType(call, instanceTypes.map(createCallFromIdentifierTypeFullName(_, fieldNames.last)))
