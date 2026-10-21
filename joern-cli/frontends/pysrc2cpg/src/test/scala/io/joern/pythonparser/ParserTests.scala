@@ -1121,6 +1121,16 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("x = type")
   }
 
+  "test lazy keyword" in {
+    testT("lazy import x", "import x")
+    testT("lazy from x import y", "from x import y")
+  }
+
+  "test non keyword 'lazy' usages" in {
+    testT("lazy = 1")
+    testT("from x import lazy")
+  }
+
   "non-latin identifier name tests" in {
     testT("print(Σ_1)")
     testT("print(ø2)")
