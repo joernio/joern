@@ -79,15 +79,38 @@ trait AstForPrimitivesCreator { this: AstCreator =>
       case Some(ref) => Ast(ref)
       case None      =>
         val identifierName = nameForIdentifier(ident)
-        typeNameForIdentifier(ident, identifierName) match {
-          case identifierTypeName: String =>
-            val tpe       = registerType(identifierTypeName)
-            val globalTag = globalTagFromDefinition(ident)
-            val node      = identifierNode(ident, identifierName, s"$globalTag${code(ident)}", tpe)
-            scope.addVariableReference(identifierName, node, tpe, EvaluationStrategies.BY_REFERENCE)
-            Ast(node)
-          case ast: Ast => ast
+        maybeAstForEnumMemberAccess(ident, identifierName) match {
+          case Some(ast) => ast
+          case None      =>
+            typeNameForIdentifier(ident, identifierName) match {
+              case identifierTypeName: String =>
+                val tpe       = registerType(identifierTypeName)
+                val globalTag = globalTagFromDefinition(ident)
+                val node      = identifierNode(ident, identifierName, s"$globalTag${code(ident)}", tpe)
+                scope.addVariableReference(identifierName, node, tpe, EvaluationStrategies.BY_REFERENCE)
+                Ast(node)
+              case ast: Ast => ast
+            }
         }
+    }
+  }
+
+  /** Enum constant references are lowered as field accesses on the enclosing enum type, mirroring how qualified
+    * accesses (`X::a`) are represented. The post-frontend `FieldAccessLinkerPass` links the access to the member.
+    */
+  private def maybeAstForEnumMemberAccess(ident: IASTNode, identifierName: String): Option[Ast] = {
+    val binding = ident match {
+      case id: IASTIdExpression => safeGetBinding(id)
+      case id: IASTName         => safeGetBinding(id)
+      case _                    => None
+    }
+    binding.flatMap(enumMembers.get).map { enumMember =>
+      val op     = Operators.fieldAccess
+      val base   = typeRefNode(ident, enumMember.typeName, enumMember.typeFullName)
+      val field  = fieldIdentifierNode(ident, identifierName, identifierName)
+      val access =
+        callNode(ident, code(ident), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(enumMember.member.typeFullName))
+      callAst(access, List(Ast(base), Ast(field)))
     }
   }
 

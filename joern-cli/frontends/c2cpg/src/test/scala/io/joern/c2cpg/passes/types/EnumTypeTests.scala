@@ -37,7 +37,7 @@ class EnumTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
           clinit.lineNumber shouldBe Option(2)
           clinit.columnNumber shouldBe Option(1)
           clinit.filename shouldBe "Test0.cpp"
-          inside(clinit.ast.isCall.l) { case List(greenInit) =>
+          inside(clinit.ast.isCall.isAssignment.l) { case List(greenInit) =>
             greenInit.code shouldBe "green = 20"
           }
         }
@@ -69,7 +69,7 @@ class EnumTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
           inside(color.astChildren.isMethod.l) { case List(clinit) =>
             clinit.name shouldBe io.joern.x2cpg.Defines.StaticInitMethodName
             clinit.fullName shouldBe s"color.${io.joern.x2cpg.Defines.StaticInitMethodName}:color()"
-            inside(clinit.ast.isCall.l) { case List(greenInit) =>
+            inside(clinit.ast.isCall.isAssignment.l) { case List(greenInit) =>
               greenInit.code shouldBe "green = 20"
             }
           }
@@ -95,7 +95,7 @@ class EnumTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         inside(altitude.astChildren.isMethod.l) { case List(clinit) =>
           clinit.name shouldBe io.joern.x2cpg.Defines.StaticInitMethodName
           clinit.fullName shouldBe s"altitude.${io.joern.x2cpg.Defines.StaticInitMethodName}:altitude()"
-          inside(clinit.ast.isCall.code.l) { case List(highInit, lowInit) =>
+          inside(clinit.ast.isCall.isAssignment.code.l) { case List(highInit, lowInit) =>
             highInit shouldBe "high='h'"
             lowInit shouldBe "low='l'"
           }
