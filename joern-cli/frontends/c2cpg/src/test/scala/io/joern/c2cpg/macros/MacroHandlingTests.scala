@@ -379,6 +379,86 @@ class MacroHandlingTests extends C2CpgSuite {
       cpg.method.nameExact("FOO").size shouldBe 1
     }
   }
+
+  "MacroHandlingTests12" should {
+    val cpg = code("""
+        |struct s { int x; };
+        |const int A = 8;
+        |const char B = ',';
+        |volatile unsigned int C = 0;
+        |const long D = 1;
+        |const volatile short E = 2;
+        |const struct s F = {1};
+        |#define MA A
+        |#define MB B
+        |#define MC C
+        |#define MD D
+        |#define ME E
+        |#define MF F
+        |int use(void) { return MA + MB + MC + MD + ME + MF.x; }
+        |""".stripMargin)
+
+    "type macros naming qualified variables with their C type" in {
+      cpg.call
+        .nameExact("MA", "MB", "MC", "MD", "ME", "MF")
+        .map(call => call.name -> call.typeFullName)
+        .sorted
+        .l shouldBe
+        List(
+          "MA" -> "int",
+          "MB" -> "char",
+          "MC" -> "volatile unsigned int",
+          "MD" -> "long",
+          "ME" -> "volatile short",
+          "MF" -> "s"
+        )
+    }
+  }
+
+  "MacroHandlingTests13" should {
+    val typesBySpelling = List(
+      "long"               -> "long",
+      "long int"           -> "long",
+      "const long int"     -> "long",
+      "volatile long"      -> "volatile long",
+      "signed long"        -> "long",
+      "long signed int"    -> "long",
+      "signed int"         -> "int",
+      "signed"             -> "int",
+      "signed short"       -> "short",
+      "signed long long"   -> "long long",
+      "signed long *"      -> "long*",
+      "short"              -> "short",
+      "short int"          -> "short",
+      "unsigned short"     -> "unsigned short",
+      "unsigned short int" -> "unsigned short",
+      "long long"          -> "long long",
+      "unsigned long long" -> "unsigned long long",
+      "unsigned long"      -> "unsigned long",
+      "unsigned"           -> "unsigned int",
+      "signed char"        -> "signed char",
+      "unsigned char"      -> "unsigned char",
+      "long double"        -> "long double",
+      "unsigned long *"    -> "unsigned long*"
+    )
+    val declarations = typesBySpelling.map(_._1)
+    val source       = declarations.zipWithIndex.map { case (decl, i) => s"$decl V$i = 0;" }.mkString("\n") + "\n" +
+      declarations.indices.map(i => s"#define M$i V$i").mkString("\n") + "\n" +
+      "int use(void) { return " + declarations.indices.map(i => s"(int)M$i").mkString(" + ") + "; }\n"
+
+    for ((fileName, language) <- List("Test0.c" -> "C", "Test0.cpp" -> "C++")) {
+      s"type macros with the same full name for every spelling of a basic type in $language" in {
+        val cpg = code(source, fileName)
+        typesBySpelling.zipWithIndex.foreach { case ((decl, tpe), i) =>
+          withClue(s"declaration `$decl`: ") {
+            cpg.call.nameExact(s"M$i").typeFullName.l shouldBe List(tpe)
+            cpg.local.nameExact(s"V$i").typeFullName.distinct.l shouldBe List(tpe)
+            cpg.method.nameExact(s"M$i").fullName.l shouldBe List(s"$fileName:M$i:$tpe(0)")
+          }
+        }
+      }
+    }
+  }
 }
 
 class CfgMacroTests extends DataFlowCodeToCpgSuite {
