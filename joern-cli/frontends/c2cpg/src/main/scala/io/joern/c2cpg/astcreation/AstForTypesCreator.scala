@@ -16,11 +16,21 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.{
 }
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
+import scala.collection.mutable
 import scala.util.Try
 
 trait AstForTypesCreator { this: AstCreator =>
 
   import FullNameProvider.*
+
+  /** An enumerator's CPG member node together with the name and full name of the enclosing enum type declaration. */
+  protected final case class EnumMemberInfo(member: NewMember, typeName: String, typeFullName: String)
+
+  /** Maps CDT enumerator bindings to their CPG counterpart. References to an enumerator are lowered as field accesses
+    * on the enum type; the binding identity (rather than the name) decides which member is referenced, which also
+    * resolves shadowing between enums.
+    */
+  protected val enumMembers: mutable.Map[IBinding, EnumMemberInfo] = mutable.HashMap.empty
 
   protected def astForDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier): Ast = {
     val op       = Defines.OperatorTypeOf
@@ -514,13 +524,22 @@ trait AstForTypesCreator { this: AstCreator =>
     }
   }
 
-  private def memberAstForEnumerator(enumerator: IASTEnumerationSpecifier.IASTEnumerator): Ast = {
+  private def memberAstForEnumerator(
+    enumerator: IASTEnumerationSpecifier.IASTEnumerator,
+    enumTypeName: String,
+    enumTypeFullName: String
+  ): Ast = {
     val tpe = enumerator.getParent match {
       case enumeration: ICPPASTEnumerationSpecifier if enumeration.getBaseType != null =>
         enumeration.getBaseType.toString
       case _ => typeFor(enumerator)
     }
-    Ast(memberNode(enumerator, ASTStringUtil.getSimpleName(enumerator.getName), code(enumerator), registerType(tpe)))
+    val member =
+      memberNode(enumerator, ASTStringUtil.getSimpleName(enumerator.getName), code(enumerator), registerType(tpe))
+    safeGetBinding(enumerator.getName).foreach(binding =>
+      enumMembers.update(binding, EnumMemberInfo(member, enumTypeName, enumTypeFullName))
+    )
+    Ast(member).withChild(Ast(NewModifier().modifierType(ModifierTypes.FINAL)))
   }
 
   protected def astForEnumeratorWithInit(enumerator: IASTEnumerationSpecifier.IASTEnumerator): Ast = {
@@ -586,15 +605,9 @@ trait AstForTypesCreator { this: AstCreator =>
       (alias.get, fullName.substring(0, fullName.indexOf("<enum>")) + alias.get, None)
     } else { (name, fullName, alias) }
 
-    val typeDecl =
-      typeDeclNode(
-        typeSpecifier,
-        deAliasedName,
-        registerType(deAliasedFullName),
-        filename,
-        codeString,
-        alias = newAlias
-      )
+    val enumTypeFullName = registerType(deAliasedFullName)
+    val typeDecl         =
+      typeDeclNode(typeSpecifier, deAliasedName, enumTypeFullName, filename, codeString, alias = newAlias)
     val typeRefNodeMaybe = typeRefIdStack.headOption match {
       case None => Some(typeRefNode(typeSpecifier, codeString, fullName))
       case _    => None
@@ -606,7 +619,7 @@ trait AstForTypesCreator { this: AstCreator =>
 
     val enumerators                = typeSpecifier.getEnumerators.toList
     val memberNodesWithInitializer = enumerators.filter(_.getValue != null)
-    val memberAsts                 = enumerators.map(memberAstForEnumerator)
+    val memberAsts                 = enumerators.map(memberAstForEnumerator(_, deAliasedName, enumTypeFullName))
 
     typeRefNodeMaybe.foreach(_ => typeRefIdStack.pop())
     methodAstParentStack.pop()
