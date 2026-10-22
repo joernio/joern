@@ -1,7 +1,7 @@
 package io.joern.abap2cpg
 
 import io.joern.abap2cpg.parser.AbapAstGenRunner
-import io.joern.abap2cpg.passes.{AbapTypeInferencePass, AstCreationPass, RefEdgePass}
+import io.joern.abap2cpg.passes.{AbapTypeInferencePass, AstCreationPass, RefEdgePass, TypeDeclStubPass}
 import io.joern.x2cpg.{X2Cpg, X2CpgFrontend}
 import io.joern.x2cpg.passes.base.{ContainsEdgePass, TypeEvalPass}
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
@@ -35,6 +35,7 @@ class Abap2Cpg extends X2CpgFrontend {
         new AstCreationPass(cpg, parsed, config).createAndApply()
         new ContainsEdgePass(cpg).createAndApply()
         TypeNodePass.withTypesFromCpg(cpg).createAndApply()
+        new TypeDeclStubPass(cpg).createAndApply()
         new RefEdgePass(cpg).createAndApply()
         new AbapTypeInferencePass(cpg).createAndApply()
         new TypeEvalPass(cpg).createAndApply()
