@@ -63,7 +63,8 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
             accumulator,
             symbolSolver,
             config.keepTypeArguments,
-            loggedExceptionCounts
+            loggedExceptionCounts,
+            sourceParser.sourceMap(filename)
           )(config.schemaValidation, config.disableTypeFallback)
             .createAst()
         )
