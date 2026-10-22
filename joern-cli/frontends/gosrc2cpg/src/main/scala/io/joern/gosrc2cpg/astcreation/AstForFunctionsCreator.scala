@@ -77,23 +77,28 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           val recName        = Try(recValue(ParserKeys.Names).arr.head(ParserKeys.Name).str).getOrElse(Defines.This)
           val typeParserNode = createParserNodeInfo(recValue(ParserKeys.Type))
           val (typeFullName, evaluationStrategy) = typeParserNode.node match {
-            case Ident =>
-              (
-                generateTypeFullName(typeName = typeParserNode.json(ParserKeys.Name).strOpt),
-                EvaluationStrategies.BY_VALUE
-              )
             case StarExpr =>
-              (
-                generateTypeFullName(typeName = typeParserNode.json(ParserKeys.X)(ParserKeys.Name).strOpt),
-                EvaluationStrategies.BY_SHARING
-              )
-            case x =>
-              logger.warn(s"Unhandled class ${x.getClass} under getReceiverInfo! file -> ${parserResult.fullPath}")
-              ("", "")
+              (receiverTypeFullName(typeParserNode.json(ParserKeys.X)), EvaluationStrategies.BY_SHARING)
+            case _ =>
+              (receiverTypeFullName(typeParserNode.json), EvaluationStrategies.BY_VALUE)
           }
           (recName, typeFullName, evaluationStrategy, recnode)
         }
       case _ => None
+    }
+  }
+
+  /** Resolves the type name of a receiver. For a generic type the receiver is written as `T[P]` (IndexExpr) or `T[P,
+    * Q]` (IndexListExpr), and the name is the one of the indexed type, i.e. `T`.
+    */
+  private def receiverTypeFullName(typeNode: Value): String = {
+    val typeParserNode = createParserNodeInfo(typeNode)
+    typeParserNode.node match {
+      case Ident                     => generateTypeFullName(typeName = typeParserNode.json(ParserKeys.Name).strOpt)
+      case IndexExpr | IndexListExpr => receiverTypeFullName(typeParserNode.json(ParserKeys.X))
+      case other                     =>
+        logger.warn(s"Unhandled class ${other.getClass} under getReceiverInfo! file -> ${parserResult.fullPath}")
+        ""
     }
   }
 
