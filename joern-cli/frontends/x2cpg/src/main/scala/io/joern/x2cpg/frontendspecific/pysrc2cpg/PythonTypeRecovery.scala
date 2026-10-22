@@ -122,18 +122,16 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     else super.visitIdentifierAssignedToCall(i, c)
   }
 
-  override def visitIdentifierAssignedToFieldLoad(i: Identifier, fa: FieldAccess): Set[String] = {
+  override def getFieldLoadTypes(fa: FieldAccess): Set[String] = {
     val fieldParents = getFieldParents(fa)
     fa.astChildren.l match {
       case List(base: Identifier, fi: FieldIdentifier) if base.name.equals("self") && fieldParents.nonEmpty =>
         val referencedFields = cpg.typeDecl.fullNameExact(fieldParents.toSeq*).member.nameExact(fi.canonicalName)
-        val globalTypes      =
-          referencedFields
-            .flatMap(field => field.typeFullName +: field.dynamicTypeHintFullName)
-            .filterNot(_ == Constants.ANY)
-            .toSet
-        associateTypes(i, globalTypes)
-      case _ => super.visitIdentifierAssignedToFieldLoad(i, fa)
+        referencedFields
+          .flatMap(field => field.typeFullName +: field.dynamicTypeHintFullName)
+          .filterNot(_ == Constants.ANY)
+          .toSet
+      case _ => super.getFieldLoadTypes(fa)
     }
   }
 

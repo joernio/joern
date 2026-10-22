@@ -355,9 +355,6 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
 
     "provide a dummy type to a member if the member type is not known" in {
-      val Some(sessionTmpVar) = cpg.identifier("tmp0").headOption: @unchecked
-      sessionTmpVar.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.<member>(session)"
-
       val Some(addCall) = cpg
         .call("add")
         .headOption: @unchecked
@@ -406,8 +403,6 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
 
     "reasonably determine the constructor type" in {
-      val Some(tmp0) = cpg.identifier("tmp0").headOption: @unchecked
-      tmp0.typeFullName shouldBe "urllib.py:<module>.<member>(request)"
       val Some(requestCall) = cpg.call("Request").headOption: @unchecked
       requestCall.methodFullName shouldBe "urllib.py:<module>.<member>(request).Request.__init__"
     }

@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import PythonVersion.*
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 object MethodParameters {
@@ -1867,6 +1868,17 @@ class PythonAstVisitor(
     ("and", Operators.logicalAnd)
   }
 
+  @tailrec
+  private def assumeHasNoSideEffects(expr: ast.iexpr): Boolean = {
+    expr match {
+      case attr: ast.Attribute =>
+        // technically field access can have arbitrary side effects, but we pretend that's not the case
+        assumeHasNoSideEffects(attr.value)
+      case _: ast.Name => true
+      case _           => false
+    }
+  }
+
   /** TODO For now this function compromises on the correctness of the lowering in order to get some data flow tracking
     * going.
     *   1. For constructs like x.func() we assume x to be the instance which is passed into func. This is not true since
@@ -1894,7 +1906,7 @@ class PythonAstVisitor(
         createXDotYCall(
           () => convert(attribute.value),
           attribute.attr,
-          xMayHaveSideEffects = !attribute.value.isInstanceOf[ast.Name],
+          xMayHaveSideEffects = !assumeHasNoSideEffects(attribute.value),
           lineAndColOf(call),
           argumentNodes,
           keywordArgNodes,
