@@ -158,10 +158,17 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     scope.pushMethodScope(methodNode, expectedType, isStatic)
     typeParameters.foreach { typeParameter => scope.addTypeParameter(typeParameter.name, typeParameter.typeFullName) }
 
-    val thisNode = Option.when(!isStatic)(thisNodeForMethod(originNode, scope.enclosingTypeDecl.fullName))
-    val thisAst  = thisNode.map(Ast(_)).toList
-
-
+    val thisNode = Option.when(!isStatic) {
+      val node = thisNodeForMethod(originNode, scope.enclosingTypeDecl.fullName)
+      originNode match {
+        case callableDeclaration: CallableDeclaration[?] =>
+          val thisPositionNode: Node =
+            callableDeclaration.getReceiverParameter.toScala.getOrElse(callableDeclaration.getName)
+          node.lineNumber(line(thisPositionNode)).columnNumber(column(thisPositionNode))
+        case _ => node
+      }
+    }
+    val thisAst = thisNode.map(Ast(_)).toList
 
     thisNode.foreach { node =>
       scope.enclosingMethod.get.addParameter(node, scope.enclosingTypeDecl.get.typeDecl.genericSignature)
