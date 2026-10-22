@@ -106,8 +106,9 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     node.text
   } else {
     (node.startOffset, node.endOffset) match {
-      case (Some(start), Some(end)) => Some(String(parseResult.contentBytes.slice(start, end), StandardCharsets.UTF_8))
-      case _                        => None
+      case (Some(start), Some(end)) =>
+        Some(String(parseResult.contentBytes, start, end - start, StandardCharsets.UTF_8))
+      case _ => None
     }
   }
 

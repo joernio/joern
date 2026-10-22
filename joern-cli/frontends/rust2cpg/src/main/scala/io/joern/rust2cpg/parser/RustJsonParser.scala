@@ -21,25 +21,28 @@ object RustJsonParser {
       * crate root, or when rust_ast_gen failed to resolve it.
       */
     modulePath: Option[String],
-    fileContent: String,
     contentBytes: Array[Byte],
     loc: Int
-  )
+  ) {
+
+    def fileContent: String = {
+      new String(contentBytes, StandardCharsets.UTF_8)
+    }
+  }
 
   def readFile(file: Path): Try[ParseResult] =
     Try(IOUtils.readEntireFile(file)).flatMap(readJsonString)
 
   def readJsonString(jsonContent: String): Try[ParseResult] = Try {
-    val json              = ujson.read(jsonContent)
-    val filename          = json("relativeFilePath").str
-    val fullPath          = json("fullFilePath").str
-    val sourceFileContent = json("content").str
-    val crateName         = json.obj.get("crateName").flatMap(_.strOpt)
-    val modulePath        = json.obj.get("modulePath").flatMap(_.strOpt)
-    val contentBytes      = sourceFileContent.getBytes(StandardCharsets.UTF_8)
-    val ast               = RustNodeSyntax.createRustNode(json("children").arr.head)
-    val loc               = json("loc").num.toInt
-    ParseResult(filename, fullPath, ast, crateName, modulePath, sourceFileContent, contentBytes, loc)
+    val json         = ujson.read(jsonContent)
+    val filename     = json("relativeFilePath").str
+    val fullPath     = json("fullFilePath").str
+    val crateName    = json.obj.get("crateName").flatMap(_.strOpt)
+    val modulePath   = json.obj.get("modulePath").flatMap(_.strOpt)
+    val contentBytes = json("content").str.getBytes(StandardCharsets.UTF_8)
+    val ast          = RustNodeSyntax.createRustNode(json("children").arr.head)
+    val loc          = json("loc").num.toInt
+    ParseResult(filename, fullPath, ast, crateName, modulePath, contentBytes, loc)
   }
 
   // Concrete nodes have `range` but no `text`. Macro-expanded nodes have `text` but a zeroed range.
