@@ -21,9 +21,18 @@ object Definition {
 
 object ReachingDefProblem {
   def create(method: Method): DataFlowProblem[CfgNode, mutable.BitSet] = {
-    val flowGraph                                                = new ReachingDefFlowGraph(method)
-    val transfer                                                 = new OptimizedReachingDefTransferFunction(flowGraph)
-    val init                                                     = new ReachingDefInit(transfer.gen)
+    val flowGraph = new ReachingDefFlowGraph(method)
+    create(flowGraph, new OptimizedReachingDefTransferFunction(flowGraph))
+  }
+
+  /** The problem of `flowGraph` with `transfer`, whose `gen` is built when the solver first reads it. */
+  private[reachingdef] def create(
+    flowGraph: ReachingDefFlowGraph,
+    transfer: ReachingDefTransferFunction
+  ): DataFlowProblem[CfgNode, mutable.BitSet] = {
+    val init = new ReachingDefInit(Map.empty) {
+      override def initOut: Map[CfgNode, mutable.BitSet] = transfer.gen
+    }
     def meet: (mutable.BitSet, mutable.BitSet) => mutable.BitSet =
       (x: mutable.BitSet, y: mutable.BitSet) => { x.union(y) }
 
@@ -159,10 +168,22 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
 
   val method: Method = flowGraph.method
 
-  val gen: Map[CfgNode, mutable.BitSet] =
+  /** Built on first use. Each call's set is a bit set as long as the call's node number, so `gen` grows with the square
+    * of the method's size; [[ReachingDefPass]] decides from [[numberOfDefinitions]] whether to skip a method, so a
+    * method it skips never builds it.
+    */
+  lazy val gen: Map[CfgNode, mutable.BitSet] =
     initGen(method).withDefaultValue(mutable.BitSet())
 
-  val kill: Map[CfgNode, mutable.BitSet] =
+  /** The number of definitions in [[gen]] as [[initGen]] builds it, counted without building it. */
+  private[reachingdef] lazy val numberOfDefinitions: Int =
+    method.parameter.size + definingCalls(method).iterator.map(definitionsOf(_).size).sum
+
+  /** Built on first use, when the solver first applies this transfer function. Building it takes time that grows with
+    * the number of definitions times the number of calls in the method, and [[ReachingDefPass]] decides from
+    * [[numberOfDefinitions]] whether to skip a method, so a method it skips never pays for it.
+    */
+  lazy val kill: Map[CfgNode, mutable.BitSet] =
     initKill(method, gen).withDefaultValue(mutable.BitSet())
 
   /** For a given flow graph node `n` and set of definitions, apply the transfer function to obtain the updated set of
@@ -183,26 +204,27 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
     // We filter out field accesses to ensure that they propagate
     // taint unharmed.
 
-    val defsForCalls = method.call
-      .filterNot(x => isFieldAccess(x.name))
-      .l
-      .map { call =>
-        call -> {
-          val retVal = List(call)
-          // Ternary only reads its operands; gen on args kills prior defs.
-          val args =
-            if (isReadOnlyShortCircuitOperator(call)) Iterator.empty
-            else call.argument.filter(hasValidGenType)
-          mutable.BitSet(
-            (retVal ++ args)
-              .collect {
-                case x if nodeToNumber.contains(x) =>
-                  Definition.fromNode(x.asInstanceOf[CfgNode], nodeToNumber)
-              }*
-          )
-        }
-      }
+    val defsForCalls = definingCalls(method).map { call =>
+      call -> mutable.BitSet(definitionsOf(call)*)
+    }
     (defsForParams ++ defsForCalls).toMap
+  }
+
+  /** The calls that have a `gen` set: all but field accesses. */
+  private def definingCalls(method: Method): List[Call] =
+    method.call.filterNot(call => isFieldAccess(call.name)).l
+
+  /** The definitions `call` generates: its own, and its identifier and call arguments' unless it is a ternary. */
+  private[reachingdef] def definitionsOf(call: Call): List[Definition] = {
+    val retVal = List(call)
+    // Ternary only reads its operands; gen on args kills prior defs.
+    val args =
+      if (isReadOnlyShortCircuitOperator(call)) Iterator.empty
+      else call.argument.filter(hasValidGenType)
+    (retVal ++ args).collect {
+      case node if nodeToNumber.contains(node) =>
+        Definition.fromNode(node.asInstanceOf[CfgNode], nodeToNumber)
+    }
   }
 
   /** Ternary must not gen its operand arguments. */
@@ -224,7 +246,7 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
     * All operations in our graph are represented by calls and non-operations such as identifiers or field-identifiers
     * have empty gen and kill sets, meaning that they just pass on definitions unaltered.
     */
-  private def initKill(method: Method, gen: Map[CfgNode, mutable.BitSet]): Map[CfgNode, mutable.BitSet] = {
+  private[reachingdef] def initKill(method: Method, gen: Map[CfgNode, mutable.BitSet]): Map[CfgNode, mutable.BitSet] = {
 
     val allIdentifiers: Map[String, List[CfgNode]] = {
       val results             = mutable.Map.empty[String, List[CfgNode]]
@@ -334,16 +356,11 @@ class OptimizedReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
       }
   }
 
-  override def initGen(method: Method): Map[CfgNode, mutable.BitSet] =
-    withoutLoneIdentifiers(super.initGen(method))
-
-  private def withoutLoneIdentifiers(g: Map[CfgNode, mutable.BitSet]): Map[CfgNode, mutable.BitSet] = {
-    g.map { case (k, defs) =>
-      k match {
-        case call: Call if loneIdentifiers.contains(call) =>
-          (call, defs.filterNot(loneIdentifiers(call).contains(_)))
-        case _ => (k, defs)
-      }
+  override private[reachingdef] def definitionsOf(call: Call): List[Definition] = {
+    val definitions = super.definitionsOf(call)
+    loneIdentifiers.get(call) match {
+      case Some(lone) => definitions.filterNot(lone.contains(_))
+      case None       => definitions
     }
   }
 }
