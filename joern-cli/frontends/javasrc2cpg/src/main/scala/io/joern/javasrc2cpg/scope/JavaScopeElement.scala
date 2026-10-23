@@ -26,9 +26,8 @@ enum TypeType {
 }
 
 trait JavaScopeElement(disableTypeFallback: Boolean) {
-  private val variables                        = mutable.Map[String, ScopeVariable]()
-  private val types                            = mutable.Map[String, ScopeType]()
-  private var wildcardImports: WildcardImports = NoWildcard
+  private val variables = mutable.Map[String, ScopeVariable]()
+  private val types     = mutable.Map[String, ScopeType]()
   // TODO: This is almost a duplicate of types, but not quite since this stores type variables and local types
   //  with original names. See if there's a way to combine them
   private val declaredTypeTypes = mutable.Map[String, TypeType]()
@@ -63,28 +62,7 @@ trait JavaScopeElement(disableTypeFallback: Boolean) {
   }
 
   def lookupType(name: String, includeWildcards: Boolean): Option[ScopeType] = {
-    types.get(name) match {
-      case None if includeWildcards && !disableTypeFallback => getNameWithWildcardPrefix(name)
-      case result                                           => result
-    }
-  }
-
-  def getNameWithWildcardPrefix(name: String): Option[ScopeType] = {
-    wildcardImports match {
-      case SingleWildcard(prefix) => Some(ScopeTopLevelType(s"$prefix.$name", name))
-
-      case _ => None
-    }
-  }
-
-  def addWildcardImport(prefix: String): Unit = {
-    wildcardImports match {
-      case NoWildcard => wildcardImports = SingleWildcard(prefix)
-
-      case SingleWildcard(_) => wildcardImports = MultipleWildcards
-
-      case MultipleWildcards => // Already MultipleWildcards, so change nothing
-    }
+    types.get(name)
   }
 
   def getVariables(): List[ScopeVariable] = variables.values.toList
@@ -119,17 +97,14 @@ object JavaScopeElement {
 
     private val staticImports                          = mutable.Map[String, String]()
     private var staticWildcardImports: WildcardImports = NoWildcard
+    private var wildcardImports: WildcardImports       = NoWildcard
 
     def addStaticImport(memberName: String, declaringTypeFullName: String): Unit = {
       staticImports.put(memberName, declaringTypeFullName)
     }
 
     def addStaticWildcardImport(declaringTypeFullName: String): Unit = {
-      staticWildcardImports match {
-        case NoWildcard        => staticWildcardImports = SingleWildcard(declaringTypeFullName)
-        case SingleWildcard(_) => staticWildcardImports = MultipleWildcards
-        case MultipleWildcards => // Already MultipleWildcards, so change nothing
-      }
+      staticWildcardImports = addWildcard(staticWildcardImports)(declaringTypeFullName)
     }
 
     def lookupStaticImport(memberName: String): Option[String] = {
@@ -138,6 +113,29 @@ object JavaScopeElement {
           case SingleWildcard(declaringTypeFullName) => Some(declaringTypeFullName)
           case _                                     => None
         }
+      }
+    }
+
+    def addWildcardImport(prefix: String): Unit = {
+      wildcardImports = addWildcard(wildcardImports)(prefix)
+    }
+
+    private def addWildcard(wildcardImports: WildcardImports)(prefix: String): WildcardImports = {
+      wildcardImports match {
+        case NoWildcard        => SingleWildcard(prefix)
+        case SingleWildcard(_) => MultipleWildcards
+        case MultipleWildcards => MultipleWildcards
+      }
+    }
+
+    override def lookupType(name: String, includeWildcards: Boolean): Option[ScopeType] = {
+      super.lookupType(name, includeWildcards) match {
+        case None if includeWildcards && !disableTypeFallback =>
+          wildcardImports match {
+            case SingleWildcard(prefix) => Some(ScopeTopLevelType(s"$prefix.$name", name))
+            case _                      => None
+          }
+        case result => result
       }
     }
   }
