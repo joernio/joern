@@ -277,6 +277,10 @@ trait AstForFunctionsCreator { this: AstCreator =>
   }
 
   private def syntheticThisAccess(ident: IASTName, identifierName: String): Ast = {
+    val tpe = safeCdtCall(ident.getBinding) match {
+      case Some(f: CPPField) => safeCdtCall(safeGetType(f.getType)).getOrElse(Defines.Any)
+      case _                 => typeFor(ident)
+    }
     scope.lookupVariable(Defines.This) match {
       case Some((_, thisTpe)) =>
         val op             = Operators.indirectFieldAccess
@@ -284,17 +288,68 @@ trait AstForFunctionsCreator { this: AstCreator =>
         val thisIdentifier = identifierNode(ident, Defines.This, Defines.This, thisTpe)
         scope.addVariableReference(Defines.This, thisIdentifier, thisTpe, EvaluationStrategies.BY_SHARING)
         val member = fieldIdentifierNode(ident, identifierName, identifierName)
-        val ma     = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(thisTpe))
+        // A field access is typed with the type of the field. `thisTpe` is the type of the pointer it
+        // is read through, i.e. the type of the enclosing class.
+        val ma = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(tpe)))
         callAst(ma, Seq(Ast(thisIdentifier), Ast(member)))
       case None =>
-        val tpe = safeCdtCall(ident.getBinding) match {
-          case Some(f: CPPField) => safeCdtCall(safeGetType(f.getType)).getOrElse(Defines.Any)
-          case _                 => typeFor(ident)
-        }
         val idNode = identifierNode(ident, identifierName, identifierName, tpe)
         scope.addVariableReference(identifierName, idNode, tpe, EvaluationStrategies.BY_REFERENCE)
         Ast(idNode)
     }
+  }
+
+  /** The type a member-initializer-id names, if it names a class type at all.
+    *
+    * CDT resolves the id of `Base(x, y)` and the id of `ns::Base(x, y)` to the same binding, so the binding, and not
+    * the spelling of the id, is what tells a base-class or delegating constructor invocation apart from the
+    * initialization of a data member.
+    */
+  private def constructorInvocationTypeFullName(memberInitializerId: IASTName): Option[String] = {
+    val boundClassType = safeGetBinding(memberInitializerId).flatMap {
+      case classType: ICPPClassType     => Option(classType)
+      case constructor: ICPPConstructor =>
+        safeCdtCall(constructor.getOwner).collect { case owner: ICPPClassType => owner }
+      case typedef: ITypedef => safeCdtCall(typedef.getType).collect { case aliased: ICPPClassType => aliased }
+      case _                 => None
+    }
+    boundClassType
+      .flatMap(classType => safeCdtCall(classType.getQualifiedName.mkString(".")))
+      .map(qualifiedName => stripTemplateTags(replaceQualifiedNameSeparator(qualifiedName)))
+  }
+
+  private def isConstructorInvocation(memberInitializerId: IASTName): Boolean = {
+    // A qualified id names a class type even where it does not resolve, e.g. in an uninstantiated template.
+    memberInitializerId.isInstanceOf[ICPPASTQualifiedName] ||
+    constructorInvocationTypeFullName(memberInitializerId).isDefined
+  }
+
+  /** A base-class or delegating constructor initializer constructs a subobject of `this`. It must not allocate a
+    * temporary to construct into, as `constructorInvocationBlockAst` does for a constructor call in an expression.
+    */
+  private def chainedConstructorInvocationAst(
+    init: ICPPASTConstructorChainInitializer,
+    typeFullName: String,
+    fullName: String,
+    signature: String,
+    constructorCallCode: String,
+    args: List[Ast]
+  ): Ast = {
+    val constructorCallNode = callNode(
+      init,
+      constructorCallCode,
+      typeFullName,
+      fullName,
+      DispatchTypes.STATIC_DISPATCH,
+      Some(signature),
+      Some(registerType(Defines.Void))
+    )
+    val receiverAst = scope.lookupVariable(Defines.This).map { case (_, thisTpe) =>
+      val thisIdentifier = identifierNode(init, Defines.This, Defines.This, thisTpe)
+      scope.addVariableReference(Defines.This, thisIdentifier, thisTpe, EvaluationStrategies.BY_SHARING)
+      Ast(thisIdentifier)
+    }
+    createCallAst(constructorCallNode, args, base = receiverAst)
   }
 
   private def astForICPPASTConstructorChainInitializer(init: ICPPASTConstructorChainInitializer): Ast = {
@@ -311,14 +366,16 @@ trait AstForFunctionsCreator { this: AstCreator =>
         val assignmentCall =
           callNode(init, codeString, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Void)))
         callAst(assignmentCall, List(leftAst, rightAst))
-      case c: ICPPASTConstructorInitializer if init.getMemberInitializerId.isInstanceOf[ICPPASTQualifiedName] =>
-        val constructorCallName = shortName(init.getMemberInitializerId)
-        val typeFullName        = fullName(init.getMemberInitializerId)
+      case c: ICPPASTConstructorInitializer if isConstructorInvocation(init.getMemberInitializerId) =>
+        val memberInitializerId = init.getMemberInitializerId
+        val constructorCallName = shortName(memberInitializerId)
+        val typeFullName        =
+          constructorInvocationTypeFullName(memberInitializerId).getOrElse(fullName(memberInitializerId))
         val signature           = s"${Defines.Void}(${initializerSignature(c)})"
         val fullNameWithSig     = s"$typeFullName.$constructorCallName:$signature"
         val constructorCallCode = code(init)
         val args                = astsForConstructorInitializer(c)
-        constructorInvocationBlockAst(init, typeFullName, fullNameWithSig, signature, constructorCallCode, args)
+        chainedConstructorInvocationAst(init, typeFullName, fullNameWithSig, signature, constructorCallCode, args)
       case _ =>
         val leftAst  = syntheticThisAccess(init.getMemberInitializerId, nameForIdentifier(init.getMemberInitializerId))
         val rightAst = init.getInitializer match {
@@ -514,7 +571,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
     case Some(b: IASTCompoundStatement) =>
       methodAstParentStack.push(blockNode)
       val chainInitAsts = chainInits.map(astForICPPASTConstructorChainInitializer)
-      val ast           = astForBlockStatement(b, blockNode, chainInitAsts, leadingAsts)
+      // Member initialization runs before the body. `leadingAsts` stays in front of it: it carries the
+      // init-captures of a lambda, which are evaluated before anything else in the closure.
+      val ast = astForBlockStatement(b, blockNode, leadingChildrenAsts = leadingAsts ++ chainInitAsts)
       methodAstParentStack.pop()
       ast
     case Some(b) =>
@@ -524,7 +583,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       val childAst      = astForNode(b)
       methodAstParentStack.pop()
       scope.popScope()
-      blockAst(blockNode).withChildren(leadingAsts).withChild(childAst).withChildren(chainInitAsts)
+      blockAst(blockNode).withChildren(leadingAsts).withChildren(chainInitAsts).withChild(childAst)
     case None =>
       blockAst(blockNode).withChildren(leadingAsts)
   }
