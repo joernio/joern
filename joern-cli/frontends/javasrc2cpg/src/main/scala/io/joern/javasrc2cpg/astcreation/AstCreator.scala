@@ -190,23 +190,21 @@ class AstCreator(
       importNode
     }
 
-    asteriskImports.filter(_.isStatic).foreach(imp => scope.addStaticWildcardImport(imp.getNameAsString))
+    val (staticAsteriskImports, nonStaticAsteriskImports) = asteriskImports.partition(_.isStatic)
 
-    val asteriskImportNodes = asteriskImports match {
-      case imp :: Nil =>
-        val name         = NameConstants.WildcardImportName
-        val typeFullName = imp.getNameAsString
-        val importNode   = newImportNode(
-          code = getImportCode(imp),
-          importedEntity = typeFullName,
-          importedAs = name,
-          include = imp,
-          isWildcard = true
-        )
-        scope.addWildcardImport(typeFullName)
-        Seq(importNode)
-      case _ => // Only try to guess a wildcard import if exactly one is defined
-        Seq.empty
+    staticAsteriskImports.foreach(imp => scope.addStaticWildcardImport(imp.getNameAsString))
+
+    val asteriskImportNodes = nonStaticAsteriskImports.map { imp =>
+      val typeFullName = imp.getNameAsString
+      val importNode   = newImportNode(
+        code = getImportCode(imp),
+        importedEntity = typeFullName,
+        importedAs = NameConstants.WildcardImportName,
+        include = imp,
+        isWildcard = true
+      )
+      scope.addWildcardImport(typeFullName)
+      importNode
     }
     specificImportNodes ++ asteriskImportNodes
   }
