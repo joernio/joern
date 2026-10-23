@@ -78,7 +78,8 @@ trait AstForExpressionsCreator { this: AstCreator =>
     IASTUnaryExpression.op_sizeof      -> Operators.sizeOf,
     IASTUnaryExpression.op_postFixIncr -> Operators.postIncrement,
     IASTUnaryExpression.op_postFixDecr -> Operators.postDecrement,
-    IASTUnaryExpression.op_typeid      -> Defines.OperatorTypeOf
+    IASTUnaryExpression.op_typeid      -> Defines.OperatorTypeOf,
+    IASTUnaryExpression.op_noexcept    -> Defines.OperatorNoExcept
   )
 
   protected def astForExpression(expression: IASTExpression): Ast = {
@@ -424,15 +425,14 @@ trait AstForExpressionsCreator { this: AstCreator =>
     if (unary.getOperator == IASTUnaryExpression.op_bracketedPrimary) {
       nullSafeAst(unary.getOperand)
     } else {
-      val cpgUnary = callNode(
-        unary,
-        code(unary),
-        operatorMethod,
-        operatorMethod,
-        DispatchTypes.STATIC_DISPATCH,
-        None,
-        Some(Defines.Any)
-      )
+      // the noexcept operator is a prvalue of type bool ([expr.unary.noexcept]);
+      // every other unary operator keeps the type it had before
+      val tpe = unary.getOperator match {
+        case IASTUnaryExpression.op_noexcept => registerType("bool")
+        case _                               => Defines.Any
+      }
+      val cpgUnary =
+        callNode(unary, code(unary), operatorMethod, operatorMethod, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
       val operand = nullSafeAst(unary.getOperand)
       callAst(cpgUnary, List(operand))
     }

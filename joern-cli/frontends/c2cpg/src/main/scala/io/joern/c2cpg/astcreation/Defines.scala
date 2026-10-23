@@ -20,6 +20,7 @@ object Defines {
   val OperatorMin: String                    = "<operator>.min"
   val OperatorEllipses: String               = "<operator>.op_ellipses"
   val OperatorUnknown: String                = "<operator>.unknown"
+  val OperatorNoExcept: String               = "<operator>.noexcept"
   val OperatorCall: String                   = "<operator>()"
   val OperatorNew: String                    = "<operator>.new"
   val DuplicateSuffix                        = "<duplicate>"
@@ -29,4 +30,5 @@ object Defines {
   val UnknownTag                             = "<unknown>"
   val ModifierDeleted                        = "DELETED"
   val ModifierDefaulted                      = "DEFAULTED"
+  val NoExceptModifier                       = "NOEXCEPT"
 }
