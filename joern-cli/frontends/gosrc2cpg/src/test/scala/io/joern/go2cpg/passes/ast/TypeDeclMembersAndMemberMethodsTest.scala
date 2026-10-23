@@ -3,7 +3,7 @@ package io.joern.go2cpg.passes.ast
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, EvaluationStrategies, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
@@ -270,6 +270,80 @@ class TypeDeclMembersAndMemberMethodsTest extends GoCodeToCpgSuite {
 
     "Have member method part of typeDecl" in {
       cpg.typeDecl("Sample").method.fullName.l shouldBe List("main.Sample.someProcessing")
+    }
+  }
+
+  "Method defined on generic struct type" should {
+    val cpg = code("""
+        |package main
+        |type Set[T comparable] struct {
+        |	items []T
+        |}
+        |type Pair[K comparable, V any] struct {
+        |	key K
+        |	value V
+        |}
+        |func helper() int {
+        |	return 1
+        |}
+        |func (s *Set[T]) Len() int {
+        |	return len(s.items)
+        |}
+        |func (s Set[T]) IsEmpty() bool {
+        |	return len(s.items) == 0
+        |}
+        |func (*Set[_]) Reset() {
+        |}
+        |func (p *Pair[K, V]) Key() K {
+        |	return p.key
+        |}
+        |func (p Pair[K, V]) Value() V {
+        |	return p.value
+        |}
+        |""".stripMargin)
+
+    "keep every method of the file" in {
+      cpg.method.name("helper").size shouldBe 1
+      cpg.method.name("Len").size shouldBe 1
+      cpg.method.name("IsEmpty").size shouldBe 1
+      cpg.method.name("Reset").size shouldBe 1
+      cpg.method.name("Key").size shouldBe 1
+      cpg.method.name("Value").size shouldBe 1
+    }
+
+    "check method nodes under the type decl with a single type parameter" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("Set").l
+      typeDeclNode.astChildren.isMethod.fullName.toSet shouldBe Set(
+        "main.Set.Len",
+        "main.Set.IsEmpty",
+        "main.Set.Reset"
+      )
+    }
+
+    "check method nodes under the type decl with multiple type parameters" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("Pair").l
+      typeDeclNode.astChildren.isMethod.fullName.toSet shouldBe Set("main.Pair.Key", "main.Pair.Value")
+    }
+
+    "check receiver parameter of pointer receiver on generic type" in {
+      val List(receiver) = cpg.method.name("Len").parameter.name("s").l
+      receiver.index shouldBe 0
+      receiver.typeFullName shouldBe "main.Set"
+      receiver.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
+    }
+
+    "check receiver parameter of value receiver on generic type" in {
+      val List(receiver) = cpg.method.name("Value").parameter.name("p").l
+      receiver.index shouldBe 0
+      receiver.typeFullName shouldBe "main.Pair"
+      receiver.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
+    }
+
+    "check receiver parameter of unnamed pointer receiver on generic type" in {
+      val List(receiver) = cpg.method.name("Reset").parameter.l
+      receiver.name shouldBe Defines.This
+      receiver.typeFullName shouldBe "main.Set"
+      receiver.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
     }
   }
 }

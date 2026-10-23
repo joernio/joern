@@ -34,6 +34,7 @@ object ParserAst {
   object CallExpr            extends BaseExpr
   object StructType          extends BaseExpr
   object IndexExpr           extends BaseExpr
+  object IndexListExpr       extends BaseExpr
   sealed trait BaseStmt      extends ParserNode
   object BlockStmt           extends BaseStmt
   object DeclStmt            extends BaseStmt
