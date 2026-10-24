@@ -126,4 +126,22 @@ class MethodRefTests extends JavaSrcCode2CpgFixture {
       methodRef.code shouldBe "b::bar"
     }
   }
+
+  "method refs cast to a functional interface and applied should be handled correctly" in {
+    val cpg = code("""import java.util.function.Function;
+        |
+        |class A {
+        |  static String g(Object o) {
+        |    return "g";
+        |  }
+        |
+        |  String run(Object o) {
+        |    return ((Function<Object, String>) A::g).apply(o);
+        |  }
+        |}
+        |""".stripMargin)
+    cpg.call.nameExact("apply").callee.fullName.l shouldBe List(
+      "java.util.function.Function.apply:java.lang.Object(java.lang.Object)"
+    )
+  }
 }
