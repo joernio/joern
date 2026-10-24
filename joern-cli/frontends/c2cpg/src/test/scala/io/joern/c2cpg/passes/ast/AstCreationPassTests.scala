@@ -1778,6 +1778,20 @@ class AstCreationPassTests extends AstC2CpgSuite {
       }
     }
 
+    "be correct for an alignment specifier on the size of a type" in {
+      // CDT's C parser throws on `_Alignas(sizeof(T))`; this must not fail the file.
+      val cpg = code("""
+          |typedef struct { int a; } T;
+          |static _Alignas(sizeof(T)) unsigned char buf[8];
+          |void foo(void) {
+          |  buf[0] = 1;
+          |}
+          |""".stripMargin)
+      val List(buf) = cpg.method.nameExact(NamespaceTraversal.globalNamespaceName).local.nameExact("buf").l
+      buf.typeFullName shouldBe "unsigned char[8]"
+      cpg.method.nameExact("foo").ast.isCall.nameExact(Operators.assignment).code.l shouldBe List("buf[0] = 1")
+    }
+
     "be correct for 'new' array" in {
       val cpg = code(
         """
