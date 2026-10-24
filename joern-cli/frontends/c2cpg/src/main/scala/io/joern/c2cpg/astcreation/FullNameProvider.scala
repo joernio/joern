@@ -5,6 +5,7 @@ import io.joern.x2cpg.passes.frontend.MetaDataPass
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
+import org.eclipse.cdt.internal.core.dom.parser.ASTQueries
 import org.eclipse.cdt.internal.core.dom.parser.c.{CASTFunctionDeclarator, CVariable}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.*
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
@@ -414,7 +415,7 @@ trait FullNameProvider { this: AstCreator =>
         safeGetBinding(declarator.getName) match {
           case Some(cVariable: CVariable)     => Option(cVariable.getName)
           case Some(cppVariable: CPPVariable) => Option(cppVariable.getName)
-          case _                              => Option(declarator.getName.toString)
+          case _                              => Option(declaredName(declarator).toString)
         }
       case definition: ICPPASTFunctionDefinition =>
         Some(fullName(definition.getDeclarator))
@@ -494,11 +495,21 @@ trait FullNameProvider { this: AstCreator =>
   }
 
   private def fullNameForIASTFunctionDeclarator(functionDeclarator: IASTFunctionDeclarator): String = {
-    Try(ASTStringUtil.getQualifiedName(functionDeclarator.getName)).getOrElse(nextClosureName())
+    Try(ASTStringUtil.getQualifiedName(declaredName(functionDeclarator))).getOrElse(nextClosureName())
   }
 
   private def fullNameForIASTFunctionDefinition(functionDefinition: IASTFunctionDefinition): String = {
-    Try(ASTStringUtil.getQualifiedName(functionDefinition.getDeclarator.getName)).getOrElse(nextClosureName())
+    Try(ASTStringUtil.getQualifiedName(declaredName(functionDefinition.getDeclarator))).getOrElse(nextClosureName())
+  }
+
+  /** The name a declarator declares, which is the name of its innermost declarator.
+    *
+    * A function declarator's own name is empty when the function's name is in parentheses, as in `void (f)(int)`
+    * (written so that a function-like macro `f` does not expand), or when the function returns a function pointer, as
+    * in `void (*f(int))(char)`. The name is then the one of the declarator nested in it.
+    */
+  private def declaredName(declarator: IASTDeclarator): IASTName = {
+    ASTQueries.findInnermostDeclarator(declarator).getName
   }
 
   private def fullNameForIASTNamedTypeSpecifier(typeSpecifier: IASTNamedTypeSpecifier): String = {
