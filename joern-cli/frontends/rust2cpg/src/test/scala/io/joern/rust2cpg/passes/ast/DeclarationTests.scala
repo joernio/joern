@@ -2,7 +2,7 @@ package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -10,34 +10,6 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
 
   "a top-level const" should {
     val cpg = code("const MAX_SIZE: usize = 1024;")
-
-    "create a LOCAL with the annotated type" in {
-      cpg.local.name("MAX_SIZE").typeFullName.l shouldBe List("usize")
-    }
-
-    "lower the initializer into an assignment" in {
-      inside(cpg.assignment.l) { case assignment :: Nil =>
-        assignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-        assignment.code shouldBe "const MAX_SIZE: usize = 1024;"
-        assignment.typeFullName shouldBe Defines.Any
-        assignment.methodFullName shouldBe Operators.assignment
-      }
-    }
-
-    "have an Identifier as the assignment's first argument" in {
-      inside(cpg.assignment.argument(1).l) { case (lhs: Identifier) :: Nil =>
-        lhs.name shouldBe "MAX_SIZE"
-        lhs.typeFullName shouldBe "usize"
-        lhs.code shouldBe "MAX_SIZE"
-      }
-    }
-
-    "have a Literal as the assignment's second argument" in {
-      inside(cpg.assignment.argument(2).l) { case (rhs: Literal) :: Nil =>
-        rhs.code shouldBe "1024"
-        rhs.typeFullName shouldBe "usize"
-      }
-    }
 
     "have correct member" in {
       inside(cpg.typeDecl.fullNameExact("rust2cpgtest").l) { case typeDecl :: Nil =>
@@ -48,6 +20,39 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
           member.code shouldBe "const MAX_SIZE: usize = 1024;"
           member.typeFullName shouldBe "usize"
         }
+      }
+    }
+
+    "have correct <clinit> modifiers" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest").method.l) { case clinit :: Nil =>
+        clinit.name shouldBe "<clinit>"
+        clinit.fullName shouldBe "rust2cpgtest::<clinit>"
+        clinit.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.STATIC)
+        clinit.methodReturn.typeFullName shouldBe "()"
+      }
+    }
+
+    "have correct assignment" in {
+      inside(cpg.method.fullNameExact("rust2cpgtest::<clinit>").block.astChildren.isCall.isAssignment.l) {
+        case assignment :: Nil =>
+          assignment.code shouldBe "const MAX_SIZE: usize = 1024;"
+          assignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+          assignment.methodFullName shouldBe Operators.assignment
+          assignment.typeFullName shouldBe Defines.Any
+
+          inside(assignment.argument.sortBy(_.argumentIndex).l) { case (fieldAccess: Call) :: (rhs: Literal) :: Nil =>
+            fieldAccess.methodFullName shouldBe Operators.fieldAccess
+            fieldAccess.code shouldBe "MAX_SIZE"
+            fieldAccess.typeFullName shouldBe "usize"
+            inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+              case TypeRef(code = "rust2cpgtest", typeFullName = "rust2cpgtest") :: FieldIdentifier(
+                    canonicalName = "MAX_SIZE"
+                  ) :: Nil =>
+                succeed
+            }
+            rhs.code shouldBe "1024"
+            rhs.typeFullName shouldBe "usize"
+          }
       }
     }
   }
@@ -92,34 +97,6 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
   "a top-level static" should {
     val cpg = code("static BAR: usize = 42;")
 
-    "create a LOCAL with the annotated type" in {
-      cpg.local.name("BAR").typeFullName.l shouldBe List("usize")
-    }
-
-    "lower the initializer into an assignment" in {
-      inside(cpg.assignment.l) { case assignment :: Nil =>
-        assignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-        assignment.code shouldBe "static BAR: usize = 42;"
-        assignment.typeFullName shouldBe Defines.Any
-        assignment.methodFullName shouldBe Operators.assignment
-      }
-    }
-
-    "have an Identifier as the assignment's first argument" in {
-      inside(cpg.assignment.argument(1).l) { case (lhs: Identifier) :: Nil =>
-        lhs.name shouldBe "BAR"
-        lhs.typeFullName shouldBe "usize"
-        lhs.code shouldBe "BAR"
-      }
-    }
-
-    "have a Literal as the assignment's second argument" in {
-      inside(cpg.assignment.argument(2).l) { case (rhs: Literal) :: Nil =>
-        rhs.code shouldBe "42"
-        rhs.typeFullName shouldBe "usize"
-      }
-    }
-
     "have correct member" in {
       inside(cpg.typeDecl.fullNameExact("rust2cpgtest").l) { case typeDecl :: Nil =>
         typeDecl.name shouldBe "rust2cpgtest"
@@ -129,6 +106,30 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
           member.code shouldBe "static BAR: usize = 42;"
           member.typeFullName shouldBe "usize"
         }
+      }
+    }
+
+    "have correct assignment" in {
+      inside(cpg.method.fullNameExact("rust2cpgtest::<clinit>").block.astChildren.isCall.isAssignment.l) {
+        case assignment :: Nil =>
+          assignment.code shouldBe "static BAR: usize = 42;"
+          assignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+          assignment.methodFullName shouldBe Operators.assignment
+          assignment.typeFullName shouldBe Defines.Any
+
+          inside(assignment.argument.sortBy(_.argumentIndex).l) { case (fieldAccess: Call) :: (rhs: Literal) :: Nil =>
+            fieldAccess.methodFullName shouldBe Operators.fieldAccess
+            fieldAccess.code shouldBe "BAR"
+            fieldAccess.typeFullName shouldBe "usize"
+            inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+              case TypeRef(code = "rust2cpgtest", typeFullName = "rust2cpgtest") :: FieldIdentifier(
+                    canonicalName = "BAR"
+                  ) :: Nil =>
+                succeed
+            }
+            rhs.code shouldBe "42"
+            rhs.typeFullName shouldBe "usize"
+          }
       }
     }
   }
@@ -158,19 +159,6 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
   "a mutable static" should {
     val cpg = code("static mut BAZ: u32 = 0;")
 
-    "create a LOCAL with the annotated type" in {
-      inside(cpg.local.name("BAZ").l) { case local :: Nil =>
-        local.typeFullName shouldBe "u32"
-        local.code shouldBe "BAZ"
-      }
-    }
-
-    "lower the initializer into an assignment" in {
-      inside(cpg.assignment.l) { case assignment :: Nil =>
-        assignment.code shouldBe "static mut BAZ: u32 = 0;"
-      }
-    }
-
     "have correct member" in {
       inside(cpg.typeDecl.fullNameExact("rust2cpgtest").l) { case typeDecl :: Nil =>
         typeDecl.name shouldBe "rust2cpgtest"
@@ -180,6 +168,65 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
           member.code shouldBe "static mut BAZ: u32 = 0;"
           member.typeFullName shouldBe "u32"
         }
+      }
+    }
+
+    "have correct assignment" in {
+      inside(cpg.method.fullNameExact("rust2cpgtest::<clinit>").block.astChildren.isCall.isAssignment.l) {
+        case assignment :: Nil =>
+          assignment.code shouldBe "static mut BAZ: u32 = 0;"
+      }
+    }
+  }
+
+  "const in an inline module" should {
+    val cpg = code("mod m { pub const K: u32 = 1; }")
+
+    "have correct static initializer" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::m").method.l) { case clinit :: Nil =>
+        clinit.name shouldBe "<clinit>"
+        clinit.fullName shouldBe "rust2cpgtest::m::<clinit>"
+      }
+    }
+
+    "have correct assignment" in {
+      inside(cpg.method.fullNameExact("rust2cpgtest::m::<clinit>").block.astChildren.isCall.isAssignment.l) {
+        case assignment :: Nil =>
+          assignment.code shouldBe "pub const K: u32 = 1;"
+          inside(assignment.argument.sortBy(_.argumentIndex).l) { case (fieldAccess: Call) :: (rhs: Literal) :: Nil =>
+            fieldAccess.code shouldBe "K"
+            inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+              case TypeRef(code = "rust2cpgtest::m", typeFullName = "rust2cpgtest::m") :: FieldIdentifier(
+                    canonicalName = "K"
+                  ) :: Nil =>
+                succeed
+            }
+            rhs.code shouldBe "1"
+          }
+      }
+    }
+  }
+
+  "two const _ in different modules" should {
+    val cpg = code("""
+        |const _: () = {};
+        |mod m {
+        |  const _: () = {};
+        |}
+        |""".stripMargin)
+
+    "have correct clinit body" in {
+      inside(cpg.method.fullNameExact("rust2cpgtest::<clinit>").block.astChildren.l) {
+        case Local(name = "<tmp>0") :: (tmpAssign: Call) :: Nil =>
+          tmpAssign.code shouldBe "const _: () = {};"
+          tmpAssign.argument(2).isBlock shouldBe true
+          tmpAssign.argument(2).astChildren shouldBe empty
+      }
+      inside(cpg.method.fullNameExact("rust2cpgtest::m::<clinit>").block.astChildren.l) {
+        case Local(name = "<tmp>0") :: (tmpAssign: Call) :: Nil =>
+          tmpAssign.code shouldBe "const _: () = {};"
+          tmpAssign.argument(2).isBlock shouldBe true
+          tmpAssign.argument(2).astChildren shouldBe empty
       }
     }
   }
