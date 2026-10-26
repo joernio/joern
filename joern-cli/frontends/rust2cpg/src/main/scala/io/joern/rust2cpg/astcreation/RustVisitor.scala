@@ -298,7 +298,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   private def lowerModuleConst(moduleFullName: String, const: Const): (Option[Ast], Seq[Ast]) = {
     (const.name.flatMap(_.identToken), const.expr) match {
       case (Some(identToken), Some(rhsExpr)) =>
-        val (memberAst, initStmtAst) = mkMemberAndAssignment(moduleFullName, const, identToken, const.typ, rhsExpr)
+        val (memberAst, initStmtAst) =
+          mkTypeRefMemberAndAssignment(moduleFullName, const, identToken, const.typ, rhsExpr)
         (Some(memberAst), initStmtAst :: Nil)
       case _ =>
         // E.g. `const _ =  rhs`, where we want `rhs` inside <clinit>.
@@ -309,7 +310,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   private def lowerModuleStatic(moduleFullName: String, static: Static): (Option[Ast], Seq[Ast]) = {
     (static.name.identToken, static.expr) match {
       case (Some(identToken), Some(rhsExpr)) =>
-        val (memberAst, assignmentAst) = mkMemberAndAssignment(moduleFullName, static, identToken, static.typ, rhsExpr)
+        val (memberAst, assignmentAst) =
+          mkTypeRefMemberAndAssignment(moduleFullName, static, identToken, static.typ, rhsExpr)
         (Some(memberAst), assignmentAst :: Nil)
       case _ =>
         (None, notHandledYet(static) :: Nil)
@@ -319,7 +321,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // Creates:
   // 1. MEMBER item
   // 2. ASSIGNMENT <moduleFullName>::<ident> = rhsExpr
-  private def mkMemberAndAssignment(
+  private def mkTypeRefMemberAndAssignment(
     moduleFullName: String,
     item: Item,
     ident: IdentToken,
