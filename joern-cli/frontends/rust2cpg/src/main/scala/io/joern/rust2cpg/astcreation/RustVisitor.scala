@@ -278,7 +278,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       parameters = Nil,
       body = blockAst(blockNode(node), stmtAsts.toList),
       methodReturn = methodReturnNode(node, "()"),
-      modifiers = Seq(modifierNode(node, ModifierTypes.STATIC))
+      modifiers = Seq(modifierNode(node, ModifierTypes.CONSTRUCTOR), modifierNode(node, ModifierTypes.STATIC))
     )
 
     Ast(typeDecl).withChildren(memberDeclAsts).withChild(clinitAst)

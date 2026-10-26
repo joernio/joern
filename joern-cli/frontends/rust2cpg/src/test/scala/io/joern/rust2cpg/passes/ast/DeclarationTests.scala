@@ -23,11 +23,11 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
 
-    "have correct static initializer" in {
+    "have correct <clinit> modifiers" in {
       inside(cpg.typeDecl.fullNameExact("rust2cpgtest").method.l) { case clinit :: Nil =>
         clinit.name shouldBe "<clinit>"
         clinit.fullName shouldBe "rust2cpgtest::<clinit>"
-        clinit.modifier.modifierType.l shouldBe List(ModifierTypes.STATIC)
+        clinit.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.STATIC)
         clinit.methodReturn.typeFullName shouldBe "()"
       }
     }
