@@ -45,10 +45,10 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
             fieldAccess.code shouldBe "MAX_SIZE"
             fieldAccess.typeFullName shouldBe "usize"
             inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
-              case (module: TypeRef) :: (field: FieldIdentifier) :: Nil =>
-                module.code shouldBe "rust2cpgtest"
-                module.typeFullName shouldBe "rust2cpgtest"
-                field.canonicalName shouldBe "MAX_SIZE"
+              case TypeRef(code = "rust2cpgtest", typeFullName = "rust2cpgtest") :: FieldIdentifier(
+                    canonicalName = "MAX_SIZE"
+                  ) :: Nil =>
+                succeed
             }
             rhs.code shouldBe "1024"
             rhs.typeFullName shouldBe "usize"
@@ -122,10 +122,10 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
             fieldAccess.code shouldBe "BAR"
             fieldAccess.typeFullName shouldBe "usize"
             inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
-              case (module: TypeRef) :: (field: FieldIdentifier) :: Nil =>
-                module.code shouldBe "rust2cpgtest"
-                module.typeFullName shouldBe "rust2cpgtest"
-                field.canonicalName shouldBe "BAR"
+              case TypeRef(code = "rust2cpgtest", typeFullName = "rust2cpgtest") :: FieldIdentifier(
+                    canonicalName = "BAR"
+                  ) :: Nil =>
+                succeed
             }
             rhs.code shouldBe "42"
             rhs.typeFullName shouldBe "usize"
@@ -196,10 +196,10 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
           inside(assignment.argument.sortBy(_.argumentIndex).l) { case (fieldAccess: Call) :: (rhs: Literal) :: Nil =>
             fieldAccess.code shouldBe "K"
             inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
-              case (module: TypeRef) :: (field: FieldIdentifier) :: Nil =>
-                module.code shouldBe "rust2cpgtest::m"
-                module.typeFullName shouldBe "rust2cpgtest::m"
-                field.canonicalName shouldBe "K"
+              case TypeRef(code = "rust2cpgtest::m", typeFullName = "rust2cpgtest::m") :: FieldIdentifier(
+                    canonicalName = "K"
+                  ) :: Nil =>
+                succeed
             }
             rhs.code shouldBe "1"
           }
@@ -217,15 +217,13 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct clinit body" in {
       inside(cpg.method.fullNameExact("rust2cpgtest::<clinit>").block.astChildren.l) {
-        case (tmp: Local) :: (tmpAssign: Call) :: Nil =>
-          tmp.name shouldBe "<tmp>0"
+        case Local(name = "<tmp>0") :: (tmpAssign: Call) :: Nil =>
           tmpAssign.code shouldBe "const _: () = {};"
           tmpAssign.argument(2).isBlock shouldBe true
           tmpAssign.argument(2).astChildren shouldBe empty
       }
       inside(cpg.method.fullNameExact("rust2cpgtest::m::<clinit>").block.astChildren.l) {
-        case (tmp: Local) :: (tmpAssign: Call) :: Nil =>
-          tmp.name shouldBe "<tmp>0"
+        case Local(name = "<tmp>0") :: (tmpAssign: Call) :: Nil =>
           tmpAssign.code shouldBe "const _: () = {};"
           tmpAssign.argument(2).isBlock shouldBe true
           tmpAssign.argument(2).astChildren shouldBe empty
