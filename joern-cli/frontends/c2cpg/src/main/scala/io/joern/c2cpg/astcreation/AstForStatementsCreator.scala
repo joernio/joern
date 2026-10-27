@@ -183,10 +183,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     Seq.from(declAsts ++ arrayModCallsAsts ++ initCallsAsts)
   }
 
-  /** True for a declaration that defines a type inline, i.e. an enum, class, struct, or union body. Such a declaration
-    * needs to be handled by astsForDeclaration so the type, its members, and the bodies of its member functions make it
-    * into the CPG.
-    */
+  /** True for a declaration that defines an enum, class, struct, or union inline. */
   private def isLocalTypeDefinition(simpleDecl: IASTSimpleDeclaration): Boolean =
     simpleDecl.getDeclSpecifier match {
       case _: IASTEnumerationSpecifier | _: IASTCompositeTypeSpecifier => true
@@ -198,9 +195,6 @@ trait AstForStatementsCreator { this: AstCreator =>
       case struct: ICPPASTStructuredBindingDeclaration => astsForStructuredBindingDeclaration(struct)
       case declStmt: CPPASTSimpleDeclaration if isUnsupportedCoroutineKeyword(declStmt) =>
         Seq(astForUnsupportedCoroutineNode(declStmt))
-      // A function-local type definition carries the type itself, not just declarators.
-      // astsForIASTSimpleDeclaration only walks the declarators and would drop the type,
-      // its members and its member function bodies; astsForDeclaration models all of them.
       case simpleDecl: IASTSimpleDeclaration if isLocalTypeDefinition(simpleDecl) =>
         astsForDeclaration(simpleDecl)
       case simpleDecl: IASTSimpleDeclaration                     => astsForIASTSimpleDeclaration(simpleDecl)
