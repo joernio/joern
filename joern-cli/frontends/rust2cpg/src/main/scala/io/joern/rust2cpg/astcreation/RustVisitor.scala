@@ -1571,7 +1571,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
       val fieldArgs = recordExpr.recordExprFieldList.recordExprField.map { field =>
         val fieldName = field.nameRef.orElse(viewExprAsNameRef(field.expr)).map(code)
-        val argAst    = visitExpr(field.expr)
+        val argAst    = visitRhsExpr(field.expr)
         argAst.root.foreach { case expr: ExpressionNew => expr.argumentName(fieldName) }
         argAst
       }
@@ -1594,7 +1594,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       // tmp = base
       val spreadAssignAst = {
         val tmpAst = mkTmp(recordExpr)
-        callAst(assignmentNode(recordExpr, s"$tmpName = ${code(base)}"), Seq(tmpAst, visitExpr(base)))
+        callAst(assignmentNode(recordExpr, s"$tmpName = ${code(base)}"), Seq(tmpAst, visitRhsExpr(base)))
       }
 
       // tmp.x = 1; etc.
@@ -1604,7 +1604,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         val fieldType    = typeFullNameForExpr(field.expr)
         val baseAst      = mkTmp(field)
         val lhs = fieldAccessAst(fieldNameRef, fieldNameRef, baseAst, s"$tmpName.$fieldName", fieldName, fieldType)
-        callAst(assignmentNode(field, s"$tmpName.$fieldName = ${code(field.expr)}"), Seq(lhs, visitExpr(field.expr)))
+        callAst(assignmentNode(field, s"$tmpName.$fieldName = ${code(field.expr)}"), Seq(lhs, visitRhsExpr(field.expr)))
       }
 
       spreadAssignAst +: fieldAssignAsts
