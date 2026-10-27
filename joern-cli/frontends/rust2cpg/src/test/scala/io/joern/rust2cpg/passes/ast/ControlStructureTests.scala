@@ -560,6 +560,94 @@ class ControlStructureTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "call in block tail in let" should {
+    val cpg = code("""
+        |fn foo() -> i32 { 1 }
+        |fn main() {
+        | let x = { let y = 3; foo() };
+        |}
+        |""".stripMargin)
+
+    "have correct block" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) { case (block: Block) :: Nil =>
+        inside(block.astChildren.l) {
+          case Local(name = "<tmp>0", typeFullName = "i32") ::
+              Local(name = "y", typeFullName = "i32") ::
+              Call(methodFullName = Operators.assignment, code = "let y = 3;") ::
+              Call(methodFullName = Operators.assignment, code = "<tmp>0 = foo()") ::
+              Identifier(name = "<tmp>0", typeFullName = "i32") :: Nil =>
+            succeed
+        }
+      }
+    }
+
+    "have correct tail assignment" in {
+      cpg.assignment.where(_.target.isIdentifier.nameExact("<tmp>0")).source.isCall.methodFullName.l shouldBe List(
+        "rust2cpgtest::foo"
+      )
+    }
+  }
+
+  "block without tail in let" should {
+    val cpg = code("""
+        |fn foo() {}
+        |fn main() {
+        | let x = { foo(); };
+        |}
+        |""".stripMargin)
+
+    "have correct block" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) { case (block: Block) :: Nil =>
+        inside(block.astChildren.l) { case Call(methodFullName = "rust2cpgtest::foo", code = "foo()") :: Nil =>
+          succeed
+        }
+      }
+    }
+
+    "have correct locals" in {
+      cpg.method.nameExact("main").local.name.l shouldBe List("x")
+    }
+  }
+
+  "if-else in block tail in let" should {
+    val cpg = code("""
+        |fn main(c: bool) {
+        | let x = { let y = 3; if c { y } else { 2 } };
+        |}
+        |""".stripMargin)
+
+    "have correct block" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) { case (block: Block) :: Nil =>
+        inside(block.astChildren.l) {
+          case Local(name = "<tmp>0", typeFullName = "i32") ::
+              Local(name = "y", typeFullName = "i32") ::
+              Call(methodFullName = Operators.assignment, code = "let y = 3;") ::
+              (tmpAssign: Call) ::
+              Identifier(name = "<tmp>0", typeFullName = "i32") :: Nil =>
+            tmpAssign.methodFullName shouldBe Operators.assignment
+            tmpAssign.code shouldBe "<tmp>0 = if c { y } else { 2 }"
+
+            inside(tmpAssign.argument(2)) { case ifBlock: Block =>
+              inside(ifBlock.astChildren.l) {
+                case Local(name = "<tmp>1", typeFullName = "i32") ::
+                    ControlStructure(controlStructureType = ControlStructureTypes.IF, code = "if c { y } else { 2 }") ::
+                    Identifier(name = "<tmp>1", typeFullName = "i32") :: Nil =>
+                  succeed
+              }
+            }
+        }
+      }
+    }
+
+    "have correct then-branch" in {
+      cpg.ifBlock.whenTrue.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>1 = y")
+    }
+
+    "have correct else-branch" in {
+      cpg.ifBlock.whenFalse.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>1 = 2")
+    }
+  }
+
   "if-else in record field" should {
     val cpg = code("""
         |struct Foo { x: i32, y: i32 }
