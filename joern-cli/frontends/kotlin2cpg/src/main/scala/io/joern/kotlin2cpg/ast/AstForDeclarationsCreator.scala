@@ -459,7 +459,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
           Some(signature),
           Some(TypeConstants.Void)
         )
-        Seq(callWithNamedArgsAst(initCallNode, argAsts, Some(initReceiverAst), None))
+        Seq(callAst(initCallNode, argAsts, Some(initReceiverAst), None))
       case _ => Seq()
     }
 
@@ -771,7 +771,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val argAsts         = astsForKtCallExpressionArguments(callExpr)
 
       val initAst =
-        callWithNamedArgsAst(initCallNode, argAsts, Option(initReceiverAst))
+        callAst(initCallNode, argAsts, Option(initReceiverAst))
           .withChildren(annotations.map(astForAnnotationEntry))
       Seq(localAst, assignmentCallAst, initAst)
     } else if (hasRHSObjectLiteral) {

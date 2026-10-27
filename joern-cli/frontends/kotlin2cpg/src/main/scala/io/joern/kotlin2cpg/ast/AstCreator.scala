@@ -544,7 +544,7 @@ class AstCreator(
     (astDerivedMethodFullName, astDerivedSignature)
   }
 
-  protected def astsForKtCallExpressionArguments(callExpr: KtCallExpression): List[(Ast, Option[String])] = {
+  protected def astsForKtCallExpressionArguments(callExpr: KtCallExpression): List[Ast] = {
     val calledFuncDesc = bindingUtils.getCalledFunctionDesc(callExpr.getCalleeExpression)
 
     withIndex(callExpr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
@@ -560,11 +560,14 @@ class AstCreator(
         }
 
       val argAsts = astsForExpression(arg.getArgumentExpression, argTypeFallback = argumentTypeMaybe)
-      argAsts.dropRight(1).map((_, None)) ++ argAsts.lastOption.map((_, argumentNameMaybe))
+      argAsts.lastOption.flatMap(_.root).collect { case node: ExpressionNew =>
+        withArgumentName(node, argumentNameMaybe)
+      }
+      argAsts
     }.flatten.toList
   }
 
-  protected def selectorExpressionArgAsts(expr: KtQualifiedExpression): List[(Ast, Option[String])] = {
+  protected def selectorExpressionArgAsts(expr: KtQualifiedExpression): List[Ast] = {
     val callExpr = expr.getSelectorExpression.asInstanceOf[KtCallExpression]
     astsForKtCallExpressionArguments(callExpr)
   }
