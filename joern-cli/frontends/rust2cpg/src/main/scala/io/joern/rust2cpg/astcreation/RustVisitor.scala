@@ -1152,9 +1152,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   private def visitRhsExpr(rhsExpr: Expr): Ast = rhsExpr match {
-    case ifExpr: IfExpr if ifExpr.elseBranch.isDefined => lowerIfWithResult(ifExpr)
-    case matchExpr: MatchExpr                          => lowerMatchWithResult(matchExpr)
-    case _                                             => visitExpr(rhsExpr)
+    case ifExpr: IfExpr if ifExpr.elseBranch.isDefined             => lowerIfWithResult(ifExpr)
+    case matchExpr: MatchExpr                                      => lowerMatchWithResult(matchExpr)
+    case blockExpr: BlockExpr if blockExpr.stmtList.expr.isDefined => lowerBlockWithResult(blockExpr)
+    case _                                                         => visitExpr(rhsExpr)
   }
 
   // `if cond { then-stmts; then-tail } else { else-stmts; else-tail }` becomes:
@@ -1199,6 +1200,35 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     blockAst(
       blockNode(matchExpr, code(matchExpr), typeFullName),
       tmpLocalAst :: matchBlockAst :: mkTmpIdentAst() :: Nil
+    )
+  }
+
+  // `{ stmts; tail }` becomes:
+  // BLOCK {
+  //   LOCAL tmp
+  //   stmts
+  //   tmp = tail
+  //   tmp
+  // }
+  private def lowerBlockWithResult(blockExpr: BlockExpr): Ast = {
+    val tmpName       = contextStack.nextTmpName()
+    val typeFullName  = typeFullNameForExpr(blockExpr)
+    val tmpLocalAst   = localAst(blockExpr, tmpName, tmpName, typeFullName)
+    val mkTmpIdentAst = () => identifierAst(blockExpr, tmpName, tmpName, typeFullName)
+
+    val mkTmpAssignAst = (tailExpr: Expr) =>
+      callAst(
+        callNode = assignmentNode(tailExpr, s"$tmpName = ${code(tailExpr)}"),
+        arguments = Seq(mkTmpIdentAst(), visitRhsExpr(tailExpr))
+      )
+
+    contextStack.pushBlock()
+    val stmtAsts = visitStmtList(blockExpr.stmtList, mkTmpAssignAst)
+    contextStack.pop()
+
+    blockAst(
+      blockNode = blockNode(blockExpr, code(blockExpr), typeFullName),
+      statements = tmpLocalAst +: stmtAsts.toList :+ mkTmpIdentAst()
     )
   }
 
