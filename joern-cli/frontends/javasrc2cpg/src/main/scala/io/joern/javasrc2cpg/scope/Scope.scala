@@ -132,7 +132,7 @@ class Scope(implicit withSchemaValidation: ValidationMode, disableTypeFallback: 
   }
 
   def addWildcardImport(prefix: String): Unit = {
-    scopeStack.head.addWildcardImport(prefix)
+    enclosingNamespace.foreach(_.addWildcardImport(prefix))
   }
 
   def addStaticImport(memberName: String, declaringTypeFullName: String): Unit = {

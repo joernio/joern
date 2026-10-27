@@ -74,6 +74,63 @@ class ImportTests extends JavaSrcCode2CpgFixture {
     }
   }
 
+  "multiple non-static wildcard imports" should {
+    lazy val cpg = code(
+      """
+        |package org.codeminers.controller;
+        |
+        |import org.codeminers.thirdparty.util.*;
+        |import org.codeminers.other.*;
+        |
+        |public class Controller {
+        |    public void foo(Unresolved u) {}
+        |}""".stripMargin,
+      fileName = "Controller.java"
+    )
+
+    "create an import node for each wildcard import" in {
+      val List(first, second) = cpg.imports.l
+      first.importedAs shouldBe Some("*")
+      first.importedEntity shouldBe Some("org.codeminers.thirdparty.util")
+      first.code shouldBe "import org.codeminers.thirdparty.util.*"
+
+      second.importedAs shouldBe Some("*")
+      second.importedEntity shouldBe Some("org.codeminers.other")
+      second.code shouldBe "import org.codeminers.other.*"
+    }
+
+    "not guess the type of an unresolved parameter since the wildcard import is ambiguous" in {
+      cpg.method.name("foo").parameter.name("u").typeFullName.l shouldBe List("<unresolvedNamespace>.Unresolved")
+    }
+  }
+
+  "a non-static wildcard import combined with a static wildcard import" should {
+    lazy val cpg = code(
+      """
+        |package org.codeminers.controller;
+        |
+        |import static org.codeminers.statichelper.StaticHelper.*;
+        |import org.codeminers.thirdparty.util.*;
+        |
+        |public class Controller {
+        |    public void foo(Unresolved u) {}
+        |}""".stripMargin,
+      fileName = "Controller.java"
+    )
+
+    "still create an import node for the non-static wildcard import" in {
+      val List(asterix) = cpg.imports.l
+      asterix.importedAs shouldBe Some("*")
+      asterix.importedEntity shouldBe Some("org.codeminers.thirdparty.util")
+    }
+
+    "guess the type of an unresolved parameter from the non-static wildcard import" in {
+      cpg.method.name("foo").parameter.name("u").typeFullName.l shouldBe List(
+        "org.codeminers.thirdparty.util.Unresolved"
+      )
+    }
+  }
+
   "an import with extra whitespace between `import` and the package name" should {
     lazy val cpg = code(
       """
