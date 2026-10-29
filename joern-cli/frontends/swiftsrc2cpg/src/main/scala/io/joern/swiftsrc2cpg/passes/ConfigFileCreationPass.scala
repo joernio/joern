@@ -23,7 +23,8 @@ class ConfigFileCreationPass(cpg: Cpg, config: Config)
 
   private val PlistExt: String = ".plist"
 
-  override val configFileFilters: List[Path => Boolean] = List(extensionFilter(PlistExt), extensionFilter(".xib"))
+  override val configFileFilters: List[Path => Boolean] =
+    extensionFilter(PlistExt) :: extensionFilter(".xib") :: DefaultFileExtensionFilters
 
   /** Reads the file once and returns its content together with an optional source comment. Binary plists are converted
     * to XML via [[PropertyListParser]] and annotated with a comment recording their origin; text files are returned

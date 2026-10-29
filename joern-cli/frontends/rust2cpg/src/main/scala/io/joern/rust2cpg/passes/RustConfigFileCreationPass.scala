@@ -8,6 +8,10 @@ import java.nio.file.Path
 
 class RustConfigFileCreationPass(cpg: Cpg, config: Config) extends XConfigFileCreationPass(cpg, config = config) {
 
-  override protected val configFileFilters: List[Path => Boolean] =
-    List(pathEndFilter("Cargo.toml"), pathEndFilter("Cargo.lock"), pathEndFilter("rust-toolchain.toml"))
+  override protected val configFileFilters: List[Path => Boolean] = {
+    pathEndFilter("Cargo.toml") ::
+      pathEndFilter("Cargo.lock") ::
+      pathEndFilter("rust-toolchain.toml") ::
+      DefaultFileExtensionFilters
+  }
 }
