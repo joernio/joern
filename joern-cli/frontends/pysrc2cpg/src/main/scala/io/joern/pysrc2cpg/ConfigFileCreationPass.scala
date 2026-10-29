@@ -15,6 +15,8 @@ class ConfigFileCreationPass(cpg: Cpg, config: Py2CpgOnFileSystemConfig)
     extensionFilter(".ini"),
     // YAML files
     extensionFilter(".yaml"),
+    // JSON files
+    extensionFilter(".json"),
     // Jinja2 templates
     extensionFilter(".jinja2"),
     // HTML files
