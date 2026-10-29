@@ -16,7 +16,6 @@ case class Py2CpgOnFileSystemConfig(
   ignoreVenvDir: Boolean = true,
   ignorePaths: Seq[Path] = Nil,
   ignoreDirNames: Seq[String] = Nil,
-  requirementsTxt: String = "requirements.txt",
   override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
   override val typeRecoveryParserConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
 ) extends X2CpgConfig[Py2CpgOnFileSystemConfig]
@@ -46,10 +45,6 @@ case class Py2CpgOnFileSystemConfig(
 
   def withIgnoreDirNames(value: Seq[String]): Py2CpgOnFileSystemConfig = {
     copy(ignoreDirNames = value)
-  }
-
-  def withRequirementsTxt(text: String): Py2CpgOnFileSystemConfig = {
-    copy(requirementsTxt = text)
   }
 }
 
