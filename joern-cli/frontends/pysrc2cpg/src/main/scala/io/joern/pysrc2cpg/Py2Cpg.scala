@@ -42,7 +42,7 @@ class Py2Cpg(inputProviders: Iterable[Py2Cpg.InputProvider], outputCpg: Cpg, con
     edgeBuilder.astEdge(anyTypeDecl, globalNamespaceBlock, 0)
     DiffGraphApplier.applyDiff(outputCpg.graph, diffGraph)
     new CodeToCpg(outputCpg, inputProviders, config.schemaValidation, !config.disableFileContent).createAndApply()
-    new ConfigFileCreationPass(outputCpg, config.requirementsTxt, config).createAndApply()
+    new ConfigFileCreationPass(outputCpg, config).createAndApply()
     new DependenciesFromRequirementsTxtPass(outputCpg).createAndApply()
   }
 }

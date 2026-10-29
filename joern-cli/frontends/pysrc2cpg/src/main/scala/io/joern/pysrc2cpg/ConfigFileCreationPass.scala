@@ -5,7 +5,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 
 import java.nio.file.Path
 
-class ConfigFileCreationPass(cpg: Cpg, requirementsTxt: String = "requirement.txt", config: Py2CpgOnFileSystemConfig)
+class ConfigFileCreationPass(cpg: Cpg, config: Py2CpgOnFileSystemConfig)
     extends XConfigFileCreationPass(cpg, config = config) {
 
   override val configFileFilters: List[Path => Boolean] = List(
@@ -22,7 +22,7 @@ class ConfigFileCreationPass(cpg: Cpg, requirementsTxt: String = "requirement.tx
     // HTM files
     extensionFilter(".htm"),
     // Requirements.txt
-    pathEndFilter(requirementsTxt),
+    pathEndFilter("requirements.txt"),
     // Pipfile
     pathEndFilter("Pipfile"),
     pathEndFilter("Pipfile.lock")
