@@ -5,7 +5,14 @@ import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAc
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
-import io.shiftleft.semanticcpg.accesspath.MatchResult
+import io.shiftleft.semanticcpg.accesspath.{
+  AccessPath,
+  Elements,
+  IndirectionAccess,
+  MatchResult,
+  TrackedBase,
+  TrackedNamedVariable
+}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
@@ -308,6 +315,43 @@ class DdgGenerator(semantics: Semantics) {
   }
 }
 
+/** ponytail: intraprocedural `p = &s` only; reassigned pointers dropped; no IndexAccess aliasing. */
+private object PointerAliasMap {
+
+  def fromMethod(method: Method): Map[String, String] = {
+    val lhsCounts = mutable.Map.empty[String, Int].withDefaultValue(0)
+    method.call
+      .nameExact(Operators.assignment)
+      .foreach { assign =>
+        assign.argumentOption(1).collect { case id: Identifier => id.name }.foreach { name =>
+          lhsCounts(name) += 1
+        }
+      }
+
+    val reassigned = lhsCounts.filter(_._2 > 1).keySet
+
+    method.call
+      .nameExact(Operators.assignment)
+      .flatMap { assign =>
+        val pointerName = assign.argumentOption(1).collect { case id: Identifier => id.name }
+        val structName  = assign
+          .argumentOption(2)
+          .collect {
+            case addrOf: Call if addrOf.name == Operators.addressOf =>
+              addrOf.argumentOption(1).collect { case id: Identifier => id.name }
+          }
+          .flatten
+
+        (pointerName, structName) match {
+          case (Some(ptr), Some(structN)) if !reassigned.contains(ptr) => Some(ptr -> structN)
+          case _                                                       => None
+        }
+      }
+      .toMap
+  }
+
+}
+
 /** Upon calculating reaching definitions, we find ourselves with a set of incoming definitions `in(n)` for each node
   * `n` of the flow graph. This component determines those of the incoming definitions that are relevant as the value
   * they define is actually used by `n`.
@@ -315,6 +359,9 @@ class DdgGenerator(semantics: Semantics) {
 private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], in: Map[CfgNode, Set[Definition]]) {
 
   val numberToNode: Map[Definition, CfgNode] = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
+
+  private val method         = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].method
+  private val pointerAliases = PointerAliasMap.fromMethod(method)
 
   private val allNodes     = in.keys.toList
   private val containerSet =
@@ -389,12 +436,43 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
           case inCall: Call =>
             val (useBase, useAccessPath) = toTrackedBaseAndAccessPathSimple(useCall)
             val (inBase, inAccessPath)   = toTrackedBaseAndAccessPathSimple(inCall)
-            useBase == inBase && useAccessPath.matchAndDiff(inAccessPath.elements)._1 == MatchResult.EXACT_MATCH
+            if (useBase == inBase && useAccessPath.matchAndDiff(inAccessPath.elements)._1 == MatchResult.EXACT_MATCH) {
+              true
+            } else {
+              isFieldAliasAcrossPointer(useBase, useAccessPath, inBase, inAccessPath)
+            }
           case _ => false
         }
       case _ => false
     }
   }
+
+  private def namedVariable(base: TrackedBase): Option[String] = base match {
+    case TrackedNamedVariable(name) => Some(name)
+    case _                          => None
+  }
+
+  private def isFieldAliasAcrossPointer(
+    useBase: TrackedBase,
+    useAccessPath: AccessPath,
+    inBase: TrackedBase,
+    inAccessPath: AccessPath
+  ): Boolean = {
+    (namedVariable(useBase), namedVariable(inBase)) match {
+      case (Some(useName), Some(inName)) if pointerAliases.get(inName).contains(useName) =>
+        fieldPathsMatchAfterOneDeref(inAccessPath, useAccessPath)
+      case (Some(useName), Some(inName)) if pointerAliases.get(useName).contains(inName) =>
+        fieldPathsMatchAfterOneDeref(useAccessPath, inAccessPath)
+      case _ => false
+    }
+  }
+
+  private def fieldPathsMatchAfterOneDeref(pointerPath: AccessPath, structPath: AccessPath): Boolean =
+    pointerPath.elements.elements.toList match {
+      case IndirectionAccess :: tail =>
+        AccessPath(Elements.normalized(tail), Nil).matchAndDiff(structPath.elements)._1 == MatchResult.EXACT_MATCH
+      case _ => false
+    }
 
   def uses(node: CfgNode): Set[CfgNode] = {
     val n: Set[CfgNode] = node match {
