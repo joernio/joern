@@ -174,10 +174,8 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CppExt) {
           |}""".stripMargin)
       val List(constructor) = cpg.typeDecl.nameExact("FooT").method.isConstructor.l
       constructor.signature shouldBe "void(std.string&,Bar.SomeClass&)"
-      constructor.block.astChildren.isBlock.astChildren.isCall.code.l shouldBe List(
-        "<tmp>0 = <operator>.alloc",
-        "Bar::Foo(a, b)"
-      )
+      // the base subobject of `this` is constructed; there is no temporary to construct into
+      constructor.block.astChildren.isCall.code.l shouldBe List("Bar::Foo(a, b)")
       val List(thisP, p1, p2) = constructor.parameter.l
       thisP.name shouldBe Defines.This
       thisP.typeFullName shouldBe "FooT*"
