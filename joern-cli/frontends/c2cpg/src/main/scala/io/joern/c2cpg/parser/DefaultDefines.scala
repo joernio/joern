@@ -12,4 +12,9 @@ object DefaultDefines {
     */
   val MSVC_INTEGER_TYPES: Map[String, String] =
     Map("__int8" -> "char", "__int16" -> "short", "__int32" -> "int", "__int64" -> "long long")
+
+  /** C11's alignment specifier. CDT's C parser throws on an alignment specifier whose operand is ambiguous, such as
+    * `_Alignas(sizeof(T))`, and the whole file is lost. The graph does not represent alignment, so it is defined away.
+    */
+  val ALIGNMENT_SPECIFIER: Map[String, String] = Map("_Alignas(x)" -> "")
 }
