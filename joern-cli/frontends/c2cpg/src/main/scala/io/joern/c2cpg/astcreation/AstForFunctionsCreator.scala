@@ -249,6 +249,28 @@ trait AstForFunctionsCreator { this: AstCreator =>
     } else Nil
   }
 
+  /** True if the exception specification of this declarator says the function cannot throw.
+    *
+    * `ICPPASTFunctionDeclarator.getNoexceptEvaluation` already folds every spelling into one evaluation: `noexcept`,
+    * `noexcept(true)` and the deprecated `throw()` all yield a constant `true`, `noexcept(false)` yields a constant
+    * `false`, and neither a `throw(E)` nor an absent specification yields anything. A condition that is not a constant
+    * expression - a dependent `noexcept(noexcept(T(x)))` on an uninstantiated template, which CDT reports as
+    * type-dependent and still assigns a value of 1 - is treated as unknown, i.e. as possibly throwing.
+    */
+  private def isNoExcept(declarator: IASTFunctionDeclarator): Boolean = declarator match {
+    case cppDeclarator: ICPPASTFunctionDeclarator =>
+      safeCdtCall(cppDeclarator.getNoexceptEvaluation)
+        .filter(evaluation => safeCdtCall(evaluation.isConstantExpression).getOrElse(false))
+        .flatMap(evaluation => safeCdtCall(evaluation.getValue))
+        .flatMap(value => safeCdtCall(value.numberValue()))
+        .exists(_.longValue() != 0L)
+    case _ => false
+  }
+
+  private def noExceptModifierFor(node: IASTNode, declarator: IASTFunctionDeclarator): List[NewModifier] = {
+    Option.when(isNoExcept(declarator))(modifierNode(node, Defines.NoExceptModifier)).toList
+  }
+
   private def modifierFor(funcDef: IASTFunctionDefinition): List[NewModifier] = {
     val constructorModifier = if (bindsToConstructor(funcDef)) {
       List(modifierNode(funcDef, ModifierTypes.CONSTRUCTOR), modifierNode(funcDef, ModifierTypes.PUBLIC))
@@ -261,7 +283,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
       case _ => Nil
     }
     val staticModifier = Try(staticModifierFor(funcDef, funcDef.getDeclSpecifier, funcDef)).getOrElse(Nil)
-    constructorModifier ++ definitionModifier ++ staticModifier
+    constructorModifier ++ definitionModifier ++ staticModifier ++
+      noExceptModifierFor(funcDef, funcDef.getDeclarator)
   }
 
   private def modifierFor(funcDecl: IASTFunctionDeclarator): List[NewModifier] = {
@@ -273,7 +296,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       case definition: IASTFunctionDefinition => staticModifierFor(funcDecl, definition.getDeclSpecifier, definition)
       case _                                  => Nil
     }).getOrElse(Nil)
-    constructorModifier ++ staticModifier
+    constructorModifier ++ staticModifier ++ noExceptModifierFor(funcDecl, funcDecl)
   }
 
   private def syntheticThisAccess(ident: IASTName, identifierName: String): Ast = {
