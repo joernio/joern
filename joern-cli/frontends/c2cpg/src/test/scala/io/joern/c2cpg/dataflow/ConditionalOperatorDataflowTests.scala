@@ -72,12 +72,7 @@ class ConditionalOperatorDataflowTests extends DataFlowCodeToCpgSuite {
       val source = cpg.identifier("source")
       val sink   = cpg.identifier("sink_2")
       sink.reachableByFlows(source).map(flowToResultPairs).toSetMutable shouldBe Set(
-        List(
-          ("source = 0", 3),
-          ("source_copy = source", 4),
-          ("source_copy && 1", 6),
-          ("sink_2 = source_copy", 7)
-        ),
+        List(("source = 0", 3), ("source_copy = source", 4), ("source_copy && 1", 6), ("sink_2 = source_copy", 7)),
         List(("source_copy = source", 4), ("source_copy && 1", 6), ("sink_2 = source_copy", 7))
       )
     }
@@ -98,12 +93,7 @@ class ConditionalOperatorDataflowTests extends DataFlowCodeToCpgSuite {
       val source = cpg.identifier("source")
       val sink   = cpg.identifier("sink_2")
       sink.reachableByFlows(source).map(flowToResultPairs).toSetMutable shouldBe Set(
-        List(
-          ("source = 0", 3),
-          ("source_copy = source", 4),
-          ("source_copy || 0", 6),
-          ("sink_2 = source_copy", 7)
-        ),
+        List(("source = 0", 3), ("source_copy = source", 4), ("source_copy || 0", 6), ("sink_2 = source_copy", 7)),
         List(("source_copy = source", 4), ("source_copy || 0", 6), ("sink_2 = source_copy", 7))
       )
     }
