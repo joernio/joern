@@ -187,7 +187,7 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
       .map { call =>
         call -> {
           val retVal = List(call)
-          // Ternary only reads its operands; gen on args kills prior defs (joern #5667).
+          // Ternary only reads its operands; gen on args kills prior defs.
           val args =
             if (isReadOnlyShortCircuitOperator(call)) Iterator.empty
             else call.argument.filter(hasValidGenType)
@@ -203,7 +203,7 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
     (defsForParams ++ defsForCalls).toMap
   }
 
-  /** Ternary must not gen its operand arguments (joern #5667). */
+  /** Ternary must not gen its operand arguments. */
   private def isReadOnlyShortCircuitOperator(call: Call): Boolean =
     call.name == Operators.conditional
 

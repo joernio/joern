@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language.*
 
 class ConditionalOperatorDataflowTests extends DataFlowCodeToCpgSuite {
 
-  "Issue5667 conditional operator condition use" should {
+  "conditional operator condition use" should {
     val cpg = code("""
         |int main(int argc, char **argv) {
         |  int source = 0;
@@ -18,11 +18,21 @@ class ConditionalOperatorDataflowTests extends DataFlowCodeToCpgSuite {
         |}""".stripMargin)
 
     "still find flow to sink_1" in {
-      cpg.identifier("sink_1").reachableByFlows(cpg.identifier("source")).nonEmpty shouldBe true
+      val source = cpg.identifier("source")
+      val sink   = cpg.identifier("sink_1")
+      sink.reachableByFlows(source).map(flowToResultPairs).toSetMutable shouldBe Set(
+        List(("source_copy = source", 4), ("sink_1 = source_copy", 5)),
+        List(("source = 0", 3), ("source_copy = source", 4), ("sink_1 = source_copy", 5))
+      )
     }
 
     "find flow to sink_2 after ternary condition use" in {
-      cpg.identifier("sink_2").reachableByFlows(cpg.identifier("source")).nonEmpty shouldBe true
+      val source = cpg.identifier("source")
+      val sink   = cpg.identifier("sink_2")
+      sink.reachableByFlows(source).map(flowToResultPairs).toSetMutable shouldBe Set(
+        List(("source_copy = source", 4), ("sink_2 = source_copy", 7)),
+        List(("source = 0", 3), ("source_copy = source", 4), ("sink_2 = source_copy", 7))
+      )
     }
   }
 
@@ -38,7 +48,12 @@ class ConditionalOperatorDataflowTests extends DataFlowCodeToCpgSuite {
         |}""".stripMargin)
 
     "find flow to sink_2 after statement ternary" in {
-      cpg.identifier("sink_2").reachableByFlows(cpg.identifier("source")).nonEmpty shouldBe true
+      val source = cpg.identifier("source")
+      val sink   = cpg.identifier("sink_2")
+      sink.reachableByFlows(source).map(flowToResultPairs).toSetMutable shouldBe Set(
+        List(("source = 0", 3), ("source_copy = source", 4), ("sink_2 = source_copy", 7)),
+        List(("source_copy = source", 4), ("sink_2 = source_copy", 7))
+      )
     }
   }
 
@@ -54,7 +69,17 @@ class ConditionalOperatorDataflowTests extends DataFlowCodeToCpgSuite {
         |}""".stripMargin)
 
     "find flow to sink_2 after logical and condition use" in {
-      cpg.identifier("sink_2").reachableByFlows(cpg.identifier("source")).nonEmpty shouldBe true
+      val source = cpg.identifier("source")
+      val sink   = cpg.identifier("sink_2")
+      sink.reachableByFlows(source).map(flowToResultPairs).toSetMutable shouldBe Set(
+        List(
+          ("source = 0", 3),
+          ("source_copy = source", 4),
+          ("source_copy && 1", 6),
+          ("sink_2 = source_copy", 7)
+        ),
+        List(("source_copy = source", 4), ("source_copy && 1", 6), ("sink_2 = source_copy", 7))
+      )
     }
   }
 
@@ -70,7 +95,17 @@ class ConditionalOperatorDataflowTests extends DataFlowCodeToCpgSuite {
         |}""".stripMargin)
 
     "find flow to sink_2 after logical or condition use" in {
-      cpg.identifier("sink_2").reachableByFlows(cpg.identifier("source")).nonEmpty shouldBe true
+      val source = cpg.identifier("source")
+      val sink   = cpg.identifier("sink_2")
+      sink.reachableByFlows(source).map(flowToResultPairs).toSetMutable shouldBe Set(
+        List(
+          ("source = 0", 3),
+          ("source_copy = source", 4),
+          ("source_copy || 0", 6),
+          ("sink_2 = source_copy", 7)
+        ),
+        List(("source_copy = source", 4), ("source_copy || 0", 6), ("sink_2 = source_copy", 7))
+      )
     }
   }
 
@@ -88,11 +123,21 @@ class ConditionalOperatorDataflowTests extends DataFlowCodeToCpgSuite {
         |}""".stripMargin)
 
     "flow into x through then-branch assignment" in {
-      cpg.identifier("sink_x").reachableByFlows(cpg.identifier("source")).nonEmpty shouldBe true
+      val source = cpg.identifier("source")
+      val sink   = cpg.identifier("sink_x")
+      sink.reachableByFlows(source).map(flowToResultPairs).toSetMutable shouldBe Set(
+        List(("source = 1", 3), ("x = source", 7), ("sink_x = x", 8)),
+        List(("x = source", 7), ("sink_x = x", 8))
+      )
     }
 
     "flow into y through else-branch assignment" in {
-      cpg.identifier("sink_y").reachableByFlows(cpg.identifier("source")).nonEmpty shouldBe true
+      val source = cpg.identifier("source")
+      val sink   = cpg.identifier("sink_y")
+      sink.reachableByFlows(source).map(flowToResultPairs).toSetMutable shouldBe Set(
+        List(("source = 1", 3), ("y = source", 7), ("sink_y = y", 9)),
+        List(("y = source", 7), ("sink_y = y", 9))
+      )
     }
   }
 }
