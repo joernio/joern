@@ -23,6 +23,9 @@ object DefaultSemantics {
 
   def operatorFlows: List[FlowSemantic] = List(
     F(Operators.addition, List((1, -1), (2, -1))),
+    F(Operators.subtraction, List((1, -1), (2, -1))),
+    F(Operators.multiplication, List((1, -1), (2, -1))),
+    F(Operators.division, List((1, -1), (2, -1))),
     F(Operators.addressOf, List((1, -1))),
     F(Operators.assignment, List((2, 1), (2, -1))),
     F(Operators.assignmentAnd, List((2, 1), (1, 1), (2, -1))),

@@ -20,7 +20,7 @@ class ControlStructureTests extends RubyCode2CpgFixture(withPostProcessing = tru
     val sink   = cpg.method.name("puts").callIn.argument
     val flows  = sink.reachableByFlows(source).l
     flows.map(flowToResultPairs).toSet shouldBe
-      Set(List(("x = 1", 2), ("y - x", 5), ("puts x", 7)))
+      Set(List(("x = 1", 2), ("puts x", 7)))
   }
 
   "flow through body of a `... while ...` statement" in {
@@ -35,7 +35,7 @@ class ControlStructureTests extends RubyCode2CpgFixture(withPostProcessing = tru
     val sink   = cpg.method.name("puts").callIn.argument
     val flows  = sink.reachableByFlows(source)
     flows.map(flowToResultPairs).toSet shouldBe
-      Set(List(("x = 1", 2), ("y - x", 4), ("puts x", 5)))
+      Set(List(("x = 1", 2), ("puts x", 5)))
   }
 
   "flow through body of an `until-end` statement" in {
@@ -51,7 +51,7 @@ class ControlStructureTests extends RubyCode2CpgFixture(withPostProcessing = tru
     val sink   = cpg.method.name("puts").callIn.argument
     val flows  = sink.reachableByFlows(source)
     flows.map(flowToResultPairs).toSet shouldBe
-      Set(List(("x = 1", 2), ("y - x", 5), ("puts x", 7)))
+      Set(List(("x = 1", 2), ("puts x", 7)))
   }
 
   // Works in deprecated - does not parse in new frontend
@@ -219,7 +219,7 @@ class ControlStructureTests extends RubyCode2CpgFixture(withPostProcessing = tru
     val sink   = cpg.method.name("puts").callIn.argument
     val flows  = sink.reachableByFlows(source)
     flows.map(flowToResultPairs).toSet shouldBe
-      Set(List(("t = 100", 2), ("y - t", 5), ("puts t", 7)))
+      Set(List(("t = 100", 2), ("puts t", 7)))
   }
 
   "flow through the 2nd branch of an `if-else-end` statement" in {
