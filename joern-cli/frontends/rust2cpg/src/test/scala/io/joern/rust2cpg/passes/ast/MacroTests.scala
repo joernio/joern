@@ -154,17 +154,20 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
         |""".stripMargin)
 
     "have correct locals" in {
-      inside(cpg.local.sortBy(_.order).l) { case xLocal :: sLocal :: Nil =>
-        xLocal.name shouldBe "x"
-        xLocal.typeFullName shouldBe "i32"
+      inside(cpg.local.sortBy(_.name).l) { case tmpLocal :: sLocal :: xLocal :: Nil =>
+        tmpLocal.name shouldBe "<tmp>0"
+        tmpLocal.typeFullName shouldBe "i32"
         sLocal.name shouldBe "s"
         sLocal.typeFullName shouldBe "i32"
+        xLocal.name shouldBe "x"
+        xLocal.typeFullName shouldBe "i32"
       }
     }
 
     "have correct assignments" in {
       cpg.method.nameExact("main").block.ast.isCall.isAssignment.sortBy(_.order).code.l shouldBe List(
         "let x = { three!() };",
+        "<tmp>0 = three!()",
         "let mut s = 1;",
         "s+=2"
       )
@@ -172,18 +175,24 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct children" in {
       inside(cpg.method.nameExact("main").block.astChildren.isCall.isAssignment.source.isBlock.astChildren.l) {
-        case (three: Block) :: Nil =>
-          three.code shouldBe "three!()"
-          three.typeFullName shouldBe "i32"
-          inside(three.astChildren.l) {
-            case (local: Local) :: (assign: Call) :: (assignPlus: Call) :: (ident: Identifier) :: Nil =>
-              local.name shouldBe "s"
-              assign.code shouldBe "let mut s = 1;"
-              assign.methodFullName shouldBe Operators.assignment
-              assignPlus.code shouldBe "s+=2"
-              assignPlus.methodFullName shouldBe Operators.assignmentPlus
-              ident.name shouldBe "s"
-              ident.typeFullName shouldBe "i32"
+        case Local(name = "<tmp>0", typeFullName = "i32") ::
+            (tmpAssign: Call) ::
+            Identifier(name = "<tmp>0", typeFullName = "i32") :: Nil =>
+          tmpAssign.code shouldBe "<tmp>0 = three!()"
+          tmpAssign.methodFullName shouldBe Operators.assignment
+          inside(tmpAssign.argument(2)) { case three: Block =>
+            three.code shouldBe "three!()"
+            three.typeFullName shouldBe "i32"
+            inside(three.astChildren.l) {
+              case (local: Local) :: (assign: Call) :: (assignPlus: Call) :: (ident: Identifier) :: Nil =>
+                local.name shouldBe "s"
+                assign.code shouldBe "let mut s = 1;"
+                assign.methodFullName shouldBe Operators.assignment
+                assignPlus.code shouldBe "s+=2"
+                assignPlus.methodFullName shouldBe Operators.assignmentPlus
+                ident.name shouldBe "s"
+                ident.typeFullName shouldBe "i32"
+            }
           }
       }
     }

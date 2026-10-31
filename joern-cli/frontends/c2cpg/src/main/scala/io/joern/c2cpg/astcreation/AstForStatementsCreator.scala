@@ -183,12 +183,19 @@ trait AstForStatementsCreator { this: AstCreator =>
     Seq.from(declAsts ++ arrayModCallsAsts ++ initCallsAsts)
   }
 
+  /** True for a declaration that defines an enum, class, struct, or union inline. */
+  private def isLocalTypeDefinition(simpleDecl: IASTSimpleDeclaration): Boolean =
+    simpleDecl.getDeclSpecifier match {
+      case _: IASTEnumerationSpecifier | _: IASTCompositeTypeSpecifier => true
+      case _                                                           => false
+    }
+
   private def astsForDeclarationStatement(decl: IASTDeclarationStatement): Seq[Ast] =
     decl.getDeclaration match {
       case struct: ICPPASTStructuredBindingDeclaration => astsForStructuredBindingDeclaration(struct)
       case declStmt: CPPASTSimpleDeclaration if isUnsupportedCoroutineKeyword(declStmt) =>
         Seq(astForUnsupportedCoroutineNode(declStmt))
-      case simpleDecl: IASTSimpleDeclaration if simpleDecl.getDeclSpecifier.isInstanceOf[IASTEnumerationSpecifier] =>
+      case simpleDecl: IASTSimpleDeclaration if isLocalTypeDefinition(simpleDecl) =>
         astsForDeclaration(simpleDecl)
       case simpleDecl: IASTSimpleDeclaration                     => astsForIASTSimpleDeclaration(simpleDecl)
       case s: ICPPASTStaticAssertDeclaration                     => Seq(astForStaticAssert(s))

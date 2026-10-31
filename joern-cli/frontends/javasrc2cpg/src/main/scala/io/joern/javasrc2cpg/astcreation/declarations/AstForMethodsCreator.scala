@@ -158,8 +158,17 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     scope.pushMethodScope(methodNode, expectedType, isStatic)
     typeParameters.foreach { typeParameter => scope.addTypeParameter(typeParameter.name, typeParameter.typeFullName) }
 
-    val thisNode = Option.when(!isStatic)(thisNodeForMethod(originNode, scope.enclosingTypeDecl.fullName))
-    val thisAst  = thisNode.map(Ast(_)).toList
+    val thisNode = Option.when(!isStatic) {
+      val node = thisNodeForMethod(originNode, scope.enclosingTypeDecl.fullName)
+      originNode match {
+        case callableDeclaration: CallableDeclaration[?] =>
+          val thisPositionNode: Node =
+            callableDeclaration.getReceiverParameter.toScala.getOrElse(callableDeclaration.getName)
+          node.lineNumber(line(thisPositionNode)).columnNumber(column(thisPositionNode))
+        case _ => node
+      }
+    }
+    val thisAst = thisNode.map(Ast(_)).toList
 
     thisNode.foreach { node =>
       scope.enclosingMethod.get.addParameter(node, scope.enclosingTypeDecl.get.typeDecl.genericSignature)
@@ -584,7 +593,14 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         }
       }
 
+      val thisPositionNode: Node = constructorDeclaration match {
+        case regularConstructor: ConstructorDeclaration =>
+          regularConstructor.getReceiverParameter.toScala.getOrElse(regularConstructor.getName)
+        case compactConstructor: CompactConstructorDeclaration => compactConstructor.getName
+      }
       val thisNode = thisNodeForMethod(constructorDeclaration, typeFullName)
+        .lineNumber(line(thisPositionNode))
+        .columnNumber(column(thisPositionNode))
       scope.enclosingMethod.get.addParameter(thisNode, scope.enclosingTypeDecl.get.typeDecl.genericSignature)
 
       scope.pushBlockScope()
@@ -759,10 +775,6 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       case compactConstructor: CompactConstructorDeclaration => code(compactConstructor)
       case annotationMember: AnnotationMemberDeclaration     => code(annotationMember)
     }
-    val columnNumber = declaration.getBegin.map(x => Integer.valueOf(x.column)).toScala
-    val endLine      = declaration.getEnd.map(x => Integer.valueOf(x.line)).toScala
-    val endColumn    = declaration.getEnd.map(x => Integer.valueOf(x.column)).toScala
-
     val placeholderFullName = ""
 
     val genericSignature = declaration match {
@@ -773,7 +785,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       case annotationMember: AnnotationMemberDeclaration =>
         binarySignatureCalculator.annotationMemberBinarySignature(annotationMember)
     }
-    methodNode(
+    val methodNode_ = methodNode(
       declaration,
       declaration.getNameAsString(),
       methodCode,
@@ -782,6 +794,8 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       filename,
       genericSignature = Option(genericSignature)
     )
+
+    methodNode_.lineNumber(line(declaration.getName)).columnNumber(column(declaration.getName))
   }
 
   def thisNodeForMethod(originNode: Node, maybeTypeFullName: Option[String]): NewMethodParameterIn = {

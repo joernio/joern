@@ -443,6 +443,22 @@ class MethodTests extends C2CpgSuite {
     }
   }
 
+  "Name for method in parentheses" should {
+    "be correct" in {
+      val cpg = code("""
+          |void (traced)(int value);
+          |
+          |void caller(void) {
+          |  traced(1);
+          |  void (*handler)(int) = traced;
+          |}
+          |""".stripMargin)
+      cpg.method.nameExact("traced").fullName.l shouldBe List("traced")
+      cpg.call.codeExact("traced(1)").callee(NoResolve).fullName.l shouldBe List("traced")
+      cpg.methodRef.codeExact("traced").methodFullName.l shouldBe List("traced")
+    }
+  }
+
   "Method name, signature and full name tests" should {
     "be correct for plain C method" in {
       val cpg = code(

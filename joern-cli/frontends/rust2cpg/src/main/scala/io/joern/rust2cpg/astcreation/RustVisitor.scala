@@ -241,27 +241,100 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // Besides visiting items, if there are module-level consts/statics, declare them in synthetic
   // typeDecl (same fullName as the module) so that their usages have a def site.
   private def visitModuleItems(node: RustNode, items: Seq[Item]): Seq[Ast] = {
-    val itemAsts   = items.flatMap(visitItem)
-    val memberAsts = items.flatMap {
-      case const: Const   => memberForConst(const)
-      case static: Static => memberForStatic(static) :: Nil
-      case _              => Nil
+    val (constsOrStatics, others) = items.partition {
+      case _: Const  => true
+      case _: Static => true
+      case _         => false
     }
-    if (memberAsts.isEmpty) {
-      itemAsts
+    val otherAsts = others.flatMap(visitItem)
+    if (constsOrStatics.isEmpty) {
+      otherAsts
     } else {
-      itemAsts :+ Ast(moduleTypeDeclNode(node)).withChildren(memberAsts)
+      otherAsts :+ moduleTypeDeclAst(node, constsOrStatics)
     }
   }
 
-  private def memberForConst(const: Const): Option[Ast] = {
-    const.name.flatMap(_.identToken).map { identToken =>
-      Ast(memberNode(const, code(identToken), code(const), typeFullNameForType(const.typ)))
+  // `const K: T = rhs` or `static K: T = rhs` items become:
+  // TYPE_DECL <module> {
+  //   MEMBER K: T
+  //   METHOD <clinit>() -> () {
+  //     <module>::K = rhs
+  //   }
+  // }
+  private def moduleTypeDeclAst(node: RustNode, items: Seq[Item]): Ast = {
+    val typeDecl = moduleTypeDeclNode(node)
+    contextStack.pushTypeDecl(typeDecl)
+
+    val clinitMethod = methodNode(node, Defines.StaticInitMethodName)
+    contextStack.pushMethod(clinitMethod)
+
+    val (memberDeclAsts, stmtAsts) = lowerModuleConstsAndStatics(typeDecl.fullName, items)
+
+    contextStack.pop()
+    contextStack.pop()
+
+    val clinitAst = methodAst(
+      method = clinitMethod,
+      parameters = Nil,
+      body = blockAst(blockNode(node), stmtAsts.toList),
+      methodReturn = methodReturnNode(node, "()"),
+      modifiers = Seq(modifierNode(node, ModifierTypes.CONSTRUCTOR), modifierNode(node, ModifierTypes.STATIC))
+    )
+
+    Ast(typeDecl).withChildren(memberDeclAsts).withChild(clinitAst)
+  }
+
+  private def lowerModuleConstsAndStatics(moduleFullName: String, items: Seq[Item]): (Seq[Ast], Seq[Ast]) = {
+    val lowered = items.collect {
+      case const: Const   => lowerModuleConst(moduleFullName, const)
+      case static: Static => lowerModuleStatic(moduleFullName, static)
+    }
+    val memberAsts   = lowered.flatMap(_._1)
+    val initStmtAsts = lowered.flatMap(_._2)
+
+    (memberAsts, initStmtAsts)
+  }
+
+  private def lowerModuleConst(moduleFullName: String, const: Const): (Option[Ast], Seq[Ast]) = {
+    (const.name.flatMap(_.identToken), const.expr) match {
+      case (Some(identToken), Some(rhsExpr)) =>
+        val (memberAst, initStmtAst) =
+          mkTypeRefMemberAndAssignment(moduleFullName, const, identToken, const.typ, rhsExpr)
+        (Some(memberAst), initStmtAst :: Nil)
+      case _ =>
+        // E.g. `const _ =  rhs`, where we want `rhs` inside <clinit>.
+        (None, visitConst(const))
     }
   }
 
-  private def memberForStatic(static: Static): Ast = {
-    Ast(memberNode(static, code(static.name), code(static), typeFullNameForType(static.typ)))
+  private def lowerModuleStatic(moduleFullName: String, static: Static): (Option[Ast], Seq[Ast]) = {
+    (static.name.identToken, static.expr) match {
+      case (Some(identToken), Some(rhsExpr)) =>
+        val (memberAst, assignmentAst) =
+          mkTypeRefMemberAndAssignment(moduleFullName, static, identToken, static.typ, rhsExpr)
+        (Some(memberAst), assignmentAst :: Nil)
+      case _ =>
+        (None, notHandledYet(static) :: Nil)
+    }
+  }
+
+  // Creates:
+  // 1. MEMBER item
+  // 2. ASSIGNMENT <moduleFullName>::<ident> = rhsExpr
+  private def mkTypeRefMemberAndAssignment(
+    moduleFullName: String,
+    item: Item,
+    ident: IdentToken,
+    typ: Type,
+    rhsExpr: Expr
+  ): (Ast, Ast) = {
+    val name          = code(ident)
+    val typeFullName  = typeFullNameForType(typ)
+    val memberAst     = Ast(memberNode(item, name, code(item), typeFullName))
+    val typeRefAst    = Ast(typeRefNode(item, moduleFullName, moduleFullName))
+    val lhsAst        = fieldAccessAst(item, ident, typeRefAst, name, name, typeFullName)
+    val assignmentAst = callAst(assignmentNode(item, code(item)), Seq(lhsAst, visitRhsExpr(rhsExpr)))
+    (memberAst, assignmentAst)
   }
 
   // Const =
@@ -1079,9 +1152,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   private def visitRhsExpr(rhsExpr: Expr): Ast = rhsExpr match {
-    case ifExpr: IfExpr if ifExpr.elseBranch.isDefined => lowerIfWithResult(ifExpr)
-    case matchExpr: MatchExpr                          => lowerMatchWithResult(matchExpr)
-    case _                                             => visitExpr(rhsExpr)
+    case ifExpr: IfExpr if ifExpr.elseBranch.isDefined             => lowerIfWithResult(ifExpr)
+    case matchExpr: MatchExpr                                      => lowerMatchWithResult(matchExpr)
+    case blockExpr: BlockExpr if blockExpr.stmtList.expr.isDefined => lowerBlockWithResult(blockExpr)
+    case _                                                         => visitExpr(rhsExpr)
   }
 
   // `if cond { then-stmts; then-tail } else { else-stmts; else-tail }` becomes:
@@ -1126,6 +1200,35 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     blockAst(
       blockNode(matchExpr, code(matchExpr), typeFullName),
       tmpLocalAst :: matchBlockAst :: mkTmpIdentAst() :: Nil
+    )
+  }
+
+  // `{ stmts; tail }` becomes:
+  // BLOCK {
+  //   LOCAL tmp
+  //   stmts
+  //   tmp = tail
+  //   tmp
+  // }
+  private def lowerBlockWithResult(blockExpr: BlockExpr): Ast = {
+    val tmpName       = contextStack.nextTmpName()
+    val typeFullName  = typeFullNameForExpr(blockExpr)
+    val tmpLocalAst   = localAst(blockExpr, tmpName, tmpName, typeFullName)
+    val mkTmpIdentAst = () => identifierAst(blockExpr, tmpName, tmpName, typeFullName)
+
+    val mkTmpAssignAst = (tailExpr: Expr) =>
+      callAst(
+        callNode = assignmentNode(tailExpr, s"$tmpName = ${code(tailExpr)}"),
+        arguments = Seq(mkTmpIdentAst(), visitRhsExpr(tailExpr))
+      )
+
+    contextStack.pushBlock()
+    val stmtAsts = visitStmtList(blockExpr.stmtList, mkTmpAssignAst)
+    contextStack.pop()
+
+    blockAst(
+      blockNode = blockNode(blockExpr, code(blockExpr), typeFullName),
+      statements = tmpLocalAst +: stmtAsts.toList :+ mkTmpIdentAst()
     )
   }
 
@@ -1498,7 +1601,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
       val fieldArgs = recordExpr.recordExprFieldList.recordExprField.map { field =>
         val fieldName = field.nameRef.orElse(viewExprAsNameRef(field.expr)).map(code)
-        val argAst    = visitExpr(field.expr)
+        val argAst    = visitRhsExpr(field.expr)
         argAst.root.foreach { case expr: ExpressionNew => expr.argumentName(fieldName) }
         argAst
       }
@@ -1521,7 +1624,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       // tmp = base
       val spreadAssignAst = {
         val tmpAst = mkTmp(recordExpr)
-        callAst(assignmentNode(recordExpr, s"$tmpName = ${code(base)}"), Seq(tmpAst, visitExpr(base)))
+        callAst(assignmentNode(recordExpr, s"$tmpName = ${code(base)}"), Seq(tmpAst, visitRhsExpr(base)))
       }
 
       // tmp.x = 1; etc.
@@ -1531,7 +1634,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         val fieldType    = typeFullNameForExpr(field.expr)
         val baseAst      = mkTmp(field)
         val lhs = fieldAccessAst(fieldNameRef, fieldNameRef, baseAst, s"$tmpName.$fieldName", fieldName, fieldType)
-        callAst(assignmentNode(field, s"$tmpName.$fieldName = ${code(field.expr)}"), Seq(lhs, visitExpr(field.expr)))
+        callAst(assignmentNode(field, s"$tmpName.$fieldName = ${code(field.expr)}"), Seq(lhs, visitRhsExpr(field.expr)))
       }
 
       spreadAssignAst +: fieldAssignAsts

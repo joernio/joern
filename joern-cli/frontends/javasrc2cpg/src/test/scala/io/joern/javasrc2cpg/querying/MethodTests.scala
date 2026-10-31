@@ -39,7 +39,7 @@ class MethodTests extends JavaSrcCode2CpgFixture {
     x.filename shouldBe "Foo.java"
     x.lineNumber shouldBe Some(2)
     x.lineNumberEnd shouldBe Some(4)
-    x.columnNumber shouldBe Some(4)
+    x.columnNumber shouldBe Some(8)
     x.columnNumberEnd shouldBe Some(4)
   }
 

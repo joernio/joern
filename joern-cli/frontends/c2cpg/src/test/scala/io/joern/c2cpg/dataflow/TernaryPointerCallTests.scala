@@ -62,6 +62,26 @@ class TernaryPointerCallTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "pointer call through a function name the graph has no method for" should {
+    val cpg = code("""
+        |void (traced)(int value);
+        |
+        |void first(int value) {}
+        |
+        |void second(int value) {}
+        |
+        |void caller(int flag) {
+        |  (traced)(1);
+        |  (flag ? first : second)(2);
+        |}
+      """.stripMargin)
+
+    "still link the other pointer calls to the functions their receivers name" in {
+      val List(call) = cpg.call.codeExact("(flag ? first : second)(2)").l
+      call._callOut.cast[Method].name.toSetMutable shouldBe Set("first", "second")
+    }
+  }
+
   "chained calls after ternary function designator" should {
     "not link method references from inner receiver expressions in chained calls" in {
       val cpg = code(

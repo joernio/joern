@@ -13,9 +13,6 @@ import org.slf4j.LoggerFactory
 import java.nio.file.{Files, Path, Paths}
 import scala.util.{Failure, Success, Try}
 
-/** Scans for and inserts configuration files into the CPG. Relies on the MetaData's `ROOT` property to provide the path
-  * to scan, but alternatively one can specify a directory on the `rootDir` parameter.
-  */
 abstract class XConfigFileCreationPass(cpg: Cpg, private val rootDir: Option[String] = None, config: X2CpgConfig[?])
     extends ForkJoinParallelCpgPass[Path](cpg) {
 
@@ -23,6 +20,17 @@ abstract class XConfigFileCreationPass(cpg: Cpg, private val rootDir: Option[Str
 
   // File filters to override by the implementing class
   protected val configFileFilters: List[Path => Boolean]
+
+  val DefaultFileExtensionFilters: List[Path => Boolean] = List(
+    extensionFilter(".ini"),
+    extensionFilter(".yaml"),
+    extensionFilter(".yml"),
+    extensionFilter(".xml"),
+    extensionFilter(".toml"),
+    extensionFilter(".json"),
+    extensionFilter(".html"),
+    extensionFilter(".htm"),
+  )
 
   override def generateParts(): Array[Path] = {
     rootDir.orElse(cpg.metaData.root.headOption) match {
@@ -103,34 +111,9 @@ class JavaConfigFileCreationPass(cpg: Cpg, rootDir: Option[String] = None, confi
     // PLAY
     pathEndFilter("routes"),
     pathEndFilter("application.conf"),
-    // SERVLET
-    pathEndFilter("web.xml"),
-    // JSF
-    pathEndFilter("faces-config.xml"),
-    // STRUTS
-    pathEndFilter("struts.xml"),
-    // DIRECT WEB REMOTING
-    pathEndFilter("dwr.xml"),
-    // MYBATIS
-    mybatisFilter,
     // BUILD SYSTEM
     extensionFilter(".gradle"),
     pathEndFilter(".gradle.kts"),
-    // ANDROID
-    pathEndFilter("AndroidManifest.xml"),
-    // SPRING
-    extensionFilter(".yaml"),
-    extensionFilter(".yml"),
-    // JPA
-    pathEndFilter("persistence.xml"),
-    // HIBERNATE
-    pathEndFilter("cfg.xml"),
-    // MAVEN
-    pathEndFilter("pom.xml")
-  )
-
-  private def mybatisFilter(file: Path): Boolean = {
-    file.absolutePathAsString.contains("batis") && file.extension().contains(".xml")
-  }
+  ) ++ DefaultFileExtensionFilters
 
 }

@@ -19,16 +19,11 @@ class ConfigFileCreationPass(cpg: Cpg, config: Config) extends XConfigFileCreati
     case None           => Seq()
   }
 
-  override protected val configFileFilters: List[Path => Boolean] = List(
+  override protected val configFileFilters: List[Path => Boolean] = {
     // Gemfiles
-    validGemfilePaths.contains,
-    extensionFilter(".ini"),
-    // YAML files
-    extensionFilter(".yaml"),
-    extensionFilter(".yml"),
-    // XML files
-    extensionFilter(".xml"),
-    // HTML.ERB files
-    pathEndFilter(".html.erb")
-  )
+    validGemfilePaths.contains ::
+      // HTML.ERB files
+      pathEndFilter(".html.erb") ::
+      DefaultFileExtensionFilters
+  }
 }
