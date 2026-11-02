@@ -450,7 +450,7 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
             val (useBase, useAccessPath) = toTrackedBaseAndAccessPathSimple(useCall)
             val (inBase, inAccessPath)   = toTrackedBaseAndAccessPathSimple(inCall)
             if (useBase == inBase && useAccessPath.matchAndDiff(inAccessPath.elements)._1 == MatchResult.EXACT_MATCH) {
-              true
+              sameRoot(useCall, inCall)
             } else {
               isFieldAliasAcrossPointer(useCall, useAccessPath, inCall, inAccessPath)
             }
@@ -458,6 +458,19 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
         }
       case _ => false
     }
+  }
+
+  /** Same tracked name is not enough when both sides resolve to different locals or parameters. */
+  private def sameRoot(use: CfgNode, defined: CfgNode): Boolean =
+    (resolvedRoot(use), resolvedRoot(defined)) match {
+      case (Some(useDecl), Some(definedDecl)) => useDecl == definedDecl
+      case _                                  => true
+    }
+
+  private def resolvedRoot(node: CfgNode): Option[Long] = node match {
+    case ident: Identifier => PointerAliasMap.declarationId(ident)
+    case call: Call        => PointerAliasMap.rootDeclarationId(call)
+    case _                 => None
   }
 
   private def isFieldAliasAcrossPointer(
@@ -499,11 +512,12 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
       case param: MethodParameterIn =>
         nodeToString(use).contains(param.name)
       case call: Call if indirectionAccessSet.contains(call.name) =>
-        call.argumentOption(1).exists(x => nodeToString(use).contains(x.code))
+        call.argumentOption(1).exists(arg => nodeToString(use).contains(arg.code)) && sameRoot(use, call)
       case call: Call =>
-        nodeToString(use).contains(call.code)
-      case identifier: Identifier => nodeToString(use).contains(identifier.name)
-      case _                      => false
+        nodeToString(use).contains(call.code) && sameRoot(use, call)
+      case identifier: Identifier =>
+        nodeToString(use).contains(identifier.name) && sameRoot(use, identifier)
+      case _ => false
     }
   }
 

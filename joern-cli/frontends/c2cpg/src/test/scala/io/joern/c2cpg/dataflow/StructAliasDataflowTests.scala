@@ -203,4 +203,50 @@ class StructAliasDataflowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "outer pointer read does not use an inner alias" should {
+    val cpg = code("""
+        |struct S { int f; };
+        |int source();
+        |void sink(int i);
+        |
+        |void foo() {
+        |  struct S s;
+        |  struct S *p;
+        |  {
+        |    struct S *p = &s;
+        |  }
+        |  s.f = source();
+        |  sink(p->f);
+        |}""".stripMargin)
+
+    "not flow from the struct write into the outer pointer read" in {
+      val source = cpg.call("source")
+      val sink   = cpg.call("sink").argument(1)
+      sink.reachableByFlows(source).size shouldBe 0
+    }
+  }
+
+  "inner pointer write does not reach an outer pointer read" should {
+    val cpg = code("""
+        |struct S { int f; };
+        |int source();
+        |void sink(int i);
+        |
+        |void foo() {
+        |  struct S s;
+        |  struct S *p;
+        |  {
+        |    struct S *p = &s;
+        |    p->f = source();
+        |  }
+        |  sink(p->f);
+        |}""".stripMargin)
+
+    "not flow across shadowed pointer names" in {
+      val source = cpg.call("source")
+      val sink   = cpg.call("sink").argument(1)
+      sink.reachableByFlows(source).size shouldBe 0
+    }
+  }
+
 }
