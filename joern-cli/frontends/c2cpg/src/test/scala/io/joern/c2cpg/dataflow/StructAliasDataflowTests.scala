@@ -154,6 +154,28 @@ class StructAliasDataflowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "repeated address of the same struct keeps the alias" should {
+    val cpg = code("""
+        |struct S { int f; };
+        |int source();
+        |void sink(int i);
+        |
+        |void foo() {
+        |  struct S s;
+        |  struct S *p;
+        |  p = &s;
+        |  p->f = source();
+        |  p = &s;
+        |  sink(s.f);
+        |}""".stripMargin)
+
+    "flow when every assignment takes the address of the same variable" in {
+      val source = cpg.call("source")
+      val sink   = cpg.call("sink").argument(1)
+      sink.reachableByFlows(source).size shouldBe 1
+    }
+  }
+
   "shadowed pointer alias stays on the inner variable" should {
     val cpg = code("""
         |struct S { int f; };

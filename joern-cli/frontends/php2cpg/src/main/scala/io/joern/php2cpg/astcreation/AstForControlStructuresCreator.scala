@@ -237,6 +237,12 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   }
 
   private def getItemAssignAstForForeach(stmt: PhpForeachStmt, iteratorIdentifier: NewIdentifier): Ast = {
+    // The loop body is built after this block scope is popped. Create key/value locals in the enclosing scope
+    // first, the same way the iterator temporary is created, so the body reuses those locals instead of
+    // allocating a second local with the same name.
+    stmt.keyVar.foreach(hoistForeachBindings(stmt, _))
+    hoistForeachBindings(stmt, stmt.valueVar)
+
     val block = blockNode(stmt)
     scope.pushNewScope(BlockScope(block, ""))
 
@@ -289,6 +295,19 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     scope.popScope()
 
     Ast(block).withChildren(keyAssignOption.toList :+ valueAssign)
+  }
+
+  private def hoistForeachBindings(origin: PhpNode, expr: PhpExpr): Unit = {
+    def walk(node: PhpExpr): Unit = node match {
+      case PhpVariable(PhpNameExpr(name, _), _) =>
+        handleVariableOccurrence(origin, name)
+      case listExpr: PhpListExpr =>
+        listExpr.items.flatten.foreach(item => walk(item.value))
+      case arrayExpr: PhpArrayExpr =>
+        arrayExpr.items.flatten.foreach(item => walk(item.value))
+      case _ =>
+    }
+    walk(expr)
   }
 
   protected def astForThrow(expr: PhpThrowExpr): Ast = {

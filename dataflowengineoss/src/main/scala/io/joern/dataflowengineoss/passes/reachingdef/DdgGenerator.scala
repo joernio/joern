@@ -308,41 +308,33 @@ class DdgGenerator(semantics: Semantics) {
   }
 }
 
-/** ponytail: intraprocedural `p = &s` only, keyed by Local/parameter id so shadowed names stay distinct; reassigned
-  * pointers dropped; no IndexAccess aliasing.
+/** Intraprocedural `p = &s` aliases, keyed by local or parameter id so shadowed names stay distinct.
+  *
+  * A pointer that is assigned more than once keeps its alias only when every assignment takes the address of the same
+  * variable. Assignment to a different target drops the alias. Matching is flow-insensitive: a `p->field` write that
+  * occurs before `p = &s` in program order is still treated as a write through that alias.
+  *
+  * Index-access aliasing is not tracked.
   */
 private object PointerAliasMap {
 
+  private val NotAnAddress = -1L
+
   def fromMethod(method: Method): Map[Long, Long] = {
-    val lhsCounts = mutable.Map.empty[Long, Int].withDefaultValue(0)
+    val targetsByPointer = mutable.Map.empty[Long, mutable.Set[Long]]
     method.call
       .nameExact(Operators.assignment)
       .foreach { assign =>
         declarationId(assign).foreach { pointerDecl =>
-          lhsCounts(pointerDecl) += 1
+          val targetId = addressTarget(assign).getOrElse(NotAnAddress)
+          targetsByPointer.getOrElseUpdate(pointerDecl, mutable.Set.empty) += targetId
         }
       }
 
-    val reassigned = lhsCounts.filter(_._2 > 1).keySet
-
-    method.call
-      .nameExact(Operators.assignment)
-      .flatMap { assign =>
-        val pointerDecl = declarationId(assign)
-        val structDecl  = assign
-          .argumentOption(2)
-          .collect {
-            case addrOf: Call if addrOf.name == Operators.addressOf =>
-              addrOf.argumentOption(1).collect { case ident: Identifier => declarationId(ident) }.flatten
-          }
-          .flatten
-
-        (pointerDecl, structDecl) match {
-          case (Some(pointer), Some(struct)) if !reassigned.contains(pointer) => Some(pointer -> struct)
-          case _                                                              => None
-        }
-      }
-      .toMap
+    targetsByPointer.collect {
+      case (pointerDecl, targets) if targets.size == 1 && !targets.contains(NotAnAddress) =>
+        pointerDecl -> targets.head
+    }.toMap
   }
 
   /** Local or parameter this identifier refers to. Empty when the reference is unresolved. */
@@ -352,7 +344,18 @@ private object PointerAliasMap {
   private def declarationId(assign: Call): Option[Long] =
     assign.argumentOption(1).collect { case ident: Identifier => declarationId(ident) }.flatten
 
-  /** Walk one member-access chain to the root identifier. Bounded so a cyclic argument cannot loop. */
+  private def addressTarget(assign: Call): Option[Long] =
+    assign
+      .argumentOption(2)
+      .collect {
+        case addrOf: Call if addrOf.name == Operators.addressOf =>
+          addrOf.argumentOption(1).collect { case ident: Identifier => declarationId(ident) }.flatten
+      }
+      .flatten
+
+  /** Walk argument 1 until an identifier. The walk stops after 4 steps so a cyclic argument cannot loop; a deeper chain
+    * returns None and matching falls back to the name-based check.
+    */
   def rootIdentifier(node: CfgNode, depth: Int = 4): Option[Identifier] =
     if (depth < 0) None
     else
@@ -463,26 +466,12 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
     }
   }
 
-  /** Reject a same-name `p->f` match only. Other calls, including PHP foreach bindings, keep the old match. */
-  private def sameRoot(use: CfgNode, defined: CfgNode): Boolean = {
-    def fieldAccess(node: CfgNode): Option[Call] = node match {
-      case call: Call if call.name == Operators.fieldAccess || call.name == Operators.indirectFieldAccess =>
-        Some(call)
-      case _ => None
+  /** Same code is not the same variable when both sides resolve to different locals or parameters. */
+  private def sameRoot(use: CfgNode, defined: CfgNode): Boolean =
+    (PointerAliasMap.rootDeclarationId(use), PointerAliasMap.rootDeclarationId(defined)) match {
+      case (Some(useDecl), Some(definedDecl)) => useDecl == definedDecl
+      case _                                  => true
     }
-    (fieldAccess(use), fieldAccess(defined)) match {
-      case (Some(useAccess), Some(definedAccess)) =>
-        (PointerAliasMap.rootIdentifier(useAccess), PointerAliasMap.rootIdentifier(definedAccess)) match {
-          case (Some(useIdent), Some(definedIdent)) if useIdent.name == definedIdent.name =>
-            (PointerAliasMap.declarationId(useIdent), PointerAliasMap.declarationId(definedIdent)) match {
-              case (Some(useDecl), Some(definedDecl)) => useDecl == definedDecl
-              case _                                  => true
-            }
-          case _ => true
-        }
-      case _ => true
-    }
-  }
 
   private def isFieldAliasAcrossPointer(
     useCall: Call,
@@ -499,10 +488,14 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
     }
   }
 
+  /** Peel one leading `IndirectionAccess`. Keep the pointer path's exclusions; an empty exclusion list would drop them.
+    */
   private def fieldPathsMatchAfterOneDeref(pointerPath: AccessPath, structPath: AccessPath): Boolean =
     pointerPath.elements.elements.toList match {
       case IndirectionAccess :: tail =>
-        AccessPath(Elements.normalized(tail), Nil).matchAndDiff(structPath.elements)._1 == MatchResult.EXACT_MATCH
+        AccessPath(Elements.normalized(tail), pointerPath.exclusions)
+          .matchAndDiff(structPath.elements)
+          ._1 == MatchResult.EXACT_MATCH
       case _ => false
     }
 
