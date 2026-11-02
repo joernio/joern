@@ -131,6 +131,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         List(Defines.Any)
       )
 
+    functionTypeDecls.update(methodFullName, functionTypeDeclNode)
+
     // Problem for https://github.com/ShiftLeftSecurity/codescience/issues/3626 here.
     // As the type (thus, the signature) of the function node is unknown (i.e., ANY*)
     // we can't generate the correct binding with signature.

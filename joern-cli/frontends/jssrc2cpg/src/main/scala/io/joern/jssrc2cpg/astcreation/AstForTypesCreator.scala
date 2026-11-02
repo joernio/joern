@@ -345,6 +345,15 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     node != ClassMethod && node != ClassPrivateMethod && isStatic
   }
 
+  /** Static methods live on the class constructor function and not on its instances. */
+  private def isStaticMethod(json: Value): Boolean = {
+    val isMethod = nodeTypeOf(json) match {
+      case ClassMethod | ClassPrivateMethod | TSDeclareMethod => true
+      case _                                                  => false
+    }
+    isMethod && safeBool(json, "static").contains(true)
+  }
+
   private def isInitializedMember(json: Value): Boolean = {
     val hasInitializedValue = hasKey(json, "value") && !json("value").isNull
     val isAssignment        = nodeTypeOf(json) match {
@@ -499,10 +508,15 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       )
     val constructorNode = constructor.methodNode
 
+    // static members live on the constructor function and not on the instances of the class
+    val constructorTypeDecl = functionTypeDecls.getOrElse(constructorNode.fullName, typeDeclNode_)
+
     // adding all class methods / functions and uninitialized, non-static members
     allClassMembers
       .filter(m => isClassMethodOrUninitializedMember(m) && !isStaticMember(m) && !isParameterProperty(m))
-      .map(m => astForClassMember(m, typeDeclNode_))
+      .foreach { member =>
+        astForClassMember(member, if (isStaticMethod(member)) constructorTypeDecl else typeDeclNode_)
+      }
 
     // adding all static members and retrieving their initialization calls
     val staticMemberInits = allClassMembers.filter(isStaticMember)
@@ -514,7 +528,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     if (staticMemberInits.nonEmpty || staticInitBlocks.nonEmpty) {
       val init = staticClassInitMethodAst(
         clazz,
-        typeDeclNode_,
+        constructorTypeDecl,
         staticMemberInits,
         staticInitBlocks,
         s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
@@ -528,6 +542,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     dynamicInstanceTypeStack.pop()
     typeRefIdStack.pop()
     scope.popScope()
+
+    // a class evaluates to its constructor function and not to an instance of the class
+    typeRefNode_.typeFullName(constructorNode.fullName)
 
     if (shouldCreateAssignmentCall) {
       // return a synthetic assignment to enable tracing of the implicitly created identifier for
@@ -979,6 +996,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   protected def addModifier(node: NewNode, json: Value): Unit = createBabelNodeInfo(json).node match {
     case ClassPrivateProperty =>
+      if (safeBool(json, "static").contains(true)) {
+        diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.STATIC), EdgeTypes.AST)
+      }
       diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.PRIVATE), EdgeTypes.AST)
     case _ =>
       if (safeBool(json, "abstract").contains(true))

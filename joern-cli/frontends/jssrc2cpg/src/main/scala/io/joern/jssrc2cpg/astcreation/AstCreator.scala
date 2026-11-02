@@ -59,6 +59,9 @@ class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val
   protected val seenAliasTypes                = mutable.HashMap.empty[String, NewTypeDecl]
   protected val functionFullNames             = mutable.HashSet.empty[String]
 
+  /** The TYPE_DECL created for each function, keyed by the function's full name. Only used for lookups. */
+  protected val functionTypeDecls = mutable.HashMap.empty[String, NewTypeDecl]
+
   // we track line and column numbers manually because astgen / @babel-parser sometimes
   // fails to deliver them at all -  strange, but this even happens with its latest version
   protected val (lineEndPositions, lineStartPositions) =

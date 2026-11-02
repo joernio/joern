@@ -240,11 +240,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
       .collect { case c if isFieldAccess(c.name) => c }
       .l
 
-  /** Finds the first usages of this module variable across all importing modules.
-    *
-    * TODO: This is wrapped in a try-catch because of the deprecated Ruby frontend crashing this process due to a
-    * missing `.method` parent node in the contains graph.
-    */
+  /** Finds the first usages of this module variable across all importing modules. */
   private def moduleVariableToFirstUsagesAcrossProgram(moduleVar: Identifier): List[CfgNode] = Try {
     moduleVar.start.moduleVariables.references
       .groupBy(_.method)
@@ -265,8 +261,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
     }
   }
 
-  /** For given method, determine the first usage of the given expression.
-    */
+  /** For given method, determine the first usage of the given expression. */
   private def firstUsagesOf(astNode: AstNode, method: Method, typeDecl: TypeDecl): List[Expression] = {
     astNode match {
       case member: Member =>
@@ -319,7 +314,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
             // If these are the same, then the parent method is the module-level type
             if identifier.method.typeDecl.fullName.contains(identifier.method.fullName) ||
               // If a member shares the name of the identifier then we consider this as a member
-              lit.method.typeDecl.member.name.toSet.contains(identifier.name) =>
+              lit.method.typeDecl.flatMap(membersIncludingStatic).name.toSet.contains(identifier.name) =>
           identifier :: Nil
         case call: Call if isFieldAccess(call.name) => call.ast.isFieldIdentifier.l
         case _                                      => Nil
@@ -345,8 +340,21 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
       case expr: Expression =>
         expr.method.typeDecl.map { typeDecl => UsageInput(src, typeDecl, expr) }
       case member: Member =>
-        member.typeDecl.map { typeDecl => UsageInput(src, typeDecl, member) }
+        member.typeDecl.map { typeDecl => UsageInput(src, owningClass(typeDecl), member) }
     }
   }
+
+  /** Some frontends (e.g., jssrc2cpg) attach the static members of a class to the TYPE_DECL of its constructor function
+    * instead of the class TYPE_DECL itself to properly resolve calls to these static members.
+    */
+  private def owningClass(typeDecl: TypeDecl): TypeDecl = {
+    if (typeDecl.name == Defines.ConstructorMethodName) {
+      typeDecl._astIn.collectFirst { case clazz: TypeDecl => clazz }.getOrElse(typeDecl)
+    } else typeDecl
+  }
+
+  /** The members of the given class TYPE_DECL including the ones attached to its constructor's TYPE_DECL. */
+  private def membersIncludingStatic(typeDecl: TypeDecl): List[Member] =
+    typeDecl.member.l ++ typeDecl.astChildren.isTypeDecl.nameExact(Defines.ConstructorMethodName).member.l
 
 }

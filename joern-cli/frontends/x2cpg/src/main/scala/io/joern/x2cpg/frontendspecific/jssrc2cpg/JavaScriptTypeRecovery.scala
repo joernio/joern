@@ -137,7 +137,8 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
         newChildren.astChildren.isFieldIdentifier
           .map(f => CallAlias(f.canonicalName, Option("this")))
           .headOption match {
-          case Some(fi) => symbolTable.get(fi)
+          // the allocated object is an instance, so it gets the type of the class and not the one of its constructor
+          case Some(fi) => symbolTable.get(fi).map(_.stripSuffix(s"$pathSep$ConstructorMethodName"))
           case None     => Set.empty[String]
         }
 
@@ -148,20 +149,30 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     associateTypes(i, constructorPaths)
   }
 
-  override protected def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
+  /** A class in expression position already evaluates to its constructor type (`Foo:<init>`), so the suffix must not be
+    * added a second time when it is instantiated.
+    */
+  private def withConstructorSuffix(typeFullName: String): String = {
+    val suffix = s"$pathSep$ConstructorMethodName"
+    if (typeFullName.endsWith(suffix)) typeFullName else s"$typeFullName$suffix"
+  }
+
+  override protected def visitIdentifierAssignedToOperator(
+    i: Identifier,
+    call: Call,
+    operation: String
+  ): Set[String] = {
     operation match {
       case Defines.OperatorsNew =>
-        c.astChildren.l match {
+        call.astChildren.l match {
           case ::(fa: Call, ::(id: Identifier, _)) if fa.name == Operators.fieldAccess =>
-            symbolTable.append(
-              c,
-              visitIdentifierAssignedToFieldLoad(id, fa.asInstanceOf[FieldAccess]).map(t =>
-                s"$t$pathSep$ConstructorMethodName"
-              )
-            )
+            val constructorTypes = visitIdentifierAssignedToFieldLoad(id, fa.asInstanceOf[FieldAccess])
+            // the identifier holds the allocated instance and thus must not be typed with the constructor
+            symbolTable.put(id, symbolTable.get(id).map(_.stripSuffix(s"$pathSep$ConstructorMethodName")))
+            symbolTable.append(call, constructorTypes.map(withConstructorSuffix))
           case _ => Set.empty
         }
-      case _ => super.visitIdentifierAssignedToOperator(i, c, operation)
+      case _ => super.visitIdentifierAssignedToOperator(i, call, operation)
     }
   }
 
