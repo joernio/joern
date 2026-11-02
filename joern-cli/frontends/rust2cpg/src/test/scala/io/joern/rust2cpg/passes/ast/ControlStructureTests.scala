@@ -161,6 +161,33 @@ class ControlStructureTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "parenthesized if-else in let" should {
+    val cpg = code("""
+        |fn main(c: bool) {
+        | let x = (if c { 1 } else { 2 });
+        |}
+        |""".stripMargin)
+
+    "have if wrapped in a block" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) { case (block: Block) :: Nil =>
+        inside(block.astChildren.l) {
+          case Local(name = "<tmp>0", typeFullName = "i32") ::
+              ControlStructure(controlStructureType = ControlStructureTypes.IF, code = "if c { 1 } else { 2 }") ::
+              Identifier(name = "<tmp>0", typeFullName = "i32") :: Nil =>
+            succeed
+        }
+      }
+    }
+
+    "have correct then-branch" in {
+      cpg.ifBlock.whenTrue.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>0 = 1")
+    }
+
+    "have correct else-branch" in {
+      cpg.ifBlock.whenFalse.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>0 = 2")
+    }
+  }
+
   "if without else in let" should {
     val cpg = code("""
         |fn foo() {}

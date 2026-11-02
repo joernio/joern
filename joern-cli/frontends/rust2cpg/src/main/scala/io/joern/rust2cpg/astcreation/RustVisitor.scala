@@ -1155,6 +1155,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     case ifExpr: IfExpr if ifExpr.elseBranch.isDefined             => lowerIfWithResult(ifExpr)
     case matchExpr: MatchExpr                                      => lowerMatchWithResult(matchExpr)
     case blockExpr: BlockExpr if blockExpr.stmtList.expr.isDefined => lowerBlockWithResult(blockExpr)
+    case parenExpr: ParenExpr                                      => visitRhsExpr(parenExpr.expr)
     case _                                                         => visitExpr(rhsExpr)
   }
 
@@ -2239,7 +2240,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  }
   // }
   private def visitMatchExpr(matchExpr: MatchExpr, lowerTail: Expr => Ast): Ast = {
-    val mkSourceAst = () => visitExpr(matchExpr.expr)
+    val mkSourceAst = () => visitRhsExpr(matchExpr.expr)
     // When it's already an identifier, we don't need to assign it a fresh tmp.
     if (isIdentifierWithoutAdjustments(matchExpr.expr)) {
       val armAsts      = matchExpr.matchArmList.matchArm.flatMap(lowerMatchArm(_, mkSourceAst, lowerTail))
