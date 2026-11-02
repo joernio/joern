@@ -515,6 +515,38 @@ class DataflowTests extends DataFlowCodeToCpgSuite {
     sink.reachableBy(source).size shouldBe 1
   }
 
+  "Flow from static member literal to sink via class access in same class" in {
+    val cpg: Cpg = code("""
+      |class Foo {
+      |  static x = "foo";
+      |  func() {
+      |    sink(Foo.x);
+      |  }
+      |}
+      |""".stripMargin)
+    def source = cpg.literal("\"foo\"")
+    def sink   = cpg.call("sink").argument(1)
+    def flows  = sink.reachableByFlows(source)
+
+    flows.map(flowToResultPairs).toSetMutable shouldBe Set(List(("static x = \"foo\";", 3), ("sink(Foo.x)", 5)))
+  }
+
+  "Flow from static member literal to sink via class access in other function" in {
+    val cpg: Cpg = code("""
+      |class Foo {
+      |  static x = "foo";
+      |}
+      |function bar() {
+      |  sink(Foo.x);
+      |}
+      |""".stripMargin)
+    def source = cpg.literal("\"foo\"")
+    def sink   = cpg.call("sink").argument(1)
+    def flows  = sink.reachableByFlows(source)
+
+    flows.map(flowToResultPairs).toSetMutable shouldBe Set(List(("static x = \"foo\";", 3), ("sink(Foo.x)", 6)))
+  }
+
   "Flow from receiver to closure parameters" in {
     val cpg: Cpg = code("foo.bar( (x,y) => { sink1(x); sink2(y); } )")
 

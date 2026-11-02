@@ -79,6 +79,43 @@ class JsClassesAstCreationPassTests extends JsSrc2CpgSuite {
       staticFoo.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL, ModifierTypes.STATIC)
     }
 
+    "have the member for a static method in the constructor TYPE_DECL and not in the class TYPE_DECL" in {
+      val cpg = code("""
+        |class ClassA {
+        |  static staticFoo() {}
+        |  foo() {}
+        |}""".stripMargin)
+      val List(classATypeDecl) = cpg.typeDecl.nameExact("ClassA").fullNameExact("Test0.js::program:ClassA").l
+      val List(foo)            = classATypeDecl.member.l
+      foo.name shouldBe "foo"
+      foo.dynamicTypeHintFullName shouldBe Seq("Test0.js::program:ClassA:foo")
+
+      val constructorFullName       = s"Test0.js::program:ClassA:${io.joern.x2cpg.Defines.ConstructorMethodName}"
+      val List(constructorTypeDecl) = cpg.typeDecl.fullNameExact(constructorFullName).l
+      val List(staticFoo)           = constructorTypeDecl.member.l
+      staticFoo.name shouldBe "staticFoo"
+      staticFoo.code shouldBe "static staticFoo() {}"
+      staticFoo.dynamicTypeHintFullName shouldBe Seq("Test0.js::program:ClassA:staticFoo")
+      staticFoo.modifier.modifierType.l shouldBe List(ModifierTypes.STATIC)
+    }
+
+    "have the member for a static field in the constructor TYPE_DECL and not in the class TYPE_DECL" in {
+      val cpg = code("""
+        |class ClassA {
+        |  static staticField = 1
+        |  static #privateStaticField = 2
+        |  field = 3
+        |}""".stripMargin)
+      val List(classATypeDecl) = cpg.typeDecl.nameExact("ClassA").fullNameExact("Test0.js::program:ClassA").l
+      classATypeDecl.member.name.l shouldBe List("field")
+
+      val constructorFullName       = s"Test0.js::program:ClassA:${io.joern.x2cpg.Defines.ConstructorMethodName}"
+      val List(constructorTypeDecl) = cpg.typeDecl.fullNameExact(constructorFullName).l
+      constructorTypeDecl.member.isStatic.name.l shouldBe List("staticField", "privateStaticField")
+      constructorTypeDecl.member.nameExact("privateStaticField").modifier.modifierType.l shouldBe
+        List(ModifierTypes.STATIC, ModifierTypes.PRIVATE)
+    }
+
     "have member for non-static method in TYPE_DECL for ClassA" in {
       val cpg = code("""
         |class ClassA {
@@ -135,7 +172,10 @@ class JsClassesAstCreationPassTests extends JsSrc2CpgSuite {
       f.lineNumber shouldBe Option(13)
       f.columnNumber shouldBe Option(4)
 
-      val List(c, d) = classATypeDecl.member.isStatic.l
+      classATypeDecl.member.isStatic.l shouldBe empty
+      val constructorFullName       = s"Test0.js::program:ClassA:${io.joern.x2cpg.Defines.ConstructorMethodName}"
+      val List(constructorTypeDecl) = cpg.typeDecl.fullNameExact(constructorFullName).l
+      val List(c, d)                = constructorTypeDecl.member.isStatic.l
       c.name shouldBe "c"
       c.code shouldBe "static c = true"
       d.name shouldBe "d"

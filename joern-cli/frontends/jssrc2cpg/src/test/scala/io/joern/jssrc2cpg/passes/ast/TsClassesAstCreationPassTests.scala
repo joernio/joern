@@ -218,7 +218,10 @@ class TsClassesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
       inside(cpg.typeDecl.name("Greeter.*").l) { case List(greeter) =>
         greeter.name shouldBe "Greeter"
         cpg.typeDecl.isAbstract.head shouldBe greeter
-        greeter.member.isStatic.head shouldBe greeter.member.name("a").head
+        greeter.member.isStatic.l shouldBe empty
+        val constructorTypeDecl =
+          cpg.typeDecl.fullNameExact(s"${greeter.fullName}:${io.joern.x2cpg.Defines.ConstructorMethodName}").head
+        constructorTypeDecl.member.isStatic.name.l shouldBe List("a")
         greeter.member.isPrivate.l shouldBe greeter.member.name("b", "e").l
         greeter.member.isPublic.head shouldBe greeter.member.name("c").head
         greeter.member.isProtected.head shouldBe greeter.member.name("d").head
