@@ -339,8 +339,8 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   }
 
   def astForDefaultConstructor(originNode: Node, instanceFieldDeclarations: List[FieldDeclaration]): Ast = {
-    val parameters       = scope.enclosingTypeDecl.get.recordParameters
-    val genericSignature = binarySignatureCalculator.defaultConstructorSignature(parameters)
+    val recordParameters = scope.enclosingTypeDecl.get.recordParameters
+    val genericSignature = binarySignatureCalculator.defaultConstructorSignature(recordParameters)
     val constructorNode  = NewMethod()
       .name(io.joern.x2cpg.Defines.ConstructorMethodName)
       .filename(filename)
@@ -350,9 +350,14 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       .columnNumber(column(originNode))
     scope.pushMethodScope(constructorNode, ExpectedType.Void, isStatic = false)
 
-    val parameterAsts = parameters.zipWithIndex.map { case (param, idx) =>
-      astForParameter(param, idx + 1)
+    val implicitParameterAsts = enumConstructorParameterAsts(originNode)
+    val sourceParameters      =
+      if (recordParameters.nonEmpty) recordParameters
+      else scope.enclosingTypeDecl.get.enumConstructorParameters
+    val sourceParameterAsts = sourceParameters.zipWithIndex.map { case (param, idx) =>
+      astForParameter(param, idx + implicitParameterAsts.size + 1)
     }
+    val parameterAsts          = implicitParameterAsts ++ sourceParameterAsts
     val parameterTypes         = parameterAsts.map(_.rootType.getOrElse(defaultTypeFallback()))
     val resolvedParameterTypes = Option.when(parameterTypes.forall(isResolvedTypeFullName))(parameterTypes)
 
@@ -369,11 +374,14 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
     val thisNode = thisNodeForMethod(originNode, typeFullName)
     scope.enclosingMethod.foreach(_.addParameter(thisNode, scope.enclosingTypeDecl.get.typeDecl.genericSignature))
-    val recordParameterAssignments = parameterAsts
-      .flatMap(_.nodes)
-      .collect { case param: nodes.NewMethodParameterIn => param }
-      .zipWithIndex
-      .map((paramNode, idx) => astForEponymousFieldAssignment(parameters(idx), thisNode, paramNode))
+    val recordParameterAssignments =
+      if (recordParameters.isEmpty) Nil
+      else
+        sourceParameterAsts
+          .flatMap(_.nodes)
+          .collect { case param: nodes.NewMethodParameterIn => param }
+          .zipWithIndex
+          .map((paramNode, idx) => astForEponymousFieldAssignment(recordParameters(idx), thisNode, paramNode))
     val bodyStatementAsts =
       astsForFieldInitializers(instanceFieldDeclarations) ++ recordParameterAssignments
     val patternLocalAsts = scope.enclosingMethod.map(_.getAndClearUnaddedPatternLocals()).getOrElse(Nil).map(Ast(_))
@@ -478,6 +486,26 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     ast.withChildren(annotationAsts)
   }
 
+  private def enumConstructorParameterAsts(originNode: Node): List[Ast] = {
+    if (scope.enclosingTypeDecl.exists(_.isEnum)) {
+      List(("$name", "java.lang.String", 1), ("$ordinal", TypeConstants.Int, 2)).map {
+        case (name, typeFullName, index) =>
+          val parameter = NewMethodParameterIn()
+            .name(name)
+            .code(s"$typeFullName $name")
+            .typeFullName(typeFullName)
+            .index(index)
+            .order(index)
+            .lineNumber(line(originNode))
+            .columnNumber(column(originNode))
+          scope.enclosingMethod.foreach(_.addParameter(parameter, ""))
+          Ast(parameter)
+      }
+    } else {
+      Nil
+    }
+  }
+
   def calcParameterTypes(
     methodLike: ResolvedMethodLikeDeclaration,
     typeParamValues: ResolvedTypeParametersMap
@@ -564,13 +592,27 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         case regularConstructor: ConstructorDeclaration        => regularConstructor.getParameters.asScala.toList
         case compactConstructor: CompactConstructorDeclaration => scope.enclosingTypeDecl.get.recordParameters
       }
-      val parameterAsts = astsForParameterList(parameters).toList
-      val paramTypes    = constructorDeclaration match {
+      val implicitParameterAsts = enumConstructorParameterAsts(constructorDeclaration)
+      val sourceParameterAsts   = astsForParameterList(parameters).toList.zipWithIndex.map { case (ast, index) =>
+        ast.root.foreach {
+          case parameter: NewMethodParameterIn =>
+            parameter.index(index + implicitParameterAsts.size + 1)
+            parameter.order(index + implicitParameterAsts.size + 1)
+          case _ => // Parameter ASTs always have a method parameter root.
+        }
+        ast
+      }
+      val parameterAsts    = implicitParameterAsts ++ sourceParameterAsts
+      val sourceParamTypes = constructorDeclaration match {
         case constructor: ConstructorDeclaration        => argumentTypesForMethodLike(maybeResolved)
         case constructor: CompactConstructorDeclaration =>
           val resolvedParams = parameters.flatMap(param => tryWithSafeStackOverflow(param.resolve()).toOption).toList
           calcParameterTypes(resolvedParams, ResolvedTypeParametersMap.empty())
       }
+      val paramTypes =
+        if (implicitParameterAsts.nonEmpty)
+          sourceParamTypes.map("java.lang.String" :: TypeConstants.Int :: _)
+        else sourceParamTypes
       val signature    = composeSignature(Some(TypeConstants.Void), paramTypes, parameterAsts.size)
       val typeFullName = scope.enclosingTypeDecl.fullName
       val fullName     =
@@ -584,7 +626,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         .fullName(fullName)
         .signature(signature)
 
-      parameterAsts.zip(parameters).foreach { (ast, parameterNode) =>
+      sourceParameterAsts.zip(parameters).foreach { (ast, parameterNode) =>
         ast.root match {
           case Some(parameter: NewMethodParameterIn) =>
             val genericType = binarySignatureCalculator.variableBinarySignature(parameterNode.getType)

@@ -205,7 +205,9 @@ object JavaScopeElement {
     outerClassType: Option[String],
     outerClassGenericSignature: Option[String],
     val declaredMethodNames: Set[String],
-    val recordParameters: List[Parameter]
+    val recordParameters: List[Parameter],
+    val isEnum: Boolean,
+    val enumConstructorParameters: List[Parameter]
   )(implicit disableTypeFallback: Boolean)
       extends JavaScopeElement(disableTypeFallback)
       with TypeDeclContainer

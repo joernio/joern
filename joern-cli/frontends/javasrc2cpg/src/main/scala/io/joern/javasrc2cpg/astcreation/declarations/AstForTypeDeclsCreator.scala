@@ -13,6 +13,7 @@ import com.github.javaparser.ast.body.{
   FieldDeclaration,
   InitializerDeclaration,
   MethodDeclaration,
+  Parameter,
   RecordDeclaration,
   TypeDeclaration,
   VariableDeclarator
@@ -45,15 +46,18 @@ import com.github.javaparser.resolution.declarations.{
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.{BindingTable, BindingTableEntry, JavaModifierTypes, NameConstants, Util}
+import io.joern.javasrc2cpg.util.Util.*
 import io.joern.x2cpg.{Ast, Defines}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewArrayInitializer,
   NewIdentifier,
   NewMethod,
+  NewMethodParameterIn,
   NewModifier,
+  NewTypeRef,
   NewTypeDecl
 }
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes, Operators}
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -75,6 +79,7 @@ import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.{
   RegularClassDeclaration
 }
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
+import io.joern.x2cpg.utils.AstPropertiesUtil.*
 
 import scala.jdk.OptionConverters.RichOptional
 
@@ -218,7 +223,8 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       typeDeclaration.isStatic,
       outerClassGenericSignature,
       declaredMethodNames,
-      recordParameters
+      recordParameters,
+      isEnum = typeDeclaration.isEnumDeclaration
     )
     addTypeDeclTypeParamsToScope(typeDeclaration)
 
@@ -382,7 +388,11 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       scope.addInnerType(name, fullName, fullName)
     }
 
-    val fields = members.collect { case fieldDeclaration: FieldDeclaration => fieldDeclaration }
+    val fields      = members.collect { case fieldDeclaration: FieldDeclaration => fieldDeclaration }
+    val enumEntries = members.collect { case enumConstantDeclaration: EnumConstantDeclaration =>
+      enumConstantDeclaration
+    }
+    val isEnum = originNode.isInstanceOf[EnumDeclaration]
 
     val fieldToFieldAsts = members.collect { case fieldDeclaration: FieldDeclaration =>
       val result =
@@ -393,10 +403,16 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       result
     }.toMap
 
+    val enumEntryLowerings =
+      if (isEnum) enumEntries.zipWithIndex.map { case (entry, ordinal) => lowerEnumEntry(entry, ordinal) } else Nil
+    val enumValuesLowering =
+      if (isEnum) enumValuesMemberAndInitializer(originNode, enumEntryLowerings)
+      else None
     val (staticFields, instanceFields) = fields.partition(_.isStatic)
     val staticFieldInitializers        = getStaticFieldInitializers(staticFields)
-
-    val clinitAst = clinitAstFromStaticInits(originNode, staticFieldInitializers)
+    val enumStaticInitializers         =
+      enumEntryLowerings.flatMap(_.staticInits) ++ enumValuesLowering.toList.flatMap(_.staticInits)
+    val clinitAst = clinitAstFromStaticInits(originNode, enumStaticInitializers ++ staticFieldInitializers)
 
     val membersAstPairs: List[(Node, List[Ast])] = members.map { member =>
       val memberAsts = member match {
@@ -415,8 +431,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
           Nil
 
         case enumConstantDeclaration: EnumConstantDeclaration =>
-          // TODO: Create initializers
-          astForEnumEntry(enumConstantDeclaration) :: Nil
+          enumEntryLowerings.find(_.entry eq enumConstantDeclaration).toList.flatMap(_.memberAsts)
 
         case field: FieldDeclaration => fieldToFieldAsts.getOrElse(field, Nil)
 
@@ -478,7 +493,17 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
     val capturedMembersAsts = membersForCapturedVariables(originNode, scope.enclosingTypeDecl.getUsedCaptures())
 
-    val allMembersAsts = List(capturedMembersAsts, membersAsts, defaultConstructorAst.toList, clinitAst.toList).flatten
+    val enumSyntheticMembers =
+      if (isEnum) enumValuesLowering.toList.map(_.memberAst) ++ enumSyntheticMethodAsts(originNode)
+      else Nil
+    val allMembersAsts =
+      List(
+        capturedMembersAsts,
+        membersAsts,
+        defaultConstructorAst.toList,
+        enumSyntheticMembers,
+        clinitAst.toList
+      ).flatten
     val allInitCallNodes = (allMembersAsts ++ scope.enclosingTypeDecl.map(_.registeredLambdaMethods).getOrElse(Nil))
       .flatMap(_.nodes)
       .collect { case call: NewCall if call.name == "<init>" => call }
@@ -781,7 +806,11 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       }
       maybeJavaObjectType ++ inheritsFromTypeNames
     } else if (typ.isEnumDeclaration) {
-      TypeConstants.Enum :: Nil
+      val enumDeclaration  = typ.asEnumDeclaration()
+      val implementedTypes = enumDeclaration.getImplementedTypes.asScala.flatMap { implementedType =>
+        typeInfoCalc.fullName(implementedType).orElse(scope.lookupType(implementedType.getNameAsString))
+      }
+      TypeConstants.Enum :: implementedTypes.toList
     } else if (typ.isRecordDeclaration) {
       TypeConstants.Record :: Nil
     } else {
@@ -861,22 +890,214 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     }
   }
 
-  private def astForEnumEntry(entry: EnumConstantDeclaration): Ast = {
-    // TODO Fix enum entries in general
-    val typeFullName =
-      tryWithSafeStackOverflow(entry.resolve().getType).toOption.flatMap(typeInfoCalc.fullName)
+  private case class EnumEntryLowering(entry: EnumConstantDeclaration, memberAsts: List[Ast], staticInits: List[Ast])
 
+  private case class EnumEntryAnonymousType(name: String, fullName: String)
+
+  private case class EnumValuesLowering(memberAst: Ast, staticInits: List[Ast])
+
+  private def enumTypeFullName(entry: EnumConstantDeclaration): String = {
+    tryWithSafeStackOverflow(entry.resolve().getType).toOption
+      .flatMap(typeInfoCalc.fullName)
+      .orElse(scope.enclosingTypeDecl.fullName)
+      .getOrElse(defaultTypeFallback())
+  }
+
+  private def enumMemberAccess(
+    node: Node,
+    typeFullName: String,
+    memberName: String,
+    memberTypeFullName: String
+  ): Ast = {
+    val typeRef = NewTypeRef()
+      .code(scope.enclosingTypeDecl.name.getOrElse(typeFullName.split('.').last))
+      .typeFullName(typeFullName)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+    fieldAccessAst(node, node, Ast(typeRef), s"${typeRef.code}.$memberName", memberName, memberTypeFullName)
+  }
+
+  private def lowerEnumEntry(entry: EnumConstantDeclaration, ordinal: Int): EnumEntryLowering = {
+    val typeFullName     = enumTypeFullName(entry)
     val genericSignature = binarySignatureCalculator.enumEntryBinarySignature(entry)
-    val entryNode        = memberNode(
-      entry,
-      entry.getNameAsString,
-      entry.toString,
-      typeFullName.getOrElse("ANY"),
-      genericSignature = Some(genericSignature)
+    val entryNode        =
+      memberNode(entry, entry.getNameAsString, entry.toString, typeFullName, genericSignature = Some(genericSignature))
+    val entryModifiers = List(
+      Ast(modifierNode(entry, ModifierTypes.PUBLIC)),
+      Ast(modifierNode(entry, ModifierTypes.STATIC)),
+      Ast(modifierNode(entry, ModifierTypes.FINAL))
     )
+    scope.enclosingTypeDecl.foreach(_.addMember(entryNode, isStatic = true))
 
-    val name = s"${typeFullName.getOrElse(Defines.UnresolvedNamespace)}.${Defines.ConstructorMethodName}"
+    val memberAst     = Ast(entryNode).withChildren(entryModifiers)
+    val anonymousType = Option.when(!entry.getClassBody.isEmpty) {
+      val anonymousIndex = scope.getNextAnonymousClassIndex()
+      val anonymousName  = s"${typeFullName.split('.').last}$$$anonymousIndex"
+      EnumEntryAnonymousType(anonymousName, s"$typeFullName$$$anonymousIndex")
+    }
+    val anonymousDeclAst = anonymousType.map { anonymousEnumType =>
+      astForEnumEntryAnonymousClass(
+        entry,
+        entry.getClassBody.asScala.toList,
+        typeFullName,
+        anonymousEnumType.name,
+        anonymousEnumType.fullName
+      )
+    }
+    val allocatedTypeFullName = anonymousType.map(_.fullName).getOrElse(typeFullName)
+    val targetAst             = enumMemberAccess(entry, typeFullName, entry.getNameAsString, typeFullName)
+    val allocAst = callAst(operatorCallNode(entry, entry.toString, Operators.alloc, Some(allocatedTypeFullName)), Nil)
+    val assignmentNode = operatorCallNode(
+      entry,
+      s"${targetAst.rootCodeOrEmpty} = ${entry.toString}",
+      Operators.assignment,
+      Some(typeFullName)
+    )
+    val assignmentAst = callAst(assignmentNode, targetAst :: allocAst :: Nil)
 
-    Ast(entryNode)
+    val implicitArgs = List(
+      Ast(literalNode(entry, s"\"${entry.getNameAsString}\"", "java.lang.String")),
+      Ast(literalNode(entry, ordinal.toString, TypeConstants.Int))
+    )
+    val sourceArgs    = entry.getArguments.asScala.toList.flatMap(astsForExpression(_, ExpectedType.empty))
+    val initArgs      = implicitArgs ++ sourceArgs
+    val argumentTypes = Some("java.lang.String" :: TypeConstants.Int :: initArgs.drop(2).flatMap(_.rootType))
+    val initCall      = initNode(
+      Some(allocatedTypeFullName),
+      argumentTypes,
+      initArgs.size,
+      s"$typeFullName(${initArgs.map(_.rootCodeOrEmpty).mkString(", ")})",
+      line(entry),
+      column(entry)
+    )
+    val receiverAst = enumMemberAccess(entry, typeFullName, entry.getNameAsString, allocatedTypeFullName)
+    val initAst     = callAst(initCall, initArgs, Some(receiverAst))
+    EnumEntryLowering(entry, memberAst :: anonymousDeclAst.toList, List(assignmentAst, initAst))
+  }
+
+  private def enumConstantConstructorParameters(entry: EnumConstantDeclaration): List[Parameter] = {
+    val constructors = entry.findAncestor(classOf[EnumDeclaration]).toScala.toList.flatMap(_.getConstructors.asScala)
+    val constructorsMatchingArgumentCount = constructors.filter(_.getParameters.size == entry.getArguments.size)
+    constructorsMatchingArgumentCount match {
+      case constructor :: Nil => constructor.getParameters.asScala.toList
+      case _                  => Nil
+    }
+  }
+
+  private def astForEnumEntryAnonymousClass(
+    entry: EnumConstantDeclaration,
+    body: List[BodyDeclaration[?]],
+    baseTypeFullName: String,
+    typeName: String,
+    typeFullName: String
+  ): Ast = {
+    val (astParentType, astParentFullName) = getAstParentInfo()
+    val typeDeclRoot                       = typeDeclNode(
+      entry,
+      typeName,
+      typeFullName,
+      filename,
+      entry.toString,
+      astParentType,
+      astParentFullName,
+      baseTypeFullName :: Nil
+    )
+    scope.addInnerType(typeName, typeFullName, typeFullName)
+    val declaredMethodNames = body.collect { case methodDeclaration: MethodDeclaration =>
+      methodDeclaration.getNameAsString
+    }.toSet
+    scope.pushTypeDeclScope(
+      typeDeclRoot,
+      scope.isEnclosingScopeStatic,
+      outerClassGenericSignature,
+      declaredMethodNames,
+      Nil,
+      isEnum = true,
+      enumConstructorParameters = enumConstantConstructorParameters(entry)
+    )
+    val memberAsts    = astsForTypeDeclMembers(entry, body, isInterface = false, Some(typeFullName))
+    val localDecls    = scope.localDeclsInScope
+    val lambdaMethods = scope.lambdaMethodsInScope
+    val declScope     = scope.popTypeDeclScope()
+    scope.enclosingTypeDecl.foreach(_.registerCapturesForType(declScope.typeDecl.fullName, declScope.getUsedCaptures()))
+    Ast(typeDeclRoot)
+      .withChildren(memberAsts)
+      .withChildren(localDecls)
+      .withChildren(lambdaMethods)
+  }
+
+  private def enumValuesMemberAndInitializer(
+    originNode: Node,
+    entries: List[EnumEntryLowering]
+  ): Option[EnumValuesLowering] = {
+    scope.enclosingTypeDecl.fullName.map { typeFullName =>
+      val valuesName = "$VALUES"
+      val valuesType = s"$typeFullName[]"
+      val valuesNode = memberNode(originNode, valuesName, s"$valuesType $valuesName", valuesType)
+      scope.enclosingTypeDecl.foreach(_.addMember(valuesNode, isStatic = true))
+      val memberAst = Ast(valuesNode).withChildren(
+        List(
+          Ast(modifierNode(originNode, ModifierTypes.PRIVATE)),
+          Ast(modifierNode(originNode, ModifierTypes.STATIC)),
+          Ast(modifierNode(originNode, ModifierTypes.FINAL))
+        )
+      )
+      val targetAst = enumMemberAccess(originNode, typeFullName, valuesName, valuesType)
+      val valueAsts = entries.map { lowered =>
+        enumMemberAccess(lowered.entry, typeFullName, lowered.entry.getNameAsString, typeFullName)
+      }
+      val valuesAst = callAst(
+        operatorCallNode(
+          originNode,
+          s"{${entries.map(_.entry.getNameAsString).mkString(", ")}}",
+          Operators.arrayInitializer,
+          Some(valuesType)
+        ),
+        valueAsts
+      )
+      val assignmentAst = callAst(
+        operatorCallNode(
+          originNode,
+          s"$valuesName = ${valuesAst.rootCodeOrEmpty}",
+          Operators.assignment,
+          Some(valuesType)
+        ),
+        targetAst :: valuesAst :: Nil
+      )
+      EnumValuesLowering(memberAst, List(assignmentAst))
+    }
+  }
+
+  private def enumSyntheticMethodAsts(originNode: Node): List[Ast] = {
+    scope.enclosingTypeDecl.fullName.toList.flatMap { typeFullName =>
+      val valuesType      = s"$typeFullName[]"
+      val valuesSignature = composeMethodLikeSignature(valuesType, Nil)
+      val valuesFullName  = composeMethodFullName(typeFullName, "values", valuesSignature)
+      val valuesMethod    = methodNode(originNode, "values", valuesFullName, valuesSignature, filename)
+      val valuesReturn    = methodReturnNode(originNode, valuesType)
+      val valuesModifiers =
+        List(modifierNode(originNode, ModifierTypes.PUBLIC), modifierNode(originNode, ModifierTypes.STATIC))
+      val valuesAst = methodStubAst(valuesMethod, Nil, valuesReturn, valuesModifiers)
+
+      val valueOfSignature = composeMethodLikeSignature(typeFullName, List("java.lang.String"))
+      val valueOfFullName  = composeMethodFullName(typeFullName, "valueOf", valueOfSignature)
+      val valueOfMethod    = methodNode(originNode, "valueOf", valueOfFullName, valueOfSignature, filename)
+      val valueOfParam     = NewMethodParameterIn()
+        .name("name")
+        .code("java.lang.String name")
+        .typeFullName("java.lang.String")
+        .index(1)
+        .order(1)
+      val valueOfReturn    = methodReturnNode(originNode, typeFullName)
+      val valueOfModifiers =
+        List(modifierNode(originNode, ModifierTypes.PUBLIC), modifierNode(originNode, ModifierTypes.STATIC))
+      val valueOfAst = methodStubAst(valueOfMethod, List(Ast(valueOfParam)), valueOfReturn, valueOfModifiers)
+
+      scope.enclosingTypeDecl.foreach { typeDecl =>
+        typeDecl.addBindingTableEntry(BindingTableEntry("values", valuesSignature, valuesFullName))
+        typeDecl.addBindingTableEntry(BindingTableEntry("valueOf", valueOfSignature, valueOfFullName))
+      }
+      List(valuesAst, valueOfAst)
+    }
   }
 }
