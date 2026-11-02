@@ -266,6 +266,115 @@ class MacroTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "module-level item macro generating const" should {
+    val cpg = code("""
+        |macro_rules! make_const { () => { const K: u32 = 1; }; }
+        |make_const!();
+        |""".stripMargin)
+
+    "have correct member" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest").member.l) {
+        case Member(name = "K", code = "const K: u32 = 1;", typeFullName = "u32") :: Nil =>
+          succeed
+      }
+    }
+
+    "have correct assignment" in {
+      inside(cpg.method.fullNameExact("rust2cpgtest::<clinit>").block.astChildren.isCall.isAssignment.l) {
+        case (assignment @ Call(code = "const K: u32 = 1;", lineNumber = Some(3))) :: Nil =>
+          inside(assignment.argument.sortBy(_.argumentIndex).l) {
+            case (fieldAccess: Call) :: Literal(code = "1") :: Nil =>
+              fieldAccess.code shouldBe "K"
+              inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+                case TypeRef(typeFullName = "rust2cpgtest") :: FieldIdentifier(canonicalName = "K") :: Nil =>
+                  succeed
+              }
+          }
+      }
+    }
+
+    "have no locals" in {
+      cpg.local shouldBe empty
+    }
+  }
+
+  "item macro generating const in an inline module" should {
+    val cpg = code("""
+        |macro_rules! make_const { () => { const K: u32 = 1; }; }
+        |mod m {
+        |  make_const!();
+        |}
+        |""".stripMargin)
+
+    "have correct member" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::m").member.l) {
+        case Member(name = "K", code = "const K: u32 = 1;", typeFullName = "u32") :: Nil =>
+          succeed
+      }
+    }
+
+    "have correct assignment" in {
+      inside(cpg.method.fullNameExact("rust2cpgtest::m::<clinit>").block.astChildren.isCall.isAssignment.l) {
+        case (assignment @ Call(code = "const K: u32 = 1;", lineNumber = Some(4))) :: Nil =>
+          inside(assignment.argument.sortBy(_.argumentIndex).l) {
+            case (fieldAccess: Call) :: Literal(code = "1") :: Nil =>
+              fieldAccess.code shouldBe "K"
+              inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+                case TypeRef(typeFullName = "rust2cpgtest::m") :: FieldIdentifier(canonicalName = "K") :: Nil =>
+                  succeed
+              }
+          }
+      }
+    }
+
+    "have no locals" in {
+      cpg.local shouldBe empty
+    }
+  }
+
+  "item macro generating const _ in an inline module" should {
+    val cpg = code("""
+        |macro_rules! make_anon { () => { const _: u32 = 1; }; }
+        |mod m {
+        |  make_anon!();
+        |}
+        |""".stripMargin)
+
+    "have correct clinit body" in {
+      inside(cpg.method.fullNameExact("rust2cpgtest::m::<clinit>").block.astChildren.l) {
+        case Local(name = "<tmp>0", typeFullName = "u32") :: (tmpAssign: Call) :: Nil =>
+          tmpAssign.lineNumber shouldBe Some(4)
+          tmpAssign.argument.sortBy(_.argumentIndex).code.l shouldBe List("<tmp>0", "1")
+      }
+    }
+  }
+
+  "nested item macro call generating const" should {
+    val cpg = code("""
+        |macro_rules! make_const { () => { const K: u32 = 1; }; }
+        |macro_rules! make_nested { () => { make_const!(); }; }
+        |make_nested!();
+        |""".stripMargin)
+
+    "have correct member" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest").member.l) { case member :: Nil =>
+        member.name shouldBe "K"
+        member.typeFullName shouldBe "u32"
+      }
+    }
+
+    "have correct assignment" in {
+      inside(cpg.method.fullNameExact("rust2cpgtest::<clinit>").block.astChildren.isCall.isAssignment.l) {
+        case (assignment @ Call(code = "const K: u32 = 1;", lineNumber = Some(4))) :: Nil =>
+          assignment.argument.sortBy(_.argumentIndex).code.l shouldBe List("K", "1")
+      }
+    }
+
+    "have no locals" in {
+      cpg.local shouldBe empty
+    }
+  }
+
   "unparseable macro expansion" should {
     val cpg = code("""
         |macro_rules! broken { () => { let }; }
@@ -684,6 +793,34 @@ class MacroTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
       inside(cpg.call.nameExact("h").l) { case call :: Nil =>
         call.methodFullName shouldBe "rust2cpgtest::h"
         call.lineNumber shouldBe Some(7)
+      }
+    }
+  }
+
+  "proc-macro in const attribute" should {
+    val cpg = withProcMacroCrate(code("""
+        |#[pm::prepend_g]
+        |const K: u32 = 1;
+        |""".stripMargin))
+
+    "have correct method" in {
+      inside(cpg.method.nameExact("g").l) { case Method(fullName = "rust2cpgtest::g", lineNumber = Some(2)) :: Nil =>
+        succeed
+      }
+    }
+
+    "have correct member" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest").member.l) {
+        case Member(name = "K", typeFullName = "u32") :: Nil =>
+          succeed
+      }
+    }
+
+    "have correct assignment" in {
+      inside(cpg.method.fullNameExact("rust2cpgtest::<clinit>").block.astChildren.isCall.isAssignment.l) {
+        case assignment :: Nil =>
+          assignment.lineNumber shouldBe Some(2)
+          assignment.argument.sortBy(_.argumentIndex).code.l shouldBe List("K", "1")
       }
     }
   }

@@ -241,16 +241,29 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // Besides visiting items, if there are module-level consts/statics, declare them in synthetic
   // typeDecl (same fullName as the module) so that their usages have a def site.
   private def visitModuleItems(node: RustNode, items: Seq[Item]): Seq[Ast] = {
-    val (constsOrStatics, others) = items.partition {
-      case _: Const  => true
-      case _: Static => true
-      case _         => false
+    val (constsOrStatics, others) = macroExpandedItems(items, outermostMacroCall = None).partition {
+      case (_: Const, _)  => true
+      case (_: Static, _) => true
+      case _              => false
     }
-    val otherAsts = others.flatMap(visitItem)
+    val otherAsts = others.flatMap {
+      case (item, None)            => visitItem(item)
+      case (item, Some(macroCall)) => withMacroCall(macroCall) { visitItem(item) }
+    }
     if (constsOrStatics.isEmpty) {
       otherAsts
     } else {
       otherAsts :+ moduleTypeDeclAst(node, constsOrStatics)
+    }
+  }
+
+  // Recursively macro-expands `items`, pairing each macro-expansion with its source item (for position.)
+  private def macroExpandedItems(items: Seq[Item], outermostMacroCall: Option[Item]): Seq[(Item, Option[Item])] = {
+    items.flatMap { item =>
+      item.macroExpansion match {
+        case Some(macroItems: MacroItems) => macroExpandedItems(macroItems.item, outermostMacroCall.orElse(Some(item)))
+        case _                            => (item, outermostMacroCall) :: Nil
+      }
     }
   }
 
@@ -261,7 +274,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //     <module>::K = rhs
   //   }
   // }
-  private def moduleTypeDeclAst(node: RustNode, items: Seq[Item]): Ast = {
+  private def moduleTypeDeclAst(node: RustNode, items: Seq[(Item, Option[Item])]): Ast = {
     val typeDecl = moduleTypeDeclNode(node)
     contextStack.pushTypeDecl(typeDecl)
 
@@ -284,10 +297,15 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     Ast(typeDecl).withChildren(memberDeclAsts).withChild(clinitAst)
   }
 
-  private def lowerModuleConstsAndStatics(moduleFullName: String, items: Seq[Item]): (Seq[Ast], Seq[Ast]) = {
+  private def lowerModuleConstsAndStatics(
+    moduleFullName: String,
+    items: Seq[(Item, Option[Item])]
+  ): (Seq[Ast], Seq[Ast]) = {
     val lowered = items.collect {
-      case const: Const   => lowerModuleConst(moduleFullName, const)
-      case static: Static => lowerModuleStatic(moduleFullName, static)
+      case (const: Const, None)              => lowerModuleConst(moduleFullName, const)
+      case (static: Static, None)            => lowerModuleStatic(moduleFullName, static)
+      case (const: Const, Some(macroCall))   => withMacroCall(macroCall) { lowerModuleConst(moduleFullName, const) }
+      case (static: Static, Some(macroCall)) => withMacroCall(macroCall) { lowerModuleStatic(moduleFullName, static) }
     }
     val memberAsts   = lowered.flatMap(_._1)
     val initStmtAsts = lowered.flatMap(_._2)
