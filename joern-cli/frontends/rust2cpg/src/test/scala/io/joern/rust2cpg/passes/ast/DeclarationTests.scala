@@ -287,6 +287,34 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "module-qualified re-exported const" should {
+    val cpg = code("""
+        |mod m {
+        | mod n {
+        |   pub const K: u32 = 1;
+        | }
+        | pub use n::K;
+        |}
+        |fn main() {
+        |  let v = m::K;
+        |}
+        |""".stripMargin)
+
+    "have correct fieldAccess" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "m::K"
+        fieldAccess.typeFullName shouldBe "u32"
+
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case (module: TypeRef) :: FieldIdentifier(canonicalName = "K") :: Nil =>
+            module.code shouldBe "m"
+            module.typeFullName shouldBe "rust2cpgtest::m::n"
+        }
+      }
+    }
+  }
+
   "module-qualified static" should {
     val cpg = code("""
         |mod m { pub static mut S: u32 = 0; }
