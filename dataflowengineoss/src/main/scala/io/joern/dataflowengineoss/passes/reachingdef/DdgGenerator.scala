@@ -5,14 +5,7 @@ import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAc
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
-import io.shiftleft.semanticcpg.accesspath.{
-  AccessPath,
-  Elements,
-  IndirectionAccess,
-  MatchResult,
-  TrackedBase,
-  TrackedNamedVariable
-}
+import io.shiftleft.semanticcpg.accesspath.{AccessPath, Elements, IndirectionAccess, MatchResult}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
@@ -315,16 +308,18 @@ class DdgGenerator(semantics: Semantics) {
   }
 }
 
-/** ponytail: intraprocedural `p = &s` only; reassigned pointers dropped; no IndexAccess aliasing. */
+/** ponytail: intraprocedural `p = &s` only, keyed by Local/parameter id so shadowed names stay distinct; reassigned
+  * pointers dropped; no IndexAccess aliasing.
+  */
 private object PointerAliasMap {
 
-  def fromMethod(method: Method): Map[String, String] = {
-    val lhsCounts = mutable.Map.empty[String, Int].withDefaultValue(0)
+  def fromMethod(method: Method): Map[Long, Long] = {
+    val lhsCounts = mutable.Map.empty[Long, Int].withDefaultValue(0)
     method.call
       .nameExact(Operators.assignment)
       .foreach { assign =>
-        assign.argumentOption(1).collect { case id: Identifier => id.name }.foreach { name =>
-          lhsCounts(name) += 1
+        declarationId(assign).foreach { pointerDecl =>
+          lhsCounts(pointerDecl) += 1
         }
       }
 
@@ -333,22 +328,40 @@ private object PointerAliasMap {
     method.call
       .nameExact(Operators.assignment)
       .flatMap { assign =>
-        val pointerName = assign.argumentOption(1).collect { case id: Identifier => id.name }
-        val structName  = assign
+        val pointerDecl = declarationId(assign)
+        val structDecl  = assign
           .argumentOption(2)
           .collect {
             case addrOf: Call if addrOf.name == Operators.addressOf =>
-              addrOf.argumentOption(1).collect { case id: Identifier => id.name }
+              addrOf.argumentOption(1).collect { case ident: Identifier => declarationId(ident) }.flatten
           }
           .flatten
 
-        (pointerName, structName) match {
-          case (Some(ptr), Some(structN)) if !reassigned.contains(ptr) => Some(ptr -> structN)
-          case _                                                       => None
+        (pointerDecl, structDecl) match {
+          case (Some(pointer), Some(struct)) if !reassigned.contains(pointer) => Some(pointer -> struct)
+          case _                                                              => None
         }
       }
       .toMap
   }
+
+  /** Local or parameter this identifier refers to. Empty when the reference is unresolved. */
+  def declarationId(ident: Identifier): Option[Long] =
+    ident.refsTo.collect { case local: Local => local.id; case param: MethodParameterIn => param.id }.headOption
+
+  private def declarationId(assign: Call): Option[Long] =
+    assign.argumentOption(1).collect { case ident: Identifier => declarationId(ident) }.flatten
+
+  /** Walk one member-access chain to the root identifier. Bounded so a cyclic argument cannot loop. */
+  def rootDeclarationId(node: CfgNode, depth: Int = 4): Option[Long] =
+    if (depth < 0) None
+    else
+      node match {
+        case ident: Identifier => declarationId(ident)
+        case call: Call        =>
+          call.argumentOption(1).collect { case next: CfgNode => next }.flatMap(rootDeclarationId(_, depth - 1))
+        case _ => None
+      }
 
 }
 
@@ -439,7 +452,7 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
             if (useBase == inBase && useAccessPath.matchAndDiff(inAccessPath.elements)._1 == MatchResult.EXACT_MATCH) {
               true
             } else {
-              isFieldAliasAcrossPointer(useBase, useAccessPath, inBase, inAccessPath)
+              isFieldAliasAcrossPointer(useCall, useAccessPath, inCall, inAccessPath)
             }
           case _ => false
         }
@@ -447,21 +460,16 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
     }
   }
 
-  private def namedVariable(base: TrackedBase): Option[String] = base match {
-    case TrackedNamedVariable(name) => Some(name)
-    case _                          => None
-  }
-
   private def isFieldAliasAcrossPointer(
-    useBase: TrackedBase,
+    useCall: Call,
     useAccessPath: AccessPath,
-    inBase: TrackedBase,
+    inCall: Call,
     inAccessPath: AccessPath
   ): Boolean = {
-    (namedVariable(useBase), namedVariable(inBase)) match {
-      case (Some(useName), Some(inName)) if pointerAliases.get(inName).contains(useName) =>
+    (PointerAliasMap.rootDeclarationId(useCall), PointerAliasMap.rootDeclarationId(inCall)) match {
+      case (Some(useDecl), Some(inDecl)) if pointerAliases.get(inDecl).contains(useDecl) =>
         fieldPathsMatchAfterOneDeref(inAccessPath, useAccessPath)
-      case (Some(useName), Some(inName)) if pointerAliases.get(useName).contains(inName) =>
+      case (Some(useDecl), Some(inDecl)) if pointerAliases.get(useDecl).contains(inDecl) =>
         fieldPathsMatchAfterOneDeref(useAccessPath, inAccessPath)
       case _ => false
     }
