@@ -3,7 +3,7 @@ package io.joern.jssrc2cpg.passes.ast
 import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{ControlStructure, Identifier, MethodRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{ControlStructure, Identifier, MethodRef, TypeRef}
 import io.shiftleft.semanticcpg.language.*
 
 class JsClassesAstCreationPassTests extends JsSrc2CpgSuite {
@@ -213,7 +213,26 @@ class JsClassesAstCreationPassTests extends JsSrc2CpgSuite {
       val List(programBlock)    = program.astChildren.isBlock.l
       val List(assignmentToTmp) = programBlock.astChildren.isCall.l
       val List(rhs)             = assignmentToTmp._typeRefViaAstOut.l
-      rhs.typeFullName shouldBe "Test0.js::program:ClassA"
+      rhs.typeFullName shouldBe s"Test0.js::program:ClassA:${Defines.ConstructorMethodName}"
+    }
+
+    "have a TYPE_REF to the constructor and not to the instance type for a class expression" in {
+      val cpg = code("module.exports = class Foo {}")
+      inside(cpg.assignment.argument(2).l) { case List(typeRef: TypeRef) =>
+        typeRef.code shouldBe "class Foo"
+        typeRef.typeFullName shouldBe s"Test0.js::program:Foo:${Defines.ConstructorMethodName}"
+      }
+    }
+
+    "have a METHOD_REF and a TYPE_REF to the constructor for a class declaration" in {
+      val cpg = code("class Foo {}")
+      inside(cpg.assignment.argument(2).l) { case List(methodRef: MethodRef) =>
+        methodRef.typeFullName shouldBe s"Test0.js::program:Foo:${Defines.ConstructorMethodName}"
+        methodRef.methodFullName shouldBe s"Test0.js::program:Foo:${Defines.ConstructorMethodName}"
+      }
+      inside(cpg.typeRef.codeExact("class Foo").l) { case List(typeRef) =>
+        typeRef.typeFullName shouldBe s"Test0.js::program:Foo:${Defines.ConstructorMethodName}"
+      }
     }
 
     "have correct structure for type decls for classes with extends" in {

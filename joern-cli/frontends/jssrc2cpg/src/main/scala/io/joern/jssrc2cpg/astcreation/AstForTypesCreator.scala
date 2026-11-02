@@ -543,6 +543,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     typeRefIdStack.pop()
     scope.popScope()
 
+    // a class evaluates to its constructor function and not to an instance of the class
+    typeRefNode_.typeFullName(constructorNode.fullName)
+
     if (shouldCreateAssignmentCall) {
       // return a synthetic assignment to enable tracing of the implicitly created identifier for
       // the class definition assigned to its constructor
