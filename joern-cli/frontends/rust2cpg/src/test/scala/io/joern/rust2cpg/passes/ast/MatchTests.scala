@@ -327,6 +327,48 @@ class MatchTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "match on if-else" should {
+    val cpg = code("""
+        |fn main(c: bool, a: i32, b: i32) {
+        | match if c { a } else { b } { 0 => one(), _ => two() };
+        |}
+        |""".stripMargin)
+
+    "have correct children" in {
+      inside(cpg.method.nameExact("main").block.astChildren.isBlock.astChildren.l) {
+        case Local(name = "<tmp>0", typeFullName = "i32") ::
+            (tmpAssign: Call) ::
+            ControlStructure(controlStructureType = ControlStructureTypes.MATCH) :: Nil =>
+          tmpAssign.methodFullName shouldBe Operators.assignment
+          tmpAssign.code shouldBe "<tmp>0 = if c { a } else { b }"
+
+          inside(tmpAssign.argument(2)) { case ifBlock: Block =>
+            inside(ifBlock.astChildren.l) {
+              case Local(name = "<tmp>1", typeFullName = "i32") ::
+                  ControlStructure(controlStructureType = ControlStructureTypes.IF, code = "if c { a } else { b }") ::
+                  Identifier(name = "<tmp>1", typeFullName = "i32") :: Nil =>
+                succeed
+            }
+          }
+      }
+    }
+
+    "have correct then-branch" in {
+      cpg.ifBlock.whenTrue.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>1 = a")
+    }
+
+    "have correct else-branch" in {
+      cpg.ifBlock.whenFalse.isBlock.astChildren.isCall.code.l shouldBe List("<tmp>1 = b")
+    }
+
+    "have correct match condition" in {
+      inside(cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.MATCH).condition.l) {
+        case Identifier(name = "<tmp>0", typeFullName = "i32") :: Nil =>
+          succeed
+      }
+    }
+  }
+
   "match with guards" should {
     val cpg = code("""
         |fn foo(x: (i32, i32)) {
