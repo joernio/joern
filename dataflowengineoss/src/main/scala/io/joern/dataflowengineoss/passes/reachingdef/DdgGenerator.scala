@@ -353,15 +353,18 @@ private object PointerAliasMap {
     assign.argumentOption(1).collect { case ident: Identifier => declarationId(ident) }.flatten
 
   /** Walk one member-access chain to the root identifier. Bounded so a cyclic argument cannot loop. */
-  def rootDeclarationId(node: CfgNode, depth: Int = 4): Option[Long] =
+  def rootIdentifier(node: CfgNode, depth: Int = 4): Option[Identifier] =
     if (depth < 0) None
     else
       node match {
-        case ident: Identifier => declarationId(ident)
+        case ident: Identifier => Some(ident)
         case call: Call        =>
-          call.argumentOption(1).collect { case next: CfgNode => next }.flatMap(rootDeclarationId(_, depth - 1))
+          call.argumentOption(1).collect { case next: CfgNode => next }.flatMap(rootIdentifier(_, depth - 1))
         case _ => None
       }
+
+  def rootDeclarationId(node: CfgNode, depth: Int = 4): Option[Long] =
+    rootIdentifier(node, depth).flatMap(declarationId)
 
 }
 
@@ -460,17 +463,25 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
     }
   }
 
-  /** Same tracked name is not enough when both sides resolve to different locals or parameters. */
-  private def sameRoot(use: CfgNode, defined: CfgNode): Boolean =
-    (resolvedRoot(use), resolvedRoot(defined)) match {
-      case (Some(useDecl), Some(definedDecl)) => useDecl == definedDecl
-      case _                                  => true
+  /** Reject a same-name `p->f` match only. Other calls, including PHP foreach bindings, keep the old match. */
+  private def sameRoot(use: CfgNode, defined: CfgNode): Boolean = {
+    def fieldAccess(node: CfgNode): Option[Call] = node match {
+      case call: Call if call.name == Operators.fieldAccess || call.name == Operators.indirectFieldAccess =>
+        Some(call)
+      case _ => None
     }
-
-  private def resolvedRoot(node: CfgNode): Option[Long] = node match {
-    case ident: Identifier => PointerAliasMap.declarationId(ident)
-    case call: Call        => PointerAliasMap.rootDeclarationId(call)
-    case _                 => None
+    (fieldAccess(use), fieldAccess(defined)) match {
+      case (Some(useAccess), Some(definedAccess)) =>
+        (PointerAliasMap.rootIdentifier(useAccess), PointerAliasMap.rootIdentifier(definedAccess)) match {
+          case (Some(useIdent), Some(definedIdent)) if useIdent.name == definedIdent.name =>
+            (PointerAliasMap.declarationId(useIdent), PointerAliasMap.declarationId(definedIdent)) match {
+              case (Some(useDecl), Some(definedDecl)) => useDecl == definedDecl
+              case _                                  => true
+            }
+          case _ => true
+        }
+      case _ => true
+    }
   }
 
   private def isFieldAliasAcrossPointer(
