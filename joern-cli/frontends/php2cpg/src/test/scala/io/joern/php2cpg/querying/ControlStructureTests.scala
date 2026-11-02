@@ -1322,8 +1322,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       |""".stripMargin)
 
     val foreachStruct = inside(cpg.method.name("foo").body.astChildren.l) {
-      case List(iterLocal: Local, valLocal: Local, foreachStruct: ControlStructure) =>
+      case List(iterLocal: Local, keyLocal: Local, valLocal: Local, foreachStruct: ControlStructure) =>
         iterLocal.name shouldBe "foo@iter_tmp-0"
+        keyLocal.name shouldBe "key"
         valLocal.name shouldBe "val"
 
         foreachStruct
@@ -1339,11 +1340,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     inside(initAsts.astChildren.l) { case List(assign: Call, kvBlock: Block) =>
       assign.code shouldBe "$foo@iter_tmp-0 = $arr"
 
-      inside(kvBlock.astChildren.l) { case List(value: Local, key: Local, _, _) =>
-        value.code shouldBe "$val"
-        value.name shouldBe "val"
-        key.code shouldBe "$key"
-        key.name shouldBe "key"
+      inside(kvBlock.astChildren.l) { case List(keyInit: Call, valInit: Call) =>
+        keyInit.code shouldBe "$key = $foo@iter_tmp-0->key()"
+        valInit.code shouldBe "$val = $foo@iter_tmp-0->current()"
       }
     }
 
@@ -1400,7 +1399,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       |""".stripMargin)
 
     val foreachStruct = inside(cpg.method.name("foo").body.astChildren.l) {
-      case List(iterLocal: Local, aLocal: Local, bLocal: Local, keyLocal: Local, foreachStruct: ControlStructure) =>
+      case List(iterLocal: Local, keyLocal: Local, aLocal: Local, bLocal: Local, foreachStruct: ControlStructure) =>
         iterLocal.name shouldBe "foo@iter_tmp-0"
         keyLocal.name shouldBe "key"
         aLocal.name shouldBe "a"
