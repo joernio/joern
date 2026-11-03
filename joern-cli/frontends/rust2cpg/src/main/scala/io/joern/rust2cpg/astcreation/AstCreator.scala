@@ -7,20 +7,24 @@ import io.joern.rust2cpg.parser.RustNodeSyntax
 import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
 import io.joern.rust2cpg.parser.RustNodeSyntaxExtensions.op
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.AstNodeBuilder.bindingNode
+import io.joern.rust2cpg.astcreation.ContextStack.ClosureContext
+import io.joern.x2cpg.AstNodeBuilder.{bindingNode, closureBindingNode}
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewCall,
-  NewFile,
+  NewIdentifier,
+  NewLocal,
   NewMember,
   NewMethod,
   NewNamespaceBlock,
   NewNode,
   NewTypeDecl
 }
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyDefaults, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, Operators, PropertyDefaults}
 import io.joern.x2cpg.utils.OffsetUtils
 import org.slf4j.LoggerFactory
+
+import scala.collection.mutable
 
 import java.nio.charset.StandardCharsets
 
@@ -43,10 +47,47 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     val ast        = visitSourceFile(sourceFile)
     Ast.storeInDiffGraph(ast, diffGraph)
     detachedAsts.foreach(Ast.storeInDiffGraph(_, diffGraph))
-    contextStack.resolvedVariableReferences.foreach { case (identifier, decl) =>
-      diffGraph.addEdge(identifier, decl, EdgeTypes.REF)
-    }
+    linkVariableReferences()
     diffGraph
+  }
+
+  private def linkVariableReferences(): Unit = {
+    // So we don't create duplicate locals for the same captured variable, e.g. in `|| x + x`.
+    val capturedLocals = mutable.Map.empty[(ClosureContext, String), NewLocal]
+
+    contextStack.resolvedVariableReferences.foreach {
+      case (identifier, decl, Nil) =>
+        diffGraph.addEdge(identifier, decl, EdgeTypes.REF)
+
+      case (identifier, decl, capturingClosures) =>
+        val innermostLocal = capturingClosures.foldLeft(decl: NewNode) { (capturedFrom, closure) =>
+          capturedLocals.getOrElseUpdate(
+            (closure, identifier.name),
+            createCapturedLocal(closure, identifier, capturedFrom)
+          )
+        }
+        diffGraph.addEdge(identifier, innermostLocal, EdgeTypes.REF)
+    }
+  }
+
+  private def createCapturedLocal(
+    closure: ClosureContext,
+    identifier: NewIdentifier,
+    capturedFrom: NewNode
+  ): NewLocal = {
+    val closureBindingId = s"${closure.method.fullName}:${identifier.name}"
+    val local            = NewLocal()
+      .name(identifier.name)
+      .code(identifier.code)
+      .typeFullName(identifier.typeFullName)
+      .closureBindingId(Some(closureBindingId))
+    val binding = closureBindingNode(closureBindingId, EvaluationStrategies.BY_REFERENCE)
+    diffGraph.addNode(local)
+    diffGraph.addNode(binding)
+    diffGraph.addEdge(closure.block, local, EdgeTypes.AST)
+    diffGraph.addEdge(closure.methodRef, binding, EdgeTypes.CAPTURE)
+    diffGraph.addEdge(binding, capturedFrom, EdgeTypes.REF)
+    local
   }
 
   protected def addDetachedAst(ast: Ast): Unit = {

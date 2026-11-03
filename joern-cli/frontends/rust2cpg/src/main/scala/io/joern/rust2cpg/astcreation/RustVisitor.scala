@@ -7,6 +7,7 @@ import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   ExpressionNew,
+  NewBlock,
   NewFile,
   NewImport,
   NewMethod,
@@ -747,7 +748,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     contextStack.pushMethod(method)
     val (paramAsts, paramAssignmentAsts) = lowerParamList(fn.paramList)
     val bodyAst                          = fn.blockExpr
-      .map(lowerFnBody(_, paramAssignmentAsts))
+      .map(blockExpr => lowerFnBody(blockExpr, blockNode(blockExpr), paramAssignmentAsts))
       .getOrElse(blockAst(blockNode(fn), paramAssignmentAsts.toList))
     contextStack.pop()
 
@@ -767,10 +768,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //   <stmts>
   //   RETURN (expr) // if (expr) exists
   // }
-  private def lowerFnBody(blockExpr: BlockExpr, preStmts: Seq[Ast]): Ast = {
+  private def lowerFnBody(blockExpr: BlockExpr, block: NewBlock, preStmts: Seq[Ast]): Ast = {
     val stmtAsts   = blockExpr.stmtList.stmt.flatMap(visitStmt)
     val retExprAst = blockExpr.stmtList.expr.map(lowerReturnExpr).toList
-    Ast(blockNode(blockExpr)).withChildren(preStmts ++ stmtAsts ++ retExprAst)
+    Ast(block).withChildren(preStmts ++ stmtAsts ++ retExprAst)
   }
 
   // Creates:
@@ -2310,21 +2311,22 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   private def visitClosureExpr(closureExpr: ClosureExpr): Ast = {
     val closureName = nextClosureName()
     val method      = methodNode(closureExpr, closureName)
+    val methodRef   = methodRefNode(closureExpr, code(closureExpr), method.fullName, method.fullName)
+    val block       = blockNode(closureExpr.expr)
 
-    contextStack.pushMethod(method)
-    lowerClosureExprAsDetachedAst(closureExpr, method)
-    val methodRefAst = Ast(methodRefNode(closureExpr, code(closureExpr), method.fullName, method.fullName))
+    contextStack.pushClosure(method, methodRef, block)
+    lowerClosureExprAsDetachedAst(closureExpr, method, block)
     contextStack.pop()
 
-    methodRefAst
+    Ast(methodRef)
   }
 
-  private def lowerClosureExprAsDetachedAst(closureExpr: ClosureExpr, method: NewMethod): Unit = {
+  private def lowerClosureExprAsDetachedAst(closureExpr: ClosureExpr, method: NewMethod, block: NewBlock): Unit = {
     val attributes                       = closureExpr.attr.map(visitAttr)
     val (paramAsts, paramAssignmentAsts) = lowerParamList(closureExpr.paramList)
     val bodyAst                          = closureExpr.expr match {
-      case blockExpr: BlockExpr => lowerFnBody(blockExpr, paramAssignmentAsts)
-      case expr                 => Ast(blockNode(expr)).withChildren(paramAssignmentAsts :+ lowerReturnExpr(expr))
+      case blockExpr: BlockExpr => lowerFnBody(blockExpr, block, paramAssignmentAsts)
+      case expr                 => Ast(block).withChildren(paramAssignmentAsts :+ lowerReturnExpr(expr))
     }
     val retTypeFullName = closureExpr.retType match {
       case None          => typeFullNameForExpr(closureExpr.expr)
