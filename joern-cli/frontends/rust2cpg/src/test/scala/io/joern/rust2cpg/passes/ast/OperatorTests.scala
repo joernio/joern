@@ -290,6 +290,21 @@ class OperatorTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.call.nameExact(Operators.greaterThan).typeFullName.l shouldBe List("bool")
     }
   }
+
+  "parenthesized adjustment" should {
+    val cpg = code("""
+        |fn f(x: &i32) {}
+        |fn main() { let y = &1; f((y)); }
+        |""".stripMargin)
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("f").argument.sortBy(_.argumentIndex).l) { case (addressOf: Call) :: Nil =>
+        addressOf.code shouldBe "&*y"
+        addressOf.methodFullName shouldBe Operators.addressOf
+        addressOf.typeFullName shouldBe "&i32"
+      }
+    }
+  }
 }
 
 class OperatorTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {

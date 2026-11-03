@@ -82,10 +82,14 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     case expr                 => visitExpr(expr) :: Nil
   }
 
-  private def visitExpr(expr: Expr): Ast = {
-    val adjustments = expr.adjustments.getOrElse(Nil)
-    val exprAst     = dispatchVisitExpr(expr)
-    adjustments.foldLeft(exprAst)(lowerAdjustment(expr, _, _))
+  @tailrec
+  private def visitExpr(expr: Expr): Ast = expr match {
+    // NB: ParenExpr has the same adjustments as its inner Expr, so we apply them only once.
+    case parenExpr: ParenExpr => visitExpr(parenExpr.expr)
+    case _                    =>
+      val adjustments = expr.adjustments.getOrElse(Nil)
+      val exprAst     = dispatchVisitExpr(expr)
+      adjustments.foldLeft(exprAst)(lowerAdjustment(expr, _, _))
   }
 
   private def dispatchVisitExpr(expr: Expr): Ast = expr match {
