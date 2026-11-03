@@ -265,6 +265,10 @@ class AnonymousClassTests extends JavaSrcCode2CpgFixture {
         }
       }
     }
+
+    "inherit from the enclosing enum type, not java.lang.Enum" in {
+      cpg.typeDecl.nameExact("Foo$0").inheritsFromTypeFullName.l shouldBe List("foo.Foo")
+    }
   }
 
   "anonymous classes extending non-trivial classes" should {

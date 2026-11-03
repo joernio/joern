@@ -414,7 +414,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       enumEntryLowerings.flatMap(_.staticInits) ++ enumValuesLowering.toList.flatMap(_.staticInits)
     val clinitAst = clinitAstFromStaticInits(originNode, enumStaticInitializers ++ staticFieldInitializers)
 
-    val membersAstPairs: List[(Node, List[Ast])] = members.map { member =>
+    val membersAstPairs: List[(Node, List[Ast])] = members.zipWithIndex.map { case (member, idx) =>
       val memberAsts = member match {
         case annotationMember: AnnotationMemberDeclaration =>
           astForAnnotationMemberDeclaration(annotationMember) :: Nil
@@ -430,8 +430,8 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
           // TODO: Add this when adding records
           Nil
 
-        case enumConstantDeclaration: EnumConstantDeclaration =>
-          enumEntryLowerings.find(_.entry eq enumConstantDeclaration).toList.flatMap(_.memberAsts)
+        case _: EnumConstantDeclaration =>
+          enumEntryLowerings(idx).memberAsts
 
         case field: FieldDeclaration => fieldToFieldAsts.getOrElse(field, Nil)
 
@@ -956,12 +956,12 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     val assignmentAst = callAst(assignmentNode, targetAst :: allocAst :: Nil)
 
     val implicitArgs = List(
-      Ast(literalNode(entry, s"\"${entry.getNameAsString}\"", "java.lang.String")),
+      Ast(literalNode(entry, s"\"${entry.getNameAsString}\"", TypeConstants.String)),
       Ast(literalNode(entry, ordinal.toString, TypeConstants.Int))
     )
     val sourceArgs    = entry.getArguments.asScala.toList.flatMap(astsForExpression(_, ExpectedType.empty))
     val initArgs      = implicitArgs ++ sourceArgs
-    val argumentTypes = Some("java.lang.String" :: TypeConstants.Int :: initArgs.drop(2).flatMap(_.rootType))
+    val argumentTypes = Some(TypeConstants.String :: TypeConstants.Int :: initArgs.drop(2).flatMap(_.rootType))
     val initCall      = initNode(
       Some(allocatedTypeFullName),
       argumentTypes,
@@ -1079,13 +1079,13 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
         List(modifierNode(originNode, ModifierTypes.PUBLIC), modifierNode(originNode, ModifierTypes.STATIC))
       val valuesAst = methodStubAst(valuesMethod, Nil, valuesReturn, valuesModifiers)
 
-      val valueOfSignature = composeMethodLikeSignature(typeFullName, List("java.lang.String"))
+      val valueOfSignature = composeMethodLikeSignature(typeFullName, List(TypeConstants.String))
       val valueOfFullName  = composeMethodFullName(typeFullName, "valueOf", valueOfSignature)
       val valueOfMethod    = methodNode(originNode, "valueOf", valueOfFullName, valueOfSignature, filename)
       val valueOfParam     = NewMethodParameterIn()
         .name("name")
-        .code("java.lang.String name")
-        .typeFullName("java.lang.String")
+        .code(s"${TypeConstants.String} name")
+        .typeFullName(TypeConstants.String)
         .index(1)
         .order(1)
       val valueOfReturn    = methodReturnNode(originNode, typeFullName)

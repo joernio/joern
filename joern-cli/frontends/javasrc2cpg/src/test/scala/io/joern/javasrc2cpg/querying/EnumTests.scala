@@ -108,4 +108,82 @@ class EnumTests extends JavaSrcCode2CpgFixture {
 
     values.name shouldBe "$VALUES"
   }
+
+  "an enum implementing an interface" should {
+    val cpg = code("""
+        |package foo;
+        |
+        |interface Bar {
+        |  String describe();
+        |}
+        |
+        |public enum Foo implements Bar {
+        |  NORTH,
+        |  SOUTH;
+        |
+        |  public String describe() {
+        |    return name();
+        |  }
+        |}
+        |""".stripMargin)
+
+    "inherit from both java.lang.Enum and the interface" in {
+      cpg.typeDecl.name("Foo").inheritsFromTypeFullName.l shouldBe List("java.lang.Enum", "foo.Bar")
+    }
+  }
+
+  "an enum implementing multiple interfaces" should {
+    val cpg = code("""
+        |package foo;
+        |
+        |interface Bar {
+        |  String describe();
+        |}
+        |
+        |interface Baz {
+        |  int priority();
+        |}
+        |
+        |public enum Foo implements Bar, Baz {
+        |  NORTH,
+        |  SOUTH;
+        |
+        |  public String describe() {
+        |    return name();
+        |  }
+        |
+        |  public int priority() {
+        |    return ordinal();
+        |  }
+        |}
+        |""".stripMargin)
+
+    "inherit from java.lang.Enum and both interfaces, in declaration order" in {
+      cpg.typeDecl.name("Foo").inheritsFromTypeFullName.l shouldBe List("java.lang.Enum", "foo.Bar", "foo.Baz")
+    }
+  }
+
+  "an enum with multiple constant-specific class bodies" should {
+    val cpg = code("""
+        |package foo;
+        |
+        |public enum Foo {
+        |  NORTH {
+        |    @Override
+        |    String describe() { return "N"; }
+        |  },
+        |  SOUTH {
+        |    @Override
+        |    String describe() { return "S"; }
+        |  };
+        |
+        |  abstract String describe();
+        |}
+        |""".stripMargin)
+
+    "give each constant-specific body its own anonymous type, inheriting from the enum" in {
+      cpg.typeDecl.nameExact("Foo$0").inheritsFromTypeFullName.l shouldBe List("foo.Foo")
+      cpg.typeDecl.nameExact("Foo$1").inheritsFromTypeFullName.l shouldBe List("foo.Foo")
+    }
+  }
 }
