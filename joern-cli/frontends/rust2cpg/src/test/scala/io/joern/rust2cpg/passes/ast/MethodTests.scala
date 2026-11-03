@@ -4,7 +4,6 @@ import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 
 import java.nio.file.Paths
@@ -19,10 +18,10 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.method.name("main").fullName.l shouldBe List("rust2cpgtest::main")
     }
 
-    "be parented by the fake global method" in {
+    "be parented by the crate namespace block" in {
       inside(cpg.method.name("main").l) { case main :: Nil =>
-        main.astParentType shouldBe NodeTypes.METHOD
-        main.astParentFullName shouldBe s"$libPath:rust2cpgtest::$globalNamespaceName"
+        main.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
+        main.astParentFullName shouldBe s"$libPath:rust2cpgtest"
       }
     }
 

@@ -36,16 +36,13 @@ object ContextStack {
     }
   }
 
-  final class GlobalMethodContext(method: NewMethod) extends MethodContext(method, mutable.Map.empty, 0)
-
   @tailrec
   private def rustItemParentFullName(stack: List[Context]): String = stack match {
-    case (ctx: GlobalMethodContext) :: tail => rustItemParentFullName(tail)
-    case (ctx: MethodContext) :: _          => ctx.method.fullName
-    case (ctx: NamespaceContext) :: _       => ctx.namespaceBlock.name
-    case (ctx: TypeDeclContext) :: _        => ctx.typeDecl.fullName
-    case _ :: tail                          => rustItemParentFullName(tail)
-    case _                                  => Defines.UnresolvedNamespace
+    case (ctx: MethodContext) :: _    => ctx.method.fullName
+    case (ctx: NamespaceContext) :: _ => ctx.namespaceBlock.name
+    case (ctx: TypeDeclContext) :: _  => ctx.typeDecl.fullName
+    case _ :: tail                    => rustItemParentFullName(tail)
+    case _                            => Defines.UnresolvedNamespace
   }
 
   @tailrec
@@ -89,10 +86,6 @@ class ContextStack {
 
   def pushMethod(method: NewMethod): Unit = {
     push(new MethodContext(method, mutable.Map.empty, 0))
-  }
-
-  def pushGlobalMethod(method: NewMethod): Unit = {
-    push(new GlobalMethodContext(method))
   }
 
   def pop(): Unit = {
