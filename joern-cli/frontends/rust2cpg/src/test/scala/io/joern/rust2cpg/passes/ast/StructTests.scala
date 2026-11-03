@@ -4,7 +4,6 @@ import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, NodeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 
 import java.nio.file.Paths
@@ -19,10 +18,10 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.typeDecl.nameExact("Foo").fullName.l shouldBe List("rust2cpgtest::Foo")
     }
 
-    "be parented by the fake global method" in {
+    "be parented by the crate namespace block" in {
       inside(cpg.typeDecl.nameExact("Foo").l) { case foo :: Nil =>
-        foo.astParentType shouldBe NodeTypes.METHOD
-        foo.astParentFullName shouldBe s"$libPath:rust2cpgtest::$globalNamespaceName"
+        foo.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
+        foo.astParentFullName shouldBe s"$libPath:rust2cpgtest"
       }
     }
 
@@ -85,10 +84,10 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.typeDecl.nameExact("Pair").fullName.l shouldBe List("rust2cpgtest::Pair")
     }
 
-    "be parented by the fake global method" in {
+    "be parented by the crate namespace block" in {
       inside(cpg.typeDecl.nameExact("Pair").l) { case pair :: Nil =>
-        pair.astParentType shouldBe NodeTypes.METHOD
-        pair.astParentFullName shouldBe s"$libPath:rust2cpgtest::$globalNamespaceName"
+        pair.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
+        pair.astParentFullName shouldBe s"$libPath:rust2cpgtest"
       }
     }
 
@@ -147,8 +146,8 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
     "have a standalone ctor wrapper" in {
       inside(cpg.method.nameExact("Pair").l) { case ctor :: Nil =>
         ctor.fullName shouldBe "rust2cpgtest::Pair"
-        ctor.astParentType shouldBe NodeTypes.METHOD
-        ctor.astParentFullName shouldBe s"$libPath:rust2cpgtest::$globalNamespaceName"
+        ctor.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
+        ctor.astParentFullName shouldBe s"$libPath:rust2cpgtest"
         ctor.modifier shouldBe empty
         ctor.methodReturn.typeFullName shouldBe "rust2cpgtest::Pair"
       }

@@ -18,9 +18,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewNode,
   NewTypeDecl
 }
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, PropertyDefaults, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyDefaults, PropertyNames}
 import io.joern.x2cpg.utils.OffsetUtils
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 
 import java.nio.charset.StandardCharsets
@@ -169,23 +168,6 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
   protected def moduleNamespaceBlockNode(module: RustNodeSyntax.Module): NewNamespaceBlock = {
     val name = typeFullNameForModule(module)
     namespaceBlockNode(module, name, s"${parseResult.filename}:$name", parseResult.filename)
-  }
-
-  protected def globalFakeMethodNode(
-    sourceFile: RustNodeSyntax.SourceFile,
-    namespaceBlock: NewNamespaceBlock
-  ): NewMethod = {
-    val name = NamespaceTraversal.globalNamespaceName
-    methodNode(
-      node = sourceFile,
-      name = name,
-      code = name,
-      fullName = combineRustFullName(namespaceBlock.fullName, name),
-      signature = Some(""),
-      fileName = parseResult.filename,
-      astParentType = Some(NodeTypes.NAMESPACE_BLOCK),
-      astParentFullName = Some(namespaceBlock.fullName)
-    )
   }
 
   protected def typeDeclForStruct(struct: RustNodeSyntax.Struct, inheritsFrom: Seq[String]): NewTypeDecl = {

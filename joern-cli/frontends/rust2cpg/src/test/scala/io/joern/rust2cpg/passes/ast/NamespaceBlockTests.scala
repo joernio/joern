@@ -1,10 +1,9 @@
 package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 
 import java.nio.file.Paths
@@ -58,40 +57,27 @@ class NamespaceBlockTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
-  "the fake global method" should {
+  "top-level fns" should {
     val libPath = (Paths.get("src") / "lib.rs").toString
     val cpg     = code("""
         |fn one() {}
         |fn two(x: i32) -> i32 { x }
         |""".stripMargin)
 
-    "have a file-prefixed fullName" in {
-      cpg.method.nameExact(globalNamespaceName).fullName.l shouldBe
-        List(s"$libPath:rust2cpgtest::$globalNamespaceName")
-    }
-
-    "be parented by the crate namespace block" in {
-      inside(cpg.method.nameExact(globalNamespaceName).l) { case fakeMethod :: Nil =>
-        fakeMethod.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
-        fakeMethod.astParentFullName shouldBe s"$libPath:rust2cpgtest"
-      }
-    }
-
-    "have a () return type" in {
-      cpg.method.nameExact(globalNamespaceName).methodReturn.typeFullName.l shouldBe List("()")
-    }
-
-    "have MODULE modifier" in {
-      cpg.method.nameExact(globalNamespaceName).modifier.modifierType.l shouldBe List(ModifierTypes.MODULE)
-    }
-
-    "own top-level fns as AST children" in {
-      inside(cpg.method.nameExact(globalNamespaceName).block.astChildren.sortBy(_.order).l) {
+    "have correct children" in {
+      inside(cpg.namespaceBlock.fullNameExact(s"$libPath:rust2cpgtest").astChildren.sortBy(_.order).l) {
         case (one: Method) :: (two: Method) :: Nil =>
           one.name shouldBe "one"
           one.fullName shouldBe "rust2cpgtest::one"
           two.name shouldBe "two"
           two.fullName shouldBe "rust2cpgtest::two"
+      }
+    }
+
+    "be parented by the crate namespace block" in {
+      inside(cpg.method.nameExact("one").l) { case one :: Nil =>
+        one.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
+        one.astParentFullName shouldBe s"$libPath:rust2cpgtest"
       }
     }
   }

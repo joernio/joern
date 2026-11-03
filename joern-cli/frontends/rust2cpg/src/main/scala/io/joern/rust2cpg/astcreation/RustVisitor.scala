@@ -11,7 +11,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewImport,
   NewMethod,
   NewModifier,
-  NewNamespaceBlock,
   NewTypeDecl
 }
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, ModifierTypes, Operators}
@@ -31,25 +30,12 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val fileNode = NewFile().name(parseResult.filename).order(0)
     Option.unless(config.disableFileContent)(parseResult.fileContent).foreach(fileNode.content(_))
 
-    val namespaceBlockNode = globalNamespaceBlockNode()
-    val globalMethodAst    = astInFakeMethod(sourceFile, namespaceBlockNode)
-
-    Ast(fileNode).withChild(Ast(namespaceBlockNode).withChild(globalMethodAst))
-  }
-
-  private def astInFakeMethod(sourceFile: SourceFile, namespaceBlockNode: NewNamespaceBlock): Ast = {
-    val method = globalFakeMethodNode(sourceFile, namespaceBlockNode)
-
-    contextStack.pushNamespace(namespaceBlockNode)
-    contextStack.pushGlobalMethod(method)
+    val namespaceBlock = globalNamespaceBlockNode()
+    contextStack.pushNamespace(namespaceBlock)
     val itemAsts = visitModuleItems(sourceFile, sourceFile.item)
     contextStack.pop()
-    contextStack.pop()
 
-    val block        = blockNode(sourceFile)
-    val methodReturn = methodReturnNode(sourceFile, "()")
-    val modifiers    = Seq(modifierNode(sourceFile, ModifierTypes.MODULE))
-    methodAst(method, parameters = Nil, body = Ast(block).withChildren(itemAsts), methodReturn, modifiers)
+    Ast(fileNode).withChild(Ast(namespaceBlock).withChildren(itemAsts))
   }
 
   private def visitItem(item: Item): Seq[Ast] = {
