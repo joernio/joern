@@ -345,6 +345,21 @@ class TsDecoratorAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
       )
     }
 
+    "create annotations correctly for fields declared with the accessor keyword" in {
+      val cpg = code("""
+          |class Foo {
+          |  @format("a, %s")
+          |  accessor a: string;
+          |}
+          |""".stripMargin)
+      val List(annotation) = cpg.member.nameExact("a").annotation.l
+      annotation.code shouldBe "@format(\"a, %s\")"
+      annotation.name shouldBe "format"
+
+      val List(decorateCall) = cpg.call.name("__decorate").l
+      decorateCall.code shouldBe """__decorate([format("a, %s")], Foo.prototype, 'a', void 0)"""
+    }
+
     "create annotations correctly for class methods" in {
       val cpg = code("""
           |class Foo {

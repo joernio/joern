@@ -1,9 +1,8 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.Config
-import io.joern.jssrc2cpg.parser.BabelAst.*
+import io.joern.jssrc2cpg.parser.BabelNodeSyntax.*
 import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
-import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstCreatorBase
 import io.joern.x2cpg.ValidationMode
@@ -22,13 +21,12 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import ujson.Value
 
 import scala.collection.mutable
 
 class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val parserResult: ParseResult)(implicit
   withSchemaValidation: ValidationMode
-) extends AstCreatorBase[BabelNodeInfo, AstCreator](parserResult.filename)
+) extends AstCreatorBase[BabelNode, AstCreator](parserResult.filename)
     with AstForExpressionsCreator
     with AstForPrimitivesCreator
     with AstForTypesCreator
@@ -52,8 +50,8 @@ class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val
   protected val dynamicInstanceTypeStack = new Stack[String]
   protected val localAstParentStack      = new Stack[NewBlock]()
   protected val rootTypeDecl             = new Stack[NewTypeDecl]()
-  // Keyed by the function node's source range (start:end): a BabelNodeInfo key would hash its ujson.Value structurally,
-  // recursing over the entire function subtree on every lookup.
+  // Keyed by the function node's source range (start:end): the typed nodes are case classes wrapping a ujson.Value and
+  // would hash that structurally, recursing over the entire function subtree on every lookup.
   protected val functionNodeToNameAndFullName = mutable.HashMap.empty[String, (String, String)]
   protected val usedVariableNames             = mutable.HashMap.empty[String, Int]
   protected val seenAliasTypes                = mutable.HashMap.empty[String, NewTypeDecl]
@@ -80,16 +78,16 @@ class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val
   }
 
   private def createProgramMethod(): Ast = {
-    val path        = parserResult.filename
-    val astNodeInfo = createBabelNodeInfo(parserResult.json("ast"))
-    val name        = Defines.Program
-    val fullName    = s"$path:$name"
+    val path     = parserResult.filename
+    val file     = parserResult.ast
+    val name     = Defines.Program
+    val fullName = s"$path:$name"
 
     val programMethod =
-      methodNode(astNodeInfo, name, name, fullName, None, path, Some(NodeTypes.TYPE_DECL), Some(fullName)).order(1)
+      methodNode(file, name, name, fullName, None, path, Some(NodeTypes.TYPE_DECL), Some(fullName)).order(1)
 
     val functionTypeAndTypeDeclAst =
-      createFunctionTypeAndTypeDeclAst(astNodeInfo, programMethod, methodAstParentStack.head, name, fullName, path)
+      createFunctionTypeAndTypeDeclAst(file, programMethod, methodAstParentStack.head, name, fullName, path)
     rootTypeDecl.push(functionTypeAndTypeDeclAst.nodes.head.asInstanceOf[NewTypeDecl])
 
     methodAstParentStack.push(programMethod)
@@ -99,11 +97,11 @@ class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val
     scope.pushNewMethodScope(fullName, name, blockNode, None)
     localAstParentStack.push(blockNode)
 
-    val thisParam = parameterInNode(astNodeInfo, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
+    val thisParam = parameterInNode(file, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
       .dynamicTypeHintFullName(typeHintForThisExpression())
     scope.addVariable("this", thisParam, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
 
-    val methodChildren = astsForFile(astNodeInfo)
+    val methodChildren = createBlockStatementAsts(file.program.body)
 
     localAstParentStack.pop()
     scope.popScope()
@@ -114,148 +112,117 @@ class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val
         programMethod,
         Ast(thisParam) :: Nil,
         blockAst(blockNode, methodChildren),
-        methodReturnNode(astNodeInfo, Defines.Any),
-        modifierNode(astNodeInfo, ModifierTypes.MODULE) :: Nil
+        methodReturnNode(file, Defines.Any),
+        modifierNode(file, ModifierTypes.MODULE) :: Nil
       )
     )
   }
 
-  private def astsForFile(file: BabelNodeInfo): List[Ast] = astsForProgram(createBabelNodeInfo(file.json("program")))
-
-  private def astsForProgram(program: BabelNodeInfo): List[Ast] = createBlockStatementAsts(program.json("body"))
-
-  protected def astForNodeWithFunctionReferenceAndCall(json: Value): Ast = {
-    val nodeInfo = createBabelNodeInfo(json)
-    nodeInfo.node match {
-      case _: FunctionLike =>
-        astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
-      case _ => astForNode(json)
-    }
+  protected def astForNodeWithFunctionReferenceAndCall(node: BabelNode): Ast = node match {
+    case f: FunctionLike =>
+      astForFunctionDeclaration(f, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
+    case _ => astForNode(node)
   }
 
-  protected def astForNode(json: Value): Ast = {
-    val nodeInfo = createBabelNodeInfo(json)
-    nodeInfo.node match {
-      case ClassDeclaration          => astForClass(nodeInfo, shouldCreateAssignmentCall = true)
-      case DeclareClass              => astForClass(nodeInfo, shouldCreateAssignmentCall = true)
-      case ClassExpression           => astForClass(nodeInfo)
-      case TSInterfaceDeclaration    => astForInterface(nodeInfo)
-      case TSModuleDeclaration       => astForModule(nodeInfo)
-      case Decorator                 => astForDecorator(nodeInfo)
-      case TSExportAssignment        => astForExportAssignment(nodeInfo)
-      case ExportNamedDeclaration    => astForExportNamedDeclaration(nodeInfo)
-      case ExportDefaultDeclaration  => astForExportDefaultDeclaration(nodeInfo)
-      case ExportAllDeclaration      => astForExportAllDeclaration(nodeInfo)
-      case ImportDeclaration         => astForImportDeclaration(nodeInfo)
-      case FunctionDeclaration       => astForFunctionDeclaration(nodeInfo)
-      case TSDeclareFunction         => astForTSDeclareFunction(nodeInfo)
-      case VariableDeclaration       => astForVariableDeclaration(nodeInfo)
-      case ArrowFunctionExpression   => astForFunctionDeclaration(nodeInfo)
-      case FunctionExpression        => astForFunctionDeclaration(nodeInfo)
-      case TSEnumDeclaration         => astForEnum(nodeInfo)
-      case DeclareTypeAlias          => astForTypeAlias(nodeInfo)
-      case TypeAlias                 => astForTypeAlias(nodeInfo)
-      case TypeCastExpression        => astForCastExpression(nodeInfo)
-      case TSTypeAssertion           => astForCastExpression(nodeInfo)
-      case TSTypeCastExpression      => astForCastExpression(nodeInfo)
-      case TSTypeAliasDeclaration    => astForTypeAlias(nodeInfo)
-      case NewExpression             => astForNewExpression(nodeInfo)
-      case ThisExpression            => astForThisExpression(nodeInfo)
-      case MemberExpression          => astForMemberExpression(nodeInfo)
-      case OptionalMemberExpression  => astForMemberExpression(nodeInfo)
-      case MetaProperty              => astForMetaProperty(nodeInfo)
-      case CallExpression            => astForCallExpression(nodeInfo)
-      case OptionalCallExpression    => astForCallExpression(nodeInfo)
-      case SequenceExpression        => astForSequenceExpression(nodeInfo)
-      case AssignmentExpression      => astForAssignmentExpression(nodeInfo)
-      case AssignmentPattern         => astForAssignmentExpression(nodeInfo)
-      case BinaryExpression          => astForBinaryExpression(nodeInfo)
-      case LogicalExpression         => astForLogicalExpression(nodeInfo)
-      case TSAsExpression            => astForCastExpression(nodeInfo)
-      case UpdateExpression          => astForUpdateExpression(nodeInfo)
-      case UnaryExpression           => astForUnaryExpression(nodeInfo)
-      case ArrayExpression           => astForArrayExpression(nodeInfo)
-      case AwaitExpression           => astForAwaitExpression(nodeInfo)
-      case ConditionalExpression     => astForConditionalExpression(nodeInfo)
-      case TaggedTemplateExpression  => astForTemplateExpression(nodeInfo)
-      case ObjectExpression          => astForObjectExpression(nodeInfo)
-      case TSNonNullExpression       => astForTSNonNullExpression(nodeInfo)
-      case YieldExpression           => astForReturnStatement(nodeInfo)
-      case ExpressionStatement       => astForExpressionStatement(nodeInfo)
-      case IfStatement               => astForIfStatement(nodeInfo)
-      case BlockStatement            => astForBlockStatement(nodeInfo)
-      case ReturnStatement           => astForReturnStatement(nodeInfo)
-      case TryStatement              => astForTryStatement(nodeInfo)
-      case ForStatement              => astForForStatement(nodeInfo)
-      case WhileStatement            => astForWhileStatement(nodeInfo)
-      case DoWhileStatement          => astForDoWhileStatement(nodeInfo)
-      case SwitchStatement           => astForSwitchStatement(nodeInfo)
-      case BreakStatement            => astForBreakStatement(nodeInfo)
-      case ContinueStatement         => astForContinueStatement(nodeInfo)
-      case LabeledStatement          => astForLabeledStatement(nodeInfo)
-      case ThrowStatement            => astForThrowStatement(nodeInfo)
-      case ForInStatement            => astForInOfStatement(nodeInfo)
-      case ForOfStatement            => astForInOfStatement(nodeInfo)
-      case ObjectPattern             => astForObjectExpression(nodeInfo)
-      case ArrayPattern              => astForArrayExpression(nodeInfo)
-      case Identifier                => astForIdentifier(nodeInfo)
-      case PrivateName               => astForPrivateName(nodeInfo)
-      case Super                     => astForSuperKeyword(nodeInfo)
-      case Import                    => astForImportKeyword(nodeInfo)
-      case TSImportEqualsDeclaration => astForTSImportEqualsDeclaration(nodeInfo)
-      case StringLiteral             => astForStringLiteral(nodeInfo)
-      case NumericLiteral            => astForNumericLiteral(nodeInfo)
-      case NumberLiteral             => astForNumberLiteral(nodeInfo)
-      case DecimalLiteral            => astForDecimalLiteral(nodeInfo)
-      case NullLiteral               => astForNullLiteral(nodeInfo)
-      case BooleanLiteral            => astForBooleanLiteral(nodeInfo)
-      case RegExpLiteral             => astForRegExpLiteral(nodeInfo)
-      case RegexLiteral              => astForRegexLiteral(nodeInfo)
-      case BigIntLiteral             => astForBigIntLiteral(nodeInfo)
-      case TemplateLiteral           => astForTemplateLiteral(nodeInfo)
-      case TemplateElement           => astForTemplateElement(nodeInfo)
-      case SpreadElement             => astForSpreadOrRestElement(nodeInfo)
-      case TSSatisfiesExpression     => astForTSSatisfiesExpression(nodeInfo)
-      case JSXElement                => astForJsxElement(nodeInfo)
-      case JSXOpeningElement         => astForJsxOpeningElement(nodeInfo)
-      case JSXClosingElement         => astForJsxClosingElement(nodeInfo)
-      case JSXText                   => astForJsxText(nodeInfo)
-      case JSXExpressionContainer    => astForJsxExprContainer(nodeInfo)
-      case JSXSpreadChild            => astForJsxExprContainer(nodeInfo)
-      case JSXSpreadAttribute        => astForJsxSpreadAttribute(nodeInfo)
-      case JSXFragment               => astForJsxFragment(nodeInfo)
-      case JSXAttribute              => astForJsxAttribute(nodeInfo)
-      case WithStatement             => astForWithStatement(nodeInfo)
-      case EmptyStatement            => Ast()
-      case DebuggerStatement         => Ast()
-      case _                         => notHandledYet(nodeInfo)
-    }
+  protected def astForNode(node: BabelNode): Ast = node match {
+    case n: (ClassDeclaration | DeclareClass)                       => astForClass(n, shouldCreateAssignmentCall = true)
+    case n: ClassExpression                                         => astForClass(n)
+    case n: TSInterfaceDeclaration                                  => astForInterface(n)
+    case n: TSModuleDeclaration                                     => astForModule(n)
+    case n: Decorator                                               => astForDecorator(n)
+    case n: TSExportAssignment                                      => astForExportAssignment(n)
+    case n: ExportNamedDeclaration                                  => astForExportNamedDeclaration(n)
+    case n: ExportDefaultDeclaration                                => astForExportDefaultDeclaration(n)
+    case n: ExportAllDeclaration                                    => astForExportAllDeclaration(n)
+    case n: ImportDeclaration                                       => astForImportDeclaration(n)
+    case n: FunctionLike                                            => astForFunctionDeclaration(n)
+    case n: TSDeclareFunction                                       => astForTSDeclareFunction(n)
+    case n: VariableDeclaration                                     => astForVariableDeclaration(n)
+    case n: TSEnumDeclaration                                       => astForEnum(n)
+    case n: (DeclareTypeAlias | TypeAlias | TSTypeAliasDeclaration) => astForTypeAlias(n)
+    case n: (TypeCastExpression | TSTypeAssertion | TSAsExpression | TSTypeCastExpression) =>
+      astForCastExpression(n)
+    case n: NewExpression                                 => astForNewExpression(n)
+    case n: ThisExpression                                => astForThisExpression(n)
+    case n: (MemberExpression | OptionalMemberExpression) => astForMemberExpression(n)
+    case n: MetaProperty                                  => astForMetaProperty(n)
+    case n: (CallExpression | OptionalCallExpression)     => astForCallExpression(n)
+    case n: SequenceExpression                            => astForSequenceExpression(n)
+    case n: (AssignmentExpression | AssignmentPattern)    => astForAssignmentExpression(n)
+    case n: BinaryExpression                              => astForBinaryExpression(n)
+    case n: LogicalExpression                             => astForLogicalExpression(n)
+    case n: UpdateExpression                              => astForUpdateExpression(n)
+    case n: UnaryExpression                               => astForUnaryExpression(n)
+    case n: (ArrayExpression | ArrayPattern)              => astForArrayExpression(n)
+    case n: AwaitExpression                               => astForAwaitExpression(n)
+    case n: ConditionalExpression                         => astForConditionalExpression(n)
+    case n: TaggedTemplateExpression                      => astForTemplateExpression(n)
+    case n: (ObjectExpression | ObjectPattern)            => astForObjectExpression(n)
+    case n: TSNonNullExpression                           => astForTSNonNullExpression(n)
+    case n: (YieldExpression | ReturnStatement)           => astForReturnStatement(n)
+    case n: ExpressionStatement                           => astForExpressionStatement(n)
+    case n: IfStatement                                   => astForIfStatement(n)
+    case n: BlockStatement                                => astForBlockStatement(n)
+    case n: TryStatement                                  => astForTryStatement(n)
+    case n: ForStatement                                  => astForForStatement(n)
+    case n: WhileStatement                                => astForWhileStatement(n)
+    case n: DoWhileStatement                              => astForDoWhileStatement(n)
+    case n: SwitchStatement                               => astForSwitchStatement(n)
+    case n: BreakStatement                                => astForBreakStatement(n)
+    case n: ContinueStatement                             => astForContinueStatement(n)
+    case n: LabeledStatement                              => astForLabeledStatement(n)
+    case n: ThrowStatement                                => astForThrowStatement(n)
+    case n: (ForInStatement | ForOfStatement)             => astForInOfStatement(n)
+    case n: Identifier                                    => astForIdentifier(n)
+    case n: PrivateName                                   => astForPrivateName(n)
+    case n: Super                                         => astForSuperKeyword(n)
+    case n: Import                                        => astForImportKeyword(n)
+    case n: TSImportEqualsDeclaration                     => astForTSImportEqualsDeclaration(n)
+    case n: StringLiteral                                 => astForStringLiteral(n)
+    case n: NumericLiteral                                => astForNumericLiteral(n)
+    case n: NullLiteral                                   => astForNullLiteral(n)
+    case n: BooleanLiteral                                => astForBooleanLiteral(n)
+    case n: RegExpLiteral                                 => astForRegExpLiteral(n)
+    case n: BigIntLiteral                                 => astForBigIntLiteral(n)
+    case n: TemplateLiteral                               => astForTemplateLiteral(n)
+    case n: TemplateElement                               => astForTemplateElement(n)
+    case n: SpreadElement                                 => astForSpreadOrRestElement(n)
+    case n: TSSatisfiesExpression                         => astForTSSatisfiesExpression(n)
+    case n: JSXElement                                    => astForJsxElement(n)
+    case n: JSXOpeningElement                             => astForJsxOpeningElement(n)
+    case n: JSXClosingElement                             => astForJsxClosingElement(n)
+    case n: JSXText                                       => astForJsxText(n)
+    case n: (JSXExpressionContainer | JSXSpreadChild)     => astForJsxExprContainer(n)
+    case n: JSXSpreadAttribute                            => astForJsxSpreadAttribute(n)
+    case n: JSXFragment                                   => astForJsxFragment(n)
+    case n: JSXAttribute                                  => astForJsxAttribute(n)
+    case n: WithStatement                                 => astForWithStatement(n)
+    case _: EmptyStatement                                => Ast()
+    case _: DebuggerStatement                             => Ast()
+    case _                                                => notHandledYet(node)
   }
 
-  protected def astForNodes(jsons: collection.Seq[Value]): List[Ast] =
-    jsons.iterator.map(astForNodeWithFunctionReference).toList
+  protected def astForNodes(nodes: collection.Seq[BabelNode]): List[Ast] =
+    nodes.iterator.map(astForNodeWithFunctionReference).toList
 
-  protected def astForNodeWithFunctionReference(json: Value): Ast = {
-    val nodeInfo = createBabelNodeInfo(json)
-    nodeInfo.node match {
-      case _: FunctionLike => astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true)
-      case _               => astForNode(json)
-    }
+  protected def astForNodeWithFunctionReference(node: BabelNode): Ast = node match {
+    case f: FunctionLike => astForFunctionDeclaration(f, shouldCreateFunctionReference = true)
+    case _               => astForNode(node)
   }
 
-  protected def line(node: BabelNodeInfo): Option[Int]      = node.lineNumber
-  protected def column(node: BabelNodeInfo): Option[Int]    = node.columnNumber
-  protected def lineEnd(node: BabelNodeInfo): Option[Int]   = node.lineNumberEnd
-  protected def columnEnd(node: BabelNodeInfo): Option[Int] = node.columnNumberEnd
-  protected def code(node: BabelNodeInfo): String           = node.code
+  override protected def code(node: BabelNode): String  = node.code
+  protected def line(node: BabelNode): Option[Int]      = node.lineNumber
+  protected def column(node: BabelNode): Option[Int]    = node.columnNumber
+  protected def lineEnd(node: BabelNode): Option[Int]   = node.lineNumberEnd
+  protected def columnEnd(node: BabelNode): Option[Int] = node.columnNumberEnd
 
   override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] =
     Option.unless(config.disableFileContent)(OffsetUtils.OffsetSourceType.Utf_16)
 
-  override protected def unadjustedOffset(node: BabelNodeInfo): Option[(Int, Int)] = {
+  override protected def unadjustedOffset(node: BabelNode): Option[(Int, Int)] = {
     for {
-      startOffset <- start(node.json)
-      endOffset   <- end(node.json)
+      startOffset <- node.start
+      endOffset   <- node.end
     } yield clampOffsets(startOffset, endOffset)
   }
 }

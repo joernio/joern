@@ -116,6 +116,23 @@ class JsClassesAstCreationPassTests extends JsSrc2CpgSuite {
         List(ModifierTypes.STATIC, ModifierTypes.PRIVATE)
     }
 
+    "have members named after the key for fields declared with the accessor keyword" in {
+      val cpg = code("""
+        |class ClassA {
+        |  accessor a = 1
+        |  static accessor b = 2
+        |  accessor #c = 3
+        |  accessor [d] = 4
+        |}""".stripMargin)
+      val List(classATypeDecl) = cpg.typeDecl.nameExact("ClassA").fullNameExact("Test0.js::program:ClassA").l
+      classATypeDecl.member.name.l shouldBe List("a", "c", "d")
+      classATypeDecl.member.nameExact("c").modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
+
+      val constructorFullName       = s"Test0.js::program:ClassA:${io.joern.x2cpg.Defines.ConstructorMethodName}"
+      val List(constructorTypeDecl) = cpg.typeDecl.fullNameExact(constructorFullName).l
+      constructorTypeDecl.member.isStatic.name.l shouldBe List("b")
+    }
+
     "have member for non-static method in TYPE_DECL for ClassA" in {
       val cpg = code("""
         |class ClassA {

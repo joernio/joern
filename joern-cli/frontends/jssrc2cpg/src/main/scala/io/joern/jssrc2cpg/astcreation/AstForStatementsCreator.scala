@@ -1,7 +1,6 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.parser.BabelAst.*
-import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.jssrc2cpg.parser.BabelNodeSyntax.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
@@ -11,8 +10,6 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import ujson.Obj
-import ujson.Value
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -24,31 +21,26 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     *
     * We do this to get TypeDecls created at the right spot so we can make use of them for the type aliases.
     */
-  private def sortBlockStatements(blockStatements: List[BabelNodeInfo]): List[BabelNodeInfo] =
-    blockStatements.sortBy { nodeInfo =>
-      nodeInfo.node match {
-        case ImportDeclaration                                     => 0
-        case FunctionDeclaration                                   => 1
-        case DeclareTypeAlias | TypeAlias | TSTypeAliasDeclaration =>
-          if (isPlainTypeAlias(nodeInfo)) 4 else 3
-        case _ => 2
-      }
+  private def sortBlockStatements(blockStatements: List[BabelNode]): List[BabelNode] =
+    blockStatements.sortBy {
+      case _: ImportDeclaration                                           => 0
+      case _: FunctionDeclaration                                         => 1
+      case alias: (DeclareTypeAlias | TypeAlias | TSTypeAliasDeclaration) =>
+        if (isPlainTypeAlias(alias)) 4 else 3
+      case _ => 2
     }
 
-  protected def createBlockStatementAsts(json: Value): List[Ast] = {
-    val blockStmts = sortBlockStatements(json.arr.iterator.map(createBabelNodeInfo).toList)
-    blockStmts.map(stmt => astForNodeWithFunctionReferenceAndCall(stmt.json))
-  }
+  protected def createBlockStatementAsts(statements: Seq[BabelNode]): List[Ast] =
+    sortBlockStatements(statements.toList).map(astForNodeWithFunctionReferenceAndCall)
 
-  protected def astForWithStatement(withStatement: BabelNodeInfo): Ast = {
+  protected def astForWithStatement(withStatement: WithStatement): Ast = {
     val blockNode_ = blockNode(withStatement, withStatement.code, Defines.Any)
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
-    val objectAst    = astForNodeWithFunctionReferenceAndCall(withStatement.json("object"))
-    val bodyNodeInfo = createBabelNodeInfo(withStatement.json("body"))
-    val bodyAsts     = bodyNodeInfo.node match {
-      case BlockStatement => createBlockStatementAsts(bodyNodeInfo.json("body"))
-      case _              => List(astForNodeWithFunctionReferenceAndCall(bodyNodeInfo.json))
+    val objectAst = astForNodeWithFunctionReferenceAndCall(withStatement.`object`)
+    val bodyAsts  = withStatement.body match {
+      case block: BlockStatement => createBlockStatementAsts(block.body)
+      case other                 => List(astForNodeWithFunctionReferenceAndCall(other))
     }
     val blockStatementAsts = objectAst +: bodyAsts
     localAstParentStack.pop()
@@ -56,113 +48,105 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     blockAst(blockNode_, blockStatementAsts)
   }
 
-  protected def astForBlockStatement(block: BabelNodeInfo): Ast = {
+  protected def astForBlockStatement(block: BlockStatement | TSModuleBlock): Ast = {
     val blockNode_ = blockNode(block, block.code, Defines.Any)
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
-    val blockStatementAsts = createBlockStatementAsts(block.json("body"))
+    val statements = block match {
+      case b: BlockStatement => b.body
+      case m: TSModuleBlock  => m.body
+    }
+    val blockStatementAsts = createBlockStatementAsts(statements)
     localAstParentStack.pop()
     scope.popScope()
     blockAst(blockNode_, blockStatementAsts)
   }
 
-  protected def astForReturnStatement(ret: BabelNodeInfo): Ast = {
-    val retCode = ret.code.stripSuffix(";")
-    val retNode = returnNode(ret, retCode)
-    safeObj(ret.json, "argument")
+  protected def astForReturnStatement(ret: YieldExpression | ReturnStatement): Ast = {
+    val retCode  = ret.code.stripSuffix(";")
+    val retNode  = returnNode(ret, retCode)
+    val argument = ret match {
+      case r: ReturnStatement => r.argument
+      case y: YieldExpression => y.argument
+    }
+    argument
       .map { argument =>
-        val argAst = astForNodeWithFunctionReference(Obj(argument))
+        val argAst = astForNodeWithFunctionReference(argument)
         returnAst(retNode, List(argAst))
       }
       .getOrElse(Ast(retNode))
   }
 
-  private def astForCatchClause(catchClause: BabelNodeInfo): Ast = {
+  private def astForCatchClause(catchClause: CatchClause): Ast = {
     val blockNode_ = blockNode(catchClause, catchClause.code, Defines.Any)
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
-    val paramAst = safeObj(catchClause.json, "param")
-      .map { param => astForNodeWithFunctionReference(Obj(param)) }
-      .getOrElse(Ast())
-    val bodyAsts           = createBlockStatementAsts(catchClause.json("body")("body"))
+    val paramAst           = catchClause.param.map(astForNodeWithFunctionReference).getOrElse(Ast())
+    val bodyAsts           = createBlockStatementAsts(catchClause.body.body)
     val blockStatementAsts = paramAst +: bodyAsts
     localAstParentStack.pop()
     scope.popScope()
     blockAst(blockNode_, blockStatementAsts)
   }
 
-  protected def astForTryStatement(tryStmt: BabelNodeInfo): Ast = {
-    val bodyAst  = astForNodeWithFunctionReference(tryStmt.json("block"))
-    val catchAst = safeObj(tryStmt.json, "handler").toList
-      .map { handler =>
-        val catchNodeInfo = createBabelNodeInfo(Obj(handler))
-        val catchNode     = controlStructureNode(catchNodeInfo, ControlStructureTypes.CATCH, code(catchNodeInfo))
-        val catchAst      = astForCatchClause(catchNodeInfo)
-        Ast(catchNode).withChild(catchAst)
-      }
-    val finalizerAst = safeObj(tryStmt.json, "finalizer")
-      .map { finalizer =>
-        val finalNodeInfo = createBabelNodeInfo(Obj(finalizer))
-        val finalNode     = controlStructureNode(finalNodeInfo, ControlStructureTypes.FINALLY, code(finalNodeInfo))
-        val finalAst      = astForNodeWithFunctionReference(finalNodeInfo.json)
-        Ast(finalNode).withChild(finalAst)
-      }
+  protected def astForTryStatement(tryStmt: TryStatement): Ast = {
+    val bodyAst  = astForNodeWithFunctionReference(tryStmt.block)
+    val catchAst = tryStmt.handler.toList.map { handler =>
+      val catchNode = controlStructureNode(handler, ControlStructureTypes.CATCH, handler.code)
+      val catchAst  = astForCatchClause(handler)
+      Ast(catchNode).withChild(catchAst)
+    }
+    val finalizerAst = tryStmt.finalizer.map { finalizer =>
+      val finalNode = controlStructureNode(finalizer, ControlStructureTypes.FINALLY, finalizer.code)
+      val finalAst  = astForNodeWithFunctionReference(finalizer)
+      Ast(finalNode).withChild(finalAst)
+    }
     tryCatchAst(tryStmt, bodyAst, catchAst, finalizerAst)
   }
 
-  private def handleEmptyStatement(json: Value): Ast = {
-    val nodeInfo = createBabelNodeInfo(json)
-    nodeInfo.node match {
-      case EmptyStatement => Ast(blockNode(nodeInfo))
-      case _              => astForNodeWithFunctionReference(nodeInfo.json)
-    }
+  private def handleEmptyStatement(node: BabelNode): Ast = node match {
+    case _: EmptyStatement => Ast(blockNode(node))
+    case _                 => astForNodeWithFunctionReference(node)
   }
 
-  def astForIfStatement(ifStmt: BabelNodeInfo): Ast = {
-    val conditionAst = handleEmptyStatement(ifStmt.json("test"))
-    val thenAst      = handleEmptyStatement(ifStmt.json("consequent"))
-    val elseAst      = safeObj(ifStmt.json, "alternate").map(alternate => handleEmptyStatement(Obj(alternate)))
+  def astForIfStatement(ifStmt: IfStatement): Ast = {
+    val conditionAst = handleEmptyStatement(ifStmt.test)
+    val thenAst      = handleEmptyStatement(ifStmt.consequent)
+    val elseAst      = ifStmt.alternate.map(handleEmptyStatement)
     ifThenElseAst(ifStmt, Some(conditionAst), thenAst, elseAst)
   }
 
-  protected def astForDoWhileStatement(doWhileStmt: BabelNodeInfo): Ast = {
-    val testAst = handleEmptyStatement(doWhileStmt.json("test"))
-    val bodyAst = handleEmptyStatement(doWhileStmt.json("body"))
+  protected def astForDoWhileStatement(doWhileStmt: DoWhileStatement): Ast = {
+    val testAst = handleEmptyStatement(doWhileStmt.test)
+    val bodyAst = handleEmptyStatement(doWhileStmt.body)
     doWhileAst(doWhileStmt, Some(testAst), Seq(bodyAst))
   }
 
-  protected def astForWhileStatement(whileStmt: BabelNodeInfo): Ast = {
-    val testAst = handleEmptyStatement(whileStmt.json("test"))
-    val bodyAst = handleEmptyStatement(whileStmt.json("body"))
+  protected def astForWhileStatement(whileStmt: WhileStatement): Ast = {
+    val testAst = handleEmptyStatement(whileStmt.test)
+    val bodyAst = handleEmptyStatement(whileStmt.body)
     whileAst(whileStmt, Some(testAst), Seq(bodyAst))
   }
 
-  protected def astForForStatement(forStmt: BabelNodeInfo): Ast = {
-    val initAsts = safeObj(forStmt.json, "init")
-      .map { init => Seq(astForNodeWithFunctionReference(Obj(init))) }
-      .getOrElse(Seq.empty)
-
-    val testAsts = safeObj(forStmt.json, "test")
-      .map { test => Seq(astForNodeWithFunctionReference(Obj(test))) }
+  protected def astForForStatement(forStmt: ForStatement): Ast = {
+    val initAsts = forStmt.init.map(init => Seq(astForNodeWithFunctionReference(init))).getOrElse(Seq.empty)
+    val testAsts = forStmt.test
+      .map(test => Seq(astForNodeWithFunctionReference(test)))
       .getOrElse(Seq(Ast(literalNode(forStmt, "true", Option(Defines.Boolean)))))
-
-    val updateAsts = safeObj(forStmt.json, "update")
-      .map { update => Seq(astForNodeWithFunctionReference(Obj(update))) }
-      .getOrElse(Seq.empty)
-
-    val bodyAst = astForNodeWithFunctionReference(forStmt.json("body"))
+    val updateAsts = forStmt.update.map(update => Seq(astForNodeWithFunctionReference(update))).getOrElse(Seq.empty)
+    val bodyAst    = astForNodeWithFunctionReference(forStmt.body)
 
     forAst(forStmt, Seq.empty, initAsts, testAsts, updateAsts, Seq(bodyAst))
   }
 
-  protected def astForLabeledStatement(labelStmt: BabelNodeInfo): Ast = {
-    val labelName   = code(labelStmt.json("label"))
-    val labeledNode = jumpTargetNode(labelStmt, labelName, s"$labelName:", Option(labelStmt.node.toString))
+  protected def astForLabeledStatement(labelStmt: LabeledStatement): Ast = {
+    val labelName   = labelStmt.label.code
+    val labeledNode = jumpTargetNode(labelStmt, labelName, s"$labelName:", Option(labelStmt.nodeType))
 
     val blockNode_ = blockNode(labelStmt, labelStmt.code, Defines.Any)
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
-    val bodyAst = astForNodeWithFunctionReference(labelStmt.json("body"))
+    val bodyAst = astForNodeWithFunctionReference(labelStmt.body)
     scope.popScope()
     localAstParentStack.pop()
 
@@ -170,38 +154,33 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     blockAst(blockNode_, labelAsts)
   }
 
-  protected def astForBreakStatement(breakStmt: BabelNodeInfo): Ast = {
-    val labelName = safeObj(breakStmt.json, "label").map(label => code(Obj(label)))
-    breakAst(breakStmt, code(breakStmt), labelName)
-  }
+  protected def astForBreakStatement(breakStmt: BreakStatement): Ast =
+    breakAst(breakStmt, breakStmt.code, breakStmt.label.map(_.code))
 
-  protected def astForContinueStatement(continueStmt: BabelNodeInfo): Ast = {
-    val labelName = safeObj(continueStmt.json, "label").map(label => code(Obj(label)))
-    continueAst(continueStmt, code(continueStmt), labelName)
-  }
+  protected def astForContinueStatement(continueStmt: ContinueStatement): Ast =
+    continueAst(continueStmt, continueStmt.code, continueStmt.label.map(_.code))
 
-  protected def astForThrowStatement(throwStmt: BabelNodeInfo): Ast = {
-    throwAst(throwStmt, List(astForNodeWithFunctionReference(throwStmt.json("argument"))))
-  }
+  protected def astForThrowStatement(throwStmt: ThrowStatement): Ast =
+    throwAst(throwStmt, List(astForNodeWithFunctionReference(throwStmt.argument)))
 
-  private def astsForSwitchCase(switchCase: BabelNodeInfo): List[Ast] = {
+  private def astsForSwitchCase(switchCase: SwitchCase): List[Ast] = {
     val labelAst       = Ast(jumpTargetNode(switchCase))
-    val testAsts       = safeObj(switchCase.json, "test").map(t => astForNodeWithFunctionReference(Obj(t))).toList
-    val consequentAsts = astForNodes(switchCase.json("consequent").arr)
+    val testAsts       = switchCase.test.map(astForNodeWithFunctionReference).toList
+    val consequentAsts = astForNodes(switchCase.consequent)
     labelAst +: (testAsts ++ consequentAsts)
   }
 
-  protected def astForSwitchStatement(switchStmt: BabelNodeInfo): Ast = {
+  protected def astForSwitchStatement(switchStmt: SwitchStatement): Ast = {
     // The semantics of switch statement children is partially defined by their order value.
     // The blockAst must have order == 2. Only to avoid collision we set switchExpressionAst to 1
     // because the semantics of it is already indicated via the condition edge.
-    val switchExpressionAst = astForNodeWithFunctionReference(switchStmt.json("discriminant"))
+    val switchExpressionAst = astForNodeWithFunctionReference(switchStmt.discriminant)
     setOrderExplicitly(switchExpressionAst, 1)
 
     val blockNode_ = blockNode(switchStmt, switchStmt.code, Defines.Any).order(2)
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
-    val casesAsts = switchStmt.json("cases").arr.flatMap(c => astsForSwitchCase(createBabelNodeInfo(c)))
+    val casesAsts = switchStmt.cases.flatMap(astsForSwitchCase)
     scope.popScope()
     localAstParentStack.pop()
 
@@ -218,14 +197,17 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     * { var _iterator = <operator>.iterator(arr); var _result; var i; while (!(_result = _iterator.next()).done) { i =
     * _result.value; body } }
     */
-  private def astForInOfStatementWithIdentifier(forInOfStmt: BabelNodeInfo, idNodeInfo: BabelNodeInfo): Ast = {
+  private def astForInOfStatementWithIdentifier(
+    forInOfStmt: ForInStatement | ForOfStatement,
+    idNode: Identifier
+  ): Ast = {
     // surrounding block:
     val blockNode_ = blockNode(forInOfStmt, forInOfStmt.code, Defines.Any)
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
 
-    val collection     = forInOfStmt.json("right")
-    val collectionName = code(collection)
+    val collection     = rightOf(forInOfStmt)
+    val collectionName = collection.code
 
     // _iterator assignment:
     val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
@@ -265,7 +247,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.addVariableReference(resultName, resultNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
     // loop variable:
-    val loopVariableName = idNodeInfo.code
+    val loopVariableName = idNode.code
 
     val loopVariableLocalNode = localNode(forInOfStmt, loopVariableName, loopVariableName, Defines.Any).order(0)
     val loopVariableNode      = identifierNode(forInOfStmt, loopVariableName)
@@ -337,7 +319,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     localAstParentStack.push(whileLoopBlockNode)
 
     // while loop block:
-    val bodyAst = astForNodeWithFunctionReference(forInOfStmt.json("body"))
+    val bodyAst = astForNodeWithFunctionReference(bodyOf(forInOfStmt))
 
     val whileLoopBlockChildren = List(loopVariableAssignmentAst, bodyAst)
     val whileLoopBlockAst      = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
@@ -363,14 +345,17 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     * { var _iterator = <operator>.iterator(arr); var _result; while (!(_result = _iterator.next()).done) { expr =
     * _result.value; body } }
     */
-  private def astForInOfStatementWithExpression(forInOfStmt: BabelNodeInfo, idNodeInfo: BabelNodeInfo): Ast = {
+  private def astForInOfStatementWithExpression(
+    forInOfStmt: ForInStatement | ForOfStatement,
+    idNode: BabelNode
+  ): Ast = {
     // surrounding block:
     val blockNode_ = blockNode(forInOfStmt, forInOfStmt.code, Defines.Any)
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
 
-    val collection     = forInOfStmt.json("right")
-    val collectionName = code(collection)
+    val collection     = rightOf(forInOfStmt)
+    val collectionName = collection.code
 
     // _iterator assignment:
     val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
@@ -451,7 +436,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val testCallAst  = callAst(testCallNode, testCallArgs)
 
     // while loop variable assignment:
-    val whileLoopVariableNode = astForNode(idNodeInfo.json)
+    val whileLoopVariableNode = astForNode(idNode)
 
     val baseNode = identifierNode(forInOfStmt, resultName)
 
@@ -459,12 +444,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     val accessAst = createFieldAccessCallAst(baseNode, memberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
-    val loopVariableAssignmentNode = callNode(
-      forInOfStmt,
-      s"${idNodeInfo.code} = $resultName.value",
-      Operators.assignment,
-      DispatchTypes.STATIC_DISPATCH
-    )
+    val loopVariableAssignmentNode =
+      callNode(forInOfStmt, s"${idNode.code} = $resultName.value", Operators.assignment, DispatchTypes.STATIC_DISPATCH)
 
     val loopVariableAssignmentArgs = List(whileLoopVariableNode, accessAst)
     val loopVariableAssignmentAst  = callAst(loopVariableAssignmentNode, loopVariableAssignmentArgs)
@@ -474,7 +455,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     localAstParentStack.push(whileLoopBlockNode)
 
     // while loop block:
-    val bodyAst = astForNodeWithFunctionReference(forInOfStmt.json("body"))
+    val bodyAst = astForNodeWithFunctionReference(bodyOf(forInOfStmt))
 
     val whileLoopBlockChildren = List(loopVariableAssignmentAst, bodyAst)
     val whileLoopBlockAst      = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
@@ -500,14 +481,17 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     * { var _iterator = <operator>.iterator(obj); var _result; var a; var b; var c; while (!(_result =
     * _iterator.next()).done) { a = _result.value.a; b = _result.value.b; c = _result.value.c; body } }
     */
-  private def astForInOfStatementWithObject(forInOfStmt: BabelNodeInfo, idNodeInfo: BabelNodeInfo): Ast = {
+  private def astForInOfStatementWithObject(
+    forInOfStmt: ForInStatement | ForOfStatement,
+    idNode: ObjectPattern
+  ): Ast = {
     // surrounding block:
     val blockNode_ = blockNode(forInOfStmt, forInOfStmt.code, Defines.Any)
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
 
-    val collection     = forInOfStmt.json("right")
-    val collectionName = code(collection)
+    val collection     = rightOf(forInOfStmt)
+    val collectionName = collection.code
 
     // _iterator assignment:
     val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
@@ -546,7 +530,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.addVariableReference(resultName, resultNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
     // loop variable:
-    val loopVariableNames = idNodeInfo.json("properties").arr.map(p => stripQuotes(code(p))).toList
+    val loopVariableNames = idNode.properties.map(property => stripQuotes(property.code)).toList
 
     val loopVariableLocalNodes = loopVariableNames.map(varName => localNode(forInOfStmt, varName, varName, Defines.Any))
     val loopVariableNodes      = loopVariableNames.map(identifierNode(forInOfStmt, _))
@@ -619,7 +603,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     localAstParentStack.push(whileLoopBlockNode)
 
     // while loop block:
-    val bodyAst = astForNodeWithFunctionReference(forInOfStmt.json("body"))
+    val bodyAst = astForNodeWithFunctionReference(bodyOf(forInOfStmt))
 
     val whileLoopBlockChildren = loopVariableAssignmentAsts :+ bodyAst
     val whileLoopBlockAst      = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
@@ -646,14 +630,14 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     * { var _iterator = <operator>.iterator(arr); var _result; var a; var b; var c; while (!(_result =
     * _iterator.next()).done) { a = _result.value[0]; b = _result.value[1]; c = _result.value[2]; body } }
     */
-  private def astForInOfStatementWithArray(forInOfStmt: BabelNodeInfo, idNodeInfo: BabelNodeInfo): Ast = {
+  private def astForInOfStatementWithArray(forInOfStmt: ForInStatement | ForOfStatement, idNode: ArrayPattern): Ast = {
     // surrounding block:
     val blockNode_ = blockNode(forInOfStmt, forInOfStmt.code, Defines.Any)
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
 
-    val collection     = forInOfStmt.json("right")
-    val collectionName = code(collection)
+    val collection     = rightOf(forInOfStmt)
+    val collectionName = collection.code
 
     // _iterator assignment:
     val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
@@ -691,7 +675,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.addVariableReference(resultName, resultNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
     // loop variable:
-    val loopVariableNames = idNodeInfo.json("elements").arr.filterNot(_.isNull).map(code).toList
+    val loopVariableNames = idNode.elements.flatten.map(_.code).toList
 
     val loopVariableLocalNodes = loopVariableNames.map(varName => localNode(forInOfStmt, varName, varName, Defines.Any))
     val loopVariableNodes      = loopVariableNames.map(identifierNode(forInOfStmt, _))
@@ -764,7 +748,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     localAstParentStack.push(whileLoopBlockNode)
 
     // while loop block:
-    val bodyAst = astForNodeWithFunctionReference(forInOfStmt.json("body"))
+    val bodyAst = astForNodeWithFunctionReference(bodyOf(forInOfStmt))
 
     val whileLoopBlockChildren = loopVariableAssignmentAsts :+ bodyAst
     val whileLoopBlockAst      = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
@@ -782,34 +766,41 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     blockAst(blockNode_, blockNodeChildren)
   }
 
-  private def extractLoopVariableNodeInfo(nodeInfo: BabelNodeInfo): Option[BabelNodeInfo] =
-    nodeInfo.node match {
-      case AssignmentPattern =>
-        Option(createBabelNodeInfo(nodeInfo.json("left")))
-      case VariableDeclaration =>
-        val varDeclNodeInfo = createBabelNodeInfo(nodeInfo.json("declarations").arr.head)
-        if (varDeclNodeInfo.node == VariableDeclarator) Option(createBabelNodeInfo(varDeclNodeInfo.json("id")))
-        else None
-      case _ => None
-    }
+  private def rightOf(stmt: ForInStatement | ForOfStatement): Expression = stmt match {
+    case s: ForInStatement => s.right
+    case s: ForOfStatement => s.right
+  }
 
-  protected def astForInOfStatement(forInOfStmt: BabelNodeInfo): Ast = {
-    val loopVariableNodeInfo = createBabelNodeInfo(forInOfStmt.json("left"))
+  private def bodyOf(stmt: ForInStatement | ForOfStatement): Statement = stmt match {
+    case s: ForInStatement => s.body
+    case s: ForOfStatement => s.body
+  }
+
+  private def extractLoopVariable(node: BabelNode): Option[BabelNode] = node match {
+    case assignment: AssignmentPattern    => Option(assignment.left)
+    case declaration: VariableDeclaration => declaration.declarations.headOption.map(_.id)
+    case _                                => None
+  }
+
+  protected def astForInOfStatement(forInOfStmt: ForInStatement | ForOfStatement): Ast = {
+    val loopVariable = forInOfStmt match {
+      case s: ForInStatement => s.left
+      case s: ForOfStatement => s.left
+    }
     // check iteration loop variable type:
-    loopVariableNodeInfo.node match {
-      case VariableDeclaration | AssignmentPattern =>
-        val idNodeInfo = extractLoopVariableNodeInfo(loopVariableNodeInfo)
-        idNodeInfo.map(_.node) match {
-          case Some(ObjectPattern) => astForInOfStatementWithObject(forInOfStmt, idNodeInfo.get)
-          case Some(ArrayPattern)  => astForInOfStatementWithArray(forInOfStmt, idNodeInfo.get)
-          case Some(Identifier)    => astForInOfStatementWithIdentifier(forInOfStmt, idNodeInfo.get)
-          case _                   => notHandledYet(forInOfStmt)
+    loopVariable match {
+      case _: (VariableDeclaration | AssignmentPattern) =>
+        extractLoopVariable(loopVariable) match {
+          case Some(pattern: ObjectPattern) => astForInOfStatementWithObject(forInOfStmt, pattern)
+          case Some(pattern: ArrayPattern)  => astForInOfStatementWithArray(forInOfStmt, pattern)
+          case Some(id: Identifier)         => astForInOfStatementWithIdentifier(forInOfStmt, id)
+          case _                            => notHandledYet(forInOfStmt)
         }
-      case ObjectPattern => astForInOfStatementWithObject(forInOfStmt, loopVariableNodeInfo)
-      case ArrayPattern  => astForInOfStatementWithArray(forInOfStmt, loopVariableNodeInfo)
-      case Identifier    => astForInOfStatementWithIdentifier(forInOfStmt, loopVariableNodeInfo)
-      case _: Expression => astForInOfStatementWithExpression(forInOfStmt, loopVariableNodeInfo)
-      case _             => notHandledYet(forInOfStmt)
+      case pattern: ObjectPattern => astForInOfStatementWithObject(forInOfStmt, pattern)
+      case pattern: ArrayPattern  => astForInOfStatementWithArray(forInOfStmt, pattern)
+      case id: Identifier         => astForInOfStatementWithIdentifier(forInOfStmt, id)
+      case _: Expression          => astForInOfStatementWithExpression(forInOfStmt, loopVariable)
+      case _                      => notHandledYet(forInOfStmt)
     }
   }
 

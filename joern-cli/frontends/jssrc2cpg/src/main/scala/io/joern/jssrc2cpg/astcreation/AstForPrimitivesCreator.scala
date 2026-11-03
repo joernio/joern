@@ -1,6 +1,6 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.jssrc2cpg.parser.BabelNodeSyntax.*
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
@@ -8,8 +8,8 @@ import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 
 trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astForIdentifier(ident: BabelNodeInfo, maybePossibleType: Option[String] = None): Ast = {
-    val name         = ejsOutputCallName(ident).getOrElse(ident.json("name").str)
+  protected def astForIdentifier(ident: Identifier, maybePossibleType: Option[String] = None): Ast = {
+    val name         = ejsOutputCallName(ident).getOrElse(ident.name)
     val identNode    = identifierNode(ident, name)
     val possibleType = maybePossibleType match {
       case None              => typeFor(ident)
@@ -23,70 +23,67 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     Ast(identNode)
   }
 
-  protected def astForSuperKeyword(superKeyword: BabelNodeInfo): Ast =
+  protected def astForSuperKeyword(superKeyword: Super): Ast =
     Ast(identifierNode(superKeyword, "super"))
 
-  protected def astForImportKeyword(importKeyword: BabelNodeInfo): Ast =
+  protected def astForImportKeyword(importKeyword: Import): Ast =
     Ast(identifierNode(importKeyword, "import"))
 
-  protected def astForNullLiteral(nullLiteral: BabelNodeInfo): Ast =
+  protected def astForNullLiteral(nullLiteral: NullLiteral): Ast =
     Ast(literalNode(nullLiteral, nullLiteral.code, Option(Defines.Null)))
 
-  protected def astForStringLiteral(stringLiteral: BabelNodeInfo): Ast = {
-    val code = s"\"${stringLiteral.json("value").str}\""
+  protected def astForStringLiteral(stringLiteral: StringLiteral): Ast = {
+    val code = s"\"${stringLiteral.value}\""
     Ast(literalNode(stringLiteral, code, Option(Defines.String)))
   }
 
-  protected def astForPrivateName(privateName: BabelNodeInfo): Ast =
-    astForIdentifier(createBabelNodeInfo(privateName.json("id")))
+  protected def astForPrivateName(privateName: PrivateName): Ast =
+    astForIdentifier(privateName.id)
 
-  protected def astForSpreadOrRestElement(spreadElement: BabelNodeInfo, arg1Ast: Option[Ast] = None): Ast = {
-    val ast       = astForNodeWithFunctionReference(spreadElement.json("argument"))
+  protected def astForSpreadOrRestElement(
+    spreadElement: SpreadElement | RestElement,
+    arg1Ast: Option[Ast] = None
+  ): Ast = {
+    val argument = spreadElement match {
+      case spread: SpreadElement => spread.argument
+      case rest: RestElement     => rest.argument
+    }
+    val ast       = astForNodeWithFunctionReference(argument)
     val callNode_ =
       callNode(spreadElement, spreadElement.code, "<operator>.spread", DispatchTypes.STATIC_DISPATCH)
     callAst(callNode_, arg1Ast.toList :+ ast)
   }
 
-  protected def astForTemplateElement(templateElement: BabelNodeInfo): Ast =
-    Ast(literalNode(templateElement, s"\"${templateElement.json("value")("raw").str}\"", Option(Defines.String)))
+  protected def astForTemplateElement(templateElement: TemplateElement): Ast =
+    Ast(literalNode(templateElement, s"\"${templateElement.value("raw").str}\"", Option(Defines.String)))
 
-  protected def astForRegExpLiteral(regExpLiteral: BabelNodeInfo): Ast =
+  protected def astForRegExpLiteral(regExpLiteral: RegExpLiteral): Ast =
     Ast(literalNode(regExpLiteral, regExpLiteral.code, Option(Defines.String)))
 
-  protected def astForRegexLiteral(regexLiteral: BabelNodeInfo): Ast =
-    Ast(literalNode(regexLiteral, regexLiteral.code, Option(Defines.String)))
-
-  protected def astForNumberLiteral(numberLiteral: BabelNodeInfo): Ast =
-    Ast(literalNode(numberLiteral, numberLiteral.code, Option(Defines.Number)))
-
-  protected def astForNumericLiteral(numericLiteral: BabelNodeInfo): Ast =
+  protected def astForNumericLiteral(numericLiteral: NumericLiteral): Ast =
     Ast(literalNode(numericLiteral, numericLiteral.code, Option(Defines.Number)))
 
-  protected def astForDecimalLiteral(decimalLiteral: BabelNodeInfo): Ast =
-    Ast(literalNode(decimalLiteral, decimalLiteral.code, Option(Defines.Number)))
-
-  protected def astForBigIntLiteral(bigIntLiteral: BabelNodeInfo): Ast =
+  protected def astForBigIntLiteral(bigIntLiteral: BigIntLiteral): Ast =
     Ast(literalNode(bigIntLiteral, bigIntLiteral.code, Option(Defines.Number)))
 
-  protected def astForBooleanLiteral(booleanLiteral: BabelNodeInfo): Ast =
+  protected def astForBooleanLiteral(booleanLiteral: BooleanLiteral): Ast =
     Ast(literalNode(booleanLiteral, booleanLiteral.code, Option(Defines.Boolean)))
 
-  protected def astForTemplateLiteral(templateLiteral: BabelNodeInfo): Ast = {
-    val expressions           = templateLiteral.json("expressions").arr
-    val (quasisTails, quasis) = templateLiteral.json("quasis").arr.partition(_("tail").bool)
+  protected def astForTemplateLiteral(templateLiteral: TemplateLiteral): Ast = {
+    val expressions           = templateLiteral.expressions
+    val (quasisTails, quasis) = templateLiteral.quasis.partition(_.tail)
     val quasisTail            = quasisTails.head
 
     if (expressions.isEmpty && quasis.isEmpty) {
-      astForTemplateElement(createBabelNodeInfo(quasisTail))
+      astForTemplateElement(quasisTail)
     } else {
       val callName        = Operators.formatString
       val expressionQuasi = expressions.zip(quasis)
       val argsCodes       = expressionQuasi.flatMap { case (expression, quasi) =>
-        List(s"\"${quasi("value")("raw").str}\"", code(expression))
+        List(s"\"${quasi.value("raw").str}\"", expression.code)
       }
-      val callCode     = s"$callName${(argsCodes :+ s"\"${quasisTail("value")("raw").str}\"").mkString("(", ", ", ")")}"
-      val templateCall =
-        callNode(templateLiteral, callCode, callName, DispatchTypes.STATIC_DISPATCH)
+      val callCode     = s"$callName${(argsCodes :+ s"\"${quasisTail.value("raw").str}\"").mkString("(", ", ", ")")}"
+      val templateCall = callNode(templateLiteral, callCode, callName, DispatchTypes.STATIC_DISPATCH)
       val argumentAsts = expressionQuasi.flatMap { case (expression, quasi) =>
         List(astForNodeWithFunctionReference(quasi), astForNodeWithFunctionReference(expression))
       }

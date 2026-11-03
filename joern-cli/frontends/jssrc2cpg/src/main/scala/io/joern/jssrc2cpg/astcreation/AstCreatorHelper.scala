@@ -1,13 +1,19 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.parser.BabelAst.*
-import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.jssrc2cpg.parser.BabelNodeSyntax.*
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNodeNew,
+  ExpressionNew,
+  NewBinding,
+  NewIdentifier,
+  NewMethod,
+  NewNode,
+  NewTypeRef
+}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyDefaults, PropertyNames}
-import ujson.Value
 
 import scala.collection.mutable
 
@@ -15,20 +21,66 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   private val anonClassKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
 
-  protected def nodeTypeOf(json: Value): BabelNode = fromString(json("type").str)
+  /** Functions that have a body, i.e. everything we create a full method AST for. */
+  type FunctionWithBody =
+    FunctionDeclaration | FunctionExpression | ArrowFunctionExpression | ObjectMethod | ClassMethod | ClassPrivateMethod
 
-  protected def createBabelNodeInfo(json: Value): BabelNodeInfo = {
-    // Resolve start/end offsets and their line numbers once, then derive columns and code from them. This runs for
-    // every AST node, so we avoid recomputing the offsets and the line binary search per accessor.
-    val startOffset   = start(json)
-    val endOffset     = end(json)
-    val lineOfStart   = startOffset.map(getLineOfSource)
-    val lineOfEnd     = endOffset.map(getLineOfSource)
-    val columnOfStart = columnFor(startOffset, lineOfStart)
-    val columnOfEnd   = columnFor(endOffset, lineOfEnd)
-    val nodeCode      = codeForOffsets(startOffset, endOffset)
-    val node          = nodeTypeOf(json)
-    BabelNodeInfo(node, json, nodeCode, lineOfStart, columnOfStart, lineOfEnd, columnOfEnd)
+  /** Function-like declarations without a body, e.g. overload signatures or members of interfaces. */
+  type FunctionSignature =
+    TSDeclareFunction | TSDeclareMethod | TSCallSignatureDeclaration | TSConstructSignatureDeclaration |
+      TSMethodSignature
+
+  type FunctionNode = FunctionWithBody | FunctionSignature
+
+  /** Everything that is a function expression or declaration in the JS sense (so, no methods). */
+  type FunctionLike = FunctionDeclaration | FunctionExpression | ArrowFunctionExpression
+
+  /** Source information of a node, resolved once per node instance on demand. A node's code, line and column values are
+    * queried several times while its AST is created, and resolving them requires a substring and a binary search each.
+    * The cache is keyed by identity as the typed nodes are case classes wrapping JSON and would be compared (and
+    * hashed) structurally otherwise.
+    */
+  private case class NodeLocation(
+    code: String,
+    line: Option[Int],
+    column: Option[Int],
+    lineEnd: Option[Int],
+    columnEnd: Option[Int]
+  )
+
+  private val nodeLocations = new java.util.IdentityHashMap[BabelNode, NodeLocation]()
+
+  private def locationOf(node: BabelNode): NodeLocation = {
+    val cached = nodeLocations.get(node)
+    if (cached != null) {
+      cached
+    } else {
+      // Resolve start/end offsets and their line numbers once, then derive columns and code from them.
+      val startOffset = node.start
+      val endOffset   = node.end
+      val lineOfStart = startOffset.map(getLineOfSource)
+      val lineOfEnd   = endOffset.map(getLineOfSource)
+      val location    = NodeLocation(
+        codeForOffsets(startOffset, endOffset),
+        lineOfStart,
+        columnFor(startOffset, lineOfStart),
+        lineOfEnd,
+        columnFor(endOffset, lineOfEnd)
+      )
+      nodeLocations.put(node, location)
+      location
+    }
+  }
+
+  /** Source information of a node. This is an implicit class and no extension, as `code(node)` is abstract in the node
+    * builder and has to be implemented as an ordinary method (see [[AstCreator]]).
+    */
+  implicit class BabelNodeSourceInfo(node: BabelNode) {
+    def code: String                 = locationOf(node).code
+    def lineNumber: Option[Int]      = locationOf(node).line
+    def columnNumber: Option[Int]    = locationOf(node).column
+    def lineNumberEnd: Option[Int]   = locationOf(node).lineEnd
+    def columnNumberEnd: Option[Int] = locationOf(node).columnEnd
   }
 
   private def columnFor(offset: Option[Int], lineOfOffset: Option[Int]): Option[Int] =
@@ -47,23 +99,18 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       }
       .getOrElse(PropertyDefaults.Code)
 
-  protected def line(node: Value): Option[Int] = start(node).map(getLineOfSource)
-
-  protected def start(node: Value): Option[Int] =
-    node.obj.get("start").flatMap(_.numOpt).map(_.toInt)
-
-  protected def range(node: Value): Option[String] = {
+  protected def range(node: BabelNode): Option[String] = {
     for {
-      nodeStart <- start(node)
-      nodeEnd   <- end(node)
+      nodeStart <- node.start
+      nodeEnd   <- node.end
     } yield s"$nodeStart:$nodeEnd"
   }
 
   /** A cheap, stable key identifying a function node within a file, used to memoize its (name, fullName). We rely on
     * the node's source range, falling back to its rendered JSON when offsets are unavailable.
     */
-  protected def functionNodeKey(node: BabelNodeInfo): String =
-    range(node.json).getOrElse(node.json.render())
+  protected def functionNodeKey(node: BabelNode): String =
+    range(node).getOrElse(node.json.render())
 
   // Binary search: find first line whose end-position >= position
   private def getLineOfSource(position: Int): Int = {
@@ -77,27 +124,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     lo + 1 // 1-based line numbers
   }
 
-  protected def lineEnd(node: Value): Option[Int] = end(node).map(getLineOfSource)
-
-  protected def end(node: Value): Option[Int] =
-    node.obj.get("end").flatMap(_.numOpt).map(_.toInt)
-
-  protected def column(node: Value): Option[Int] = start(node).map(getColumnOfSource)
-
-  private def getColumnOfSource(position: Int): Int = {
-    val lineIdx = getLineOfSource(position) - 1
-    position - lineStartPositions(lineIdx)
-  }
-
-  protected def columnEnd(node: Value): Option[Int] = end(node).map(getColumnOfSource)
-
   protected def setOrderExplicitly(ast: Ast, order: Int): Unit = {
     ast.root.foreach { case expr: ExpressionNew => expr.order = order }
   }
 
-  protected def notHandledYet(node: BabelNodeInfo): Ast = {
+  protected def notHandledYet(node: BabelNode): Ast = {
     val text =
-      s"""Node type '${node.node}' not handled yet!
+      s"""Node type '${node.nodeType}' not handled yet!
          |  Code: '${node.code}'
          |  File: '${parserResult.fullPath}'
          |  Line: ${node.lineNumber.getOrElse(-1)}
@@ -108,7 +141,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def createFunctionTypeAndTypeDeclAst(
-    node: BabelNodeInfo,
+    node: BabelNode,
     methodNode: NewMethod,
     parentNode: NewNode,
     methodName: String,
@@ -149,12 +182,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     case clazz: NewTypeRef => clazz.code.stripPrefix("class ")
   }
 
-  protected def nameForBabelNodeInfo(nodeInfo: BabelNodeInfo, defaultName: Option[String]): String = {
+  protected def nameForBabelNode(node: BabelNode, defaultName: Option[String]): String = {
     defaultName
-      .orElse(codeForBabelNodeInfo(nodeInfo).headOption)
+      .orElse(codesForNode(node).headOption)
       .getOrElse {
         val tmpName    = generateUnusedVariableName(usedVariableNames, "_tmp")
-        val nLocalNode = localNode(nodeInfo, tmpName, tmpName, Defines.Any).order(0)
+        val nLocalNode = localNode(node, tmpName, tmpName, Defines.Any).order(0)
         diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
         tmpName
       }
@@ -169,12 +202,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     usedVariableNames.update(variableName, counter)
     currentVariableName
   }
-
-  protected def safeBool(node: Value, key: String): Option[Boolean] =
-    node.obj.get(key).flatMap(_.boolOpt)
-
-  protected def safeObj(node: Value, key: String): Option[upickle.core.LinkedHashMap[String, Value]] =
-    node.obj.get(key).flatMap(_.objOpt).filter(_.nonEmpty)
 
   protected def buildPositionArrays(source: String): (Array[Int], Array[Int]) = {
     val ends                = mutable.ArrayBuffer[Int]()
@@ -199,7 +226,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     (ends.toArray, starts.toArray)
   }
 
-  protected def calcMethodNameAndFullName(func: BabelNodeInfo): (String, String) = {
+  protected def calcMethodNameAndFullName(func: FunctionNode): (String, String) = {
     // functionNode.getName is not necessarily unique and thus the full name calculated based on the scope
     // is not necessarily unique. Specifically we have this problem with lambda functions which are defined
     // in the same scope.
@@ -228,35 +255,86 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  private def calcMethodName(func: BabelNodeInfo): String = func.node match {
-    case ObjectMethod if hasKey(func.json, "computed") && func.json("computed").bool =>
+  /** The parameters of a function; signatures without a body call them `parameters`, everything else `params`. */
+  protected def paramsOf(func: FunctionNode): Seq[BabelNode] = func match {
+    case f: FunctionDeclaration             => f.params
+    case f: FunctionExpression              => f.params
+    case f: ArrowFunctionExpression         => f.params
+    case f: ObjectMethod                    => f.params
+    case f: ClassMethod                     => f.params
+    case f: ClassPrivateMethod              => f.params
+    case f: TSDeclareFunction               => f.params
+    case f: TSDeclareMethod                 => f.params
+    case f: TSCallSignatureDeclaration      => f.parameters
+    case f: TSConstructSignatureDeclaration => f.parameters
+    case f: TSMethodSignature               => f.parameters
+  }
+
+  protected def bodyOf(func: FunctionWithBody): BlockStatement | Expression = func match {
+    case f: FunctionDeclaration     => f.body
+    case f: FunctionExpression      => f.body
+    case f: ArrowFunctionExpression => f.body
+    case f: ObjectMethod            => f.body
+    case f: ClassMethod             => f.body
+    case f: ClassPrivateMethod      => f.body
+  }
+
+  /** The name of a method, getter or setter is its key; plain functions are named by their identifier. */
+  private def methodKey(func: FunctionNode): Option[BabelNode] = func match {
+    case f: ObjectMethod       => Some(f.key)
+    case f: ClassMethod        => Some(f.key)
+    case f: ClassPrivateMethod => Some(f.key)
+    case f: TSDeclareMethod    => Some(f.key)
+    case f: TSMethodSignature  => Some(f.key)
+    case _                     => None
+  }
+
+  private def methodKind(func: FunctionNode): Option[String] = func match {
+    case f: ObjectMethod       => Some(f.kind)
+    case f: ClassMethod        => Some(f.kind)
+    case f: ClassPrivateMethod => Some(f.kind)
+    case f: TSDeclareMethod    => f.kind
+    case f: TSMethodSignature  => Some(f.kind)
+    case _                     => None
+  }
+
+  private def functionId(func: FunctionNode): Option[Identifier] = func match {
+    case f: FunctionDeclaration     => f.id
+    case f: FunctionExpression      => f.id
+    case f: ArrowFunctionExpression => f.id
+    case f: ClassMethod             => f.id
+    case f: ClassPrivateMethod      => f.id
+    case f: ObjectMethod            => f.id
+    case f: TSDeclareFunction       => f.id
+    case f: TSDeclareMethod         => f.id
+    case _                          => None
+  }
+
+  private def calcMethodName(func: FunctionNode): String = func match {
+    case f: ObjectMethod if f.computed =>
       generateUnusedVariableName(usedVariableNames, "_computed_object_method")
-    case ObjectMethod if isMethodOrGetSet(func) && code(func.json("key")).startsWith("'") =>
+    case f: ObjectMethod if isMethodOrGetSet(func) && f.key.code.startsWith("'") =>
       nextClosureName()
-    case TSCallSignatureDeclaration =>
+    case _: TSCallSignatureDeclaration =>
       nextClosureName()
-    case TSConstructSignatureDeclaration =>
+    case _: TSConstructSignatureDeclaration =>
       io.joern.x2cpg.Defines.ConstructorMethodName
     case _ if isMethodOrGetSet(func) =>
-      if (hasKey(func.json("key"), "name")) func.json("key")("name").str
-      else code(func.json("key"))
-    case _ if safeStr(func.json, "kind").contains("constructor") =>
+      methodKey(func).get match {
+        case key: Identifier => key.name
+        case key             => key.code
+      }
+    case _ if methodKind(func).contains("constructor") =>
       io.joern.x2cpg.Defines.ConstructorMethodName
-    case _ if func.json("id").isNull =>
-      nextClosureName()
     case _ =>
-      func.json("id")("name").str
+      functionId(func) match {
+        case Some(id) => id.name
+        case None     => nextClosureName()
+      }
   }
 
-  protected def safeStr(node: Value, key: String): Option[String] =
-    node.obj.get(key).flatMap(_.strOpt)
-
-  private def isMethodOrGetSet(func: BabelNodeInfo): Boolean = {
-    if (hasKey(func.json, "kind") && !func.json("kind").isNull) {
-      val t = func.json("kind").str
-      t == "method" || t == "get" || t == "set"
-    } else false
-  }
+  private def isMethodOrGetSet(func: FunctionNode): Boolean =
+    methodKind(func).exists(kind => kind == "method" || kind == "get" || kind == "set")
 
   protected def codeOf(node: NewNode): String = node match {
     case astNodeNew: AstNodeNew => astNodeNew.code
@@ -272,7 +350,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     .stripSuffix("`")
 
   protected def calcTypeNameAndFullName(
-    classNode: BabelNodeInfo,
+    classNode: BabelNode,
     preCalculatedName: Option[String] = None
   ): (String, String) = {
     val name           = preCalculatedName.getOrElse(calcTypeName(classNode))
@@ -281,21 +359,34 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     (name, fullName)
   }
 
+  private def typeId(node: BabelNode): Option[BabelNode] = node match {
+    case n: ClassDeclaration       => n.id
+    case n: ClassExpression        => n.id
+    case n: DeclareClass           => Some(n.id)
+    case n: TSTypeAliasDeclaration => Some(n.id)
+    case n: DeclareTypeAlias       => Some(n.id)
+    case n: TypeAlias              => Some(n.id)
+    case n: TSEnumDeclaration      => Some(n.id)
+    case n: TSInterfaceDeclaration => Some(n.id)
+    case n: TSModuleDeclaration    => Some(n.id)
+    case n: GenericTypeAnnotation  => Some(n.id)
+    case _                         => None
+  }
+
   /** In JS, it is possible to create anonymous classes. We have to handle this here.
     */
-  private def calcTypeName(classNode: BabelNodeInfo): String =
-    if (hasKey(classNode.json, "id") && !classNode.json("id").isNull) code(classNode.json("id"))
-    else nextAnonClassName()
+  private def calcTypeName(classNode: BabelNode): String =
+    typeId(classNode).map(_.code).getOrElse(nextAnonClassName())
 
-  /** If `nodeInfo` is the callee of a fake EJS output call, its source bytes are exactly the EJS output-tag prefix
-    * `<%`; the character right after (the tag's third char) selects escaped (`=`) vs. unescaped (`-`) output. Returns
-    * the CPG call name to use, or None for every ordinary node. The `<%` guard is safe: a bare `<%` is never the full
-    * source text of a real JS/TS identifier.
+  /** If `node` is the callee of a fake EJS output call, its source bytes are exactly the EJS output-tag prefix `<%`;
+    * the character right after (the tag's third char) selects escaped (`=`) vs. unescaped (`-`) output. Returns the CPG
+    * call name to use, or None for every ordinary node. The `<%` guard is safe: a bare `<%` is never the full source
+    * text of a real JS/TS identifier.
     */
-  protected def ejsOutputCallName(nodeInfo: BabelNodeInfo): Option[String] = {
+  protected def ejsOutputCallName(node: BabelNode): Option[String] = {
     val fileContent = parserResult.fileContent
-    end(nodeInfo.json) match {
-      case Some(endOffset) if nodeInfo.code == Defines.EjsOutputTagPrefix && endOffset < fileContent.length =>
+    node.end match {
+      case Some(endOffset) if node.code == Defines.EjsOutputTagPrefix && endOffset < fileContent.length =>
         fileContent.charAt(endOffset) match {
           case '=' => Some(Defines.EscapedOutputName)
           case '-' => Some(Defines.UnescapedOutputName)
@@ -304,11 +395,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case _ => None
     }
   }
-
-  protected def code(node: Value): String = codeForOffsets(start(node), end(node))
-
-  protected def hasKey(node: Value, key: String): Boolean =
-    node.objOpt.exists(_.contains(key))
 
   private def nextAnonClassName(): String = s"<anon-class>${anonClassKeyPool.next}"
 
