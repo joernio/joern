@@ -99,7 +99,7 @@ class StructAliasDataflowTests extends DataFlowCodeToCpgSuite {
     "not flow into a different struct field" in {
       val source = cpg.identifier.name("two")
       val sink   = cpg.call("printf").argument(2).where(_.code("nums.number_1"))
-      sink.reachableByFlows(source).size shouldBe 0
+      sink.reachableByFlows(source) shouldBe empty
     }
   }
 
@@ -126,7 +126,7 @@ class StructAliasDataflowTests extends DataFlowCodeToCpgSuite {
     "not flow from buf assignment into len" in {
       val source = cpg.call("source")
       val sink   = cpg.assignment.code(".*\\.len = .*").target
-      sink.reachableByFlows(source).size shouldBe 0
+      sink.reachableByFlows(source) shouldBe empty
     }
   }
 
@@ -150,7 +150,7 @@ class StructAliasDataflowTests extends DataFlowCodeToCpgSuite {
     "not report flow after pointer reassignment" in {
       val source = cpg.call("source")
       val sink   = cpg.call("sink").argument(1)
-      sink.reachableByFlows(source).size shouldBe 0
+      sink.reachableByFlows(source) shouldBe empty
     }
   }
 
@@ -221,7 +221,7 @@ class StructAliasDataflowTests extends DataFlowCodeToCpgSuite {
     "not flow from the outer pointer write into the inner alias target" in {
       val source = cpg.call("source")
       val sink   = cpg.call("sink").argument(1)
-      sink.reachableByFlows(source).size shouldBe 0
+      sink.reachableByFlows(source) shouldBe empty
     }
   }
 
@@ -244,7 +244,7 @@ class StructAliasDataflowTests extends DataFlowCodeToCpgSuite {
     "not flow from the struct write into the outer pointer read" in {
       val source = cpg.call("source")
       val sink   = cpg.call("sink").argument(1)
-      sink.reachableByFlows(source).size shouldBe 0
+      sink.reachableByFlows(source) shouldBe empty
     }
   }
 
@@ -267,7 +267,7 @@ class StructAliasDataflowTests extends DataFlowCodeToCpgSuite {
     "not flow across shadowed pointer names" in {
       val source = cpg.call("source")
       val sink   = cpg.call("sink").argument(1)
-      sink.reachableByFlows(source).size shouldBe 0
+      sink.reachableByFlows(source) shouldBe empty
     }
   }
 

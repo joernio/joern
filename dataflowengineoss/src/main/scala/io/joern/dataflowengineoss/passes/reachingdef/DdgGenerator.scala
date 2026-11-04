@@ -235,7 +235,7 @@ class DdgGenerator(semantics: Semantics) {
       .collect { case (declId, pairs) if pairs.size == 1 => declId -> pairs.head._2 }
       .toMap
 
-    // ponytail: one RHS per Local/param only; reassigned locals are dropped (same ceiling as addressOfMap).
+    // Design note: one RHS per Local/param only; reassigned locals drop the alias (same ceiling as addressOfMap).
     val pointerRhsMap: Map[Long, CfgNode] = method.ast.isCall
       .nameExact(Operators.assignment)
       .flatMap { assign =>
@@ -311,14 +311,20 @@ class DdgGenerator(semantics: Semantics) {
 /** Intraprocedural `p = &s` aliases, keyed by local or parameter id so shadowed names stay distinct.
   *
   * A pointer that is assigned more than once keeps its alias only when every assignment takes the address of the same
-  * variable. Assignment to a different target drops the alias. Matching is flow-insensitive: a `p->field` write that
-  * occurs before `p = &s` in program order is still treated as a write through that alias.
+  * variable. Assignment to a different target drops the alias.
+  *
+  * Flow-insensitive and no pointer arithmetic: conservative over-approximation that keeps the engine fast and sound for
+  * the common case; deep alias chains are out of scope. A `p->field` write before `p = &s` in program order is still
+  * treated as a write through that alias.
   *
   * Index-access aliasing is not tracked.
   */
 private object PointerAliasMap {
 
   private val NotAnAddress = -1L
+
+  private val memberAccessOps =
+    Set(Operators.fieldAccess, Operators.indirectFieldAccess, Operators.indexAccess, Operators.indirectIndexAccess)
 
   def fromMethod(method: Method): Map[Long, Long] = {
     val targetsByPointer = mutable.Map.empty[Long, mutable.Set[Long]]
@@ -344,24 +350,40 @@ private object PointerAliasMap {
   private def declarationId(assign: Call): Option[Long] =
     assign.argumentOption(1).collect { case ident: Identifier => declarationId(ident) }.flatten
 
-  private def addressTarget(assign: Call): Option[Long] =
-    assign
-      .argumentOption(2)
-      .collect {
-        case addrOf: Call if addrOf.name == Operators.addressOf =>
-          addrOf.argumentOption(1).collect { case ident: Identifier => declarationId(ident) }.flatten
-      }
-      .flatten
+  private def addressTarget(assign: Call): Option[Long] = {
+    val rhs = assign.argumentOption(2)
+    rhs.flatMap {
+      case addrOf: Call if addrOf.name == Operators.addressOf =>
+        addressOfOperand(addrOf)
+      case cast: Call if cast.name == Operators.cast =>
+        cast.argumentOption(1).flatMap {
+          case addrOf: Call if addrOf.name == Operators.addressOf => addressOfOperand(addrOf)
+          case ident: Identifier                                  => declarationId(ident)
+          case _                                                  => None
+        }
+      case _ => None
+    }
+  }
 
-  /** Walk argument 1 until an identifier. The walk stops after 4 steps so a cyclic argument cannot loop; a deeper chain
-    * returns None and matching falls back to the name-based check.
+  private def addressOfOperand(addrOf: Call): Option[Long] =
+    addrOf.argumentOption(1).flatMap {
+      case ident: Identifier                                              => declarationId(ident)
+      case fieldAccess: Call if fieldAccess.name == Operators.fieldAccess =>
+        rootIdentifier(fieldAccess).flatMap(declarationId)
+      case _ => None
+    }
+
+  /** Walk member/index access bases until an identifier.
+    *
+    * Depth-4 cutoff: bounds traversal so a cyclic argument graph cannot loop forever. A deeper access chain returns
+    * None and the caller falls back to the name-based check.
     */
   def rootIdentifier(node: CfgNode, depth: Int = 4): Option[Identifier] =
     if (depth < 0) None
     else
       node match {
-        case ident: Identifier => Some(ident)
-        case call: Call        =>
+        case ident: Identifier                                 => Some(ident)
+        case call: Call if memberAccessOps.contains(call.name) =>
           call.argumentOption(1).collect { case next: CfgNode => next }.flatMap(rootIdentifier(_, depth - 1))
         case _ => None
       }
@@ -381,6 +403,11 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
 
   private val method         = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].method
   private val pointerAliases = PointerAliasMap.fromMethod(method)
+
+  private val rootDeclCache: mutable.Map[CfgNode, Option[Long]] = mutable.HashMap.empty
+
+  private def rootDeclOf(node: CfgNode): Option[Long] =
+    rootDeclCache.getOrElseUpdate(node, PointerAliasMap.rootDeclarationId(node))
 
   private val allNodes     = in.keys.toList
   private val containerSet =
@@ -422,7 +449,10 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
       case call: Call if containerSet.contains(call.name) =>
         // Keep upstream base (e.g. `c->buf` for `c->buf[idx]`) so struct params are not containers for field writes.
         call.argument.headOption.exists { base =>
-          nodeToString(use) == nodeToString(base)
+          (rootDeclOf(use), rootDeclOf(base)) match {
+            case (Some(u), Some(b)) => u == b
+            case _                  => nodeToString(use) == nodeToString(base)
+          }
         }
       case _ => false
     }
@@ -436,11 +466,17 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
         inElement match {
           case param: MethodParameterIn =>
             containerBaseForMatching(call).exists { base =>
-              nodeToString(base).contains(param.name)
+              (rootDeclOf(base), rootDeclOf(param)) match {
+                case (Some(b), Some(p)) => b == p
+                case _                  => nodeToString(base).contains(param.name)
+              }
             }
           case identifier: Identifier =>
             containerBaseForMatching(call).exists { base =>
-              nodeToString(base).contains(identifier.name)
+              (rootDeclOf(base), rootDeclOf(identifier)) match {
+                case (Some(b), Some(i)) => b == i
+                case _                  => nodeToString(base).contains(identifier.name)
+              }
             }
           case _ => false
         }
@@ -466,11 +502,12 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
     }
   }
 
-  /** Same code is not the same variable when both sides resolve to different locals or parameters. */
+  /** Reject only when both sides resolve to distinct declarations; unresolved sides keep lenient name-based matching.
+    */
   private def sameRoot(use: CfgNode, defined: CfgNode): Boolean =
-    (PointerAliasMap.rootDeclarationId(use), PointerAliasMap.rootDeclarationId(defined)) match {
-      case (Some(useDecl), Some(definedDecl)) => useDecl == definedDecl
-      case _                                  => true
+    (rootDeclOf(use), rootDeclOf(defined)) match {
+      case (Some(useDecl), Some(definedDecl)) if useDecl != definedDecl => false
+      case _                                                            => true
     }
 
   private def isFieldAliasAcrossPointer(
@@ -479,7 +516,9 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
     inCall: Call,
     inAccessPath: AccessPath
   ): Boolean = {
-    (PointerAliasMap.rootDeclarationId(useCall), PointerAliasMap.rootDeclarationId(inCall)) match {
+    if (pointerAliases.isEmpty)
+      return false
+    (rootDeclOf(useCall), rootDeclOf(inCall)) match {
       case (Some(useDecl), Some(inDecl)) if pointerAliases.get(inDecl).contains(useDecl) =>
         fieldPathsMatchAfterOneDeref(inAccessPath, useAccessPath)
       case (Some(useDecl), Some(inDecl)) if pointerAliases.get(useDecl).contains(inDecl) =>

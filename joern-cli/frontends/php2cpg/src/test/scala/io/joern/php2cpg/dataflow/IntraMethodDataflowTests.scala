@@ -104,6 +104,24 @@ class IntraMethodDataflowTests extends PhpCode2CpgFixture(runOssDataflow = true)
     flows.size shouldBe 3
   }
 
+  "foreach key-value taint reaches sink through hoisted locals" in {
+    val cpg = code("""<?php
+        |function sink($x) { return $x; }
+        |function foo($arr) {
+        |  foreach ($arr as $key => $val) {
+        |    sink($val);
+        |  }
+        |}
+        |""".stripMargin)
+    val source = cpg.identifier.name("arr").head
+    val sink   = cpg.call("sink").argument(1)
+    val flows  = sink.reachableByFlows(source)
+    flows.nonEmpty shouldBe true
+    flows.foreach { flow =>
+      (flow.elements.lastOption.exists(_.code.contains("val"))).shouldBe(true)
+    }
+  }
+
   "closure with a global statement should not break the reaching-def pass" in {
     // Regression test for https://github.com/joernio/joern/issues/6269: the closure's METHOD_REF
     // used to be attached to two AST parents, which crashed ReachingDefPass.
