@@ -21,7 +21,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewNode,
   NewTypeDecl
 }
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, Operators, PropertyDefaults}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyDefaults}
 import io.joern.x2cpg.utils.OffsetUtils
 import org.slf4j.LoggerFactory
 
@@ -86,8 +86,7 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
       .lineNumber(closure.methodRef.lineNumber)
       .columnNumber(closure.methodRef.columnNumber)
       .order(0)
-    // TODO: `move ||` should be BY_VALUE.
-    val binding = closureBindingNode(closureBindingId, EvaluationStrategies.BY_REFERENCE)
+    val binding = closureBindingNode(closureBindingId, closure.evaluationStrategy)
     diffGraph.addNode(local)
     diffGraph.addNode(binding)
     diffGraph.addEdge(closure.block, local, EdgeTypes.AST)

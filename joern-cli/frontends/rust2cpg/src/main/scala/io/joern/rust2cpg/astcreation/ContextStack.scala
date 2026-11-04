@@ -38,8 +38,12 @@ object ContextStack {
     }
   }
 
-  final class ClosureContext(override val method: NewMethod, val methodRef: NewMethodRef, val block: NewBlock)
-      extends MethodContext(method, mutable.Map.empty, 0)
+  final class ClosureContext(
+    override val method: NewMethod,
+    val methodRef: NewMethodRef,
+    val block: NewBlock,
+    val evaluationStrategy: String
+  ) extends MethodContext(method, mutable.Map.empty, 0)
 
   @tailrec
   private def rustItemParentFullName(stack: List[Context]): String = stack match {
@@ -107,8 +111,8 @@ class ContextStack {
     push(new MethodContext(method, mutable.Map.empty, 0))
   }
 
-  def pushClosure(method: NewMethod, methodRef: NewMethodRef, block: NewBlock): Unit = {
-    push(new ClosureContext(method, methodRef, block))
+  def pushClosure(method: NewMethod, methodRef: NewMethodRef, block: NewBlock, evaluationStrategy: String): Unit = {
+    push(new ClosureContext(method, methodRef, block, evaluationStrategy))
   }
 
   def pop(): Unit = {
