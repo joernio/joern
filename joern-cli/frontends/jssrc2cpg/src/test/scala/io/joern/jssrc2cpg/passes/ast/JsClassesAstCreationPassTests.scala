@@ -116,7 +116,7 @@ class JsClassesAstCreationPassTests extends JsSrc2CpgSuite {
         List(ModifierTypes.STATIC, ModifierTypes.PRIVATE)
     }
 
-    "have members named after the key for fields declared with the accessor keyword" in {
+    "have members named after the key and lift the values for fields declared with the accessor keyword" in {
       val cpg = code("""
         |class ClassA {
         |  accessor a = 1
@@ -131,6 +131,24 @@ class JsClassesAstCreationPassTests extends JsSrc2CpgSuite {
       val constructorFullName       = s"Test0.js::program:ClassA:${io.joern.x2cpg.Defines.ConstructorMethodName}"
       val List(constructorTypeDecl) = cpg.typeDecl.fullNameExact(constructorFullName).l
       constructorTypeDecl.member.isStatic.name.l shouldBe List("b")
+
+      val List(constructor)         = classATypeDecl.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l
+      val List(aInit, cInit, dInit) = constructor.block.astChildren.isCall.isAssignment.l
+      aInit.code shouldBe "accessor a = 1"
+      inside(aInit.argument(1)) { case lhs: Identifier => lhs.name shouldBe "a" }
+      aInit.argument(2).code shouldBe "1"
+      cInit.code shouldBe "accessor #c = 3"
+      inside(cInit.argument(1)) { case lhs: Identifier => lhs.name shouldBe "c" }
+      cInit.argument(2).code shouldBe "3"
+      dInit.code shouldBe "accessor [d] = 4"
+      inside(dInit.argument(1)) { case lhs: Identifier => lhs.name shouldBe "d" }
+      dInit.argument(2).code shouldBe "4"
+
+      val List(clInit) = classATypeDecl.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l
+      val List(bInit)  = clInit.block.astChildren.isCall.isAssignment.l
+      bInit.code shouldBe "static accessor b = 2"
+      inside(bInit.argument(1)) { case lhs: Identifier => lhs.name shouldBe "b" }
+      bInit.argument(2).code shouldBe "2"
     }
 
     "have member for non-static method in TYPE_DECL for ClassA" in {
