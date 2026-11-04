@@ -2,10 +2,12 @@ package io.joern.rust2cpg.astcreation
 
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBlock,
   NewIdentifier,
   NewLocal,
   NewMethod,
   NewMethodParameterIn,
+  NewMethodRef,
   NewNamespaceBlock,
   NewNode,
   NewTypeDecl
@@ -36,6 +38,9 @@ object ContextStack {
     }
   }
 
+  final class ClosureContext(override val method: NewMethod, val methodRef: NewMethodRef, val block: NewBlock)
+      extends MethodContext(method, mutable.Map.empty, 0)
+
   @tailrec
   private def rustItemParentFullName(stack: List[Context]): String = stack match {
     case (ctx: MethodContext) :: _    => ctx.method.fullName
@@ -46,16 +51,30 @@ object ContextStack {
   }
 
   @tailrec
-  def lookup(name: String, stack: List[Context]): Option[NewLocal | NewMethodParameterIn] = {
+  def lookup(
+    name: String,
+    stack: List[Context],
+    capturingClosures: List[ClosureContext]
+  ): Option[(NewLocal | NewMethodParameterIn, List[ClosureContext])] = {
     stack match {
       case Nil                         => None
-      case (ctx: LocalContext) :: tail => if (ctx.local.name == name) Some(ctx.local) else lookup(name, tail)
+      case (ctx: LocalContext) :: tail =>
+        if (ctx.local.name == name) {
+          Some((ctx.local, capturingClosures))
+        } else {
+          lookup(name, tail, capturingClosures)
+        }
       case (ctx: BlockContext) :: tail =>
         ctx.items.get(name) match {
-          case Some(decl) => Some(decl)
-          case None       => lookup(name, tail)
+          case Some(decl) => Some((decl, capturingClosures))
+          case None       => lookup(name, tail, capturingClosures)
         }
-      case (ctx: MethodContext) :: tail    => ctx.parameters.get(name)
+      case (ctx: ClosureContext) :: tail =>
+        ctx.parameters.get(name) match {
+          case Some(param) => Some((param, capturingClosures))
+          case None        => lookup(name, tail, ctx :: capturingClosures)
+        }
+      case (ctx: MethodContext) :: tail    => ctx.parameters.get(name).map((_, capturingClosures))
       case (ctx: NamespaceContext) :: tail => None
       case (ctx: TypeDeclContext) :: tail  => None
     }
@@ -86,6 +105,10 @@ class ContextStack {
 
   def pushMethod(method: NewMethod): Unit = {
     push(new MethodContext(method, mutable.Map.empty, 0))
+  }
+
+  def pushClosure(method: NewMethod, methodRef: NewMethodRef, block: NewBlock): Unit = {
+    push(new ClosureContext(method, methodRef, block))
   }
 
   def pop(): Unit = {
@@ -131,8 +154,12 @@ class ContextStack {
     rustItemParentFullName(stack)
   }
 
-  def resolvedVariableReferences: Seq[(NewIdentifier, NewLocal | NewMethodParameterIn)] = {
-    variableReferences.flatMap { case (identifier, stack) => lookup(identifier.name, stack).map((identifier, _)) }.toSeq
+  def resolvedVariableReferences: Seq[(NewIdentifier, NewLocal | NewMethodParameterIn, List[ClosureContext])] = {
+    variableReferences.flatMap { case (identifier, stack) =>
+      lookup(identifier.name, stack, Nil).map { case (decl, capturingClosures) =>
+        (identifier, decl, capturingClosures)
+      }
+    }.toSeq
   }
 
 }
