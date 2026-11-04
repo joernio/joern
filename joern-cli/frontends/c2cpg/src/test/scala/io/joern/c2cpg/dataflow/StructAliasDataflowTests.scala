@@ -172,7 +172,10 @@ class StructAliasDataflowTests extends DataFlowCodeToCpgSuite {
     "flow when every assignment takes the address of the same variable" in {
       val source = cpg.call("source")
       val sink   = cpg.call("sink").argument(1)
-      sink.reachableByFlows(source).size shouldBe 1
+      val flows  = sink.reachableByFlows(source)
+      flows.map(flowToResultPairs).toSetMutable shouldBe Set(
+        List(("source()", 10), ("p->f = source()", 10), ("sink(s.f)", 12))
+      )
     }
   }
 

@@ -1326,6 +1326,8 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         iterLocal.name shouldBe "foo@iter_tmp-0"
         keyLocal.name shouldBe "key"
         valLocal.name shouldBe "val"
+        keyLocal.code shouldBe "$key"
+        valLocal.code shouldBe "$val"
 
         foreachStruct
     }
@@ -1344,6 +1346,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         keyInit.code shouldBe "$key = $foo@iter_tmp-0->key()"
         valInit.code shouldBe "$val = $foo@iter_tmp-0->current()"
       }
+      kvBlock.ast.isLocal.l shouldBe empty
     }
 
     inside(initAsts.ast.isCall.isAssignment.l) { case List(_: Call, keyInit: Call, valInit: Call) =>
