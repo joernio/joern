@@ -52,12 +52,10 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewArrayInitializer,
   NewIdentifier,
   NewMethod,
-  NewMethodParameterIn,
   NewModifier,
-  NewTypeRef,
   NewTypeDecl
 }
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes, NodeTypes, Operators}
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -406,13 +404,13 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     val enumEntryLowerings =
       if (isEnum) enumEntries.zipWithIndex.map { case (entry, ordinal) => lowerEnumEntry(entry, ordinal) } else Nil
     val enumValuesLowering =
-      if (isEnum) enumValuesMemberAndInitializer(originNode, enumEntryLowerings)
+      if (isEnum) Some(enumValuesMemberAndInitializer(originNode, enumEntryLowerings))
       else None
     val (staticFields, instanceFields) = fields.partition(_.isStatic)
     val staticFieldInitializers        = getStaticFieldInitializers(staticFields)
     val enumStaticInitializers         =
       enumEntryLowerings.flatMap(_.staticInits) ++ enumValuesLowering.toList.flatMap(_.staticInits)
-    val clinitAst = clinitAstFromStaticInits(originNode, enumStaticInitializers ++ staticFieldInitializers)
+    val clinitAst = clinitAstFromStaticInits(originNode, enumStaticInitializers, staticFieldInitializers)
 
     val membersAstPairs: List[(Node, List[Ast])] = members.zipWithIndex.map { case (member, idx) =>
       val memberAsts = member match {
@@ -909,12 +907,9 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     memberName: String,
     memberTypeFullName: String
   ): Ast = {
-    val typeRef = NewTypeRef()
-      .code(scope.enclosingTypeDecl.name.getOrElse(typeFullName.split('.').last))
-      .typeFullName(typeFullName)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-    fieldAccessAst(node, node, Ast(typeRef), s"${typeRef.code}.$memberName", memberName, memberTypeFullName)
+    val typeRefCode = scope.enclosingTypeDecl.name.getOrElse(typeFullName.split('.').last)
+    val typeRef     = typeRefNode(node, typeRefCode, typeFullName)
+    fieldAccessAst(node, node, Ast(typeRef), s"$typeRefCode.$memberName", memberName, memberTypeFullName)
   }
 
   private def lowerEnumEntry(entry: EnumConstantDeclaration, ordinal: Int): EnumEntryLowering = {
@@ -1026,46 +1021,42 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       .withChildren(lambdaMethods)
   }
 
-  private def enumValuesMemberAndInitializer(
-    originNode: Node,
-    entries: List[EnumEntryLowering]
-  ): Option[EnumValuesLowering] = {
-    scope.enclosingTypeDecl.fullName.map { typeFullName =>
-      val valuesName = "$VALUES"
-      val valuesType = s"$typeFullName[]"
-      val valuesNode = memberNode(originNode, valuesName, s"$valuesType $valuesName", valuesType)
-      scope.enclosingTypeDecl.foreach(_.addMember(valuesNode, isStatic = true))
-      val memberAst = Ast(valuesNode).withChildren(
-        List(
-          Ast(modifierNode(originNode, ModifierTypes.PRIVATE)),
-          Ast(modifierNode(originNode, ModifierTypes.STATIC)),
-          Ast(modifierNode(originNode, ModifierTypes.FINAL))
-        )
+  private def enumValuesMemberAndInitializer(originNode: Node, entries: List[EnumEntryLowering]): EnumValuesLowering = {
+    val typeFullName = scope.enclosingTypeDecl.fullName.get
+    val valuesName   = "$VALUES"
+    val valuesType   = s"$typeFullName[]"
+    val valuesNode   = memberNode(originNode, valuesName, s"$valuesType $valuesName", valuesType)
+    scope.enclosingTypeDecl.foreach(_.addMember(valuesNode, isStatic = true))
+    val memberAst = Ast(valuesNode).withChildren(
+      List(
+        Ast(modifierNode(originNode, ModifierTypes.PRIVATE)),
+        Ast(modifierNode(originNode, ModifierTypes.STATIC)),
+        Ast(modifierNode(originNode, ModifierTypes.FINAL))
       )
-      val targetAst = enumMemberAccess(originNode, typeFullName, valuesName, valuesType)
-      val valueAsts = entries.map { lowered =>
-        enumMemberAccess(lowered.entry, typeFullName, lowered.entry.getNameAsString, typeFullName)
-      }
-      val valuesAst = callAst(
-        operatorCallNode(
-          originNode,
-          s"{${entries.map(_.entry.getNameAsString).mkString(", ")}}",
-          Operators.arrayInitializer,
-          Some(valuesType)
-        ),
-        valueAsts
-      )
-      val assignmentAst = callAst(
-        operatorCallNode(
-          originNode,
-          s"$valuesName = ${valuesAst.rootCodeOrEmpty}",
-          Operators.assignment,
-          Some(valuesType)
-        ),
-        targetAst :: valuesAst :: Nil
-      )
-      EnumValuesLowering(memberAst, List(assignmentAst))
+    )
+    val targetAst = enumMemberAccess(originNode, typeFullName, valuesName, valuesType)
+    val valueAsts = entries.map { lowered =>
+      enumMemberAccess(lowered.entry, typeFullName, lowered.entry.getNameAsString, typeFullName)
     }
+    val valuesAst = callAst(
+      operatorCallNode(
+        originNode,
+        s"{${entries.map(_.entry.getNameAsString).mkString(", ")}}",
+        Operators.arrayInitializer,
+        Some(valuesType)
+      ),
+      valueAsts
+    )
+    val assignmentAst = callAst(
+      operatorCallNode(
+        originNode,
+        s"$valuesName = ${valuesAst.rootCodeOrEmpty}",
+        Operators.assignment,
+        Some(valuesType)
+      ),
+      targetAst :: valuesAst :: Nil
+    )
+    EnumValuesLowering(memberAst, List(assignmentAst))
   }
 
   private def enumSyntheticMethodAsts(originNode: Node): List[Ast] = {
@@ -1082,12 +1073,15 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       val valueOfSignature = composeMethodLikeSignature(typeFullName, List(TypeConstants.String))
       val valueOfFullName  = composeMethodFullName(typeFullName, "valueOf", valueOfSignature)
       val valueOfMethod    = methodNode(originNode, "valueOf", valueOfFullName, valueOfSignature, filename)
-      val valueOfParam     = NewMethodParameterIn()
-        .name("name")
-        .code(s"${TypeConstants.String} name")
-        .typeFullName(TypeConstants.String)
-        .index(1)
-        .order(1)
+      val valueOfParam     = parameterInNode(
+        originNode,
+        "name",
+        s"${TypeConstants.String} name",
+        1,
+        isVariadic = false,
+        EvaluationStrategies.BY_SHARING,
+        TypeConstants.String
+      )
       val valueOfReturn    = methodReturnNode(originNode, typeFullName)
       val valueOfModifiers =
         List(modifierNode(originNode, ModifierTypes.PUBLIC), modifierNode(originNode, ModifierTypes.STATIC))

@@ -316,7 +316,8 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     }.toList
   }
 
-  def clinitAstFromStaticInits(node: Node, staticInits: Seq[Ast]): Option[Ast] = {
+  def clinitAstFromStaticInits(node: Node, enumStaticInits: Seq[Ast], otherStaticInits: Seq[Ast]): Option[Ast] = {
+    val staticInits = enumStaticInits ++ otherStaticInits
     Option.when(staticInits.nonEmpty) {
       val signature         = composeMethodLikeSignature(TypeConstants.Void, Nil)
       val enclosingDeclName = scope.enclosingTypeDecl.fullName.getOrElse(Defines.UnresolvedNamespace)
@@ -376,7 +377,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
     val thisNode = thisNodeForMethod(originNode, typeFullName)
     scope.enclosingMethod.foreach(_.addParameter(thisNode, scope.enclosingTypeDecl.get.typeDecl.genericSignature))
-    val recordParameterAssignments =
+    val eponymousFieldAssignments =
       if (recordParameters.isEmpty) Nil
       else
         sourceParameterAsts
@@ -385,7 +386,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
           .zipWithIndex
           .map((paramNode, idx) => astForEponymousFieldAssignment(recordParameters(idx), thisNode, paramNode))
     val bodyStatementAsts =
-      astsForFieldInitializers(instanceFieldDeclarations) ++ recordParameterAssignments
+      astsForFieldInitializers(instanceFieldDeclarations) ++ eponymousFieldAssignments
     val patternLocalAsts = scope.enclosingMethod.map(_.getAndClearUnaddedPatternLocals()).getOrElse(Nil).map(Ast(_))
 
     val returnNode = methodReturnNode(originNode, TypeConstants.Void)
@@ -490,18 +491,21 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
   private def enumConstructorParameterAsts(originNode: Node): List[Ast] = {
     if (scope.enclosingTypeDecl.exists(_.isEnum)) {
-      List(("$name", TypeConstants.String, 1), ("$ordinal", TypeConstants.Int, 2)).map {
-        case (name, typeFullName, index) =>
-          val parameter = NewMethodParameterIn()
-            .name(name)
-            .code(s"$typeFullName $name")
-            .typeFullName(typeFullName)
-            .index(index)
-            .order(index)
-            .lineNumber(line(originNode))
-            .columnNumber(column(originNode))
-          scope.enclosingMethod.foreach(_.addParameter(parameter, ""))
-          Ast(parameter)
+      List(
+        ("$name", TypeConstants.String, EvaluationStrategies.BY_SHARING, 1),
+        ("$ordinal", TypeConstants.Int, EvaluationStrategies.BY_VALUE, 2)
+      ).map { case (name, typeFullName, evaluationStrategy, index) =>
+        val parameter = parameterInNode(
+          originNode,
+          name,
+          s"$typeFullName $name",
+          index,
+          isVariadic = false,
+          evaluationStrategy,
+          typeFullName
+        )
+        scope.enclosingMethod.foreach(_.addParameter(parameter, ""))
+        Ast(parameter)
       }
     } else {
       Nil
