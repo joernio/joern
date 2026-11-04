@@ -449,10 +449,7 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
       case call: Call if containerSet.contains(call.name) =>
         // Keep upstream base (e.g. `c->buf` for `c->buf[idx]`) so struct params are not containers for field writes.
         call.argument.headOption.exists { base =>
-          (rootDeclOf(use), rootDeclOf(base)) match {
-            case (Some(u), Some(b)) => u == b
-            case _                  => nodeToString(use) == nodeToString(base)
-          }
+          sameRoot(use, base) && nodeToString(use) == nodeToString(base)
         }
       case _ => false
     }
@@ -466,17 +463,11 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
         inElement match {
           case param: MethodParameterIn =>
             containerBaseForMatching(call).exists { base =>
-              (rootDeclOf(base), rootDeclOf(param)) match {
-                case (Some(b), Some(p)) => b == p
-                case _                  => nodeToString(base).contains(param.name)
-              }
+              sameRoot(base, param) && nodeToString(base).contains(param.name)
             }
           case identifier: Identifier =>
             containerBaseForMatching(call).exists { base =>
-              (rootDeclOf(base), rootDeclOf(identifier)) match {
-                case (Some(b), Some(i)) => b == i
-                case _                  => nodeToString(base).contains(identifier.name)
-              }
+              sameRoot(base, identifier) && nodeToString(base).contains(identifier.name)
             }
           case _ => false
         }
