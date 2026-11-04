@@ -100,7 +100,7 @@ docker run --rm -it -v /tmp:/tmp -v $(pwd):/app:rw -w /app -t ghcr.io/joernio/jo
 ```
 
 ## Releases
-A new release is [created automatically](.github/workflows/release.yml) once per day. Contributers can also manually run the [release workflow](https://github.com/joernio/joern/actions/workflows/release.yml) if they need the release sooner.
+A new release is [created automatically](.github/workflows/release.yml) once per day. Contributors can also manually run the [release workflow](https://github.com/joernio/joern/actions/workflows/release.yml) if they need the release sooner.
 
 Each release publishes platform-specific distribution zips:
 - `joern-cli-linux-x86_64.zip`
