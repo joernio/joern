@@ -86,6 +86,7 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
       .lineNumber(closure.methodRef.lineNumber)
       .columnNumber(closure.methodRef.columnNumber)
       .order(0)
+    // TODO: `move ||` should be BY_VALUE.
     val binding = closureBindingNode(closureBindingId, EvaluationStrategies.BY_REFERENCE)
     diffGraph.addNode(local)
     diffGraph.addNode(binding)
