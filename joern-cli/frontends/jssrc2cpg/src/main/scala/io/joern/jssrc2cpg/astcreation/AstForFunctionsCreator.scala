@@ -1,14 +1,12 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.parser.BabelAst.*
-import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.jssrc2cpg.parser.BabelNodeSyntax.*
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.VariableScopeManager
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier as _, *}
+import io.shiftleft.codepropertygraph.generated.nodes.{Expression as _, Identifier as _, *}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
-import ujson.Value
 
 import scala.collection.mutable
 
@@ -16,148 +14,132 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   case class MethodAst(ast: Ast, methodNode: NewMethod, methodAst: Ast)
 
-  private def handleRestInParameters(
-    elementNodeInfo: BabelNodeInfo,
-    paramNodeInfo: BabelNodeInfo,
-    paramName: String
-  ): Ast = {
-    val ast         = astForNodeWithFunctionReferenceAndCall(elementNodeInfo.json("argument"))
+  private def handleRestInParameters(element: RestElement, param: BabelNode, paramName: String): Ast = {
+    val ast         = astForNodeWithFunctionReferenceAndCall(element.argument)
     val defaultName = codeForNodes(ast.nodes.toSeq)
-    val restName    = stripQuotes(nameForBabelNodeInfo(paramNodeInfo, defaultName))
+    val restName    = stripQuotes(nameForBabelNode(param, defaultName))
     ast.root match {
       case Some(_: NewIdentifier) =>
-        val keyNode   = fieldIdentifierNode(elementNodeInfo, restName, restName)
-        val paramNode = identifierNode(elementNodeInfo, paramName)
+        val keyNode   = fieldIdentifierNode(element, restName, restName)
+        val paramNode = identifierNode(element, paramName)
         val accessAst =
-          createFieldAccessCallAst(paramNode, keyNode, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
+          createFieldAccessCallAst(paramNode, keyNode, element.lineNumber, element.columnNumber)
         createAssignmentCallAst(
           ast,
           accessAst,
           s"$restName = ${codeOf(accessAst.nodes.head)}",
-          elementNodeInfo.lineNumber,
-          elementNodeInfo.columnNumber
+          element.lineNumber,
+          element.columnNumber
         )
       case _ =>
-        val localParamNode = identifierNode(elementNodeInfo, restName)
+        val localParamNode = identifierNode(element, restName)
         createAssignmentCallAst(
           Ast(localParamNode),
           ast,
           s"$restName = ${codeOf(ast.nodes.head)}",
-          elementNodeInfo.lineNumber,
-          elementNodeInfo.columnNumber
+          element.lineNumber,
+          element.columnNumber
         )
     }
   }
 
   private def handleParameters(
-    parameters: Seq[Value],
+    parameters: Seq[BabelNode],
     additionalBlockStatements: mutable.ArrayBuffer[Ast],
     createLocals: Boolean = true
   ): Seq[NewMethodParameterIn] =
     withIndex(parameters) { case (param, index) =>
-      val nodeInfo  = createBabelNodeInfo(param)
-      val paramNode = nodeInfo.node match {
-        case RestElement =>
-          val paramName     = nodeInfo.code.replace("...", "")
-          val tpe           = typeFor(nodeInfo)
+      val paramNode = param match {
+        case rest: RestElement =>
+          val paramName     = rest.code.replace("...", "")
+          val tpe           = typeFor(rest)
           val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
           val possibleTypes = Seq(tpe)
           if (createLocals) {
-            val localTmpNode = localNode(nodeInfo, paramName, paramName, typeFullName)
+            val localTmpNode = localNode(rest, paramName, paramName, typeFullName)
               .order(0)
               .possibleTypes(possibleTypes)
             diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
           }
-          parameterInNode(nodeInfo, paramName, nodeInfo.code, index, true, EvaluationStrategies.BY_VALUE, typeFullName)
+          parameterInNode(rest, paramName, rest.code, index, true, EvaluationStrategies.BY_VALUE, typeFullName)
             .possibleTypes(possibleTypes)
-        case AssignmentPattern =>
-          val lhsElement  = nodeInfo.json("left")
-          val rhsElement  = nodeInfo.json("right")
-          val lhsNodeInfo = createBabelNodeInfo(lhsElement)
-          lhsNodeInfo.node match {
-            case ObjectPattern | ArrayPattern =>
+        case assignment: AssignmentPattern =>
+          assignment.left match {
+            case lhs: (ObjectPattern | ArrayPattern) =>
               val paramName = generateUnusedVariableName(usedVariableNames, s"param$index")
               val param     = parameterInNode(
-                nodeInfo,
+                assignment,
                 paramName,
-                nodeInfo.code,
+                assignment.code,
                 index,
                 isVariadic = false,
                 EvaluationStrategies.BY_VALUE
               )
               scope.addVariable(paramName, param, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
 
-              val rhsAst = astForNodeWithFunctionReference(rhsElement)
-              additionalBlockStatements.addOne(
-                astForDeconstruction(lhsNodeInfo, rhsAst, nodeInfo.code, Option(paramName))
-              )
+              val rhsAst = astForNodeWithFunctionReference(assignment.right)
+              additionalBlockStatements.addOne(astForDeconstruction(lhs, rhsAst, assignment.code, Option(paramName)))
               param
-            case _ =>
-              additionalBlockStatements.addOne(convertParamWithDefault(nodeInfo))
-              val possibleTypes = Seq(typeFor(lhsNodeInfo))
-              parameterInNode(lhsNodeInfo, lhsNodeInfo.code, nodeInfo.code, index, false, EvaluationStrategies.BY_VALUE)
+            case lhs =>
+              additionalBlockStatements.addOne(convertParamWithDefault(assignment))
+              val possibleTypes = Seq(typeFor(lhs))
+              parameterInNode(lhs, lhs.code, assignment.code, index, false, EvaluationStrategies.BY_VALUE)
                 .possibleTypes(possibleTypes)
           }
-        case ArrayPattern =>
+        case arrayPattern: ArrayPattern =>
           val paramName     = generateUnusedVariableName(usedVariableNames, s"param$index")
-          val tpe           = typeFor(nodeInfo)
+          val tpe           = typeFor(arrayPattern)
           val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
           val possibleTypes = Seq(tpe)
           val param         = parameterInNode(
-            nodeInfo,
+            arrayPattern,
             paramName,
-            nodeInfo.code,
+            arrayPattern.code,
             index,
             isVariadic = false,
             EvaluationStrategies.BY_VALUE,
             typeFullName
           ).possibleTypes(possibleTypes)
-          additionalBlockStatements.addAll(nodeInfo.json("elements").arr.iterator.map {
-            case element if !element.isNull =>
-              val elementNodeInfo = createBabelNodeInfo(element)
-              elementNodeInfo.node match {
-                case Identifier =>
-                  val elemName       = stripQuotes(elementNodeInfo.code)
-                  val tpe            = typeFor(elementNodeInfo)
+          additionalBlockStatements.addAll(arrayPattern.elements.iterator.map {
+            case Some(element) =>
+              element match {
+                case _: Identifier =>
+                  val elemName       = stripQuotes(element.code)
+                  val tpe            = typeFor(element)
                   val typeFullName   = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
                   val possibleTypes  = Seq(tpe)
-                  val localParamNode = identifierNode(elementNodeInfo, elemName).possibleTypes(possibleTypes)
-                  val localTmpNode   = localNode(elementNodeInfo, elemName, elemName, typeFullName)
+                  val localParamNode = identifierNode(element, elemName).possibleTypes(possibleTypes)
+                  val localTmpNode   = localNode(element, elemName, elemName, typeFullName)
                     .order(0)
                     .possibleTypes(possibleTypes)
                   diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
                   scope.addVariable(elemName, localTmpNode, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
 
-                  val paramNode = identifierNode(elementNodeInfo, paramName)
+                  val paramNode = identifierNode(element, paramName)
                   scope.addVariableReference(paramName, paramNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
-                  val keyNode   = fieldIdentifierNode(elementNodeInfo, elemName, elemName)
-                  val accessAst = createFieldAccessCallAst(
-                    paramNode,
-                    keyNode,
-                    elementNodeInfo.lineNumber,
-                    elementNodeInfo.columnNumber
-                  )
+                  val keyNode   = fieldIdentifierNode(element, elemName, elemName)
+                  val accessAst = createFieldAccessCallAst(paramNode, keyNode, element.lineNumber, element.columnNumber)
                   createAssignmentCallAst(
                     Ast(localParamNode),
                     accessAst,
                     s"$elemName = ${codeOf(accessAst.nodes.head)}",
-                    elementNodeInfo.lineNumber,
-                    elementNodeInfo.columnNumber
+                    element.lineNumber,
+                    element.columnNumber
                   )
-                case RestElement => handleRestInParameters(elementNodeInfo, nodeInfo, paramName)
-                case _           => astForNodeWithFunctionReference(elementNodeInfo.json)
+                case rest: RestElement => handleRestInParameters(rest, arrayPattern, paramName)
+                case _                 => astForNodeWithFunctionReference(element)
               }
-            case _ => Ast()
+            case None => Ast()
           })
           param
-        case ObjectPattern =>
+        case objectPattern: ObjectPattern =>
           val paramName = generateUnusedVariableName(usedVariableNames, s"param$index")
           // Handle de-structured parameters declared as `{ username: string; password: string; }`
-          val typeDeclAst = astForTypeAlias(nodeInfo)
+          val typeDeclAst = astForTypeAlias(objectPattern)
           Ast.storeInDiffGraph(typeDeclAst, diffGraph)
 
-          val tpe          = typeFor(nodeInfo)
+          val tpe          = typeFor(objectPattern)
           var typeFullName = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
 
           val possibleTypes =
@@ -170,9 +152,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
                 .getOrElse(tpe)
             )
           val param = parameterInNode(
-            nodeInfo,
+            objectPattern,
             paramName,
-            nodeInfo.code,
+            objectPattern.code,
             index,
             isVariadic = false,
             EvaluationStrategies.BY_VALUE,
@@ -180,112 +162,112 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           ).possibleTypes(possibleTypes)
           scope.addVariable(paramName, param, typeFullName, VariableScopeManager.ScopeType.MethodScope)
 
-          additionalBlockStatements.addAll(nodeInfo.json("properties").arr.iterator.map { element =>
-            val elementNodeInfo = createBabelNodeInfo(element)
-            elementNodeInfo.node match {
-              case ObjectProperty =>
-                val elemName = code(elementNodeInfo.json("key"))
+          additionalBlockStatements.addAll(objectPattern.properties.iterator.map {
+            case property: ObjectProperty =>
+              val elemName = property.key.code
 
-                val tpe           = typeFor(elementNodeInfo)
-                val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
-                val possibleTypes = Seq(tpe)
+              val tpe           = typeFor(property)
+              val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
+              val possibleTypes = Seq(tpe)
 
-                val localParamNode =
-                  identifierNode(elementNodeInfo, elemName).typeFullName(typeFullName).possibleTypes(possibleTypes)
-                val localTmpNode =
-                  localNode(elementNodeInfo, elemName, elemName, typeFullName).order(0).possibleTypes(possibleTypes)
-                diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
-                scope.addVariable(elemName, localTmpNode, typeFullName, VariableScopeManager.ScopeType.MethodScope)
+              val localParamNode =
+                identifierNode(property, elemName).typeFullName(typeFullName).possibleTypes(possibleTypes)
+              val localTmpNode =
+                localNode(property, elemName, elemName, typeFullName).order(0).possibleTypes(possibleTypes)
+              diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
+              scope.addVariable(elemName, localTmpNode, typeFullName, VariableScopeManager.ScopeType.MethodScope)
 
-                val paramNode = identifierNode(elementNodeInfo, paramName)
-                scope.addVariableReference(paramName, paramNode, typeFullName, EvaluationStrategies.BY_REFERENCE)
+              val paramNode = identifierNode(property, paramName)
+              scope.addVariableReference(paramName, paramNode, typeFullName, EvaluationStrategies.BY_REFERENCE)
 
-                val keyNode   = fieldIdentifierNode(elementNodeInfo, elemName, elemName)
-                val accessAst =
-                  createFieldAccessCallAst(paramNode, keyNode, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
-                val assignmentCallAst = createAssignmentCallAst(
-                  Ast(localParamNode),
-                  accessAst,
-                  s"$elemName = ${codeOf(accessAst.nodes.head)}",
-                  elementNodeInfo.lineNumber,
-                  elementNodeInfo.columnNumber
-                )
-                // Handle identifiers referring to locals created by destructured parameters
-                assignmentCallAst.nodes
-                  .collect { case i: NewIdentifier if localTmpNode.name == i.name => i }
-                  .map { i => assignmentCallAst.withRefEdge(i, localTmpNode) }
-                  .reduce(_ `merge` _)
-              case RestElement => handleRestInParameters(elementNodeInfo, nodeInfo, paramName)
-              case _           => astForNodeWithFunctionReference(elementNodeInfo.json)
-            }
+              val keyNode   = fieldIdentifierNode(property, elemName, elemName)
+              val accessAst =
+                createFieldAccessCallAst(paramNode, keyNode, property.lineNumber, property.columnNumber)
+              val assignmentCallAst = createAssignmentCallAst(
+                Ast(localParamNode),
+                accessAst,
+                s"$elemName = ${codeOf(accessAst.nodes.head)}",
+                property.lineNumber,
+                property.columnNumber
+              )
+              // Handle identifiers referring to locals created by destructured parameters
+              assignmentCallAst.nodes
+                .collect { case i: NewIdentifier if localTmpNode.name == i.name => i }
+                .map { i => assignmentCallAst.withRefEdge(i, localTmpNode) }
+                .reduce(_ `merge` _)
+            case rest: RestElement => handleRestInParameters(rest, objectPattern, paramName)
           })
           param
-        case Identifier =>
+        case ident: Identifier =>
           // Handle types declared as `credentials: { username: string; password: string; }`
-          val tpe          = typeFor(nodeInfo)
-          var typeFullName = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
-          val possibleType = nodeInfo.json.obj
-            .get("typeAnnotation")
-            .flatMap(_.objOpt)
-            .flatMap(_.get("typeAnnotation"))
-            .filter(!_.isNull)
-            .map(createBabelNodeInfo)
-            .map(x =>
-              x.node match {
-                case TSTypeLiteral =>
-                  val typeDecl = astForTypeAlias(x)
-                  Ast.storeInDiffGraph(typeDecl, diffGraph)
-                  typeDecl.root
-                    .collect { case t: NewTypeDecl =>
-                      typeFullName = t.fullName
-                      t.fullName
-                    }
-                    .getOrElse(tpe)
-                case _ => tpe
-              }
-            )
+          val tpe           = typeFor(ident)
+          var typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
+          val annotatedType = ident.typeAnnotation.collect {
+            case annotation: TSTypeAnnotation => annotation.typeAnnotation
+            case annotation: TypeAnnotation   => annotation.typeAnnotation
+          }
+          val possibleType = annotatedType
+            .map {
+              case typeLiteral: TSTypeLiteral =>
+                val typeDecl = astForTypeAlias(typeLiteral)
+                Ast.storeInDiffGraph(typeDecl, diffGraph)
+                typeDecl.root
+                  .collect { case t: NewTypeDecl =>
+                    typeFullName = t.fullName
+                    t.fullName
+                  }
+                  .getOrElse(tpe)
+              case _ => tpe
+            }
             .getOrElse(tpe)
 
-          val name = nodeInfo.json("name").str
+          val name = ident.name
           val node =
-            parameterInNode(nodeInfo, name, nodeInfo.code, index, false, EvaluationStrategies.BY_VALUE, typeFullName)
+            parameterInNode(ident, name, ident.code, index, false, EvaluationStrategies.BY_VALUE, typeFullName)
               .possibleTypes(Seq(possibleType))
           scope.addVariable(name, node, typeFullName, VariableScopeManager.ScopeType.MethodScope)
           node
-        case TSParameterProperty =>
-          val unpackedParam = createBabelNodeInfo(nodeInfo.json("parameter"))
+        case parameterProperty: TSParameterProperty =>
+          val unpackedParam = parameterProperty.parameter
 
           val tpe           = typeFor(unpackedParam)
           val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
           val possibleTypes = Seq(tpe)
 
-          val name = unpackedParam.node match {
-            case AssignmentPattern => createBabelNodeInfo(unpackedParam.json("left")).code
-            case _                 => unpackedParam.json("name").str
+          val name = unpackedParam match {
+            case assignment: AssignmentPattern => assignment.left.code
+            case ident: Identifier             => ident.name
           }
           val node =
-            parameterInNode(nodeInfo, name, nodeInfo.code, index, false, EvaluationStrategies.BY_VALUE, typeFullName)
-              .possibleTypes(possibleTypes)
+            parameterInNode(
+              parameterProperty,
+              name,
+              parameterProperty.code,
+              index,
+              false,
+              EvaluationStrategies.BY_VALUE,
+              typeFullName
+            ).possibleTypes(possibleTypes)
           scope.addVariable(name, node, typeFullName, VariableScopeManager.ScopeType.MethodScope)
           node
-        case _ =>
-          val tpe           = typeFor(nodeInfo)
+        case other =>
+          val tpe           = typeFor(other)
           val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
           val possibleTypes = Seq(tpe)
           val node          =
             parameterInNode(
-              nodeInfo,
-              nodeInfo.code,
-              nodeInfo.code,
+              other,
+              other.code,
+              other.code,
               index,
               isVariadic = false,
               EvaluationStrategies.BY_VALUE,
               typeFullName
             ).possibleTypes(possibleTypes)
-          scope.addVariable(nodeInfo.code, node, typeFullName, VariableScopeManager.ScopeType.MethodScope)
+          scope.addVariable(other.code, node, typeFullName, VariableScopeManager.ScopeType.MethodScope)
           node
       }
-      val decoratorAsts = astsForDecorators(nodeInfo)
+      val decoratorAsts = astsForDecorators(param)
       decoratorAsts.foreach { decoratorAst =>
         Ast.storeInDiffGraph(decoratorAst, diffGraph)
         decoratorAst.root.foreach(diffGraph.addEdge(paramNode, _, EdgeTypes.AST))
@@ -293,11 +275,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       paramNode
     }
 
-  private def convertParamWithDefault(element: BabelNodeInfo): Ast = {
-    val lhsElement = element.json("left")
-    val rhsElement = element.json("right")
-    val rhsAst     = astForNodeWithFunctionReference(rhsElement)
-    val lhsAst     = astForNode(lhsElement)
+  private def convertParamWithDefault(element: AssignmentPattern): Ast = {
+    val rhsAst = astForNodeWithFunctionReference(element.right)
+    val lhsAst = astForNode(element.left)
 
     val testAst = {
       val keyNode      = identifierNode(element, codeOf(lhsAst.nodes.head))
@@ -323,7 +303,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     methodAstParentStack.collectFirst { case n: NewTypeDecl => n }.getOrElse(rootTypeDecl.head)
   }
 
-  protected def astForTSDeclareFunction(func: BabelNodeInfo): Ast = {
+  protected def astForTSDeclareFunction(func: TSDeclareFunction): Ast = {
     val functionNode  = createMethodDefinitionNode(func, ConstructorContent.empty)
     val tpe           = typeFor(func)
     val possibleTypes = Seq(tpe)
@@ -331,11 +311,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val memberNode_   = memberNode(func, functionNode.name, func.code, typeFullName, Seq(functionNode.fullName))
       .possibleTypes(possibleTypes)
     diffGraph.addEdge(getParentTypeDecl, memberNode_, EdgeTypes.AST)
-    addModifier(functionNode, func.json)
+    addModifier(functionNode, func)
     Ast()
   }
 
-  protected def createMethodDefinitionNode(func: BabelNodeInfo, methodBlockContent: ConstructorContent): NewMethod = {
+  protected def createMethodDefinitionNode(func: FunctionNode, methodBlockContent: ConstructorContent): NewMethod = {
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
     val methodNode_    = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
     val lambdaModifier = if (methodName.startsWith(io.joern.x2cpg.Defines.ClosurePrefix)) {
@@ -351,11 +331,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         .dynamicTypeHintFullName(typeHintForThisExpression())
     scope.addVariable("this", thisNode, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
 
-    val paramNodes = if (hasKey(func.json, "parameters")) {
-      handleParameters(func.json("parameters").arr.toSeq, mutable.ArrayBuffer.empty[Ast], createLocals = false)
-    } else {
-      handleParameters(func.json("params").arr.toSeq, mutable.ArrayBuffer.empty[Ast], createLocals = false)
-    }
+    val paramNodes = handleParameters(paramsOf(func), mutable.ArrayBuffer.empty[Ast], createLocals = false)
 
     val blockAsts =
       methodBlockContent.constructorContent.flatMap(m => methodBlockContent.typeDecl.map(astForClassMember(m, _)))
@@ -396,7 +372,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def createMethodAstAndNode(
-    func: BabelNodeInfo,
+    func: FunctionWithBody,
     shouldCreateFunctionReference: Boolean = false,
     shouldCreateAssignmentCall: Boolean = false,
     methodBlockContent: ConstructorContent
@@ -429,9 +405,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     methodAstParentStack.push(methodNode_)
 
-    val bodyJson                  = func.json("body")
-    val bodyNodeInfo              = createBabelNodeInfo(bodyJson)
-    val blockNode_                = blockNode(bodyNodeInfo, bodyNodeInfo.code, Defines.Any)
+    val body                      = bodyOf(func)
+    val blockNode_                = blockNode(body, body.code, Defines.Any)
     val additionalBlockStatements = mutable.ArrayBuffer.empty[Ast]
 
     val capturingRefNode = if (shouldCreateFunctionReference) { methodRefNode_ }
@@ -444,20 +419,18 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .dynamicTypeHintFullName(typeHintForThisExpression())
     scope.addVariable("this", thisNode, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
 
-    val paramNodes = handleParameters(func.json("params").arr.toSeq, additionalBlockStatements)
+    val paramNodes = handleParameters(paramsOf(func), additionalBlockStatements)
 
-    val bodyStmtAsts = func.node match {
-      case ArrowFunctionExpression =>
-        bodyNodeInfo.node match {
-          case BlockStatement =>
-            // when body contains more than one statement, use bodyJson("body")) to avoid double Block node
-            createBlockStatementAsts(bodyJson("body"))
-          case _ =>
-            // when body is just one expression like const foo = () => 42, generate a Return node
-            val retCode = bodyNodeInfo.code.stripSuffix(";")
-            returnAst(returnNode(bodyNodeInfo, retCode), List(astForNodeWithFunctionReference(bodyJson))) :: Nil
-        }
-      case _ => createBlockStatementAsts(bodyJson("body"))
+    val bodyStmtAsts = (func, body) match {
+      case (_: ArrowFunctionExpression, expression: Expression) =>
+        // when body is just one expression like const foo = () => 42, generate a Return node
+        val retCode = expression.code.stripSuffix(";")
+        returnAst(returnNode(expression, retCode), List(astForNodeWithFunctionReference(expression))) :: Nil
+      case (_, block: BlockStatement) =>
+        // use the statements of the block directly to avoid a double Block node
+        createBlockStatementAsts(block.body)
+      case (_, other) =>
+        astForNodeWithFunctionReference(other) :: Nil
     }
 
     val methodBlockChildren = methodBlockContent.constructorContent.flatMap(m =>
@@ -500,7 +473,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def astForFunctionDeclaration(
-    func: BabelNodeInfo,
+    func: FunctionWithBody,
     shouldCreateFunctionReference: Boolean = false,
     shouldCreateAssignmentCall: Boolean = false
   ): Ast = createMethodAstAndNode(

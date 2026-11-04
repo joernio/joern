@@ -1,15 +1,12 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.parser.BabelAst.*
-import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.jssrc2cpg.parser.BabelNodeSyntax.*
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 
 import java.util.regex.Pattern
 
 trait TypeHelper { this: AstCreator =>
 
-  private val TypeAnnotationKey   = "typeAnnotation"
-  private val ReturnTypeKey       = "returnType"
   private val ImportMatcher       = Pattern.compile("(typeof )?import\\([\"'](.*)[\"']\\)")
   private val ArrayReplacePattern = ":[^,.]+\\[]".r
 
@@ -28,75 +25,122 @@ trait TypeHelper { this: AstCreator =>
     "typeof "    -> ""
   )
 
-  protected def isPlainTypeAlias(alias: BabelNodeInfo): Boolean = if (hasKey(alias.json, "right")) {
-    nodeTypeOf(alias.json("right")) == TSTypeReference
-  } else {
-    nodeTypeOf(alias.json("typeAnnotation")) == TSTypeReference
+  protected def isPlainTypeAlias(alias: DeclareTypeAlias | TypeAlias | TSTypeAliasDeclaration): Boolean = alias match {
+    case tsAlias: TSTypeAliasDeclaration => tsAlias.typeAnnotation.isInstanceOf[TSTypeReference]
+    case _                               => false
   }
 
-  private def typeForFlowType(flowType: BabelNodeInfo): String = flowType.node match {
-    case BooleanTypeAnnotation        => Defines.Boolean
-    case NumberTypeAnnotation         => Defines.Number
-    case ObjectTypeAnnotation         => Defines.Object
-    case StringTypeAnnotation         => Defines.String
-    case SymbolTypeAnnotation         => Defines.Symbol
-    case NumberLiteralTypeAnnotation  => code(flowType.json)
-    case ArrayTypeAnnotation          => Defines.Array
-    case BooleanLiteralTypeAnnotation => code(flowType.json)
-    case NullLiteralTypeAnnotation    => code(flowType.json)
-    case StringLiteralTypeAnnotation  => code(flowType.json)
-    case GenericTypeAnnotation        =>
-      code(flowType.json("id")) match {
+  private def typeForFlowType(flowType: BabelNode): String = flowType match {
+    case _: BooleanTypeAnnotation        => Defines.Boolean
+    case _: NumberTypeAnnotation         => Defines.Number
+    case _: ObjectTypeAnnotation         => Defines.Object
+    case _: StringTypeAnnotation         => Defines.String
+    case _: SymbolTypeAnnotation         => Defines.Symbol
+    case _: NumberLiteralTypeAnnotation  => flowType.code
+    case _: ArrayTypeAnnotation          => Defines.Array
+    case _: BooleanLiteralTypeAnnotation => flowType.code
+    case _: NullLiteralTypeAnnotation    => flowType.code
+    case _: StringLiteralTypeAnnotation  => flowType.code
+    case generic: GenericTypeAnnotation  =>
+      generic.id.code match {
         case tpe if isNumberType(tpe) => Defines.Number
         case tpe if isStringType(tpe) => Defines.String
         case tpe                      => tpe
       }
-    case ThisTypeAnnotation     => typeHintForThisExpression(Option(flowType)).headOption.getOrElse(Defines.Any)
-    case NullableTypeAnnotation => typeForTypeAnnotation(createBabelNodeInfo(flowType.json(TypeAnnotationKey)))
-    case _                      => Defines.Any
+    case _: ThisTypeAnnotation => typeHintForThisExpression(Option(flowType)).headOption.getOrElse(Defines.Any)
+    case nullable: NullableTypeAnnotation => typeForTypeAnnotation(nullable.typeAnnotation)
+    case _                                => Defines.Any
   }
 
-  private def typeForTsType(tsType: BabelNodeInfo): String = tsType.node match {
-    case TSBooleanKeyword   => Defines.Boolean
-    case TSBigIntKeyword    => Defines.Number
-    case TSNullKeyword      => Defines.Null
-    case TSNumberKeyword    => Defines.Number
-    case TSObjectKeyword    => Defines.Object
-    case TSStringKeyword    => Defines.String
-    case TSSymbolKeyword    => Defines.Symbol
-    case TSUnknownKeyword   => Defines.Unknown
-    case TSVoidKeyword      => Defines.Void
-    case TSUndefinedKeyword => Defines.Undefined
-    case TSNeverKeyword     => Defines.Never
-    case TSIntrinsicKeyword => code(tsType.json)
-    case TSTypeReference    =>
-      code(tsType.json) match {
+  private def typeForTsType(tsType: BabelNode): String = tsType match {
+    case _: TSBooleanKeyword   => Defines.Boolean
+    case _: TSBigIntKeyword    => Defines.Number
+    case _: TSNullKeyword      => Defines.Null
+    case _: TSNumberKeyword    => Defines.Number
+    case _: TSObjectKeyword    => Defines.Object
+    case _: TSStringKeyword    => Defines.String
+    case _: TSSymbolKeyword    => Defines.Symbol
+    case _: TSUnknownKeyword   => Defines.Unknown
+    case _: TSVoidKeyword      => Defines.Void
+    case _: TSUndefinedKeyword => Defines.Undefined
+    case _: TSNeverKeyword     => Defines.Never
+    case _: TSIntrinsicKeyword => tsType.code
+    case _: TSTypeReference    =>
+      tsType.code match {
         case tpe if isNumberType(tpe) => Defines.Number
         case tpe if isStringType(tpe) => Defines.String
         case tpe                      => tpe
       }
-    case TSArrayType         => Defines.Array
-    case TSThisType          => typeHintForThisExpression(Option(tsType)).headOption.getOrElse(Defines.Any)
-    case TSOptionalType      => typeForTypeAnnotation(createBabelNodeInfo(tsType.json(TypeAnnotationKey)))
-    case TSRestType          => typeForTypeAnnotation(createBabelNodeInfo(tsType.json(TypeAnnotationKey)))
-    case TSParenthesizedType => typeForTypeAnnotation(createBabelNodeInfo(tsType.json(TypeAnnotationKey)))
-    case _                   => Defines.Any
+    case _: TSArrayType           => Defines.Array
+    case _: TSThisType            => typeHintForThisExpression(Option(tsType)).headOption.getOrElse(Defines.Any)
+    case optional: TSOptionalType => typeForTypeAnnotation(optional.typeAnnotation)
+    case rest: TSRestType         => typeForTypeAnnotation(rest.typeAnnotation)
+    case parenthesized: TSParenthesizedType => typeForTypeAnnotation(parenthesized.typeAnnotation)
+    case _                                  => Defines.Any
   }
 
-  private def typeForTypeAnnotation(typeAnnotation: BabelNodeInfo): String = typeAnnotation.node match {
-    case TypeAnnotation   => typeForFlowType(createBabelNodeInfo(typeAnnotation.json(TypeAnnotationKey)))
-    case TSTypeAnnotation => typeForTsType(createBabelNodeInfo(typeAnnotation.json(TypeAnnotationKey)))
-    case _: FlowType      => typeForFlowType(createBabelNodeInfo(typeAnnotation.json))
-    case _: TSType        => typeForTsType(createBabelNodeInfo(typeAnnotation.json))
-    case _                => Defines.Any
+  private def typeForTypeAnnotation(typeAnnotation: BabelNode): String = typeAnnotation match {
+    case flow: TypeAnnotation => typeForFlowType(flow.typeAnnotation)
+    case ts: TSTypeAnnotation => typeForTsType(ts.typeAnnotation)
+    case _: FlowType          => typeForFlowType(typeAnnotation)
+    case _: TSType            => typeForTsType(typeAnnotation)
+    case _                    => Defines.Any
+  }
+
+  /** The explicitly annotated type of a node: the `typeAnnotation` of e.g. identifiers and properties or the
+    * `returnType` of functions, if there is any.
+    */
+  private def annotatedType(node: BabelNode): Option[BabelNode] = node match {
+    case n: Identifier                      => n.typeAnnotation
+    case n: ArrayPattern                    => n.typeAnnotation
+    case n: ObjectPattern                   => n.typeAnnotation
+    case n: AssignmentPattern               => n.typeAnnotation
+    case n: RestElement                     => n.typeAnnotation
+    case n: ClassProperty                   => n.typeAnnotation
+    case n: ClassPrivateProperty            => n.typeAnnotation
+    case n: ClassAccessorProperty           => n.typeAnnotation
+    case n: Placeholder                     => n.typeAnnotation
+    case n: DeclareModuleExports            => Some(n.typeAnnotation)
+    case n: FunctionTypeParam               => Some(n.typeAnnotation)
+    case n: NullableTypeAnnotation          => Some(n.typeAnnotation)
+    case n: TypeAnnotation                  => Some(n.typeAnnotation)
+    case n: TypeCastExpression              => Some(n.typeAnnotation)
+    case n: TSAsExpression                  => Some(n.typeAnnotation)
+    case n: TSTypeAssertion                 => Some(n.typeAnnotation)
+    case n: TSSatisfiesExpression           => Some(n.typeAnnotation)
+    case n: TSTypeAliasDeclaration          => Some(n.typeAnnotation)
+    case n: TSTypeAnnotation                => Some(n.typeAnnotation)
+    case n: TSOptionalType                  => Some(n.typeAnnotation)
+    case n: TSParenthesizedType             => Some(n.typeAnnotation)
+    case n: TSRestType                      => Some(n.typeAnnotation)
+    case n: TSTypeOperator                  => Some(n.typeAnnotation)
+    case n: TSMappedType                    => n.typeAnnotation
+    case n: TSCallSignatureDeclaration      => n.typeAnnotation
+    case n: TSConstructSignatureDeclaration => n.typeAnnotation
+    case n: TSConstructorType               => n.typeAnnotation
+    case n: TSFunctionType                  => n.typeAnnotation
+    case n: TSIndexSignature                => n.typeAnnotation
+    case n: TSMethodSignature               => n.typeAnnotation
+    case n: TSPropertySignature             => n.typeAnnotation
+    case n: TSTypePredicate                 => n.typeAnnotation
+    case n: ArrowFunctionExpression         => n.returnType
+    case n: ClassMethod                     => n.returnType
+    case n: ClassPrivateMethod              => n.returnType
+    case n: FunctionDeclaration             => n.returnType
+    case n: FunctionExpression              => n.returnType
+    case n: ObjectMethod                    => n.returnType
+    case n: FunctionTypeAnnotation          => Some(n.returnType)
+    case n: TSDeclareFunction               => n.returnType
+    case n: TSDeclareMethod                 => n.returnType
+    case _                                  => None
   }
 
   private def isStringType(tpe: String): Boolean = tpe == "string"
 
   private def isNumberType(tpe: String): Boolean = tpe == "number" || tpe == "int" || tpe.toDoubleOption.isDefined
 
-  private def typeFromTypeMap(node: BabelNodeInfo): String =
-    range(node.json).flatMap(parserResult.typeMap.get) match {
+  private def typeFromTypeMap(node: BabelNode): String =
+    range(node).flatMap(parserResult.typeMap.get) match {
       case Some(value) if value == "any"      => Defines.Any
       case Some(value) if value == "boolean"  => Defines.Boolean
       case Some(value) if value == "null"     => Defines.Null
@@ -115,10 +159,10 @@ trait TypeHelper { this: AstCreator =>
       case None                      => value
     }
 
-  protected def typeFor(node: BabelNodeInfo): String = {
-    val tpe = Seq(TypeAnnotationKey, ReturnTypeKey).find(hasKey(node.json, _)) match {
-      case Some(key) => typeForTypeAnnotation(createBabelNodeInfo(node.json(key)))
-      case None      => typeFromTypeMap(node)
+  protected def typeFor(node: BabelNode): String = {
+    val tpe = annotatedType(node) match {
+      case Some(annotation) => typeForTypeAnnotation(annotation)
+      case None             => typeFromTypeMap(node)
     }
     // Every replacement key contains a space or a '{'; if the type has neither, none of them can match, so we can skip
     // the twelve String.contains scans entirely.
@@ -138,7 +182,7 @@ trait TypeHelper { this: AstCreator =>
     tpeWithArrayReplacements
   }
 
-  protected def typeHintForThisExpression(node: Option[BabelNodeInfo] = None): Seq[String] = {
+  protected def typeHintForThisExpression(node: Option[BabelNode] = None): Seq[String] = {
     dynamicInstanceTypeStack.headOption match {
       case Some(tpe)              => Seq(tpe)
       case None if node.isDefined =>

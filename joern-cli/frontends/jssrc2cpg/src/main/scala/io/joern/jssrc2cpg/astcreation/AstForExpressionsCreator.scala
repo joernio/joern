@@ -1,7 +1,6 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.parser.BabelAst.*
-import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.jssrc2cpg.parser.BabelNodeSyntax.*
 import io.joern.jssrc2cpg.passes.EcmaBuiltins
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
@@ -11,38 +10,51 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewId
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astForExpressionStatement(exprStmt: BabelNodeInfo): Ast =
-    astForNodeWithFunctionReference(exprStmt.json("expression"))
+  protected def astForExpressionStatement(exprStmt: ExpressionStatement): Ast =
+    astForNodeWithFunctionReference(exprStmt.expression)
 
-  private def createBuiltinStaticCall(callExpr: BabelNodeInfo, callee: BabelNodeInfo, fullName: String): Ast = {
-    val callName = callee.node match {
-      case MemberExpression => code(callee.json("property"))
-      case _                => callee.code
+  private type CallLike = CallExpression | OptionalCallExpression | NewExpression
+
+  private def argumentsOf(callLike: CallLike): Seq[BabelNode] = callLike match {
+    case c: CallExpression         => c.arguments
+    case c: OptionalCallExpression => c.arguments
+    case c: NewExpression          => c.arguments
+  }
+
+  private def calleeOf(callLike: CallLike): BabelNode = callLike match {
+    case c: CallExpression         => c.callee
+    case c: OptionalCallExpression => c.callee
+    case c: NewExpression          => c.callee
+  }
+
+  private def createBuiltinStaticCall(
+    callExpr: CallExpression | OptionalCallExpression,
+    callee: BabelNode,
+    fullName: String
+  ): Ast = {
+    val callName = callee match {
+      case member: MemberExpression => member.property.code
+      case _                        => callee.code
     }
     val callNode = staticCallNode(callExpr.code, callName, fullName, callee.lineNumber, callee.columnNumber)
-    val argAsts  = astForNodes(callExpr.json("arguments").arr)
+    val argAsts  = astForNodes(argumentsOf(callExpr))
     callAst(callNode, argAsts)
   }
 
   private case class CallExpressionInfo(receiverAst: Ast, baseNode: NewIdentifier, callName: String)
 
-  private def handleCallNodeArgs(
-    callExpr: BabelNodeInfo,
-    callExpressionInfo: CallExpressionInfo,
-    maybeCallee: Option[BabelNodeInfo] = None
-  ): Ast = {
-    val args      = astForNodes(callExpr.json("arguments").arr)
+  /** If the callee is a function itself, e.g. closure, then resolve this locally, if possible. */
+  private def resolveLocalCallee(callee: BabelNode): Option[(String, String)] = callee match {
+    case function: FunctionLike => functionNodeToNameAndFullName.get(functionNodeKey(function))
+    case _                      => None
+  }
+
+  private def handleCallNodeArgs(callExpr: CallLike, callExpressionInfo: CallExpressionInfo): Ast = {
+    val args      = astForNodes(argumentsOf(callExpr))
     val callNode_ = callNode(callExpr, callExpr.code, callExpressionInfo.callName, DispatchTypes.DYNAMIC_DISPATCH)
-    // If the callee is a function itself, e.g. closure, then resolve this locally, if possible.
-    // Reuse the already-built callee when the caller has one to avoid rebuilding it from JSON.
-    maybeCallee
-      .orElse(callExpr.json.obj.get("callee").map(createBabelNodeInfo))
-      .flatMap {
-        case callee if callee.node.isInstanceOf[FunctionLike] =>
-          functionNodeToNameAndFullName.get(functionNodeKey(callee))
-        case _ => None
-      }
-      .foreach { case (name, fullName) => callNode_.name(name).methodFullName(fullName) }
+    resolveLocalCallee(calleeOf(callExpr)).foreach { case (name, fullName) =>
+      callNode_.name(name).methodFullName(fullName)
+    }
     callAst(
       callNode_,
       args,
@@ -51,19 +63,21 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     )
   }
 
-  private def callExpressionInfoForCallLikeExpr(callLike: BabelNodeInfo): CallExpressionInfo = {
-    callLike.node match {
-      case MemberExpression | OptionalMemberExpression =>
-        val base   = createBabelNodeInfo(callLike.json("object"))
-        val member = createBabelNodeInfo(callLike.json("property"))
-        base.node match {
-          case ThisExpression =>
-            val receiverAst = astForNodeWithFunctionReference(callLike.json)
+  private def callExpressionInfoForCallLikeExpr(callLike: BabelNode): CallExpressionInfo = {
+    callLike match {
+      case memberExpr: (MemberExpression | OptionalMemberExpression) =>
+        val (base, member) = memberExpr match {
+          case m: MemberExpression         => (m.`object`: BabelNode, m.property: BabelNode)
+          case m: OptionalMemberExpression => (m.`object`: BabelNode, m.property: BabelNode)
+        }
+        base match {
+          case _: ThisExpression =>
+            val receiverAst = astForNodeWithFunctionReference(callLike)
             val baseNode    = identifierNode(base, base.code).dynamicTypeHintFullName(typeHintForThisExpression())
             scope.addVariableReference(base.code, baseNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
             CallExpressionInfo(receiverAst, baseNode, member.code)
-          case Identifier =>
-            val receiverAst = astForNodeWithFunctionReference(callLike.json)
+          case _: Identifier =>
+            val receiverAst = astForNodeWithFunctionReference(callLike)
             val baseNode    = identifierNode(base, base.code)
             scope.addVariableReference(base.code, baseNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
             CallExpressionInfo(receiverAst, baseNode, member.code)
@@ -71,7 +85,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             val tmpVarName  = generateUnusedVariableName(usedVariableNames, "_tmp")
             val baseTmpNode = identifierNode(base, tmpVarName)
             scope.addVariableReference(tmpVarName, baseTmpNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-            val baseAst          = astForNodeWithFunctionReference(base.json)
+            val baseAst          = astForNodeWithFunctionReference(base)
             val code             = s"(${codeOf(baseTmpNode)} = ${base.code})"
             val tmpAssignmentAst =
               createAssignmentCallAst(Ast(baseTmpNode), baseAst, code, base.lineNumber, base.columnNumber)
@@ -84,7 +98,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             CallExpressionInfo(fieldAccessAst, thisTmpNode, member.code)
         }
       case _ =>
-        val receiverAst = astForNodeWithFunctionReference(callLike.json)
+        val receiverAst = astForNodeWithFunctionReference(callLike)
         val thisNode    = identifierNode(callLike, "this").dynamicTypeHintFullName(typeHintForThisExpression())
         scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
         val callName = ejsOutputCallName(callLike).getOrElse(callLike.code)
@@ -92,26 +106,26 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  protected def astForCallExpression(callExpr: BabelNodeInfo): Ast = {
-    val callee     = createBabelNodeInfo(callExpr.json("callee"))
+  protected def astForCallExpression(callExpr: CallExpression | OptionalCallExpression): Ast = {
+    val callee     = calleeOf(callExpr)
     val calleeCode = callee.code
     if (GlobalBuiltins.builtins.contains(calleeCode)) {
       createBuiltinStaticCall(callExpr, callee, calleeCode)
     } else {
       val callExpressionInfo = callExpressionInfoForCallLikeExpr(callee)
-      handleCallNodeArgs(callExpr, callExpressionInfo, Option(callee))
+      handleCallNodeArgs(callExpr, callExpressionInfo)
     }
   }
 
-  protected def astForThisExpression(thisExpr: BabelNodeInfo): Ast = {
+  protected def astForThisExpression(thisExpr: ThisExpression): Ast = {
     val dynamicTypeOption = typeHintForThisExpression(Option(thisExpr)).headOption
     val thisNode = identifierNode(thisExpr, thisExpr.code, thisExpr.code, Defines.Any, dynamicTypeOption.toList)
     scope.addVariableReference(thisExpr.code, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
     Ast(thisNode)
   }
 
-  protected def astForNewExpression(newExpr: BabelNodeInfo): Ast = {
-    val callee     = newExpr.json("callee")
+  protected def astForNewExpression(newExpr: NewExpression): Ast = {
+    val callee     = newExpr.callee
     val blockNode_ = blockNode(newExpr, newExpr.code, Defines.Any)
 
     scope.pushNewBlockScope(blockNode_)
@@ -145,25 +159,26 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     blockAst(blockNode_, blockChildren)
   }
 
-  protected def astForMetaProperty(metaProperty: BabelNodeInfo): Ast = {
-    val metaAst        = astForIdentifier(createBabelNodeInfo(metaProperty.json("meta")))
-    val memberNodeInfo = createBabelNodeInfo(metaProperty.json("property"))
-    val fieldName      = stripQuotes(memberNodeInfo.code)
-    val memberAst      = Ast(fieldIdentifierNode(memberNodeInfo, fieldName, fieldName))
+  protected def astForMetaProperty(metaProperty: MetaProperty): Ast = {
+    val metaAst   = astForIdentifier(metaProperty.meta)
+    val member    = metaProperty.property
+    val fieldName = stripQuotes(member.code)
+    val memberAst = Ast(fieldIdentifierNode(member, fieldName, fieldName))
     createFieldAccessCallAst(metaAst, memberAst.nodes.head, metaProperty.lineNumber, metaProperty.columnNumber)
   }
 
-  protected def astForMemberExpression(memberExpr: BabelNodeInfo): Ast = {
-    val baseAst          = astForNodeWithFunctionReference(memberExpr.json("object"))
-    val memberIsComputed = memberExpr.json("computed").bool
-    val isOptional = memberExpr.node == OptionalMemberExpression && memberExpr.json("optional").boolOpt.getOrElse(false)
-    val memberNodeInfo = createBabelNodeInfo(memberExpr.json("property"))
+  protected def astForMemberExpression(memberExpr: MemberExpression | OptionalMemberExpression): Ast = {
+    val (baseNode, member, memberIsComputed, isOptional) = memberExpr match {
+      case m: MemberExpression         => (m.`object`, m.property, m.computed, false)
+      case m: OptionalMemberExpression => (m.`object`, m.property, m.computed, m.optional)
+    }
+    val baseAst = astForNodeWithFunctionReference(baseNode)
     if (memberIsComputed) {
-      val memberAst = astForNode(memberNodeInfo.json)
+      val memberAst = astForNode(member)
       createIndexAccessCallAst(baseAst, memberAst, memberExpr.lineNumber, memberExpr.columnNumber, isOptional)
     } else {
-      val fieldName = stripQuotes(memberNodeInfo.code)
-      val memberAst = Ast(fieldIdentifierNode(memberNodeInfo, fieldName, fieldName))
+      val fieldName = stripQuotes(member.code)
+      val memberAst = Ast(fieldIdentifierNode(member, fieldName, fieldName))
       createFieldAccessCallAst(
         baseAst,
         memberAst.nodes.head,
@@ -174,76 +189,90 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  protected def astForAssignmentExpression(assignment: BabelNodeInfo): Ast = {
-    val op = if (hasKey(assignment.json, "operator")) {
-      assignment.json("operator").str match {
-        case "="    => Operators.assignment
-        case "+="   => Operators.assignmentPlus
-        case "-="   => Operators.assignmentMinus
-        case "*="   => Operators.assignmentMultiplication
-        case "/="   => Operators.assignmentDivision
-        case "%="   => Operators.assignmentModulo
-        case "**="  => Operators.assignmentExponentiation
-        case "&="   => Operators.assignmentAnd
-        case "&&="  => Operators.assignmentAnd
-        case "|="   => Operators.assignmentOr
-        case "||="  => Operators.assignmentOr
-        case "^="   => Operators.assignmentXor
-        case "<<="  => Operators.assignmentShiftLeft
-        case ">>="  => Operators.assignmentArithmeticShiftRight
-        case ">>>=" => Operators.assignmentLogicalShiftRight
-        case "??="  => Operators.notNullAssert
-        case other  =>
-          logger.warn(s"Unknown assignment operator: '$other'")
-          Operators.assignment
-      }
-    } else Operators.assignment
+  protected def astForAssignmentExpression(assignment: AssignmentExpression | AssignmentPattern): Ast = {
+    val (op, left, right) = assignment match {
+      case pattern: AssignmentPattern       => (Operators.assignment, pattern.left, pattern.right)
+      case expression: AssignmentExpression =>
+        val operator = expression.operator match {
+          case "="    => Operators.assignment
+          case "+="   => Operators.assignmentPlus
+          case "-="   => Operators.assignmentMinus
+          case "*="   => Operators.assignmentMultiplication
+          case "/="   => Operators.assignmentDivision
+          case "%="   => Operators.assignmentModulo
+          case "**="  => Operators.assignmentExponentiation
+          case "&="   => Operators.assignmentAnd
+          case "&&="  => Operators.assignmentAnd
+          case "|="   => Operators.assignmentOr
+          case "||="  => Operators.assignmentOr
+          case "^="   => Operators.assignmentXor
+          case "<<="  => Operators.assignmentShiftLeft
+          case ">>="  => Operators.assignmentArithmeticShiftRight
+          case ">>>=" => Operators.assignmentLogicalShiftRight
+          case "??="  => Operators.notNullAssert
+          case other  =>
+            logger.warn(s"Unknown assignment operator: '$other'")
+            Operators.assignment
+        }
+        (operator, expression.left, expression.right)
+    }
 
-    val nodeInfo = createBabelNodeInfo(assignment.json("left"))
-    nodeInfo.node match {
-      case ObjectPattern | ArrayPattern =>
-        val rhsAst = astForNodeWithFunctionReference(assignment.json("right"))
-        astForDeconstruction(nodeInfo, rhsAst, assignment.code)
+    left match {
+      case pattern: (ObjectPattern | ArrayPattern) =>
+        val rhsAst = astForNodeWithFunctionReference(right)
+        astForDeconstruction(pattern, rhsAst, assignment.code)
       case _ =>
-        val lhsAst    = astForNode(assignment.json("left"))
-        val rhsAst    = astForNodeWithFunctionReference(assignment.json("right"))
-        val callNode_ =
-          callNode(assignment, assignment.code, op, DispatchTypes.STATIC_DISPATCH)
-        val argAsts = List(lhsAst, rhsAst)
+        val lhsAst    = astForNode(left)
+        val rhsAst    = astForNodeWithFunctionReference(right)
+        val callNode_ = callNode(assignment, assignment.code, op, DispatchTypes.STATIC_DISPATCH)
+        val argAsts   = List(lhsAst, rhsAst)
         callAst(callNode_, argAsts)
     }
   }
 
-  protected def astForConditionalExpression(ternary: BabelNodeInfo): Ast = {
-    val testAst       = astForNodeWithFunctionReference(ternary.json("test"))
-    val consequentAst = astForNodeWithFunctionReference(ternary.json("consequent"))
-    val alternateAst  = astForNodeWithFunctionReference(ternary.json("alternate"))
+  protected def astForConditionalExpression(ternary: ConditionalExpression): Ast = {
+    val testAst       = astForNodeWithFunctionReference(ternary.test)
+    val consequentAst = astForNodeWithFunctionReference(ternary.consequent)
+    val alternateAst  = astForNodeWithFunctionReference(ternary.alternate)
     createTernaryCallAst(testAst, consequentAst, alternateAst, ternary.lineNumber, ternary.columnNumber)
   }
 
-  protected def astForLogicalExpression(logicalExpr: BabelNodeInfo): Ast =
+  protected def astForLogicalExpression(logicalExpr: LogicalExpression): Ast =
     astForBinaryExpression(logicalExpr)
 
-  protected def astForTSNonNullExpression(nonNullExpr: BabelNodeInfo): Ast = {
+  protected def astForTSNonNullExpression(nonNullExpr: TSNonNullExpression): Ast = {
     val op        = Operators.notNullAssert
     val callNode_ = callNode(nonNullExpr, nonNullExpr.code, op, DispatchTypes.STATIC_DISPATCH)
-    val argAsts   = List(astForNodeWithFunctionReference(nonNullExpr.json("expression")))
+    val argAsts   = List(astForNodeWithFunctionReference(nonNullExpr.expression))
     callAst(callNode_, argAsts)
   }
 
-  protected def astForCastExpression(castExpr: BabelNodeInfo): Ast = {
-    val op            = Operators.cast
-    val lhsNode       = castExpr.json("typeAnnotation")
-    val rhsAst        = astForNodeWithFunctionReference(castExpr.json("expression"))
-    val possibleTypes = Seq(typeFor(castExpr))
-    val lhsAst        = Ast(literalNode(castExpr, code(lhsNode), None).possibleTypes(possibleTypes))
+  protected def astForCastExpression(
+    castExpr: TypeCastExpression | TSTypeAssertion | TSAsExpression | TSTypeCastExpression
+  ): Ast = {
+    val op                                = Operators.cast
+    val castParts: (BabelNode, BabelNode) = castExpr match {
+      case c: TypeCastExpression   => (c.typeAnnotation, c.expression)
+      case c: TSTypeAssertion      => (c.typeAnnotation, c.expression)
+      case c: TSAsExpression       => (c.typeAnnotation, c.expression)
+      case c: TSTypeCastExpression => (c.typeAnnotation, c.expression)
+    }
+    val (lhsNode, rhsNode) = castParts
+    val rhsAst             = astForNodeWithFunctionReference(rhsNode)
+    val possibleTypes      = Seq(typeFor(castExpr))
+    val lhsAst             = Ast(literalNode(castExpr, lhsNode.code, None).possibleTypes(possibleTypes))
     val node    = callNode(castExpr, castExpr.code, op, DispatchTypes.STATIC_DISPATCH).possibleTypes(possibleTypes)
     val argAsts = List(lhsAst, rhsAst)
     callAst(node, argAsts)
   }
 
-  protected def astForBinaryExpression(binExpr: BabelNodeInfo): Ast = {
-    val op = binExpr.json("operator").str match {
+  protected def astForBinaryExpression(binExpr: BinaryExpression | LogicalExpression): Ast = {
+    val binParts: (String, BabelNode, BabelNode) = binExpr match {
+      case b: BinaryExpression  => (b.operator, b.left, b.right)
+      case b: LogicalExpression => (b.operator, b.left, b.right)
+    }
+    val (operator, left, right) = binParts
+    val op                      = operator match {
       case "+"          => Operators.addition
       case "-"          => Operators.subtraction
       case "/"          => Operators.division
@@ -276,8 +305,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         Operators.assignment
     }
 
-    val lhsAst = astForNodeWithFunctionReference(binExpr.json("left"))
-    val rhsAst = astForNodeWithFunctionReference(binExpr.json("right"))
+    val lhsAst = astForNodeWithFunctionReference(left)
+    val rhsAst = astForNodeWithFunctionReference(right)
 
     val node =
       callNode(binExpr, binExpr.code, op, DispatchTypes.STATIC_DISPATCH)
@@ -285,9 +314,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callAst(node, argAsts)
   }
 
-  protected def astForUpdateExpression(updateExpr: BabelNodeInfo): Ast = {
-    val isPrefix = updateExpr.json("prefix").bool
-    val op       = updateExpr.json("operator").str match {
+  protected def astForUpdateExpression(updateExpr: UpdateExpression): Ast = {
+    val isPrefix = updateExpr.prefix
+    val op       = updateExpr.operator match {
       case "++" if isPrefix => Operators.preIncrement
       case "++"             => Operators.postIncrement
       case "--" if isPrefix => Operators.preIncrement
@@ -297,16 +326,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         Operators.assignment
     }
 
-    val argumentAst = astForNodeWithFunctionReference(updateExpr.json("argument"))
+    val argumentAst = astForNodeWithFunctionReference(updateExpr.argument)
 
     val node    = callNode(updateExpr, updateExpr.code, op, DispatchTypes.STATIC_DISPATCH)
     val argAsts = List(argumentAst)
     callAst(node, argAsts)
   }
 
-  protected def astForUnaryExpression(unaryExpr: BabelNodeInfo): Ast = {
-    val argumentAst = astForNodeWithFunctionReference(unaryExpr.json("argument"))
-    unaryExpr.json("operator").str match {
+  protected def astForUnaryExpression(unaryExpr: UnaryExpression): Ast = {
+    val argumentAst = astForNodeWithFunctionReference(unaryExpr.argument)
+    unaryExpr.operator match {
       case "throw" => throwAst(unaryExpr, List(argumentAst))
       case op      =>
         val operator = op match {
@@ -325,26 +354,31 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  protected def astForSequenceExpression(seq: BabelNodeInfo): Ast = {
+  protected def astForSequenceExpression(seq: SequenceExpression): Ast = {
     val blockNode_ = blockNode(seq, seq.code, Defines.Any)
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
-    val sequenceExpressionAsts = createBlockStatementAsts(seq.json("expressions"))
+    val sequenceExpressionAsts = createBlockStatementAsts(seq.expressions)
     localAstParentStack.pop()
     scope.popScope()
     blockAst(blockNode_, sequenceExpressionAsts)
   }
 
-  protected def astForAwaitExpression(awaitExpr: BabelNodeInfo): Ast = {
+  protected def astForAwaitExpression(awaitExpr: AwaitExpression): Ast = {
     val node    = callNode(awaitExpr, awaitExpr.code, "<operator>.await", DispatchTypes.STATIC_DISPATCH)
-    val argAsts = List(astForNodeWithFunctionReference(awaitExpr.json("argument")))
+    val argAsts = List(astForNodeWithFunctionReference(awaitExpr.argument))
     callAst(node, argAsts)
   }
 
-  protected def astForArrayExpression(arrExpr: BabelNodeInfo, elementsKey: String = "elements"): Ast = {
+  protected def astForArrayExpression(arrExpr: ArrayExpression | ArrayPattern): Ast =
+    arrExpr match {
+      case a: ArrayExpression => astForArrayElements(a, a.elements)
+      case a: ArrayPattern    => astForArrayElements(a, a.elements)
+    }
+
+  private def astForArrayElements(arrExpr: BabelNode, allElements: Seq[Option[BabelNode]]): Ast = {
     val MAX_INITIALIZERS = 1000
-    val elementsJsons    = arrExpr.json.obj.get(elementsKey).flatMap(_.arrOpt).toList.flatten
-    val elements         = elementsJsons.slice(0, MAX_INITIALIZERS)
+    val elements         = allElements.slice(0, MAX_INITIALIZERS)
     if (elements.isEmpty) {
       Ast(
         callNode(arrExpr, s"${EcmaBuiltins.arrayFactory}()", EcmaBuiltins.arrayFactory, DispatchTypes.STATIC_DISPATCH)
@@ -370,31 +404,30 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         createAssignmentCallAst(tmpArrayNode, arrayCallNode, assignmentCode, lineNumber, columnNumber)
 
       val elementAsts = elements.flatMap {
-        case element if !element.isNull =>
-          val elementNodeInfo     = createBabelNodeInfo(element)
-          val elementLineNumber   = elementNodeInfo.lineNumber
-          val elementColumnNumber = elementNodeInfo.columnNumber
-          val elementNode         = elementNodeInfo.node match {
-            case RestElement =>
+        case Some(element) =>
+          val elementLineNumber   = element.lineNumber
+          val elementColumnNumber = element.columnNumber
+          val elementNode         = element match {
+            case rest: RestElement =>
               val arg1Ast = Ast(identifierNode(arrExpr, tmpName))
-              astForSpreadOrRestElement(elementNodeInfo, Option(arg1Ast))
+              astForSpreadOrRestElement(rest, Option(arg1Ast))
             case _ =>
               astForNodeWithFunctionReference(element)
           }
 
-          val elementCode  = elementNode.root.map(codeOf).getOrElse(elementNodeInfo.code)
+          val elementCode  = elementNode.root.map(codeOf).getOrElse(element.code)
           val pushCallNode =
-            callNode(elementNodeInfo, s"$tmpName.push($elementCode)", "", DispatchTypes.DYNAMIC_DISPATCH)
+            callNode(element, s"$tmpName.push($elementCode)", "", DispatchTypes.DYNAMIC_DISPATCH)
 
-          val baseNode     = identifierNode(elementNodeInfo, tmpName)
-          val memberNode   = fieldIdentifierNode(elementNodeInfo, "push", "push")
+          val baseNode     = identifierNode(element, tmpName)
+          val memberNode   = fieldIdentifierNode(element, "push", "push")
           val receiverNode = createFieldAccessCallAst(baseNode, memberNode, elementLineNumber, elementColumnNumber)
-          val thisPushNode = identifierNode(elementNodeInfo, tmpName)
+          val thisPushNode = identifierNode(element, tmpName)
 
           Option(
             callAst(pushCallNode, List(elementNode), receiver = Option(receiverNode), base = Option(Ast(thisPushNode)))
           )
-        case _ => None // skip
+        case None => None // skip
       }
 
       val tmpArrayReturnNode = identifierNode(arrExpr, tmpName)
@@ -402,29 +435,23 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       scope.popScope()
       localAstParentStack.pop()
 
-      val blockChildrenAsts = if (elementsJsons.sizeIs > MAX_INITIALIZERS) {
+      val blockChildrenAsts = if (allElements.sizeIs > MAX_INITIALIZERS) {
         val placeholder = literalNode(arrExpr, "<too-many-initializers>", Defines.Any)
         assignmentTmpArrayCallNode +: elementAsts :+ Ast(placeholder) :+ Ast(tmpArrayReturnNode)
       } else { assignmentTmpArrayCallNode +: elementAsts :+ Ast(tmpArrayReturnNode) }
-      blockAst(blockNode_, blockChildrenAsts)
+      blockAst(blockNode_, blockChildrenAsts.toList)
     }
   }
 
-  private def handleTemplateExpressionArgs(templateExpr: BabelNodeInfo, callExpressionInfo: CallExpressionInfo): Ast = {
-    val expressionArgs = templateExpr.json("quasi")("expressions").arr.map(astForNodeWithFunctionReference).toSeq
-    val quasisArg      = astForArrayExpression(createBabelNodeInfo(templateExpr.json("quasi")), "quasis")
+  private def handleTemplateExpressionArgs(
+    templateExpr: TaggedTemplateExpression,
+    callExpressionInfo: CallExpressionInfo
+  ): Ast = {
+    val quasi          = templateExpr.quasi
+    val expressionArgs = quasi.expressions.map(astForNodeWithFunctionReference)
+    val quasisArg      = astForArrayElements(quasi, quasi.quasis.map(Option(_)))
     val callNode_      =
       callNode(templateExpr, templateExpr.code, callExpressionInfo.callName, DispatchTypes.DYNAMIC_DISPATCH)
-    // If the callee is a function itself, e.g. closure, then resolve this locally, if possible
-    templateExpr.json.obj
-      .get("callee")
-      .map(createBabelNodeInfo)
-      .flatMap {
-        case callee if callee.node.isInstanceOf[FunctionLike] =>
-          functionNodeToNameAndFullName.get(functionNodeKey(callee))
-        case _ => None
-      }
-      .foreach { case (name, fullName) => callNode_.name(name).methodFullName(fullName) }
     callAst(
       callNode_,
       quasisArg +: expressionArgs,
@@ -435,13 +462,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   /** Lowering from expressions like, x`a ${1+1} b` to x(["a ", " b"], 1+1)
     */
-  def astForTemplateExpression(templateExpr: BabelNodeInfo): Ast = {
-    val callee             = createBabelNodeInfo(templateExpr.json("tag"))
-    val callExpressionInfo = callExpressionInfoForCallLikeExpr(callee)
+  def astForTemplateExpression(templateExpr: TaggedTemplateExpression): Ast = {
+    val callExpressionInfo = callExpressionInfoForCallLikeExpr(templateExpr.tag)
     handleTemplateExpressionArgs(templateExpr, callExpressionInfo)
   }
 
-  protected def astForObjectExpression(objExpr: BabelNodeInfo): Ast = {
+  protected def astForObjectExpression(objExpr: ObjectExpression | ObjectPattern): Ast = {
     val blockNode_ = blockNode(objExpr, objExpr.code, Defines.Any)
 
     scope.pushNewBlockScope(blockNode_)
@@ -451,59 +477,57 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val localTmpNode = localNode(objExpr, tmpName, tmpName, Defines.Any).order(0)
     diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
 
-    val propertiesAsts = objExpr.json("properties").arr.map { property =>
-      val nodeInfo = createBabelNodeInfo(property)
-      nodeInfo.node match {
-        case SpreadElement | RestElement =>
-          val arg1Ast = Ast(identifierNode(nodeInfo, tmpName))
-          astForSpreadOrRestElement(nodeInfo, Option(arg1Ast))
-        case _ =>
-          val (lhsAst, rhsAst) = nodeInfo.node match {
-            case ObjectMethod =>
-              val objectMethodAst = astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true)
-              val keyName         = if (hasKey(nodeInfo.json("key"), "name")) { nodeInfo.json("key")("name").str }
-              else { code(nodeInfo.json("key")) }
-              val keyAst = objectMethodAst.root match {
-                case Some(r: NewMethodRef) if !hasKey(nodeInfo.json("key"), "name") =>
-                  Ast(literalNode(nodeInfo, keyName, keyName))
-                case _ =>
-                  val fieldName = stripQuotes(keyName)
-                  Ast(fieldIdentifierNode(nodeInfo, fieldName, fieldName))
+    val properties: Seq[ObjectMethod | ObjectProperty | SpreadElement | RestElement] = objExpr match {
+      case o: ObjectExpression => o.properties
+      case o: ObjectPattern    => o.properties
+    }
+    val propertiesAsts = properties.map {
+      case property @ (_: SpreadElement | _: RestElement) =>
+        val arg1Ast = Ast(identifierNode(property, tmpName))
+        astForSpreadOrRestElement(property, Option(arg1Ast))
+      case property: (ObjectMethod | ObjectProperty) =>
+        val (lhsAst, rhsAst) = property match {
+          case objectMethod: ObjectMethod =>
+            val objectMethodAst = astForFunctionDeclaration(objectMethod, shouldCreateFunctionReference = true)
+            val keyName         = objectMethod.key match {
+              case id: Identifier => id.name
+              case other          => other.code
+            }
+            val keyAst = objectMethodAst.root match {
+              case Some(_: NewMethodRef) if !objectMethod.key.isInstanceOf[Identifier] =>
+                Ast(literalNode(property, keyName, keyName))
+              case _ =>
+                val fieldName = stripQuotes(keyName)
+                Ast(fieldIdentifierNode(property, fieldName, fieldName))
+            }
+            (keyAst, objectMethodAst)
+          case objectProperty: ObjectProperty =>
+            val keyAst =
+              if (objectProperty.computed) {
+                astForNode(objectProperty.key)
+              } else {
+                val fieldName = stripQuotes(objectProperty.key.code)
+                Ast(fieldIdentifierNode(property, fieldName, fieldName))
               }
-              (keyAst, objectMethodAst)
-            case ObjectProperty =>
-              val key    = createBabelNodeInfo(nodeInfo.json("key"))
-              val keyAst = key.node match {
-                case _ if nodeInfo.json("computed").bool =>
-                  astForNode(key.json)
-                case _ =>
-                  val fieldName = stripQuotes(key.code)
-                  Ast(fieldIdentifierNode(nodeInfo, fieldName, fieldName))
-              }
-              val ast = astForNodeWithFunctionReference(nodeInfo.json("value"))
-              (keyAst, ast)
-            case _ =>
-              // can't happen as per https://github.com/babel/babel/blob/main/packages/babel-types/src/ast-types/generated/index.ts#L573
-              // just to make the compiler happy here.
-              ???
-          }
+            val ast = astForNodeWithFunctionReference(objectProperty.value)
+            (keyAst, ast)
+        }
 
-          val leftHandSideTmpNode   = identifierNode(nodeInfo, tmpName)
-          val leftHandSideAccessAst = lhsAst.root match {
-            case Some(f: NewFieldIdentifier) =>
-              createFieldAccessCallAst(leftHandSideTmpNode, f, nodeInfo.lineNumber, nodeInfo.columnNumber)
-            case _ =>
-              createIndexAccessCallAst(Ast(leftHandSideTmpNode), lhsAst, nodeInfo.lineNumber, nodeInfo.columnNumber)
-          }
+        val leftHandSideTmpNode   = identifierNode(property, tmpName)
+        val leftHandSideAccessAst = lhsAst.root match {
+          case Some(f: NewFieldIdentifier) =>
+            createFieldAccessCallAst(leftHandSideTmpNode, f, property.lineNumber, property.columnNumber)
+          case _ =>
+            createIndexAccessCallAst(Ast(leftHandSideTmpNode), lhsAst, property.lineNumber, property.columnNumber)
+        }
 
-          createAssignmentCallAst(
-            leftHandSideAccessAst,
-            rhsAst,
-            s"${codeOf(leftHandSideAccessAst.nodes.head)} = ${codeOf(rhsAst.nodes.head)}",
-            nodeInfo.lineNumber,
-            nodeInfo.columnNumber
-          )
-      }
+        createAssignmentCallAst(
+          leftHandSideAccessAst,
+          rhsAst,
+          s"${codeOf(leftHandSideAccessAst.nodes.head)} = ${codeOf(rhsAst.nodes.head)}",
+          property.lineNumber,
+          property.columnNumber
+        )
     }
 
     val tmpNode = identifierNode(objExpr, tmpName)
@@ -515,8 +539,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     blockAst(blockNode_, childrenAsts)
   }
 
-  protected def astForTSSatisfiesExpression(satisfiesExpr: BabelNodeInfo): Ast = {
+  protected def astForTSSatisfiesExpression(satisfiesExpr: TSSatisfiesExpression): Ast = {
     // Ignores the type, i.e. `x satisfies T` is understood as `x`.
-    astForNode(satisfiesExpr.json("expression"))
+    astForNode(satisfiesExpr.expression)
   }
 }

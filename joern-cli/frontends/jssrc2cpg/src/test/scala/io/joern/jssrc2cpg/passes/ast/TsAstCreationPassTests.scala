@@ -215,4 +215,17 @@ class TsAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
     cpg.call.nameExact("foo").size shouldBe 1
   }
 
+  "have correct structure for a type annotation where none is allowed (parser error recovery)" in {
+    // The parser recovers from the annotated argument with a `TSTypeCastExpression`, which is not part of `@babel/types`.
+    val cpg = code("""
+        |trustProductDescription(tableData: any[]);
+        |""".stripMargin)
+    val List(call) = cpg.call.nameExact("trustProductDescription").l
+    inside(call.argument(1)) { case cast: Call =>
+      cast.name shouldBe Operators.cast
+      cast.argument.size shouldBe 2
+      cast.argument(2).code shouldBe "tableData"
+    }
+  }
+
 }

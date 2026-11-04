@@ -1,6 +1,6 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.jssrc2cpg.parser.BabelNodeSyntax.{BabelNode, SwitchCase}
 import io.joern.x2cpg
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
@@ -11,7 +11,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 
 trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def callNode(node: BabelNodeInfo, code: String, name: String, dispatchType: String): NewCall = {
+  protected def callNode(node: BabelNode, code: String, name: String, dispatchType: String): NewCall = {
     val fullName = dispatchType match {
       case DispatchTypes.STATIC_DISPATCH => name
       case _                             => x2cpg.Defines.DynamicCallUnknownFullName
@@ -19,17 +19,19 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     callNode(node, code, name, fullName, dispatchType, None, Option(Defines.Any))
   }
 
-  protected def methodReturnNode(func: BabelNodeInfo): NewMethodReturn = {
+  protected def methodReturnNode(func: FunctionNode): NewMethodReturn = {
     val tpe           = typeFor(func)
     val possibleTypes = Seq(tpe)
     val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
     methodReturnNode(func, typeFullName).possibleTypes(possibleTypes)
   }
 
-  protected def jumpTargetNode(switchCase: BabelNodeInfo): NewJumpTarget = {
-    val (switchName, switchCode) = if (switchCase.json("test").isNull) { ("default", "default:") }
-    else { ("case", s"case ${code(switchCase.json("test"))}:") }
-    val parserTypeName = switchCase.node.toString
+  protected def jumpTargetNode(switchCase: SwitchCase): NewJumpTarget = {
+    val (switchName, switchCode) = switchCase.test match {
+      case None       => ("default", "default:")
+      case Some(test) => ("case", s"case ${test.code}:")
+    }
+    val parserTypeName = switchCase.nodeType
     jumpTargetNode(switchCase, switchName, switchCode, Some(parserTypeName))
   }
 
@@ -97,7 +99,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
   protected def voidCallNode(line: Option[Int], column: Option[Int]): NewCall =
     callNode("void 0", "<operator>.void", DispatchTypes.STATIC_DISPATCH, line, column)
 
-  protected def literalNode(node: BabelNodeInfo, code: String, dynamicTypeOption: Option[String]): NewLiteral = {
+  protected def literalNode(node: BabelNode, code: String, dynamicTypeOption: Option[String]): NewLiteral = {
     val typeFullName = dynamicTypeOption match {
       case Some(value) if Defines.isBuiltinType(value) => value
       case _                                           => Defines.Any
@@ -155,7 +157,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     callAst(callNode_, arguments)
   }
 
-  protected def identifierNode(node: BabelNodeInfo, name: String): NewIdentifier = {
+  protected def identifierNode(node: BabelNode, name: String): NewIdentifier = {
     val dynamicInstanceTypeOption = name match {
       case "this"    => typeHintForThisExpression(Option(node)).headOption
       case "console" => Option(Defines.Console)

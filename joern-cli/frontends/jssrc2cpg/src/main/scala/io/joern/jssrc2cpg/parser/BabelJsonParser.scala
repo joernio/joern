@@ -12,11 +12,13 @@ object BabelJsonParser {
   case class ParseResult(
     filename: String,
     fullPath: String,
-    json: Value,
+    ast: BabelNodeSyntax.File,
     fileContent: String,
     typeMap: Map[String, String],
     fileLoc: Int
-  ) extends BaseParserResult
+  ) extends BaseParserResult {
+    override def json: Value = ast.json
+  }
 
   /** Strips the last file extension, i.e. everything after and including the final '.'. */
   def stripExtension(path: String): String = {
@@ -46,7 +48,8 @@ object BabelJsonParser {
     val fullPath          = Paths.get(rootPath.toString, filename)
     val sourceFileContent = IOUtils.readEntireFile(fullPath)
     val fileLoc           = sourceFileContent.lines().count().toInt
-    ParseResult(filename, fullPath.toString, json, sourceFileContent, typeMap, fileLoc)
+    val ast               = BabelNodeSyntax.BabelAstFile(json).ast
+    ParseResult(filename, fullPath.toString, ast, sourceFileContent, typeMap, fileLoc)
   }
 
   def readFile(rootPath: Path, file: Path): Try[ParseResult] = {
