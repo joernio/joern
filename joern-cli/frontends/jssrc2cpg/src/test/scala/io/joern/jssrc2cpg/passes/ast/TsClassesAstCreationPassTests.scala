@@ -222,7 +222,7 @@ class TsClassesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
         val constructorTypeDecl =
           cpg.typeDecl.fullNameExact(s"${greeter.fullName}:${io.joern.x2cpg.Defines.ConstructorMethodName}").head
         constructorTypeDecl.member.isStatic.name.l shouldBe List("a")
-        greeter.member.isPrivate.l shouldBe greeter.member.name("b", "e").l
+        greeter.member.isPrivate.l shouldBe greeter.member.nameExact("b", "#e").l
         greeter.member.isPublic.head shouldBe greeter.member.name("c").head
         greeter.member.isProtected.head shouldBe greeter.member.name("d").head
       }
