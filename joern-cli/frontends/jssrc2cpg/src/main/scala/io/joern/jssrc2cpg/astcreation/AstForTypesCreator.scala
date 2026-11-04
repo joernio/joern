@@ -204,22 +204,33 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     forElem: BabelNode,
     methodBlockContent: ConstructorContent
   ): MethodAst = {
-    val fakeStart       = ujson.Num(forElem.start.getOrElse(-1))
-    val fakeEnd         = ujson.Num(forElem.end.getOrElse(-1))
+    val fakeStart = ujson.Num(forElem.start.getOrElse(-1))
+    val fakeEnd   = ujson.Num(forElem.end.getOrElse(-1))
+    // the constructor is located where the class is
+    val fakeLoc         = forElem.json.objOpt.flatMap(_.get("loc")).filter(_ != ujson.Null).toList.map("loc" -> _)
     val fakeConstructor = ClassMethod(
-      ujson.Obj(
-        "type"   -> "ClassMethod",
-        "start"  -> fakeStart,
-        "end"    -> fakeEnd,
-        "key"    -> ujson.Obj("type" -> "Identifier", "name" -> "constructor", "start" -> fakeStart, "end" -> fakeEnd),
-        "kind"   -> "constructor",
-        "static" -> false,
-        "computed"  -> false,
-        "generator" -> false,
-        "async"     -> false,
-        "id"        -> ujson.Null,
-        "params"    -> ujson.Arr(),
-        "body"      -> ujson.Obj("type" -> "BlockStatement", "body" -> ujson.Arr(), "directives" -> ujson.Arr())
+      ujson.Obj.from(
+        List(
+          "type"  -> ujson.Str("ClassMethod"),
+          "start" -> fakeStart,
+          "end"   -> fakeEnd,
+          "key"   -> ujson.Obj.from(
+            List(
+              "type"  -> ujson.Str("Identifier"),
+              "name"  -> ujson.Str("constructor"),
+              "start" -> fakeStart,
+              "end"   -> fakeEnd
+            ) ++ fakeLoc
+          ),
+          "kind"      -> ujson.Str("constructor"),
+          "static"    -> ujson.False,
+          "computed"  -> ujson.False,
+          "generator" -> ujson.False,
+          "async"     -> ujson.False,
+          "id"        -> ujson.Null,
+          "params"    -> ujson.Arr(),
+          "body"      -> ujson.Obj("type" -> "BlockStatement", "body" -> ujson.Arr(), "directives" -> ujson.Arr())
+        ) ++ fakeLoc
       )
     )
     val result = createMethodAstAndNode(fakeConstructor, false, false, methodBlockContent)
