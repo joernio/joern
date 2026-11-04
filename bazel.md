@@ -1,12 +1,12 @@
 # Important information about Bazel
-The Bazel build is currently experimental and intended for developement purposes.
+The Bazel build is currently experimental and intended for development purposes.
 It is not used in CI or for artifact releases.
-Currenlty only a subset of the entire repository can be build with Bazel.
+Currently only a subset of the entire repository can be build with Bazel.
 E.g. only a subset of the frontends are included. Check for the
 existence joern-cli/frontends/<frontend>/BUILD file to check if a frontend is already
 included.
 
-## Prerequisits
+## Prerequisites
 - Bazelisk - This is a frontend to Bazel which makes sure you have the right version
   of Bazel on your system. Use it since Bazel wont work if you dont use the exact
   version configured in `.bazelversion`.
@@ -76,9 +76,9 @@ Additionally the command `REPIN=1 bazel run @maven//:pin` needs to be run in the
 repository root directory to regenerate the `maven_install.json` lock file.
 
 ## Multi-platform build
-Some of our targets are platform dependend. This is most often the case if a frontend brings
-in platform dependend AST generator components. By default the targets are build for the platform
-which executes the build. A platform independend target build is created with the command line
+Some of our targets are platform dependent. This is most often the case if a frontend brings
+in platform dependent AST generator components. By default the targets are build for the platform
+which executes the build. A platform independent target build is created with the command line
 flag `--//:all_platforms=true`. This packs binaries for all platforms into the resulting artifact.
 
 ## Trouble shooting
@@ -133,7 +133,7 @@ There are two workarounds:
    the Scala target with the runtime dependency.
 
 In practice this is not much of a problem since runtime dependency are usually only brought
-in at leaf targets. Those leafs are usualy binary target which only reference a main class and
+in at leaf targets. Those leafs are usually binary target which only reference a main class and
 libraries. So we do not even have Scala code and can directly use `java_binary`.
 
 ### Current problems (aka todo-list)
