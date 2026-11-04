@@ -16,6 +16,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewLocal,
   NewMember,
   NewMethod,
+  NewMethodParameterIn,
   NewNamespaceBlock,
   NewNode,
   NewTypeDecl
@@ -60,11 +61,12 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
         diffGraph.addEdge(identifier, decl, EdgeTypes.REF)
 
       case (identifier, decl, capturingClosures) =>
-        val innermostLocal = capturingClosures.foldLeft(decl: NewNode) { (capturedFrom, closure) =>
-          capturedLocals.getOrElseUpdate(
-            (closure, identifier.name),
-            createCapturedLocal(closure, identifier, capturedFrom)
-          )
+        val innermostLocal = capturingClosures.foldLeft(decl: NewLocal | NewMethodParameterIn) {
+          (capturedFrom, closure) =>
+            capturedLocals.getOrElseUpdate(
+              (closure, identifier.name),
+              createCapturedLocal(closure, identifier, capturedFrom)
+            )
         }
         diffGraph.addEdge(identifier, innermostLocal, EdgeTypes.REF)
     }
@@ -73,7 +75,7 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
   private def createCapturedLocal(
     closure: ClosureContext,
     identifier: NewIdentifier,
-    capturedFrom: NewNode
+    capturedFrom: NewLocal | NewMethodParameterIn
   ): NewLocal = {
     val closureBindingId = s"${closure.method.fullName}:${identifier.name}"
     val local            = NewLocal()
@@ -81,6 +83,9 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
       .code(identifier.code)
       .typeFullName(identifier.typeFullName)
       .closureBindingId(Some(closureBindingId))
+      .lineNumber(closure.methodRef.lineNumber)
+      .columnNumber(closure.methodRef.columnNumber)
+      .order(0)
     val binding = closureBindingNode(closureBindingId, EvaluationStrategies.BY_REFERENCE)
     diffGraph.addNode(local)
     diffGraph.addNode(binding)

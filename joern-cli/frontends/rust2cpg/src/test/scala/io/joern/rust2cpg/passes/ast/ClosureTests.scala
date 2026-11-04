@@ -96,8 +96,11 @@ class ClosureTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct REF edges" in {
       cpg.method.nameExact("main").block.local.nameExact("x").referencingIdentifiers.lineNumber.l shouldBe List(3)
-      cpg.method.nameExact("<lambda>0").block.local.nameExact("x").referencingIdentifiers.lineNumber.l shouldBe
-        List(4, 4)
+      inside(cpg.method.nameExact("<lambda>0").block.local.l) { case local :: Nil =>
+        local.name shouldBe "x"
+        local.lineNumber shouldBe Some(4)
+        local.referencingIdentifiers.lineNumber.l shouldBe List(4, 4)
+      }
     }
   }
 
@@ -135,8 +138,16 @@ class ClosureTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct REF edges" in {
       cpg.method.nameExact("main").block.local.nameExact("x").referencingIdentifiers.lineNumber.l shouldBe List(3)
-      cpg.method.nameExact("<lambda>0").block.local.nameExact("x").referencingIdentifiers shouldBe empty
-      cpg.method.nameExact("<lambda>1").block.local.nameExact("x").referencingIdentifiers.lineNumber.l shouldBe List(4)
+      inside(cpg.method.nameExact("<lambda>0").block.local.l) { case local :: Nil =>
+        local.name shouldBe "x"
+        local.lineNumber shouldBe Some(4)
+        local.referencingIdentifiers shouldBe empty
+      }
+      inside(cpg.method.nameExact("<lambda>1").block.local.l) { case local :: Nil =>
+        local.name shouldBe "x"
+        local.lineNumber shouldBe Some(4)
+        local.referencingIdentifiers.lineNumber.l shouldBe List(4)
+      }
     }
   }
 
@@ -164,7 +175,11 @@ class ClosureTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct REF edges" in {
       cpg.method.nameExact("f").parameter.nameExact("x").referencingIdentifiers shouldBe empty
-      cpg.method.nameExact("<lambda>0").block.local.nameExact("x").referencingIdentifiers.lineNumber.l shouldBe List(3)
+      inside(cpg.method.nameExact("<lambda>0").block.local.l) { case local :: Nil =>
+        local.name shouldBe "x"
+        local.lineNumber shouldBe Some(3)
+        local.referencingIdentifiers.lineNumber.l shouldBe List(3)
+      }
     }
   }
 
