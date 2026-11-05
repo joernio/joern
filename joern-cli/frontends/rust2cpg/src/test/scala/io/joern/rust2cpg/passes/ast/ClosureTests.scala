@@ -104,6 +104,39 @@ class ClosureTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "move closure capturing enclosing local" should {
+    val cpg = code("""
+        |fn main() {
+        | let mut n = 0;
+        | move || n += 1;
+        |}
+        |""".stripMargin)
+
+    "have correct captured local" in {
+      inside(cpg.method.nameExact("<lambda>0").block.local.l) { case local :: Nil =>
+        local.name shouldBe "n"
+        local.closureBindingId shouldBe Some("rust2cpgtest::main::<lambda>0:n")
+      }
+    }
+
+    "have correct closure binding" in {
+      inside(cpg.method.nameExact("main").block.local.nameExact("n").closureBinding.l) { case binding :: Nil =>
+        binding.closureBindingId shouldBe Some("rust2cpgtest::main::<lambda>0:n")
+        binding.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
+        binding._methodRefViaCaptureIn.methodFullName.l shouldBe List("rust2cpgtest::main::<lambda>0")
+      }
+    }
+
+    "have correct REF edges" in {
+      cpg.method.nameExact("main").block.local.nameExact("n").referencingIdentifiers.lineNumber.l shouldBe List(3)
+      inside(cpg.method.nameExact("<lambda>0").block.local.l) { case local :: Nil =>
+        local.name shouldBe "n"
+        local.lineNumber shouldBe Some(4)
+        local.referencingIdentifiers.lineNumber.l shouldBe List(4)
+      }
+    }
+  }
+
   "nested closure capturing enclosing local" should {
     val cpg = code("""
         |fn main() {

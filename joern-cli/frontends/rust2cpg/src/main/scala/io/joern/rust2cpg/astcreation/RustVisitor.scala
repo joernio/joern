@@ -2314,7 +2314,13 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val methodRef   = methodRefNode(closureExpr, code(closureExpr), method.fullName, method.fullName)
     val block       = blockNode(closureExpr.expr)
 
-    contextStack.pushClosure(method, methodRef, block)
+    val evaluationStrategy = if (closureExpr.moveKwToken.isDefined) {
+      EvaluationStrategies.BY_VALUE
+    } else {
+      EvaluationStrategies.BY_REFERENCE
+    }
+
+    contextStack.pushClosure(method, methodRef, block, evaluationStrategy)
     lowerClosureExprAsDetachedAst(closureExpr, method, block)
     contextStack.pop()
 
