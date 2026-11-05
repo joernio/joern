@@ -82,6 +82,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
     IASTUnaryExpression.op_noexcept    -> Defines.OperatorNoExcept
   )
 
+  private val UnevaluatedOperators: Set[Int] =
+    Set(IASTUnaryExpression.op_noexcept, IASTUnaryExpression.op_sizeof, IASTUnaryExpression.op_alignOf)
+
   protected def astForExpression(expression: IASTExpression): Ast = {
     if (isUnsupportedCoroutineKeyword(expression)) {
       return astForUnsupportedCoroutineNode(expression)
@@ -193,6 +196,29 @@ trait AstForExpressionsCreator { this: AstCreator =>
         binary.getOperator == IASTBinaryExpression.op_pmdot ||
         binary.getOperator == IASTBinaryExpression.op_pmarrow
       case _ => false
+    }
+  }
+
+  /** True for a node inside the operand of one of `UnevaluatedOperators`, which is not evaluated: [expr.context]/1 for
+    * `sizeof` and `noexcept`, and GCC's documented behaviour for the `__alignof__` expression form, standard `alignof`
+    * taking a type-id only.
+    *
+    * C exempts a variable-length-array operand, which [6.5.3.4]/2 does evaluate. That does not reach here: the size
+    * expression of a type-id is not lowered, so neither `sizeof(int[f()])` nor `sizeof(*(int(*)[f()])p)` carries a call
+    * for `f`, with or without this guard.
+    *
+    * The walk stops at a lambda expression, whose body c2cpg lowers into its own METHOD, and at the enclosing function
+    * definition, which bounds it to one expression.
+    */
+  @tailrec
+  private def isInUnevaluatedOperand(node: IASTNode): Boolean = {
+    node.getParent match {
+      case null                                                       => false
+      case (_: ICPPASTLambdaExpression) | (_: IASTFunctionDefinition) => false
+      case unary: IASTUnaryExpression
+          if UnevaluatedOperators.contains(unary.getOperator) && (unary.getOperand eq node) =>
+        true
+      case parent => isInUnevaluatedOperand(parent)
     }
   }
 
@@ -409,9 +435,13 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   private def astForCallExpression(call: IASTFunctionCallExpression): Ast = {
-    call match {
-      case cppCall: ICPPASTFunctionCallExpression => astForCppCallExpression(cppCall)
-      case cCall: CASTFunctionCallExpression      => astForCCallExpression(cCall)
+    if (isInUnevaluatedOperand(call)) {
+      Ast(unknownNode(call, code(call)).typeFullName(registerType(safeGetExpressionType(call))))
+    } else {
+      call match {
+        case cppCall: ICPPASTFunctionCallExpression => astForCppCallExpression(cppCall)
+        case cCall: CASTFunctionCallExpression      => astForCCallExpression(cCall)
+      }
     }
   }
 
