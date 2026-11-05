@@ -5,7 +5,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EvaluationStrategies, Operators}
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
-import org.eclipse.cdt.core.dom.ast.c.ICArrayType
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTCompoundStatementExpression
 import org.eclipse.cdt.internal.core.dom.parser.c.{
@@ -27,7 +26,7 @@ import scala.util.Try
 
 trait AstForExpressionsCreator { this: AstCreator =>
 
-  import FullNameProvider.{replaceOperator, stripTemplateTags}
+  import FullNameProvider.{constSuffix, replaceOperator, stripTemplateTags}
 
   private val OperatorMap: Map[Int, String] = Map(
     IASTBinaryExpression.op_multiply         -> Operators.multiplication,
@@ -160,18 +159,6 @@ trait AstForExpressionsCreator { this: AstCreator =>
     }
   }
 
-  @tailrec
-  private def isConstType(tpe: IType): Boolean = {
-    tpe match {
-      case t: ICPPFunctionType  => t.isConst
-      case t: IPointerType      => t.isConst
-      case t: IQualifierType    => t.isConst
-      case t: ICArrayType       => t.isConst
-      case t: ICPPReferenceType => isConstType(t.getType)
-      case _                    => false
-    }
-  }
-
   /** Strips the cv-qualifiers CDT wraps around the type of a cv-qualified expression.
     *
     * `IQualifierType` is a type container, not a type: for `const T x` the expression `x` has type
@@ -263,8 +250,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
             val args        = call.getArguments.toList.map(a => astForNode(a))
 
             val method    = fieldRefExpr.getFieldName.getBinding.asInstanceOf[ICPPMethod]
-            val constFlag = if (safeCdtCall(method.getType).exists(isConstType)) { Defines.ConstSuffix }
-            else { "" }
+            val constFlag = safeCdtCall(method.getType).map(constSuffix).getOrElse("")
             // TODO This wont do if the name is a reference.
             val name =
               stripTemplateTags(replaceOperator(StringUtils.normalizeSpace(fieldRefExpr.getFieldName.toString)))
