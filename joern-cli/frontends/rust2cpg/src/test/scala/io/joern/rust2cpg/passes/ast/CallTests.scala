@@ -440,6 +440,78 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.methodRef.referencedMethod.l shouldBe cpg.method.fullNameExact("rust2cpgtest::Counter::incr").l
     }
   }
+
+  "call via parenthesized path" should {
+    val cpg = code("""
+        |fn foo(x: i32) -> i32 { x }
+        |fn main() { ((foo))(1); }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("foo").l) { case call :: Nil =>
+        call.code shouldBe "((foo))(1)"
+        call.methodFullName shouldBe "rust2cpgtest::foo"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        call.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("foo").argument.sortBy(_.argumentIndex).l) { case (lit: Literal) :: Nil =>
+        lit.code shouldBe "1"
+        lit.argumentIndex shouldBe 1
+      }
+    }
+  }
+
+  "call via macro-expanded path" should {
+    val cpg = code("""
+        |macro_rules! call { () => { foo }; }
+        |fn foo(x: i32) -> i32 { x }
+        |fn main() { call!()(1); }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("foo").l) { case call :: Nil =>
+        call.code shouldBe "call!()(1)"
+        call.methodFullName shouldBe "rust2cpgtest::foo"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        call.lineNumber shouldBe Some(4)
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("foo").argument.sortBy(_.argumentIndex).l) { case (lit: Literal) :: Nil =>
+        lit.code shouldBe "1"
+        lit.argumentIndex shouldBe 1
+      }
+    }
+  }
+
+  "call via nested macro-expanded path" should {
+    val cpg = code("""
+        |macro_rules! inner { () => { foo }; }
+        |macro_rules! outer { () => { inner!() }; }
+        |fn foo(x: i32) -> i32 { x }
+        |fn main() { outer!()(1); }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("foo").l) { case call :: Nil =>
+        call.code shouldBe "outer!()(1)"
+        call.methodFullName shouldBe "rust2cpgtest::foo"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        call.lineNumber shouldBe Some(5)
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("foo").argument.sortBy(_.argumentIndex).l) { case (lit: Literal) :: Nil =>
+        lit.code shouldBe "1"
+        lit.argumentIndex shouldBe 1
+      }
+    }
+  }
 }
 
 class CallTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
