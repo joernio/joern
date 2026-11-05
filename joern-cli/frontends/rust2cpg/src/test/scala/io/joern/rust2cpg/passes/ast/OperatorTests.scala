@@ -305,6 +305,22 @@ class OperatorTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "assignment to _" should {
+    val cpg = code("""
+        |fn foo() -> i32 { 1 }
+        |fn main() {
+        | _ = foo();
+        |}
+        |""".stripMargin)
+
+    "have correct children" in {
+      inside(cpg.method.nameExact("main").block.astChildren.l) { case (call: Call) :: Nil =>
+        call.code shouldBe "foo()"
+        call.methodFullName shouldBe "rust2cpgtest::foo"
+      }
+    }
+  }
 }
 
 class OperatorTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {

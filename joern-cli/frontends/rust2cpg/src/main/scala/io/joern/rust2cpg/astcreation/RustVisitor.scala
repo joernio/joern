@@ -1113,15 +1113,15 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  )
   //  rhs:Expr
   private def visitBinExpr(binExpr: BinExpr): Ast = {
-    operatorNameFor(binExpr) match {
-      case Some(opName) =>
-        val typeFullName  = typeFullNameForExpr(binExpr)
-        val callNode      = operatorCallNode(binExpr, code(binExpr), opName, Some(typeFullName))
-        val Seq(lhs, rhs) = binExpr.expr
-        val lhsAst        = visitExpr(lhs)
-        val rhsAst        = if (allAssignmentTypes.contains(opName)) visitRhsExpr(rhs) else visitExpr(rhs)
+    (operatorNameFor(binExpr), binExpr.expr) match {
+      case (Some(Operators.assignment), Seq(_: UnderscoreExpr, rhs)) => visitRhsExpr(rhs)
+      case (Some(opName), Seq(lhs, rhs))                             =>
+        val typeFullName = typeFullNameForExpr(binExpr)
+        val callNode     = operatorCallNode(binExpr, code(binExpr), opName, Some(typeFullName))
+        val lhsAst       = visitExpr(lhs)
+        val rhsAst       = if (allAssignmentTypes.contains(opName)) visitRhsExpr(rhs) else visitExpr(rhs)
         callAst(callNode, Seq(lhsAst, rhsAst))
-      case None => notHandledYet(binExpr)
+      case _ => notHandledYet(binExpr)
     }
   }
 
