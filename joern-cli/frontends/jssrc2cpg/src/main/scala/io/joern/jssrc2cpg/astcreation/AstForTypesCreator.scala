@@ -690,12 +690,13 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         constructorTypeDecl,
         staticMemberInits,
         staticInitBlocks,
-        s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
+        s"${constructorNode.fullName}:${io.joern.x2cpg.Defines.StaticInitMethodName}",
         Defines.Any,
         MemberOwner(typeName, constructorNode.fullName)
       )
       Ast.storeInDiffGraph(init, diffGraph)
-      diffGraph.addEdge(typeDeclNode_, init.nodes.head, EdgeTypes.AST)
+      // the static initializer belongs to the constructor function, just like the static members it initializes
+      diffGraph.addEdge(constructorTypeDecl, init.nodes.head, EdgeTypes.AST)
     }
 
     methodAstParentStack.pop()
@@ -709,9 +710,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     if (shouldCreateAssignmentCall) {
       // return a synthetic assignment to enable tracing of the implicitly created identifier for
       // the class definition assigned to its constructor
-      val classIdNode        = identifierNode(clazz, typeName, typeName, Defines.Any, Seq(constructorNode.fullName))
-      val constructorRefNode =
-        methodRefNode(clazz, constructorNode.code, constructorNode.fullName, constructorNode.fullName)
+      val classIdNode = identifierNode(clazz, typeName, typeName, Defines.Any, Seq(constructorNode.fullName))
 
       val idLocal = localNode(clazz, typeName, typeName, Defines.Any).order(0)
       diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
@@ -720,7 +719,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
       val assignmentAst = createAssignmentCallAst(
         classIdNode,
-        constructorRefNode,
+        typeRefNode_,
         s"$typeName = ${constructorNode.fullName}",
         clazz.lineNumber,
         clazz.columnNumber
@@ -734,12 +733,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       if (classDecorationAst.root.isDefined || propertyDecorationAsts.nonEmpty || methodDecorationAsts.nonEmpty) {
         val blockNode_   = blockNode(clazz)
         val childrenAsts =
-          List(Ast(typeRefNode_), assignmentAst, classDecorationAst) ++ propertyDecorationAsts ++ methodDecorationAsts
+          List(assignmentAst, classDecorationAst) ++ propertyDecorationAsts ++ methodDecorationAsts
         Ast(blockNode_).withChildren(childrenAsts)
       } else {
-        val blockNode_   = blockNode(clazz)
-        val childrenAsts = List(Ast(typeRefNode_), assignmentAst)
-        Ast(blockNode_).withChildren(childrenAsts)
+        val blockNode_ = blockNode(clazz)
+        Ast(blockNode_).withChildren(List(assignmentAst))
       }
     } else {
       Ast(typeRefNode_)

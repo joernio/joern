@@ -338,14 +338,15 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
   private def targetsToClassIdentifierPair(targets: List[AstNode], src: StoredNode): List[UsageInput] = {
     targets.flatMap {
       case expr: Expression =>
-        expr.method.typeDecl.map { typeDecl => UsageInput(src, typeDecl, expr) }
+        expr.method.typeDecl.map { typeDecl => UsageInput(src, owningClass(typeDecl), expr) }
       case member: Member =>
         member.typeDecl.map { typeDecl => UsageInput(src, owningClass(typeDecl), member) }
     }
   }
 
-  /** Some frontends (e.g., jssrc2cpg) attach the static members of a class to the TYPE_DECL of its constructor function
-    * instead of the class TYPE_DECL itself to properly resolve calls to these static members.
+  /** Some frontends (e.g., jssrc2cpg) attach the static members of a class, and the static initializer that initializes
+    * them, to the TYPE_DECL of its constructor function instead of the class TYPE_DECL itself to properly resolve calls
+    * to these static members.
     */
   private def owningClass(typeDecl: TypeDecl): TypeDecl = {
     if (typeDecl.name == Defines.ConstructorMethodName) {

@@ -63,10 +63,17 @@ class TsClassesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
         init.block.astChildren.isCall.code.loneElement shouldBe "a = 1"
       }
 
-      inside(cpg.typeDecl.nameExact("Foo").method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l) {
-        case List(init) =>
-          init.modifier.modifierType.l shouldBe List(ModifierTypes.STATIC, ModifierTypes.CONSTRUCTOR)
-          init.block.astChildren.isCall.code.loneElement shouldBe "static b = 2"
+      // the static initializer of a class belongs to its constructor function
+      inside(
+        cpg.typeDecl
+          .fullNameExact("Test0.ts::program:Foo:<init>")
+          .method
+          .nameExact(io.joern.x2cpg.Defines.StaticInitMethodName)
+          .l
+      ) { case List(init) =>
+        init.fullName shouldBe "Test0.ts::program:Foo:<init>:<clinit>"
+        init.modifier.modifierType.l shouldBe List(ModifierTypes.STATIC, ModifierTypes.CONSTRUCTOR)
+        init.block.astChildren.isCall.code.loneElement shouldBe "static b = 2"
       }
     }
 

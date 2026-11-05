@@ -60,12 +60,11 @@ class JsClassesAstCreationPassTests extends JsSrc2CpgSuite {
     "have a synthetic assignment for ClassA" in {
       val cpg = code("class ClassA {}")
       cpg.typeDecl.nameExact("ClassA").fullNameExact("Test0.js::program:ClassA").size shouldBe 1
-      inside(cpg.assignment.argument.l) { case List(id: Identifier, constructorRef: MethodRef) =>
+      inside(cpg.assignment.argument.l) { case List(id: Identifier, typeRef: TypeRef) =>
         id.name shouldBe "ClassA"
         id.dynamicTypeHintFullName shouldBe List(s"Test0.js::program:ClassA:${Defines.ConstructorMethodName}")
-        constructorRef.code shouldBe "constructor() {}"
-        constructorRef.typeFullName shouldBe s"Test0.js::program:ClassA:${Defines.ConstructorMethodName}"
-        constructorRef.methodFullName shouldBe s"Test0.js::program:ClassA:${Defines.ConstructorMethodName}"
+        typeRef.code shouldBe "class ClassA"
+        typeRef.typeFullName shouldBe s"Test0.js::program:ClassA:${Defines.ConstructorMethodName}"
       }
     }
 
@@ -186,8 +185,10 @@ class JsClassesAstCreationPassTests extends JsSrc2CpgSuite {
       }
       dInit.argument(2).code shouldBe "4"
 
-      val List(clInit) = classATypeDecl.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l
-      val List(bInit)  = clInit.block.astChildren.isCall.isAssignment.l
+      val List(clInit) = constructorTypeDecl.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l
+      clInit.fullName shouldBe s"$constructorFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}"
+      classATypeDecl.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName) shouldBe empty
+      val List(bInit) = clInit.block.astChildren.isCall.isAssignment.l
       bInit.code shouldBe "static accessor b = 2"
       assertFieldAccess(bInit.argument(1), "ClassA.b", "ClassA", "b")
       inside(bInit.argument(1).astChildren.isTypeRef.l) { case List(classRef) =>
@@ -317,7 +318,7 @@ class JsClassesAstCreationPassTests extends JsSrc2CpgSuite {
       d.name shouldBe "d"
       d.code shouldBe "static d"
 
-      val List(clInitMethod)         = classATypeDecl.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l
+      val List(clInitMethod) = constructorTypeDecl.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l
       val List(cInitCall, dInitCall) = clInitMethod.block.astChildren.isCall.isAssignment.l
       cInitCall.code shouldBe "static c = true"
       dInitCall.code shouldBe "this.d = false"
@@ -360,15 +361,14 @@ class JsClassesAstCreationPassTests extends JsSrc2CpgSuite {
       }
     }
 
-    "have a METHOD_REF and a TYPE_REF to the constructor for a class declaration" in {
+    "have a single TYPE_REF to the constructor and no METHOD_REF for a class declaration" in {
       val cpg = code("class Foo {}")
-      inside(cpg.assignment.argument(2).l) { case List(methodRef: MethodRef) =>
-        methodRef.typeFullName shouldBe s"Test0.js::program:Foo:${Defines.ConstructorMethodName}"
-        methodRef.methodFullName shouldBe s"Test0.js::program:Foo:${Defines.ConstructorMethodName}"
-      }
-      inside(cpg.typeRef.codeExact("class Foo").l) { case List(typeRef) =>
+      inside(cpg.assignment.argument(2).l) { case List(typeRef: TypeRef) =>
+        typeRef.code shouldBe "class Foo"
         typeRef.typeFullName shouldBe s"Test0.js::program:Foo:${Defines.ConstructorMethodName}"
       }
+      cpg.typeRef.codeExact("class Foo").size shouldBe 1
+      cpg.methodRef shouldBe empty
     }
 
     "have correct structure for type decls for classes with extends" in {
