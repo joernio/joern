@@ -55,17 +55,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     if (cached != null) {
       cached
     } else {
-      // Resolve start/end offsets and their line numbers once, then derive columns and code from them.
-      val startOffset = node.start
-      val endOffset   = node.end
-      val lineOfStart = startOffset.map(getLineOfSource)
-      val lineOfEnd   = endOffset.map(getLineOfSource)
-      val location    = NodeLocation(
-        codeForOffsets(startOffset, endOffset),
-        lineOfStart,
-        columnFor(startOffset, lineOfStart),
-        lineOfEnd,
-        columnFor(endOffset, lineOfEnd)
+      // Lines and columns come from the `loc` of the node as delivered by the parser. Note that the parser ends a
+      // line at `\n`, `\r\n`, a lone `\r`, `\u2028` and `\u2029`.
+      val location = NodeLocation(
+        codeForOffsets(node.start, node.end),
+        node.startLine,
+        node.startColumn,
+        node.endLine,
+        node.endColumn
       )
       nodeLocations.put(node, location)
       location
@@ -82,9 +79,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     def lineNumberEnd: Option[Int]   = locationOf(node).lineEnd
     def columnNumberEnd: Option[Int] = locationOf(node).columnEnd
   }
-
-  private def columnFor(offset: Option[Int], lineOfOffset: Option[Int]): Option[Int] =
-    offset.zip(lineOfOffset).map { case (position, line) => position - lineStartPositions(line - 1) }
 
   /** Clamps a raw start/end offset pair to the bounds of the file content. */
   protected def clampOffsets(startOffset: Int, endOffset: Int): (Int, Int) =
@@ -111,18 +105,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     */
   protected def functionNodeKey(node: BabelNode): String =
     range(node).getOrElse(node.json.render())
-
-  // Binary search: find first line whose end-position >= position
-  private def getLineOfSource(position: Int): Int = {
-    var lo = 0
-    var hi = lineEndPositions.length - 1
-    while (lo < hi) {
-      val mid = (lo + hi) >>> 1
-      if (lineEndPositions(mid) < position) lo = mid + 1
-      else hi = mid
-    }
-    lo + 1 // 1-based line numbers
-  }
 
   protected def setOrderExplicitly(ast: Ast, order: Int): Unit = {
     ast.root.foreach { case expr: ExpressionNew => expr.order = order }
@@ -201,29 +183,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val currentVariableName = s"${variableName}_$counter"
     usedVariableNames.update(variableName, counter)
     currentVariableName
-  }
-
-  protected def buildPositionArrays(source: String): (Array[Int], Array[Int]) = {
-    val ends                = mutable.ArrayBuffer[Int]()
-    val starts              = mutable.ArrayBuffer[Int]()
-    var firstPositionInLine = 0
-    var position            = 0
-    val data                = source.toCharArray
-    while (position < data.length) {
-      if (data(position) == '\n') {
-        ends += position
-        starts += firstPositionInLine
-        firstPositionInLine = position + 1
-      }
-      position += 1
-    }
-    // Final line (may not end with newline)
-    ends += position
-    starts += firstPositionInLine
-    // Extra entry for empty line at end of file (matches current BabelJsonParser behavior)
-    ends += (position + 1)
-    starts += 0
-    (ends.toArray, starts.toArray)
   }
 
   protected def calcMethodNameAndFullName(func: FunctionNode): (String, String) = {

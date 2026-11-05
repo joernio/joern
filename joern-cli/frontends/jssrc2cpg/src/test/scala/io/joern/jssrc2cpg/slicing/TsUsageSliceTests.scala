@@ -107,14 +107,23 @@ class TsUsageSliceTests extends DataFlowCodeToCpgSuite {
     "extract 'loader' object slice from the main program" in {
       val slice = programSlice.objectSlices
         .find(x => x.fullName == "main.ts::program:Game:<init>")
-        .flatMap(_.slices.lastOption)
+        .flatMap(_.slices.find(_.targetObj.name == "loader"))
         .get
       slice.definedBy shouldBe Option(CallDef("new Loader", "Loader", Option("Loader"), Option(24), Option(21)))
-      slice.targetObj shouldBe LocalDef("loader", "loader:Loader", Option(24), Option(4))
+      slice.targetObj shouldBe LocalDef("loader", "Loader", Option(24), Option(4))
 
       val inv1 = slice.invokedCalls.find(_.callName == "Loader").get
 
       inv1.returnType shouldBe "Loader"
+    }
+
+    "extract 'input' field slice for a field assigned in the constructor" in {
+      val slice = programSlice.objectSlices
+        .find(x => x.fullName == "main.ts::program:Game:<init>")
+        .flatMap(_.slices.find(_.targetObj.name == "input"))
+        .get
+      slice.targetObj shouldBe a[LocalDef]
+      slice.definedBy.map(_.name) shouldBe Option("new Input")
     }
 
     "extract 'time' parameter slice from the lambda in 'loop'" in {

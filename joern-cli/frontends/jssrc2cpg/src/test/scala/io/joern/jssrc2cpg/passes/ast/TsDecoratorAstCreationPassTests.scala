@@ -233,9 +233,7 @@ class TsDecoratorAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
           |""".stripMargin)
       cpg.methodRef.where(_._containsIn.collectAll[TypeDecl]) shouldBe empty
 
-      val List(constructorRef, annotationLambdaRef) = cpg.methodRef.l
-      constructorRef.methodFullName shouldBe "Test0.ts::program:MyClass:<init>"
-      constructorRef._containsIn.collectAll[Method].fullName.l shouldBe List("Test0.ts::program")
+      val List(annotationLambdaRef) = cpg.methodRef.l
       annotationLambdaRef.methodFullName shouldBe "Test0.ts::program:<lambda>0"
       annotationLambdaRef._containsIn.collectAll[Method].fullName.l shouldBe List("Test0.ts::program")
 

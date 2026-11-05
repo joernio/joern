@@ -22,7 +22,9 @@ class TSTypesTests extends JsSrc2CpgSuite {
       |  isAuthorized() { return () => { return this.publicKey } }
       |}
       |""".stripMargin).withConfig(Config().withTsTypes(true))
-    val List(t) = cpg.identifier("this").l
+    // the first one is the `this` of the initialization of `publicKey` in the constructor
+    val List(init, t) = cpg.identifier("this").l
+    init.dynamicTypeHintFullName shouldBe List("Test0.js::program:Foo")
     t.dynamicTypeHintFullName shouldBe List("Test0.js::program:Foo")
   }
 

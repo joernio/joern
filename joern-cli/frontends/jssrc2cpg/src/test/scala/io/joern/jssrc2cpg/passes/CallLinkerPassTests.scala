@@ -39,6 +39,24 @@ class CallLinkerPassTests extends DataFlowCodeToCpgSuite {
       }
     }
 
+    "create call edges correctly for functions stored in fields" in {
+      val cpg: Cpg = code("""
+        |class Foo {
+        |  f = () => { console.log("f"); }
+        |  static g = () => { console.log("g"); }
+        |
+        |  a() {
+        |    this.f();
+        |  }
+        |}""".stripMargin)
+
+      val List(f) = cpg.method.nameExact("f").l
+      inside(f.callIn(NoResolve).l) { case List(call) =>
+        call.code shouldBe "this.f()"
+        call.methodFullName shouldBe f.fullName
+      }
+    }
+
     "create call edges correctly" in {
       val cpg: Cpg = code("""
         |function sayhi() {

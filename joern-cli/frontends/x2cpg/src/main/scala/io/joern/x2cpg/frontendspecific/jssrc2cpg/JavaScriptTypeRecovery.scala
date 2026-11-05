@@ -214,6 +214,19 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
   ): Set[String] =
     super.visitIdentifierAssignedToTypeRef(i, t, Option("this"))
 
+  /** A class (expression) assigned to a field of `this`, e.g. a class field initialized with a class, is handled like
+    * the identifier version of it: the field then points to the type.
+    */
+  override protected def visitAssignmentArguments(args: List[AstNode]): Set[String] = args match {
+    case List(fa: Call, t: TypeRef) if fa.name == Operators.fieldAccess =>
+      fa.argumentOut.l match {
+        case List(base: Identifier, field: FieldIdentifier) if base.name == "this" =>
+          symbolTable.append(CallAlias(field.canonicalName, Option("this")), Set(t.typeFullName))
+        case _ => super.visitAssignmentArguments(args)
+      }
+    case _ => super.visitAssignmentArguments(args)
+  }
+
   override protected def postSetTypeInformation(): Unit = {
     // often there are "this" identifiers with type hints but this can be set to a type hint if they meet the criteria
     cu.method

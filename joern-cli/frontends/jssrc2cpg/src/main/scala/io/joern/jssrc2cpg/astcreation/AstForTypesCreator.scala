@@ -204,22 +204,33 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     forElem: BabelNode,
     methodBlockContent: ConstructorContent
   ): MethodAst = {
-    val fakeStart       = ujson.Num(forElem.start.getOrElse(-1))
-    val fakeEnd         = ujson.Num(forElem.end.getOrElse(-1))
+    val fakeStart = ujson.Num(forElem.start.getOrElse(-1))
+    val fakeEnd   = ujson.Num(forElem.end.getOrElse(-1))
+    // the constructor is located where the class is
+    val fakeLoc         = forElem.json.objOpt.flatMap(_.get("loc")).filter(_ != ujson.Null).toList.map("loc" -> _)
     val fakeConstructor = ClassMethod(
-      ujson.Obj(
-        "type"   -> "ClassMethod",
-        "start"  -> fakeStart,
-        "end"    -> fakeEnd,
-        "key"    -> ujson.Obj("type" -> "Identifier", "name" -> "constructor", "start" -> fakeStart, "end" -> fakeEnd),
-        "kind"   -> "constructor",
-        "static" -> false,
-        "computed"  -> false,
-        "generator" -> false,
-        "async"     -> false,
-        "id"        -> ujson.Null,
-        "params"    -> ujson.Arr(),
-        "body"      -> ujson.Obj("type" -> "BlockStatement", "body" -> ujson.Arr(), "directives" -> ujson.Arr())
+      ujson.Obj.from(
+        List(
+          "type"  -> ujson.Str("ClassMethod"),
+          "start" -> fakeStart,
+          "end"   -> fakeEnd,
+          "key"   -> ujson.Obj.from(
+            List(
+              "type"  -> ujson.Str("Identifier"),
+              "name"  -> ujson.Str("constructor"),
+              "start" -> fakeStart,
+              "end"   -> fakeEnd
+            ) ++ fakeLoc
+          ),
+          "kind"      -> ujson.Str("constructor"),
+          "static"    -> ujson.False,
+          "computed"  -> ujson.False,
+          "generator" -> ujson.False,
+          "async"     -> ujson.False,
+          "id"        -> ujson.Null,
+          "params"    -> ujson.Arr(),
+          "body"      -> ujson.Obj("type" -> "BlockStatement", "body" -> ujson.Arr(), "directives" -> ujson.Arr())
+        ) ++ fakeLoc
       )
     )
     val result = createMethodAstAndNode(fakeConstructor, false, false, methodBlockContent)
@@ -266,7 +277,36 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       case _ => createFakeConstructor(s"new: $typeName", tsInterface, ConstructorContent.empty).methodNode
     }
 
-  private def astsForEnumMember(tsEnumMember: TSEnumMember): Seq[Ast] = {
+  /** The class or enum a static member belongs to. Its type is the base of the member's access, e.g. `ClassA` in
+    * `ClassA.b = 2`.
+    */
+  protected case class MemberOwner(name: String, typeFullName: String)
+
+  private def thisAst(node: BabelNode): Ast = {
+    val thisNode = identifierNode(node, "this").dynamicTypeHintFullName(typeHintForThisExpression())
+    scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+    Ast(thisNode)
+  }
+
+  /** The access of the member `key` of `base`: `base.key`, or `base[key]` for keys that are no plain names. */
+  private def memberAccessAst(base: Ast, key: BabelNode, isComputed: Boolean, node: BabelNode): Ast = key match {
+    case id: Identifier if !isComputed =>
+      createFieldAccessCallAst(base, fieldIdentifierNode(id, id.name, id.name), node.lineNumber, node.columnNumber)
+    case privateName: PrivateName =>
+      val name = privateName.code
+      createFieldAccessCallAst(base, fieldIdentifierNode(privateName, name, name), node.lineNumber, node.columnNumber)
+    case _ =>
+      createIndexAccessCallAst(base, astForNode(key), node.lineNumber, node.columnNumber)
+  }
+
+  /** The base of the access of a member: `this` for instance members, the type of the owner for static members. */
+  private def memberBaseAst(node: BabelNode, isStatic: Boolean, owner: Option[MemberOwner]): Ast =
+    owner.filter(_ => isStatic) match {
+      case Some(MemberOwner(name, typeFullName)) => Ast(typeRefNode(node, name, typeFullName))
+      case None                                  => thisAst(node)
+    }
+
+  private def astsForEnumMember(tsEnumMember: TSEnumMember, owner: MemberOwner): Seq[Ast] = {
     val name          = tsEnumMember.id.code
     val tpe           = typeFor(tsEnumMember)
     val possibleTypes = Seq(tpe)
@@ -276,7 +316,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     tsEnumMember.initializer match {
       case Some(initializer) =>
-        val lhsAst    = astForNode(tsEnumMember.id)
+        val lhsAst =
+          memberAccessAst(memberBaseAst(tsEnumMember, true, Some(owner)), tsEnumMember.id, false, tsEnumMember)
         val rhsAst    = astForNodeWithFunctionReference(initializer)
         val callNode_ =
           callNode(tsEnumMember, tsEnumMember.code, Operators.assignment, DispatchTypes.STATIC_DISPATCH)
@@ -303,7 +344,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   protected def astForClassMember(
     classElement: BabelNode,
     typeDeclNode: NewTypeDecl,
-    ignoreInitCalls: Boolean = false
+    ignoreInitCalls: Boolean = false,
+    staticOwner: Option[MemberOwner] = None
   ): Ast = {
     val tpe           = typeFor(classElement)
     val possibleTypes = Seq(tpe)
@@ -336,9 +378,10 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         memberNode_
       case _ =>
         val name = classElement match {
+          // The name of a private field includes the hash: `#a` is not the same member as `a`
           case property: ClassProperty         => property.key.code
-          case property: ClassAccessorProperty => accessorName(property)
-          case property: ClassPrivateProperty  => property.key.id.code
+          case property: ClassAccessorProperty => property.key.code
+          case property: ClassPrivateProperty  => property.key.code
           case property: TSParameterProperty   =>
             property.parameter match {
               case assignment: AssignmentPattern => assignment.left.code
@@ -358,7 +401,21 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     if (!ignoreInitCalls) {
       keyAndValueOf(classElement) match {
         case Some((key, value)) =>
-          val lhsAst    = astForNode(key)
+          val lhsAst = classElement match {
+            case _: (ClassProperty | ClassPrivateProperty | ClassAccessorProperty) =>
+              val isComputed = classElement match {
+                case n: ClassProperty         => n.computed
+                case n: ClassAccessorProperty => n.computed
+                case _                        => false
+              }
+              memberAccessAst(
+                memberBaseAst(classElement, staticOf(classElement), staticOwner),
+                key,
+                isComputed,
+                classElement
+              )
+            case _ => astForNode(key)
+          }
           val rhsAst    = astForNodeWithFunctionReference(value)
           val callNode_ =
             callNode(classElement, classElement.code, Operators.assignment, DispatchTypes.STATIC_DISPATCH)
@@ -414,7 +471,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val (enumMembersWithInitializer, enumMembersPlain) = tsEnum.members.toList.partition(_.initializer.isDefined)
 
-    val memberAsts = enumMembersPlain.flatMap(astsForEnumMember)
+    val enumOwner  = MemberOwner(typeName, typeFullName)
+    val memberAsts = enumMembersPlain.flatMap(astsForEnumMember(_, enumOwner))
 
     if (enumMembersWithInitializer.isEmpty) {
       Ast.storeInDiffGraph(Ast(typeDeclNode_).withChildren(memberAsts), diffGraph)
@@ -424,7 +482,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         typeDeclNode_,
         enumMembersWithInitializer,
         s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
-        Defines.Any
+        Defines.Any,
+        enumOwner
       )
       Ast.storeInDiffGraph(Ast(typeDeclNode_).withChildren(memberAsts).withChild(init), diffGraph)
     }
@@ -484,7 +543,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     staticMemberInits: List[BabelNode],
     staticMemberBlocks: List[BabelNode],
     fullName: String,
-    returnType: String
+    returnType: String,
+    owner: MemberOwner
   ): Ast = {
     val modifiers =
       List(NewModifier().modifierType(ModifierTypes.STATIC), NewModifier().modifierType(ModifierTypes.CONSTRUCTOR))
@@ -500,9 +560,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     )
     localAstParentStack.push(blockNode)
 
-    val initAsts = staticMemberInits.map(astForClassMember(_, typeDeclNode)) ++ staticMemberBlocks.map(
-      astForNodeWithFunctionReference
-    )
+    val initAsts = staticMemberInits.map(
+      astForClassMember(_, typeDeclNode, staticOwner = Some(owner))
+    ) ++ staticMemberBlocks.map(astForNodeWithFunctionReference)
 
     methodAstParentStack.pop()
     localAstParentStack.pop()
@@ -517,7 +577,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     typeDeclNode: NewTypeDecl,
     enumMembersWithInitializer: List[TSEnumMember],
     fullName: String,
-    returnType: String
+    returnType: String,
+    owner: MemberOwner
   ): Ast = {
     val modifiers =
       List(NewModifier().modifierType(ModifierTypes.STATIC), NewModifier().modifierType(ModifierTypes.CONSTRUCTOR))
@@ -533,7 +594,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     )
     localAstParentStack.push(blockNode)
 
-    val initAsts         = enumMembersWithInitializer.flatMap(astsForEnumMember)
+    val initAsts         = enumMembersWithInitializer.flatMap(astsForEnumMember(_, owner))
     val (calls, members) = initAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
 
     members.foreach(m => diffGraph.addEdge(typeDeclNode, m.root.get, EdgeTypes.AST))
@@ -629,11 +690,13 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         constructorTypeDecl,
         staticMemberInits,
         staticInitBlocks,
-        s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
-        Defines.Any
+        s"${constructorNode.fullName}:${io.joern.x2cpg.Defines.StaticInitMethodName}",
+        Defines.Any,
+        MemberOwner(typeName, constructorNode.fullName)
       )
       Ast.storeInDiffGraph(init, diffGraph)
-      diffGraph.addEdge(typeDeclNode_, init.nodes.head, EdgeTypes.AST)
+      // the static initializer belongs to the constructor function, just like the static members it initializes
+      diffGraph.addEdge(constructorTypeDecl, init.nodes.head, EdgeTypes.AST)
     }
 
     methodAstParentStack.pop()
@@ -647,9 +710,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     if (shouldCreateAssignmentCall) {
       // return a synthetic assignment to enable tracing of the implicitly created identifier for
       // the class definition assigned to its constructor
-      val classIdNode        = identifierNode(clazz, typeName, typeName, Defines.Any, Seq(constructorNode.fullName))
-      val constructorRefNode =
-        methodRefNode(clazz, constructorNode.code, constructorNode.fullName, constructorNode.fullName)
+      val classIdNode = identifierNode(clazz, typeName, typeName, Defines.Any, Seq(constructorNode.fullName))
 
       val idLocal = localNode(clazz, typeName, typeName, Defines.Any).order(0)
       diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
@@ -658,7 +719,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
       val assignmentAst = createAssignmentCallAst(
         classIdNode,
-        constructorRefNode,
+        typeRefNode_,
         s"$typeName = ${constructorNode.fullName}",
         clazz.lineNumber,
         clazz.columnNumber
@@ -672,12 +733,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       if (classDecorationAst.root.isDefined || propertyDecorationAsts.nonEmpty || methodDecorationAsts.nonEmpty) {
         val blockNode_   = blockNode(clazz)
         val childrenAsts =
-          List(Ast(typeRefNode_), assignmentAst, classDecorationAst) ++ propertyDecorationAsts ++ methodDecorationAsts
+          List(assignmentAst, classDecorationAst) ++ propertyDecorationAsts ++ methodDecorationAsts
         Ast(blockNode_).withChildren(childrenAsts)
       } else {
-        val blockNode_   = blockNode(clazz)
-        val childrenAsts = List(Ast(typeRefNode_), assignmentAst)
-        Ast(blockNode_).withChildren(childrenAsts)
+        val blockNode_ = blockNode(clazz)
+        Ast(blockNode_).withChildren(List(assignmentAst))
       }
     } else {
       Ast(typeRefNode_)
@@ -899,8 +959,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       if (decoratorAsts.nonEmpty) {
         val name = tsPropertyNodeInfo match {
           case property: ClassProperty         => property.key.code
-          case property: ClassAccessorProperty => accessorName(property)
-          case property: ClassPrivateProperty  => property.key.id.code
+          case property: ClassAccessorProperty => property.key.code
+          case property: ClassPrivateProperty  => property.key.code
         }
         val propertyTpe = typeFor(tsPropertyNodeInfo)
 
@@ -1067,12 +1127,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val blockChildrenAsts = assignmentTmpArrayCallNode +: elementAsts :+ Ast(tmpArrayReturnNode)
     blockAst(blockNode_, blockChildrenAsts)
-  }
-
-  /** Like for `ClassPrivateProperty`, the name of `accessor #a = 1` is `a`, without the hash. */
-  private def accessorName(property: ClassAccessorProperty): String = property.key match {
-    case privateName: PrivateName => privateName.id.code
-    case other                    => other.code
   }
 
   private def hasPrivateKey(member: BabelNode): Boolean = member match {
