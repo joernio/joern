@@ -26,7 +26,7 @@ import scala.annotation.tailrec
 
 trait AstForPrimitivesCreator { this: AstCreator =>
 
-  import FullNameProvider.stripTemplateTags
+  import FullNameProvider.{constSuffix, stripTemplateTags}
 
   protected def astForComment(comment: IASTComment): Ast =
     Ast(commentNode(comment, code(comment), fileName(comment)))
@@ -304,8 +304,13 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     safeGetBinding(qualId) match {
       case Some(function: ICPPFunction) =>
         val name      = qualId.getLastName.toString
-        val signature = if (function.isExternC) "" else functionTypeToSignature(function.getType)
-        val fullName  = if (function.isExternC) {
+        val signature = if (function.isExternC) {
+          ""
+        } else {
+          val fnType = function.getType
+          s"${functionTypeToSignature(fnType)}${constSuffix(fnType)}"
+        }
+        val fullName = if (function.isExternC) {
           StringUtils.normalizeSpace(name)
         } else {
           val fullNameNoSig = StringUtils.normalizeSpace(function.getQualifiedName.mkString("."))

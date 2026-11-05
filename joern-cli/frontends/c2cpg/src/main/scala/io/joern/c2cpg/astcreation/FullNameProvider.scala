@@ -4,6 +4,7 @@ import io.joern.x2cpg.Defines as X2CpgDefines
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
+import org.eclipse.cdt.core.dom.ast.c.ICArrayType
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.internal.core.dom.parser.ASTQueries
 import org.eclipse.cdt.internal.core.dom.parser.c.{CASTFunctionDeclarator, CVariable}
@@ -103,6 +104,45 @@ object FullNameProvider {
       .replace("operator ", "")
   }
 
+  /** The suffix a const-qualified method-like carries in its signature. [dcl.fct] makes the cv-qualifier-seq part of a
+    * function's type, alongside the return type and the parameter-type-list.
+    *
+    * Constness arrives in two shapes a caller cannot convert between: a resolved function type, which a call site or a
+    * member reference has in hand, and a declarator, which is what a signature is built from and all that exists when
+    * the name does not bind. The two do not always agree -- a lambda's `operator()` is const per [expr.prim.lambda]
+    * while its declarator writes no `const` -- so both readings are kept behind one entry point rather than unified.
+    */
+  def constSuffix(func: IType | IASTNode): String = {
+    val isConst = func match {
+      case tpe: IType     => isConstType(tpe)
+      case node: IASTNode => isConstDeclarator(node)
+    }
+    if (isConst) { Defines.ConstSuffix }
+    else { "" }
+  }
+
+  @tailrec
+  private def isConstType(tpe: IType): Boolean = {
+    tpe match {
+      case t: ICPPFunctionType  => t.isConst
+      case t: IPointerType      => t.isConst
+      case t: IQualifierType    => t.isConst
+      case t: ICArrayType       => t.isConst
+      case t: ICPPReferenceType => isConstType(t.getType)
+      case _                    => false
+    }
+  }
+
+  @tailrec
+  private def isConstDeclarator(node: IASTNode): Boolean = {
+    node match {
+      case lambdaExpression: ICPPASTLambdaExpression => isConstDeclarator(lambdaExpression.getDeclarator)
+      case definition: ICPPASTFunctionDefinition     => isConstDeclarator(definition.getDeclarator)
+      case declarator: ICPPASTFunctionDeclarator     => declarator.isConst
+      case _                                         => false
+    }
+  }
+
   final case class MethodFullNameInfo(name: String, fullName: String, signature: String, returnType: String)
 
   final case class TypeFullNameInfo(name: String, fullName: String)
@@ -181,8 +221,7 @@ trait FullNameProvider { this: AstCreator =>
   }
 
   protected def signature(returnType: String, methodLike: MethodLike): String = {
-    val constFlag = if (isConst(methodLike)) { Defines.ConstSuffix }
-    else { "" }
+    val constFlag = constSuffix(methodLike)
     StringUtils.normalizeSpace(s"$returnType${parameterListSignature(methodLike)}$constFlag")
   }
 
@@ -295,16 +334,6 @@ trait FullNameProvider { this: AstCreator =>
             other.getName
         }
       case _ => shortName(d.getName)
-    }
-  }
-
-  @tailrec
-  private def isConst(node: IASTNode): Boolean = {
-    node match {
-      case lambdaExpression: ICPPASTLambdaExpression => isConst(lambdaExpression.getDeclarator)
-      case definition: ICPPASTFunctionDefinition     => isConst(definition.getDeclarator)
-      case declarator: ICPPASTFunctionDeclarator     => declarator.isConst
-      case _                                         => false
     }
   }
 
