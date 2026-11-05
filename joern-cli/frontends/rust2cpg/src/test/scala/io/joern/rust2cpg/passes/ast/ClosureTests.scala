@@ -69,6 +69,38 @@ class ClosureTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.method.nameExact("<lambda>0").methodReturn.typeFullName.l shouldBe List("i32")
     }
 
+    "have correct typeDecl fullName" in {
+      cpg.typeDecl.nameExact("<lambda>0").fullName.l shouldBe List("rust2cpgtest::main::<lambda>0")
+    }
+
+    "have correct inheritsFrom" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::main::<lambda>0").inheritsFromTypeFullName.l shouldBe List(
+        "core::ops::function::Fn",
+        "core::ops::function::FnMut",
+        "core::ops::function::FnOnce"
+      )
+    }
+
+    "have correct bindings" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::main::<lambda>0").methodBinding.sortBy(_.name).l) {
+        case Binding(
+              name = "call",
+              signature = "core::ops::function::Fn",
+              methodFullName = "rust2cpgtest::main::<lambda>0"
+            ) ::
+            Binding(
+              name = "call_mut",
+              signature = "core::ops::function::FnMut",
+              methodFullName = "rust2cpgtest::main::<lambda>0"
+            ) ::
+            Binding(
+              name = "call_once",
+              signature = "core::ops::function::FnOnce",
+              methodFullName = "rust2cpgtest::main::<lambda>0"
+            ) :: Nil =>
+          succeed
+      }
+    }
   }
 
   "closure capturing enclosing local" should {

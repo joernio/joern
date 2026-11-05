@@ -208,7 +208,10 @@ trait RustFullNames { this: AstCreator =>
 }
 
 object RustFullNames {
-  val PathSep = "::"
+  val PathSep     = "::"
+  val FnTrait     = "core::ops::function::Fn"
+  val FnMutTrait  = "core::ops::function::FnMut"
+  val FnOnceTrait = "core::ops::function::FnOnce"
 
   def shortName(fullName: String): String = {
     // A path e.g. `x::...::z<...>` or `z<...>` has shortname `z`, without generics.

@@ -106,6 +106,18 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     }
   }
 
+  protected def addDetachedClosureBindingAsts(typeDecl: NewTypeDecl, method: NewMethod): Unit = {
+    // NB: We don't actually need all three. For a given closureExpr, only one of them applies.
+    // If/When we later extend astgen to specify which one applies, we can be more concrete.
+    // Until then, we are free to pick one, as they all bind to the same method.
+    val bindings = Seq(
+      bindingNode("call", RustFullNames.FnTrait, method.fullName),
+      bindingNode("call_mut", RustFullNames.FnMutTrait, method.fullName),
+      bindingNode("call_once", RustFullNames.FnOnceTrait, method.fullName)
+    )
+    bindings.foreach(binding => addDetachedAst(Ast(binding).withBindsEdge(typeDecl, binding)))
+  }
+
   protected def withMacroCall[T](macroCall: RustNode)(body: => T): T = {
     if (outermostMacroCall.isDefined) {
       body
@@ -301,6 +313,19 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
       filename = parseResult.filename,
       code = code(impl),
       inherits = Seq(traitTypeFullName)
+    )
+  }
+
+  protected def typeDeclForClosure(closureExpr: RustNodeSyntax.ClosureExpr, method: NewMethod): NewTypeDecl = {
+    typeDeclNode(
+      node = closureExpr,
+      name = method.name,
+      fullName = method.fullName,
+      filename = parseResult.filename,
+      code = code(closureExpr),
+      astParentType = contextStack.astParentType,
+      astParentFullName = contextStack.astParentFullName,
+      inherits = Seq(RustFullNames.FnTrait, RustFullNames.FnMutTrait, RustFullNames.FnOnceTrait)
     )
   }
 
