@@ -900,9 +900,20 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // CallExpr =
   //  Attr* Expr ArgList
   private def visitCallExpr(callExpr: CallExpr): Ast = {
-    callExpr.expr match {
-      case pathExpr: PathExpr => lowerPathExprCall(callExpr, pathExpr)
-      case _                  => notHandledYet(callExpr)
+    lowerCallExpr(callExpr, callExpr.expr)
+  }
+
+  @tailrec
+  private def lowerCallExpr(callExpr: CallExpr, callee: Expr): Ast = {
+    callee match {
+      case pathExpr: PathExpr   => lowerPathExprCall(callExpr, pathExpr)
+      case parenExpr: ParenExpr => lowerCallExpr(callExpr, parenExpr.expr)
+      case macroExpr: MacroExpr =>
+        macroExpr.macroCall.macroExpansion match {
+          case Some(expr: Expr) => lowerCallExpr(callExpr, expr)
+          case _                => notHandledYet(callExpr)
+        }
+      case _ => notHandledYet(callExpr)
     }
   }
 
