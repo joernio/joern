@@ -87,6 +87,48 @@ class NewFunctionCallTests extends JavaSrcCode2CpgFixture(withOssDataflow = true
       }
     }
   }
+
+  "Dataflow through a call to a class that implements an interface" should {
+    def program(applyBody: String) = s"""
+         |class Foo {
+         |  interface Op { String apply(String s); }
+         |  static class Impl implements Op { public String apply(String s) { $applyBody } }
+         |  static void sink(String s) {}
+         |  static void test(String input) {
+         |    sink(new Impl().apply(input));
+         |  }
+         |}
+         |""".stripMargin
+
+    "not find a path when the implementation returns a constant" in {
+      val cpg    = code(program("return \"constant\";"))
+      def source = cpg.method.name("test").parameter.name("input")
+      def sink   = cpg.method.name("sink").parameter.index(1)
+      sink.reachableBy(source).size shouldBe 0
+    }
+
+    "find a path when the implementation returns its argument" in {
+      val cpg    = code(program("return s;"))
+      def source = cpg.method.name("test").parameter.name("input")
+      def sink   = cpg.method.name("sink").parameter.index(1)
+      sink.reachableBy(source).size shouldBe 1
+    }
+
+    "still pass taint through an interface method that has no implementation" in {
+      val cpg = code("""
+          |class Foo {
+          |  interface Op { String apply(String s); }
+          |  static void sink(String s) {}
+          |  static void test(Op op, String input) {
+          |    sink(op.apply(input));
+          |  }
+          |}
+          |""".stripMargin)
+      def source = cpg.method.name("test").parameter.name("input")
+      def sink   = cpg.method.name("sink").parameter.index(1)
+      sink.reachableBy(source).size shouldBe 1
+    }
+  }
 }
 
 class FunctionCallTests extends JavaDataflowFixture {

@@ -109,7 +109,7 @@ class TaskCreator(context: EngineContext) {
       outArg.toList.flatMap {
         case call: Call =>
           val methodReturns = call.toList
-            .flatMap(x => NoResolve.getCalledMethods(x).methodReturn.map(y => (x, y)))
+            .flatMap(x => calledMethodsWithoutAbstractStubs(x).methodReturn.map(y => (x, y)))
             .iterator
 
           methodReturns.flatMap { case (call, methodReturn) =>
@@ -170,6 +170,21 @@ class TaskCreator(context: EngineContext) {
       }
     }
     restrictSize(forCalls) ++ restrictSize(forArgs) ++ restrictSize(forMethodRefs)
+  }
+
+  /** The methods a call may invoke, without the bodiless abstract ones (e.g., an interface method) whenever a method
+    * with a body is also among them. An abstract target has no code that could propagate taint, and treating it like an
+    * external method would let the arguments reach the result regardless of what the concrete target does.
+    */
+  private def calledMethodsWithoutAbstractStubs(call: Call): List[Method] = {
+    val calledMethods                           = NoResolve.getCalledMethods(call).toList
+    def isAbstractStub(method: Method): Boolean =
+      !method.isExternal && method.isStub && method.start.isAbstract.nonEmpty
+    if (calledMethods.exists(method => !method.isExternal && !method.isStub)) {
+      calledMethods.filterNot(isAbstractStub)
+    } else {
+      calledMethods
+    }
   }
 
   private def restrictSize(l: Vector[ReachableByTask]): Vector[ReachableByTask] = {
