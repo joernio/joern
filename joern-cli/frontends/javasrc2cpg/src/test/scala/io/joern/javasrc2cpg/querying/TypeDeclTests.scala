@@ -1,8 +1,8 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Return, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, Return, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
@@ -431,6 +431,196 @@ class TypeDeclTests extends JavaSrcCode2CpgFixture {
         method.signature shouldBe "int(int)"
         method.block.astChildren.head shouldBe a[Return]
         method.block.ast.isIdentifier.head.name shouldBe "x"
+      }
+    }
+  }
+
+  "a static initialiser block" should {
+    val cpg = code("""
+        |package foo;
+        |
+        |public class Foo {
+        |    static { staticInit(); }
+        |
+        |    static void staticInit() {}
+        |}
+        |""".stripMargin)
+
+    "be added to the <clinit> method of the type decl" in {
+      inside(cpg.typeDecl.nameExact("Foo").method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l) {
+        case List(clinit) =>
+          clinit.fullName shouldBe s"foo.Foo.${io.joern.x2cpg.Defines.StaticInitMethodName}:void()"
+          inside(clinit.body.astChildren.l) { case List(staticInitBlock: Block) =>
+            inside(staticInitBlock.astChildren.l) { case List(staticInitCall: Call) =>
+              staticInitCall.code shouldBe "staticInit()"
+              staticInitCall.methodFullName shouldBe "foo.Foo.staticInit:void()"
+            }
+          }
+      }
+    }
+
+    "not be added to the <init> method" in {
+      cpg.typeDecl
+        .nameExact("Foo")
+        .method
+        .nameExact(io.joern.x2cpg.Defines.ConstructorMethodName)
+        .call
+        .nameExact("staticInit")
+        .size shouldBe 0
+    }
+  }
+
+  "a non-static initialiser block" should {
+    val cpg = code("""
+        |package foo;
+        |
+        |public class Foo {
+        |    { instanceInit(); }
+        |
+        |    void instanceInit() {}
+        |}
+        |""".stripMargin)
+
+    "be added to the <init> method of the type decl" in {
+      inside(cpg.typeDecl.nameExact("Foo").method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l) {
+        case List(init) =>
+          init.fullName shouldBe s"foo.Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
+          inside(init.body.astChildren.isBlock.l) { case List(instanceInitBlock) =>
+            inside(instanceInitBlock.astChildren.l) { case List(instanceInitCall: Call) =>
+              instanceInitCall.code shouldBe "this.instanceInit()"
+              instanceInitCall.methodFullName shouldBe "foo.Foo.instanceInit:void()"
+            }
+          }
+      }
+    }
+
+    "not create a <clinit> method" in {
+      cpg.typeDecl.nameExact("Foo").method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).size shouldBe 0
+    }
+  }
+
+  "an initialiser block in an anonymous class" should {
+    val cpg = code("""
+        |package foo;
+        |
+        |import java.util.HashMap;
+        |import java.util.Map;
+        |
+        |public class Foo {
+        |    Map<String, Integer> m = new HashMap<String, Integer>() {{ put("a", 1); }};
+        |}
+        |""".stripMargin)
+
+    "be added to the <init> method of the anonymous type decl" in {
+      inside(
+        cpg.typeDecl
+          .fullNameExact("foo.Foo.m.HashMap$0")
+          .method
+          .nameExact(io.joern.x2cpg.Defines.ConstructorMethodName)
+          .l
+      ) { case List(init) =>
+        inside(init.body.astChildren.isBlock.l) { case List(anonInitBlock) =>
+          inside(anonInitBlock.astChildren.l) { case List(putCall: Call) =>
+            putCall.code shouldBe "this.put(\"a\", 1)"
+            putCall.name shouldBe "put"
+          }
+        }
+      }
+    }
+
+    "not be added to the <init> method of the enclosing type decl" in {
+      cpg.typeDecl
+        .nameExact("Foo")
+        .method
+        .nameExact(io.joern.x2cpg.Defines.ConstructorMethodName)
+        .call
+        .nameExact("put")
+        .size shouldBe 0
+    }
+  }
+
+  "static field initialisers interleaved with a static initialiser block" should {
+    val cpg = code("""
+        |package foo;
+        |
+        |public class Foo {
+        |    static int a = 1;
+        |
+        |    static { staticInit(); }
+        |
+        |    static int b = 2;
+        |
+        |    static void staticInit() {}
+        |}
+        |""".stripMargin)
+
+    "be added to the <clinit> method in source order" in {
+      inside(cpg.typeDecl.nameExact("Foo").method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l) {
+        case List(clinit) =>
+          inside(clinit.body.astChildren.l) { case List(aAssign: Call, initBlock: Block, bAssign: Call) =>
+            aAssign.name shouldBe Operators.assignment
+            inside(aAssign.argument.l) { case List(aFieldAccess: Call, oneLiteral: Literal) =>
+              aFieldAccess.name shouldBe Operators.fieldAccess
+              aFieldAccess.code shouldBe "Foo.a"
+              oneLiteral.code shouldBe "1"
+            }
+
+            inside(initBlock.astChildren.l) { case List(staticInitCall: Call) =>
+              staticInitCall.code shouldBe "staticInit()"
+            }
+
+            bAssign.name shouldBe Operators.assignment
+            inside(bAssign.argument.l) { case List(bFieldAccess: Call, twoLiteral: Literal) =>
+              bFieldAccess.name shouldBe Operators.fieldAccess
+              bFieldAccess.code shouldBe "Foo.b"
+              twoLiteral.code shouldBe "2"
+            }
+          }
+      }
+    }
+  }
+
+  "instance field initialisers interleaved with an instance initialiser block" should {
+    val cpg = code("""
+        |package foo;
+        |
+        |public class Foo {
+        |    int a = 1;
+        |
+        |    { instanceInit(); }
+        |
+        |    int b = 2;
+        |
+        |    void instanceInit() {}
+        |}
+        |""".stripMargin)
+
+    "be added to the <init> method in source order" in {
+      inside(cpg.typeDecl.nameExact("Foo").method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l) {
+        case List(init) =>
+          val initialisers = init.body.astChildren.l.filter {
+            case call: Call => call.name == Operators.assignment
+            case _: Block   => true
+            case _          => false
+          }
+
+          inside(initialisers) { case List(aAssign: Call, initBlock: Block, bAssign: Call) =>
+            inside(aAssign.argument.l) { case List(aFieldAccess: Call, oneLiteral: Literal) =>
+              aFieldAccess.name shouldBe Operators.fieldAccess
+              aFieldAccess.code shouldBe "this.a"
+              oneLiteral.code shouldBe "1"
+            }
+
+            inside(initBlock.astChildren.l) { case List(instanceInitCall: Call) =>
+              instanceInitCall.code shouldBe "this.instanceInit()"
+            }
+
+            inside(bAssign.argument.l) { case List(bFieldAccess: Call, twoLiteral: Literal) =>
+              bFieldAccess.name shouldBe Operators.fieldAccess
+              bFieldAccess.code shouldBe "this.b"
+              twoLiteral.code shouldBe "2"
+            }
+          }
       }
     }
   }

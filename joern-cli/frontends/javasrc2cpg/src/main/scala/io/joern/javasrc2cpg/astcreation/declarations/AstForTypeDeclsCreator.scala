@@ -43,6 +43,7 @@ import com.github.javaparser.resolution.declarations.{
   ResolvedTypeParameterDeclaration
 }
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
+import io.joern.javasrc2cpg.astcreation.declarations.AstForTypeDeclsCreator.FieldOrInitBlock
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.{BindingTable, BindingTableEntry, JavaModifierTypes, NameConstants, Util}
 import io.joern.x2cpg.{Ast, Defines}
@@ -87,6 +88,8 @@ object AstForTypeDeclsCreator {
       AstWithStaticInit(Seq(ast), staticInits = Seq.empty)
     }
   }
+
+  type FieldOrInitBlock = FieldDeclaration | InitializerDeclaration
 }
 
 private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
@@ -382,7 +385,9 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       scope.addInnerType(name, fullName, fullName)
     }
 
-    val fields = members.collect { case fieldDeclaration: FieldDeclaration => fieldDeclaration }
+    val fieldOrInitBlocks: List[FieldOrInitBlock] = members.collect { case fieldOrInitBlock: FieldOrInitBlock =>
+      fieldOrInitBlock
+    }
 
     val fieldToFieldAsts = members.collect { case fieldDeclaration: FieldDeclaration =>
       val result =
@@ -393,10 +398,14 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       result
     }.toMap
 
-    val (staticFields, instanceFields) = fields.partition(_.isStatic)
-    val staticFieldInitializers        = getStaticFieldInitializers(staticFields)
+    val (staticFieldOrInitBlocks, instanceFieldOrInitBlocks) =
+      fieldOrInitBlocks.partition {
+        case fieldDeclaration: FieldDeclaration             => fieldDeclaration.isStatic
+        case initializerDeclaration: InitializerDeclaration => initializerDeclaration.isStatic
+      }
+    val staticInitAsts = astsForStaticFieldOrInitBlocks(staticFieldOrInitBlocks)
 
-    val clinitAst = clinitAstFromStaticInits(originNode, staticFieldInitializers)
+    val clinitAst = clinitAstFromStaticInits(originNode, staticInitAsts)
 
     val membersAstPairs: List[(Node, List[Ast])] = members.map { member =>
       val memberAsts = member match {
@@ -435,7 +444,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
         case constructor: ConstructorDeclaration        => constructor
         case constructor: CompactConstructorDeclaration => constructor
       },
-      instanceFields
+      instanceFieldOrInitBlocks
     )
 
     val membersAsts = membersAstPairs.flatMap {
@@ -460,7 +469,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
         }.nonEmpty
     }
     val defaultConstructorAst = Option.when(!(isInterface || hasCanonicalConstructor)) {
-      astForDefaultConstructor(originNode, instanceFields)
+      astForDefaultConstructor(originNode, instanceFieldOrInitBlocks)
     }
 
     (defaultConstructorAst.toList ++ constructorAstMap.values)
@@ -560,20 +569,24 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     }
   }
 
-  private def getStaticFieldInitializers(staticFields: List[FieldDeclaration]): List[Ast] = {
+  private def astsForStaticFieldOrInitBlocks(staticFieldOrInitBlocks: List[FieldOrInitBlock]): List[Ast] = {
     scope.pushMethodScope(NewMethod(), ExpectedType.empty, isStatic = true)
     scope.pushBlockScope()
-    val fieldsAsts = staticFields.flatMap { field =>
-      field.getVariables.asScala.toList.flatMap { variable =>
-        scope.pushFieldDeclScope(isStatic = true, name = variable.getNameAsString)
-        val assignment = astsForVariableDeclarator(variable, field)
-        scope.popFieldDeclScope()
-        assignment
-      }
+    val fieldOrInitBlockAsts = staticFieldOrInitBlocks.flatMap {
+      case field: FieldDeclaration =>
+        field.getVariables.asScala.toList.flatMap { variable =>
+          scope.pushFieldDeclScope(isStatic = true, name = variable.getNameAsString)
+          val assignment = astsForVariableDeclarator(variable, field)
+          scope.popFieldDeclScope()
+          assignment
+        }
+
+      case initializerDeclaration: InitializerDeclaration =>
+        astForBlockStatement(initializerDeclaration.getBody, code(initializerDeclaration)) :: Nil
     }
     scope.popBlockScope()
     val methodScope = scope.popMethodScope()
-    methodScope.getAndClearUnaddedPatternLocals().map(Ast(_)) ++ fieldsAsts
+    methodScope.getAndClearUnaddedPatternLocals().map(Ast(_)) ++ fieldOrInitBlockAsts
   }
 
   private[declarations] def astForAnnotationExpr(annotationExpr: AnnotationExpr): Ast = {
