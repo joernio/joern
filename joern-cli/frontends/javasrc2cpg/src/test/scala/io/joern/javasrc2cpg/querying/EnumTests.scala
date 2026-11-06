@@ -37,14 +37,14 @@ class EnumTests extends JavaSrcCode2CpgFixture {
     val members = cpg.typeDecl.nameExact("FuzzyBool").member.l
     members.map(_.name) shouldBe List("TRUE", "FALSE", "MAYBE", "$VALUES")
     members.take(3).foreach { member =>
-      member.modifier.modifierType.l should contain allOf (
+      member.modifier.modifierType.l should contain theSameElementsAs List(
         ModifierTypes.PUBLIC,
         ModifierTypes.STATIC,
         ModifierTypes.FINAL
       )
     }
     members.last.typeFullName shouldBe "FuzzyBool[]"
-    members.last.modifier.modifierType.l should contain allOf (
+    members.last.modifier.modifierType.l should contain theSameElementsAs List(
       ModifierTypes.PRIVATE,
       ModifierTypes.STATIC,
       ModifierTypes.FINAL
@@ -53,12 +53,12 @@ class EnumTests extends JavaSrcCode2CpgFixture {
 
   "it should synthesize the enum API and initialize entries in declaration order" in {
     val enumDecl = cpg.typeDecl.nameExact("Color")
-    enumDecl.method.name.l should contain allOf ("values", "valueOf", "<clinit>")
+    enumDecl.method.name.l shouldBe List("<init>", "isRed", "values", "valueOf", "<clinit>")
   }
 
   "it should resolve unqualified enum constants as static field accesses" in {
     val accesses = cpg.typeDecl.nameExact("Color").method.nameExact("isRed").call.nameExact("<operator>.fieldAccess").l
-    accesses.map(_.code) should contain("Color.RED")
+    accesses.map(_.code) shouldBe List("Color.RED", "Color.RED")
   }
 
   "it should parse a basic enum without values" in {
@@ -101,10 +101,18 @@ class EnumTests extends JavaSrcCode2CpgFixture {
     l.code shouldBe "String label"
 
     r.code shouldBe "RED(\"Red\")"
-    r.modifier.modifierType.l should contain allOf (ModifierTypes.PUBLIC, ModifierTypes.STATIC, ModifierTypes.FINAL)
+    r.modifier.modifierType.l should contain theSameElementsAs List(
+      ModifierTypes.PUBLIC,
+      ModifierTypes.STATIC,
+      ModifierTypes.FINAL
+    )
 
     b.code shouldBe "BLUE(\"Blue\")"
-    b.modifier.modifierType.l should contain allOf (ModifierTypes.PUBLIC, ModifierTypes.STATIC, ModifierTypes.FINAL)
+    b.modifier.modifierType.l should contain theSameElementsAs List(
+      ModifierTypes.PUBLIC,
+      ModifierTypes.STATIC,
+      ModifierTypes.FINAL
+    )
 
     values.name shouldBe "$VALUES"
   }

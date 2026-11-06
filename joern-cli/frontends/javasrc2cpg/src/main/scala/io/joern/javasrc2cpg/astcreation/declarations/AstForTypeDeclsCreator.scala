@@ -402,7 +402,10 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     }.toMap
 
     val enumEntryLowerings =
-      if (isEnum) enumEntries.zipWithIndex.map { case (entry, ordinal) => lowerEnumEntry(entry, ordinal) } else Nil
+      if (isEnum)
+        enumEntries.zipWithIndex.map { case (entry, ordinal) => lowerEnumEntry(entry, ordinal) }
+      else
+        Nil
     val enumValuesLowering =
       if (isEnum) Some(enumValuesMemberAndInitializer(originNode, enumEntryLowerings))
       else None
