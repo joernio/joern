@@ -512,6 +512,41 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "immediately invoked closure" should {
+    val cpg = code("""
+        |fn main() { (|x| x)(3); }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("call").l) { case call :: Nil =>
+        call.code shouldBe "(|x| x)(3)"
+        call.methodFullName shouldBe "core::ops::function::Fn::call"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.signature shouldBe "core::ops::function::Fn"
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("call").receiver.l) { case (methodRef: MethodRef) :: Nil =>
+        methodRef.typeFullName shouldBe "rust2cpgtest::main::<lambda>0"
+        methodRef.methodFullName shouldBe methodRef.typeFullName
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("call").argument.l) { case Literal(code = "3", argumentIndex = 1) :: Nil =>
+        succeed
+      }
+    }
+
+    "have correct binding" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::main::<lambda>0").methodBinding.nameExact("call").l) {
+        case Binding(signature = "core::ops::function::Fn", methodFullName = "rust2cpgtest::main::<lambda>0") :: Nil =>
+          succeed
+      }
+    }
+  }
 }
 
 class CallTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
@@ -651,6 +686,43 @@ class CallTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
           deref.code shouldBe """*String::from(" hello ").trim()"""
           deref.typeFullName shouldBe "str"
         }
+      }
+    }
+  }
+
+  "call on returned closure" should {
+    val cpg = code("""
+        |fn f() -> impl Fn(i32) -> i32 { |x| x }
+        |fn main() { f()(3); }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("call").l) { case call :: Nil =>
+        call.code shouldBe "f()(3)"
+        call.methodFullName shouldBe "core::ops::function::Fn::call"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.signature shouldBe "core::ops::function::Fn"
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("call").receiver.l) { case (receiver: Call) :: Nil =>
+        receiver.methodFullName shouldBe "rust2cpgtest::f"
+        // TODO(rust_ast_gen): might change later.
+        receiver.typeFullName shouldBe "impl core::ops::function::Fn + core::marker::Sized"
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("call").argument.l) { case Literal(code = "3", argumentIndex = 1) :: Nil =>
+        succeed
+      }
+    }
+
+    "have correct binding" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::f::<lambda>0").methodBinding.nameExact("call").l) {
+        case Binding(signature = "core::ops::function::Fn", methodFullName = "rust2cpgtest::f::<lambda>0") :: Nil =>
+          succeed
       }
     }
   }

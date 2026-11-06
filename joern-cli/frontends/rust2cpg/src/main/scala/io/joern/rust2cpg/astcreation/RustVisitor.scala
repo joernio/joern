@@ -913,8 +913,34 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
           case Some(expr: Expr) => lowerCallExpr(callExpr, expr)
           case _                => notHandledYet(callExpr)
         }
-      case _ => notHandledYet(callExpr)
+      case callee if callExpr.methodFullName.isEmpty => lowerClosureCall(callExpr, callee)
+      case _                                         => notHandledYet(callExpr)
     }
+  }
+
+  private def lowerClosureCall(callExpr: CallExpr, callee: Expr): Ast = {
+    // TODO(rust_ast_gen): decide between call/call_mut/call_once.
+    val callName = "call"
+    val call     = callNode(
+      node = callExpr,
+      code = code(callExpr),
+      name = callName,
+      methodFullName = combineRustFullName(RustFullNames.FnTrait, callName),
+      dispatchType = DispatchTypes.DYNAMIC_DISPATCH,
+      signature = Some(RustFullNames.FnTrait),
+      typeFullName = Some(typeFullNameForExpr(callExpr))
+    )
+    val args = callExpr.argList.expr.map(visitExpr)
+
+    // NB: with sysroot, there's a `&` adjustment, making the receiver have type `&T` instead of `T`, and
+    // we only add bindings to `T`.
+    @tailrec
+    def calleeWithoutAdjustment(callee: Expr): Ast = callee match {
+      case parenExpr: ParenExpr => calleeWithoutAdjustment(parenExpr.expr)
+      case _                    => dispatchVisitExpr(callee)
+    }
+
+    callAst(call, args, receiver = Some(calleeWithoutAdjustment(callee)))
   }
 
   private def lowerPathExprCall(callExpr: CallExpr, pathExpr: PathExpr): Ast = {
@@ -2334,6 +2360,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     contextStack.pushClosure(method, methodRef, block, evaluationStrategy)
     lowerClosureExprAsDetachedAst(closureExpr, method, block)
     contextStack.pop()
+
+    val typeDecl = typeDeclForClosure(closureExpr, method)
+    addDetachedAst(Ast(typeDecl))
+    addDetachedClosureBindingAsts(typeDecl, method)
 
     Ast(methodRef)
   }
