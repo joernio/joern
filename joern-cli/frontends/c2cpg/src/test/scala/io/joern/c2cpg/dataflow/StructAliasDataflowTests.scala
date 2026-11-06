@@ -1,0 +1,277 @@
+package io.joern.c2cpg.dataflow
+
+import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
+import io.joern.dataflowengineoss.language.*
+import io.shiftleft.semanticcpg.language.*
+
+class StructAliasDataflowTests extends DataFlowCodeToCpgSuite {
+
+  "pointer field write read through the struct" should {
+    val cpg = code("""
+        |#include <stdio.h>
+        |
+        |struct numbers {
+        |  int number_1;
+        |  int number_2;
+        |};
+        |
+        |int main(int argc, char **argv) {
+        |  struct numbers nums = {};
+        |  int one = 1;
+        |  nums.number_1 = one;
+        |  printf("%d", nums.number_1);
+        |
+        |  int two = 2;
+        |  struct numbers *nums_p = &nums;
+        |  nums_p->number_2 = two;
+        |  printf("%d", nums.number_2);
+        |  return 0;
+        |}""".stripMargin)
+
+    "flow from one through direct struct field access" in {
+      val source = cpg.identifier.name("one")
+      val sink   = cpg.call("printf").argument(2).where(_.code("nums.number_1"))
+      val flows  = sink.reachableByFlows(source)
+      flows.map(flowToResultPairs).toSetMutable shouldBe Set(
+        List(("nums.number_1 = one", 12), ("printf(\"%d\", nums.number_1)", 13)),
+        List(("one = 1", 11), ("nums.number_1 = one", 12), ("printf(\"%d\", nums.number_1)", 13))
+      )
+    }
+
+    "flow from two through pointer write and struct field read" in {
+      val source = cpg.identifier.name("two")
+      val sink   = cpg.call("printf").argument(2).where(_.code("nums.number_2"))
+      val flows  = sink.reachableByFlows(source)
+      flows.map(flowToResultPairs).toSetMutable shouldBe Set(
+        List(("nums_p->number_2 = two", 17), ("printf(\"%d\", nums.number_2)", 18)),
+        List(("two = 2", 15), ("nums_p->number_2 = two", 17), ("printf(\"%d\", nums.number_2)", 18))
+      )
+    }
+  }
+
+  "struct write pointer field read" should {
+    val cpg = code("""
+        |#include <stdio.h>
+        |
+        |struct numbers {
+        |  int number_1;
+        |  int number_2;
+        |};
+        |
+        |int main() {
+        |  struct numbers nums = {};
+        |  struct numbers *nums_p = &nums;
+        |  int two = 2;
+        |  nums.number_2 = two;
+        |  printf("%d", nums_p->number_2);
+        |  return 0;
+        |}""".stripMargin)
+
+    "flow from struct assignment to pointer field read" in {
+      val source = cpg.identifier.name("two")
+      val sink   = cpg.call("printf").argument(2).where(_.code("nums_p->number_2"))
+      val flows  = sink.reachableByFlows(source)
+      flows.map(flowToResultPairs).toSetMutable shouldBe Set(
+        List(("two = 2", 12), ("nums.number_2 = two", 13), ("printf(\"%d\", nums_p->number_2)", 14)),
+        List(("nums.number_2 = two", 13), ("printf(\"%d\", nums_p->number_2)", 14))
+      )
+    }
+  }
+
+  "field sensitivity across pointer alias" should {
+    val cpg = code("""
+        |#include <stdio.h>
+        |
+        |struct numbers {
+        |  int number_1;
+        |  int number_2;
+        |};
+        |
+        |int main() {
+        |  struct numbers nums = {};
+        |  struct numbers *nums_p = &nums;
+        |  int two = 2;
+        |  nums_p->number_2 = two;
+        |  printf("%d", nums.number_1);
+        |  return 0;
+        |}""".stripMargin)
+
+    "not flow into a different struct field" in {
+      val source = cpg.identifier.name("two")
+      val sink   = cpg.call("printf").argument(2).where(_.code("nums.number_1"))
+      sink.reachableByFlows(source) shouldBe empty
+    }
+  }
+
+  "field sensitivity on simplified struct members" should {
+    val cpg = code("""
+        |struct Data { char *buf; int len; };
+        |char *source();
+        |void sink(char *str);
+        |
+        |int main() {
+        |  struct Data d;
+        |  d.buf = source();
+        |  d.len = 10;
+        |  sink(d.buf);
+        |  return 0;
+        |}""".stripMargin)
+
+    "flow through buf only not len" in {
+      val source = cpg.call("source")
+      val sink   = cpg.call("sink").argument(1)
+      sink.reachableByFlows(source).nonEmpty shouldBe true
+    }
+
+    "not flow from buf assignment into len" in {
+      val source = cpg.call("source")
+      val sink   = cpg.assignment.code(".*\\.len = .*").target
+      sink.reachableByFlows(source) shouldBe empty
+    }
+  }
+
+  "reassignment drops stale pointer alias" should {
+    val cpg = code("""
+        |struct S1 { int f; };
+        |struct S2 { int f; };
+        |int source();
+        |void sink(int i);
+        |
+        |void foo() {
+        |  struct S1 s1;
+        |  struct S2 s2;
+        |  struct S1 *p;
+        |  p = &s1;
+        |  p = &s2;
+        |  p->f = source();
+        |  sink(s1.f);
+        |}""".stripMargin)
+
+    "not report flow after pointer reassignment" in {
+      val source = cpg.call("source")
+      val sink   = cpg.call("sink").argument(1)
+      sink.reachableByFlows(source) shouldBe empty
+    }
+  }
+
+  "repeated address of the same struct keeps the alias" should {
+    val cpg = code("""
+        |struct S { int f; };
+        |int source();
+        |void sink(int i);
+        |
+        |void foo() {
+        |  struct S s;
+        |  struct S *p;
+        |  p = &s;
+        |  p->f = source();
+        |  p = &s;
+        |  sink(s.f);
+        |}""".stripMargin)
+
+    "flow when every assignment takes the address of the same variable" in {
+      val source = cpg.call("source")
+      val sink   = cpg.call("sink").argument(1)
+      val flows  = sink.reachableByFlows(source)
+      flows.map(flowToResultPairs).toSetMutable shouldBe Set(
+        List(("source()", 10), ("p->f = source()", 10), ("sink(s.f)", 12))
+      )
+    }
+  }
+
+  "shadowed pointer alias stays on the inner variable" should {
+    val cpg = code("""
+        |struct S { int f; };
+        |int source();
+        |void sink(int i);
+        |
+        |void foo() {
+        |  struct S s;
+        |  struct S *p;
+        |  {
+        |    struct S *p = &s;
+        |    p->f = source();
+        |  }
+        |  sink(s.f);
+        |}""".stripMargin)
+
+    "flow from the inner pointer write to the struct field" in {
+      val source = cpg.call("source")
+      val sink   = cpg.call("sink").argument(1)
+      val flows  = sink.reachableByFlows(source)
+      flows.map(flowToResultPairs).toSetMutable shouldBe Set(
+        List(("source()", 11), ("p->f = source()", 11), ("sink(s.f)", 13))
+      )
+    }
+  }
+
+  "outer pointer does not inherit an inner alias" should {
+    val cpg = code("""
+        |struct S { int f; };
+        |int source();
+        |void sink(int i);
+        |
+        |void foo() {
+        |  struct S s;
+        |  struct S *p;
+        |  {
+        |    struct S *p = &s;
+        |  }
+        |  p->f = source();
+        |  sink(s.f);
+        |}""".stripMargin)
+
+    "not flow from the outer pointer write into the inner alias target" in {
+      val source = cpg.call("source")
+      val sink   = cpg.call("sink").argument(1)
+      sink.reachableByFlows(source) shouldBe empty
+    }
+  }
+
+  "outer pointer read does not use an inner alias" should {
+    val cpg = code("""
+        |struct S { int f; };
+        |int source();
+        |void sink(int i);
+        |
+        |void foo() {
+        |  struct S s;
+        |  struct S *p;
+        |  {
+        |    struct S *p = &s;
+        |  }
+        |  s.f = source();
+        |  sink(p->f);
+        |}""".stripMargin)
+
+    "not flow from the struct write into the outer pointer read" in {
+      val source = cpg.call("source")
+      val sink   = cpg.call("sink").argument(1)
+      sink.reachableByFlows(source) shouldBe empty
+    }
+  }
+
+  "inner pointer write does not reach an outer pointer read" should {
+    val cpg = code("""
+        |struct S { int f; };
+        |int source();
+        |void sink(int i);
+        |
+        |void foo() {
+        |  struct S s;
+        |  struct S *p;
+        |  {
+        |    struct S *p = &s;
+        |    p->f = source();
+        |  }
+        |  sink(p->f);
+        |}""".stripMargin)
+
+    "not flow across shadowed pointer names" in {
+      val source = cpg.call("source")
+      val sink   = cpg.call("sink").argument(1)
+      sink.reachableByFlows(source) shouldBe empty
+    }
+  }
+
+}
