@@ -835,9 +835,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         val identifierAst  = astWithRefEdgeMaybe(identifier.name, identifier)
         val assignmentNode = operatorCallNode(expr, code(expr), Operators.assignment, None)
         val call           =
-          callAst(assignmentNode, List(identifierAst) ++ rhsAsts)
+          callAst(assignmentNode, identifierAst :: rhsAsts.lastOption.toList)
             .withChildren(annotations.map(astForAnnotationEntry))
-        Seq(localAst, call)
+        Seq(localAst) ++ rhsAsts.dropRight(1) ++ Seq(call)
       } else {
         Seq(localAst)
       }
