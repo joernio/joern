@@ -9,6 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Call,
   FieldIdentifier,
   Identifier,
+  Literal,
   TypeDecl,
   TypeRef
 }
@@ -253,16 +254,20 @@ class AnonymousClassTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
     "be constructed correctly in the enclosing class's clinit" in {
-      pendingUntilFixed {
-        inside(cpg.typeDecl.name("Foo").method.nameExact("<clinit>").call.nameExact("<init>").l) {
-          case List(initCall) =>
-            initCall.methodFullName shouldBe "foo.Foo$0.<init>:void()"
-            inside(initCall.argument.l) { case List(thisArgument: Identifier) =>
-              thisArgument.name shouldBe "ENTRY"
-              thisArgument.typeFullName shouldBe "foo.Foo$0"
-            }
+      inside(cpg.typeDecl.name("Foo").method.nameExact("<clinit>").call.nameExact("<init>").l) { case List(initCall) =>
+        initCall.methodFullName shouldBe "foo.Foo$0.<init>:void(java.lang.String,int,int)"
+        inside(initCall.argument.l) { case List(thisArgument: Call, name: Literal, ordinal: Literal, value: Literal) =>
+          thisArgument.code shouldBe "Foo.ENTRY"
+          thisArgument.typeFullName shouldBe "foo.Foo$0"
+          name.code shouldBe "\"ENTRY\""
+          ordinal.code shouldBe "0"
+          value.code shouldBe "42"
         }
       }
+    }
+
+    "inherit from the enclosing enum type, not java.lang.Enum" in {
+      cpg.typeDecl.nameExact("Foo$0").inheritsFromTypeFullName.l shouldBe List("foo.Foo")
     }
   }
 
