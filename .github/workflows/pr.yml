@@ -19,7 +19,7 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@b113b960ba361e87e08ce02a390d51871b7ee459 # v1.5.13
+      - uses: sbt/setup-sbt@67d461eba2c4753196c230e02da850757ba4775e # v1.5.14
       - name: Check formatting and lint
         run: sbt "scalafmtCheck ; Test/scalafmtCheck ; integrationTests/scalafmtCheck ; integrationTests/Test/scalafmtCheck ; scalafix --diff-base $(git merge-base origin/${{ github.event.pull_request.base.ref }} ${{ github.event.pull_request.head.sha }} || echo origin/${{ github.event.pull_request.base.ref }}) RestrictedImports SingleLetterIdentifiers UnorderedIteration"
       - run: echo "Previous step failed because the code is not formatted or violates coding quality expectations. Run 'sbt scalafmt Test/scalafmt' to format, and check the logs for scalafix violations."
@@ -52,7 +52,7 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@b113b960ba361e87e08ce02a390d51871b7ee459 # v1.5.13
+      - uses: sbt/setup-sbt@67d461eba2c4753196c230e02da850757ba4775e # v1.5.14
       - name: Install php
         if: matrix.os == 'macos-latest'
         run: brew install php
@@ -106,7 +106,7 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@b113b960ba361e87e08ce02a390d51871b7ee459 # v1.5.13
+      - uses: sbt/setup-sbt@67d461eba2c4753196c230e02da850757ba4775e # v1.5.14
       - name: Run integration tests
         run: sbt "c2cpg/stage ; integrationTests/testFull"
 
@@ -127,7 +127,7 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@b113b960ba361e87e08ce02a390d51871b7ee459 # v1.5.13
+      - uses: sbt/setup-sbt@67d461eba2c4753196c230e02da850757ba4775e # v1.5.14
       - name: Install coreutils
         if: matrix.os == 'macos-latest'
         run: brew install coreutils
