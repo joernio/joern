@@ -54,8 +54,10 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[CfgNode] {
       x.id != entryNode.id && x.id != exitNode.id
     ) ++ method.parameter.asOutput.toList ++ List(exitNode)
 
-  private val allNodesEvenUnreachable =
-    allNodesReversePostOrder ++ method.cfgNode.l.filterNot(x => allNodesReversePostOrder.contains(x))
+  private val allNodesEvenUnreachable = {
+    val reachable = allNodesReversePostOrder.toSet
+    allNodesReversePostOrder ++ method.cfgNode.l.filterNot(node => reachable.contains(node))
+  }
   val nodeToNumber: Map[CfgNode, Int] = allNodesEvenUnreachable.zipWithIndex.map { case (x, i) => x -> i }.toMap
   val numberToNode: Map[Int, CfgNode] = allNodesEvenUnreachable.zipWithIndex.map { case (x, i) => i -> x }.toMap
 

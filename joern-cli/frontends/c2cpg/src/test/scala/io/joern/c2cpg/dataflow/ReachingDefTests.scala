@@ -125,4 +125,27 @@ class ReachingDefTests extends DataFlowCodeToCpgSuite {
     }
 
   }
+
+  "ReachingDefTest4" should {
+    val cpg = code("""
+      |int foo(int x) {
+      | return x;
+      | x = 2;
+      |}
+      |""".stripMargin)
+
+    val fooMethod = cpg.method("foo").head
+    val flowGraph = new ReachingDefFlowGraph(fooMethod)
+
+    "number every CFG node once, those no path reaches after the reachable ones" in {
+      val reachable  = flowGraph.allNodesReversePostOrder
+      val assignment = cpg.call.codeExact("x = 2").head
+      reachable should not contain assignment
+
+      flowGraph.nodeToNumber.keySet shouldBe (reachable ++ fooMethod.cfgNode.l).toSet
+      flowGraph.numberToNode.size shouldBe flowGraph.nodeToNumber.size
+      reachable.map(flowGraph.nodeToNumber) shouldBe reachable.indices.toList
+      flowGraph.nodeToNumber(assignment) should be >= reachable.size
+    }
+  }
 }
