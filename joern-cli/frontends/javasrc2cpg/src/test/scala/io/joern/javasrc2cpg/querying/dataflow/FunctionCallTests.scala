@@ -104,14 +104,24 @@ class NewFunctionCallTests extends JavaSrcCode2CpgFixture(withOssDataflow = true
       val cpg    = code(program("return \"constant\";"))
       def source = cpg.method.name("test").parameter.name("input")
       def sink   = cpg.method.name("sink").parameter.index(1)
-      sink.reachableBy(source).size shouldBe 0
+      sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe empty
     }
 
     "find a path when the implementation returns its argument" in {
       val cpg    = code(program("return s;"))
       def source = cpg.method.name("test").parameter.name("input")
       def sink   = cpg.method.name("sink").parameter.index(1)
-      sink.reachableBy(source).size shouldBe 1
+      sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
+        List(
+          ("test(String input)", Some(6)),
+          ("new Impl().apply(input)", Some(7)),
+          ("apply(this, String s)", Some(4)),
+          ("return s;", Some(4)),
+          ("RET", Some(4)),
+          ("new Impl().apply(input)", Some(7)),
+          ("sink(String s)", Some(5))
+        )
+      )
     }
 
     "still pass taint through an interface method that has no implementation" in {
@@ -126,7 +136,16 @@ class NewFunctionCallTests extends JavaSrcCode2CpgFixture(withOssDataflow = true
           |""".stripMargin)
       def source = cpg.method.name("test").parameter.name("input")
       def sink   = cpg.method.name("sink").parameter.index(1)
-      sink.reachableBy(source).size shouldBe 1
+      sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
+        List(
+          ("test(Op op, String input)", Some(5)),
+          ("op.apply(input)", Some(6)),
+          ("apply(this, String s)", Some(3)),
+          ("RET", Some(3)),
+          ("op.apply(input)", Some(6)),
+          ("sink(String s)", Some(4))
+        )
+      )
     }
   }
 }
