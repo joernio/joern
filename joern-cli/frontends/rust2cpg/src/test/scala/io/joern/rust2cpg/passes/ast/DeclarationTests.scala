@@ -396,6 +396,174 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "assoc const in an inherent impl" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo {
+        |  const K: u32 = 1;
+        |}
+        |fn main() {
+        |  let v = Foo::K;
+        |}
+        |""".stripMargin)
+
+    "have correct fieldAccess" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "Foo::K"
+        fieldAccess.typeFullName shouldBe "u32"
+
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case TypeRef(typeFullName = "rust2cpgtest::Foo", code = "Foo") :: FieldIdentifier(
+                canonicalName = "K"
+              ) :: Nil =>
+            succeed
+        }
+      }
+    }
+
+    "have correct referencedMember" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.isCall.referencedMember.l) {
+        case member :: Nil =>
+          member.name shouldBe "K"
+          member.typeDecl.fullName shouldBe "rust2cpgtest::Foo"
+      }
+    }
+  }
+
+  "self assoc const" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo {
+        |  const K: u32 = 1;
+        |  fn k() {
+        |    let v = Self::K;
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct fieldAccess" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "Self::K"
+        fieldAccess.typeFullName shouldBe "u32"
+
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case TypeRef(typeFullName = "rust2cpgtest::Foo", code = "Self") :: FieldIdentifier(
+                canonicalName = "K"
+              ) :: Nil =>
+            succeed
+        }
+      }
+    }
+
+    "have correct referencedMember" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.isCall.referencedMember.l) {
+        case member :: Nil =>
+          member.name shouldBe "K"
+          member.typeDecl.fullName shouldBe "rust2cpgtest::Foo"
+      }
+    }
+  }
+
+  "fully qualified assoc const" should {
+    val cpg = code("""
+        |trait Tr { const K: u32; }
+        |struct S;
+        |impl Tr for S { const K: u32 = 1; }
+        |fn main() {
+        |  let v = <S as Tr>::K;
+        |}
+        |""".stripMargin)
+
+    "have correct fieldAccess" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "<S as Tr>::K"
+        fieldAccess.typeFullName shouldBe "u32"
+
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case TypeRef(typeFullName = "<rust2cpgtest::S as rust2cpgtest::Tr>", code = "<S as Tr>") :: FieldIdentifier(
+                canonicalName = "K"
+              ) :: Nil =>
+            succeed
+        }
+      }
+    }
+
+    "have correct referencedMember" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.isCall.referencedMember.l) {
+        case member :: Nil =>
+          member.name shouldBe "K"
+          member.typeDecl.fullName shouldBe "<rust2cpgtest::S as rust2cpgtest::Tr>"
+      }
+    }
+  }
+
+  "default trait assoc const" should {
+    val cpg = code("""
+        |trait Tr { const K: u32 = 1; }
+        |struct S;
+        |impl Tr for S {}
+        |fn main() {
+        |  let v = S::K;
+        |}
+        |""".stripMargin)
+
+    "have correct fieldAccess" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "S::K"
+        fieldAccess.typeFullName shouldBe "u32"
+
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case TypeRef(typeFullName = "rust2cpgtest::Tr", code = "S") :: FieldIdentifier(canonicalName = "K") :: Nil =>
+            succeed
+        }
+      }
+    }
+
+    "have correct referencedMember" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.isCall.referencedMember.l) {
+        case member :: Nil =>
+          member.name shouldBe "K"
+          member.typeDecl.fullName shouldBe "rust2cpgtest::Tr"
+      }
+    }
+  }
+
+  "type parameter trait assoc const" should {
+    val cpg = code("""
+        |trait Tr { const K: u32; }
+        |fn f<T: Tr>() {
+        |  let v = <T as Tr>::K;
+        |}
+        |""".stripMargin)
+
+    "have correct fieldAccess" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.l) { case (fieldAccess: Call) :: Nil =>
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "<T as Tr>::K"
+        fieldAccess.typeFullName shouldBe "u32"
+
+        inside(fieldAccess.argument.sortBy(_.argumentIndex).l) {
+          case TypeRef(typeFullName = "rust2cpgtest::Tr", code = "<T as Tr>") :: FieldIdentifier(
+                canonicalName = "K"
+              ) :: Nil =>
+            succeed
+        }
+      }
+    }
+
+    "have correct referencedMember" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("v")).source.isCall.referencedMember.l) {
+        case member :: Nil =>
+          member.name shouldBe "K"
+          member.typeDecl.fullName shouldBe "rust2cpgtest::Tr"
+      }
+    }
+  }
+
   "unqualified mutable static" should {
     val cpg = code("""
         |static mut S: u32 = 0;
