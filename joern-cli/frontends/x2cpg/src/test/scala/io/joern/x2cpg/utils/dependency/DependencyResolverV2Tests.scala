@@ -1,7 +1,9 @@
 package io.joern.x2cpg.utils.dependency
 
+import io.joern.x2cpg.testfixtures.RetryableAssertion.{eventually, NetworkRetryConfig, RetryConfig}
 import io.joern.x2cpg.utils.dependency.DependencyResolverV2
 import io.shiftleft.utils.ProjectRoot
+import org.gradle.tooling.GradleConnectionException
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -13,10 +15,15 @@ import java.nio.file.{Path, Paths}
   */
 class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
 
+  private implicit val retryConfig: RetryConfig = NetworkRetryConfig
+
+  /** Resolving the graph may download a Gradle distribution, which can fail transiently. The Gradle Tooling API reports
+    * such failures as a `GradleConnectionException`.
+    */
   private def graphFor(inputPath: Path) =
-    DependencyResolverV2
-      .getDependencyGraph(inputPath)
-      .getOrElse(fail(s"V2 dependency resolver returned no graph for $inputPath"))
+    eventually[Option[DependencyGraph], GradleConnectionException] {
+      DependencyResolverV2.getDependencyGraph(inputPath)
+    }.getOrElse(fail(s"V2 dependency resolver returned no graph for $inputPath"))
 
   private def projectRoot(name: String): Path =
     Paths
