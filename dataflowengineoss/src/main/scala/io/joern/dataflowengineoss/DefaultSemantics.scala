@@ -27,6 +27,8 @@ object DefaultSemantics {
     F(Operators.multiplication, List((1, -1), (2, -1))),
     F(Operators.division, List((1, -1), (2, -1))),
     F(Operators.addressOf, List((1, -1))),
+    F(Operators.logicalAnd, List((1, -1), (2, -1))),
+    F(Operators.logicalOr, List((1, -1), (2, -1))),
     F(Operators.assignment, List((2, 1), (2, -1))),
     F(Operators.assignmentAnd, List((2, 1), (1, 1), (2, -1))),
     F(Operators.assignmentArithmeticShiftRight, List((2, 1), (1, 1), (2, -1))),
