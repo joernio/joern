@@ -6,9 +6,17 @@ class DataFlowSolver {
 
   /** Calculate fix point solution via a standard work list algorithm (Forwards). The result is given by two maps: `in`
     * and `out`. These maps associate all CFG nodes with the set of definitions at node entry and node exit
-    * respectively.
+    * respectively. A problem of [[ReachingDefProblem.create]] is solved with [[CompactReachingDefSets]], and its maps
+    * build a node's set when it is read.
     */
-  def calculateMopSolutionForwards[Node, T <: Iterable[?]](problem: DataFlowProblem[Node, T]): Solution[Node, T] = {
+  def calculateMopSolutionForwards[Node, T <: Iterable[?]](problem: DataFlowProblem[Node, T]): Solution[Node, T] =
+    problem match {
+      case reachingDefinitions: ReachingDefDataFlowProblem =>
+        CompactReachingDefSets.solution(reachingDefinitions).asInstanceOf[Solution[Node, T]]
+      case _ => solveForwards(problem)
+    }
+
+  private def solveForwards[Node, T <: Iterable[?]](problem: DataFlowProblem[Node, T]): Solution[Node, T] = {
     var out: Map[Node, T] = problem.inOutInit.initOut
     var in                = problem.inOutInit.initIn
     val workList          = mutable.ListBuffer[Node]()

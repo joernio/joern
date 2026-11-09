@@ -43,11 +43,28 @@ class DdgGenerator(semantics: Semantics) {
     problem: DataFlowProblem[CfgNode, mutable.BitSet],
     solution: Solution[CfgNode, mutable.BitSet]
   ): Unit = {
+    val in = solution.in match {
+      case solved: SolvedIn => solved.views
+      case other            => other
+    }
+    addReachingDefEdges(dstGraph, method, problem, in, solution.problem.transferFunction)
+  }
+
+  /** As [[addReachingDefEdges]], from the `in` sets of the solution alone, read through the views of
+    * [[CompactReachingDefSets.solveIn]] when [[DataFlowSolver]] solved it with [[CompactReachingDefSets]], and from
+    * `transfer`, the transfer function whose `gen` and lone identifiers it reads.
+    */
+  private[reachingdef] def addReachingDefEdges(
+    dstGraph: DiffGraphBuilder,
+    method: Method,
+    problem: DataFlowProblem[CfgNode, mutable.BitSet],
+    in: Map[CfgNode, Set[Definition]],
+    transfer: TransferFunction[CfgNode, mutable.BitSet]
+  ): Unit = {
     implicit val implicitDst: DiffGraphBuilder = dstGraph
 
     val numberToNode = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
-    val in           = solution.in
-    val gen          = solution.problem.transferFunction.asInstanceOf[ReachingDefTransferFunction].gen
+    val gen          = transfer.asInstanceOf[ReachingDefTransferFunction].gen
 
     val allNodes      = in.keys.toList
     val usageAnalyzer = new UsageAnalyzer(problem, in)
@@ -167,7 +184,7 @@ class DdgGenerator(semantics: Semantics) {
     def addEdgesFromLoneIdentifiersToExit(method: Method): Unit = {
       val numberToNode     = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
       val exitNode         = method.methodReturn
-      val transferFunction = solution.problem.transferFunction.asInstanceOf[OptimizedReachingDefTransferFunction]
+      val transferFunction = transfer.asInstanceOf[OptimizedReachingDefTransferFunction]
       val genOnce          = transferFunction.loneIdentifiers
       genOnce.foreach { case (_, defs) =>
         defs.foreach { d =>
