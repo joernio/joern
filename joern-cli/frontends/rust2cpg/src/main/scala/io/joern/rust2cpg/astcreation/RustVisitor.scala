@@ -1092,7 +1092,6 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     fieldAccessAst(path, path.pathSegment, typeRefAst, code(path), fieldName, typeFullNameForPath(path))
   }
 
-  // TODO: `<Foo as Bar>::baz`, etc.
   private def lowerQualifiedPath(path: Path, qualifier: Path, ownerFullName: Option[String]): Ast = {
     ownerFullName.orElse(qualifier.pathSegment.nameRef.flatMap(_.typeFullName)) match {
       case Some(qualifierFullName) =>
