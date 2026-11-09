@@ -1,7 +1,7 @@
 package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
-import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -146,6 +146,69 @@ class SwitchTests extends GoCodeToCpgSuite {
       "float64",
       "y = 12"
     )
+  }
+
+  "an unbound type switch on a non-identifier subject" should {
+    val cpg = code("""
+        |package main
+        |type S struct { f any }
+        |func g() any { return 1 }
+        |func Helper() int { return 1 }
+        |func Index(m map[string]any) int {
+        |  switch m["k"].(type) {
+        |    case int: return 1
+        |  }
+        |  return 0
+        |}
+        |func Slice(xs []any) int {
+        |  switch xs[0].(type) {
+        |    case int: return 1
+        |  }
+        |  return 0
+        |}
+        |func Selector(s S) int {
+        |  switch s.f.(type) {
+        |    case int: return 1
+        |  }
+        |  return 0
+        |}
+        |func Call() int {
+        |  switch g().(type) {
+        |    case int: return 1
+        |  }
+        |  return 0
+        |}
+        |func Paren(m map[string]any) int {
+        |  switch (m["k"]).(type) {
+        |    case int: return 1
+        |  }
+        |  return 0
+        |}
+        |""".stripMargin)
+
+    "keep every method of the file in the CPG" in {
+      cpg.method.name("Helper", "Index", "Slice", "Selector", "Call", "Paren").name.sorted.l shouldBe
+        List("Call", "Helper", "Index", "Paren", "Selector", "Slice")
+    }
+
+    "create a switch with an `is` condition over the subject" in {
+      // the parentheses are not part of the argument
+      val expected = List(
+        ("Call", "g()", "g()"),
+        ("Index", "m[\"k\"]", "m[\"k\"]"),
+        ("Paren", "(m[\"k\"])", "m[\"k\"]"),
+        ("Selector", "s.f", "s.f"),
+        ("Slice", "xs[0]", "xs[0]")
+      )
+      expected.foreach { case (method, subject, argument) =>
+        val List(switch) = cpg.method.name(method).controlStructure.l
+        switch.controlStructureType shouldBe ControlStructureTypes.SWITCH
+        switch.code shouldBe s"switch $subject.(type)"
+        val List(isCall) = switch.condition.isCall.l
+        isCall.name shouldBe Operators.is
+        isCall.argument.code.l shouldBe List(argument)
+      }
+    }
   }
 
   // TODO Need to handle `fallthrough` statements

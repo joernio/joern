@@ -180,17 +180,25 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case _          => ("", Seq.empty)
     }
     val stmtAsts = astsForStatement(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Body)))
-    val id       = conditionAst
-      .flatMap(_.root)
-      .collectFirst {
-        case x: NewIdentifier => identifierNode(conditionParserNode.get, x.name, x.code, x.typeFullName)
-        case x: NewLocal      => identifierNode(conditionParserNode.get, x.name, x.code, x.typeFullName)
-      }
-      .get
-    val identifier = Ast(id)
-    val isOp       =
-      callNode(conditionParserNode.get, s"${id.name}.(type)", Operators.is, Operators.is, DispatchTypes.STATIC_DISPATCH)
-    val condition = Option(callAst(isOp, Seq(identifier)))
+    // `switch x.(type)` and `switch v := x.(type)` have an identifier or local as the root. Any other subject
+    // (`m["k"]`, `s.f`, `g()`, `(x)`) is used as it is.
+    val subjectAst = conditionParserNode.toOption.flatMap { parserNode =>
+      conditionAst
+        .flatMap(_.root)
+        .collectFirst {
+          case x: NewIdentifier => Ast(identifierNode(parserNode, x.name, x.code, x.typeFullName))
+          case x: NewLocal      => Ast(identifierNode(parserNode, x.name, x.code, x.typeFullName))
+        }
+        .orElse(conditionAst.headOption)
+    }
+    val condition = for {
+      parserNode <- conditionParserNode.toOption
+      subject    <- subjectAst
+    } yield {
+      val subjectCode = subject.root.collect { case expr: ExpressionNew => expr.code }.getOrElse(parserNode.code)
+      val isOp = callNode(parserNode, s"$subjectCode.(type)", Operators.is, Operators.is, DispatchTypes.STATIC_DISPATCH)
+      callAst(isOp, Seq(subject))
+    }
 
     val newStmtAst = stmtAsts // TODO: Push conditionAst to the front of the block
     switchAst(typeSwitchStmt, condition, newStmtAst, Some(s"switch $code"))
