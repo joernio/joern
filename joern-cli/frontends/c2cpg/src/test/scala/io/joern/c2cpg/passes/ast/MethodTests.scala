@@ -328,7 +328,7 @@ class MethodTests extends C2CpgSuite {
       ).sorted
 
       val List(declaredOnly) = cpg.method.fullNameExact("DeclaredOnly.DeclaredOnly:void(DeclaredOnly&)").l
-      declaredOnly.modifier.modifierType.sorted.l shouldBe List(ModifierTypes.CONSTRUCTOR)
+      declaredOnly.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PUBLIC)
 
       val List(userBody) = cpg.method.fullNameExact("UserBody.UserBody:void(UserBody&)").l
       userBody.modifier.modifierType.sorted.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PUBLIC)
@@ -737,6 +737,100 @@ class MethodTests extends C2CpgSuite {
       initMethods.size shouldBe 3
       initMethods.foreach { method =>
         method.block.astChildren.isLocal.nameExact("scvGeoms_").size shouldBe 1
+      }
+    }
+  }
+
+  "A constructor's access modifier" should {
+    val cpg = code(
+      """
+        |class Locked {
+        |private:
+        |  Locked();
+        |};
+        |class Guarded {
+        |protected:
+        |  Guarded();
+        |};
+        |class DefaultPrivate {
+        |  DefaultPrivate();
+        |};
+        |struct Opened {
+        |  Opened();
+        |};
+        |Locked::Locked() {}
+        |Guarded::Guarded() {}
+        |DefaultPrivate::DefaultPrivate() {}
+        |Opened::Opened() {}
+        |""".stripMargin,
+      "test.cpp"
+    )
+
+    "be private for a private constructor" in {
+      inside(cpg.method.fullNameExact("Locked.Locked:void()").l) { case List(constructor) =>
+        constructor.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PRIVATE)
+      }
+    }
+
+    "be protected for a protected constructor" in {
+      inside(cpg.method.fullNameExact("Guarded.Guarded:void()").l) { case List(constructor) =>
+        constructor.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PROTECTED)
+      }
+    }
+
+    "be private for an unlabelled member of a class" in {
+      inside(cpg.method.fullNameExact("DefaultPrivate.DefaultPrivate:void()").l) { case List(constructor) =>
+        constructor.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PRIVATE)
+      }
+    }
+
+    "be public for an unlabelled member of a struct" in {
+      inside(cpg.method.fullNameExact("Opened.Opened:void()").l) { case List(constructor) =>
+        constructor.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PUBLIC)
+      }
+    }
+  }
+
+  "A constructor declared without a definition" should {
+    val cpg = code(
+      """
+        |class Hidden {
+        |  Hidden();
+        |
+        |public:
+        |  Hidden(int);
+        |};
+        |""".stripMargin,
+      "test.cpp"
+    )
+
+    "still carry its access modifier" in {
+      inside(cpg.method.fullNameExact("Hidden.Hidden:void()").l) { case List(constructor) =>
+        constructor.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PRIVATE)
+      }
+      inside(cpg.method.fullNameExact("Hidden.Hidden:void(int)").l) { case List(constructor) =>
+        constructor.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PUBLIC)
+      }
+    }
+  }
+
+  "A deleted private constructor" should {
+    val cpg = code(
+      """
+        |class NoCopy {
+        |  NoCopy(const NoCopy&) = delete;
+        |
+        |public:
+        |  NoCopy() = default;
+        |};
+        |""".stripMargin,
+      "test.cpp"
+    )
+
+    "carry both the access and the deleted modifier" in {
+      inside(cpg.method.fullNameExact("NoCopy.NoCopy:void(NoCopy&)").l) { case List(constructor) =>
+        constructor.modifier.modifierType.l shouldBe
+          List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PRIVATE, Defines.ModifierDeleted)
       }
     }
   }
