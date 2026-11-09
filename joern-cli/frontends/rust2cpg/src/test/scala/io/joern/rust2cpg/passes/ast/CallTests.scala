@@ -513,6 +513,66 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "call via macro-expanded closure" should {
+    val cpg = code("""
+        |macro_rules! m { () => { |x: i32| x }; }
+        |fn main() { m!()(1); }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("call").l) { case call :: Nil =>
+        call.code shouldBe "m!()(1)"
+        call.methodFullName shouldBe "core::ops::function::Fn::call"
+        call.lineNumber shouldBe Some(3)
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("call").receiver.l) { case (methodRef: MethodRef) :: Nil =>
+        methodRef.methodFullName shouldBe "rust2cpgtest::main::<lambda>0"
+        methodRef.lineNumber shouldBe Some(3)
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("call").argument.l) { case Literal(code = "1", argumentIndex = 1) :: Nil =>
+        succeed
+      }
+    }
+  }
+
+  "call via macro-expanded block with nested macro" should {
+    val cpg = code("""
+        |macro_rules! inner { () => { |x: i32| x }; }
+        |macro_rules! m { () => {{ inner!() }}; }
+        |fn main() { m!()(1); }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("call").l) { case call :: Nil =>
+        call.code shouldBe "m!()(1)"
+        call.methodFullName shouldBe "core::ops::function::Fn::call"
+        call.lineNumber shouldBe Some(4)
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("call").receiver.l) { case (block: Block) :: Nil =>
+        block.lineNumber shouldBe Some(4)
+        inside(block.astChildren.l) { case (methodRef: MethodRef) :: Nil =>
+          methodRef.methodFullName shouldBe "rust2cpgtest::main::<lambda>0"
+          methodRef.lineNumber shouldBe Some(4)
+        }
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("call").argument.l) { case Literal(code = "1", argumentIndex = 1) :: Nil =>
+        succeed
+      }
+    }
+  }
+
   "immediately invoked closure" should {
     val cpg = code("""
         |fn main() { (|x| x)(3); }
