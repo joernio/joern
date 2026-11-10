@@ -905,9 +905,9 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
   private def lowerCallExpr(callExpr: CallExpr, callee: Expr): Ast = {
     callee match {
-      case pathExpr: PathExpr   => lowerPathExprCall(callExpr, pathExpr)
-      case parenExpr: ParenExpr => lowerCallExpr(callExpr, parenExpr.expr)
-      case macroExpr: MacroExpr =>
+      case pathExpr: PathExpr if callExpr.fnTrait.isEmpty => lowerPathExprCall(callExpr, pathExpr)
+      case parenExpr: ParenExpr                           => lowerCallExpr(callExpr, parenExpr.expr)
+      case macroExpr: MacroExpr                           =>
         macroExpr.macroCall.macroExpansion match {
           case Some(expr: Expr) => withMacroCall(macroExpr.macroCall) { lowerCallExpr(callExpr, expr) }
           case _                => notHandledYet(callExpr)
