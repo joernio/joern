@@ -84,15 +84,17 @@ class LombokTests extends JavaSrcCode2CpgFixture {
   }
 
   "basic source with lombok annotations" should {
-    val cpg = code(
+    val fooSource =
       """
         |import lombok.Getter;
         |
         |public class Foo {
         |    @Getter private int value = 42;
-        |}""".stripMargin,
-      fileName = "Foo.java"
-    ).withConfig(config)
+        |}""".stripMargin
+
+    val cpg = code(fooSource, fileName = "Foo.java").withConfig(config)
+
+    val getterFieldLine = fooSource.stripMargin.split("\n").indexWhere(_.contains("@Getter")) + 1
 
     "delombok the source correctly" in {
       inside(cpg.method.name("getValue").l) { case method :: Nil =>
@@ -102,8 +104,44 @@ class LombokTests extends JavaSrcCode2CpgFixture {
       }
     }
 
+    "map generated getValue onto the @Getter field line" in {
+      cpg.method.name("getValue").lineNumber.head shouldBe getterFieldLine
+    }
+
     "not give the delomboked filename" in {
       cpg.typeDecl.name("Foo").filename.head.contains("lombok") shouldBe false
+    }
+  }
+
+  "issue 5330 QuartzDAOImplDefault" should {
+    val quartzSource =
+      """
+        |package com.test.dao.db.impl;
+        |
+        |import java.io.ByteArrayInputStream;
+        |import java.io.IOException;
+        |import java.io.ObjectInputStream;
+        |import java.util.ArrayList;
+        |import java.util.Map;
+        |import org.springframework.stereotype.Repository;
+        |import lombok.extern.slf4j.Slf4j;
+        |
+        |@Slf4j
+        |@Repository
+        |public class QuartzDAOImplDefault implements QuartzDAO {
+        |    private ScanData deserializeJobData(byte[] jobData) {
+        |            ByteArrayInputStream bis = new ByteArrayInputStream(jobData);
+        |            ObjectInputStream ois = new ObjectInputStream(bis);
+        |            Map<String, Object> jobDataMap = (Map<String, Object>) ois.readObject();
+        |    }
+        |}""".stripMargin
+
+    val readObjectLine = quartzSource.stripMargin.split("\n").indexWhere(_.contains("readObject")) + 1
+
+    val cpg = code(quartzSource, fileName = "QuartzDAOImplDefault.java").withConfig(config)
+
+    "map readObject to the original source line" in {
+      cpg.call.name("readObject").lineNumber.head shouldBe readObjectLine
     }
   }
 
