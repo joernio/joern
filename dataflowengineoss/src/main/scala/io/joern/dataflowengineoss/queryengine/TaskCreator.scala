@@ -172,15 +172,20 @@ class TaskCreator(context: EngineContext) {
     restrictSize(forCalls) ++ restrictSize(forArgs) ++ restrictSize(forMethodRefs)
   }
 
-  /** The methods a call may invoke, without the bodiless abstract ones (e.g., an interface method) whenever a method
-    * with a body is also among them. An abstract target has no code that could propagate taint, and treating it like an
-    * external method would let the arguments reach the result regardless of what the concrete target does.
+  /** The methods a call may invoke, without the bodiless abstract ones (e.g., an interface method) when the call itself
+    * names a method with a body, as `new Impl().apply(x)` names `Impl.apply`. An abstract target has no code that could
+    * propagate taint, and treating it like an external method would let the arguments reach the result regardless of
+    * what the named method does. A call that names the abstract method, as `op.apply(x)` on an interface-typed `op`
+    * does, keeps it: the receiver may be an implementation that is not among the linked targets, such as a lambda.
     */
   private def calledMethodsWithoutAbstractStubs(call: Call): List[Method] = {
     val calledMethods                           = NoResolve.getCalledMethods(call).toList
     def isAbstractStub(method: Method): Boolean =
       !method.isExternal && method.isStub && method.start.isAbstract.nonEmpty
-    if (calledMethods.exists(method => !method.isExternal && !method.isStub)) {
+    val namesMethodWithBody = calledMethods.exists { method =>
+      method.fullName == call.methodFullName && !method.isExternal && !method.isStub
+    }
+    if (namesMethodWithBody) {
       calledMethods.filterNot(isAbstractStub)
     } else {
       calledMethods
