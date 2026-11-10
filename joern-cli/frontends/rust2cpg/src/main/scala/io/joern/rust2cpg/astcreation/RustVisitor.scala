@@ -912,21 +912,23 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
           case Some(expr: Expr) => withMacroCall(macroExpr.macroCall) { lowerCallExpr(callExpr, expr) }
           case _                => notHandledYet(callExpr)
         }
-      case callee if callExpr.methodFullName.isEmpty => lowerClosureCall(callExpr, callee)
-      case _                                         => notHandledYet(callExpr)
+      case callee =>
+        callExpr.fnTrait match {
+          case Some(fnTrait) => lowerClosureCall(callExpr, callee, fnTrait)
+          case None          => notHandledYet(callExpr)
+        }
     }
   }
 
-  private def lowerClosureCall(callExpr: CallExpr, callee: Expr): Ast = {
-    // TODO(rust_ast_gen): decide between call/call_mut/call_once.
-    val callName = "call"
+  private def lowerClosureCall(callExpr: CallExpr, callee: Expr, fnTrait: String): Ast = {
+    val callName = RustFullNames.FnTraitMethodNames.getOrElse(fnTrait, "call")
     val call     = callNode(
       node = callExpr,
       code = code(callExpr),
       name = callName,
-      methodFullName = combineRustFullName(RustFullNames.FnTrait, callName),
+      methodFullName = combineRustFullName(fnTrait, callName),
       dispatchType = DispatchTypes.DYNAMIC_DISPATCH,
-      signature = Some(RustFullNames.FnTrait),
+      signature = Some(fnTrait),
       typeFullName = Some(typeFullNameForExpr(callExpr))
     )
     val args = callExpr.argList.expr.map(visitExpr)

@@ -75,6 +75,9 @@ class ClosureTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct inheritsFrom" in {
       cpg.typeDecl.fullNameExact("rust2cpgtest::main::<lambda>0").inheritsFromTypeFullName.l shouldBe List(
+        "core::ops::async_function::AsyncFn",
+        "core::ops::async_function::AsyncFnMut",
+        "core::ops::async_function::AsyncFnOnce",
         "core::ops::function::Fn",
         "core::ops::function::FnMut",
         "core::ops::function::FnOnce"
@@ -84,6 +87,21 @@ class ClosureTests extends Rust2CpgSuite(noSysRoot = true) {
     "have correct bindings" in {
       inside(cpg.typeDecl.fullNameExact("rust2cpgtest::main::<lambda>0").methodBinding.sortBy(_.name).l) {
         case Binding(
+              name = "async_call",
+              signature = "core::ops::async_function::AsyncFn",
+              methodFullName = "rust2cpgtest::main::<lambda>0"
+            ) ::
+            Binding(
+              name = "async_call_mut",
+              signature = "core::ops::async_function::AsyncFnMut",
+              methodFullName = "rust2cpgtest::main::<lambda>0"
+            ) ::
+            Binding(
+              name = "async_call_once",
+              signature = "core::ops::async_function::AsyncFnOnce",
+              methodFullName = "rust2cpgtest::main::<lambda>0"
+            ) ::
+            Binding(
               name = "call",
               signature = "core::ops::function::Fn",
               methodFullName = "rust2cpgtest::main::<lambda>0"
