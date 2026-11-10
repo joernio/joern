@@ -46,7 +46,7 @@
     "org.jline:jline": 214767589,
     "org.jruby:jruby-complete": -26341225,
     "org.ow2.asm:asm": 1206815935,
-    "org.projectlombok:lombok": -1238622139,
+    "org.projectlombok:lombok": 801552971,
     "org.scala-lang.modules:scala-xml_3": -2041798718,
     "org.scala-lang:scala-library": 1230160761,
     "org.scala-lang:scala3-library_3": 1771369610,
@@ -280,8 +280,8 @@
     "org.osgi:osgi.annotation:jar:sources": 1165286739,
     "org.ow2.asm:asm": 1614653533,
     "org.ow2.asm:asm:jar:sources": 340034775,
-    "org.projectlombok:lombok": 367235498,
-    "org.projectlombok:lombok:jar:sources": -1275591244,
+    "org.projectlombok:lombok": -1796387573,
+    "org.projectlombok:lombok:jar:sources": -1360576805,
     "org.scala-lang.modules:scala-asm": -1242346001,
     "org.scala-lang.modules:scala-asm:jar:sources": -1283554894,
     "org.scala-lang.modules:scala-parser-combinators_3": -342168038,
@@ -1118,10 +1118,10 @@
     },
     "org.projectlombok:lombok": {
       "shasums": {
-        "jar": "3488a4e9994c26596baaceebee58cad36a50e3bdaec5be72b5834d3c3b560306",
-        "sources": "22ca494eccf86fbfa87a53f56968ca40c2ef075eb55eb3842cb25357be4d4fc4"
+        "jar": "85477a4655ebb2c074a9099cfb749be454449fee564d4282610df1b85f7c508b",
+        "sources": "afd22998de562ee9a9018cf63412c0cb737e49485e011d33468fd67973f09170"
       },
-      "version": "1.18.42"
+      "version": "1.18.48"
     },
     "org.scala-lang.modules:scala-asm": {
       "shasums": {
@@ -5257,6 +5257,7 @@
         "lombok.installer.eclipse.RhcrLocationProvider",
         "lombok.installer.eclipse.RhdsLocationProvider",
         "lombok.installer.eclipse.STS4LocationProvider",
+        "lombok.installer.eclipse.STS5LocationProvider",
         "lombok.installer.eclipse.STSLocationProvider"
       ],
       "lombok.javac.JavacASTVisitor": [
