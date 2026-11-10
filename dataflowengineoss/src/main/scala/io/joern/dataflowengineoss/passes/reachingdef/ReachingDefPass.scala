@@ -22,7 +22,7 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000)(implicit s: 
 
   override def runOnPart(dstGraph: DiffGraphBuilder, method: Method): Unit = {
     logger.info("Calculating reaching definitions for: {} in {}", method.fullName, method.filename)
-    val problem = ReachingDefProblem.create(method)
+    val problem = createProblem(method)
     if (shouldBailOut(method, problem)) {
       logger.warn("Skipping.")
       return
@@ -33,15 +33,21 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000)(implicit s: 
     ddgGenerator.addReachingDefEdges(dstGraph, method, problem, solution)
   }
 
+  /** The reaching-definition problem of `method`. Creating it builds the flow graph, which with the count of
+    * definitions is all that [[shouldBailOut]] reads; the `gen` and kill sets are built when the solver first needs
+    * them.
+    */
+  private[reachingdef] def createProblem(method: Method): DataFlowProblem[CfgNode, mutable.BitSet] =
+    ReachingDefProblem.create(method)
+
   /** Before we start propagating definitions in the graph, which is the bulk of the work, we check how many definitions
     * were are dealing with in total. If a threshold is reached, we bail out instead, leaving reaching definitions
     * uncalculated for the method in question. Users can increase the threshold if desired.
     */
   private def shouldBailOut(method: Method, problem: DataFlowProblem[CfgNode, mutable.BitSet]): Boolean = {
     val transferFunction = problem.transferFunction.asInstanceOf[ReachingDefTransferFunction]
-    // For each node, the `gen` map contains the list of definitions it generates
-    // We add up the sizes of these lists to obtain the total number of definitions
-    val numberOfDefinitions = transferFunction.gen.foldLeft(0)(_ + _._2.size)
+    // The number of definitions in the `gen` sets, counted without building them
+    val numberOfDefinitions = transferFunction.numberOfDefinitions
     logger.info("Number of definitions for {}: {}", method.fullName, numberOfDefinitions)
     if (numberOfDefinitions > maxNumberOfDefinitions) {
       logger.warn("{} has more than {} definitions", method.fullName, maxNumberOfDefinitions)
