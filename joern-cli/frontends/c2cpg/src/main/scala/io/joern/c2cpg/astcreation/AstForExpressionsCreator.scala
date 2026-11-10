@@ -660,7 +660,10 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   private def astForDeleteExpression(delExpression: ICPPASTDeleteExpression): Ast = {
-    val name          = Operators.delete
+    // [expr.delete]: the array form deallocates an array and calls `operator delete[]`, a different function.
+    val name =
+      if (delExpression.isVectored) { Defines.OperatorDeleteArray }
+      else { Operators.delete }
     val cpgDeleteNode =
       callNode(
         delExpression,
