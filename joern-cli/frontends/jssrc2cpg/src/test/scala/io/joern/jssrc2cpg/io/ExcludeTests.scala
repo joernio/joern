@@ -33,6 +33,12 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
     "b-min.js",
     "c.spec.js",
     "d.chunk.js",
+    "bundle.js",
+    "jest.config.js",
+    "webpack.config.js",
+    "Gruntfile.js",
+    "types.d.ts",
+    "api.t.ts",
     "index.js"
   )
 
@@ -147,6 +153,23 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
       s"$statement" in testWithArguments(exclude, excludeRegex, result)
     }
 
+  }
+
+  "Forwarding --exclude to astgen" should {
+    "prevent the binary from emitting a JSON for excluded files and folders" in {
+      FileUtil.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
+        val config = Config()
+          .withInputPath(projectUnderTest.toString)
+          .withOutputPath(tmpDir.toString)
+          .withIgnoredFiles(Seq("index.js", s"$projectUnderTest/folder/b.js", "foo.bar"))
+        new AstGenRunner(config).execute(tmpDir)
+        val emittedJsons = tmpDir.listFiles().map(_.getFileName.toString).toSet
+        emittedJsons should not contain "index.js.json"
+        emittedJsons should not contain "foo.bar"
+        emittedJsons should contain("a.js.json")
+        (tmpDir / "folder").listFiles().map(_.getFileName.toString).toSet shouldBe Set("c.js.json")
+      }
+    }
   }
 
   "Forwarding --exclude-regex to astgen" should {
