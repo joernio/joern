@@ -208,10 +208,16 @@ trait RustFullNames { this: AstCreator =>
 }
 
 object RustFullNames {
-  val PathSep     = "::"
-  val FnTrait     = "core::ops::function::Fn"
-  val FnMutTrait  = "core::ops::function::FnMut"
-  val FnOnceTrait = "core::ops::function::FnOnce"
+  val PathSep = "::"
+
+  val FnTraitMethodNames: Map[String, String] = Map(
+    "core::ops::function::Fn"                -> "call",
+    "core::ops::function::FnMut"             -> "call_mut",
+    "core::ops::function::FnOnce"            -> "call_once",
+    "core::ops::async_function::AsyncFn"     -> "async_call",
+    "core::ops::async_function::AsyncFnMut"  -> "async_call_mut",
+    "core::ops::async_function::AsyncFnOnce" -> "async_call_once"
+  )
 
   def shortName(fullName: String): String = {
     // A path e.g. `x::...::z<...>` or `z<...>` has shortname `z`, without generics.

@@ -607,6 +607,62 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "immediately invoked FnMut closure" should {
+    val cpg = code("""
+        |fn main() { let mut n = 0; (|x: i32| n = x)(3); }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("call_mut").l) { case call :: Nil =>
+        call.code shouldBe "(|x: i32| n = x)(3)"
+        call.methodFullName shouldBe "core::ops::function::FnMut::call_mut"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.signature shouldBe "core::ops::function::FnMut"
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("call_mut").receiver.l) {
+        case MethodRef(methodFullName = "rust2cpgtest::main::<lambda>0") :: Nil =>
+          succeed
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("call_mut").argument.l) { case Literal(code = "3", argumentIndex = 1) :: Nil =>
+        succeed
+      }
+    }
+  }
+
+  "immediately invoked async closure" should {
+    val cpg = code("""
+        |async fn f() { (async |x: i32| x)(3).await; }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("async_call").l) { case call :: Nil =>
+        call.code shouldBe "(async |x: i32| x)(3)"
+        call.methodFullName shouldBe "core::ops::async_function::AsyncFn::async_call"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.signature shouldBe "core::ops::async_function::AsyncFn"
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("async_call").receiver.l) {
+        case MethodRef(methodFullName = "rust2cpgtest::f::<lambda>0") :: Nil =>
+          succeed
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("async_call").argument.l) { case Literal(code = "3", argumentIndex = 1) :: Nil =>
+        succeed
+      }
+    }
+  }
 }
 
 class CallTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
