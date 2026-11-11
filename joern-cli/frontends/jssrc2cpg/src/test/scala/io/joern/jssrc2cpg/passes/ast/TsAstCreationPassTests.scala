@@ -97,6 +97,21 @@ class TsAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
       models.importedAs shouldBe Option("models")
     }
 
+    "have correct structure for exported import assignments" in {
+      val cpg = code("""
+        |export import fs = require('fs');
+        |export import shape = A.B;
+        |""".stripMargin)
+      cpg.local.code.l shouldBe List("fs", "shape")
+      val List(fs, shape) = cpg.imports.l
+      fs.code shouldBe "export import fs = require('fs')"
+      fs.importedEntity shouldBe Option("fs")
+      fs.importedAs shouldBe Option("fs")
+      shape.code shouldBe "export import shape = A.B"
+      shape.importedEntity shouldBe Option("A.B")
+      shape.importedAs shouldBe Option("shape")
+    }
+
     "have correct structure for declared functions" in {
       val cpg        = code("declare function foo(arg: string): string")
       val List(func) = cpg.method("foo").l

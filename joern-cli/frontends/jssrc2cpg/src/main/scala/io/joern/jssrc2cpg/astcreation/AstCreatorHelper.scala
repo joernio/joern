@@ -93,6 +93,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       }
       .getOrElse(PropertyDefaults.Code)
 
+  /** The source code from the start of `from` to the end of `to`. */
+  protected def codeBetween(from: BabelNode, to: BabelNode): String = codeForOffsets(from.start, to.end)
+
   protected def range(node: BabelNode): Option[String] = {
     for {
       nodeStart <- node.start
@@ -214,7 +217,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  /** The parameters of a function; signatures without a body call them `parameters`, everything else `params`. */
+  /** The parameters of a function. */
   protected def paramsOf(func: FunctionNode): Seq[BabelNode] = func match {
     case f: FunctionDeclaration             => f.params
     case f: FunctionExpression              => f.params
@@ -224,9 +227,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     case f: ClassPrivateMethod              => f.params
     case f: TSDeclareFunction               => f.params
     case f: TSDeclareMethod                 => f.params
-    case f: TSCallSignatureDeclaration      => f.parameters
-    case f: TSConstructSignatureDeclaration => f.parameters
-    case f: TSMethodSignature               => f.parameters
+    case f: TSCallSignatureDeclaration      => f.params
+    case f: TSConstructSignatureDeclaration => f.params
+    case f: TSMethodSignature               => f.params
   }
 
   protected def bodyOf(func: FunctionWithBody): BlockStatement | Expression = func match {
@@ -252,7 +255,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     case f: ObjectMethod       => Some(f.kind)
     case f: ClassMethod        => Some(f.kind)
     case f: ClassPrivateMethod => Some(f.kind)
-    case f: TSDeclareMethod    => f.kind
+    case f: TSDeclareMethod    => Some(f.kind)
     case f: TSMethodSignature  => Some(f.kind)
     case _                     => None
   }

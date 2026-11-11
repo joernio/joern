@@ -115,7 +115,13 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  protected def astForExportNamedDeclaration(declaration: ExportNamedDeclaration): Ast = {
+  protected def astForExportNamedDeclaration(declaration: ExportNamedDeclaration): Ast = declaration.declaration match {
+    case Some(importEquals: TSImportEqualsDeclaration) =>
+      astForTSImportEqualsDeclaration(importEquals, Some(declaration))
+    case _ => astForExportNamedDeclarationWithSpecifiers(declaration)
+  }
+
+  private def astForExportNamedDeclarationWithSpecifiers(declaration: ExportNamedDeclaration): Ast = {
     val specifiers: Seq[(Option[BabelNode], Option[BabelNode])] = declaration.specifiers.map {
       case spec: ExportNamespaceSpecifier => (None, Option(spec.exported))
       case spec: ExportSpecifier          => (Option(spec.local), Option(spec.exported))
@@ -324,7 +330,14 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  protected def astForTSImportEqualsDeclaration(impDecl: TSImportEqualsDeclaration): Ast = {
+  /** `export import a = b.c` is an export declaration wrapping the import-equals declaration, but it creates the same
+    * AST as `import a = b.c`; the location is the one of the whole statement, `positionNode`.
+    */
+  protected def astForTSImportEqualsDeclaration(
+    impDecl: TSImportEqualsDeclaration,
+    positionNode: Option[BabelNode] = None
+  ): Ast = {
+    val node          = positionNode.getOrElse(impDecl)
     val name          = impDecl.id.name
     val referenceName = impDecl.moduleReference match {
       case externalModule: TSExternalModuleReference => externalModule.expression.value
@@ -332,10 +345,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
     val _dependencyNode = dependencyNode(name, referenceName, ImportKeyword)
     diffGraph.addNode(_dependencyNode)
-    val assignment = astForRequireCallFromImport(name, None, referenceName, isImportN = false, impDecl)
+    val assignment = astForRequireCallFromImport(name, None, referenceName, isImportN = false, node)
     val call       = assignment.nodes.collectFirst { case x: NewCall if x.name == "require" => x }
     val importNode =
-      createImportNodeAndAttachToCall(impDecl, referenceName, name, call)
+      createImportNodeAndAttachToCall(node, referenceName, name, call)
     diffGraph.addEdge(importNode, _dependencyNode, EdgeTypes.IMPORTS)
     assignment
   }

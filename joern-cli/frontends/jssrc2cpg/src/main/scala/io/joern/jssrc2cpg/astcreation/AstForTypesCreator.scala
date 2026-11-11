@@ -91,7 +91,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     case n: ClassMethod         => Some(n.kind)
     case n: ClassPrivateMethod  => Some(n.kind)
     case n: ObjectMethod        => Some(n.kind)
-    case n: TSDeclareMethod     => n.kind
+    case n: TSDeclareMethod     => Some(n.kind)
     case n: TSMethodSignature   => Some(n.kind)
     case n: TSPropertySignature => n.kind
     case _                      => None
@@ -108,7 +108,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     case n: ClassPrivateMethod    => n.static
     case n: ClassPrivateProperty  => n.static
     case n: ClassProperty         => n.static
-    case n: TSDeclareMethod       => n.static.contains(true)
+    case n: TSDeclareMethod       => n.static
     case n: TSIndexSignature      => n.static.contains(true)
     case _                        => false
   }
@@ -469,7 +469,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     typeRefIdStack.push(typeRefNode_)
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
-    val (enumMembersWithInitializer, enumMembersPlain) = tsEnum.members.toList.partition(_.initializer.isDefined)
+    val (enumMembersWithInitializer, enumMembersPlain) = tsEnum.body.members.toList.partition(_.initializer.isDefined)
 
     val enumOwner  = MemberOwner(typeName, typeFullName)
     val memberAsts = enumMembersPlain.flatMap(astsForEnumMember(_, enumOwner))
@@ -1156,14 +1156,38 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       }
   }
 
+  /** The first and the remaining identifiers of a module name: `A.B.C` is one `TSQualifiedName`, a plain name or a
+    * string is a single part.
+    */
+  private def moduleNameParts(id: BabelNode): (BabelNode, List[BabelNode]) = id match {
+    case qualified: TSQualifiedName =>
+      val (first, rest) = moduleNameParts(qualified.left)
+      (first, rest :+ qualified.right)
+    case other => (other, Nil)
+  }
+
   protected def astForModule(tsModuleDecl: TSModuleDeclaration): Ast = {
-    val (name, fullName) = calcTypeNameAndFullName(tsModuleDecl)
+    val (first, nested) = moduleNameParts(tsModuleDecl.id)
+    astForModulePart(tsModuleDecl, tsModuleDecl, first, nested)
+  }
+
+  /** `namespace A.B.C {}` is a single declaration, but stands for the namespaces A, B and C nested in each other. The
+    * namespace of a `part` spans from the start of `from` (the declaration itself for the first part, else the part) to
+    * the end of the declaration.
+    */
+  private def astForModulePart(
+    tsModuleDecl: TSModuleDeclaration,
+    from: BabelNode,
+    part: BabelNode,
+    nested: List[BabelNode]
+  ): Ast = {
+    val (name, fullName) = calcTypeNameAndFullName(tsModuleDecl, Some(part.code))
     registerType(fullName)
 
     val namespaceNode = NewNamespaceBlock()
-      .code(tsModuleDecl.code)
-      .lineNumber(tsModuleDecl.lineNumber)
-      .columnNumber(tsModuleDecl.columnNumber)
+      .code(codeBetween(from, tsModuleDecl))
+      .lineNumber(from.lineNumber)
+      .columnNumber(from.columnNumber)
       .filename(parserResult.filename)
       .name(name)
       .fullName(fullName)
@@ -1173,11 +1197,10 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     scope.pushNewMethodScope(fullName, name, namespaceNode, None)
 
-    // ambient module declarations like `declare module "foo";` have no body at all
-    val blockAst = tsModuleDecl.body match {
-      case Some(module: TSModuleDeclaration) => astForModule(module)
-      case Some(block: TSModuleBlock)        => astForBlockStatement(block)
-      case None                              => Ast()
+    val blockAst = nested match {
+      case next :: rest => astForModulePart(tsModuleDecl, next, next, rest)
+      // ambient module declarations like `declare module "foo";` have no body at all
+      case Nil => tsModuleDecl.body.map(astForBlockStatement).getOrElse(Ast())
     }
 
     methodAstParentStack.pop()

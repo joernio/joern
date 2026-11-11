@@ -350,19 +350,17 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         parserResult.filename
       )
 
-    val mAst = if (blockAsts.isEmpty) {
-      methodStubAst(methodNode_, (thisNode +: paramNodes).map(Ast(_)), methodReturnNode_, modifiers)
-    } else {
-      val bodyAst = blockAst(NewBlock(), blockAsts)
-      methodAstWithAnnotations(
-        methodNode_,
-        (thisNode +: paramNodes).map(Ast(_)),
-        bodyAst,
-        methodReturnNode_,
-        modifiers,
-        astsForDecorators(func)
-      )
-    }
+    // Signatures without a body, e.g. overloads and abstract methods, are stubs but carry their decorators as well.
+    val bodyAst =
+      if (blockAsts.isEmpty) Ast(NewBlock().typeFullName(Defines.Any)) else blockAst(NewBlock(), blockAsts)
+    val mAst = methodAstWithAnnotations(
+      methodNode_,
+      (thisNode +: paramNodes).map(Ast(_)),
+      bodyAst,
+      methodReturnNode_,
+      modifiers,
+      astsForDecorators(func)
+    )
 
     Ast.storeInDiffGraph(mAst, diffGraph)
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
