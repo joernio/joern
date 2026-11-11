@@ -663,6 +663,64 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "call on closure local" should {
+    val cpg = code("""
+        |fn main() { let f = |x: i32| x; f(3); }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("call").l) { case call :: Nil =>
+        call.code shouldBe "f(3)"
+        call.methodFullName shouldBe "core::ops::function::Fn::call"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.signature shouldBe "core::ops::function::Fn"
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("call").receiver.l) {
+        // TODO(rust_ast_gen): might change later.
+        case Identifier(name = "f", typeFullName = "impl Fn(i32) -> i32") :: Nil =>
+          succeed
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("call").argument.l) { case Literal(code = "3", argumentIndex = 1) :: Nil =>
+        succeed
+      }
+    }
+  }
+
+  "call on fn pointer parameter" should {
+    val cpg = code("""
+        |fn f(g: fn(i32) -> i32) -> i32 { g(3) }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("call").l) { case call :: Nil =>
+        call.code shouldBe "g(3)"
+        call.methodFullName shouldBe "core::ops::function::Fn::call"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.signature shouldBe "core::ops::function::Fn"
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("call").receiver.l) {
+        // TODO(rust_ast_gen): might change later.
+        case Identifier(name = "g", typeFullName = "fn(i32) -> i32") :: Nil =>
+          succeed
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("call").argument.l) { case Literal(code = "3", argumentIndex = 1) :: Nil =>
+        succeed
+      }
+    }
+  }
 }
 
 class CallTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
@@ -839,6 +897,35 @@ class CallTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
       inside(cpg.typeDecl.fullNameExact("rust2cpgtest::f::<lambda>0").methodBinding.nameExact("call").l) {
         case Binding(signature = "core::ops::function::Fn", methodFullName = "rust2cpgtest::f::<lambda>0") :: Nil =>
           succeed
+      }
+    }
+  }
+
+  "call on impl Fn parameter" should {
+    val cpg = code("""
+        |fn f(g: impl Fn(i32) -> i32) -> i32 { g(3) }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("call").l) { case call :: Nil =>
+        call.code shouldBe "g(3)"
+        call.methodFullName shouldBe "core::ops::function::Fn::call"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.signature shouldBe "core::ops::function::Fn"
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("call").receiver.l) {
+        // TODO(rust_ast_gen): might change later.
+        case Identifier(name = "g", typeFullName = "impl core::ops::function::Fn + core::marker::Sized") :: Nil =>
+          succeed
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("call").argument.l) { case Literal(code = "3", argumentIndex = 1) :: Nil =>
+        succeed
       }
     }
   }
