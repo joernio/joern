@@ -39,11 +39,11 @@ class NoExceptTests extends AstC2CpgSuite(".cpp") {
          |};
          |""".stripMargin)
       def modifiers(name: String) = cpg.method.nameExact(name).modifier.modifierType.l
-      modifiers("q_static") shouldBe List(ModifierTypes.STATIC)
-      modifiers("q_const") shouldBe empty
-      modifiers("q_noexcept") shouldBe List(Defines.NoExceptModifier)
-      modifiers("q_const_noexcept") shouldBe List(Defines.NoExceptModifier)
-      modifiers("q_plain") shouldBe empty
+      modifiers("q_static") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.STATIC)
+      modifiers("q_const") shouldBe List(ModifierTypes.PUBLIC)
+      modifiers("q_noexcept") shouldBe List(ModifierTypes.PUBLIC, Defines.NoExceptModifier)
+      modifiers("q_const_noexcept") shouldBe List(ModifierTypes.PUBLIC, Defines.NoExceptModifier)
+      modifiers("q_plain") shouldBe List(ModifierTypes.PUBLIC)
       cpg.method.nameExact("q_const_noexcept").signature.l shouldBe List(s"void()${Defines.ConstSuffix}")
     }
 

@@ -271,23 +271,23 @@ trait AstForFunctionsCreator { this: AstCreator =>
     Option.when(isNoExcept(declarator))(modifierNode(node, Defines.NoExceptModifier)).toList
   }
 
-  /** [class.access.general]/3: members of a `class` are private by default, members of a `struct` or `union` public.
+  /** [class.access.general]/3: members of a `class` are private by default, members of a `struct` or `union` public. A
+    * name that does not bind to a class member carries no access specifier.
     */
-  private def accessModifierTypeFor(name: IASTName): String = {
-    safeGetBinding(name).collect { case member: ICPPMember => member.getVisibility } match {
-      case Some(ICPPMember.v_private)   => ModifierTypes.PRIVATE
-      case Some(ICPPMember.v_protected) => ModifierTypes.PROTECTED
-      case _                            => ModifierTypes.PUBLIC
+  private def accessModifierTypeFor(name: IASTName): Option[String] = {
+    safeGetBinding(name).collect { case member: ICPPMember => member.getVisibility }.map {
+      case ICPPMember.v_private   => ModifierTypes.PRIVATE
+      case ICPPMember.v_protected => ModifierTypes.PROTECTED
+      case _                      => ModifierTypes.PUBLIC
     }
   }
 
   private def modifierFor(funcDef: IASTFunctionDefinition): List[NewModifier] = {
-    val constructorModifier = if (bindsToConstructor(funcDef)) {
-      List(
-        modifierNode(funcDef, ModifierTypes.CONSTRUCTOR),
-        modifierNode(funcDef, accessModifierTypeFor(funcDef.getDeclarator.getName))
-      )
-    } else Nil
+    val constructorModifier =
+      Option.when(bindsToConstructor(funcDef))(modifierNode(funcDef, ModifierTypes.CONSTRUCTOR)).toList
+    val accessModifier = accessModifierTypeFor(funcDef.getDeclarator.getName)
+      .map(modifierNode(funcDef, _))
+      .toList
     val definitionModifier = funcDef match {
       case cppFuncDef: ICPPASTFunctionDefinition if cppFuncDef.isDeleted =>
         List(modifierNode(funcDef, Defines.ModifierDeleted))
@@ -296,23 +296,20 @@ trait AstForFunctionsCreator { this: AstCreator =>
       case _ => Nil
     }
     val staticModifier = Try(staticModifierFor(funcDef, funcDef.getDeclSpecifier, funcDef)).getOrElse(Nil)
-    constructorModifier ++ definitionModifier ++ staticModifier ++
+    constructorModifier ++ accessModifier ++ definitionModifier ++ staticModifier ++
       noExceptModifierFor(funcDef, funcDef.getDeclarator)
   }
 
   private def modifierFor(funcDecl: IASTFunctionDeclarator): List[NewModifier] = {
-    val constructorModifier = if (bindsToConstructor(funcDecl)) {
-      List(
-        modifierNode(funcDecl, ModifierTypes.CONSTRUCTOR),
-        modifierNode(funcDecl, accessModifierTypeFor(funcDecl.getName))
-      )
-    } else Nil
+    val constructorModifier =
+      Option.when(bindsToConstructor(funcDecl))(modifierNode(funcDecl, ModifierTypes.CONSTRUCTOR)).toList
+    val accessModifier = accessModifierTypeFor(funcDecl.getName).map(modifierNode(funcDecl, _)).toList
     val staticModifier = Try(funcDecl.getParent match {
       case declaration: IASTSimpleDeclaration => staticModifierFor(funcDecl, declaration.getDeclSpecifier, declaration)
       case definition: IASTFunctionDefinition => staticModifierFor(funcDecl, definition.getDeclSpecifier, definition)
       case _                                  => Nil
     }).getOrElse(Nil)
-    constructorModifier ++ staticModifier ++ noExceptModifierFor(funcDecl, funcDecl)
+    constructorModifier ++ accessModifier ++ staticModifier ++ noExceptModifierFor(funcDecl, funcDecl)
   }
 
   private def syntheticThisAccess(ident: IASTName, identifierName: String): Ast = {

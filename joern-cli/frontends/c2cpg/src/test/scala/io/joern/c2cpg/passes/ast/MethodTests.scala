@@ -302,6 +302,70 @@ class MethodTests extends C2CpgSuite {
     }
   }
 
+  "Access modifier for member functions" should {
+    "be read from the binding on a declaration" in {
+      val cpg = code(
+        """
+          |class C {
+          |  void implicitlyPrivate();
+          |  void declaredPrivate();
+          |protected:
+          |  void declaredProtected();
+          |public:
+          |  void declaredPublic();
+          |  static void staticMember();
+          |  ~C();
+          |  C& operator=(const C&);
+          |};
+          |struct S { void structMember(); };
+          |""".stripMargin,
+        "test.cpp"
+      )
+      def modifiers(name: String) = cpg.method.nameExact(name).modifier.modifierType.sorted.l
+      modifiers("implicitlyPrivate") shouldBe List(ModifierTypes.PRIVATE)
+      modifiers("declaredPrivate") shouldBe List(ModifierTypes.PRIVATE)
+      modifiers("declaredProtected") shouldBe List(ModifierTypes.PROTECTED)
+      modifiers("declaredPublic") shouldBe List(ModifierTypes.PUBLIC)
+      modifiers("staticMember") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.STATIC).sorted
+      modifiers("~C") shouldBe List(ModifierTypes.PUBLIC)
+      modifiers("=") shouldBe List(ModifierTypes.PUBLIC)
+      modifiers("structMember") shouldBe List(ModifierTypes.PUBLIC)
+    }
+
+    "be read from the binding on an out-of-line definition" in {
+      val cpg = code(
+        """
+          |class D {
+          |  void hidden();
+          |public:
+          |  void shown();
+          |};
+          |void D::hidden() {}
+          |void D::shown() {}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      cpg.method.fullNameExact("D.hidden:void()").modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
+      cpg.method.fullNameExact("D.shown:void()").modifier.modifierType.l shouldBe List(ModifierTypes.PUBLIC)
+    }
+
+    "be absent for a function that is not a class member" in {
+      val cpg = code(
+        """
+          |void freeFunction() {}
+          |static void staticFreeFunction() {}
+          |namespace ns { void namespaceFunction() {} }
+          |""".stripMargin,
+        "test.cpp"
+      ).moreCode("void cFunction() {}", "test.c")
+      def modifiers(name: String) = cpg.method.nameExact(name).modifier.modifierType.l
+      modifiers("freeFunction") shouldBe empty
+      modifiers("staticFreeFunction") shouldBe List(ModifierTypes.STATIC)
+      modifiers("namespaceFunction") shouldBe empty
+      modifiers("cFunction") shouldBe empty
+    }
+  }
+
   "Deleted and defaulted special members" should {
     "be distinguishable by modifier" in {
       val cpg = code(
@@ -351,10 +415,14 @@ class MethodTests extends C2CpgSuite {
           |""".stripMargin,
         "test.cpp"
       )
-      cpg.method.fullNameExact("A.~A:ANY()").modifier.modifierType.l shouldBe List(Defines.ModifierDefaulted)
-      cpg.method.fullNameExact("B.~B:ANY()").modifier.modifierType.l shouldBe List(Defines.ModifierDeleted)
-      cpg.method.fullNameExact("A.=:A&(A&)").modifier.modifierType.l shouldBe List(Defines.ModifierDeleted)
-      cpg.method.fullNameExact("A.=:A&(A&&)").modifier.modifierType.l shouldBe List(Defines.ModifierDefaulted)
+      cpg.method.fullNameExact("A.~A:ANY()").modifier.modifierType.sorted.l shouldBe
+        List(Defines.ModifierDefaulted, ModifierTypes.PUBLIC).sorted
+      cpg.method.fullNameExact("B.~B:ANY()").modifier.modifierType.sorted.l shouldBe
+        List(Defines.ModifierDeleted, ModifierTypes.PUBLIC).sorted
+      cpg.method.fullNameExact("A.=:A&(A&)").modifier.modifierType.sorted.l shouldBe
+        List(Defines.ModifierDeleted, ModifierTypes.PUBLIC).sorted
+      cpg.method.fullNameExact("A.=:A&(A&&)").modifier.modifierType.sorted.l shouldBe
+        List(Defines.ModifierDefaulted, ModifierTypes.PUBLIC).sorted
     }
 
     "be correct for the DISALLOW_COPY macro idiom" in {
@@ -369,7 +437,8 @@ class MethodTests extends C2CpgSuite {
       cpg.method.fullNameExact("M.M:void(M&)").code.l shouldBe List("DISALLOW_COPY(M)")
       cpg.method.fullNameExact("M.M:void(M&)").modifier.modifierType.sorted.l shouldBe
         List(ModifierTypes.CONSTRUCTOR, Defines.ModifierDeleted, ModifierTypes.PUBLIC).sorted
-      cpg.method.fullNameExact("M.=:M&(M&)").modifier.modifierType.l shouldBe List(Defines.ModifierDeleted)
+      cpg.method.fullNameExact("M.=:M&(M&)").modifier.modifierType.sorted.l shouldBe
+        List(Defines.ModifierDeleted, ModifierTypes.PUBLIC).sorted
     }
 
     "be absent for plain definitions and for C" in {
@@ -410,8 +479,8 @@ class MethodTests extends C2CpgSuite {
         "test.cpp"
       )
       cpg.method.isConstructor.fullName.sorted.l shouldBe List("S.S:void()", "S.S:void(S&)")
-      cpg.method.fullNameExact("S.m:void()").modifier.modifierType.l shouldBe List.empty
-      cpg.method.fullNameExact("S.~S:ANY()").modifier.modifierType.l shouldBe List.empty
+      cpg.method.fullNameExact("S.m:void()").modifier.modifierType.l shouldBe List(ModifierTypes.PUBLIC)
+      cpg.method.fullNameExact("S.~S:ANY()").modifier.modifierType.l shouldBe List(ModifierTypes.PUBLIC)
     }
 
     "not be added to plain C functions" in {
