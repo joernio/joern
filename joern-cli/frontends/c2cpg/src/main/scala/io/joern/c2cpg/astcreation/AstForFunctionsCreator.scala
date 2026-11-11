@@ -274,7 +274,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
   /** [class.access.general]/3: members of a `class` are private by default, members of a `struct` or `union` public. A
     * name that does not bind to a class member carries no access specifier.
     */
-  private def accessModifierTypeFor(name: IASTName): Option[String] = {
+  protected def accessModifierTypeFor(name: IASTName): Option[String] = {
     safeGetBinding(name).collect { case member: ICPPMember => member.getVisibility }.map {
       case ICPPMember.v_private   => ModifierTypes.PRIVATE
       case ICPPMember.v_protected => ModifierTypes.PROTECTED

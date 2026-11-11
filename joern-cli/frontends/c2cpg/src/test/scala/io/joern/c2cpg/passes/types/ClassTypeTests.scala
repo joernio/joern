@@ -230,6 +230,39 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CppExt) {
       modifiers("final") shouldBe empty
     }
 
+    "record the access specifier of every data member" in {
+      val cpg = code("""
+          |class C {
+          |  int implicitlyPrivate;
+          |  static int staticPrivate;
+          |  int bitfield : 3;
+          |protected:
+          |  int declaredProtected;
+          |public:
+          |  int declaredPublic;
+          |};
+          |struct S {
+          |  int structMember;
+          |private:
+          |  int structPrivate;
+          |};
+          |union U { int unionMember; };
+          |""".stripMargin)
+      def modifiers(name: String) = cpg.member.nameExact(name).modifier.modifierType.l
+      modifiers("implicitlyPrivate") shouldBe List(ModifierTypes.PRIVATE)
+      modifiers("staticPrivate") shouldBe List(ModifierTypes.PRIVATE)
+      modifiers("bitfield") shouldBe List(ModifierTypes.PRIVATE)
+      modifiers("declaredProtected") shouldBe List(ModifierTypes.PROTECTED)
+      modifiers("declaredPublic") shouldBe List(ModifierTypes.PUBLIC)
+      modifiers("structMember") shouldBe List(ModifierTypes.PUBLIC)
+      modifiers("structPrivate") shouldBe List(ModifierTypes.PRIVATE)
+      modifiers("unionMember") shouldBe List(ModifierTypes.PUBLIC)
+    }
+
+    "not record an access specifier for a C struct member" in {
+      val cpg = code("struct Plain { int x; };", "test.c")
+      cpg.member.nameExact("x").modifier.modifierType.l shouldBe empty
+    }
     "not record a final modifier for a C struct" in {
       val cpg = code("struct Plain { int x; };", "test.c")
       cpg.typeDecl.nameExact("Plain").modifier.modifierType.l shouldBe empty
