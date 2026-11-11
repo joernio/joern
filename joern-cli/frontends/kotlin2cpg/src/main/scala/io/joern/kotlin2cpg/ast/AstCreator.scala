@@ -560,7 +560,7 @@ class AstCreator(
         }
       case _ => None
     }
-    
+
     exprTypeFullName(receiver)
       .filter(isUsableReceiverType)
       .orElse(importedName)
