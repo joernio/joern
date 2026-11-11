@@ -1,7 +1,7 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, Languages, Operators}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.MemberAccess.{isFieldAccess, isGenericMemberAccessName}
 import org.slf4j.{Logger, LoggerFactory}
@@ -214,16 +214,77 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
   private def definingCalls(method: Method): List[Call] =
     method.call.filterNot(call => isFieldAccess(call.name)).l
 
-  /** The definitions `call` generates: its own, and its identifier and call arguments' unless it is a ternary. */
+  /** The definitions `call` generates: its own, and its identifier and call arguments' unless it is a ternary or the
+    * argument is a C scalar the call receives by value.
+    */
   private[reachingdef] def definitionsOf(call: Call): List[Definition] = {
     val retVal = List(call)
     // Ternary only reads its operands; gen on args kills prior defs.
     val args =
       if (isReadOnlyShortCircuitOperator(call)) Iterator.empty
-      else call.argument.filter(hasValidGenType)
+      else call.argument.filter(hasValidGenType).filterNot(isScalarPassedByValue(call, _))
     (retVal ++ args).collect {
       case node if nodeToNumber.contains(node) =>
         Definition.fromNode(node.asInstanceOf[CfgNode], nodeToNumber)
+    }
+  }
+
+  /** C passes every argument by value, so a function cannot write a variable of the caller that is passed to it by
+    * name. That holds for a scalar local or parameter of this method whose address is never taken; a pointer, an array,
+    * a struct, a global or an address-taken variable can still be written through. Operators (named `<operator>.*` or
+    * `<operators>.*`) keep their semantics and macros may assign their arguments, so only calls of functions qualify.
+    * c2cpg parses a `.c` file as C, so the rule applies to methods of `.c` files only.
+    */
+  private def isScalarPassedByValue(call: Call, argument: Expression): Boolean =
+    isCMethod && !call.name.startsWith("<operator") && call.dispatchType != DispatchTypes.INLINED && (argument match {
+      case identifier: Identifier =>
+        identifier.refsTo.nextOption().exists {
+          case local: Local             => isScalarOfThisMethod(local, local.typeFullName)
+          case param: MethodParameterIn => isScalarOfThisMethod(param, param.typeFullName)
+          case _                        => false
+        }
+      case _ => false
+    })
+
+  private def isScalarOfThisMethod(declaration: Declaration, typeFullName: String): Boolean =
+    ownDeclarations.contains(declaration) && !addressTaken.contains(declaration) && isScalarType(typeFullName)
+
+  private lazy val isCMethod: Boolean =
+    method.filename.endsWith(".c") &&
+      Cpg(method.graph).metaData.language.headOption.exists(language =>
+        language == Languages.NEWC || language == Languages.C
+      )
+
+  /** The locals and parameters of this method. A local with a closure binding stands for a variable of an enclosing
+    * scope, such as a global.
+    */
+  private lazy val ownDeclarations: Set[Declaration] =
+    method.ast.isLocal.filter(_.closureBindingId.isEmpty).toSet[Declaration] ++ method.parameter
+
+  private lazy val addressTaken: Set[Declaration] =
+    method.call.nameExact(Operators.addressOf).argument.isIdentifier.refsTo.toSet
+
+  private val scalarTypeWords =
+    Set("char", "short", "int", "long", "float", "double", "_Bool", "bool", "signed", "unsigned")
+
+  private val typeIsScalar = mutable.Map.empty[String, Boolean]
+
+  /** An arithmetic type, an enum, or a typedef of one. An unresolved type is not scalar. */
+  private def isScalarType(typeFullName: String): Boolean =
+    typeIsScalar.get(typeFullName) match {
+      case Some(known) => known
+      case None        =>
+        val scalar = isScalarType(typeFullName, typedefSteps = 8)
+        typeIsScalar.put(typeFullName, scalar)
+        scalar
+    }
+
+  private def isScalarType(typeFullName: String, typedefSteps: Int): Boolean = {
+    val words = typeFullName.split(' ').filterNot(word => word == "const" || word == "volatile")
+    words.nonEmpty && words.forall(scalarTypeWords.contains) || typedefSteps > 0 && {
+      val decl = Cpg(method.graph).typeDecl.fullNameExact(typeFullName).nextOption()
+      decl.exists(_.code.startsWith("enum ")) ||
+      decl.flatMap(_.aliasTypeFullName).exists(alias => isScalarType(alias, typedefSteps - 1))
     }
   }
 

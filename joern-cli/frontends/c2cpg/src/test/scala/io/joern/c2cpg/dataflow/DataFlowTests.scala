@@ -1096,7 +1096,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     "find flow from outer params to inner params" in {
       val source = cpg.method.name("f").parameter
       val sink   = cpg.method.name("g").parameter
-      sink.reachableBy(source).size shouldBe 4
+      sink.reachableBy(source).size shouldBe 2
     }
   }
 
