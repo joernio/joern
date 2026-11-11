@@ -473,6 +473,12 @@ trait AstForTypesCreator { this: AstCreator =>
         typeDeclNode(other, name, fullName, filename, codeString, alias = alias)
     }
 
+    // [class.pre]: `final` forbids deriving from the class, so no further override of its members can exist.
+    val finalModifier = typeSpecifier match {
+      case c: ICPPASTCompositeTypeSpecifier if c.isFinal => Seq(Ast(modifierNode(c, ModifierTypes.FINAL)))
+      case _                                             => Seq.empty
+    }
+
     val typeRefNodeMaybe = typeRefIdStack.headOption match {
       case None => Some(typeRefNode(typeSpecifier, codeString, fullName))
       case _    => None
@@ -491,10 +497,10 @@ trait AstForTypesCreator { this: AstCreator =>
     scope.popScope()
 
     val asts = if (memberNodesWithInitializer.isEmpty) {
-      Ast(typeDecl).withChildren(memberAsts) +: declAsts
+      Ast(typeDecl).withChildren(finalModifier ++ memberAsts) +: declAsts
     } else {
       val initAst = createStaticConstructor(typeSpecifier, memberNodesWithInitializer, typeDecl)
-      Ast(typeDecl).withChildren(memberAsts).withChild(initAst) +: declAsts
+      Ast(typeDecl).withChildren(finalModifier ++ memberAsts).withChild(initAst) +: declAsts
     }
     asts.foreach { ast =>
       Ast.storeInDiffGraph(ast, diffGraph)

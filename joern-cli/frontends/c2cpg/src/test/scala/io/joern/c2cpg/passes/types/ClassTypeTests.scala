@@ -3,6 +3,7 @@ package io.joern.c2cpg.passes.types
 import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.C2CpgSuite
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
@@ -211,6 +212,27 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CppExt) {
       apply.fullName shouldBe "Foo.():Foo&(Foo&)"
       idx.name shouldBe "[]"
       idx.fullName shouldBe "Foo.[]:Foo&(int)"
+    }
+
+    "record the final specifier as a modifier on the type" in {
+      val cpg = code("""
+          |class Sealed final { };
+          |struct SealedStruct final { };
+          |class Open { };
+          |class Derived final : Open { };
+          |class final { };
+          |""".stripMargin)
+      def modifiers(name: String) = cpg.typeDecl.nameExact(name).modifier.modifierType.l
+      modifiers("Sealed") shouldBe List(ModifierTypes.FINAL)
+      modifiers("SealedStruct") shouldBe List(ModifierTypes.FINAL)
+      modifiers("Derived") shouldBe List(ModifierTypes.FINAL)
+      modifiers("Open") shouldBe empty
+      modifiers("final") shouldBe empty
+    }
+
+    "not record a final modifier for a C struct" in {
+      val cpg = code("struct Plain { int x; };", "test.c")
+      cpg.typeDecl.nameExact("Plain").modifier.modifierType.l shouldBe empty
     }
 
     "generate correct fullnames in classes with conversions" in {
