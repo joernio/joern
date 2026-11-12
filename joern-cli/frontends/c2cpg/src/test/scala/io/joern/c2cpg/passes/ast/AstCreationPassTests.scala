@@ -46,7 +46,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       a1.isVariadic shouldBe false
       ellipsis1.name shouldBe "<param>2"
       ellipsis1.code shouldBe "<param>2..."
-      ellipsis1.typeFullName shouldBe "char*"
+      ellipsis1.typeFullName shouldBe Defines.Any
       ellipsis1.index shouldBe 2
       ellipsis1.isVariadic shouldBe true
 
@@ -61,7 +61,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       a2.isVariadic shouldBe false
       ellipsis2.name shouldBe "<param>2"
       ellipsis2.code shouldBe "<param>2..."
-      ellipsis2.typeFullName shouldBe "char*"
+      ellipsis2.typeFullName shouldBe Defines.Any
       ellipsis2.index shouldBe 2
       ellipsis2.isVariadic shouldBe true
     }
@@ -93,7 +93,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       a1.isVariadic shouldBe false
       ellipsis1.name shouldBe "<param>2"
       ellipsis1.code shouldBe "<param>2..."
-      ellipsis1.typeFullName shouldBe "char*"
+      ellipsis1.typeFullName shouldBe Defines.Any
       ellipsis1.index shouldBe 2
       ellipsis1.isVariadic shouldBe true
 
@@ -108,7 +108,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       a2.isVariadic shouldBe false
       ellipsis2.name shouldBe "<param>2"
       ellipsis2.code shouldBe "<param>2..."
-      ellipsis2.typeFullName shouldBe "char*"
+      ellipsis2.typeFullName shouldBe Defines.Any
       ellipsis2.index shouldBe 2
       ellipsis2.isVariadic shouldBe true
     }
@@ -135,6 +135,38 @@ class AstCreationPassTests extends AstC2CpgSuite {
       foo2.signature shouldBe "wchar_t*(char_type*,char_type*,char,char*)<const>"
     }
 
+    "be correct for the ellipsis parameter whatever precedes it" in {
+      val cpg = code(
+        """
+          |int withChar(const char *fmt, ...);
+          |int withDouble(double d, ...);
+          |struct S { int member(int *p, ...); };
+          |void withPack(int x, int*... args);
+          |""".stripMargin,
+        "test.cpp"
+      )
+      inside(cpg.method.nameExact("withChar").parameter.l) { case List(fmt, ellipsis) =>
+        fmt.typeFullName shouldBe "char*"
+        ellipsis.typeFullName shouldBe Defines.Any
+        ellipsis.isVariadic shouldBe true
+      }
+      inside(cpg.method.nameExact("withDouble").parameter.l) { case List(d, ellipsis) =>
+        d.typeFullName shouldBe "double"
+        ellipsis.typeFullName shouldBe Defines.Any
+      }
+      inside(cpg.method.nameExact("member").parameter.l) { case List(p, ellipsis) =>
+        p.typeFullName shouldBe "int*"
+        ellipsis.typeFullName shouldBe Defines.Any
+      }
+      inside(cpg.method.nameExact("withPack").parameter.l) { case List(x, args) =>
+        x.typeFullName shouldBe "int"
+        args.typeFullName shouldBe "int*"
+        args.isVariadic shouldBe true
+      }
+      cpg.method.nameExact("withChar").signature.l shouldBe List("int(char*,...)")
+      cpg.method.nameExact("withDouble").signature.l shouldBe List("int(double,...)")
+      cpg.method.nameExact("member").signature.l shouldBe List("int(int*,...)")
+    }
     "be correct for packed args" in {
       val cpg = code("void foo(int x, int*... args) {};", "test.cpp")
       inside(cpg.method("foo").l) { case List(m) =>
@@ -171,7 +203,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
           args.index shouldBe 2
           param3.name shouldBe "<param>3"
           param3.code shouldBe "<param>3..."
-          param3.typeFullName shouldBe "int"
+          param3.typeFullName shouldBe Defines.Any
           param3.isVariadic shouldBe true
           param3.index shouldBe 3
         }

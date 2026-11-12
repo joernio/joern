@@ -464,7 +464,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
         p.evaluationStrategy,
         p.lineNumber,
         p.columnNumber,
-        p.typeFullName
+        // [dcl.fct]/3: an ellipsis is not a parameter-declaration and has no type of its own.
+        Defines.Any
       )
     }.toSeq
   }
@@ -489,7 +490,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
         p.evaluationStrategy,
         p.lineNumber,
         p.columnNumber,
-        p.typeFullName
+        // [dcl.fct]/3: an ellipsis is not a parameter-declaration and has no type of its own.
+        Defines.Any
       )
     }.toSeq
   }
