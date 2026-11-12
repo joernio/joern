@@ -9,7 +9,7 @@ import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTArrayRangeDesignator
-import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTArrayRangeDesignator, ICPPEvaluation}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.{ClassTypeHelper, CPPASTArrayRangeDesignator, ICPPEvaluation}
 
 import java.nio.file.{Path, Paths}
 import scala.collection.mutable
@@ -159,6 +159,13 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def safeGetBinding(name: IASTName): Option[IBinding] = {
     safeCdtCall(name.resolveBinding())
+  }
+
+  /** [class.virtual]/2: a function that overrides a virtual member function is itself virtual, whether or not it is
+    * declared with the `virtual` keyword.
+    */
+  protected def isVirtual(method: ICPPMethod): Boolean = {
+    method.isPureVirtual || safeCdtCall(ClassTypeHelper.isVirtual(method)).getOrElse(method.isVirtual)
   }
 
   protected def notHandledYet(node: IASTNode): Ast = {

@@ -366,6 +366,84 @@ class MethodTests extends C2CpgSuite {
     }
   }
 
+  "The virtual modifier" should {
+    "be present on every virtual member function" in {
+      val cpg = code(
+        """
+          |struct Base {
+          |  virtual void declaredVirtual();
+          |  virtual void pureVirtual() = 0;
+          |  void nonVirtual();
+          |  virtual ~Base();
+          |};
+          |struct Derived : Base {
+          |  void declaredVirtual() override;
+          |  void pureVirtual() final;
+          |  void newNonVirtual();
+          |};
+          |""".stripMargin,
+        "test.cpp"
+      )
+      def modifiers(fullName: String) = cpg.method.fullNameExact(fullName).modifier.modifierType.sorted.l
+      modifiers("Base.declaredVirtual:void()") shouldBe
+        List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Base.pureVirtual:void()") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Base.~Base:ANY()") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Derived.declaredVirtual:void()") shouldBe
+        List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Derived.pureVirtual:void()") shouldBe
+        List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Base.nonVirtual:void()") shouldBe List(ModifierTypes.PUBLIC)
+      modifiers("Derived.newNonVirtual:void()") shouldBe List(ModifierTypes.PUBLIC)
+    }
+
+    "be present on an out-of-line definition of a virtual member function" in {
+      val cpg = code(
+        """
+          |struct Base { virtual void run(); void walk(); };
+          |void Base::run() {}
+          |void Base::walk() {}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      cpg.method.fullNameExact("Base.run:void()").modifier.modifierType.sorted.l shouldBe
+        List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      cpg.method.fullNameExact("Base.walk:void()").modifier.modifierType.sorted.l shouldBe
+        List(ModifierTypes.PUBLIC)
+    }
+
+    "be absent for a free function and for C, and present on a lambda method" in {
+      val cpg = code(
+        """
+          |void freeFunction() {}
+          |void withLambda() { auto l = [](int x) { return x; }; }
+          |""".stripMargin,
+        "test.cpp"
+      ).moreCode("void cFunction() {}", "test.c")
+      cpg.method.nameExact("freeFunction").modifier.modifierType.l shouldBe empty
+      cpg.method.nameExact("cFunction").modifier.modifierType.l shouldBe empty
+      cpg.method.nameExact("<lambda>0").modifier.modifierType.sorted.l shouldBe
+        List(ModifierTypes.LAMBDA, ModifierTypes.PRIVATE, ModifierTypes.STATIC, ModifierTypes.VIRTUAL).sorted
+    }
+
+    "select the virtual member functions, and the lambda method the frontend marks virtual" in {
+      val cpg = code(
+        """
+          |struct Shape { virtual double area() = 0; const char* name(); };
+          |struct Circle : Shape { double area() override; };
+          |double compute(Shape* s) { auto l = [](int x) { return x; }; return s->area(); }
+          |""".stripMargin,
+        "test.cpp"
+      )
+      cpg.method.isVirtual.fullName.sorted.l shouldBe List(
+        "Circle.area:double()",
+        "Shape.area:double()",
+        "test.cpp:<global>.compute.<lambda>0:int(int)"
+      )
+      cpg.method.isVirtual.whereNot(_.isLambda).fullName.sorted.l shouldBe
+        List("Circle.area:double()", "Shape.area:double()")
+    }
+  }
   "Deleted and defaulted special members" should {
     "be distinguishable by modifier" in {
       val cpg = code(
