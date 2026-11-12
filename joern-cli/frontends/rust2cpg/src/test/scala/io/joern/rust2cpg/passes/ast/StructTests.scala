@@ -81,11 +81,11 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
     val cpg     = code("struct Pair(i32, bool);")
 
     "have a crate-prefixed fullName TYPE_DECL" in {
-      cpg.typeDecl.nameExact("Pair").fullName.l shouldBe List("rust2cpgtest::Pair")
+      cpg.typeDecl.nameExact("Pair").fullName.sorted.l shouldBe List("rust2cpgtest::Pair", "rust2cpgtest::Pair::{fn}")
     }
 
     "be parented by the crate namespace block" in {
-      inside(cpg.typeDecl.nameExact("Pair").l) { case pair :: Nil =>
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::Pair").l) { case pair :: Nil =>
         pair.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
         pair.astParentFullName shouldBe s"$libPath:rust2cpgtest"
       }
@@ -148,9 +148,23 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
         ctor.fullName shouldBe "rust2cpgtest::Pair"
         ctor.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
         ctor.astParentFullName shouldBe s"$libPath:rust2cpgtest"
-        ctor.modifier shouldBe empty
+        ctor.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL)
         ctor.methodReturn.typeFullName shouldBe "rust2cpgtest::Pair"
       }
+    }
+
+    "have correct ctor wrapper bindings" in {
+      val bindings = cpg.typeDecl.fullNameExact("rust2cpgtest::Pair::{fn}").methodBinding.sortBy(_.name).l
+      bindings.name.l shouldBe List(
+        "",
+        "async_call",
+        "async_call_mut",
+        "async_call_once",
+        "call",
+        "call_mut",
+        "call_once"
+      )
+      bindings.methodFullName.distinct.l shouldBe List("rust2cpgtest::Pair")
     }
 
     "have correct ctor wrapper parameters" in {
@@ -204,7 +218,10 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
     val cpg = code("struct Empty();")
 
     "have a crate-prefixed fullName TYPE_DECL" in {
-      cpg.typeDecl.nameExact("Empty").fullName.l shouldBe List("rust2cpgtest::Empty")
+      cpg.typeDecl.nameExact("Empty").fullName.sorted.l shouldBe List(
+        "rust2cpgtest::Empty",
+        "rust2cpgtest::Empty::{fn}"
+      )
     }
 
     "have no members" in {
@@ -914,7 +931,7 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.assignment.where(_.target.isIdentifier.nameExact("foo")).source.l) { case (metRef: MethodRef) :: Nil =>
         metRef.code shouldBe "Foo"
         metRef.methodFullName shouldBe "rust2cpgtest::Foo"
-        metRef.typeFullName shouldBe "rust2cpgtest::Foo"
+        metRef.typeFullName shouldBe "rust2cpgtest::Foo::{fn}"
       }
     }
 
@@ -937,7 +954,7 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.assignment.where(_.target.isIdentifier.nameExact("foo")).source.l) { case (metRef: MethodRef) :: Nil =>
         metRef.code shouldBe "Self"
         metRef.methodFullName shouldBe "rust2cpgtest::Foo"
-        metRef.typeFullName shouldBe "rust2cpgtest::Foo"
+        metRef.typeFullName shouldBe "rust2cpgtest::Foo::{fn}"
       }
     }
 

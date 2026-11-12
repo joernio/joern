@@ -219,6 +219,8 @@ object RustFullNames {
     "core::ops::async_function::AsyncFnOnce" -> "async_call_once"
   )
 
+  def fnItemTypeFullName(methodFullName: String): String = s"$methodFullName$PathSep{fn}"
+
   def shortName(fullName: String): String = {
     // A path e.g. `x::...::z<...>` or `z<...>` has shortname `z`, without generics.
     // Any other type shape has matching name/fullName.

@@ -65,13 +65,17 @@ class NamespaceBlockTests extends Rust2CpgSuite(noSysRoot = true) {
         |""".stripMargin)
 
     "have correct children" in {
-      inside(cpg.namespaceBlock.fullNameExact(s"$libPath:rust2cpgtest").astChildren.sortBy(_.order).l) {
-        case (one: Method) :: (two: Method) :: Nil =>
+      inside(cpg.namespaceBlock.fullNameExact(s"$libPath:rust2cpgtest").astChildren.isMethod.sortBy(_.order).l) {
+        case one :: two :: Nil =>
           one.name shouldBe "one"
           one.fullName shouldBe "rust2cpgtest::one"
           two.name shouldBe "two"
           two.fullName shouldBe "rust2cpgtest::two"
       }
+      cpg.namespaceBlock.fullNameExact(s"$libPath:rust2cpgtest").astChildren.isTypeDecl.fullName.sorted.l shouldBe List(
+        "rust2cpgtest::one::{fn}",
+        "rust2cpgtest::two::{fn}"
+      )
     }
 
     "be parented by the crate namespace block" in {

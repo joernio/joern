@@ -106,10 +106,11 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     }
   }
 
-  protected def addDetachedClosureBindingAsts(typeDecl: NewTypeDecl, method: NewMethod): Unit = {
-    val bindings = RustFullNames.FnTraitMethodNames.toSeq.sorted.map { case (fnTrait, methodName) =>
+  protected def addDetachedFnTraitBindingAsts(typeDecl: NewTypeDecl, method: NewMethod): Unit = {
+    val fnTraitBindings = RustFullNames.FnTraitMethodNames.toSeq.sorted.map { case (fnTrait, methodName) =>
       bindingNode(methodName, fnTrait, method.fullName)
     }
+    val bindings = bindingNode("", "", method.fullName) +: fnTraitBindings
     bindings.foreach(binding => addDetachedAst(Ast(binding).withBindsEdge(typeDecl, binding)))
   }
 
@@ -318,6 +319,19 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
       fullName = method.fullName,
       filename = parseResult.filename,
       code = code(closureExpr),
+      astParentType = contextStack.astParentType,
+      astParentFullName = contextStack.astParentFullName,
+      inherits = RustFullNames.FnTraitMethodNames.keys.toSeq.sorted
+    )
+  }
+
+  protected def typeDeclForFn(node: RustNode, method: NewMethod): NewTypeDecl = {
+    typeDeclNode(
+      node = node,
+      name = method.name,
+      fullName = RustFullNames.fnItemTypeFullName(method.fullName),
+      filename = parseResult.filename,
+      code = code(node),
       astParentType = contextStack.astParentType,
       astParentFullName = contextStack.astParentFullName,
       inherits = RustFullNames.FnTraitMethodNames.keys.toSeq.sorted

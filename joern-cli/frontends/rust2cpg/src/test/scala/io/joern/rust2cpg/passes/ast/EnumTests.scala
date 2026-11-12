@@ -288,7 +288,10 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
         |""".stripMargin)
 
     "have correct fullName" in {
-      cpg.typeDecl.nameExact("Rgb").fullName.l shouldBe List("rust2cpgtest::Color::Rgb")
+      cpg.typeDecl.nameExact("Rgb").fullName.sorted.l shouldBe List(
+        "rust2cpgtest::Color::Rgb",
+        "rust2cpgtest::Color::Rgb::{fn}"
+      )
     }
 
     "have correct inheritsFrom" in {
@@ -346,9 +349,23 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
     "have correct ctor wrapper" in {
       inside(cpg.method.nameExact("Rgb").l) { case ctor :: Nil =>
         ctor.fullName shouldBe "rust2cpgtest::Color::Rgb"
-        ctor.modifier shouldBe empty
+        ctor.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL)
         ctor.methodReturn.typeFullName shouldBe "rust2cpgtest::Color"
       }
+    }
+
+    "have correct ctor wrapper bindings" in {
+      val bindings = cpg.typeDecl.fullNameExact("rust2cpgtest::Color::Rgb::{fn}").methodBinding.sortBy(_.name).l
+      bindings.name.l shouldBe List(
+        "",
+        "async_call",
+        "async_call_mut",
+        "async_call_once",
+        "call",
+        "call_mut",
+        "call_once"
+      )
+      bindings.methodFullName.distinct.l shouldBe List("rust2cpgtest::Color::Rgb")
     }
 
     "have correct ctor wrapper parameters" in {
@@ -398,7 +415,7 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.assignment.where(_.target.isIdentifier.nameExact("bar")).source.l) { case (metRef: MethodRef) :: Nil =>
         metRef.code shouldBe "Foo::Bar"
         metRef.methodFullName shouldBe "rust2cpgtest::Foo::Bar"
-        metRef.typeFullName shouldBe "rust2cpgtest::Foo::Bar"
+        metRef.typeFullName shouldBe "rust2cpgtest::Foo::Bar::{fn}"
       }
     }
 
@@ -416,7 +433,10 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
         |""".stripMargin)
 
     "have correct variant fullName" in {
-      cpg.typeDecl.nameExact("One").fullName.l shouldBe List("rust2cpgtest::Wrapper<T>::One")
+      cpg.typeDecl.nameExact("One").fullName.sorted.l shouldBe List(
+        "rust2cpgtest::Wrapper<T>::One",
+        "rust2cpgtest::Wrapper<T>::One::{fn}"
+      )
     }
 
     "have correct inheritsFrom" in {
@@ -630,8 +650,14 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "have correct variant fullNames" in {
-      cpg.typeDecl.nameExact("Red").fullName.l shouldBe List("rust2cpgtest::outer::Inner#1::Red")
-      cpg.typeDecl.nameExact("Green").fullName.l shouldBe List("rust2cpgtest::outer::Inner#2::Green")
+      cpg.typeDecl.nameExact("Red").fullName.sorted.l shouldBe List(
+        "rust2cpgtest::outer::Inner#1::Red",
+        "rust2cpgtest::outer::Inner#1::Red::{fn}"
+      )
+      cpg.typeDecl.nameExact("Green").fullName.sorted.l shouldBe List(
+        "rust2cpgtest::outer::Inner#2::Green",
+        "rust2cpgtest::outer::Inner#2::Green::{fn}"
+      )
     }
 
     "have correct ctor wrapper fullNames" in {

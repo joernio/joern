@@ -11,7 +11,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewFile,
   NewImport,
   NewMethod,
-  NewModifier,
   NewTypeDecl
 }
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, ModifierTypes, Operators}
@@ -742,7 +741,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val method          = methodNode(node = fn, name = name).fullName(fullName)
     val retTypeFullName = fn.retType.map(_.typ).map(typeFullNameForType).getOrElse("()")
     val methodRet       = methodReturnNode(fn, retTypeFullName)
-    val methodMods      = Seq[NewModifier]()
+    val methodMods      = Seq(modifierNode(fn, ModifierTypes.VIRTUAL))
     val attributes      = fn.attr.map(visitAttr)
 
     contextStack.pushMethod(method)
@@ -751,6 +750,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       .map(blockExpr => lowerFnBody(blockExpr, blockNode(blockExpr), paramAssignmentAsts))
       .getOrElse(blockAst(blockNode(fn), paramAssignmentAsts.toList))
     contextStack.pop()
+
+    val typeDecl = typeDeclForFn(fn, method)
+    addDetachedAst(Ast(typeDecl))
+    addDetachedFnTraitBindingAsts(typeDecl, method)
 
     methodAstWithAnnotations(
       method = method,
@@ -807,9 +810,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       case implTrait :: implType :: Nil =>
         val typeDecl = typeDeclForTraitImpl(impl, implTrait, implType)
         contextStack.pushTypeDecl(typeDecl)
-        val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn => fn }.flatMap(visitAssocFn).map {
-          _.withChild(Ast(NewModifier().modifierType(ModifierTypes.VIRTUAL)))
-        }
+        val methodAsts      = impl.assocItemList.assocItem.collect { case fn: Fn => fn }.flatMap(visitAssocFn)
         val constMemberAsts = impl.assocItemList.assocItem.collect {
           case const: Const if const.name.isDefined =>
             Ast(memberForAssocConst(const)).withChildren(const.attr.map(visitAttr))
@@ -866,9 +867,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     )
     contextStack.pushTypeDecl(typeDecl)
     val methodAsts =
-      trait_.assocItemList.toSeq.flatMap(_.assocItem).collect { case fn: Fn => fn }.flatMap(visitAssocFn).map {
-        _.withChild(Ast(NewModifier().modifierType(ModifierTypes.VIRTUAL)))
-      }
+      trait_.assocItemList.toSeq.flatMap(_.assocItem).collect { case fn: Fn => fn }.flatMap(visitAssocFn)
     val constMemberAsts = trait_.assocItemList.toSeq.flatMap(_.assocItem).collect {
       case const: Const if const.name.isDefined =>
         Ast(memberForAssocConst(const)).withChildren(const.attr.map(visitAttr))
@@ -1071,7 +1070,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     // A path has `methodFullName` if it denotes a method reference, or `ctorTypeFullName` if it denotes a unit
     // constructor. Otherwise, it's some other identifier.
     (pathExpr.methodFullName, pathExpr.ctorTypeFullName) match {
-      case (Some(methodFullName), _)   => Ast(methodRefNode(pathExpr, code(pathExpr), methodFullName, methodFullName))
+      case (Some(methodFullName), _) =>
+        Ast(methodRefNode(pathExpr, code(pathExpr), methodFullName, RustFullNames.fnItemTypeFullName(methodFullName)))
       case (_, Some(ctorTypeFullName)) => unitCtorCallAst(pathExpr, ctorTypeFullName)
       case _                           => visitPath(pathExpr.path, pathExpr.ownerFullName)
     }
@@ -2057,7 +2057,17 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val bodyAst = blockAst(blockNode(node), List(Ast(local), allocAssignAst, initCallAst, retAst))
     contextStack.pop()
 
-    methodAst(method, fieldParams.map(Ast(_)), bodyAst, methodReturnNode(node, returnTypeFullName))
+    val fnTypeDecl = typeDeclForFn(node, method)
+    addDetachedAst(Ast(fnTypeDecl))
+    addDetachedFnTraitBindingAsts(fnTypeDecl, method)
+
+    methodAst(
+      method = method,
+      parameters = fieldParams.map(Ast(_)),
+      body = bodyAst,
+      methodReturn = methodReturnNode(node, returnTypeFullName),
+      modifiers = Seq(modifierNode(node, ModifierTypes.VIRTUAL))
+    )
   }
 
   private def tupleStructFieldData(tupleFieldList: TupleFieldList): Seq[(node: RustNode, name: String, typ: String)] = {
@@ -2363,7 +2373,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
     val typeDecl = typeDeclForClosure(closureExpr, method)
     addDetachedAst(Ast(typeDecl))
-    addDetachedClosureBindingAsts(typeDecl, method)
+    addDetachedFnTraitBindingAsts(typeDecl, method)
 
     Ast(methodRef)
   }

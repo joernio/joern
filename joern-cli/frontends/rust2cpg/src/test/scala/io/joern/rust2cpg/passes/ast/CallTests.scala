@@ -398,7 +398,7 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
 
           ref.code shouldBe "handler"
           ref.methodFullName shouldBe "rust2cpgtest::handler"
-          ref.typeFullName shouldBe "rust2cpgtest::handler"
+          ref.typeFullName shouldBe "rust2cpgtest::handler::{fn}"
         }
       }
     }
@@ -431,7 +431,7 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
 
           ref.code shouldBe "Counter::incr"
           ref.methodFullName shouldBe "rust2cpgtest::Counter::incr"
-          ref.typeFullName shouldBe "rust2cpgtest::Counter::incr"
+          ref.typeFullName shouldBe "rust2cpgtest::Counter::incr::{fn}"
         }
       }
     }

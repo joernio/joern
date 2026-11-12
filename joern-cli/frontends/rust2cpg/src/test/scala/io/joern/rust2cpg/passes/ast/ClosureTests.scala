@@ -86,7 +86,8 @@ class ClosureTests extends Rust2CpgSuite(noSysRoot = true) {
 
     "have correct bindings" in {
       inside(cpg.typeDecl.fullNameExact("rust2cpgtest::main::<lambda>0").methodBinding.sortBy(_.name).l) {
-        case Binding(
+        case Binding(name = "", signature = "", methodFullName = "rust2cpgtest::main::<lambda>0") ::
+            Binding(
               name = "async_call",
               signature = "core::ops::async_function::AsyncFn",
               methodFullName = "rust2cpgtest::main::<lambda>0"
