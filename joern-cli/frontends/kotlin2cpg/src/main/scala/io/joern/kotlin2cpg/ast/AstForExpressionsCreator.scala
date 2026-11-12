@@ -137,9 +137,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     )
   }
 
-  private def astForQualifiedExpressionFieldAccess(expr: KtQualifiedExpression): Ast = {
-    val exprNode = astsForExpression(expr.getReceiverExpression).lastOption
-      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.Empty)))
+  private def astForQualifiedExpressionFieldAccess(expr: KtQualifiedExpression): Seq[Ast] = {
+    val receiverAsts = astsForExpression(expr.getReceiverExpression)
+    val receiverAst  = receiverAsts.lastOption.getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.Empty)))
 
     val nameReferenceExpr = expr.getSelectorExpression.asInstanceOf[KtNameReferenceExpression]
     val fieldIdentifier   = Ast(
@@ -148,11 +148,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val retType = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val node    = operatorCallNode(expr, code(expr), Operators.fieldAccess, Option(retType))
-    callAst(node, List(exprNode, fieldIdentifier))
+    receiverAsts.dropRight(1) :+ callAst(node, List(receiverAst, fieldIdentifier))
   }
 
-  private def astForQualifiedExpressionExtensionCall(expr: KtQualifiedExpression): Ast = {
-    val argAsts = selectorExpressionArgAsts(expr)
+  private def astForQualifiedExpressionExtensionCall(expr: KtQualifiedExpression): Seq[Ast] = {
+    val instanceAsts = astsForExpression(expr.getReceiverExpression)
+    val instanceArg  = instanceAsts.lastOption.getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.Empty)))
+    val argAsts      = selectorExpressionArgAsts(expr)
 
     // TODO fix the cast to KtCallExpression
     val (astFullName, astSignature) = astDerivedFullNameWithSignature(expr, argAsts)
@@ -163,15 +165,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val node       =
       callNode(expr, code(expr), methodName, fullName, DispatchTypes.STATIC_DISPATCH, Some(signature), Some(retType))
 
-    val instanceArg = astsForExpression(expr.getReceiverExpression).lastOption
-      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.Empty)))
-    callAst(node, instanceArg +: argAsts)
+    instanceAsts.dropRight(1) :+ callAst(node, instanceArg +: argAsts)
   }
 
-  private def astForQualifiedExpressionCallToSuper(expr: KtQualifiedExpression): Ast = {
-    val receiverAst = astsForExpression(expr.getReceiverExpression).lastOption
-      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.Empty)))
-    val argAsts = selectorExpressionArgAsts(expr)
+  private def astForQualifiedExpressionCallToSuper(expr: KtQualifiedExpression): Seq[Ast] = {
+    val receiverAsts = astsForExpression(expr.getReceiverExpression)
+    val receiverAst  = receiverAsts.lastOption.getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.Empty)))
+    val argAsts      = selectorExpressionArgAsts(expr)
 
     val (astFullName, astSignature) = astDerivedFullNameWithSignature(expr, argAsts)
     val (fullName, signature)       = calleeFullnameAndSignature(getCalleeExpr(expr), astFullName, astSignature)
@@ -180,7 +180,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val methodName = expr.getSelectorExpression.getFirstChild.getText
     val node       =
       callNode(expr, code(expr), methodName, fullName, DispatchTypes.STATIC_DISPATCH, Some(signature), Some(retType))
-    callAst(node, argAsts, Option(receiverAst))
+    receiverAsts.dropRight(1) :+ callAst(node, argAsts, Option(receiverAst))
   }
 
   private def astForQualifiedExpressionCtor(expr: KtQualifiedExpression): Ast = {
@@ -233,10 +233,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def astForQualifiedExpressionWithNoAstForReceiver(expr: KtQualifiedExpression): Ast = {
-    val receiverAst = astsForExpression(expr.getReceiverExpression).lastOption
-      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.Empty)))
-    val argAsts = selectorExpressionArgAsts(expr)
+  private def astForQualifiedExpressionWithNoAstForReceiver(expr: KtQualifiedExpression): Seq[Ast] = {
+    val receiverAsts = astsForExpression(expr.getReceiverExpression)
+    val receiverAst  = receiverAsts.lastOption.getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.Empty)))
+    val argAsts      = selectorExpressionArgAsts(expr)
 
     val (astFullName, astSignature) = astDerivedFullNameWithSignature(expr, argAsts)
     val (fullName, signature)       = calleeFullnameAndSignature(getCalleeExpr(expr), astFullName, astSignature)
@@ -245,17 +245,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val node                        =
       callNode(expr, code(expr), methodName, fullName, DispatchTypes.STATIC_DISPATCH, Some(signature), Some(retType))
 
-    callAst(node, argAsts, Option(receiverAst))
+    receiverAsts.dropRight(1) :+ callAst(node, argAsts, Option(receiverAst))
   }
 
-  private def astForQualifiedExpressionWithReceiverEdge(expr: KtQualifiedExpression, callKind: CallKind): Ast = {
+  private def astForQualifiedExpressionWithReceiverEdge(expr: KtQualifiedExpression, callKind: CallKind): Seq[Ast] = {
     val dispatchType =
       if (callKind == CallKind.DynamicCall) DispatchTypes.DYNAMIC_DISPATCH
       else DispatchTypes.STATIC_DISPATCH
 
-    val receiverAst = astsForExpression(expr.getReceiverExpression).lastOption
-      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.Empty)))
-    val argAsts = selectorExpressionArgAsts(expr)
+    val receiverAsts = astsForExpression(expr.getReceiverExpression)
+    val receiverAst  = receiverAsts.lastOption.getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.Empty)))
+    val argAsts      = selectorExpressionArgAsts(expr)
 
     val (astFullName, astSignature) = astDerivedFullNameWithSignature(expr, argAsts)
     val (fullName, signature)       = calleeFullnameAndSignature(getCalleeExpr(expr), astFullName, astSignature)
@@ -269,11 +269,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         callNode(expr, code(expr), methodName, fullName, dispatchType, Some(signature), Some(retType))
       }
 
-    callAst(node, argAsts, Option(receiverAst))
+    receiverAsts.dropRight(1) :+ callAst(node, argAsts, Option(receiverAst))
   }
 
   // TODO: clean up this whole fn
-  def astForQualifiedExpression(expr: KtQualifiedExpression, annotations: Seq[KtAnnotationEntry] = Seq()): Ast = {
+  def astForQualifiedExpression(expr: KtQualifiedExpression, annotations: Seq[KtAnnotationEntry] = Seq()): Seq[Ast] = {
     val callKind        = typeInfoProvider.bindingKind(expr)
     val isExtensionCall = callKind == CallKind.ExtensionCall
 
@@ -292,9 +292,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val isCtorCtorCall   = typeInfoProvider.isConstructorCall(expr)
     val noAstForReceiver = isStaticMethodCall && hasRefToClassReceiver
 
-    val outAst =
+    val asts =
       if (isCtorCtorCall.getOrElse(false)) {
-        astForQualifiedExpressionCtor(expr)
+        Seq(astForQualifiedExpressionCtor(expr))
       } else if (isExtensionCall) {
         astForQualifiedExpressionExtensionCall(expr)
       } else if (hasNameRefSelector) {
@@ -306,7 +306,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       } else {
         astForQualifiedExpressionWithReceiverEdge(expr, callKind)
       }
-    outAst.withChildren(annotations.map(astForAnnotationEntry))
+    val annotationAsts = annotations.map(astForAnnotationEntry)
+    asts.dropRight(1) ++ asts.lastOption.map(_.withChildren(annotationAsts))
   }
 
   def astForIsExpression(expr: KtIsExpression, annotations: Seq[KtAnnotationEntry] = Seq()): Ast = {
@@ -487,8 +488,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val annotationsAsts = annotations.map(astForAnnotationEntry)
     astsForNonTrails ++ Seq(
-      blockAst(tmpBlockNode, List(tmpLocalAst, assignmentAst, initCallAst, lastIdentifierAst))
-        .withChildren(annotationsAsts)
+      blockAst(tmpBlockNode, List(tmpLocalAst, assignmentAst, initCallAst, lastIdentifierAst) ++ annotationsAsts)
     )
   }
 
@@ -800,8 +800,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       val lastIdentifier    = identifierNode(expr, tmpName, tmpName, samImplClass)
       val lastIdentifierAst = astWithRefEdgeMaybe(tmpName, lastIdentifier)
 
-      blockAst(tmpBlockNode, List(tmpLocalAst, assignmentAst, ctorCallAst, lastIdentifierAst))
-        .withChildren(annotations.map(astForAnnotationEntry))
+      val annotationAsts = annotations.map(astForAnnotationEntry)
+      blockAst(tmpBlockNode, List(tmpLocalAst, assignmentAst, ctorCallAst, lastIdentifierAst) ++ annotationAsts)
     }
   }
 }

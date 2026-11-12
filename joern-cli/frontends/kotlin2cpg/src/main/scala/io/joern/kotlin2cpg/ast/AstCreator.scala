@@ -334,11 +334,11 @@ class AstCreator(
       case typedExpr: KtConstantExpression          => Seq(astForLiteral(typedExpr, annotations))
       case typedExpr: KtClass                       => Seq(astForClassOrObject(typedExpr, None, annotations))
       case typedExpr: KtClassLiteralExpression      => Seq(astForClassLiteral(typedExpr, annotations))
-      case typedExpr: KtSafeQualifiedExpression     => Seq(astForQualifiedExpression(typedExpr, annotations))
+      case typedExpr: KtSafeQualifiedExpression     => astForQualifiedExpression(typedExpr, annotations)
       case typedExpr: KtContinueExpression          => Seq(astForContinue(typedExpr))
       // note: annotations are not currently (Kotlin 1.9.0) supported on destructuring declarations
       case typedExpr: KtDestructuringDeclaration => astsForDestructuringDeclaration(typedExpr)
-      case typedExpr: KtDotQualifiedExpression   => Seq(astForQualifiedExpression(typedExpr, annotations))
+      case typedExpr: KtDotQualifiedExpression   => astForQualifiedExpression(typedExpr, annotations)
       case typedExpr: KtDoWhileExpression        => Seq(astForDoWhile(typedExpr, annotations))
       case typedExpr: KtForExpression            => Seq(astForFor(typedExpr, annotations))
       case typedExpr: KtIfExpression             => Seq(astForIf(typedExpr, annotations))
@@ -546,25 +546,18 @@ class AstCreator(
   }
 
   private def receiverNamespace(expr: KtQualifiedExpression): String = {
-    val receiver             = expr.getReceiverExpression
-    val isUsableReceiverType = (typeName: String) =>
-      typeName != TypeConstants.Any && typeName != Defines.UnresolvedNamespace
+    val receiver     = expr.getReceiverExpression
     val importedName = receiver match {
       case nameRef: KtNameReferenceExpression =>
         val receiverName = nameRef.getText
         nameRef.getContainingKtFile.getImportList.getImports.asScala.collectFirst {
-          case directive
-              if directive.getImportedName != null && directive.getImportedName.toString == receiverName &&
-                directive.getImportPath != null =>
-            directive.getImportPath.getPathStr
-        }
+          case directive if Option(directive.getImportedName).map(_.toString).contains(receiverName) =>
+            Option(directive.getImportPath).map(_.getPathStr)
+        }.flatten
       case _ => None
     }
 
-    exprTypeFullName(receiver)
-      .filter(isUsableReceiverType)
-      .orElse(importedName)
-      .getOrElse(Defines.UnresolvedNamespace)
+    exprTypeFullName(receiver).orElse(importedName).getOrElse(Defines.UnresolvedNamespace)
   }
 
   protected def astsForKtCallExpressionArguments(callExpr: KtCallExpression): List[Ast] = {
