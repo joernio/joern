@@ -282,6 +282,17 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
   }
 
+  /** On a member function the modifier states [class.virtual] virtuality. On a lambda method it marks a method reached
+    * through a BINDING rather than a direct CALL, which is a separate CPG convention.
+    */
+  private def isVirtualMethod(name: IASTName): Boolean = {
+    safeGetBinding(name).collect { case method: ICPPMethod => method }.exists(isVirtual)
+  }
+
+  private def virtualModifierFor(node: IASTNode, name: IASTName): List[NewModifier] = {
+    Option.when(isVirtualMethod(name))(modifierNode(node, ModifierTypes.VIRTUAL)).toList
+  }
+
   private def modifierFor(funcDef: IASTFunctionDefinition): List[NewModifier] = {
     val constructorModifier =
       Option.when(bindsToConstructor(funcDef))(modifierNode(funcDef, ModifierTypes.CONSTRUCTOR)).toList
@@ -295,8 +306,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
         List(modifierNode(funcDef, Defines.ModifierDefaulted))
       case _ => Nil
     }
-    val staticModifier = Try(staticModifierFor(funcDef, funcDef.getDeclSpecifier, funcDef)).getOrElse(Nil)
-    constructorModifier ++ accessModifier ++ definitionModifier ++ staticModifier ++
+    val staticModifier  = Try(staticModifierFor(funcDef, funcDef.getDeclSpecifier, funcDef)).getOrElse(Nil)
+    val virtualModifier = virtualModifierFor(funcDef, funcDef.getDeclarator.getName)
+    constructorModifier ++ accessModifier ++ definitionModifier ++ staticModifier ++ virtualModifier ++
       noExceptModifierFor(funcDef, funcDef.getDeclarator)
   }
 
@@ -309,7 +321,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
       case definition: IASTFunctionDefinition => staticModifierFor(funcDecl, definition.getDeclSpecifier, definition)
       case _                                  => Nil
     }).getOrElse(Nil)
-    constructorModifier ++ accessModifier ++ staticModifier ++ noExceptModifierFor(funcDecl, funcDecl)
+    val virtualModifier = virtualModifierFor(funcDecl, funcDecl.getName)
+    constructorModifier ++ accessModifier ++ staticModifier ++ virtualModifier ++
+      noExceptModifierFor(funcDecl, funcDecl)
   }
 
   private def syntheticThisAccess(ident: IASTName, identifierName: String): Ast = {
@@ -736,7 +750,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val staticModifier  = Option.when(isStatic)(modifierNode(lambdaExpression, ModifierTypes.STATIC))
     val privateModifier = Some(modifierNode(lambdaExpression, ModifierTypes.PRIVATE))
     val lambdaModifier  = Some(modifierNode(lambdaExpression, ModifierTypes.LAMBDA))
-    val modifiers       = List(virtualModifier, staticModifier, privateModifier, lambdaModifier).flatten.map(Ast(_))
+    // VIRTUAL marks a method reached through a BINDING, not a direct CALL; javasrc2cpg does the same.
+    val modifiers = List(virtualModifier, staticModifier, privateModifier, lambdaModifier).flatten.map(Ast(_))
 
     val lambdaMethodAst = Ast(lambdaMethodNode)
       .withChildren(parameterAsts)

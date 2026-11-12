@@ -15,7 +15,6 @@ import org.eclipse.cdt.internal.core.dom.parser.c.{
 }
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalFunctionCall
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{
-  ClassTypeHelper,
   CPPASTFoldExpression,
   CPPASTIdExpression,
   CPPASTQualifiedName,
@@ -208,12 +207,6 @@ trait AstForExpressionsCreator { this: AstCreator =>
         true
       case parent => isInUnevaluatedOperand(parent)
     }
-  }
-
-  /** [class.virtual]: a function that overrides a virtual member function is virtual whether or not it says so.
-    */
-  private def isVirtual(method: ICPPMethod): Boolean = {
-    method.isPureVirtual || safeCdtCall(ClassTypeHelper.isVirtual(method)).getOrElse(method.isVirtual)
   }
 
   private def astForCppCallExpression(call: ICPPASTFunctionCallExpression): Ast = {
