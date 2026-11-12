@@ -383,6 +383,36 @@ class TsClassesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
       }
     }
 
+    "have correct code and location for each part of a nested namespace with path" in {
+      val cpg                                      = code("namespace A.B.C {\n  class Foo {};\n}")
+      val List(namespaceA, namespaceB, namespaceC) = cpg.namespaceBlock.name("[ABC]").sortBy(_.fullName).l
+      namespaceA.code shouldBe "namespace A.B.C {\n  class Foo {};\n}"
+      namespaceA.lineNumber shouldBe Some(1)
+      namespaceA.columnNumber shouldBe Some(0)
+      namespaceB.code shouldBe "B.C {\n  class Foo {};\n}"
+      namespaceB.lineNumber shouldBe Some(1)
+      namespaceB.columnNumber shouldBe Some(12)
+      namespaceC.code shouldBe "C {\n  class Foo {};\n}"
+      namespaceC.lineNumber shouldBe Some(1)
+      namespaceC.columnNumber shouldBe Some(14)
+      namespaceC.typeDecl.name("Foo").fullName.l shouldBe List("Test0.ts::program:A:B:C:Foo")
+    }
+
+    "have correct structure for a namespace with path that is exported" in {
+      val cpg = code("export namespace A.B {\n  export class Foo {};\n}")
+      cpg.namespaceBlock.name("[AB]").fullName.sorted.l shouldBe List("Test0.ts::program:A", "Test0.ts::program:A:B")
+      cpg.namespaceBlock("B").typeDecl.name("Foo").fullName.l shouldBe List("Test0.ts::program:A:B:Foo")
+    }
+
+    "have correct structure for ambient module declarations without body" in {
+      val cpg          = code("declare module \"foo\";")
+      val List(module) = cpg.namespaceBlock.nameNot("<global>").l
+      module.name shouldBe "\"foo\""
+      module.fullName shouldBe "Test0.ts::program:\"foo\""
+      module.code shouldBe "declare module \"foo\";"
+      module.astChildren.size shouldBe 0
+    }
+
     "AST generation for dynamically exported and defined class" in {
       val cpg = code("""
         |export type User = {
