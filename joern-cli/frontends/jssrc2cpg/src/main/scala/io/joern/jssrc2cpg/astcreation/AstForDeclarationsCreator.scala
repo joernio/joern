@@ -300,6 +300,13 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     stripped.substring(stripped.lastIndexOf("/") + 1)
   } else name
 
+  /** `require("from")` as generated for imports and re-exports: a statically dispatched call without receiver. */
+  private def staticRequireCallAst(node: BabelNode, from: String): Ast = {
+    val argNode = literalNode(node, s"\"$from\"", None)
+    val call    = callNode(node, s"$RequireKeyword(${argNode.code})", RequireKeyword, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, List(Ast(argNode)))
+  }
+
   private def createAstForFrom(fromName: String, declaration: BabelNode): Ast = {
     if (fromName == ExportKeyword) {
       Ast()
@@ -311,16 +318,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       scope.addVariableReference(id.code, id, Defines.Any, EvaluationStrategies.BY_REFERENCE)
       diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
 
-      val sourceCallArgNode = literalNode(declaration, s"\"${fromName.stripPrefix("_")}\"", None)
-      val sourceCall        =
-        callNode(
-          declaration,
-          s"$RequireKeyword(${sourceCallArgNode.code})",
-          RequireKeyword,
-          DispatchTypes.STATIC_DISPATCH
-        )
-      val sourceAst =
-        callAst(sourceCall, List(Ast(sourceCallArgNode)))
+      val sourceAst         = staticRequireCallAst(declaration, fromName.stripPrefix("_"))
       val assignmentCallAst = createAssignmentCallAst(
         Ast(id),
         sourceAst,
@@ -421,20 +419,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     scope.addVariableReference(destName, destNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
     diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
 
-    val destAst           = Ast(destNode)
-    val sourceCallArgNode = literalNode(node, s"\"$from\"", None)
-    val sourceCall        =
-      callNode(node, s"$RequireKeyword(${sourceCallArgNode.code})", RequireKeyword, DispatchTypes.DYNAMIC_DISPATCH)
-
-    val receiverNode = identifierNode(node, RequireKeyword)
-    val thisNode     = identifierNode(node, "this")
-    scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-    val cAst = callAst(
-      sourceCall,
-      List(Ast(sourceCallArgNode)),
-      receiver = Option(Ast(receiverNode)),
-      base = Option(Ast(thisNode))
-    )
+    val destAst   = Ast(destNode)
+    val cAst      = staticRequireCallAst(node, from)
     val sourceAst = if (isImportN) {
       val fieldName       = stripQuotes(name)
       val fieldAccessCall = createFieldAccessCallAst(
