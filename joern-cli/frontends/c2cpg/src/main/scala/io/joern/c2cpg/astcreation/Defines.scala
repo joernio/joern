@@ -23,6 +23,7 @@ object Defines {
   val OperatorNoExcept: String               = "<operator>.noexcept"
   val OperatorCall: String                   = "<operator>()"
   val OperatorNew: String                    = "<operator>.new"
+  val OperatorDeleteArray: String            = "<operator>.deleteArray"
   val DuplicateSuffix                        = "<duplicate>"
   val NamespaceExtension                     = "<extension>"
   val ConstSuffix                            = "<const>"

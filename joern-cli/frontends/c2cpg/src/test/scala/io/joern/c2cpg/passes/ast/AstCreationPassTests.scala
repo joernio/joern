@@ -2287,7 +2287,59 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |""".stripMargin,
         "file.cpp"
       )
-      cpg.call.nameExact(Operators.delete).codeExact("delete[] n").argument.code("n").size shouldBe 1
+      cpg.call.nameExact(Defines.OperatorDeleteArray).codeExact("delete[] n").argument.code("n").size shouldBe 1
+    }
+
+    "be correct for the scalar and the array form of 'delete' side by side" in {
+      val cpg = code(
+        """
+        |void free_them(int *p, int *a) {
+        |  delete p;
+        |  delete[] a;
+        |}
+        |""".stripMargin,
+        "file.cpp"
+      )
+      inside(cpg.call.nameExact(Operators.delete).l) { case List(scalarDelete) =>
+        scalarDelete.code shouldBe "delete p"
+        scalarDelete.argument.code.l shouldBe List("p")
+        scalarDelete.typeFullName shouldBe Defines.Void
+      }
+      inside(cpg.call.nameExact(Defines.OperatorDeleteArray).l) { case List(arrayDelete) =>
+        arrayDelete.code shouldBe "delete[] a"
+        arrayDelete.argument.code.l shouldBe List("a")
+        arrayDelete.typeFullName shouldBe Defines.Void
+      }
+    }
+
+    "be correct for a non-array 'delete' of a subscripted operand" in {
+      val cpg = code(
+        """
+        |void free_one(int **table) {
+        |  delete table[0];
+        |}
+        |""".stripMargin,
+        "file.cpp"
+      )
+      inside(cpg.call.nameExact(Operators.delete).l) { case List(scalarDelete) =>
+        scalarDelete.code shouldBe "delete table[0]"
+      }
+      cpg.call.nameExact(Defines.OperatorDeleteArray).l shouldBe empty
+    }
+
+    "be correct for a globally qualified array 'delete'" in {
+      val cpg = code(
+        """
+        |void free_them(int *a) {
+        |  ::delete[] a;
+        |}
+        |""".stripMargin,
+        "file.cpp"
+      )
+      inside(cpg.call.nameExact(Defines.OperatorDeleteArray).l) { case List(arrayDelete) =>
+        arrayDelete.code shouldBe "::delete[] a"
+        arrayDelete.argument.code.l shouldBe List("a")
+      }
     }
 
     "be correct for const_cast" in {
