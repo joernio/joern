@@ -117,8 +117,22 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
   protected def astForExportNamedDeclaration(declaration: ExportNamedDeclaration): Ast = declaration.declaration match {
     case Some(importEquals: TSImportEqualsDeclaration) =>
-      astForTSImportEqualsDeclaration(importEquals, Some(declaration))
+      astForExportedImportEquals(declaration, importEquals)
     case _ => astForExportNamedDeclarationWithSpecifiers(declaration)
+  }
+
+  /** `export import a = b.c` is lowered like any other exported declaration: the import of `a`, followed by the export
+    * of the binding, `exports.a = a`.
+    */
+  private def astForExportedImportEquals(
+    declaration: ExportNamedDeclaration,
+    importEquals: TSImportEqualsDeclaration
+  ): Ast = {
+    val name          = importEquals.id.name
+    val importAst     = astForTSImportEqualsDeclaration(importEquals, Some(declaration))
+    val exportCallAst = createExportCallAst(name, ExportKeyword, declaration)
+    val exportAst     = createExportAssignmentCallAst(name, exportCallAst, declaration, None)
+    blockAst(blockNode(declaration, declaration.code, Defines.Any), List(importAst, exportAst))
   }
 
   private def astForExportNamedDeclarationWithSpecifiers(declaration: ExportNamedDeclaration): Ast = {
@@ -330,8 +344,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  /** `export import a = b.c` is an export declaration wrapping the import-equals declaration, but it creates the same
-    * AST as `import a = b.c`; the location is the one of the whole statement, `positionNode`.
+  /** For `export import a = b.c`, the export declaration wraps the import-equals declaration; the location is the one
+    * of the whole statement, `positionNode`.
     */
   protected def astForTSImportEqualsDeclaration(
     impDecl: TSImportEqualsDeclaration,
