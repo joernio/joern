@@ -15,25 +15,19 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private val ImportCallName = "import"
 
-  private type CallLike = CallExpression | OptionalCallExpression | ImportExpression | NewExpression
+  private type CallLike = CallExpression | OptionalCallExpression | NewExpression
 
-  private def argumentsOf(callLike: CallLike): Seq[BabelNode] = callLike match {
+  private def argumentsOf(callLike: CallLike | ImportExpression): Seq[BabelNode] = callLike match {
     case c: CallExpression         => c.arguments
     case c: OptionalCallExpression => c.arguments
     case c: ImportExpression       => c.source +: c.options.toSeq
     case c: NewExpression          => c.arguments
   }
 
-  private def calleeOf(callLike: CallExpression | OptionalCallExpression | NewExpression): BabelNode = callLike match {
+  private def calleeOf(callLike: CallLike): BabelNode = callLike match {
     case c: CallExpression         => c.callee
     case c: OptionalCallExpression => c.callee
     case c: NewExpression          => c.callee
-  }
-
-  /** `import(...)` is an `ImportExpression`, which has no callee node that could be resolved. */
-  private def localCalleeOf(callLike: CallLike): Option[(String, String)] = callLike match {
-    case _: ImportExpression                                          => None
-    case c: (CallExpression | OptionalCallExpression | NewExpression) => resolveLocalCallee(calleeOf(c))
   }
 
   private def createBuiltinStaticCall(
@@ -61,7 +55,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def handleCallNodeArgs(callExpr: CallLike, callExpressionInfo: CallExpressionInfo): Ast = {
     val args      = astForNodes(argumentsOf(callExpr))
     val callNode_ = callNode(callExpr, callExpr.code, callExpressionInfo.callName, DispatchTypes.DYNAMIC_DISPATCH)
-    localCalleeOf(callExpr).foreach { case (name, fullName) =>
+    resolveLocalCallee(calleeOf(callExpr)).foreach { case (name, fullName) =>
       callNode_.name(name).methodFullName(fullName)
     }
     callAst(
@@ -107,32 +101,31 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             CallExpressionInfo(fieldAccessAst, thisTmpNode, member.code)
         }
       case _ =>
+        val receiverAst = astForNodeWithFunctionReference(callLike)
+        val thisNode    = identifierNode(callLike, "this").dynamicTypeHintFullName(typeHintForThisExpression())
+        scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
         val callName = ejsOutputCallName(callLike).getOrElse(callLike.code)
-        callExpressionInfoForReceiver(callLike, astForNodeWithFunctionReference(callLike), callName)
+        CallExpressionInfo(receiverAst, thisNode, callName)
     }
   }
 
-  /** A call on an arbitrary receiver, which is called on `this`; `at` provides the location of that `this`. */
-  private def callExpressionInfoForReceiver(at: BabelNode, receiverAst: Ast, callName: String): CallExpressionInfo = {
-    val thisNode = identifierNode(at, "this").dynamicTypeHintFullName(typeHintForThisExpression())
-    scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-    CallExpressionInfo(receiverAst, thisNode, callName)
+  /** `import(...)` loads a module like `require(...)`: it is statically dispatched and has neither receiver nor base.
+    */
+  protected def astForImportExpression(importExpr: ImportExpression): Ast = {
+    val callNode_ = callNode(importExpr, importExpr.code, ImportCallName, DispatchTypes.STATIC_DISPATCH)
+    callAst(callNode_, astForNodes(argumentsOf(importExpr)))
   }
 
-  protected def astForCallExpression(callExpr: CallExpression | OptionalCallExpression | ImportExpression): Ast =
-    callExpr match {
-      case importExpr: ImportExpression =>
-        val receiverAst = Ast(identifierNode(importExpr, ImportCallName))
-        handleCallNodeArgs(importExpr, callExpressionInfoForReceiver(importExpr, receiverAst, ImportCallName))
-      case call: (CallExpression | OptionalCallExpression) =>
-        val callee     = calleeOf(call)
-        val calleeCode = callee.code
-        if (GlobalBuiltins.builtins.contains(calleeCode)) {
-          createBuiltinStaticCall(call, callee, calleeCode)
-        } else {
-          handleCallNodeArgs(call, callExpressionInfoForCallLikeExpr(callee))
-        }
+  protected def astForCallExpression(callExpr: CallExpression | OptionalCallExpression): Ast = {
+    val callee     = calleeOf(callExpr)
+    val calleeCode = callee.code
+    if (GlobalBuiltins.builtins.contains(calleeCode)) {
+      createBuiltinStaticCall(callExpr, callee, calleeCode)
+    } else {
+      val callExpressionInfo = callExpressionInfoForCallLikeExpr(callee)
+      handleCallNodeArgs(callExpr, callExpressionInfo)
     }
+  }
 
   protected def astForThisExpression(thisExpr: ThisExpression): Ast = {
     val dynamicTypeOption = typeHintForThisExpression(Option(thisExpr)).headOption

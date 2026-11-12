@@ -112,6 +112,25 @@ class TsAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
       shape.importedAs shouldBe Option("shape")
     }
 
+    "export the binding of exported import assignments" in {
+      val cpg = code("""
+        |export import fs = require('fs');
+        |export import shape = A.B;
+        |import local = require('path');
+        |""".stripMargin)
+      cpg.assignment.code("exports\\..*").code.l shouldBe List("exports.fs = fs", "exports.shape = shape")
+      val List(exportFs, exportShape) = cpg.assignment.code("exports\\..*").l
+      exportFs.argument(1).code shouldBe "exports.fs"
+      exportFs.argument(2).code shouldBe "fs"
+      exportFs.lineNumber shouldBe Some(2)
+      exportShape.lineNumber shouldBe Some(3)
+      cpg.call.nameExact("require").inCall.isAssignment.code.l shouldBe List(
+        "var fs = require(\"fs\")",
+        "var shape = require(\"A.B\")",
+        "var local = require(\"path\")"
+      )
+    }
+
     "have correct structure for declared functions" in {
       val cpg        = code("declare function foo(arg: string): string")
       val List(func) = cpg.method("foo").l
