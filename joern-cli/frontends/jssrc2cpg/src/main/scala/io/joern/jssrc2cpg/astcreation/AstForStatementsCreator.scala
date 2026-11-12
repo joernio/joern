@@ -800,7 +800,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case pattern: ArrayPattern  => astForInOfStatementWithArray(forInOfStmt, pattern)
       case id: Identifier         => astForInOfStatementWithIdentifier(forInOfStmt, id)
       case _: Expression          => astForInOfStatementWithExpression(forInOfStmt, loopVariable)
-      case _                      => notHandledYet(forInOfStmt)
     }
   }
 

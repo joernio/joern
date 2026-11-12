@@ -20,6 +20,20 @@ class SimpleAstCreationPassTests extends JsSrc2CpgSuite {
       fileTest.order shouldBe 0
     }
 
+    "have correct structure for dynamic import" in {
+      val cpg = code("""
+        |const m = await import("./x", { with: { type: "json" } });
+        |""".stripMargin)
+      val List(importCall) = cpg.call.nameExact("import").l
+      importCall.code shouldBe """import("./x", { with: { type: "json" } })"""
+      importCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      importCall.lineNumber shouldBe Some(2)
+      importCall.columnNumber shouldBe Some(16)
+      importCall.receiver.isIdentifier.nameExact("import").size shouldBe 1
+      importCall.argument.isLiteral.code.l shouldBe List("\"./x\"")
+      importCall.argument.argumentIndex.l shouldBe List(0, 1, 2)
+    }
+
     "have correct structure for with statement with block" in {
       val cpg = code("""
         |with(foo()) {
