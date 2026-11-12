@@ -75,9 +75,10 @@ trait AstForTypesCreator { this: AstCreator =>
         val (name_, fullName_) = scopeLocalUniqueName(cleanType(typeDefName), fullName(declarator), "")
         Ast(typeDeclNode(declarator, name_, registerType(fullName_), filename, code(d), alias = Option(tpe)))
       case d if parentIsClassDef(d) =>
-        val tpe = typeForIASTDeclarator(declaration, declarator, index)
-        Ast(memberNode(declarator, name, code(declarator), tpe))
-      case d if isAssignmentFromBrokenMacro(d, declarator) && scope.lookupVariable(name).nonEmpty =>
+        val tpe       = typeForIASTDeclarator(declaration, declarator, index)
+        val accessAst = accessModifierTypeFor(declarator.getName).map(modifierNode(declarator, _)).map(Ast(_)).toList
+        Ast(memberNode(declarator, name, code(declarator), tpe)).withChildren(accessAst)
+      case decl if isAssignmentFromBrokenMacro(decl, declarator) && scope.lookupVariable(name).nonEmpty =>
         Ast()
       case _ if declarator.getName.isInstanceOf[ICPPASTQualifiedName] =>
         // Out-of-class static member definition (e.g. `int Foo::bar[N]`).
