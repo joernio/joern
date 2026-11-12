@@ -30,8 +30,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case _ => 2
     }
 
-  protected def createBlockStatementAsts(statements: Seq[BabelNode]): List[Ast] =
-    sortBlockStatements(statements.toList).map(astForNodeWithFunctionReferenceAndCall)
+  protected def createBlockStatementAsts(
+    statements: Seq[BabelNode],
+    astForHandler: BabelNode => Ast = astForNodeWithFunctionReferenceAndCall
+  ): List[Ast] = {
+    sortBlockStatements(statements.toList).map(astForHandler)
+  }
 
   protected def astForWithStatement(withStatement: WithStatement): Ast = {
     val blockNode_ = blockNode(withStatement, withStatement.code, Defines.Any)

@@ -738,4 +738,40 @@ class DataflowTests extends DataFlowCodeToCpgSuite {
       x.lineNumber shouldBe Option(3)
     }
   }
+
+  "Flow through the members of a namespace" should {
+    val cpg = code(
+      """
+        |namespace A.B {
+        |  export function outer(x) { return inner(x); }
+        |  export function inner(x) { return x; }
+        |  export const secret = "s3cr3t";
+        |}
+        |const q = A.B.secret;
+        |function main(p) {
+        |  return A.B.outer(p);
+        |}
+        |""".stripMargin,
+      "a.ts"
+    )
+
+    "link the calls of the namespace members" in {
+      cpg.call.nameExact("outer").methodFullName.l shouldBe List("a.ts::program:A:B:outer")
+      cpg.call.nameExact("inner").methodFullName.l shouldBe List("a.ts::program:A:B:inner")
+    }
+
+    "find the flow of a parameter through the calls of the namespace members" in {
+      def source = cpg.method.nameExact("main").parameter.nameExact("p")
+      def sink   = cpg.method.nameExact("main").methodReturn
+      sink.reachableByFlows(source).map(flowToResultPairs).toSetMutable shouldBe
+        Set(List(("main(this, p)", 8), ("A.B.outer(p)", 9), ("return A.B.outer(p)", 9), ("RET", 8)))
+    }
+
+    "find the flow of an exported value to its use via the path of the namespace" in {
+      def source = cpg.literal.codeExact("\"s3cr3t\"")
+      def sink   = cpg.identifier.nameExact("q")
+      sink.reachableByFlows(source).map(flowToResultPairs).toSetMutable shouldBe
+        Set(List(("A.B.secret = \"s3cr3t\"", 5), ("const q = A.B.secret", 7)))
+    }
+  }
 }
