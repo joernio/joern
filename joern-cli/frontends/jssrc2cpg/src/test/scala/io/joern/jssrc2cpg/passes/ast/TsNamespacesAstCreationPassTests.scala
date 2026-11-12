@@ -2,6 +2,7 @@ package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.Local
 import io.shiftleft.semanticcpg.language.*
 
 /** A namespace is lowered to an object that has the exported members of the namespace as properties. */
@@ -41,7 +42,7 @@ class TsNamespacesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
         List("Test0.ts::program:A:B:C:Foo:<init>", "Test0.ts::program:A:B:C:Foo:run", "Test0.ts::program:A:B:C:f")
     }
 
-    "not declare the exported members as variables" in {
+    "assign the exported members to the object and not declare them as variables" in {
       val cpg = code("""
           |namespace A {
           |  export class Foo {}
@@ -49,20 +50,21 @@ class TsNamespacesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
           |  export const x = 1;
           |}
           |""".stripMargin)
-      cpg.local.name.sorted.l shouldBe List("A", "_tmp_0")
-      cpg.identifier.nameExact("Foo", "f", "x").l shouldBe empty
+      cpg.assignment.code.l shouldBe List("A = {}", "A.f = f", "A.Foo = class Foo", "A.x = 1")
+      cpg.local.name.l shouldBe List("A", "_tmp_0")
+      cpg.identifier.name.distinct.sorted.l shouldBe List("A", "_tmp_0")
     }
 
-    "not export the exported members of a namespace from the file" in {
+    "keep the exported members of a namespace inside of the namespace and not export them from the file" in {
       val cpg = code("""
           |namespace A {
           |  export class Foo {}
           |}
           |""".stripMargin)
-      cpg.identifier.nameExact("exports").l shouldBe empty
+      cpg.assignment.target.code.l shouldBe List("A", "A.Foo")
     }
 
-    "not assign the members that are not exported to the object of the namespace" in {
+    "assign the members that are not exported to a private object and not to the object of the namespace" in {
       val cpg = code("""
           |namespace A {
           |  const hidden = 1;
@@ -70,16 +72,16 @@ class TsNamespacesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
           |  export const visible = 2;
           |}
           |""".stripMargin)
-      cpg.assignment.code.l should contain allOf (
-        "A.visible = 2",
+      cpg.assignment.code.l shouldBe List(
+        "A = {}",
+        "_private_0 = {}",
+        "_private_0.helper = helper",
         "_private_0.hidden = 1",
-        "_private_0.helper = helper"
+        "A.visible = 2"
       )
-      cpg.assignment.target.code.l should not contain "A.hidden"
-      cpg.assignment.target.code.l should not contain "A.helper"
     }
 
-    "not declare the members that are not exported as variables" in {
+    "assign the members that are not exported to a private object and not declare them as variables" in {
       val cpg = code("""
           |namespace A {
           |  class Hidden {}
@@ -88,8 +90,16 @@ class TsNamespacesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
           |  export const visible = 2;
           |}
           |""".stripMargin)
-      cpg.local.name.sorted.l shouldBe List("A", "_private_0", "_tmp_0", "_tmp_1")
-      cpg.identifier.nameExact("Hidden", "helper", "value").l shouldBe empty
+      cpg.assignment.code.l shouldBe List(
+        "A = {}",
+        "_private_0 = {}",
+        "_private_0.helper = helper",
+        "_private_0.Hidden = class Hidden",
+        "_private_0.value = 1",
+        "A.visible = 2"
+      )
+      cpg.local.name.l shouldBe List("A", "_tmp_0", "_private_0", "_tmp_1")
+      cpg.identifier.name.distinct.sorted.l shouldBe List("A", "_private_0", "_tmp_0", "_tmp_1")
     }
 
     "lower the reference to a member that is not exported to the property access of the private object" in {
@@ -107,7 +117,7 @@ class TsNamespacesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
         List("_private_0.helper")
     }
 
-    "not make a member that is not exported visible outside of the namespace" in {
+    "keep a member that is not exported out of the reach of the code outside of the namespace" in {
       val cpg = code("""
           |namespace A {
           |  class Hidden {}
@@ -115,9 +125,19 @@ class TsNamespacesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
           |}
           |const h = new Hidden();
           |""".stripMargin)
-      cpg.assignment.code.l should contain("_private_0.Hidden = class Hidden")
-      cpg.assignment.target.isIdentifier.nameExact("Hidden").l shouldBe empty
-      cpg.call.codeExact("new Hidden()").receiver.isIdentifier.name.l shouldBe List("Hidden")
+      cpg.assignment.code.l shouldBe List(
+        "A = {}",
+        "_private_0 = {}",
+        "_private_0.Hidden = class Hidden",
+        "A.visible = 2",
+        "const h = new Hidden()",
+        "_tmp_2 = .alloc"
+      )
+      // the only `Hidden` is the one outside of the namespace, which is not the class
+      val List(hidden) = cpg.identifier.nameExact("Hidden").l
+      hidden.lineNumber shouldBe Some(6)
+      hidden.refsTo.collectAll[Local].code.l shouldBe List("Hidden")
+      cpg.typeDecl.nameExact("Hidden").fullName.l shouldBe List("Test0.ts::program:A:Hidden")
     }
 
     "lower the reference to an exported member inside of the namespace to the property access" in {
@@ -179,8 +199,14 @@ class TsNamespacesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
           |  export const y = B.x;
           |}
           |""".stripMargin)
-      cpg.assignment.code.l should contain allOf ("_private_0.B = {}", "_private_0.B.x = 1", "A.y = _private_0.B.x")
-      cpg.local.nameExact("B").l shouldBe empty
+      cpg.assignment.code.l shouldBe List(
+        "A = {}",
+        "_private_0 = {}",
+        "_private_0.B = {}",
+        "_private_0.B.x = 1",
+        "A.y = _private_0.B.x"
+      )
+      cpg.local.name.l shouldBe List("A", "_tmp_0", "_private_0", "_tmp_1", "_tmp_2")
     }
 
     "extend an existing class instead of replacing it" in {
@@ -232,9 +258,15 @@ class TsNamespacesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
           |}
           |""".stripMargin)
       cpg.typeDecl.nameExact("E").fullName.l shouldBe List("Test0.ts::program:A:E")
-      cpg.assignment.code.l should contain allOf ("A.E = enum E", "_private_0.Hidden = enum Hidden")
-      cpg.assignment.code.l should contain allOf ("A.x = A.E.X", "A.y = _private_0.Hidden.Y")
-      cpg.identifier.nameExact("E", "Hidden").l shouldBe empty
+      cpg.assignment.code.l shouldBe List(
+        "A = {}",
+        "_private_0 = {}",
+        "A.E = enum E",
+        "_private_0.Hidden = enum Hidden",
+        "A.x = A.E.X",
+        "A.y = _private_0.Hidden.Y"
+      )
+      cpg.identifier.name.distinct.sorted.l shouldBe List("A", "_private_0", "_tmp_0", "_tmp_1")
     }
 
     "assign a decorated class to the property" in {
@@ -244,13 +276,18 @@ class TsNamespacesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
           |  @dec() class Hidden {}
           |}
           |""".stripMargin)
-      cpg.assignment.code.l should contain allOf (
+      cpg.assignment.code.l shouldBe List(
+        "A = {}",
+        "_private_0 = {}",
         "A.D = Test0.ts::program:A:D:<init>",
-        "_private_0.Hidden = Test0.ts::program:A:Hidden:<init>"
+        "_tmp_2 = __ecma.Array.factory()",
+        "_private_0.Hidden = Test0.ts::program:A:Hidden:<init>",
+        "_tmp_3 = __ecma.Array.factory()"
       )
       cpg.call.nameExact("__decorate").code.l shouldBe
         List("__decorate([dec()], A.D)", "__decorate([dec()], _private_0.Hidden)")
-      cpg.identifier.nameExact("D", "Hidden").l shouldBe empty
+      cpg.identifier.name.distinct.sorted.l shouldBe
+        List("A", "__decorate", "_private_0", "_tmp_0", "_tmp_1", "_tmp_2", "_tmp_3", "dec", "this")
     }
 
     "assign the decorated members of a class to the property" in {
@@ -274,24 +311,36 @@ class TsNamespacesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
           |  export const p = path;
           |}
           |""".stripMargin)
-      cpg.assignment.code.l should contain allOf (
+      cpg.assignment.code.l shouldBe List(
+        "A = {}",
+        "_private_0 = {}",
         "A.fs = require(\"fs\")",
         "_private_0.path = require(\"path\")",
         "A.f = A.fs",
         "A.p = _private_0.path"
       )
-      cpg.local.nameExact("fs", "path").l shouldBe empty
+      cpg.local.name.l shouldBe List("A", "_tmp_0", "_private_0", "_tmp_1")
       cpg.imports.importedEntity.l shouldBe List("fs", "path")
       cpg.imports.importedAs.l shouldBe List("A.fs", "_private_0.path")
     }
 
-    "declare an exported variable with a pattern as usual and assign it to the property" in {
+    "copy the variables of an exported destructuring declaration to the object of the namespace" in {
       val cpg = code("""
           |namespace A {
           |  export const { p, q } = lib;
+          |  export const r = p;
           |}
           |""".stripMargin)
-      cpg.assignment.code.l should contain allOf ("p = _tmp_1.p", "A.p = p", "A.q = q")
+      // `p` and `q` are variables of the namespace: they are declared by the destructuring and copied afterwards
+      cpg.assignment.code.l shouldBe List(
+        "A = {}",
+        "_tmp_1 = lib",
+        "p = _tmp_1.p",
+        "q = _tmp_1.q",
+        "A.p = p",
+        "A.q = q",
+        "A.r = p"
+      )
     }
 
     "assign the exported function declaration as method reference" in {
@@ -333,7 +382,8 @@ class TsNamespacesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
           |}
           |""".stripMargin)
       cpg.assignment.code.l shouldBe List("_private_0 = {}", "_private_0.hidden = 1")
-      cpg.local.nameExact("A").l shouldBe empty
+      cpg.local.name.l shouldBe List("_private_0", "_tmp_0")
+      cpg.namespaceBlock.nameExact("A").fullName.l shouldBe List("Test0.ts::program:A")
     }
 
     "support overloaded exported functions" in {
@@ -358,8 +408,10 @@ class TsNamespacesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
           |  }
           |}
           |""".stripMargin)
-      cpg.assignment.code.l shouldBe empty
-      cpg.local.nameExact("A").l shouldBe empty
+      // the namespaces exist, but they are only declarations: nothing is assigned and `A` is no variable
+      cpg.namespaceBlock.nameNot("<global>").fullName.l shouldBe List("Test0.ts::program:A", "Test0.ts::program:A:B")
+      cpg.local.name.l shouldBe List("x")
+      cpg.assignment.code.l shouldBe List()
     }
 
     "not create an object for ambient module declarations" in {
@@ -374,7 +426,10 @@ class TsNamespacesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
           |  export function g(): void;
           |}
           |""".stripMargin)
-      cpg.assignment.code.l shouldBe empty
+      cpg.namespaceBlock.nameNot("<global>").fullName.sorted.l shouldBe
+        List("Test0.ts::program:\"foo\"", "Test0.ts::program:\"foo\":N", "Test0.ts::program:global")
+      cpg.local.name.l shouldBe List("x")
+      cpg.assignment.code.l shouldBe List()
     }
 
     "export an exported namespace with a path from the file by its first name" in {
@@ -383,8 +438,7 @@ class TsNamespacesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
           |  export class Foo {}
           |}
           |""".stripMargin)
-      cpg.assignment.code.l should contain allOf ("A = { B: {} }", "A.B.Foo = class Foo", "exports.A = A")
-      cpg.assignment.code.l should not contain "exports.A.B = A.B"
+      cpg.assignment.code.l shouldBe List("A = { B: {} }", "_tmp_1.B = {}", "A.B.Foo = class Foo", "exports.A = A")
     }
   }
 
