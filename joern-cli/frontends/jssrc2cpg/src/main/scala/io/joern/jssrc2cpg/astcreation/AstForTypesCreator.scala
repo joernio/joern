@@ -27,11 +27,18 @@ import io.shiftleft.codepropertygraph.generated.{
 
 import java.util
 import java.util.Collections
+import scala.collection.mutable
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   /** The namespaces whose body is processed, the innermost one on top. */
   private val moduleScopes = new Stack[ModuleScope]()
+
+  /** The paths of the objects of the namespaces that exist already, by the variable of the root of a path. A namespace
+    * extends the longest prefix of the path of its object that exists instead of replacing it, see
+    * [[declareModuleBinding]].
+    */
+  private val moduleObjectPaths = mutable.Map.empty[NewNode, Set[List[String]]]
 
   protected def astForTypeAlias(
     alias: DeclareTypeAlias | TypeAlias | TSTypeAliasDeclaration | ObjectPattern | TSTypeLiteral
@@ -1244,13 +1251,13 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     )
   }
 
-  /** The object of a namespace. It is the property path `rootPath` followed by the nested namespaces `B` and `C` of
-    * `namespace A.B.C {}`. The root is either the variable `A`, or a property of the object of the enclosing namespace.
-    * `isNew` is false if the variable `A` already exists in scope, e.g. a class or an earlier namespace that is merged
-    * with this one.
+  /** The object of a namespace. Its property path is `existingPath` followed by the nested namespaces of `missing` that
+    * this namespace creates: `B` and `C` of `namespace A.B.C {}` if only the variable `A` exists. `existingPath` is the
+    * variable of a class or of an earlier namespace, or the object of an earlier nested namespace that is merged with
+    * this one. It is empty if this namespace declares the root variable of the path itself.
     */
-  private case class ModuleBinding(rootPath: List[String], nested: List[String], isNew: Boolean) {
-    def objectPath: List[String] = rootPath ++ nested
+  private case class ModuleBinding(existingPath: List[String], missing: List[String]) {
+    def objectPath: List[String] = existingPath ++ missing
   }
 
   /** A namespace whose body is processed and the exported members that are accessed as properties of its object. */
@@ -1274,23 +1281,55 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     astForModulePart(tsModuleDecl, tsModuleDecl, first, nested, binding, ambient)
   }
 
+  /** The binding of the object of a namespace at `path` to the longest prefix of the path that exists already: the
+    * `basePath`, or the object of an earlier namespace under the same root variable. The path is registered for the
+    * namespaces that follow this one.
+    */
+  private def createModuleBinding(
+    rootVariable: Option[NewNode],
+    basePath: List[String],
+    path: List[String]
+  ): ModuleBinding = {
+    val registered = rootVariable.flatMap(moduleObjectPaths.get).getOrElse(Set.empty)
+    val existing   = (path.length until basePath.length by -1)
+      .find(length => registered.contains(path.take(length)))
+      .map(path.take)
+      .getOrElse(basePath)
+    rootVariable.foreach { node =>
+      (2 to path.length).foreach { length =>
+        moduleObjectPaths.updateWith(node)(paths => Option(paths.getOrElse(Set.empty) + path.take(length)))
+      }
+    }
+    ModuleBinding(existing, path.drop(existing.length))
+  }
+
   private def declareModuleBinding(
     tsModuleDecl: TSModuleDeclaration,
     first: BabelNode,
     nested: List[BabelNode],
     enclosingObjectPath: Option[List[String]]
   ): ModuleBinding = {
-    val name = first.code
+    val name        = first.code
+    val nestedNames = nested.map(_.code)
     enclosingObjectPath match {
-      case Some(enclosingPath) => ModuleBinding(enclosingPath :+ name, nested.map(_.code), isNew = true)
-      case None                =>
-        val isNew = scope.lookupVariable(name).isEmpty
-        if (isNew) {
-          val localNode_ = localNode(tsModuleDecl, name, name, Defines.Any).order(0)
-          scope.addVariable(name, localNode_, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
-          diffGraph.addEdge(localAstParentStack.head, localNode_, EdgeTypes.AST)
+      // the object of the enclosing namespace exists; the path of this one may extend the objects of earlier
+      // namespaces under the same root
+      case Some(enclosingPath) =>
+        createModuleBinding(
+          scope.lookupVariable(enclosingPath.head).map(_._1),
+          enclosingPath,
+          (enclosingPath :+ name) ++ nestedNames
+        )
+      case None =>
+        scope.lookupVariable(name) match {
+          case Some((rootVariable, _)) =>
+            createModuleBinding(Option(rootVariable), List(name), name +: nestedNames)
+          case None =>
+            val localNode_ = localNode(tsModuleDecl, name, name, Defines.Any).order(0)
+            scope.addVariable(name, localNode_, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
+            diffGraph.addEdge(localAstParentStack.head, localNode_, EdgeTypes.AST)
+            createModuleBinding(Option(localNode_), Nil, name +: nestedNames)
         }
-        ModuleBinding(List(name), nested.map(_.code), isNew)
     }
   }
 
@@ -1383,12 +1422,13 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val exported     = Collections.newSetFromMap(new util.IdentityHashMap[BabelNode, java.lang.Boolean]())
     block.body.flatMap(exportedDeclaration).foreach(exported.add)
 
-    val inline = if (binding.isDefined) {
-      declarations.filter(exported.contains).flatMap(inlineMemberNames)
-    } else { Nil }
+    val inline =
+      if (binding.isDefined) { declarations.filter(exported.contains).flatMap(inlineMemberNames) }
+      else { Nil }
     val objectAsts   = binding.toList.flatMap(astsForModuleObjectCreation(tsModuleDecl, _))
-    val privateNames = if (ambient) { Nil }
-    else { declarations.filterNot(exported.contains).flatMap(inlineMemberNames) }
+    val privateNames =
+      if (ambient) { Nil }
+      else { declarations.filterNot(exported.contains).flatMap(inlineMemberNames) }
 
     val privatePath =
       Option.when(privateNames.nonEmpty)(List(declarePrivateModuleObject(tsModuleDecl)))
@@ -1468,6 +1508,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
 
     declaration match {
+      // astForClass lowers a class with decorators, so that the decorations reference the class through the
+      // property; a class without decorators is assigned to the property directly
       case clazz: ClassDeclaration if inlineMemberNames(clazz).nonEmpty && !hasDecorators(clazz) =>
         memberAssignment(clazz.id.get.name, astForClass(clazz, shouldCreateAssignmentCall = false))
       case clazz: ClassDeclaration if inlineMemberNames(clazz).nonEmpty =>
@@ -1527,19 +1569,18 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
   }
 
-  /** `A = { B: { C: {} } }` for `namespace A.B.C {}`. If `A` exists already, only the nested namespaces are assigned:
-    * `A.B = { C: {} }`.
+  /** `A = { B: { C: {} } }` for `namespace A.B.C {}`. If a prefix of the path exists already, e.g. the variable `A` of
+    * a class or the object `A.B` of an earlier namespace, only the missing nested namespaces are assigned to it:
+    * `A.B = { C: {} }`, or `A.B.C = {}` if `A.B` exists already too.
     */
   private def astsForModuleObjectCreation(tsModuleDecl: TSModuleDeclaration, binding: ModuleBinding): List[Ast] = {
-    val (targetPath, nestedPath) = if (binding.isNew) { (binding.rootPath, binding.nested) }
-    else { (binding.rootPath ++ binding.nested.take(1), binding.nested.drop(1)) }
-
-    if (!binding.isNew && binding.nested.isEmpty) { Nil }
-    else {
-      val valueAst = nestedPath.reverse.foldLeft(astForObject(tsModuleDecl)) { (inner, name) =>
-        astForObject(tsModuleDecl, Option(name -> inner))
-      }
-      List(astForObjectAssignment(tsModuleDecl, targetPath, valueAst))
+    binding.missing match {
+      case Nil           => Nil
+      case first :: rest =>
+        val valueAst = rest.reverse.foldLeft(astForObject(tsModuleDecl)) { (inner, name) =>
+          astForObject(tsModuleDecl, Option(name -> inner))
+        }
+        List(astForObjectAssignment(tsModuleDecl, binding.existingPath :+ first, valueAst))
     }
   }
 

@@ -243,9 +243,13 @@ class TsNamespacesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
           |namespace A.B {
           |  export const y = 2;
           |}
+          |namespace A.B.C {
+          |  export const z = 3;
+          |}
           |""".stripMargin)
-      cpg.assignment.code.l should contain allOf ("A = {}", "A.B = {}", "A.B.y = 2")
+      cpg.assignment.code.l should contain allOf ("A = {}", "A.B = {}", "A.B.y = 2", "A.B.C = {}", "A.B.C.z = 3")
       cpg.assignment.code("A = .*").size shouldBe 1
+      cpg.assignment.code("A.B = .*").size shouldBe 1
     }
 
     "assign an enum as type reference to the property" in {

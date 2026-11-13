@@ -359,7 +359,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val _dependencyNode = dependencyNode(name, referenceName, ImportKeyword)
     diffGraph.addNode(_dependencyNode)
     val assignment = astForRequireCallFromImport(name, None, referenceName, isImportN = false, node, destinationPath)
-    // an assignment to a property is not marked as import by its code, so the imports pass creates its import node
+    // an assignment to a property has no `var ` prefix in its code, so the imports pass finds it and creates its
+    // import node; the import node of an assignment to a new variable is created here
     if (destinationPath.isEmpty) {
       val call       = assignment.nodes.collectFirst { case x: NewCall if x.name == "require" => x }
       val importNode = createImportNodeAndAttachToCall(node, referenceName, name, call)
