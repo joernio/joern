@@ -209,8 +209,8 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   def astForAnnotationEntry(entry: KtAnnotationEntry): Ast = {
-    val typeFullName = nameRenderer
-      .typeFullName(bindingUtils.getAnnotationDesc(entry).getType)
+    val typeFullName = Option(bindingUtils.getAnnotationDesc(entry))
+      .flatMap(desc => nameRenderer.typeFullName(desc.getType))
       .orElse(fullNameByImportPath(entry.getTypeReference, entry.getContainingKtFile))
       .getOrElse(s"${Defines.UnresolvedNamespace}.${entry.getShortName.toString}")
     registerType(typeFullName)

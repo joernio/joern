@@ -255,8 +255,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val loopParameterNextAssignmentAst =
       callAst(loopParameterNextAssignment, List(Ast(loopParameterIdentifier), iteratorNextCallAst))
 
-    val stmtAsts = astsForExpression(expr.getBody)
-    setArgumentIndices(stmtAsts.lastOption.toList, start = 3)
+    val stmtAsts                = astsForExpression(expr.getBody)
     val controlStructureBody    = blockNode(expr.getBody, "", "")
     val controlStructureBodyAst =
       blockAst(controlStructureBody, List(loopParameterAst, loopParameterNextAssignmentAst) ++ stmtAsts)
@@ -298,7 +297,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
         .withChildren(annotations.map(astForAnnotationEntry))
     } else {
       logger.warn("Could not create ASTs for condition-then-else of conditional.")
-      astForUnknown(expr)
+      astForUnknown(expr, annotations)
     }
   }
 
@@ -319,12 +318,15 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       case Some(subjectExpression) =>
         val subjectAsts = astsForExpression(subjectExpression)
         subjectExpression match {
-          case p: KtProperty =>
-            val block = blockNode(p, "", "").argumentIndex(1)
-            blockAst(block, subjectAsts.headOption.toList)
+          case property: KtProperty =>
+            val block = blockNode(property, "", "")
+            blockAst(block, subjectAsts.toList)
           case _ =>
-            setArgumentIndices(subjectAsts.take(1))
-            subjectAsts.headOption.getOrElse(Ast())
+            subjectAsts.toList match {
+              case Nil         => Ast()
+              case only :: Nil => only
+              case many        => blockAst(blockNode(subjectExpression, "", ""), many)
+            }
         }
       case _ =>
         logger.warn(s"Subject Expression empty in this file '$relativizedPath'.")
@@ -432,14 +434,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   private def astsForWhenEntry(entry: KtWhenEntry, argIdx: Int): Seq[Ast] = {
     // TODO: get all conditions with entry.getConditions()
     val name =
-      if (entry.getElseKeyword == null) Constants.DefaultCaseNode
-      else s"${Constants.CaseNodePrefix}$argIdx"
+      if (entry.getElseKeyword == null) s"${Constants.CaseNodePrefix}$argIdx"
+      else Constants.DefaultCaseNode
     val jumpNode = jumpTargetNode(entry, name, code(entry), Some(Constants.CaseNodeParserTypeName))
-      .argumentIndex(argIdx)
-    val exprAsts = astsForExpression(entry.getExpression).take(1)
-    setArgumentIndices(exprAsts, start = argIdx + 1)
-    val exprNode = exprAsts.headOption.getOrElse(Ast())
-    Seq(Ast(jumpNode), exprNode)
+    val exprAsts = astsForExpression(entry.getExpression)
+    Seq(Ast(jumpNode), wrapMultipleInBlock(exprAsts, line(entry.getExpression)))
   }
 
   private def astForTryAsStatement(expr: KtTryExpression): Ast = {
@@ -491,7 +490,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       node.order(1)
     }
     val node            = controlStructureNode(expr, ControlStructureTypes.THROW, code(expr))
-    val astWithChildren = Ast(node).withChildren(thrownValue)
+    val astWithChildren = Ast(node)
+      .withChildren(thrownValue)
+      .withChildren(annotations.map(astForAnnotationEntry))
     thrownValue.headOption.flatMap(_.root) match {
       case Some(thrownRoot) => astWithChildren.withArgEdge(node, thrownRoot)
       case None             => astWithChildren

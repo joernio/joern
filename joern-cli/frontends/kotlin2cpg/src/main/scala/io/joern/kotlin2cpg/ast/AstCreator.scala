@@ -323,7 +323,7 @@ class AstCreator(
   ): Seq[Ast] = {
     expr match {
       case typedExpr: KtAnnotatedExpression =>
-        astsForExpression(typedExpr.getBaseExpression, typedExpr.getAnnotationEntries.asScala.toSeq)
+        astsForExpression(typedExpr.getBaseExpression, typedExpr.getAnnotationEntries.asScala.toSeq, argTypeFallback)
       case typedExpr: KtArrayAccessExpression       => Seq(astForArrayAccess(typedExpr, annotations))
       case typedExpr: KtAnonymousInitializer        => astsForExpression(typedExpr.getBody)
       case typedExpr: KtBinaryExpression            => astsForBinaryExpr(typedExpr, annotations)
@@ -334,24 +334,26 @@ class AstCreator(
       case typedExpr: KtConstantExpression          => Seq(astForLiteral(typedExpr, annotations))
       case typedExpr: KtClass                       => Seq(astForClassOrObject(typedExpr, None, annotations))
       case typedExpr: KtClassLiteralExpression      => Seq(astForClassLiteral(typedExpr, annotations))
-      case typedExpr: KtSafeQualifiedExpression     => Seq(astForQualifiedExpression(typedExpr, annotations))
+      case typedExpr: KtSafeQualifiedExpression     => astForQualifiedExpression(typedExpr, annotations)
       case typedExpr: KtContinueExpression          => Seq(astForContinue(typedExpr))
       // note: annotations are not currently (Kotlin 1.9.0) supported on destructuring declarations
       case typedExpr: KtDestructuringDeclaration => astsForDestructuringDeclaration(typedExpr)
-      case typedExpr: KtDotQualifiedExpression   => Seq(astForQualifiedExpression(typedExpr, annotations))
+      case typedExpr: KtDotQualifiedExpression   => astForQualifiedExpression(typedExpr, annotations)
       case typedExpr: KtDoWhileExpression        => Seq(astForDoWhile(typedExpr, annotations))
       case typedExpr: KtForExpression            => Seq(astForFor(typedExpr, annotations))
       case typedExpr: KtIfExpression             => Seq(astForIf(typedExpr, annotations))
       case typedExpr: KtIsExpression             => Seq(astForIsExpression(typedExpr, annotations))
-      case typedExpr: KtLabeledExpression        => astsForExpression(typedExpr.getBaseExpression, annotations)
-      case typedExpr: KtLambdaExpression         => Seq(astForLambda(typedExpr, annotations))
+      case typedExpr: KtLabeledExpression        =>
+        astsForExpression(typedExpr.getBaseExpression, annotations, argTypeFallback)
+      case typedExpr: KtLambdaExpression => Seq(astForLambda(typedExpr, annotations))
       case typedExpr: KtNameReferenceExpression if typedExpr.getReferencedNameElementType == KtTokens.IDENTIFIER =>
         Seq(astForNameReference(typedExpr, annotations))
       case _: KtNameReferenceExpression             => Seq()
       case typedExpr: KtCallableReferenceExpression =>
         Seq(astForCallableReferenceExpression(typedExpr, annotations, argTypeFallback))
-      case typedExpr: KtObjectLiteralExpression       => Seq(astForObjectLiteralExpr(typedExpr, annotations))
-      case typedExpr: KtParenthesizedExpression       => astsForExpression(typedExpr.getExpression, annotations)
+      case typedExpr: KtObjectLiteralExpression => Seq(astForObjectLiteralExpr(typedExpr, annotations))
+      case typedExpr: KtParenthesizedExpression =>
+        astsForExpression(typedExpr.getExpression, annotations, argTypeFallback)
       case typedExpr: KtPostfixExpression             => Seq(astForPostfixExpression(typedExpr, annotations))
       case typedExpr: KtPrefixExpression              => Seq(astForPrefixExpression(typedExpr, annotations))
       case typedExpr: KtProperty if typedExpr.isLocal =>
@@ -530,9 +532,8 @@ class AstCreator(
   protected def astDerivedFullNameWithSignature(expr: KtQualifiedExpression, argAsts: List[Ast]): (String, String) = {
     val astDerivedMethodFullName = expr.getSelectorExpression match {
       case expression: KtCallExpression =>
-        val receiverPlaceholderType = Defines.UnresolvedNamespace
-        val shortName               = expression.getFirstChild.getText
-        s"$receiverPlaceholderType.$shortName"
+        val shortName = expression.getFirstChild.getText
+        s"${receiverNamespace(expr)}.$shortName"
       case _: KtNameReferenceExpression =>
         Operators.fieldAccess
       case _ =>
@@ -542,6 +543,21 @@ class AstCreator(
 
     val astDerivedSignature = s"${Defines.UnresolvedSignature}(${argAsts.size})"
     (astDerivedMethodFullName, astDerivedSignature)
+  }
+
+  private def receiverNamespace(expr: KtQualifiedExpression): String = {
+    val receiver     = expr.getReceiverExpression
+    val importedName = receiver match {
+      case nameRef: KtNameReferenceExpression =>
+        val receiverName = nameRef.getText
+        nameRef.getContainingKtFile.getImportList.getImports.asScala.collectFirst {
+          case directive if Option(directive.getImportedName).map(_.toString).contains(receiverName) =>
+            Option(directive.getImportPath).map(_.getPathStr)
+        }.flatten
+      case _ => None
+    }
+
+    exprTypeFullName(receiver).orElse(importedName).getOrElse(Defines.UnresolvedNamespace)
   }
 
   protected def astsForKtCallExpressionArguments(callExpr: KtCallExpression): List[Ast] = {
