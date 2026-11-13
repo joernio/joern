@@ -496,4 +496,32 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     cpg.call("evaluator").methodFullName.head shouldBe "Test0.js::program:evaluator"
   }
 
+  "constructors of classes that are exported from a namespace" should {
+    val cpg = code(
+      """
+        |namespace A.B.C {
+        |  export class Foo {}
+        |}
+        |namespace N {
+        |  export class Bar {}
+        |}
+        |let foo = new A.B.C.Foo();
+        |let bar = new N.Bar();
+        |let invalidFoo = new Foo();
+        |let invalidBar = new Bar();
+        |""".stripMargin,
+      "a.ts"
+    )
+
+    "be resolved if accessed via the path of the namespace" in {
+      cpg.call.codeExact("new A.B.C.Foo()").methodFullName.l shouldBe List("a.ts::program:A:B:C:Foo:<init>")
+      cpg.call.codeExact("new N.Bar()").methodFullName.l shouldBe List("a.ts::program:N:Bar:<init>")
+    }
+
+    "not be resolved if accessed without the path of the namespace" in {
+      cpg.call.codeExact("new Foo()").methodFullName.l shouldBe List("<unknownFullName>")
+      cpg.call.codeExact("new Bar()").methodFullName.l shouldBe List("<unknownFullName>")
+    }
+  }
+
 }

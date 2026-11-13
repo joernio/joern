@@ -41,13 +41,28 @@ class TsAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
         |}
         |""".stripMargin)
       cpg.assignment.code.l shouldBe List(
-        "_tmp_1 = [1, 2]",
-        "_tmp_0 = __ecma.Array.factory()",
-        "a = _tmp_1[0]",
-        "b = _tmp_1[1]",
-        "exports.a = a",
-        "exports.b = b"
+        "M = {}",
+        "_tmp_2 = [1, 2]",
+        "_tmp_1 = __ecma.Array.factory()",
+        "a = _tmp_2[0]",
+        "b = _tmp_2[1]",
+        "M.a = a",
+        "M.b = b"
       )
+    }
+
+    "not leak the parameters of overloaded function signatures into the surrounding scope" in {
+      val cpg = code("""
+        |function over(a: string): void;
+        |function over(a: any): void {}
+        |class C {
+        |  m(a: string): void;
+        |  m(a: any): void {}
+        |}
+        |over(this);
+        |""".stripMargin)
+      cpg.method.nameExact(":program").ast.isIdentifier.nameExact("this").refsTo.method.fullName.toSet shouldBe
+        Set("Test0.ts::program")
     }
 
     "have correct structure for binding pattern" in {

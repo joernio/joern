@@ -9,7 +9,6 @@ import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
   NewCall,
-  NewIdentifier,
   NewMethod,
   NewModifier,
   NewNamespaceBlock,
@@ -26,7 +25,20 @@ import io.shiftleft.codepropertygraph.generated.{
   PropertyNames
 }
 
+import java.util
+import java.util.Collections
+import scala.collection.mutable
+
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+
+  /** The namespaces whose body is processed, the innermost one on top. */
+  private val moduleScopes = new Stack[ModuleScope]()
+
+  /** The paths of the objects of the namespaces that exist already, by the variable of the root of a path. A namespace
+    * extends the longest prefix of the path of its object that exists instead of replacing it, see
+    * [[declareModuleBinding]].
+    */
+  private val moduleObjectPaths = mutable.Map.empty[NewNode, Set[List[String]]]
 
   protected def astForTypeAlias(
     alias: DeclareTypeAlias | TypeAlias | TSTypeAliasDeclaration | ObjectPattern | TSTypeLiteral
@@ -607,9 +619,18 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     methodAst(methodNode_, Nil, Ast(blockNode).withChildren(calls), methodReturn, modifiers)
   }
 
+  /** The type declaration of the class and its members are always created in the scope where the class is declared,
+    * e.g. below of the namespace for a class of a namespace. Only the target of the synthetic assignment of the class
+    * is different for a class of a namespace.
+    *
+    * @param classPath
+    *   the path of the property that the class is assigned to instead of the variable that is named like the class, see
+    *   [[astForModuleBlock]]. It is only used if `shouldCreateAssignmentCall` is set.
+    */
   protected def astForClass(
     clazz: ClassDeclaration | ClassExpression | DeclareClass,
-    shouldCreateAssignmentCall: Boolean = false
+    shouldCreateAssignmentCall: Boolean = false,
+    classPath: Option[List[String]] = None
   ): Ast = {
     val (typeName, typeFullName) = calcTypeNameAndFullName(clazz)
     registerType(typeFullName)
@@ -710,30 +731,50 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     if (shouldCreateAssignmentCall) {
       // return a synthetic assignment to enable tracing of the implicitly created identifier for
       // the class definition assigned to its constructor
-      val classIdNode = identifierNode(clazz, typeName, typeName, Defines.Any, Seq(constructorNode.fullName))
+      // a reference to the class, with the type hint of its constructor if requested
+      def classRef(withTypeHint: Boolean): Ast = classPath match {
+        case Some(path) => astForModuleMemberAccess(clazz, path)
+        case None       =>
+          val typeHints = if (withTypeHint) {
+            Seq(constructorNode.fullName)
+          } else {
+            Seq.empty
+          }
+          Ast(identifierNode(clazz, typeName, typeName, Defines.Any, typeHints))
+      }
 
-      val idLocal = localNode(clazz, typeName, typeName, Defines.Any).order(0)
-      diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
-      scope.addVariable(typeName, idLocal, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
-      scope.addVariableReference(typeName, classIdNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-
-      val assignmentAst = createAssignmentCallAst(
-        classIdNode,
-        typeRefNode_,
-        s"$typeName = ${constructorNode.fullName}",
-        clazz.lineNumber,
-        clazz.columnNumber
-      )
+      val assignmentAst = classPath match {
+        case Some(path) =>
+          val targetAst = astForModuleMemberAccess(clazz, path)
+          createAssignmentCallAst(
+            targetAst,
+            Ast(typeRefNode_),
+            s"${codeOf(targetAst.nodes.head)} = ${constructorNode.fullName}",
+            clazz.lineNumber,
+            clazz.columnNumber
+          )
+        case None =>
+          val classIdNode = identifierNode(clazz, typeName, typeName, Defines.Any, Seq(constructorNode.fullName))
+          val idLocal     = localNode(clazz, typeName, typeName, Defines.Any).order(0)
+          diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
+          scope.addVariable(typeName, idLocal, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
+          scope.addVariableReference(typeName, classIdNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+          createAssignmentCallAst(
+            classIdNode,
+            typeRefNode_,
+            s"$typeName = ${constructorNode.fullName}",
+            clazz.lineNumber,
+            clazz.columnNumber
+          )
+      }
 
       val membersWithConstructor = decomposedMembers.members(withConstructor = true)
-      val classDecorationAst     = createClassDecorationAst(clazz, classIdNode)
-      val propertyDecorationAsts =
-        createPropertyDecorationAsts(membersWithConstructor, classNodeInfo = clazz, classIdNode)
-      val methodDecorationAsts = createMethodDecorationAsts(membersWithConstructor, classNodeInfo = clazz, classIdNode)
+      val classDecorationAst     = createClassDecorationAst(clazz, classRef, classPath.isEmpty)
+      val propertyDecorationAsts = createPropertyDecorationAsts(membersWithConstructor, classNodeInfo = clazz, classRef)
+      val methodDecorationAsts   = createMethodDecorationAsts(membersWithConstructor, classNodeInfo = clazz, classRef)
       if (classDecorationAst.root.isDefined || propertyDecorationAsts.nonEmpty || methodDecorationAsts.nonEmpty) {
         val blockNode_   = blockNode(clazz)
-        val childrenAsts =
-          List(assignmentAst, classDecorationAst) ++ propertyDecorationAsts ++ methodDecorationAsts
+        val childrenAsts = List(assignmentAst, classDecorationAst) ++ propertyDecorationAsts ++ methodDecorationAsts
         Ast(blockNode_).withChildren(childrenAsts)
       } else {
         val blockNode_ = blockNode(clazz)
@@ -744,53 +785,47 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
   }
 
-  private def createClassDecorationAst(classNodeInfo: BabelNode, classIdNode: NewIdentifier): Ast = {
+  /** @param reassign
+    *   whether the decorated class replaces the class, as it does if a decorator returns another class. A class that is
+    *   a property of a namespace keeps its type for the resolution of its constructor.
+    */
+  private def createClassDecorationAst(
+    classNodeInfo: BabelNode,
+    classRefHandler: Boolean => Ast,
+    reassign: Boolean
+  ): Ast = {
     val decoratorAsts = decoratorExpressionElements(classNodeInfo).map(astForNodeWithFunctionReference)
     if (decoratorAsts.nonEmpty) {
-      val lhsAst = Ast(
-        identifierNode(
-          classNodeInfo,
-          classIdNode.name,
-          classIdNode.code,
-          Defines.Any,
-          classIdNode.dynamicTypeHintFullName
-        )
-      )
-
+      val lhsAst       = Option.when(reassign)(classRefHandler(true))
       val receiverNode = identifierNode(classNodeInfo, "__decorate")
       scope.addVariableReference(receiverNode.name, receiverNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
       val thisNode = identifierNode(classNodeInfo, "this").dynamicTypeHintFullName(rootTypeDecl.map(_.fullName).toSeq)
       scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
-      val decorateCallNode =
-        callNode(
-          classNodeInfo,
-          s"__decorate([${decoratorAsts.flatMap(_.root.map(codeOf)).mkString(",")}], ${classIdNode.name})",
-          "__decorate",
-          DispatchTypes.DYNAMIC_DISPATCH
-        )
-
-      val classRefNode = Ast(
-        identifierNode(
-          classNodeInfo,
-          classIdNode.name,
-          classIdNode.code,
-          Defines.Any,
-          classIdNode.dynamicTypeHintFullName
-        )
+      val classRefNode     = classRefHandler(true)
+      val decorateCallNode = callNode(
+        classNodeInfo,
+        s"__decorate([${decoratorAsts.flatMap(_.root.map(codeOf)).mkString(",")}], ${codeOf(classRefNode.nodes.head)})",
+        "__decorate",
+        DispatchTypes.DYNAMIC_DISPATCH
       )
+
       val annotationExprAst = astForDecorateArray(classNodeInfo, decoratorAsts)
       val args              = Seq(annotationExprAst, classRefNode)
       val decorateCallAst   =
         callAst(decorateCallNode, args, receiver = Option(Ast(receiverNode)), base = Option(Ast(thisNode)))
 
-      createAssignmentCallAst(
-        lhsAst,
-        decorateCallAst,
-        s"${classIdNode.name} = ${codeOf(decorateCallAst.nodes.head)}",
-        classNodeInfo.lineNumber,
-        classNodeInfo.columnNumber
-      )
+      lhsAst match {
+        case Some(lhs) =>
+          createAssignmentCallAst(
+            lhs,
+            decorateCallAst,
+            s"${codeOf(lhs.nodes.head)} = ${codeOf(decorateCallAst.nodes.head)}",
+            classNodeInfo.lineNumber,
+            classNodeInfo.columnNumber
+          )
+        case None => decorateCallAst
+      }
     } else Ast()
   }
 
@@ -948,7 +983,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   private def createPropertyDecorationAsts(
     members: Seq[BabelNode],
     classNodeInfo: BabelNode,
-    classIdNode: NewIdentifier
+    classRefHandler: Boolean => Ast
   ): Seq[Ast] = {
     val tsProperties = members.collect {
       case property: (ClassProperty | ClassAccessorProperty | ClassPrivateProperty) => property
@@ -970,7 +1005,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
         val classPrototypeAccessAst = createFieldAccessCallAst(
-          identifierNode(classNodeInfo, classIdNode.name),
+          classRefHandler(false),
           fieldIdentifierNode(classNodeInfo, "prototype", "prototype"),
           classNodeInfo.lineNumber,
           classNodeInfo.columnNumber
@@ -999,7 +1034,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   private def createMethodDecorationAsts(
     members: Seq[BabelNode],
     classNodeInfo: BabelNode,
-    classIdNode: NewIdentifier
+    classRefHandler: Boolean => Ast
   ): Seq[Ast] = {
     val tsMethods = members.collect { case method: ClassMethod => method }
 
@@ -1043,7 +1078,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
         val classPrototypeAccessAst = createFieldAccessCallAst(
-          identifierNode(classNodeInfo, classIdNode.name),
+          classRefHandler(false),
           fieldIdentifierNode(classNodeInfo, "prototype", "prototype"),
           classNodeInfo.lineNumber,
           classNodeInfo.columnNumber
@@ -1135,40 +1170,167 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     case _                        => false
   }
 
-  protected def addModifier(node: NewNode, member: BabelNode): Unit = member match {
-    case _ if hasPrivateKey(member) =>
-      if (staticOf(member)) {
-        diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.STATIC), EdgeTypes.AST)
+  protected def addModifier(node: NewNode, member: BabelNode): Unit = {
+    modifierTypesOf(member).foreach { modifierType =>
+      diffGraph.addEdge(node, NewModifier().modifierType(modifierType), EdgeTypes.AST)
+    }
+  }
+
+  /** The modifiers of a member in the order in which they are added to the CPG. A member with a private key, e.g. `#x`,
+    * is private and has no other accessibility.
+    */
+  private def modifierTypesOf(member: BabelNode): List[String] = {
+    val staticModifier = Option.when(staticOf(member))(ModifierTypes.STATIC)
+    if (hasPrivateKey(member)) {
+      List(staticModifier, Some(ModifierTypes.PRIVATE)).flatten
+    } else {
+      val accessModifier = accessibilityOf(member).collect {
+        case "public"    => ModifierTypes.PUBLIC
+        case "private"   => ModifierTypes.PRIVATE
+        case "protected" => ModifierTypes.PROTECTED
       }
-      diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.PRIVATE), EdgeTypes.AST)
-    case _ =>
-      if (abstractOf(member))
-        diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.ABSTRACT), EdgeTypes.AST)
-      if (staticOf(member))
-        diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.STATIC), EdgeTypes.AST)
-      if (readonlyOf(member))
-        diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.READONLY), EdgeTypes.AST)
-      accessibilityOf(member).foreach {
-        case "public"    => diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.PUBLIC), EdgeTypes.AST)
-        case "private"   => diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.PRIVATE), EdgeTypes.AST)
-        case "protected" => diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.PROTECTED), EdgeTypes.AST)
-        case _           =>
-      }
+      List(
+        Option.when(abstractOf(member))(ModifierTypes.ABSTRACT),
+        staticModifier,
+        Option.when(readonlyOf(member))(ModifierTypes.READONLY),
+        accessModifier
+      ).flatten
+    }
   }
 
   /** The first and the remaining identifiers of a module name: `A.B.C` is one `TSQualifiedName`, a plain name or a
     * string is a single part.
     */
-  private def moduleNameParts(id: BabelNode): (BabelNode, List[BabelNode]) = id match {
-    case qualified: TSQualifiedName =>
-      val (first, rest) = moduleNameParts(qualified.left)
-      (first, rest :+ qualified.right)
-    case other => (other, Nil)
+  protected def moduleNameParts(id: BabelNode): (BabelNode, List[BabelNode]) = {
+    id match {
+      case qualified: TSQualifiedName =>
+        val (first, rest) = moduleNameParts(qualified.left)
+        (first, rest :+ qualified.right)
+      case other => (other, Nil)
+    }
   }
 
-  protected def astForModule(tsModuleDecl: TSModuleDeclaration): Ast = {
+  /** The module declarations that do not exist at runtime: `declare module "foo"`, `declare namespace A {}`,
+    * `declare global {}` and everything inside of them.
+    *
+    * @param enclosingAmbient
+    *   whether the declaration is inside of the body of an ambient module declaration
+    */
+  private def isAmbientModule(tsModuleDecl: TSModuleDeclaration, enclosingAmbient: Boolean): Boolean = {
+    enclosingAmbient || tsModuleDecl.declare.contains(true) || tsModuleDecl.kind == "global" ||
+    tsModuleDecl.id.isInstanceOf[StringLiteral]
+  }
+
+  /** The names of the values that the declaration of an `export` statement inside of a namespace adds to the namespace.
+    * Types do not exist at runtime and are therefore not part of it.
+    */
+  private def exportedValueNames(declaration: BabelNode): Seq[String] = {
+    declaration match {
+      case _: (ClassDeclaration | FunctionDeclaration | TSEnumDeclaration | VariableDeclaration) =>
+        codesForNode(declaration).distinct
+      case importEquals: TSImportEqualsDeclaration =>
+        Seq(importEquals.id.name)
+      case module: TSModuleDeclaration if isInstantiatedModule(module) =>
+        Seq(moduleNameParts(module.id)._1.code)
+      case _ =>
+        Seq.empty
+    }
+  }
+
+  private def exportedDeclaration(statement: BabelNode): Option[BabelNode] = {
+    statement match {
+      case exportDecl: ExportNamedDeclaration => exportDecl.declaration
+      case _                                  => None
+    }
+  }
+
+  /** A namespace is instantiated, i.e. it is an object at runtime that can be referenced, if it exports a value. */
+  protected def isInstantiatedModule(tsModuleDecl: TSModuleDeclaration, enclosingAmbient: Boolean = false): Boolean = {
+    !isAmbientModule(tsModuleDecl, enclosingAmbient) && tsModuleDecl.body.exists(
+      _.body.exists(exportedDeclaration(_).exists(exportedValueNames(_).nonEmpty))
+    )
+  }
+
+  /** The object of a namespace. Its property path is `existingPath` followed by the nested namespaces of `missing` that
+    * this namespace creates: `B` and `C` of `namespace A.B.C {}` if only the variable `A` exists. `existingPath` is the
+    * variable of a class or of an earlier namespace, or the object of an earlier nested namespace that is merged with
+    * this one. It is empty if this namespace declares the root variable of the path itself.
+    */
+  private case class ModuleBinding(existingPath: List[String], missing: List[String]) {
+    def objectPath: List[String] = existingPath ++ missing
+  }
+
+  /** A namespace whose body is processed and the exported members that are accessed as properties of its object. */
+  private case class ModuleScope(objectPath: List[String], members: Set[String])
+
+  /** @param enclosingObjectPath
+    *   the path of the object of the enclosing namespace if this namespace is exported from it
+    * @param enclosingAmbient
+    *   whether this namespace is inside of the body of an ambient module declaration
+    */
+  protected def astForModule(
+    tsModuleDecl: TSModuleDeclaration,
+    enclosingObjectPath: Option[List[String]] = None,
+    enclosingAmbient: Boolean = false
+  ): Ast = {
     val (first, nested) = moduleNameParts(tsModuleDecl.id)
-    astForModulePart(tsModuleDecl, tsModuleDecl, first, nested)
+    val ambient         = isAmbientModule(tsModuleDecl, enclosingAmbient)
+    val binding         = if (isInstantiatedModule(tsModuleDecl, enclosingAmbient)) {
+      Option(declareModuleBinding(tsModuleDecl, first, nested, enclosingObjectPath))
+    } else { None }
+    astForModulePart(tsModuleDecl, tsModuleDecl, first, nested, binding, ambient)
+  }
+
+  /** The binding of the object of a namespace at `path` to the longest prefix of the path that exists already: the
+    * `basePath`, or the object of an earlier namespace under the same root variable. The path is registered for the
+    * namespaces that follow this one.
+    */
+  private def createModuleBinding(
+    rootVariable: Option[NewNode],
+    basePath: List[String],
+    path: List[String]
+  ): ModuleBinding = {
+    val registered = rootVariable.flatMap(moduleObjectPaths.get).getOrElse(Set.empty)
+    val existing   = (path.length until basePath.length by -1)
+      .find(length => registered.contains(path.take(length)))
+      .map(path.take)
+      .getOrElse(basePath)
+    rootVariable.foreach { node =>
+      (2 to path.length).foreach { length =>
+        moduleObjectPaths.updateWith(node)(paths => Option(paths.getOrElse(Set.empty) + path.take(length)))
+      }
+    }
+    ModuleBinding(existing, path.drop(existing.length))
+  }
+
+  private def declareModuleBinding(
+    tsModuleDecl: TSModuleDeclaration,
+    first: BabelNode,
+    nested: List[BabelNode],
+    enclosingObjectPath: Option[List[String]]
+  ): ModuleBinding = {
+    val name        = first.code
+    val nestedNames = nested.map(_.code)
+    enclosingObjectPath match {
+      // the object of the enclosing namespace exists; the path of this one may extend the objects of earlier
+      // namespaces under the same root
+      case Some(enclosingPath) =>
+        createModuleBinding(
+          scope.lookupVariable(enclosingPath.head).map(_._1),
+          enclosingPath,
+          (enclosingPath :+ name) ++ nestedNames
+        )
+      case None =>
+        scope.lookupVariable(name) match {
+          case Some((rootVariable, _)) =>
+            createModuleBinding(Option(rootVariable), List(name), name +: nestedNames)
+          case None =>
+            val localNode_ = localNode(tsModuleDecl, name, name, Defines.Any).order(0)
+            scope.addVariable(name, localNode_, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
+            diffGraph.addEdge(localAstParentStack.head, localNode_, EdgeTypes.AST)
+            createModuleBinding(Option(localNode_), Nil, name +: nestedNames)
+        }
+    }
   }
 
   /** `namespace A.B.C {}` is a single declaration, but stands for the namespaces A, B and C nested in each other. The
@@ -1179,7 +1341,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     tsModuleDecl: TSModuleDeclaration,
     from: BabelNode,
     part: BabelNode,
-    nested: List[BabelNode]
+    nested: List[BabelNode],
+    binding: Option[ModuleBinding],
+    ambient: Boolean
   ): Ast = {
     val (name, fullName) = calcTypeNameAndFullName(tsModuleDecl, Some(part.code))
     registerType(fullName)
@@ -1198,9 +1362,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     scope.pushNewMethodScope(fullName, name, namespaceNode, None)
 
     val blockAst = nested match {
-      case next :: rest => astForModulePart(tsModuleDecl, next, next, rest)
+      case next :: rest => astForModulePart(tsModuleDecl, next, next, rest, binding, ambient)
       // ambient module declarations like `declare module "foo";` have no body at all
-      case Nil => tsModuleDecl.body.map(astForBlockStatement).getOrElse(Ast())
+      case Nil => tsModuleDecl.body.map(astForModuleBlock(tsModuleDecl, _, binding, ambient)).getOrElse(Ast())
     }
 
     methodAstParentStack.pop()
@@ -1208,6 +1372,244 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     scope.popScope()
 
     Ast(namespaceNode).withChild(blockAst)
+  }
+
+  /** The body of a namespace. Its exported members are properties of the object of the namespace, and not variables
+    * that are visible outside of the namespace:
+    * {{{
+    * namespace A.B.C { export class Foo {} }
+    * }}}
+    * is lowered to
+    * {{{
+    * A = { B: { C: {} } };
+    * A.B.C.Foo = class Foo {};
+    * }}}
+    * The lowering is only about how the name is bound. The declaration itself stays inside of the namespace, and
+    * `class Foo {}` above stands for the type reference of the class that is created for it:
+    *   - the TYPE_DECL `...:A:B:C:Foo` and its methods are created while the scopes of the namespaces and of the class
+    *     are active. Their full names are unchanged, and the TYPE_DECL is attached to the NAMESPACE_BLOCK of `C`.
+    *   - the TYPE_REF to the class is the value of the assignment, which is part of the body of `C` and belongs to the
+    *     method that contains the namespace, e.g. `:program`.
+    *   - there is no variable named `Foo`. Code inside of a method of `Foo` that reads `A` captures it as any closure.
+    *
+    * A reference to an exported member inside the namespace is lowered to the access of the property, e.g. `A.B.C.Foo`.
+    * Exported members that are not declared inline, i.e. variables that are declared by a pattern, are declared as
+    * usual and then assigned to the property. If `A` already exists, e.g. a class or an earlier namespace, its object
+    * is extended instead of replaced.
+    *
+    * The members that are not exported are only visible inside of the namespace. They are lowered the same way, but to
+    * the properties of an object that only the namespace can reference:
+    * {{{
+    * namespace A { function helper() {} }
+    * }}}
+    * is lowered to
+    * {{{
+    * _private_0 = {};
+    * _private_0.helper = function helper() {};
+    * }}}
+    */
+  private def astForModuleBlock(
+    tsModuleDecl: TSModuleDeclaration,
+    block: TSModuleBlock,
+    binding: Option[ModuleBinding],
+    ambient: Boolean
+  ): Ast = {
+    val blockNode_ = blockNode(block, block.code, Defines.Any)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
+
+    val declarations = block.body.map(statement => exportedDeclaration(statement).getOrElse(statement))
+    val exported     = Collections.newSetFromMap(new util.IdentityHashMap[BabelNode, java.lang.Boolean]())
+    block.body.flatMap(exportedDeclaration).foreach(exported.add)
+
+    val inline =
+      if (binding.isDefined) { declarations.filter(exported.contains).flatMap(inlineMemberNames) }
+      else { Nil }
+    val objectAsts   = binding.toList.flatMap(astsForModuleObjectCreation(tsModuleDecl, _))
+    val privateNames =
+      if (ambient) { Nil }
+      else { declarations.filterNot(exported.contains).flatMap(inlineMemberNames) }
+
+    val privatePath =
+      Option.when(privateNames.nonEmpty)(List(declarePrivateModuleObject(tsModuleDecl)))
+
+    val privateAsts =
+      privatePath.toList.map(path => astForObjectAssignment(tsModuleDecl, path, astForObject(tsModuleDecl)))
+
+    val objectPath = binding.map(_.objectPath).getOrElse(Nil)
+    moduleScopes.push(ModuleScope(objectPath, inline.toSet))
+    privatePath.foreach(path => moduleScopes.push(ModuleScope(path, privateNames.toSet)))
+    val statementAsts = createBlockStatementAsts(
+      declarations,
+      declaration =>
+        if (binding.isDefined && exported.contains(declaration)) {
+          astForModuleMember(declaration, objectPath)
+        } else if (privatePath.isDefined && inlineMemberNames(declaration).nonEmpty) {
+          astForModuleMember(declaration, privatePath.get)
+        } else {
+          declaration match {
+            case module: TSModuleDeclaration if ambient => astForModule(module, enclosingAmbient = true)
+            case _                                      => astForNodeWithFunctionReferenceAndCall(declaration)
+          }
+        }
+    )
+    privatePath.foreach(_ => moduleScopes.pop())
+    moduleScopes.pop()
+
+    localAstParentStack.pop()
+    scope.popScope()
+    blockAst(blockNode_, objectAsts ++ privateAsts ++ statementAsts)
+  }
+
+  /** The variable that holds the object of the members of a namespace that are not exported. */
+  private def declarePrivateModuleObject(tsModuleDecl: TSModuleDeclaration): String = {
+    val name       = generateUnusedVariableName(usedVariableNames, "_private")
+    val localNode_ = localNode(tsModuleDecl, name, name, Defines.Any).order(0)
+    scope.addVariable(name, localNode_, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
+    diffGraph.addEdge(localAstParentStack.head, localNode_, EdgeTypes.AST)
+    name
+  }
+
+  /** The names of the declarations of a namespace that are assigned inline, i.e. the property of an object is their
+    * binding. The declarations themselves, e.g. the type declaration of a class, are still created inside of the
+    * namespace, see [[astForModuleBlock]].
+    */
+  private def inlineMemberNames(declaration: BabelNode): Seq[String] = {
+    declaration match {
+      case clazz: ClassDeclaration if clazz.id.isDefined          => clazz.id.map(_.name).toSeq
+      case function: FunctionDeclaration if function.id.isDefined => function.id.map(_.name).toSeq
+      case variable: VariableDeclaration if variable.declarations.forall(_.id.isInstanceOf[Identifier]) =>
+        codesForNode(variable).distinct
+      case enumeration: TSEnumDeclaration                              => Seq(enumeration.id.code)
+      case importEquals: TSImportEqualsDeclaration                     => Seq(importEquals.id.name)
+      case module: TSModuleDeclaration if isInstantiatedModule(module) => Seq(moduleNameParts(module.id)._1.code)
+      case _                                                           => Seq.empty
+    }
+  }
+
+  /** The decorators of a class, of its members and of the parameters of its methods are part of the lowering of the
+    * class that is declared by an assignment.
+    */
+  private def hasDecorators(clazz: ClassDeclaration): Boolean = {
+    decoratorsOf(clazz).nonEmpty || clazz.body.body.exists {
+      case method: ClassMethod => decoratorsOf(method).nonEmpty || paramsOf(method).exists(decoratorsOf(_).nonEmpty)
+      case member              => decoratorsOf(member).nonEmpty
+    }
+  }
+
+  /** A declaration of a namespace that is bound to a property of the object `objectPath` instead of a variable. The
+    * declaration itself, e.g. the type declaration of a class, is created as usual inside of the namespace, and its
+    * type reference, method reference or value is assigned to the property. The ones that are not assigned inline are
+    * declared with a variable as usual and then copied to the property.
+    */
+  private def astForModuleMember(declaration: BabelNode, objectPath: List[String]): Ast = {
+    def memberAssignment(name: String, valueAst: Ast): Ast = {
+      astForObjectAssignment(declaration, objectPath :+ name, valueAst)
+    }
+
+    declaration match {
+      // astForClass lowers a class with decorators, so that the decorations reference the class through the
+      // property; a class without decorators is assigned to the property directly
+      case clazz: ClassDeclaration if inlineMemberNames(clazz).nonEmpty && !hasDecorators(clazz) =>
+        memberAssignment(clazz.id.get.name, astForClass(clazz, shouldCreateAssignmentCall = false))
+      case clazz: ClassDeclaration if inlineMemberNames(clazz).nonEmpty =>
+        astForClass(clazz, shouldCreateAssignmentCall = true, Option(objectPath :+ clazz.id.get.name))
+      case enumeration: TSEnumDeclaration =>
+        memberAssignment(enumeration.id.code, astForEnum(enumeration))
+      case importEquals: TSImportEqualsDeclaration =>
+        astForTSImportEqualsDeclaration(importEquals, None, Option(objectPath :+ importEquals.id.name))
+      case function: FunctionDeclaration if inlineMemberNames(function).nonEmpty =>
+        val functionAst = astForFunctionDeclaration(function, shouldCreateFunctionReference = true)
+        memberAssignment(function.id.get.name, functionAst)
+      case variable: VariableDeclaration if inlineMemberNames(variable).nonEmpty =>
+        val assignmentAsts = variable.declarations.toList.flatMap { declarator =>
+          declarator.init.map(init => memberAssignment(declarator.id.code, astForNodeWithFunctionReference(init)))
+        }
+        blockAst(blockNode(variable, variable.code, Defines.Any), assignmentAsts)
+      case module: TSModuleDeclaration if inlineMemberNames(module).nonEmpty =>
+        astForModule(module, Option(objectPath))
+      case other =>
+        val declarationAst = astForNodeWithFunctionReferenceAndCall(other)
+        val memberAsts     = exportedValueNames(other).map { name =>
+          val identNode_ = identifierNode(other, name)
+          scope.addVariableReference(name, identNode_, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+          memberAssignment(name, Ast(identNode_))
+        }
+        blockAst(blockNode(other, other.code, Defines.Any), declarationAst +: memberAsts.toList)
+    }
+  }
+
+  private def astForObjectAssignment(node: BabelNode, targetPath: List[String], valueAst: Ast): Ast = {
+    val targetAst = astForModuleMemberAccess(node, targetPath)
+    createAssignmentCallAst(
+      targetAst,
+      valueAst,
+      s"${codeOf(targetAst.nodes.head)} = ${codeOf(valueAst.nodes.head)}",
+      node.lineNumber,
+      node.columnNumber
+    )
+  }
+
+  /** `A.B.C`: the root object `A` followed by the property accesses for the rest of the path. */
+  protected def astForModuleMemberAccess(node: BabelNode, objectPath: List[String]): Ast = {
+    val rootNode = identifierNode(node, objectPath.head)
+    scope.addVariableReference(rootNode.name, rootNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+    objectPath.tail.foldLeft(Ast(rootNode)) { (baseAst, name) =>
+      createFieldAccessCallAst(baseAst, fieldIdentifierNode(node, name, name), node.lineNumber, node.columnNumber)
+    }
+  }
+
+  /** The reference to an exported member of an enclosing namespace, unless it is shadowed by a variable. */
+  protected def astForModuleMemberReference(ident: Identifier): Option[Ast] = {
+    if (scope.lookupVariable(ident.name).isDefined) { None }
+    else {
+      moduleScopes.iterator.find(_.members.contains(ident.name)).map { moduleScope =>
+        astForModuleMemberAccess(ident, moduleScope.objectPath :+ ident.name)
+      }
+    }
+  }
+
+  /** `A = { B: { C: {} } }` for `namespace A.B.C {}`. If a prefix of the path exists already, e.g. the variable `A` of
+    * a class or the object `A.B` of an earlier namespace, only the missing nested namespaces are assigned to it:
+    * `A.B = { C: {} }`, or `A.B.C = {}` if `A.B` exists already too.
+    */
+  private def astsForModuleObjectCreation(tsModuleDecl: TSModuleDeclaration, binding: ModuleBinding): List[Ast] = {
+    binding.missing match {
+      case Nil           => Nil
+      case first :: rest =>
+        val valueAst = rest.reverse.foldLeft(astForObject(tsModuleDecl)) { (inner, name) =>
+          astForObject(tsModuleDecl, Option(name -> inner))
+        }
+        List(astForObjectAssignment(tsModuleDecl, binding.existingPath :+ first, valueAst))
+    }
+  }
+
+  /** An object literal that is lowered like the one that is written in the source, see [[astForObjectExpression]]. */
+  private def astForObject(node: BabelNode, member: Option[(String, Ast)] = None): Ast = {
+    val code = member.map { case (name, valueAst) => s"{ $name: ${codeOf(valueAst.nodes.head)} }" }.getOrElse("{}")
+    val blockNode_ = blockNode(node, code, Defines.Any)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
+
+    val tmpName      = generateUnusedVariableName(usedVariableNames, "_tmp")
+    val localTmpNode = localNode(node, tmpName, tmpName, Defines.Any).order(0)
+    diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
+
+    val propertyAsts = member.toList.map { case (name, valueAst) =>
+      val memberAccess = createFieldAccessCallAst(
+        identifierNode(node, tmpName),
+        fieldIdentifierNode(node, name, name),
+        node.lineNumber,
+        node.columnNumber
+      )
+      val assignmentCode = s"${codeOf(memberAccess.nodes.head)} = ${codeOf(valueAst.nodes.head)}"
+      createAssignmentCallAst(memberAccess, valueAst, assignmentCode, node.lineNumber, node.columnNumber)
+    }
+    val tmpNode = identifierNode(node, tmpName)
+
+    scope.popScope()
+    localAstParentStack.pop()
+    blockAst(blockNode_, propertyAsts :+ Ast(tmpNode))
   }
 
   protected def astForInterface(tsInterface: TSInterfaceDeclaration): Ast = {

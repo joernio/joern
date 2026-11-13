@@ -27,7 +27,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case alias: TSTypeAliasDeclaration     => Seq(alias.id.code)
       case interface: TSInterfaceDeclaration => Seq(interface.id.code)
       case enumeration: TSEnumDeclaration    => Seq(enumeration.id.code)
-      case module: TSModuleDeclaration       => Seq(module.id.code)
+      case module: TSModuleDeclaration if isInstantiatedModule(module) => Seq(moduleNameParts(module.id)._1.code)
       case TSDeclareFunction(_) | FunctionDeclaration(_) | FunctionExpression(_) | ClassExpression(_)
           if namedId(node).isDefined =>
         namedId(node).map(_.name).toSeq
@@ -347,7 +347,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     */
   protected def astForTSImportEqualsDeclaration(
     impDecl: TSImportEqualsDeclaration,
-    positionNode: Option[BabelNode] = None
+    positionNode: Option[BabelNode] = None,
+    destinationPath: Option[List[String]] = None
   ): Ast = {
     val node          = positionNode.getOrElse(impDecl)
     val name          = impDecl.id.name
@@ -357,11 +358,14 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
     val _dependencyNode = dependencyNode(name, referenceName, ImportKeyword)
     diffGraph.addNode(_dependencyNode)
-    val assignment = astForRequireCallFromImport(name, None, referenceName, isImportN = false, node)
-    val call       = assignment.nodes.collectFirst { case x: NewCall if x.name == "require" => x }
-    val importNode =
-      createImportNodeAndAttachToCall(node, referenceName, name, call)
-    diffGraph.addEdge(importNode, _dependencyNode, EdgeTypes.IMPORTS)
+    val assignment = astForRequireCallFromImport(name, None, referenceName, isImportN = false, node, destinationPath)
+    // an assignment to a property has no `var ` prefix in its code, so the imports pass finds it and creates its
+    // import node; the import node of an assignment to a new variable is created here
+    if (destinationPath.isEmpty) {
+      val call       = assignment.nodes.collectFirst { case x: NewCall if x.name == "require" => x }
+      val importNode = createImportNodeAndAttachToCall(node, referenceName, name, call)
+      diffGraph.addEdge(importNode, _dependencyNode, EdgeTypes.IMPORTS)
+    }
     assignment
   }
 
@@ -405,21 +409,28 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
+  /** @param destinationPath
+    *   the path of the property that the result is assigned to instead of a new variable
+    */
   private def astForRequireCallFromImport(
     name: String,
     alias: Option[String],
     from: String,
     isImportN: Boolean,
-    node: BabelNode
+    node: BabelNode,
+    destinationPath: Option[List[String]] = None
   ): Ast = {
-    val destName   = alias.getOrElse(name)
-    val destNode   = identifierNode(node, destName)
-    val nLocalNode = localNode(node, destName, destName, Defines.Any).order(0)
-    scope.addVariable(destName, nLocalNode, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
-    scope.addVariableReference(destName, destNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-    diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
-
-    val destAst   = Ast(destNode)
+    val destName = alias.getOrElse(name)
+    val destAst  = destinationPath match {
+      case Some(path) => astForModuleMemberAccess(node, path)
+      case None       =>
+        val destNode   = identifierNode(node, destName)
+        val nLocalNode = localNode(node, destName, destName, Defines.Any).order(0)
+        scope.addVariable(destName, nLocalNode, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
+        scope.addVariableReference(destName, destNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+        diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
+        Ast(destNode)
+    }
     val cAst      = staticRequireCallAst(node, from)
     val sourceAst = if (isImportN) {
       val fieldName       = stripQuotes(name)
@@ -433,14 +444,14 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     } else {
       cAst
     }
-    val assigmentCallAst =
-      createAssignmentCallAst(
-        destAst,
-        sourceAst,
-        s"var ${codeOf(destAst.nodes.head)} = ${codeOf(sourceAst.nodes.head)}",
-        node.lineNumber,
-        node.columnNumber
-      )
+    val varCode          = if (destinationPath.isDefined) "" else "var "
+    val assigmentCallAst = createAssignmentCallAst(
+      destAst,
+      sourceAst,
+      s"$varCode${codeOf(destAst.nodes.head)} = ${codeOf(sourceAst.nodes.head)}",
+      node.lineNumber,
+      node.columnNumber
+    )
     assigmentCallAst
   }
 

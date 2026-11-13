@@ -498,7 +498,7 @@ class TsClassesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
         .astChildren
         .labelNot("LOCAL")
         .order
-        .l shouldBe (1 to 4).toList
+        .l shouldBe (1 to 5).toList
     }
   }
 
