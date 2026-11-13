@@ -294,6 +294,18 @@ trait AstForFunctionsCreator { this: AstCreator =>
     Option.when(isVirtualMethod(name))(modifierNode(node, ModifierTypes.VIRTUAL)).toList
   }
 
+  /** [class.virtual] A final virtual function cannot be overridden in a derived class, so a call that resolves to it
+    * needs no further dispatch lookup. Read from the binding rather than from the declarator, because a definition
+    * written out of line carries the specifier on its in-class declaration and not on itself.
+    */
+  private def isFinalMethod(name: IASTName): Boolean = {
+    safeGetBinding(name).collect { case method: ICPPMethod => method }.exists(_.isFinal)
+  }
+
+  private def finalModifierFor(node: IASTNode, name: IASTName): List[NewModifier] = {
+    Option.when(isFinalMethod(name))(modifierNode(node, ModifierTypes.FINAL)).toList
+  }
+
   /** A C++ attribute states intent that nothing else in the graph records: `[[nodiscard]]` on a function whose result
     * must be checked, `[[deprecated]]` on one that should no longer be called. A scoped attribute keeps its scope in
     * the full name, separated by a single dot as every other full name in this frontend is, so `[[gnu::always_inline]]`
@@ -339,8 +351,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
     val staticModifier  = Try(staticModifierFor(funcDef, funcDef.getDeclSpecifier, funcDef)).getOrElse(Nil)
     val virtualModifier = virtualModifierFor(funcDef, funcDef.getDeclarator.getName)
+    val finalModifier   = finalModifierFor(funcDef, funcDef.getDeclarator.getName)
     constructorModifier ++ accessModifier ++ definitionModifier ++ staticModifier ++ virtualModifier ++
-      noExceptModifierFor(funcDef, funcDef.getDeclarator)
+      finalModifier ++ noExceptModifierFor(funcDef, funcDef.getDeclarator)
   }
 
   private def modifierFor(funcDecl: IASTFunctionDeclarator): List[NewModifier] = {
@@ -353,7 +366,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
       case _                                  => Nil
     }).getOrElse(Nil)
     val virtualModifier = virtualModifierFor(funcDecl, funcDecl.getName)
-    constructorModifier ++ accessModifier ++ staticModifier ++ virtualModifier ++
+    val finalModifier   = finalModifierFor(funcDecl, funcDecl.getName)
+    constructorModifier ++ accessModifier ++ staticModifier ++ virtualModifier ++ finalModifier ++
       noExceptModifierFor(funcDecl, funcDecl)
   }
 
