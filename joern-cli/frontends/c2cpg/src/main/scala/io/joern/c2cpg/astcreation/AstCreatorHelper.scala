@@ -4,7 +4,8 @@ import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.AstNodeBuilder.dependencyNode
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, NewTag}
+import io.shiftleft.semanticcpg.language.importresolver.EvaluatedImport
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
 import org.eclipse.cdt.core.dom.ast.cpp.*
@@ -203,6 +204,14 @@ trait AstCreatorHelper { this: AstCreator =>
     Option(node).map(astsForStatement).getOrElse(Seq.empty)
   }
 
+  /** An include the preprocessor performed but could not find is marked with `UNKNOWN_IMPORT`, the tag the import
+    * resolver already defines for an import that did not resolve. Without it a header that was found and parsed and a
+    * header that is missing produce the same DEPENDENCY and IMPORT pair, so a consumer cannot tell declarations that
+    * are genuinely absent from declarations that were never available.
+    *
+    * `isActive` is what keeps the mark honest: an include under a false `#if` was never performed, so it is not a
+    * missing header and is left unmarked.
+    */
   protected def astsForDependenciesAndImports(iASTTranslationUnit: IASTTranslationUnit): Seq[Ast] = {
     val allIncludes = iASTTranslationUnit.getIncludeDirectives.iterator.filterNot(isIncludedNode).toSeq
     allIncludes.map { include =>
@@ -211,6 +220,11 @@ trait AstCreatorHelper { this: AstCreator =>
       val importNode = newImportNode(code(include), name, name, include)
       diffGraph.addNode(dependency)
       diffGraph.addEdge(importNode, dependency, EdgeTypes.IMPORTS)
+      if (include.isActive && !include.isResolved) {
+        val unresolvedTag = NewTag().name(EvaluatedImport.UNKNOWN_IMPORT).value(name)
+        diffGraph.addNode(unresolvedTag)
+        diffGraph.addEdge(importNode, unresolvedTag, EdgeTypes.TAGGED_BY)
+      }
       Ast(importNode)
     }
   }
