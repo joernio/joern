@@ -929,4 +929,25 @@ class CallTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
       }
     }
   }
+
+  "unresolved call with Fn in scope" should {
+    val cpg = code("""
+        |fn f(foo: impl Fn(i32)) { g(1); }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("g").l) { case call :: Nil =>
+        call.name shouldBe "g"
+        call.code shouldBe "g(1)"
+        call.methodFullName shouldBe s"${Defines.UnresolvedNamespace}::g"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("g").argument.l) { case Literal(code = "1", argumentIndex = 1) :: Nil =>
+        succeed
+      }
+    }
+  }
 }
