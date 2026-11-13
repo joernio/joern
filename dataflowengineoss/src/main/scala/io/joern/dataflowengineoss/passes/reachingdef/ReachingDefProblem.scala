@@ -179,18 +179,29 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
   private[reachingdef] lazy val numberOfDefinitions: Int =
     method.parameter.size + definingCalls(method).iterator.map(definitionsOf(_).size).sum
 
-  /** Built on first use, when the solver first applies this transfer function. Building it takes time that grows with
-    * the number of definitions times the number of calls in the method, and [[ReachingDefPass]] decides from
-    * [[numberOfDefinitions]] whether to skip a method, so a method it skips never pays for it.
+  /** For each call, the definitions it kills: for each definition it generates, the other definitions of the same
+    * variable. Built on first use, from [[killIndex]]. The transfer function does not read it; it reads [[killMasks]].
     */
   lazy val kill: Map[CfgNode, mutable.BitSet] =
     initKill(method, gen).withDefaultValue(mutable.BitSet())
 
-  /** For a given flow graph node `n` and set of definitions, apply the transfer function to obtain the updated set of
-    * definitions, considering `gen(n)` and `kill(n)`.
+  /** For each call, one array per variable it defines, holding all definitions of that variable, the call's own
+    * included. The calls that define a variable share its array, so the masks take space in proportion to the number of
+    * definitions in the method. Removing a call's masks from `in` and adding `gen` back gives `gen ∪ (in \ kill)`: a
+    * definition outside `gen` is removed exactly when `kill` holds it, and `gen` is in both. Built on first use;
+    * [[ReachingDefPass]] decides from [[numberOfDefinitions]] whether to skip a method, so a method it skips never
+    * builds them.
+    */
+  private[reachingdef] lazy val killMasks: Map[CfgNode, Array[Array[Definition]]] =
+    initKillMasks(method, gen).withDefaultValue(Array.empty)
+
+  /** For a given flow graph node `n` and set of definitions `x`, apply the transfer function to obtain the updated set
+    * of definitions: remove `n`'s [[killMasks]] from `x` and add `gen(n)`, which gives `gen(n) ∪ (x \ kill(n))`.
     */
   override def apply(n: CfgNode, x: mutable.BitSet): mutable.BitSet = {
-    gen(n).union(x.diff(kill(n)))
+    val result = x.clone()
+    killMasks(n).foreach(mask => mask.foreach(result -= _))
+    result |= gen(n)
   }
 
   /** Initialize the map `gen`, a map that contains generated definitions for each flow graph node.
@@ -241,13 +252,28 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
     }
   }
 
-  /** Initialize the map `kill`, a map that contains killed definitions for each flow graph node.
-    *
-    * All operations in our graph are represented by calls and non-operations such as identifiers or field-identifiers
-    * have empty gen and kill sets, meaning that they just pass on definitions unaltered.
-    */
-  private[reachingdef] def initKill(method: Method, gen: Map[CfgNode, mutable.BitSet]): Map[CfgNode, mutable.BitSet] = {
+  /** What a definition defines, for the kill sets: a parameter's name, an identifier's name, or a call's code. */
+  private enum Variable {
+    case ParameterName(name: String)
+    case IdentifierName(name: String)
+    case CallCode(code: String)
+  }
 
+  private def variableOf(definition: Definition): Option[Variable] =
+    flowGraph.numberToNode(definition) match {
+      case param: MethodParameterIn => Some(Variable.ParameterName(param.name))
+      case identifier: Identifier   => Some(Variable.IdentifierName(identifier.name))
+      case call: Call               => Some(Variable.CallCode(call.code))
+      case _                        => None
+    }
+
+  /** Per variable, the definitions of it in the method, built once from indexes of the method's identifiers and
+    * parameters by name, its field accesses by the identifier names in them, and its calls by code: for a parameter's
+    * name, the parameters and identifiers of that name; for an identifier's name, those and the field accesses on it
+    * (killing an identifier also kills field accesses on it: a reassignment `x = new Box()` kills `x.value`); for a
+    * call's code, the calls with that code.
+    */
+  private lazy val killIndex: Variable => Array[Definition] = {
     val allIdentifiers: Map[String, List[CfgNode]] = {
       val results             = mutable.Map.empty[String, List[CfgNode]]
       val identifierName2Node = method._identifierViaContainsOut.map { identifier => (identifier.name, identifier) }
@@ -257,69 +283,73 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
           val oldValues = results.getOrElse(name, Nil)
           results.put(name, node :: oldValues)
         }
-      results.toMap
+      results.toMap.withDefaultValue(Nil)
     }
-
     val allCalls: Map[String, List[Call]] =
-      method.call.l
-        .groupBy(_.code)
+      method.call.l.groupBy(_.code).withDefaultValue(List.empty[Call])
+    val fieldAccesses: Map[String, List[Call]] =
+      method.call
+        .nameExact(Operators.fieldAccess)
+        .l
+        .flatMap(call => call.ast.isIdentifier.name.distinct.map(_ -> call))
+        .groupMap(_._1)(_._2)
         .withDefaultValue(List.empty[Call])
-
-    // We filter out field accesses to ensure that they propagate
-    // taint unharmed.
-
-    method.call
-      .filterNot(x => isGenericMemberAccessName(x.name))
-      .map { call =>
-        call -> killsForGens(gen(call), allIdentifiers, allCalls)
-      }
-      .toMap
+    val definitionsOf = mutable.HashMap.empty[Variable, Array[Definition]]
+    variable =>
+      definitionsOf.getOrElseUpdate(
+        variable, {
+          val nodes = variable match {
+            case Variable.ParameterName(name)  => allIdentifiers(name).iterator
+            case Variable.IdentifierName(name) => allIdentifiers(name).iterator ++ fieldAccesses(name)
+            case Variable.CallCode(code)       => allCalls(code).iterator
+          }
+          nodes
+            // It can happen that the CFG is broken and contains isolated nodes,
+            // in which case they are not in `nodeToNumber`. Let's filter those.
+            .collect { case node if nodeToNumber.contains(node) => Definition.fromNode(node, nodeToNumber) }.toArray
+        }
+      )
   }
 
-  /** The only way in which a call can kill another definition is by generating a new definition for the same variable.
-    * Given the set of generated definitions `gens`, we calculate definitions of the same variable for each, that is, we
-    * calculate kill(call) based on gen(call).
+  /** The calls whose kill sets are built: field and other member accesses are left out, so that they propagate taint
+    * unharmed.
     */
-  private def killsForGens(
-    genOfCall: mutable.BitSet,
-    allIdentifiers: Map[String, List[CfgNode]],
-    allCalls: Map[String, List[Call]]
-  ): mutable.BitSet = {
+  private def killingCalls(method: Method): Iterator[Call] =
+    method.call.filterNot(call => isGenericMemberAccessName(call.name))
 
-    def definitionsOfSameVariable(definition: Definition): Iterator[Definition] = {
-      val definedNodes = flowGraph.numberToNode(definition) match {
-        case param: MethodParameterIn =>
-          allIdentifiers(param.name).iterator
-            .filter(x => x.id != param.id)
-        case identifier: Identifier =>
-          val sameIdentifiers = allIdentifiers(identifier.name).iterator
-            .filter(x => x.id != identifier.id)
-
-          /** Killing an identifier should also kill field accesses on that identifier. For example, a reassignment `x =
-            * new Box()` should kill any previous calls to `x.value`, `x.length()`, etc.
-            */
-          val sameObjects: Iterator[Call] = allCalls.valuesIterator.flatten
-            .filter(_.name == Operators.fieldAccess)
-            .filter(_.ast.isIdentifier.nameExact(identifier.name).nonEmpty)
-
-          sameIdentifiers ++ sameObjects
-        case call: Call =>
-          allCalls(call.code).iterator
-            .filter(x => x.id != call.id)
-        case _ => Iterator.empty
+  /** Initialize the map `kill`, a map that contains killed definitions for each flow graph node: the only way in which
+    * a call can kill another definition is by generating a new definition for the same variable, so for each definition
+    * in `gen(call)`, the other definitions of its variable.
+    *
+    * All operations in our graph are represented by calls and non-operations such as identifiers or field-identifiers
+    * have empty gen and kill sets, meaning that they just pass on definitions unaltered.
+    */
+  private[reachingdef] def initKill(method: Method, gen: Map[CfgNode, mutable.BitSet]): Map[CfgNode, mutable.BitSet] =
+    killingCalls(method).map { call =>
+      val killed = mutable.BitSet()
+      gen(call).foreach { definition =>
+        variableOf(definition).foreach(variable =>
+          killIndex(variable).foreach(other => if (other != definition) killed += other)
+        )
       }
-      definedNodes
-        // It can happen that the CFG is broken and contains isolated nodes,
-        // in which case they are not in `nodeToNumber`. Let's filter those.
-        .collect { case x if nodeToNumber.contains(x) => Definition.fromNode(x, nodeToNumber) }
-    }
+      call -> killed
+    }.toMap
 
-    val res = mutable.BitSet()
-    for (definition <- genOfCall) {
-      res.addAll(definitionsOfSameVariable(definition))
-    }
-    res
-  }
+  /** Initialize [[killMasks]]. A variable whose only definition is the call's own gets no mask. */
+  private[reachingdef] def initKillMasks(
+    method: Method,
+    gen: Map[CfgNode, mutable.BitSet]
+  ): Map[CfgNode, Array[Array[Definition]]] =
+    killingCalls(method).map { call =>
+      call -> gen(call).iterator
+        .flatMap(definition => variableOf(definition).map(_ -> definition))
+        .distinctBy(_._1)
+        .flatMap { case (variable, definition) =>
+          val definitions = killIndex(variable)
+          if (definitions.forall(_ == definition)) None else Some(definitions)
+        }
+        .toArray
+    }.toMap
 
 }
 

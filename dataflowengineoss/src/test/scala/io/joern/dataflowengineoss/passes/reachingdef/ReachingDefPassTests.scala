@@ -44,8 +44,8 @@ class ReachingDefPassTests extends AnyWordSpec with Matchers {
       .cpg
 
   /** A [[ReachingDefPass]] that records the methods whose `gen` and kill sets it builds. Its problems are built as
-    * [[ReachingDefProblem.create]] builds them, with a transfer function that records each call of `initGen` and
-    * `initKill`.
+    * [[ReachingDefProblem.create]] builds them, with a transfer function that records each call of `initGen`,
+    * `initKill` and `initKillMasks`.
     */
   private class KillSetRecordingPass(cpg: Cpg, maxNumberOfDefinitions: Int)
       extends ReachingDefPass(cpg, maxNumberOfDefinitions)(DefaultSemantics()) {
@@ -66,6 +66,13 @@ class ReachingDefPassTests extends AnyWordSpec with Matchers {
         ): Map[CfgNode, mutable.BitSet] = {
           methodsWithKillSets.add(method.fullName)
           super.initKill(method, gen)
+        }
+        override private[reachingdef] def initKillMasks(
+          method: Method,
+          gen: Map[CfgNode, mutable.BitSet]
+        ): Map[CfgNode, Array[Array[Definition]]] = {
+          methodsWithKillSets.add(method.fullName)
+          super.initKillMasks(method, gen)
         }
       }
       ReachingDefProblem.create(flowGraph, transfer)
