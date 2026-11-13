@@ -85,6 +85,13 @@ object AstCreator {
     expr: KtCallableReferenceExpression
   ) extends SamImplInfo
 
+  def namespaceBlockFullName(relativizedPath: String, packageName: String): String =
+    if (packageName == Constants.Root) NamespaceTraversal.globalNamespaceName
+    else s"$relativizedPath:$packageName"
+
+  def fakeGlobalTypeDeclFullName(relativizedPath: String, packageName: String): String =
+    s"$relativizedPath:${namespaceBlockFullName(relativizedPath, packageName)}"
+
   def offsetSource(disableFileContent: Boolean): Option[OffsetUtils.OffsetSourceType] =
     Option.unless(disableFileContent)(OffsetUtils.OffsetSourceType.Utf_16)
 
@@ -388,27 +395,26 @@ class AstCreator(
     val importDirectives = ktFile.getImportList.getImports.asScala
     val importAsts       = importDirectives.toList.map(astForImportDirective)
 
-    val packageName = ktFile.getPackageFqName.toString
-    val node        =
-      if (packageName == Constants.Root) {
-        namespaceBlockNode(
-          fileWithMeta.f,
-          NamespaceTraversal.globalNamespaceName,
-          NamespaceTraversal.globalNamespaceName,
-          relativizedPath
-        )
-      } else {
-        val fullName = s"$relativizedPath:$packageName"
-        namespaceBlockNode(fileWithMeta.f, packageName, fullName, relativizedPath)
-      }
+    val packageName   = ktFile.getPackageFqName.toString
+    val namespaceName =
+      if (packageName == Constants.Root) NamespaceTraversal.globalNamespaceName else packageName
+    val namespaceFullName = AstCreator.namespaceBlockFullName(relativizedPath, packageName)
+    val node              = namespaceBlockNode(fileWithMeta.f, namespaceName, namespaceFullName, relativizedPath)
     methodAstParentStack.push(node)
 
     val name                       = NamespaceTraversal.globalNamespaceName
-    val fullName                   = node.fullName
-    val fakeGlobalTypeDeclFullName = s"$relativizedPath:$fullName"
+    val fakeGlobalTypeDeclFullName = AstCreator.fakeGlobalTypeDeclFullName(relativizedPath, packageName)
     val fakeGlobalMethodFullName   = s"$fakeGlobalTypeDeclFullName.global"
     val fakeGlobalTypeDecl         =
-      typeDeclNode(ktFile, name, fakeGlobalTypeDeclFullName, relativizedPath, name, NodeTypes.NAMESPACE_BLOCK, fullName)
+      typeDeclNode(
+        ktFile,
+        name,
+        fakeGlobalTypeDeclFullName,
+        relativizedPath,
+        name,
+        NodeTypes.NAMESPACE_BLOCK,
+        namespaceFullName
+      )
     methodAstParentStack.push(fakeGlobalTypeDecl)
 
     val fakeGlobalMethod =
