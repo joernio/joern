@@ -612,7 +612,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     methodAst(methodNode_, Nil, Ast(blockNode).withChildren(calls), methodReturn, modifiers)
   }
 
-  /** @param classPath
+  /** The type declaration of the class and its members are always created in the scope where the class is declared,
+    * e.g. below of the namespace for a class of a namespace. Only the target of the synthetic assignment of the class
+    * is different for a class of a namespace.
+    *
+    * @param classPath
     *   the path of the property that the class is assigned to instead of the variable that is named like the class, see
     *   [[astForModuleBlock]]. It is only used if `shouldCreateAssignmentCall` is set.
     */
@@ -1341,6 +1345,14 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     * A = { B: { C: {} } };
     * A.B.C.Foo = class Foo {};
     * }}}
+    * The lowering is only about how the name is bound. The declaration itself stays inside of the namespace, and
+    * `class Foo {}` above stands for the type reference of the class that is created for it:
+    *   - the TYPE_DECL `...:A:B:C:Foo` and its methods are created while the scopes of the namespaces and of the class
+    *     are active. Their full names are unchanged, and the TYPE_DECL is attached to the NAMESPACE_BLOCK of `C`.
+    *   - the TYPE_REF to the class is the value of the assignment, which is part of the body of `C` and belongs to the
+    *     method that contains the namespace, e.g. `:program`.
+    *   - there is no variable named `Foo`. Code inside of a method of `Foo` that reads `A` captures it as any closure.
+    *
     * A reference to an exported member inside the namespace is lowered to the access of the property, e.g. `A.B.C.Foo`.
     * Exported members that are not declared inline, i.e. variables that are declared by a pattern, are declared as
     * usual and then assigned to the property. If `A` already exists, e.g. a class or an earlier namespace, its object
@@ -1418,7 +1430,10 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     name
   }
 
-  /** Exported declarations that are declared inline, i.e. as the value of the property of the namespace object. */
+  /** The names of the declarations of a namespace that are assigned inline, i.e. the property of an object is their
+    * binding. The declarations themselves, e.g. the type declaration of a class, are still created inside of the
+    * namespace, see [[astForModuleBlock]].
+    */
   private def inlineMemberNames(declaration: BabelNode): Seq[String] = {
     declaration match {
       case clazz: ClassDeclaration if clazz.id.isDefined          => clazz.id.map(_.name).toSeq
@@ -1442,8 +1457,10 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
   }
 
-  /** A declaration of a namespace as property of the object `objectPath`. The ones that are not declared inline are
-    * declared as usual and then assigned to the property.
+  /** A declaration of a namespace that is bound to a property of the object `objectPath` instead of a variable. The
+    * declaration itself, e.g. the type declaration of a class, is created as usual inside of the namespace, and its
+    * type reference, method reference or value is assigned to the property. The ones that are not assigned inline are
+    * declared with a variable as usual and then copied to the property.
     */
   private def astForModuleMember(declaration: BabelNode, objectPath: List[String]): Ast = {
     def memberAssignment(name: String, valueAst: Ast): Ast = {
