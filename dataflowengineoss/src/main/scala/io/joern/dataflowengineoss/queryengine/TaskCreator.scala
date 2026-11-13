@@ -109,7 +109,7 @@ class TaskCreator(context: EngineContext) {
       outArg.toList.flatMap {
         case call: Call =>
           val methodReturns = call.toList
-            .flatMap(x => calledMethodsWithoutAbstractStubs(x).methodReturn.map(y => (x, y)))
+            .flatMap(callNode => calledMethodsWithoutAbstractStubs(callNode).methodReturn.map((callNode, _)))
             .iterator
 
           methodReturns.flatMap { case (call, methodReturn) =>
