@@ -77,6 +77,25 @@ private class SamTypeDeclAstBuilder()(implicit withSchemaValidation: ValidationM
 
   private def registerType(typeName: String): String = typeName
 
+  /** SAM classes are deduplicated across use sites, so they are file-level types rather than locals of one method. The
+    * per-file `<global>` TYPE_DECL is a unique parent even for the root package, whose namespace full name `<global>`
+    * is shared.
+    */
+  private def samTypeDeclNode(samInfo: SamImplInfo, relativizedPath: String): NewTypeDecl = {
+    val packageName = samInfo.expr.getContainingKtFile.getPackageFqName.toString
+    val name        = samInfo.samImplClass.split('.').last
+    typeDeclNode(
+      samInfo.expr,
+      name,
+      samInfo.samImplClass,
+      relativizedPath,
+      name,
+      astParentType = NodeTypes.TYPE_DECL,
+      astParentFullName = AstCreator.fakeGlobalTypeDeclFullName(relativizedPath, packageName),
+      inherits = samInfo.inheritsFrom.map(registerType)
+    )
+  }
+
   private def createBindingInfo(
     methodName: String,
     signature: String,
@@ -91,14 +110,7 @@ private class SamTypeDeclAstBuilder()(implicit withSchemaValidation: ValidationM
   }
 
   private def createUnboundSamTypeDecl(relativizedPath: String, samInfo: UnboundSamInfo): SamTypeDeclBuild = {
-    val samTypeDecl = typeDeclNode(
-      samInfo.expr,
-      samInfo.samImplClass.split('.').last,
-      samInfo.samImplClass,
-      relativizedPath,
-      samInfo.inheritsFrom.map(registerType),
-      None
-    )
+    val samTypeDecl = samTypeDeclNode(samInfo, relativizedPath)
 
     val samMethodFullName = s"${samInfo.methodRefName}:${samInfo.signature}"
     val bindings          =
@@ -268,14 +280,7 @@ private class SamTypeDeclAstBuilder()(implicit withSchemaValidation: ValidationM
   }
 
   private def createBoundSamTypeDecl(relativizedPath: String, samInfo: BoundSamInfo): SamTypeDeclBuild = {
-    val samTypeDecl = typeDeclNode(
-      samInfo.expr,
-      samInfo.samImplClass.split('.').last,
-      samInfo.samImplClass,
-      relativizedPath,
-      samInfo.inheritsFrom.map(registerType),
-      None
-    )
+    val samTypeDecl = samTypeDeclNode(samInfo, relativizedPath)
 
     val samMethodFullName = s"${samInfo.samImplClass}.${samInfo.samMethodName}:${samInfo.samMethodSig}"
     val methodAst         = createBoundSamMethodAst(relativizedPath, samInfo, samMethodFullName)
