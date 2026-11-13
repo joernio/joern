@@ -158,12 +158,13 @@ trait AstForFunctionsCreator { this: AstCreator =>
     scope.popScope()
     methodAstParentStack.pop()
 
-    val astForMethod = methodAst(
+    val astForMethod = methodAstWithAnnotations(
       methodNode_,
       (parameterNodes ++ variadicParams).map(Ast(_)),
       methodBodyAst,
       methodReturnNode(funcDef, registerType(returnType)),
-      modifiers = modifierFor(funcDef)
+      modifiers = modifierFor(funcDef),
+      annotations = astsForAttributes(funcDef)
     )
 
     methodRefNode_ match {
@@ -291,6 +292,35 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
   private def virtualModifierFor(node: IASTNode, name: IASTName): List[NewModifier] = {
     Option.when(isVirtualMethod(name))(modifierNode(node, ModifierTypes.VIRTUAL)).toList
+  }
+
+  /** A C++ attribute states intent that nothing else in the graph records: `[[nodiscard]]` on a function whose result
+    * must be checked, `[[deprecated]]` on one that should no longer be called. A scoped attribute keeps its scope in
+    * the full name, so `[[gnu::always_inline]]` is named `always_inline` with full name `gnu::always_inline`, which
+    * lets a query select a vendor namespace without reading the code string.
+    *
+    * The parameter is an `IASTNode` rather than an `IASTAttributeOwner` because `IASTFunctionDefinition` does not
+    * extend that interface even though the node CDT builds for a function definition implements it.
+    */
+  private def astsForAttributes(node: IASTNode): Seq[Ast] = {
+    val attributes = node match {
+      case owner: IASTAttributeOwner =>
+        Option(owner.getAttributeSpecifiers).toSeq.flatten.flatMap {
+          case attributeList: IASTAttributeList => Option(attributeList.getAttributes).toSeq.flatten
+          case _                                => Seq.empty
+        }
+      case _ => Seq.empty
+    }
+    attributes.map { attribute =>
+      val attributeName = new String(attribute.getName)
+      val scope         = attribute match {
+        case cppAttribute: ICPPASTAttribute =>
+          Option(cppAttribute.getScope).map(scopeName => new String(scopeName)).filter(_.nonEmpty)
+        case _ => None
+      }
+      val fullName = scope.fold(attributeName)(scopeName => s"$scopeName::$attributeName")
+      annotationAst(annotationNode(attribute, code(attribute), attributeName, fullName), Nil)
+    }
   }
 
   private def modifierFor(funcDef: IASTFunctionDefinition): List[NewModifier] = {
