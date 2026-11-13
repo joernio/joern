@@ -30,7 +30,7 @@ class AttributeTests extends AstC2CpgSuite {
       )
       inside(cpg.method.nameExact("inlined").annotation.l) { case List(annotation) =>
         annotation.name shouldBe "always_inline"
-        annotation.fullName shouldBe "gnu::always_inline"
+        annotation.fullName shouldBe "gnu.always_inline"
       }
     }
 

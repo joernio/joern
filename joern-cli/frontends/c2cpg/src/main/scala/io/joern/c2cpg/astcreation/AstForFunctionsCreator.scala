@@ -296,8 +296,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
   /** A C++ attribute states intent that nothing else in the graph records: `[[nodiscard]]` on a function whose result
     * must be checked, `[[deprecated]]` on one that should no longer be called. A scoped attribute keeps its scope in
-    * the full name, so `[[gnu::always_inline]]` is named `always_inline` with full name `gnu::always_inline`, which
-    * lets a query select a vendor namespace without reading the code string.
+    * the full name, separated by a single dot as every other full name in this frontend is, so `[[gnu::always_inline]]`
+    * is named `always_inline` with full name `gnu.always_inline`. That lets a query select a vendor namespace without
+    * reading the code string.
     *
     * The parameter is an `IASTNode` rather than an `IASTAttributeOwner` because `IASTFunctionDefinition` does not
     * extend that interface even though the node CDT builds for a function definition implements it.
@@ -318,7 +319,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           Option(cppAttribute.getScope).map(scopeName => new String(scopeName)).filter(_.nonEmpty)
         case _ => None
       }
-      val fullName = scope.fold(attributeName)(scopeName => s"$scopeName::$attributeName")
+      val fullName = scope.fold(attributeName)(scopeName => s"$scopeName.$attributeName")
       annotationAst(annotationNode(attribute, code(attribute), attributeName, fullName), Nil)
     }
   }
