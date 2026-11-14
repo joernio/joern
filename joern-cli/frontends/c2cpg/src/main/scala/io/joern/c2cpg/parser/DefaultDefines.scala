@@ -17,4 +17,10 @@ object DefaultDefines {
     * `_Alignas(sizeof(T))`, and the whole file is lost. The graph does not represent alignment, so it is defined away.
     */
   val ALIGNMENT_SPECIFIER: Map[String, String] = Map("_Alignas(x)" -> "")
+
+  /** C11's `_Thread_local`, which CDT's C parser does not know. Without this define, `static _Thread_local int x;` at
+    * file scope is a problem declaration and `x` is lost. It is defined as `__thread`, GCC's keyword for the same
+    * storage class, which CDT's GNU configuration defines away.
+    */
+  private[parser] val C11_KEYWORDS: Map[String, String] = Map("_Thread_local" -> "__thread")
 }
