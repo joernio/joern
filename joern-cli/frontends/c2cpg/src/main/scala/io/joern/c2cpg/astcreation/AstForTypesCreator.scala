@@ -1,6 +1,6 @@
 package io.joern.c2cpg.astcreation
 
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, Defines as X2CpgDefines}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -90,8 +90,37 @@ trait AstForTypesCreator { this: AstCreator =>
         val code = codeForDeclarator(declaration, declarator)
         val node = localNode(declarator, name, code, tpe)
         scope.addVariable(name, node, tpe, VariableScopeManager.ScopeType.BlockScope)
+        storageClassOfLocal(declaration).foreach { storageClass =>
+          val tag = NewTag().name(X2CpgDefines.StorageClassTag).value(storageClass)
+          diffGraph.addNode(tag)
+          diffGraph.addEdge(node, tag, EdgeTypes.TAGGED_BY)
+        }
         Ast(node)
     }
+  }
+
+  /** The storage class of a variable that is declared inside a function and whose storage outlives a call of the
+    * function: `static`, `extern` or `thread_local`, as CDT reports it after macro expansion. A local variable, whose
+    * storage is automatic, has none, and neither does a variable declared outside any function.
+    */
+  private def storageClassOfLocal(declaration: IASTSimpleDeclaration): Option[String] = {
+    val declSpecifier = declaration.getDeclSpecifier
+    if (!isInsideFunction(declaration)) { None }
+    else {
+      declSpecifier.getStorageClass match {
+        case IASTDeclSpecifier.sc_static => Some("static")
+        case IASTDeclSpecifier.sc_extern => Some("extern")
+        case _                           =>
+          declSpecifier match {
+            case cppDeclSpecifier: ICPPASTDeclSpecifier if cppDeclSpecifier.isThreadLocal => Some("thread_local")
+            case _                                                                        => None
+          }
+      }
+    }
+  }
+
+  private def isInsideFunction(node: IASTNode): Boolean = {
+    Iterator.iterate(node.getParent)(_.getParent).takeWhile(_ != null).exists(_.isInstanceOf[IASTFunctionDefinition])
   }
 
   private def astForIASTInitializer(
