@@ -514,7 +514,7 @@ class CallTests extends C2CpgSuite {
       )
 
       val List(call) = cpg.call.nameExact("foo").l
-      call.signature shouldBe ""
+      call.signature shouldBe "void(int)"
       call.methodFullName shouldBe "foo"
       call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       call.typeFullName shouldBe "void"
@@ -523,6 +523,29 @@ class CallTests extends C2CpgSuite {
       arg1.code shouldBe "1"
 
       call.receiver.isEmpty shouldBe true
+    }
+
+    "have the signature of the declaration a C call resolves to" in {
+      val cpg = code(
+        """
+          |int log_msg(const char* fmt, ...);
+          |void copy(int* dst, unsigned long n);
+          |int add(int a, int b) { return a + b; }
+          |void outer(int* p) {
+          |  log_msg("x", 1);
+          |  copy(p, 2);
+          |  add(1, 2);
+          |}
+          |""".stripMargin,
+        "test.c"
+      )
+
+      cpg.call.nameExact("log_msg").signature.l shouldBe List("int(char*,...)")
+      cpg.call.nameExact("copy").signature.l shouldBe List("void(int*,unsigned long)")
+      cpg.call.nameExact("add").signature.l shouldBe List("int(int,int)")
+      cpg.call.nameExact("log_msg", "copy", "add").l.foreach { call =>
+        call.callee.signature.l shouldBe List(call.signature)
+      }
     }
 
     "have correct call for call on extern C function" in {

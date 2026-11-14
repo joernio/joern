@@ -378,10 +378,10 @@ trait AstForExpressionsCreator { this: AstCreator =>
     safeCdtCall(functionNameExpr.getExpressionType) match {
       case Some(_: CPointerType) =>
         createPointerCallAst(call, safeGetExpressionType(call))
-      case Some(_: CFunctionType) =>
+      case Some(functionType: CFunctionType) =>
         functionNameExpr match {
           case idExpr: CASTIdExpression =>
-            createCFunctionCallAst(call, idExpr, safeGetExpressionType(call))
+            createCFunctionCallAst(call, idExpr, safeGetExpressionType(call), functionTypeToSignature(functionType))
           case _ =>
             createPointerCallAst(call, safeGetExpressionType(call))
         }
@@ -390,16 +390,21 @@ trait AstForExpressionsCreator { this: AstCreator =>
     }
   }
 
+  /** A call of the function `idExpr` names. Its signature is that of the declaration the call resolves to in this
+    * translation unit, or empty when none is visible here, as for a call of an undeclared function or of a macro whose
+    * definition was not parsed.
+    */
   private def createCFunctionCallAst(
     call: CASTFunctionCallExpression,
     idExpr: CASTIdExpression,
-    callTypeFullName: String
+    callTypeFullName: String,
+    signature: String
   ): Ast = {
     val name         = idExpr.getName.getLastName.toString
     val dispatchType = DispatchTypes.STATIC_DISPATCH
     val callCpgNode  =
-      callNode(call, code(call), name, name, dispatchType, Some(""), Some(registerType(callTypeFullName)))
-    val args = call.getArguments.toList.map(a => astForNode(a))
+      callNode(call, code(call), name, name, dispatchType, Some(signature), Some(registerType(callTypeFullName)))
+    val args = call.getArguments.toList.map(astForNode)
     createCallAst(callCpgNode, args)
   }
 
@@ -415,7 +420,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
   private def astForCCallExpressionUntyped(call: CASTFunctionCallExpression): Ast = {
     call.getFunctionNameExpression match {
-      case idExpr: CASTIdExpression => createCFunctionCallAst(call, idExpr, Defines.Any)
+      case idExpr: CASTIdExpression => createCFunctionCallAst(call, idExpr, Defines.Any, "")
       case _                        => createPointerCallAst(call, Defines.Any)
     }
   }
