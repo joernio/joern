@@ -250,7 +250,7 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CppExt) {
           |""".stripMargin)
       def modifiers(name: String) = cpg.member.nameExact(name).modifier.modifierType.l
       modifiers("implicitlyPrivate") shouldBe List(ModifierTypes.PRIVATE)
-      modifiers("staticPrivate") shouldBe List(ModifierTypes.PRIVATE)
+      modifiers("staticPrivate") shouldBe List(ModifierTypes.PRIVATE, ModifierTypes.STATIC)
       modifiers("bitfield") shouldBe List(ModifierTypes.PRIVATE)
       modifiers("declaredProtected") shouldBe List(ModifierTypes.PROTECTED)
       modifiers("declaredPublic") shouldBe List(ModifierTypes.PUBLIC)
@@ -279,6 +279,36 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CppExt) {
       val List(k) = cpg.typeDecl.nameExact("Foo").method.l
       k.name shouldBe "Kind"
       k.fullName shouldBe "Foo.Kind:Foo.Kind()<const>"
+    }
+  }
+
+  "handling the storage class of a data member" should {
+    "record the static storage class of a data member" in {
+      val cpg = code("""
+          |class C {
+          |  static int staticImplicitlyPrivate;
+          |  int instanceImplicitlyPrivate;
+          |public:
+          |  static int staticPublic;
+          |  static const int staticConst = 1;
+          |  static int staticFirst, staticSecond;
+          |};
+          |struct S { static int staticMember; int instanceMember; };
+          |""".stripMargin)
+      def modifiers(name: String) = cpg.member.nameExact(name).modifier.modifierType.l
+      modifiers("staticImplicitlyPrivate") shouldBe List(ModifierTypes.PRIVATE, ModifierTypes.STATIC)
+      modifiers("staticPublic") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.STATIC)
+      modifiers("staticConst") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.STATIC)
+      modifiers("staticFirst") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.STATIC)
+      modifiers("staticSecond") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.STATIC)
+      modifiers("staticMember") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.STATIC)
+      modifiers("instanceImplicitlyPrivate") shouldBe List(ModifierTypes.PRIVATE)
+      modifiers("instanceMember") shouldBe List(ModifierTypes.PUBLIC)
+    }
+
+    "select the static data members" in {
+      val cpg = code("struct S { static int shared; int perObject; };")
+      cpg.member.isStatic.name.l shouldBe List("shared")
     }
   }
 
