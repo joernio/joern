@@ -10,6 +10,7 @@ import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression.CaptureDefault
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
+import org.eclipse.cdt.internal.core.dom.parser.ASTQueries
 import org.eclipse.cdt.internal.core.dom.parser.c.{CASTFunctionDeclarator, CASTParameterDeclaration, CVariable}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.*
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
@@ -666,6 +667,13 @@ trait AstForFunctionsCreator { this: AstCreator =>
     )
   }
 
+  private def parameterDeclaratorName(parameter: IASTNode): Option[IASTName] =
+    parameter match {
+      case declaration: IASTParameterDeclaration =>
+        Option(ASTQueries.findInnermostDeclarator(declaration.getDeclarator)).map(_.getName)
+      case _ => None
+    }
+
   private def parameterNode(parameter: IASTNode, paramIndex: Int): NewMethodParameterIn = {
     val parameterInfo = parameterNodeInfo(parameter, paramIndex)
     val parameterNode =
@@ -678,6 +686,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         parameterInfo.evaluationStrategy,
         parameterInfo.typeFullName
       )
+    parameterDeclaratorName(parameter).foreach(tagIfPassedByValue(parameterNode, _))
     scope.addVariable(
       parameterInfo.name,
       parameterNode,

@@ -4,7 +4,7 @@ import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.AstNodeBuilder.dependencyNode
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, NewTag}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, NewNode, NewTag}
 import io.shiftleft.semanticcpg.language.importresolver.EvaluatedImport
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
@@ -18,6 +18,19 @@ import scala.util.control.NonFatal
 import scala.util.{Success, Try}
 
 trait AstCreatorHelper { this: AstCreator =>
+
+  /** Links `node`, the LOCAL of a variable, to a TAG named `STORAGE_CLASS` with value `storageClass`, once the AST is
+    * stored.
+    */
+  protected def tagWithStorageClass(node: NewNode, storageClass: String): Unit =
+    storageClassTags.append(node -> Right(storageClass))
+
+  /** Links `node`, the LOCAL or METHOD_PARAMETER_IN of the variable `name` declares, to a TAG named `STORAGE_CLASS`
+    * with value `by_value` if the variable is of scalar type and passed by value, as [[ByValueVariables]] finds it once
+    * the AST is stored.
+    */
+  protected def tagIfPassedByValue(node: NewNode, name: IASTName): Unit =
+    storageClassTags.append(node -> Left(name))
 
   private val resolvedInputPath: Path = Paths.get(config.inputPath).toAbsolutePath.normalize()
 

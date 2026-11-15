@@ -3,15 +3,17 @@ package io.joern.c2cpg.astcreation
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.parser.HeaderFileFinder
 import io.joern.c2cpg.passes.AstCreationPass
-import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
+import io.joern.x2cpg.{Ast, AstCreatorBase, Defines as X2CpgDefines, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import org.eclipse.cdt.core.dom.ast.{IASTNode, IASTTranslationUnit}
+import org.eclipse.cdt.core.dom.ast.{IASTName, IASTNode, IASTTranslationUnit}
 import org.slf4j.{Logger, LoggerFactory}
+
+import scala.collection.mutable
 
 /** Translates the Eclipse CDT AST into a CPG AST. */
 class AstCreator(
@@ -44,14 +46,36 @@ class AstCreator(
   protected val methodAstParentStack: Stack[NewNode] = new Stack()
   protected val typeRefIdStack: Stack[NewTypeRef]    = new Stack()
 
+  protected lazy val byValueVariables: ByValueVariables = new ByValueVariables(cdtAst)
+
+  /** The LOCAL and METHOD_PARAMETER_IN nodes to tag `STORAGE_CLASS`, each with its storage class, or with the name of
+    * its variable when the tag is `by_value` if the variable is passed by value. The tags are linked once the AST is
+    * stored, so that a tag does not add its node to the graph ahead of the nodes before it in the AST, and `by_value`
+    * is decided then, so that resolving CDT bindings for it does not change how the AST is created.
+    */
+  protected val storageClassTags: mutable.ArrayBuffer[(NewNode, Either[IASTName, String])] = mutable.ArrayBuffer.empty
+
   def createAst(): DiffGraphBuilder = {
     val fileContent = if (!config.disableFileContent) Option(cdtAst.getRawSignature) else None
     val fileNode    = NewFile().name(fileName(cdtAst)).order(0)
     fileContent.foreach(fileNode.content(_))
     val ast = Ast(fileNode).withChild(astForTranslationUnit(cdtAst))
     Ast.storeInDiffGraph(ast, diffGraph)
+    storeStorageClassTags()
     scope.createVariableReferenceLinks(diffGraph, filename)
     diffGraph
+  }
+
+  private def storeStorageClassTags(): Unit = {
+    storageClassTags.foreach { case (node, storageClass) =>
+      storageClass
+        .fold(name => Option.when(byValueVariables.isPassedByValue(name))("by_value"), Some(_))
+        .foreach { value =>
+          val tag = NewTag().name(X2CpgDefines.StorageClassTag).value(value)
+          diffGraph.addNode(tag)
+          diffGraph.addEdge(node, tag, EdgeTypes.TAGGED_BY)
+        }
+    }
   }
 
   private def astForTranslationUnit(iASTTranslationUnit: IASTTranslationUnit): Ast = {

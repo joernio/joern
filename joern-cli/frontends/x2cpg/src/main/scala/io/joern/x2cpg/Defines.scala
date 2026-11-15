@@ -21,9 +21,11 @@ object Defines {
   val UnresolvedNamespace = "<unresolvedNamespace>"
   val UnresolvedSignature = "<unresolvedSignature>"
 
-  // Name of the tag a frontend gives the LOCAL of a variable that is declared inside a method but whose storage outlives
-  // a call of that method. Its value is the storage class as declared, such as `static`, `extern` or `thread_local` in C
-  // and C++.
+  // Name of the tag a frontend gives the LOCAL or METHOD_PARAMETER_IN of a variable declared inside a method, to say
+  // what a call can write of it. Its value is either the storage class as declared, such as `static`, `extern` or
+  // `thread_local` in C and C++, for a variable whose storage outlives a call of that method, or `by_value`, for a
+  // variable of scalar type that no call can write: its address is never taken, it is never bound to a reference, and
+  // every call it is passed to receives it by value.
   val StorageClassTag = "STORAGE_CLASS"
 
   // Name of the synthetic, static method that contains the initialization of member variables.

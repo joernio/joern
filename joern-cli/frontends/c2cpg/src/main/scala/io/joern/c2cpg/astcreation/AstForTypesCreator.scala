@@ -1,6 +1,6 @@
 package io.joern.c2cpg.astcreation
 
-import io.joern.x2cpg.{Ast, Defines as X2CpgDefines}
+import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -103,10 +103,10 @@ trait AstForTypesCreator { this: AstCreator =>
         val code = codeForDeclarator(declaration, declarator)
         val node = localNode(declarator, name, code, tpe)
         scope.addVariable(name, node, tpe, VariableScopeManager.ScopeType.BlockScope)
-        storageClassOfLocal(declaration).foreach { storageClass =>
-          val tag = NewTag().name(X2CpgDefines.StorageClassTag).value(storageClass)
-          diffGraph.addNode(tag)
-          diffGraph.addEdge(node, tag, EdgeTypes.TAGGED_BY)
+        storageClassOfLocal(declaration) match {
+          case Some(storageClass)                    => tagWithStorageClass(node, storageClass)
+          case None if isInsideFunction(declaration) => tagIfPassedByValue(node, declarator.getName)
+          case None                                  =>
         }
         Ast(node)
     }
