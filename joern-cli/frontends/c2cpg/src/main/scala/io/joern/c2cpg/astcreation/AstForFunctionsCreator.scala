@@ -306,6 +306,21 @@ trait AstForFunctionsCreator { this: AstCreator =>
     Option.when(isFinalMethod(name))(modifierNode(node, ModifierTypes.FINAL)).toList
   }
 
+  /** [class.abstract]/2: a virtual member function declared with a pure-specifier is pure virtual, and its class is
+    * abstract. Such a function need be defined only if it is called with the qualified-id syntax, so it usually has no
+    * definition, but the modifier does not state that the method has no body.
+    *
+    * Read from the binding rather than from the declarator, because a pure virtual function may still be defined out of
+    * line, and that definition's own declarator carries no pure-specifier.
+    */
+  private def isAbstractMethod(name: IASTName): Boolean = {
+    safeGetBinding(name).collect { case method: ICPPMethod => method }.exists(_.isPureVirtual)
+  }
+
+  private def abstractModifierFor(node: IASTNode, name: IASTName): List[NewModifier] = {
+    Option.when(isAbstractMethod(name))(modifierNode(node, ModifierTypes.ABSTRACT)).toList
+  }
+
   /** A C++ attribute states intent that nothing else in the graph records: `[[nodiscard]]` on a function whose result
     * must be checked, `[[deprecated]]` on one that should no longer be called. A scoped attribute keeps its scope in
     * the full name, separated by a single dot as every other full name in this frontend is, so `[[gnu::always_inline]]`
@@ -349,11 +364,12 @@ trait AstForFunctionsCreator { this: AstCreator =>
         List(modifierNode(funcDef, Defines.ModifierDefaulted))
       case _ => Nil
     }
-    val staticModifier  = Try(staticModifierFor(funcDef, funcDef.getDeclSpecifier, funcDef)).getOrElse(Nil)
-    val virtualModifier = virtualModifierFor(funcDef, funcDef.getDeclarator.getName)
-    val finalModifier   = finalModifierFor(funcDef, funcDef.getDeclarator.getName)
+    val staticModifier   = Try(staticModifierFor(funcDef, funcDef.getDeclSpecifier, funcDef)).getOrElse(Nil)
+    val virtualModifier  = virtualModifierFor(funcDef, funcDef.getDeclarator.getName)
+    val abstractModifier = abstractModifierFor(funcDef, funcDef.getDeclarator.getName)
+    val finalModifier    = finalModifierFor(funcDef, funcDef.getDeclarator.getName)
     constructorModifier ++ accessModifier ++ definitionModifier ++ staticModifier ++ virtualModifier ++
-      finalModifier ++ noExceptModifierFor(funcDef, funcDef.getDeclarator)
+      abstractModifier ++ finalModifier ++ noExceptModifierFor(funcDef, funcDef.getDeclarator)
   }
 
   private def modifierFor(funcDecl: IASTFunctionDeclarator): List[NewModifier] = {
@@ -365,10 +381,11 @@ trait AstForFunctionsCreator { this: AstCreator =>
       case definition: IASTFunctionDefinition => staticModifierFor(funcDecl, definition.getDeclSpecifier, definition)
       case _                                  => Nil
     }).getOrElse(Nil)
-    val virtualModifier = virtualModifierFor(funcDecl, funcDecl.getName)
-    val finalModifier   = finalModifierFor(funcDecl, funcDecl.getName)
-    constructorModifier ++ accessModifier ++ staticModifier ++ virtualModifier ++ finalModifier ++
-      noExceptModifierFor(funcDecl, funcDecl)
+    val virtualModifier  = virtualModifierFor(funcDecl, funcDecl.getName)
+    val abstractModifier = abstractModifierFor(funcDecl, funcDecl.getName)
+    val finalModifier    = finalModifierFor(funcDecl, funcDecl.getName)
+    constructorModifier ++ accessModifier ++ staticModifier ++ virtualModifier ++ abstractModifier ++
+      finalModifier ++ noExceptModifierFor(funcDecl, funcDecl)
   }
 
   private def syntheticThisAccess(ident: IASTName, identifierName: String): Ast = {
