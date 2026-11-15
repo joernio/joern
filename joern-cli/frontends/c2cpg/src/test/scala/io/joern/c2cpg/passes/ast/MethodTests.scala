@@ -387,7 +387,8 @@ class MethodTests extends C2CpgSuite {
       def modifiers(fullName: String) = cpg.method.fullNameExact(fullName).modifier.modifierType.sorted.l
       modifiers("Base.declaredVirtual:void()") shouldBe
         List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
-      modifiers("Base.pureVirtual:void()") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Base.pureVirtual:void()") shouldBe
+        List(ModifierTypes.ABSTRACT, ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
       modifiers("Base.~Base:ANY()") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
       modifiers("Derived.declaredVirtual:void()") shouldBe
         List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
@@ -442,6 +443,65 @@ class MethodTests extends C2CpgSuite {
       )
       cpg.method.isVirtual.whereNot(_.isLambda).fullName.sorted.l shouldBe
         List("Circle.area:double()", "Shape.area:double()")
+    }
+  }
+
+  "The abstract modifier" should {
+    "be present on a pure virtual member function in both spellings" in {
+      val cpg = code(
+        """
+          |struct Base {
+          |  virtual void withKeyword() = 0;
+          |  virtual void reDeclared() = 0;
+          |  virtual void declaredVirtual();
+          |  virtual ~Base() = 0;
+          |  void nonVirtual();
+          |};
+          |struct Derived : Base {
+          |  void reDeclared() = 0;
+          |  void withKeyword() override {}
+          |};
+          |""".stripMargin,
+        "test.cpp"
+      )
+      def modifiers(fullName: String) = cpg.method.fullNameExact(fullName).modifier.modifierType.sorted.l
+      modifiers("Base.withKeyword:void()") shouldBe
+        List(ModifierTypes.ABSTRACT, ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Base.reDeclared:void()") shouldBe
+        List(ModifierTypes.ABSTRACT, ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Derived.reDeclared:void()") shouldBe
+        List(ModifierTypes.ABSTRACT, ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Base.~Base:ANY()") shouldBe
+        List(ModifierTypes.ABSTRACT, ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Base.declaredVirtual:void()") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Derived.withKeyword:void()") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Base.nonVirtual:void()") shouldBe List(ModifierTypes.PUBLIC)
+    }
+
+    "be present on an out-of-line definition of a pure virtual member function" in {
+      val cpg = code(
+        """
+          |struct Base { virtual void pure() = 0; virtual void impure(); };
+          |void Base::pure() {}
+          |void Base::impure() {}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      cpg.method.fullNameExact("Base.pure:void()").modifier.modifierType.sorted.l shouldBe
+        List(ModifierTypes.ABSTRACT, ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      cpg.method.fullNameExact("Base.impure:void()").modifier.modifierType.sorted.l shouldBe
+        List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+    }
+
+    "select the pure virtual member functions" in {
+      val cpg = code(
+        """
+          |struct Shape { virtual double area() = 0; virtual double perimeter(); };
+          |struct Circle : Shape { double area() override; };
+          |""".stripMargin,
+        "test.cpp"
+      )
+      cpg.method.isAbstract.fullName.sorted.l shouldBe List("Shape.area:double()")
     }
   }
 
