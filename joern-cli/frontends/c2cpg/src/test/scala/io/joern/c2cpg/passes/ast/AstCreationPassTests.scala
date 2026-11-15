@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -111,6 +112,54 @@ class AstCreationPassTests extends AstC2CpgSuite {
       ellipsis2.typeFullName shouldBe Defines.Any
       ellipsis2.index shouldBe 2
       ellipsis2.isVariadic shouldBe true
+    }
+
+    "be correct for a C++ ellipsis with no parameter in front of it" in {
+      val cpg = code(
+        """
+          |int freeFunction(...) { return 0; }
+          |struct S {
+          |  int declared(...);
+          |  int defined(...) { return 0; }
+          |};
+          |void withLambda() { auto l = [](...) { return 0; }; }
+          |""".stripMargin,
+        "foo.cpp"
+      )
+      inside(cpg.method("freeFunction").l) { case List(freeFunction) =>
+        freeFunction.isVariadic shouldBe true
+        inside(freeFunction.parameter.l) { case List(ellipsis) =>
+          ellipsis.name shouldBe "<param>1"
+          ellipsis.code shouldBe "<param>1..."
+          ellipsis.typeFullName shouldBe Defines.Any
+          ellipsis.index shouldBe 1
+          ellipsis.isVariadic shouldBe true
+        }
+      }
+      inside(cpg.method("declared").l) { case List(declared) =>
+        declared.isVariadic shouldBe true
+        inside(declared.parameter.l) { case List(ellipsis) =>
+          ellipsis.name shouldBe "<param>1"
+          ellipsis.index shouldBe 1
+          ellipsis.isVariadic shouldBe true
+        }
+      }
+      inside(cpg.method("defined").l) { case List(defined) =>
+        defined.isVariadic shouldBe true
+        inside(defined.parameter.l.filter(_.isVariadic)) { case List(ellipsis) =>
+          ellipsis.name shouldBe "<param>1"
+          ellipsis.index shouldBe 1
+          ellipsis.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
+        }
+      }
+      inside(cpg.method.nameExact("<lambda>0").l) { case List(lambda) =>
+        lambda.isVariadic shouldBe true
+        inside(lambda.parameter.l) { case List(ellipsis) =>
+          ellipsis.name shouldBe "<param>1"
+          ellipsis.index shouldBe 1
+          ellipsis.isVariadic shouldBe true
+        }
+      }
     }
 
     "be correct for full names and signatures for method problem bindings" in {

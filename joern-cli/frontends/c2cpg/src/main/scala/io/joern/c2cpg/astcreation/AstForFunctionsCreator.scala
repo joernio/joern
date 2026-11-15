@@ -520,56 +520,67 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
   }
 
+  /** [dcl.fct]: an ellipsis is not a parameter-declaration and has no type of its own. It is modelled as a parameter
+    * node all the same, so that `isVariadic` and variadic argument absorption have something to find. It may stand
+    * alone, as in `int f(...)`, where no preceding parameter exists to take an index, an evaluation strategy or a
+    * position from; the implicit `this` of a member function does not count as one.
+    */
+  private def ellipsisParameter(
+    index: Int,
+    evaluationStrategy: String,
+    lineNumber: Option[Int],
+    columnNumber: Option[Int]
+  ): FunctionDeclNodePass.ParameterInfo = {
+    new FunctionDeclNodePass.ParameterInfo(
+      s"<param>$index",
+      s"<param>$index...",
+      index,
+      true,
+      evaluationStrategy,
+      lineNumber,
+      columnNumber,
+      Defines.Any
+    )
+  }
+
   private def variadicParamsForCPPFunctionFromInfo(
     func: IASTNode,
     otherParams: Seq[FunctionDeclNodePass.ParameterInfo]
   ): Seq[FunctionDeclNodePass.ParameterInfo] = {
-    val variadicParam = otherParams.find(p => p.isVariadic && !p.code.contains(s"... ${p.name}")) match {
-      case Some(p)               => Some(p)
-      case _ if isVariadic(func) => otherParams.lastOption
-      case _                     => None
+    val precedingParam =
+      otherParams.find(param => param.isVariadic && !param.code.contains(s"... ${param.name}")) match {
+        case Some(param)           => Some(param)
+        case _ if isVariadic(func) => otherParams.filter(_.index > 0).lastOption
+        case _                     => None
+      }
+    precedingParam match {
+      case Some(param) =>
+        param.isVariadic = false
+        Seq(ellipsisParameter(param.index + 1, param.evaluationStrategy, param.lineNumber, param.columnNumber))
+      case None if isVariadic(func) =>
+        Seq(ellipsisParameter(1, EvaluationStrategies.BY_VALUE, line(func), column(func)))
+      case None => Seq.empty
     }
-    variadicParam.map { p =>
-      p.isVariadic = false
-      val index = p.index + 1
-      new FunctionDeclNodePass.ParameterInfo(
-        s"<param>$index",
-        s"<param>$index...",
-        index,
-        true,
-        p.evaluationStrategy,
-        p.lineNumber,
-        p.columnNumber,
-        // [dcl.fct]/3: an ellipsis is not a parameter-declaration and has no type of its own.
-        Defines.Any
-      )
-    }.toSeq
   }
 
   private def variadicParamsForCPPFunctionFromParam(
     func: IASTNode,
     otherParams: Seq[NewMethodParameterIn]
   ): Seq[FunctionDeclNodePass.ParameterInfo] = {
-    val variadicParam = otherParams.find(p => p.isVariadic && !p.code.contains(s"... ${p.name}")) match {
-      case Some(p)               => Some(p)
-      case _ if isVariadic(func) => otherParams.lastOption
-      case _                     => None
+    val precedingParam =
+      otherParams.find(param => param.isVariadic && !param.code.contains(s"... ${param.name}")) match {
+        case Some(param)           => Some(param)
+        case _ if isVariadic(func) => otherParams.filter(_.index > 0).lastOption
+        case _                     => None
+      }
+    precedingParam match {
+      case Some(param) =>
+        param.isVariadic = false
+        Seq(ellipsisParameter(param.index + 1, param.evaluationStrategy, param.lineNumber, param.columnNumber))
+      case None if isVariadic(func) =>
+        Seq(ellipsisParameter(1, EvaluationStrategies.BY_VALUE, line(func), column(func)))
+      case None => Seq.empty
     }
-    variadicParam.map { p =>
-      p.isVariadic = false
-      val index = p.index + 1
-      new FunctionDeclNodePass.ParameterInfo(
-        s"<param>$index",
-        s"<param>$index...",
-        index,
-        true,
-        p.evaluationStrategy,
-        p.lineNumber,
-        p.columnNumber,
-        // [dcl.fct]/3: an ellipsis is not a parameter-declaration and has no type of its own.
-        Defines.Any
-      )
-    }.toSeq
   }
 
   private def thisForCPPFunctions(func: IASTNode): Seq[FunctionDeclNodePass.ParameterInfo] = {
