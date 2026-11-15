@@ -64,6 +64,18 @@ trait AstForTypesCreator { this: AstCreator =>
     }
   }
 
+  /** [class.static.data]/1: a data member declared `static` is not part of a subobject of its class, so one instance is
+    * shared by every object of that class instead of one existing per object. The storage class is read from the
+    * declaration specifier, which every declarator of the same declaration shares.
+    */
+  private def staticModifierForMember(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator): List[Ast] = {
+    Option
+      .when(hasStorageClass(declaration.getDeclSpecifier, IASTDeclSpecifier.sc_static, false))(
+        Ast(modifierNode(declarator, ModifierTypes.STATIC))
+      )
+      .toList
+  }
+
   protected def astForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator, index: Int): Ast = {
     val name = shortName(declarator)
     declaration match {
@@ -77,7 +89,8 @@ trait AstForTypesCreator { this: AstCreator =>
       case d if parentIsClassDef(d) =>
         val tpe       = typeForIASTDeclarator(declaration, declarator, index)
         val accessAst = accessModifierTypeFor(declarator.getName).map(modifierNode(declarator, _)).map(Ast(_)).toList
-        Ast(memberNode(declarator, name, code(declarator), tpe)).withChildren(accessAst)
+        val staticAst = staticModifierForMember(declaration, declarator)
+        Ast(memberNode(declarator, name, code(declarator), tpe)).withChildren(accessAst ++ staticAst)
       case decl if isAssignmentFromBrokenMacro(decl, declarator) && scope.lookupVariable(name).nonEmpty =>
         Ast()
       case _ if declarator.getName.isInstanceOf[ICPPASTQualifiedName] =>
