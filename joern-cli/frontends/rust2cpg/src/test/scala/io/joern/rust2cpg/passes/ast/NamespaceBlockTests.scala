@@ -2,7 +2,6 @@ package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 
@@ -65,12 +64,20 @@ class NamespaceBlockTests extends Rust2CpgSuite(noSysRoot = true) {
         |""".stripMargin)
 
     "have correct children" in {
-      inside(cpg.namespaceBlock.fullNameExact(s"$libPath:rust2cpgtest").astChildren.sortBy(_.order).l) {
-        case (one: Method) :: (two: Method) :: Nil =>
+      inside(cpg.namespaceBlock.fullNameExact(s"$libPath:rust2cpgtest").astChildren.isMethod.sortBy(_.order).l) {
+        case one :: two :: Nil =>
           one.name shouldBe "one"
           one.fullName shouldBe "rust2cpgtest::one"
           two.name shouldBe "two"
           two.fullName shouldBe "rust2cpgtest::two"
+      }
+      inside(cpg.namespaceBlock.fullNameExact(s"$libPath:rust2cpgtest").astChildren.isTypeDecl.sortBy(_.fullName).l) {
+        case one :: two :: Nil =>
+          one.fullName shouldBe "rust2cpgtest::one::{fn}"
+          one.name shouldBe "one"
+
+          two.fullName shouldBe "rust2cpgtest::two::{fn}"
+          two.name shouldBe "two"
       }
     }
 

@@ -752,6 +752,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       .getOrElse(blockAst(blockNode(fn), paramAssignmentAsts.toList))
     contextStack.pop()
 
+    val typeDecl = typeDeclForFn(fn, method)
+    addDetachedAst(Ast(typeDecl))
+    addDetachedFnTraitBindingAsts(typeDecl, method)
+
     methodAstWithAnnotations(
       method = method,
       parameters = paramAsts,
@@ -1071,7 +1075,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     // A path has `methodFullName` if it denotes a method reference, or `ctorTypeFullName` if it denotes a unit
     // constructor. Otherwise, it's some other identifier.
     (pathExpr.methodFullName, pathExpr.ctorTypeFullName) match {
-      case (Some(methodFullName), _)   => Ast(methodRefNode(pathExpr, code(pathExpr), methodFullName, methodFullName))
+      case (Some(methodFullName), _) =>
+        Ast(methodRefNode(pathExpr, code(pathExpr), methodFullName, RustFullNames.fnTypeFullName(methodFullName)))
       case (_, Some(ctorTypeFullName)) => unitCtorCallAst(pathExpr, ctorTypeFullName)
       case _                           => visitPath(pathExpr.path, pathExpr.ownerFullName)
     }
@@ -2363,7 +2368,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
     val typeDecl = typeDeclForClosure(closureExpr, method)
     addDetachedAst(Ast(typeDecl))
-    addDetachedClosureBindingAsts(typeDecl, method)
+    addDetachedFnTraitBindingAsts(typeDecl, method)
 
     Ast(methodRef)
   }

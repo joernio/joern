@@ -229,4 +229,8 @@ object RustFullNames {
       fullName
     }
   }
+
+  def fnTypeFullName(methodFullName: String): String = {
+    s"$methodFullName$PathSep{fn}"
+  }
 }
