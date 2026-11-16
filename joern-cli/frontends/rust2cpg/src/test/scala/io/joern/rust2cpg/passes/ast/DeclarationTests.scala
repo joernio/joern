@@ -1794,7 +1794,7 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.assignment.argument(2).l) { case (rhs: MethodRef) :: Nil =>
         rhs.code shouldBe "handler"
         rhs.methodFullName shouldBe "rust2cpgtest::handler"
-        rhs.typeFullName shouldBe "rust2cpgtest::handler"
+        rhs.typeFullName shouldBe "rust2cpgtest::handler::{fn}"
       }
     }
   }

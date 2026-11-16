@@ -398,7 +398,7 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.assignment.where(_.target.isIdentifier.nameExact("bar")).source.l) { case (metRef: MethodRef) :: Nil =>
         metRef.code shouldBe "Foo::Bar"
         metRef.methodFullName shouldBe "rust2cpgtest::Foo::Bar"
-        metRef.typeFullName shouldBe "rust2cpgtest::Foo::Bar"
+        metRef.typeFullName shouldBe "rust2cpgtest::Foo::Bar::{fn}"
       }
     }
 
