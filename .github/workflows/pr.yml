@@ -61,26 +61,13 @@ jobs:
         with:
           cache: false
           go-version: 1.25
-      - name: Set up Swift (macos-latest)
-        if: matrix.os == 'macos-latest'
-        uses: SwiftyLab/setup-swift@d60245579ea3836a3f2fa65ebbe1e8891d577c76 # v1.14.2
-        # macos-latest runner switched to Xcode 26.4.1 as the new default
-        # Some swiftsrc2cpg tests use `import Foundation` which can not be
-        # compiled with an incompatible toolchain/SDK combination.
-        #
-        # error: failed to build module 'Darwin'; this SDK is not supported by the compiler
-        # (the SDK is built with 'Apple Swift version 6.3.2 (swiftlang-6.3.2.1.2 clang-2100.0.123.2)',
-        # while this compiler is 'Apple Swift version 6.1.3 (swift-6.1.3-RELEASE)').
-        # Please select a toolchain which matches the SDK.
-        #
-        # See: https://github.com/actions/runner-images/issues/14167
-        with:
-          swift-version: "6.3"
       - name: Set up Swift
-        if: matrix.os != 'macos-latest'
         uses: SwiftyLab/setup-swift@d60245579ea3836a3f2fa65ebbe1e8891d577c76 # v1.14.2
         with:
-          swift-version: "6.1"
+          # SwiftAstGen-win.exe is built with Swift 6.1 and still loads the Swift runtime DLLs dynamically.
+          # Swift has no stable ABI on Windows, so with a newer runtime it exits silently without any output.
+          # Keep Windows on 6.1 until the Windows SwiftAstGen binary is rebuilt with a newer toolchain.
+          swift-version: ${{ matrix.os == 'windows-latest' && '6.1' || '6.4' }}
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
         with:

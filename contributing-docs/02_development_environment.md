@@ -35,7 +35,7 @@ fail, so install the tools for the frontends you work on:
 | `c2cpg` | _optional_: `gcc` and `g++`, for auto-discovery of system header files |
 | `php2cpg` | `php` on the `PATH` (`brew install php` on macOS) |
 | `gosrc2cpg` | Go (CI uses 1.25) |
-| `swiftsrc2cpg` | A Swift toolchain (CI uses 6.1, and 6.3 on macOS to match the Xcode SDK) |
+| `swiftsrc2cpg` | A Swift toolchain (CI uses 6.4, and 6.1 on Windows to match the prebuilt `SwiftAstGen-win.exe`) |
 | `rust2cpg` | A Rust toolchain with the `rust-src` component |
 | `jssrc2cpg`, `csharpsrc2cpg`, `abap2cpg` | Nothing, the AST generator is downloaded |
 | `rubysrc2cpg`, `kotlin2cpg`, `javasrc2cpg`, `jimple2cpg`, `pysrc2cpg` | Nothing, they run on the JVM |
