@@ -192,9 +192,9 @@ class TaskCreator(context: EngineContext) {
     }
   }
 
-  private def restrictSize(l: Vector[ReachableByTask]): Vector[ReachableByTask] = {
-    if (l.size <= context.config.maxOutputArgsExpansion) {
-      l
+  private def restrictSize(tasks: Vector[ReachableByTask]): Vector[ReachableByTask] = {
+    if (tasks.size <= context.config.maxOutputArgsExpansion) {
+      tasks
     } else {
       logger.warn("Too many new tasks in expansion of unresolved output arguments")
       Vector()
