@@ -10,7 +10,7 @@ lazy val linterRules = (project in file("."))
       .cross(CrossVersion.for3Use2_13),
 
     // The testkit is published per full Scala version, but only for the Scala 3 versions current
-    // at the scalafix release date (0.14.9 ships 3.3.8, 3.8.4 and 3.9.0), so an exact
+    // at the scalafix release date (0.14.10 ships 3.9.0, among others), so an exact
     // match with ThisBuild scalaVersion is not guaranteed. A patch mismatch is harmless:
     // patches within a Scala 3 minor are binary/TASTy-compatible both ways, and the SemanticDB
     // under test is produced by the input project's own compiler (3.9.0), not by the testkit
@@ -27,7 +27,7 @@ lazy val linterRules = (project in file("."))
       val scalaVer =
         (LocalProject("linterRulesInput") / scalaVersion).value
       val scalacOpts =
-        (LocalProject("linterRulesInput") / Compile / scalacOptions).value
+        (LocalProject("linterRulesInput") / Compile / resolvedScalacOptions).value
       val converter = fileConverter.value
 
       val props = new java.util.Properties()

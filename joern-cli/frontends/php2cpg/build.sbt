@@ -33,7 +33,7 @@ lazy val php2cpg = (project in file("."))
     ),
     phpParserDownloadTask := DownloadHelper
       .downloadArtifacts(
-        target.value / "php-parser-download",
+        crossTarget.value / "php-parser-download",
         phpParserDlUrl.value,
         Seq(upstreamParserBinName),
         fileConverter.value,

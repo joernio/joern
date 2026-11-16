@@ -61,7 +61,7 @@ lazy val swiftsrc2cpg = (project in file("."))
       }
     },
     astGenDownloadTask := DownloadHelper
-      .downloadArtifacts(target.value / "astgen-download", astGenDlUrl.value, astGenBinaryNames.value, fileConverter.value)
+      .downloadArtifacts(crossTarget.value / "astgen-download", astGenDlUrl.value, astGenBinaryNames.value, fileConverter.value)
       .map { vf => Def.declareOutput(vf); vf },
     astGenStageTask := Def.uncached {
       DownloadHelper.stageArtifacts(
