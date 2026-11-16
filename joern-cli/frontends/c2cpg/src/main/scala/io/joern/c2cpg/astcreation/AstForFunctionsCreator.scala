@@ -158,12 +158,13 @@ trait AstForFunctionsCreator { this: AstCreator =>
     scope.popScope()
     methodAstParentStack.pop()
 
-    val astForMethod = methodAst(
+    val astForMethod = methodAstWithAnnotations(
       methodNode_,
       (parameterNodes ++ variadicParams).map(Ast(_)),
       methodBodyAst,
       methodReturnNode(funcDef, registerType(returnType)),
-      modifiers = modifierFor(funcDef)
+      modifiers = modifierFor(funcDef),
+      annotations = astsForAttributes(funcDef)
     )
 
     methodRefNode_ match {
@@ -271,10 +272,91 @@ trait AstForFunctionsCreator { this: AstCreator =>
     Option.when(isNoExcept(declarator))(modifierNode(node, Defines.NoExceptModifier)).toList
   }
 
+  /** [class.access.general]/3: members of a `class` are private by default, members of a `struct` or `union` public. A
+    * name that does not bind to a class member carries no access specifier.
+    */
+  protected def accessModifierTypeFor(name: IASTName): Option[String] = {
+    safeGetBinding(name).collect { case member: ICPPMember => member.getVisibility }.map {
+      case ICPPMember.v_private   => ModifierTypes.PRIVATE
+      case ICPPMember.v_protected => ModifierTypes.PROTECTED
+      case _                      => ModifierTypes.PUBLIC
+    }
+  }
+
+  /** On a member function the modifier states [class.virtual] virtuality. On a lambda method it marks a method reached
+    * through a BINDING rather than a direct CALL, which is a separate CPG convention.
+    */
+  private def isVirtualMethod(name: IASTName): Boolean = {
+    safeGetBinding(name).collect { case method: ICPPMethod => method }.exists(isVirtual)
+  }
+
+  private def virtualModifierFor(node: IASTNode, name: IASTName): List[NewModifier] = {
+    Option.when(isVirtualMethod(name))(modifierNode(node, ModifierTypes.VIRTUAL)).toList
+  }
+
+  /** [class.virtual] A final virtual function cannot be overridden in a derived class, so a call that resolves to it
+    * needs no further dispatch lookup. Read from the binding rather than from the declarator, because a definition
+    * written out of line carries the specifier on its in-class declaration and not on itself.
+    */
+  private def isFinalMethod(name: IASTName): Boolean = {
+    safeGetBinding(name).collect { case method: ICPPMethod => method }.exists(_.isFinal)
+  }
+
+  private def finalModifierFor(node: IASTNode, name: IASTName): List[NewModifier] = {
+    Option.when(isFinalMethod(name))(modifierNode(node, ModifierTypes.FINAL)).toList
+  }
+
+  /** [class.abstract]/2: a virtual member function declared with a pure-specifier is pure virtual, and its class is
+    * abstract. Such a function need be defined only if it is called with the qualified-id syntax, so it usually has no
+    * definition, but the modifier does not state that the method has no body.
+    *
+    * Read from the binding rather than from the declarator, because a pure virtual function may still be defined out of
+    * line, and that definition's own declarator carries no pure-specifier.
+    */
+  private def isAbstractMethod(name: IASTName): Boolean = {
+    safeGetBinding(name).collect { case method: ICPPMethod => method }.exists(_.isPureVirtual)
+  }
+
+  private def abstractModifierFor(node: IASTNode, name: IASTName): List[NewModifier] = {
+    Option.when(isAbstractMethod(name))(modifierNode(node, ModifierTypes.ABSTRACT)).toList
+  }
+
+  /** A C++ attribute states intent that nothing else in the graph records: `[[nodiscard]]` on a function whose result
+    * must be checked, `[[deprecated]]` on one that should no longer be called. A scoped attribute keeps its scope in
+    * the full name, separated by a single dot as every other full name in this frontend is, so `[[gnu::always_inline]]`
+    * is named `always_inline` with full name `gnu.always_inline`. That lets a query select a vendor namespace without
+    * reading the code string.
+    *
+    * The parameter is an `IASTNode` rather than an `IASTAttributeOwner` because `IASTFunctionDefinition` does not
+    * extend that interface even though the node CDT builds for a function definition implements it.
+    */
+  private def astsForAttributes(node: IASTNode): Seq[Ast] = {
+    val attributes = node match {
+      case owner: IASTAttributeOwner =>
+        Option(owner.getAttributeSpecifiers).toSeq.flatten.flatMap {
+          case attributeList: IASTAttributeList => Option(attributeList.getAttributes).toSeq.flatten
+          case _                                => Seq.empty
+        }
+      case _ => Seq.empty
+    }
+    attributes.map { attribute =>
+      val attributeName = new String(attribute.getName)
+      val scope         = attribute match {
+        case cppAttribute: ICPPASTAttribute =>
+          Option(cppAttribute.getScope).map(scopeName => new String(scopeName)).filter(_.nonEmpty)
+        case _ => None
+      }
+      val fullName = scope.fold(attributeName)(scopeName => s"$scopeName.$attributeName")
+      annotationAst(annotationNode(attribute, code(attribute), attributeName, fullName), Nil)
+    }
+  }
+
   private def modifierFor(funcDef: IASTFunctionDefinition): List[NewModifier] = {
-    val constructorModifier = if (bindsToConstructor(funcDef)) {
-      List(modifierNode(funcDef, ModifierTypes.CONSTRUCTOR), modifierNode(funcDef, ModifierTypes.PUBLIC))
-    } else Nil
+    val constructorModifier =
+      Option.when(bindsToConstructor(funcDef))(modifierNode(funcDef, ModifierTypes.CONSTRUCTOR)).toList
+    val accessModifier = accessModifierTypeFor(funcDef.getDeclarator.getName)
+      .map(modifierNode(funcDef, _))
+      .toList
     val definitionModifier = funcDef match {
       case cppFuncDef: ICPPASTFunctionDefinition if cppFuncDef.isDeleted =>
         List(modifierNode(funcDef, Defines.ModifierDeleted))
@@ -282,21 +364,28 @@ trait AstForFunctionsCreator { this: AstCreator =>
         List(modifierNode(funcDef, Defines.ModifierDefaulted))
       case _ => Nil
     }
-    val staticModifier = Try(staticModifierFor(funcDef, funcDef.getDeclSpecifier, funcDef)).getOrElse(Nil)
-    constructorModifier ++ definitionModifier ++ staticModifier ++
-      noExceptModifierFor(funcDef, funcDef.getDeclarator)
+    val staticModifier   = Try(staticModifierFor(funcDef, funcDef.getDeclSpecifier, funcDef)).getOrElse(Nil)
+    val virtualModifier  = virtualModifierFor(funcDef, funcDef.getDeclarator.getName)
+    val abstractModifier = abstractModifierFor(funcDef, funcDef.getDeclarator.getName)
+    val finalModifier    = finalModifierFor(funcDef, funcDef.getDeclarator.getName)
+    constructorModifier ++ accessModifier ++ definitionModifier ++ staticModifier ++ virtualModifier ++
+      abstractModifier ++ finalModifier ++ noExceptModifierFor(funcDef, funcDef.getDeclarator)
   }
 
   private def modifierFor(funcDecl: IASTFunctionDeclarator): List[NewModifier] = {
-    val constructorModifier = if (bindsToConstructor(funcDecl)) {
-      List(modifierNode(funcDecl, ModifierTypes.CONSTRUCTOR))
-    } else Nil
+    val constructorModifier =
+      Option.when(bindsToConstructor(funcDecl))(modifierNode(funcDecl, ModifierTypes.CONSTRUCTOR)).toList
+    val accessModifier = accessModifierTypeFor(funcDecl.getName).map(modifierNode(funcDecl, _)).toList
     val staticModifier = Try(funcDecl.getParent match {
       case declaration: IASTSimpleDeclaration => staticModifierFor(funcDecl, declaration.getDeclSpecifier, declaration)
       case definition: IASTFunctionDefinition => staticModifierFor(funcDecl, definition.getDeclSpecifier, definition)
       case _                                  => Nil
     }).getOrElse(Nil)
-    constructorModifier ++ staticModifier ++ noExceptModifierFor(funcDecl, funcDecl)
+    val virtualModifier  = virtualModifierFor(funcDecl, funcDecl.getName)
+    val abstractModifier = abstractModifierFor(funcDecl, funcDecl.getName)
+    val finalModifier    = finalModifierFor(funcDecl, funcDecl.getName)
+    constructorModifier ++ accessModifier ++ staticModifier ++ virtualModifier ++ abstractModifier ++
+      finalModifier ++ noExceptModifierFor(funcDecl, funcDecl)
   }
 
   private def syntheticThisAccess(ident: IASTName, identifierName: String): Ast = {
@@ -431,54 +520,67 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
   }
 
+  /** [dcl.fct]: an ellipsis is not a parameter-declaration and has no type of its own. It is modelled as a parameter
+    * node all the same, so that `isVariadic` and variadic argument absorption have something to find. It may stand
+    * alone, as in `int f(...)`, where no preceding parameter exists to take an index, an evaluation strategy or a
+    * position from; the implicit `this` of a member function does not count as one.
+    */
+  private def ellipsisParameter(
+    index: Int,
+    evaluationStrategy: String,
+    lineNumber: Option[Int],
+    columnNumber: Option[Int]
+  ): FunctionDeclNodePass.ParameterInfo = {
+    new FunctionDeclNodePass.ParameterInfo(
+      s"<param>$index",
+      s"<param>$index...",
+      index,
+      true,
+      evaluationStrategy,
+      lineNumber,
+      columnNumber,
+      Defines.Any
+    )
+  }
+
   private def variadicParamsForCPPFunctionFromInfo(
     func: IASTNode,
     otherParams: Seq[FunctionDeclNodePass.ParameterInfo]
   ): Seq[FunctionDeclNodePass.ParameterInfo] = {
-    val variadicParam = otherParams.find(p => p.isVariadic && !p.code.contains(s"... ${p.name}")) match {
-      case Some(p)               => Some(p)
-      case _ if isVariadic(func) => otherParams.lastOption
-      case _                     => None
+    val precedingParam =
+      otherParams.find(param => param.isVariadic && !param.code.contains(s"... ${param.name}")) match {
+        case Some(param)           => Some(param)
+        case _ if isVariadic(func) => otherParams.filter(_.index > 0).lastOption
+        case _                     => None
+      }
+    precedingParam match {
+      case Some(param) =>
+        param.isVariadic = false
+        Seq(ellipsisParameter(param.index + 1, param.evaluationStrategy, param.lineNumber, param.columnNumber))
+      case None if isVariadic(func) =>
+        Seq(ellipsisParameter(1, EvaluationStrategies.BY_VALUE, line(func), column(func)))
+      case None => Seq.empty
     }
-    variadicParam.map { p =>
-      p.isVariadic = false
-      val index = p.index + 1
-      new FunctionDeclNodePass.ParameterInfo(
-        s"<param>$index",
-        s"<param>$index...",
-        index,
-        true,
-        p.evaluationStrategy,
-        p.lineNumber,
-        p.columnNumber,
-        p.typeFullName
-      )
-    }.toSeq
   }
 
   private def variadicParamsForCPPFunctionFromParam(
     func: IASTNode,
     otherParams: Seq[NewMethodParameterIn]
   ): Seq[FunctionDeclNodePass.ParameterInfo] = {
-    val variadicParam = otherParams.find(p => p.isVariadic && !p.code.contains(s"... ${p.name}")) match {
-      case Some(p)               => Some(p)
-      case _ if isVariadic(func) => otherParams.lastOption
-      case _                     => None
+    val precedingParam =
+      otherParams.find(param => param.isVariadic && !param.code.contains(s"... ${param.name}")) match {
+        case Some(param)           => Some(param)
+        case _ if isVariadic(func) => otherParams.filter(_.index > 0).lastOption
+        case _                     => None
+      }
+    precedingParam match {
+      case Some(param) =>
+        param.isVariadic = false
+        Seq(ellipsisParameter(param.index + 1, param.evaluationStrategy, param.lineNumber, param.columnNumber))
+      case None if isVariadic(func) =>
+        Seq(ellipsisParameter(1, EvaluationStrategies.BY_VALUE, line(func), column(func)))
+      case None => Seq.empty
     }
-    variadicParam.map { p =>
-      p.isVariadic = false
-      val index = p.index + 1
-      new FunctionDeclNodePass.ParameterInfo(
-        s"<param>$index",
-        s"<param>$index...",
-        index,
-        true,
-        p.evaluationStrategy,
-        p.lineNumber,
-        p.columnNumber,
-        p.typeFullName
-      )
-    }.toSeq
   }
 
   private def thisForCPPFunctions(func: IASTNode): Seq[FunctionDeclNodePass.ParameterInfo] = {
@@ -723,7 +825,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val staticModifier  = Option.when(isStatic)(modifierNode(lambdaExpression, ModifierTypes.STATIC))
     val privateModifier = Some(modifierNode(lambdaExpression, ModifierTypes.PRIVATE))
     val lambdaModifier  = Some(modifierNode(lambdaExpression, ModifierTypes.LAMBDA))
-    val modifiers       = List(virtualModifier, staticModifier, privateModifier, lambdaModifier).flatten.map(Ast(_))
+    // VIRTUAL marks a method reached through a BINDING, not a direct CALL; javasrc2cpg does the same.
+    val modifiers = List(virtualModifier, staticModifier, privateModifier, lambdaModifier).flatten.map(Ast(_))
 
     val lambdaMethodAst = Ast(lambdaMethodNode)
       .withChildren(parameterAsts)

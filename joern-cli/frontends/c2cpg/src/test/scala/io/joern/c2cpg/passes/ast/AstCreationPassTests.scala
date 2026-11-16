@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -46,7 +47,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       a1.isVariadic shouldBe false
       ellipsis1.name shouldBe "<param>2"
       ellipsis1.code shouldBe "<param>2..."
-      ellipsis1.typeFullName shouldBe "char*"
+      ellipsis1.typeFullName shouldBe Defines.Any
       ellipsis1.index shouldBe 2
       ellipsis1.isVariadic shouldBe true
 
@@ -61,7 +62,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       a2.isVariadic shouldBe false
       ellipsis2.name shouldBe "<param>2"
       ellipsis2.code shouldBe "<param>2..."
-      ellipsis2.typeFullName shouldBe "char*"
+      ellipsis2.typeFullName shouldBe Defines.Any
       ellipsis2.index shouldBe 2
       ellipsis2.isVariadic shouldBe true
     }
@@ -93,7 +94,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       a1.isVariadic shouldBe false
       ellipsis1.name shouldBe "<param>2"
       ellipsis1.code shouldBe "<param>2..."
-      ellipsis1.typeFullName shouldBe "char*"
+      ellipsis1.typeFullName shouldBe Defines.Any
       ellipsis1.index shouldBe 2
       ellipsis1.isVariadic shouldBe true
 
@@ -108,9 +109,57 @@ class AstCreationPassTests extends AstC2CpgSuite {
       a2.isVariadic shouldBe false
       ellipsis2.name shouldBe "<param>2"
       ellipsis2.code shouldBe "<param>2..."
-      ellipsis2.typeFullName shouldBe "char*"
+      ellipsis2.typeFullName shouldBe Defines.Any
       ellipsis2.index shouldBe 2
       ellipsis2.isVariadic shouldBe true
+    }
+
+    "be correct for a C++ ellipsis with no parameter in front of it" in {
+      val cpg = code(
+        """
+          |int freeFunction(...) { return 0; }
+          |struct S {
+          |  int declared(...);
+          |  int defined(...) { return 0; }
+          |};
+          |void withLambda() { auto l = [](...) { return 0; }; }
+          |""".stripMargin,
+        "foo.cpp"
+      )
+      inside(cpg.method("freeFunction").l) { case List(freeFunction) =>
+        freeFunction.isVariadic shouldBe true
+        inside(freeFunction.parameter.l) { case List(ellipsis) =>
+          ellipsis.name shouldBe "<param>1"
+          ellipsis.code shouldBe "<param>1..."
+          ellipsis.typeFullName shouldBe Defines.Any
+          ellipsis.index shouldBe 1
+          ellipsis.isVariadic shouldBe true
+        }
+      }
+      inside(cpg.method("declared").l) { case List(declared) =>
+        declared.isVariadic shouldBe true
+        inside(declared.parameter.l) { case List(ellipsis) =>
+          ellipsis.name shouldBe "<param>1"
+          ellipsis.index shouldBe 1
+          ellipsis.isVariadic shouldBe true
+        }
+      }
+      inside(cpg.method("defined").l) { case List(defined) =>
+        defined.isVariadic shouldBe true
+        inside(defined.parameter.l.filter(_.isVariadic)) { case List(ellipsis) =>
+          ellipsis.name shouldBe "<param>1"
+          ellipsis.index shouldBe 1
+          ellipsis.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
+        }
+      }
+      inside(cpg.method.nameExact("<lambda>0").l) { case List(lambda) =>
+        lambda.isVariadic shouldBe true
+        inside(lambda.parameter.l) { case List(ellipsis) =>
+          ellipsis.name shouldBe "<param>1"
+          ellipsis.index shouldBe 1
+          ellipsis.isVariadic shouldBe true
+        }
+      }
     }
 
     "be correct for full names and signatures for method problem bindings" in {
@@ -135,6 +184,38 @@ class AstCreationPassTests extends AstC2CpgSuite {
       foo2.signature shouldBe "wchar_t*(char_type*,char_type*,char,char*)<const>"
     }
 
+    "be correct for the ellipsis parameter whatever precedes it" in {
+      val cpg = code(
+        """
+          |int withChar(const char *fmt, ...);
+          |int withDouble(double d, ...);
+          |struct S { int member(int *p, ...); };
+          |void withPack(int x, int*... args);
+          |""".stripMargin,
+        "test.cpp"
+      )
+      inside(cpg.method.nameExact("withChar").parameter.l) { case List(fmt, ellipsis) =>
+        fmt.typeFullName shouldBe "char*"
+        ellipsis.typeFullName shouldBe Defines.Any
+        ellipsis.isVariadic shouldBe true
+      }
+      inside(cpg.method.nameExact("withDouble").parameter.l) { case List(d, ellipsis) =>
+        d.typeFullName shouldBe "double"
+        ellipsis.typeFullName shouldBe Defines.Any
+      }
+      inside(cpg.method.nameExact("member").parameter.l) { case List(p, ellipsis) =>
+        p.typeFullName shouldBe "int*"
+        ellipsis.typeFullName shouldBe Defines.Any
+      }
+      inside(cpg.method.nameExact("withPack").parameter.l) { case List(x, args) =>
+        x.typeFullName shouldBe "int"
+        args.typeFullName shouldBe "int*"
+        args.isVariadic shouldBe true
+      }
+      cpg.method.nameExact("withChar").signature.l shouldBe List("int(char*,...)")
+      cpg.method.nameExact("withDouble").signature.l shouldBe List("int(double,...)")
+      cpg.method.nameExact("member").signature.l shouldBe List("int(int*,...)")
+    }
     "be correct for packed args" in {
       val cpg = code("void foo(int x, int*... args) {};", "test.cpp")
       inside(cpg.method("foo").l) { case List(m) =>
@@ -171,7 +252,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
           args.index shouldBe 2
           param3.name shouldBe "<param>3"
           param3.code shouldBe "<param>3..."
-          param3.typeFullName shouldBe "int"
+          param3.typeFullName shouldBe Defines.Any
           param3.isVariadic shouldBe true
           param3.index shouldBe 3
         }
@@ -2255,7 +2336,59 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |""".stripMargin,
         "file.cpp"
       )
-      cpg.call.nameExact(Operators.delete).codeExact("delete[] n").argument.code("n").size shouldBe 1
+      cpg.call.nameExact(Defines.OperatorDeleteArray).codeExact("delete[] n").argument.code("n").size shouldBe 1
+    }
+
+    "be correct for the scalar and the array form of 'delete' side by side" in {
+      val cpg = code(
+        """
+        |void free_them(int *p, int *a) {
+        |  delete p;
+        |  delete[] a;
+        |}
+        |""".stripMargin,
+        "file.cpp"
+      )
+      inside(cpg.call.nameExact(Operators.delete).l) { case List(scalarDelete) =>
+        scalarDelete.code shouldBe "delete p"
+        scalarDelete.argument.code.l shouldBe List("p")
+        scalarDelete.typeFullName shouldBe Defines.Void
+      }
+      inside(cpg.call.nameExact(Defines.OperatorDeleteArray).l) { case List(arrayDelete) =>
+        arrayDelete.code shouldBe "delete[] a"
+        arrayDelete.argument.code.l shouldBe List("a")
+        arrayDelete.typeFullName shouldBe Defines.Void
+      }
+    }
+
+    "be correct for a non-array 'delete' of a subscripted operand" in {
+      val cpg = code(
+        """
+        |void free_one(int **table) {
+        |  delete table[0];
+        |}
+        |""".stripMargin,
+        "file.cpp"
+      )
+      inside(cpg.call.nameExact(Operators.delete).l) { case List(scalarDelete) =>
+        scalarDelete.code shouldBe "delete table[0]"
+      }
+      cpg.call.nameExact(Defines.OperatorDeleteArray).l shouldBe empty
+    }
+
+    "be correct for a globally qualified array 'delete'" in {
+      val cpg = code(
+        """
+        |void free_them(int *a) {
+        |  ::delete[] a;
+        |}
+        |""".stripMargin,
+        "file.cpp"
+      )
+      inside(cpg.call.nameExact(Defines.OperatorDeleteArray).l) { case List(arrayDelete) =>
+        arrayDelete.code shouldBe "::delete[] a"
+        arrayDelete.argument.code.l shouldBe List("a")
+      }
     }
 
     "be correct for const_cast" in {

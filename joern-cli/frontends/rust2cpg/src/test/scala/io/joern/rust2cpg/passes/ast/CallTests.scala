@@ -398,7 +398,7 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
 
           ref.code shouldBe "handler"
           ref.methodFullName shouldBe "rust2cpgtest::handler"
-          ref.typeFullName shouldBe "rust2cpgtest::handler"
+          ref.typeFullName shouldBe "rust2cpgtest::handler::{fn}"
         }
       }
     }
@@ -431,7 +431,7 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
 
           ref.code shouldBe "Counter::incr"
           ref.methodFullName shouldBe "rust2cpgtest::Counter::incr"
-          ref.typeFullName shouldBe "rust2cpgtest::Counter::incr"
+          ref.typeFullName shouldBe "rust2cpgtest::Counter::incr::{fn}"
         }
       }
     }
@@ -509,6 +509,215 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.call.nameExact("foo").argument.sortBy(_.argumentIndex).l) { case (lit: Literal) :: Nil =>
         lit.code shouldBe "1"
         lit.argumentIndex shouldBe 1
+      }
+    }
+  }
+
+  "call via macro-expanded closure" should {
+    val cpg = code("""
+        |macro_rules! m { () => { |x: i32| x }; }
+        |fn main() { m!()(1); }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("call").l) { case call :: Nil =>
+        call.code shouldBe "m!()(1)"
+        call.methodFullName shouldBe "core::ops::function::Fn::call"
+        call.lineNumber shouldBe Some(3)
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("call").receiver.l) { case (methodRef: MethodRef) :: Nil =>
+        methodRef.methodFullName shouldBe "rust2cpgtest::main::<lambda>0"
+        methodRef.lineNumber shouldBe Some(3)
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("call").argument.l) { case Literal(code = "1", argumentIndex = 1) :: Nil =>
+        succeed
+      }
+    }
+  }
+
+  "call via macro-expanded block with nested macro" should {
+    val cpg = code("""
+        |macro_rules! inner { () => { |x: i32| x }; }
+        |macro_rules! m { () => {{ inner!() }}; }
+        |fn main() { m!()(1); }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("call").l) { case call :: Nil =>
+        call.code shouldBe "m!()(1)"
+        call.methodFullName shouldBe "core::ops::function::Fn::call"
+        call.lineNumber shouldBe Some(4)
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("call").receiver.l) { case (block: Block) :: Nil =>
+        block.lineNumber shouldBe Some(4)
+        inside(block.astChildren.l) { case (methodRef: MethodRef) :: Nil =>
+          methodRef.methodFullName shouldBe "rust2cpgtest::main::<lambda>0"
+          methodRef.lineNumber shouldBe Some(4)
+        }
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("call").argument.l) { case Literal(code = "1", argumentIndex = 1) :: Nil =>
+        succeed
+      }
+    }
+  }
+
+  "immediately invoked closure" should {
+    val cpg = code("""
+        |fn main() { (|x| x)(3); }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("call").l) { case call :: Nil =>
+        call.code shouldBe "(|x| x)(3)"
+        call.methodFullName shouldBe "core::ops::function::Fn::call"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.signature shouldBe "core::ops::function::Fn"
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("call").receiver.l) { case (methodRef: MethodRef) :: Nil =>
+        methodRef.typeFullName shouldBe "rust2cpgtest::main::<lambda>0"
+        methodRef.methodFullName shouldBe methodRef.typeFullName
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("call").argument.l) { case Literal(code = "3", argumentIndex = 1) :: Nil =>
+        succeed
+      }
+    }
+
+    "have correct binding" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::main::<lambda>0").methodBinding.nameExact("call").l) {
+        case Binding(signature = "core::ops::function::Fn", methodFullName = "rust2cpgtest::main::<lambda>0") :: Nil =>
+          succeed
+      }
+    }
+  }
+
+  "immediately invoked FnMut closure" should {
+    val cpg = code("""
+        |fn main() { let mut n = 0; (|x: i32| n = x)(3); }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("call_mut").l) { case call :: Nil =>
+        call.code shouldBe "(|x: i32| n = x)(3)"
+        call.methodFullName shouldBe "core::ops::function::FnMut::call_mut"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.signature shouldBe "core::ops::function::FnMut"
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("call_mut").receiver.l) {
+        case MethodRef(methodFullName = "rust2cpgtest::main::<lambda>0") :: Nil =>
+          succeed
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("call_mut").argument.l) { case Literal(code = "3", argumentIndex = 1) :: Nil =>
+        succeed
+      }
+    }
+  }
+
+  "immediately invoked async closure" should {
+    val cpg = code("""
+        |async fn f() { (async |x: i32| x)(3).await; }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("async_call").l) { case call :: Nil =>
+        call.code shouldBe "(async |x: i32| x)(3)"
+        call.methodFullName shouldBe "core::ops::async_function::AsyncFn::async_call"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.signature shouldBe "core::ops::async_function::AsyncFn"
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("async_call").receiver.l) {
+        case MethodRef(methodFullName = "rust2cpgtest::f::<lambda>0") :: Nil =>
+          succeed
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("async_call").argument.l) { case Literal(code = "3", argumentIndex = 1) :: Nil =>
+        succeed
+      }
+    }
+  }
+
+  "call on closure local" should {
+    val cpg = code("""
+        |fn main() { let f = |x: i32| x; f(3); }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("call").l) { case call :: Nil =>
+        call.code shouldBe "f(3)"
+        call.methodFullName shouldBe "core::ops::function::Fn::call"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.signature shouldBe "core::ops::function::Fn"
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("call").receiver.l) {
+        // TODO(rust_ast_gen): might change later.
+        case Identifier(name = "f", typeFullName = "impl Fn(i32) -> i32") :: Nil =>
+          succeed
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("call").argument.l) { case Literal(code = "3", argumentIndex = 1) :: Nil =>
+        succeed
+      }
+    }
+  }
+
+  "call on fn pointer parameter" should {
+    val cpg = code("""
+        |fn f(g: fn(i32) -> i32) -> i32 { g(3) }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("call").l) { case call :: Nil =>
+        call.code shouldBe "g(3)"
+        call.methodFullName shouldBe "core::ops::function::Fn::call"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.signature shouldBe "core::ops::function::Fn"
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("call").receiver.l) {
+        // TODO(rust_ast_gen): might change later.
+        case Identifier(name = "g", typeFullName = "fn(i32) -> i32") :: Nil =>
+          succeed
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("call").argument.l) { case Literal(code = "3", argumentIndex = 1) :: Nil =>
+        succeed
       }
     }
   }
@@ -651,6 +860,93 @@ class CallTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
           deref.code shouldBe """*String::from(" hello ").trim()"""
           deref.typeFullName shouldBe "str"
         }
+      }
+    }
+  }
+
+  "call on returned closure" should {
+    val cpg = code("""
+        |fn f() -> impl Fn(i32) -> i32 { |x| x }
+        |fn main() { f()(3); }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("call").l) { case call :: Nil =>
+        call.code shouldBe "f()(3)"
+        call.methodFullName shouldBe "core::ops::function::Fn::call"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.signature shouldBe "core::ops::function::Fn"
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("call").receiver.l) { case (receiver: Call) :: Nil =>
+        receiver.methodFullName shouldBe "rust2cpgtest::f"
+        // TODO(rust_ast_gen): might change later.
+        receiver.typeFullName shouldBe "impl core::ops::function::Fn + core::marker::Sized"
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("call").argument.l) { case Literal(code = "3", argumentIndex = 1) :: Nil =>
+        succeed
+      }
+    }
+
+    "have correct binding" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::f::<lambda>0").methodBinding.nameExact("call").l) {
+        case Binding(signature = "core::ops::function::Fn", methodFullName = "rust2cpgtest::f::<lambda>0") :: Nil =>
+          succeed
+      }
+    }
+  }
+
+  "call on impl Fn parameter" should {
+    val cpg = code("""
+        |fn f(g: impl Fn(i32) -> i32) -> i32 { g(3) }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("call").l) { case call :: Nil =>
+        call.code shouldBe "g(3)"
+        call.methodFullName shouldBe "core::ops::function::Fn::call"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.signature shouldBe "core::ops::function::Fn"
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("call").receiver.l) {
+        // TODO(rust_ast_gen): might change later.
+        case Identifier(name = "g", typeFullName = "impl core::ops::function::Fn + core::marker::Sized") :: Nil =>
+          succeed
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("call").argument.l) { case Literal(code = "3", argumentIndex = 1) :: Nil =>
+        succeed
+      }
+    }
+  }
+
+  "unresolved call with Fn in scope" should {
+    val cpg = code("""
+        |fn f(foo: impl Fn(i32)) { g(1); }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("g").l) { case call :: Nil =>
+        call.name shouldBe "g"
+        call.code shouldBe "g(1)"
+        call.methodFullName shouldBe s"${Defines.UnresolvedNamespace}::g"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("g").argument.l) { case Literal(code = "1", argumentIndex = 1) :: Nil =>
+        succeed
       }
     }
   }

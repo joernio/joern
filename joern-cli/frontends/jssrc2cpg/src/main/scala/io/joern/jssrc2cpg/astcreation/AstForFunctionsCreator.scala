@@ -326,12 +326,17 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val modifiers = modifierNode(func, ModifierTypes.VIRTUAL) :: lambdaModifier
     methodAstParentStack.push(methodNode_)
 
+    // the parameters must not be visible in the surrounding scope, e.g. the one of an overload of a function
+    scope.pushNewMethodScope(methodFullName, methodName, methodNode_, None)
+
     val thisNode =
       parameterInNode(func, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
         .dynamicTypeHintFullName(typeHintForThisExpression())
     scope.addVariable("this", thisNode, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
 
     val paramNodes = handleParameters(paramsOf(func), mutable.ArrayBuffer.empty[Ast], createLocals = false)
+
+    scope.popScope()
 
     val blockAsts =
       methodBlockContent.constructorContent.flatMap(m => methodBlockContent.typeDecl.map(astForClassMember(m, _)))
@@ -350,19 +355,17 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         parserResult.filename
       )
 
-    val mAst = if (blockAsts.isEmpty) {
-      methodStubAst(methodNode_, (thisNode +: paramNodes).map(Ast(_)), methodReturnNode_, modifiers)
-    } else {
-      val bodyAst = blockAst(NewBlock(), blockAsts)
-      methodAstWithAnnotations(
-        methodNode_,
-        (thisNode +: paramNodes).map(Ast(_)),
-        bodyAst,
-        methodReturnNode_,
-        modifiers,
-        astsForDecorators(func)
-      )
-    }
+    // Signatures without a body, e.g. overloads and abstract methods, are stubs but carry their decorators as well.
+    val bodyAst =
+      if (blockAsts.isEmpty) Ast(NewBlock().typeFullName(Defines.Any)) else blockAst(NewBlock(), blockAsts)
+    val mAst = methodAstWithAnnotations(
+      methodNode_,
+      (thisNode +: paramNodes).map(Ast(_)),
+      bodyAst,
+      methodReturnNode_,
+      modifiers,
+      astsForDecorators(func)
+    )
 
     Ast.storeInDiffGraph(mAst, diffGraph)
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)

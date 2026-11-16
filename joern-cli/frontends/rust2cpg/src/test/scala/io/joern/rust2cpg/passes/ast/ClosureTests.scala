@@ -69,6 +69,57 @@ class ClosureTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.method.nameExact("<lambda>0").methodReturn.typeFullName.l shouldBe List("i32")
     }
 
+    "have correct typeDecl fullName" in {
+      cpg.typeDecl.nameExact("<lambda>0").fullName.l shouldBe List("rust2cpgtest::main::<lambda>0")
+    }
+
+    "have correct inheritsFrom" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::main::<lambda>0").inheritsFromTypeFullName.l shouldBe List(
+        "core::ops::async_function::AsyncFn",
+        "core::ops::async_function::AsyncFnMut",
+        "core::ops::async_function::AsyncFnOnce",
+        "core::ops::function::Fn",
+        "core::ops::function::FnMut",
+        "core::ops::function::FnOnce"
+      )
+    }
+
+    "have correct bindings" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::main::<lambda>0").methodBinding.sortBy(_.name).l) {
+        case Binding(name = "", signature = "", methodFullName = "rust2cpgtest::main::<lambda>0") ::
+            Binding(
+              name = "async_call",
+              signature = "core::ops::async_function::AsyncFn",
+              methodFullName = "rust2cpgtest::main::<lambda>0"
+            ) ::
+            Binding(
+              name = "async_call_mut",
+              signature = "core::ops::async_function::AsyncFnMut",
+              methodFullName = "rust2cpgtest::main::<lambda>0"
+            ) ::
+            Binding(
+              name = "async_call_once",
+              signature = "core::ops::async_function::AsyncFnOnce",
+              methodFullName = "rust2cpgtest::main::<lambda>0"
+            ) ::
+            Binding(
+              name = "call",
+              signature = "core::ops::function::Fn",
+              methodFullName = "rust2cpgtest::main::<lambda>0"
+            ) ::
+            Binding(
+              name = "call_mut",
+              signature = "core::ops::function::FnMut",
+              methodFullName = "rust2cpgtest::main::<lambda>0"
+            ) ::
+            Binding(
+              name = "call_once",
+              signature = "core::ops::function::FnOnce",
+              methodFullName = "rust2cpgtest::main::<lambda>0"
+            ) :: Nil =>
+          succeed
+      }
+    }
   }
 
   "closure capturing enclosing local" should {

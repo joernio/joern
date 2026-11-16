@@ -914,7 +914,7 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.assignment.where(_.target.isIdentifier.nameExact("foo")).source.l) { case (metRef: MethodRef) :: Nil =>
         metRef.code shouldBe "Foo"
         metRef.methodFullName shouldBe "rust2cpgtest::Foo"
-        metRef.typeFullName shouldBe "rust2cpgtest::Foo"
+        metRef.typeFullName shouldBe "rust2cpgtest::Foo::{fn}"
       }
     }
 
@@ -937,7 +937,7 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.assignment.where(_.target.isIdentifier.nameExact("foo")).source.l) { case (metRef: MethodRef) :: Nil =>
         metRef.code shouldBe "Self"
         metRef.methodFullName shouldBe "rust2cpgtest::Foo"
-        metRef.typeFullName shouldBe "rust2cpgtest::Foo"
+        metRef.typeFullName shouldBe "rust2cpgtest::Foo::{fn}"
       }
     }
 

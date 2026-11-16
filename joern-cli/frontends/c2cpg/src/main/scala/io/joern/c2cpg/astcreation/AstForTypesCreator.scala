@@ -1,6 +1,6 @@
 package io.joern.c2cpg.astcreation
 
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, Defines as X2CpgDefines}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -64,6 +64,18 @@ trait AstForTypesCreator { this: AstCreator =>
     }
   }
 
+  /** [class.static.data]/1: a data member declared `static` is not part of a subobject of its class, so one instance is
+    * shared by every object of that class instead of one existing per object. The storage class is read from the
+    * declaration specifier, which every declarator of the same declaration shares.
+    */
+  private def staticModifierForMember(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator): List[Ast] = {
+    Option
+      .when(hasStorageClass(declaration.getDeclSpecifier, IASTDeclSpecifier.sc_static, false))(
+        Ast(modifierNode(declarator, ModifierTypes.STATIC))
+      )
+      .toList
+  }
+
   protected def astForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator, index: Int): Ast = {
     val name = shortName(declarator)
     declaration match {
@@ -75,9 +87,11 @@ trait AstForTypesCreator { this: AstCreator =>
         val (name_, fullName_) = scopeLocalUniqueName(cleanType(typeDefName), fullName(declarator), "")
         Ast(typeDeclNode(declarator, name_, registerType(fullName_), filename, code(d), alias = Option(tpe)))
       case d if parentIsClassDef(d) =>
-        val tpe = typeForIASTDeclarator(declaration, declarator, index)
-        Ast(memberNode(declarator, name, code(declarator), tpe))
-      case d if isAssignmentFromBrokenMacro(d, declarator) && scope.lookupVariable(name).nonEmpty =>
+        val tpe       = typeForIASTDeclarator(declaration, declarator, index)
+        val accessAst = accessModifierTypeFor(declarator.getName).map(modifierNode(declarator, _)).map(Ast(_)).toList
+        val staticAst = staticModifierForMember(declaration, declarator)
+        Ast(memberNode(declarator, name, code(declarator), tpe)).withChildren(accessAst ++ staticAst)
+      case decl if isAssignmentFromBrokenMacro(decl, declarator) && scope.lookupVariable(name).nonEmpty =>
         Ast()
       case _ if declarator.getName.isInstanceOf[ICPPASTQualifiedName] =>
         // Out-of-class static member definition (e.g. `int Foo::bar[N]`).
@@ -89,8 +103,37 @@ trait AstForTypesCreator { this: AstCreator =>
         val code = codeForDeclarator(declaration, declarator)
         val node = localNode(declarator, name, code, tpe)
         scope.addVariable(name, node, tpe, VariableScopeManager.ScopeType.BlockScope)
+        storageClassOfLocal(declaration).foreach { storageClass =>
+          val tag = NewTag().name(X2CpgDefines.StorageClassTag).value(storageClass)
+          diffGraph.addNode(tag)
+          diffGraph.addEdge(node, tag, EdgeTypes.TAGGED_BY)
+        }
         Ast(node)
     }
+  }
+
+  /** The storage class of a variable that is declared inside a function and whose storage outlives a call of the
+    * function: `static`, `extern` or `thread_local`, as CDT reports it after macro expansion. A local variable, whose
+    * storage is automatic, has none, and neither does a variable declared outside any function.
+    */
+  private def storageClassOfLocal(declaration: IASTSimpleDeclaration): Option[String] = {
+    val declSpecifier = declaration.getDeclSpecifier
+    if (!isInsideFunction(declaration)) { None }
+    else {
+      declSpecifier.getStorageClass match {
+        case IASTDeclSpecifier.sc_static => Some("static")
+        case IASTDeclSpecifier.sc_extern => Some("extern")
+        case _                           =>
+          declSpecifier match {
+            case cppDeclSpecifier: ICPPASTDeclSpecifier if cppDeclSpecifier.isThreadLocal => Some("thread_local")
+            case _                                                                        => None
+          }
+      }
+    }
+  }
+
+  private def isInsideFunction(node: IASTNode): Boolean = {
+    Iterator.iterate(node.getParent)(_.getParent).takeWhile(_ != null).exists(_.isInstanceOf[IASTFunctionDefinition])
   }
 
   private def astForIASTInitializer(
@@ -473,6 +516,12 @@ trait AstForTypesCreator { this: AstCreator =>
         typeDeclNode(other, name, fullName, filename, codeString, alias = alias)
     }
 
+    // [class.pre]: `final` forbids deriving from the class, so no further override of its members can exist.
+    val finalModifier = typeSpecifier match {
+      case c: ICPPASTCompositeTypeSpecifier if c.isFinal => Seq(Ast(modifierNode(c, ModifierTypes.FINAL)))
+      case _                                             => Seq.empty
+    }
+
     val typeRefNodeMaybe = typeRefIdStack.headOption match {
       case None => Some(typeRefNode(typeSpecifier, codeString, fullName))
       case _    => None
@@ -491,10 +540,10 @@ trait AstForTypesCreator { this: AstCreator =>
     scope.popScope()
 
     val asts = if (memberNodesWithInitializer.isEmpty) {
-      Ast(typeDecl).withChildren(memberAsts) +: declAsts
+      Ast(typeDecl).withChildren(finalModifier ++ memberAsts) +: declAsts
     } else {
       val initAst = createStaticConstructor(typeSpecifier, memberNodesWithInitializer, typeDecl)
-      Ast(typeDecl).withChildren(memberAsts).withChild(initAst) +: declAsts
+      Ast(typeDecl).withChildren(finalModifier ++ memberAsts).withChild(initAst) +: declAsts
     }
     asts.foreach { ast =>
       Ast.storeInDiffGraph(ast, diffGraph)

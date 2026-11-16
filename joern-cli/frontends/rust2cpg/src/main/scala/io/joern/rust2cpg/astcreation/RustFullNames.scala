@@ -210,6 +210,15 @@ trait RustFullNames { this: AstCreator =>
 object RustFullNames {
   val PathSep = "::"
 
+  val FnTraitMethodNames: Map[String, String] = Map(
+    "core::ops::function::Fn"                -> "call",
+    "core::ops::function::FnMut"             -> "call_mut",
+    "core::ops::function::FnOnce"            -> "call_once",
+    "core::ops::async_function::AsyncFn"     -> "async_call",
+    "core::ops::async_function::AsyncFnMut"  -> "async_call_mut",
+    "core::ops::async_function::AsyncFnOnce" -> "async_call_once"
+  )
+
   def shortName(fullName: String): String = {
     // A path e.g. `x::...::z<...>` or `z<...>` has shortname `z`, without generics.
     // Any other type shape has matching name/fullName.
@@ -219,5 +228,9 @@ object RustFullNames {
     } else {
       fullName
     }
+  }
+
+  def fnTypeFullName(methodFullName: String): String = {
+    s"$methodFullName$PathSep{fn}"
   }
 }

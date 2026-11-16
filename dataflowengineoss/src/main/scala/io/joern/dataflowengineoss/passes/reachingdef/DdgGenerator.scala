@@ -5,7 +5,17 @@ import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAc
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
-import io.shiftleft.semanticcpg.accesspath.{AccessPath, Elements, IndirectionAccess, MatchResult}
+import io.shiftleft.semanticcpg.accesspath.{
+  AccessElement,
+  AccessPath,
+  AddressOf,
+  Elements,
+  IndirectionAccess,
+  MatchResult,
+  PointerShift,
+  TrackedBase,
+  VariablePointerShift
+}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
@@ -397,7 +407,10 @@ private object PointerAliasMap {
   * `n` of the flow graph. This component determines those of the incoming definitions that are relevant as the value
   * they define is actually used by `n`.
   */
-private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], in: Map[CfgNode, Set[Definition]]) {
+private[reachingdef] class UsageAnalyzer(
+  problem: DataFlowProblem[CfgNode, mutable.BitSet],
+  in: Map[CfgNode, Set[Definition]]
+) {
 
   val numberToNode: Map[Definition, CfgNode] = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
 
@@ -412,7 +425,45 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
   private val allNodes     = in.keys.toList
   private val containerSet =
     Set(Operators.fieldAccess, Operators.indexAccess, Operators.indirectIndexAccess, Operators.indirectFieldAccess)
-  private val indirectionAccessSet                                  = Set(Operators.addressOf, Operators.indirection)
+  private val indirectionAccessSet = Set(Operators.addressOf, Operators.indirection)
+
+  /** `isUsing` matches a use with a definition under any one of five conditions, and each of them requires the two to
+    * share a key. These maps index the definitions by those keys, so that a use is tested against the definitions that
+    * share at least one key with it.
+    */
+  private val definitionsByString    = mutable.HashMap.empty[String, mutable.ArrayBuffer[Definition]]
+  private val containersByBaseString = mutable.HashMap.empty[Option[String], mutable.ArrayBuffer[Definition]]
+  private val definitionsByName      = mutable.HashMap.empty[String, mutable.ArrayBuffer[Definition]]
+  private val callsByAliasKey        =
+    mutable.HashMap.empty[(TrackedBase, Seq[AccessElement]), mutable.ArrayBuffer[Definition]]
+  private val callsByRootDeclaration = mutable.HashMap.empty[Long, mutable.ArrayBuffer[Definition]]
+  private val pointersTo             = pointerAliases.groupMap(_._2)(_._1)
+
+  numberToNode.toSeq.sortBy(_._1).foreach { case (definition, node) =>
+    def add[K](index: mutable.HashMap[K, mutable.ArrayBuffer[Definition]], key: K): Unit =
+      index.getOrElseUpdate(key, mutable.ArrayBuffer.empty) += definition
+    node match {
+      case param: MethodParameterIn =>
+        add(definitionsByString, param.name)
+        add(definitionsByName, param.name)
+      case identifier: Identifier =>
+        add(definitionsByString, identifier.name)
+        add(definitionsByName, identifier.name)
+      case call: Call =>
+        if (indirectionAccessSet.contains(call.name)) {
+          call.argumentOption(1).foreach(argument => add(definitionsByString, argument.code))
+        } else {
+          add(definitionsByString, call.code)
+        }
+        if (containerSet.contains(call.name)) {
+          call.argument.headOption.foreach(base => add(containersByBaseString, nodeToString(base)))
+        }
+        add(callsByAliasKey, aliasKey(call))
+        if (pointerAliases.nonEmpty) rootDeclOf(call).foreach(add(callsByRootDeclaration, _))
+      case _ =>
+    }
+  }
+
   val usedIncomingDefs: Map[CfgNode, Map[CfgNode, Set[Definition]]] = initUsedIncomingDefs()
 
   def initUsedIncomingDefs(): Map[CfgNode, Map[CfgNode, Set[Definition]]] = {
@@ -422,12 +473,61 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
   }
 
   private def usedIncomingDefsForNode(node: CfgNode): Map[CfgNode, Set[Definition]] = {
+    val incoming          = in(node)
+    lazy val incomingSize = incoming.size
     uses(node).map { use =>
-      use -> in(node).filter { inElement =>
-        val inElemNode = numberToNode(inElement)
-        isUsing(use, inElemNode)
+      val candidates = candidatesFor(use)
+      use -> {
+        if (candidates.length > incomingSize) {
+          incoming.filter { inElement =>
+            val inElemNode = numberToNode(inElement)
+            isUsing(use, inElemNode)
+          }
+        } else {
+          usedAmong(candidates, use, incoming)
+        }
       }
     }.toMap
+  }
+
+  /** The definitions of `incoming` that `use` uses, found among its candidates. */
+  private[reachingdef] def usedByIndex(use: CfgNode, incoming: Set[Definition]): Set[Definition] =
+    usedAmong(candidatesFor(use), use, incoming)
+
+  private def usedAmong(candidates: Array[Definition], use: CfgNode, incoming: Set[Definition]): Set[Definition] = {
+    val used = mutable.BitSet()
+    candidates.foreach { candidate =>
+      if (incoming.contains(candidate) && isUsing(use, numberToNode(candidate))) used.add(candidate)
+    }
+    used
+  }
+
+  /** The definitions that share a key with `use` (see [[definitionsByString]]), with repeats. */
+  private def candidatesFor(use: CfgNode): Array[Definition] = {
+    val useString = nodeToString(use)
+    val parts     = use match {
+      case call: Call if containerSet.contains(call.name) =>
+        containerBaseForMatching(call).flatMap(nodeToString).flatMap(definitionsByName.get)
+      case _ => None
+    }
+    val aliases = use match {
+      case call: Call => callsByAliasKey.get(aliasKey(call)) ++ acrossPointer(call)
+      case _          => None
+    }
+    val sameOrContainer = useString.flatMap(definitionsByString.get) ++ containersByBaseString.get(useString)
+    (sameOrContainer ++ parts ++ aliases).flatten.toArray
+  }
+
+  /** Returns the field and index accesses rooted at a variable that `call`'s root aliases through a pointer. */
+  private def acrossPointer(call: Call): Iterable[mutable.ArrayBuffer[Definition]] =
+    rootDeclOf(call).toList.flatMap { declaration =>
+      (pointerAliases.get(declaration) ++ pointersTo.getOrElse(declaration, Nil)).flatMap(callsByRootDeclaration.get)
+    }
+
+  /** Returns `call`'s tracked base and its access path without the trailing address-of and pointer shifts. */
+  private def aliasKey(call: Call): (TrackedBase, Seq[AccessElement]) = {
+    val (base, accessPath) = toTrackedBaseAndAccessPathSimple(call)
+    (base, AliasKeys.head(accessPath.elements))
   }
 
   def isUsing(use: CfgNode, inElemNode: CfgNode): Boolean =
@@ -565,4 +665,18 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
     }
   }
 
+}
+
+private[reachingdef] object AliasKeys {
+
+  /** Returns `elements` without its trailing address-of and pointer shifts. */
+  def head(elements: Elements): Seq[AccessElement] = {
+    val all = elements.elements
+    all.take(all.lastIndexWhere(element => !isInvertible(element)) + 1).toSeq
+  }
+
+  private def isInvertible(element: AccessElement): Boolean = element match {
+    case AddressOf | VariablePointerShift | _: PointerShift => true
+    case _                                                  => false
+  }
 }

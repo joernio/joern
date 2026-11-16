@@ -22,7 +22,7 @@ object Versions {
   val jacksonDatabind        = "2.17.0"
   val javaParser             = "3.28.0"
   val jRuby                  = "9.4.15.0"
-  val lombok                 = "1.18.42"
+  val lombok                 = "1.18.48"
   val mavenArtifact          = "3.9.16"
   val mavenArcheologist      = "0.0.10"
   val phpParser              = "4.15.10"

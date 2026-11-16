@@ -752,6 +752,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       .getOrElse(blockAst(blockNode(fn), paramAssignmentAsts.toList))
     contextStack.pop()
 
+    val typeDecl = typeDeclForFn(fn, method)
+    addDetachedAst(Ast(typeDecl))
+    addDetachedFnTraitBindingAsts(typeDecl, method)
+
     methodAstWithAnnotations(
       method = method,
       parameters = paramAsts,
@@ -903,18 +907,45 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     lowerCallExpr(callExpr, callExpr.expr)
   }
 
-  @tailrec
   private def lowerCallExpr(callExpr: CallExpr, callee: Expr): Ast = {
     callee match {
-      case pathExpr: PathExpr   => lowerPathExprCall(callExpr, pathExpr)
-      case parenExpr: ParenExpr => lowerCallExpr(callExpr, parenExpr.expr)
-      case macroExpr: MacroExpr =>
+      case pathExpr: PathExpr if callExpr.fnTrait.isEmpty => lowerPathExprCall(callExpr, pathExpr)
+      case parenExpr: ParenExpr                           => lowerCallExpr(callExpr, parenExpr.expr)
+      case macroExpr: MacroExpr                           =>
         macroExpr.macroCall.macroExpansion match {
-          case Some(expr: Expr) => lowerCallExpr(callExpr, expr)
+          case Some(expr: Expr) => withMacroCall(macroExpr.macroCall) { lowerCallExpr(callExpr, expr) }
           case _                => notHandledYet(callExpr)
         }
-      case _ => notHandledYet(callExpr)
+      case callee =>
+        callExpr.fnTrait match {
+          case Some(fnTrait) => lowerClosureCall(callExpr, callee, fnTrait)
+          case None          => notHandledYet(callExpr)
+        }
     }
+  }
+
+  private def lowerClosureCall(callExpr: CallExpr, callee: Expr, fnTrait: String): Ast = {
+    val callName = RustFullNames.FnTraitMethodNames.getOrElse(fnTrait, "call")
+    val call     = callNode(
+      node = callExpr,
+      code = code(callExpr),
+      name = callName,
+      methodFullName = combineRustFullName(fnTrait, callName),
+      dispatchType = DispatchTypes.DYNAMIC_DISPATCH,
+      signature = Some(fnTrait),
+      typeFullName = Some(typeFullNameForExpr(callExpr))
+    )
+    val args = callExpr.argList.expr.map(visitExpr)
+
+    // NB: with sysroot, there's a `&` adjustment, making the receiver have type `&T` instead of `T`, and
+    // we only add bindings to `T`.
+    @tailrec
+    def calleeWithoutAdjustment(callee: Expr): Ast = callee match {
+      case parenExpr: ParenExpr => calleeWithoutAdjustment(parenExpr.expr)
+      case _                    => dispatchVisitExpr(callee)
+    }
+
+    callAst(call, args, receiver = Some(calleeWithoutAdjustment(callee)))
   }
 
   private def lowerPathExprCall(callExpr: CallExpr, pathExpr: PathExpr): Ast = {
@@ -1044,7 +1075,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     // A path has `methodFullName` if it denotes a method reference, or `ctorTypeFullName` if it denotes a unit
     // constructor. Otherwise, it's some other identifier.
     (pathExpr.methodFullName, pathExpr.ctorTypeFullName) match {
-      case (Some(methodFullName), _)   => Ast(methodRefNode(pathExpr, code(pathExpr), methodFullName, methodFullName))
+      case (Some(methodFullName), _) =>
+        Ast(methodRefNode(pathExpr, code(pathExpr), methodFullName, RustFullNames.fnTypeFullName(methodFullName)))
       case (_, Some(ctorTypeFullName)) => unitCtorCallAst(pathExpr, ctorTypeFullName)
       case _                           => visitPath(pathExpr.path, pathExpr.ownerFullName)
     }
@@ -1066,7 +1098,6 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     fieldAccessAst(path, path.pathSegment, typeRefAst, code(path), fieldName, typeFullNameForPath(path))
   }
 
-  // TODO: `<Foo as Bar>::baz`, etc.
   private def lowerQualifiedPath(path: Path, qualifier: Path, ownerFullName: Option[String]): Ast = {
     ownerFullName.orElse(qualifier.pathSegment.nameRef.flatMap(_.typeFullName)) match {
       case Some(qualifierFullName) =>
@@ -2334,6 +2365,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     contextStack.pushClosure(method, methodRef, block, evaluationStrategy)
     lowerClosureExprAsDetachedAst(closureExpr, method, block)
     contextStack.pop()
+
+    val typeDecl = typeDeclForClosure(closureExpr, method)
+    addDetachedAst(Ast(typeDecl))
+    addDetachedFnTraitBindingAsts(typeDecl, method)
 
     Ast(methodRef)
   }

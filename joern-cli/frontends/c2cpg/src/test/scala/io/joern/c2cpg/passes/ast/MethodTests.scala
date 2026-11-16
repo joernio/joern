@@ -302,6 +302,269 @@ class MethodTests extends C2CpgSuite {
     }
   }
 
+  "Access modifier for member functions" should {
+    "be read from the binding on a declaration" in {
+      val cpg = code(
+        """
+          |class C {
+          |  void implicitlyPrivate();
+          |  void declaredPrivate();
+          |protected:
+          |  void declaredProtected();
+          |public:
+          |  void declaredPublic();
+          |  static void staticMember();
+          |  ~C();
+          |  C& operator=(const C&);
+          |};
+          |struct S { void structMember(); };
+          |""".stripMargin,
+        "test.cpp"
+      )
+      def modifiers(name: String) = cpg.method.nameExact(name).modifier.modifierType.sorted.l
+      modifiers("implicitlyPrivate") shouldBe List(ModifierTypes.PRIVATE)
+      modifiers("declaredPrivate") shouldBe List(ModifierTypes.PRIVATE)
+      modifiers("declaredProtected") shouldBe List(ModifierTypes.PROTECTED)
+      modifiers("declaredPublic") shouldBe List(ModifierTypes.PUBLIC)
+      modifiers("staticMember") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.STATIC).sorted
+      modifiers("~C") shouldBe List(ModifierTypes.PUBLIC)
+      modifiers("=") shouldBe List(ModifierTypes.PUBLIC)
+      modifiers("structMember") shouldBe List(ModifierTypes.PUBLIC)
+    }
+
+    "be read from the binding on an out-of-line definition" in {
+      val cpg = code(
+        """
+          |class D {
+          |  void hidden();
+          |public:
+          |  void shown();
+          |};
+          |void D::hidden() {}
+          |void D::shown() {}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      cpg.method.fullNameExact("D.hidden:void()").modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
+      cpg.method.fullNameExact("D.shown:void()").modifier.modifierType.l shouldBe List(ModifierTypes.PUBLIC)
+    }
+
+    "be absent for a function that is not a class member" in {
+      val cpg = code(
+        """
+          |void freeFunction() {}
+          |static void staticFreeFunction() {}
+          |namespace ns { void namespaceFunction() {} }
+          |""".stripMargin,
+        "test.cpp"
+      ).moreCode("void cFunction() {}", "test.c")
+      def modifiers(name: String) = cpg.method.nameExact(name).modifier.modifierType.l
+      modifiers("freeFunction") shouldBe empty
+      modifiers("staticFreeFunction") shouldBe List(ModifierTypes.STATIC)
+      modifiers("namespaceFunction") shouldBe empty
+      modifiers("cFunction") shouldBe empty
+    }
+  }
+
+  "The virtual modifier" should {
+    "be present on every virtual member function" in {
+      val cpg = code(
+        """
+          |struct Base {
+          |  virtual void declaredVirtual();
+          |  virtual void pureVirtual() = 0;
+          |  void nonVirtual();
+          |  virtual ~Base();
+          |};
+          |struct Derived : Base {
+          |  void declaredVirtual() override;
+          |  void pureVirtual() final;
+          |  void newNonVirtual();
+          |};
+          |""".stripMargin,
+        "test.cpp"
+      )
+      def modifiers(fullName: String) = cpg.method.fullNameExact(fullName).modifier.modifierType.sorted.l
+      modifiers("Base.declaredVirtual:void()") shouldBe
+        List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Base.pureVirtual:void()") shouldBe
+        List(ModifierTypes.ABSTRACT, ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Base.~Base:ANY()") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Derived.declaredVirtual:void()") shouldBe
+        List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Derived.pureVirtual:void()") shouldBe
+        List(ModifierTypes.FINAL, ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Base.nonVirtual:void()") shouldBe List(ModifierTypes.PUBLIC)
+      modifiers("Derived.newNonVirtual:void()") shouldBe List(ModifierTypes.PUBLIC)
+    }
+
+    "be present on an out-of-line definition of a virtual member function" in {
+      val cpg = code(
+        """
+          |struct Base { virtual void run(); void walk(); };
+          |void Base::run() {}
+          |void Base::walk() {}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      cpg.method.fullNameExact("Base.run:void()").modifier.modifierType.sorted.l shouldBe
+        List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      cpg.method.fullNameExact("Base.walk:void()").modifier.modifierType.sorted.l shouldBe
+        List(ModifierTypes.PUBLIC)
+    }
+
+    "be absent for a free function and for C, and present on a lambda method" in {
+      val cpg = code(
+        """
+          |void freeFunction() {}
+          |void withLambda() { auto l = [](int x) { return x; }; }
+          |""".stripMargin,
+        "test.cpp"
+      ).moreCode("void cFunction() {}", "test.c")
+      cpg.method.nameExact("freeFunction").modifier.modifierType.l shouldBe empty
+      cpg.method.nameExact("cFunction").modifier.modifierType.l shouldBe empty
+      cpg.method.nameExact("<lambda>0").modifier.modifierType.sorted.l shouldBe
+        List(ModifierTypes.LAMBDA, ModifierTypes.PRIVATE, ModifierTypes.STATIC, ModifierTypes.VIRTUAL).sorted
+    }
+
+    "select the virtual member functions, and the lambda method the frontend marks virtual" in {
+      val cpg = code(
+        """
+          |struct Shape { virtual double area() = 0; const char* name(); };
+          |struct Circle : Shape { double area() override; };
+          |double compute(Shape* s) { auto l = [](int x) { return x; }; return s->area(); }
+          |""".stripMargin,
+        "test.cpp"
+      )
+      cpg.method.isVirtual.fullName.sorted.l shouldBe List(
+        "Circle.area:double()",
+        "Shape.area:double()",
+        "test.cpp:<global>.compute.<lambda>0:int(int)"
+      )
+      cpg.method.isVirtual.whereNot(_.isLambda).fullName.sorted.l shouldBe
+        List("Circle.area:double()", "Shape.area:double()")
+    }
+  }
+
+  "The abstract modifier" should {
+    "be present on a pure virtual member function in both spellings" in {
+      val cpg = code(
+        """
+          |struct Base {
+          |  virtual void withKeyword() = 0;
+          |  virtual void reDeclared() = 0;
+          |  virtual void declaredVirtual();
+          |  virtual ~Base() = 0;
+          |  void nonVirtual();
+          |};
+          |struct Derived : Base {
+          |  void reDeclared() = 0;
+          |  void withKeyword() override {}
+          |};
+          |""".stripMargin,
+        "test.cpp"
+      )
+      def modifiers(fullName: String) = cpg.method.fullNameExact(fullName).modifier.modifierType.sorted.l
+      modifiers("Base.withKeyword:void()") shouldBe
+        List(ModifierTypes.ABSTRACT, ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Base.reDeclared:void()") shouldBe
+        List(ModifierTypes.ABSTRACT, ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Derived.reDeclared:void()") shouldBe
+        List(ModifierTypes.ABSTRACT, ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Base.~Base:ANY()") shouldBe
+        List(ModifierTypes.ABSTRACT, ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Base.declaredVirtual:void()") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Derived.withKeyword:void()") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Base.nonVirtual:void()") shouldBe List(ModifierTypes.PUBLIC)
+    }
+
+    "be present on an out-of-line definition of a pure virtual member function" in {
+      val cpg = code(
+        """
+          |struct Base { virtual void pure() = 0; virtual void impure(); };
+          |void Base::pure() {}
+          |void Base::impure() {}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      cpg.method.fullNameExact("Base.pure:void()").modifier.modifierType.sorted.l shouldBe
+        List(ModifierTypes.ABSTRACT, ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      cpg.method.fullNameExact("Base.impure:void()").modifier.modifierType.sorted.l shouldBe
+        List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+    }
+
+    "select the pure virtual member functions" in {
+      val cpg = code(
+        """
+          |struct Shape { virtual double area() = 0; virtual double perimeter(); };
+          |struct Circle : Shape { double area() override; };
+          |""".stripMargin,
+        "test.cpp"
+      )
+      cpg.method.isAbstract.fullName.sorted.l shouldBe List("Shape.area:double()")
+    }
+  }
+
+  "The final modifier" should {
+    "be present on a member function declared final" in {
+      val cpg = code(
+        """
+          |struct Base {
+          |  virtual void overridable();
+          |  virtual void sealed();
+          |};
+          |struct Derived : Base {
+          |  void overridable() override;
+          |  void sealed() final;
+          |};
+          |""".stripMargin,
+        "test.cpp"
+      )
+      def modifiers(fullName: String) = cpg.method.fullNameExact(fullName).modifier.modifierType.sorted.l
+      modifiers("Derived.sealed:void()") shouldBe
+        List(ModifierTypes.FINAL, ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Derived.overridable:void()") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      modifiers("Base.sealed:void()") shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+    }
+
+    "be present on an out-of-line definition of a final member function" in {
+      val cpg = code(
+        """
+          |struct Base { virtual void run(); virtual void walk(); };
+          |struct Derived : Base {
+          |  void run() final;
+          |  void walk() override;
+          |};
+          |void Derived::run() {}
+          |void Derived::walk() {}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      cpg.method.fullNameExact("Derived.run:void()").modifier.modifierType.sorted.l shouldBe
+        List(ModifierTypes.FINAL, ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+      cpg.method.fullNameExact("Derived.walk:void()").modifier.modifierType.sorted.l shouldBe
+        List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+    }
+
+    "be absent for a free function and for C" in {
+      val cpg = code("void freeFunction() {}", "test.cpp").moreCode("void cFunction() {}", "test.c")
+      cpg.method.nameExact("freeFunction").modifier.modifierType.l shouldBe empty
+      cpg.method.nameExact("cFunction").modifier.modifierType.l shouldBe empty
+    }
+
+    "be absent on a member function of a final class, which carries the modifier on its type declaration" in {
+      val cpg = code(
+        """
+          |struct Base { virtual void run(); };
+          |struct Derived final : Base { void run() override; };
+          |""".stripMargin,
+        "test.cpp"
+      )
+      cpg.typeDecl.nameExact("Derived").modifier.modifierType.l shouldBe List(ModifierTypes.FINAL)
+      cpg.method.fullNameExact("Derived.run:void()").modifier.modifierType.sorted.l shouldBe
+        List(ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL).sorted
+    }
+  }
   "Deleted and defaulted special members" should {
     "be distinguishable by modifier" in {
       val cpg = code(
@@ -328,7 +591,7 @@ class MethodTests extends C2CpgSuite {
       ).sorted
 
       val List(declaredOnly) = cpg.method.fullNameExact("DeclaredOnly.DeclaredOnly:void(DeclaredOnly&)").l
-      declaredOnly.modifier.modifierType.sorted.l shouldBe List(ModifierTypes.CONSTRUCTOR)
+      declaredOnly.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PUBLIC)
 
       val List(userBody) = cpg.method.fullNameExact("UserBody.UserBody:void(UserBody&)").l
       userBody.modifier.modifierType.sorted.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PUBLIC)
@@ -351,10 +614,14 @@ class MethodTests extends C2CpgSuite {
           |""".stripMargin,
         "test.cpp"
       )
-      cpg.method.fullNameExact("A.~A:ANY()").modifier.modifierType.l shouldBe List(Defines.ModifierDefaulted)
-      cpg.method.fullNameExact("B.~B:ANY()").modifier.modifierType.l shouldBe List(Defines.ModifierDeleted)
-      cpg.method.fullNameExact("A.=:A&(A&)").modifier.modifierType.l shouldBe List(Defines.ModifierDeleted)
-      cpg.method.fullNameExact("A.=:A&(A&&)").modifier.modifierType.l shouldBe List(Defines.ModifierDefaulted)
+      cpg.method.fullNameExact("A.~A:ANY()").modifier.modifierType.sorted.l shouldBe
+        List(Defines.ModifierDefaulted, ModifierTypes.PUBLIC).sorted
+      cpg.method.fullNameExact("B.~B:ANY()").modifier.modifierType.sorted.l shouldBe
+        List(Defines.ModifierDeleted, ModifierTypes.PUBLIC).sorted
+      cpg.method.fullNameExact("A.=:A&(A&)").modifier.modifierType.sorted.l shouldBe
+        List(Defines.ModifierDeleted, ModifierTypes.PUBLIC).sorted
+      cpg.method.fullNameExact("A.=:A&(A&&)").modifier.modifierType.sorted.l shouldBe
+        List(Defines.ModifierDefaulted, ModifierTypes.PUBLIC).sorted
     }
 
     "be correct for the DISALLOW_COPY macro idiom" in {
@@ -369,7 +636,8 @@ class MethodTests extends C2CpgSuite {
       cpg.method.fullNameExact("M.M:void(M&)").code.l shouldBe List("DISALLOW_COPY(M)")
       cpg.method.fullNameExact("M.M:void(M&)").modifier.modifierType.sorted.l shouldBe
         List(ModifierTypes.CONSTRUCTOR, Defines.ModifierDeleted, ModifierTypes.PUBLIC).sorted
-      cpg.method.fullNameExact("M.=:M&(M&)").modifier.modifierType.l shouldBe List(Defines.ModifierDeleted)
+      cpg.method.fullNameExact("M.=:M&(M&)").modifier.modifierType.sorted.l shouldBe
+        List(Defines.ModifierDeleted, ModifierTypes.PUBLIC).sorted
     }
 
     "be absent for plain definitions and for C" in {
@@ -410,8 +678,8 @@ class MethodTests extends C2CpgSuite {
         "test.cpp"
       )
       cpg.method.isConstructor.fullName.sorted.l shouldBe List("S.S:void()", "S.S:void(S&)")
-      cpg.method.fullNameExact("S.m:void()").modifier.modifierType.l shouldBe List.empty
-      cpg.method.fullNameExact("S.~S:ANY()").modifier.modifierType.l shouldBe List.empty
+      cpg.method.fullNameExact("S.m:void()").modifier.modifierType.l shouldBe List(ModifierTypes.PUBLIC)
+      cpg.method.fullNameExact("S.~S:ANY()").modifier.modifierType.l shouldBe List(ModifierTypes.PUBLIC)
     }
 
     "not be added to plain C functions" in {
@@ -737,6 +1005,100 @@ class MethodTests extends C2CpgSuite {
       initMethods.size shouldBe 3
       initMethods.foreach { method =>
         method.block.astChildren.isLocal.nameExact("scvGeoms_").size shouldBe 1
+      }
+    }
+  }
+
+  "A constructor's access modifier" should {
+    val cpg = code(
+      """
+        |class Locked {
+        |private:
+        |  Locked();
+        |};
+        |class Guarded {
+        |protected:
+        |  Guarded();
+        |};
+        |class DefaultPrivate {
+        |  DefaultPrivate();
+        |};
+        |struct Opened {
+        |  Opened();
+        |};
+        |Locked::Locked() {}
+        |Guarded::Guarded() {}
+        |DefaultPrivate::DefaultPrivate() {}
+        |Opened::Opened() {}
+        |""".stripMargin,
+      "test.cpp"
+    )
+
+    "be private for a private constructor" in {
+      inside(cpg.method.fullNameExact("Locked.Locked:void()").l) { case List(constructor) =>
+        constructor.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PRIVATE)
+      }
+    }
+
+    "be protected for a protected constructor" in {
+      inside(cpg.method.fullNameExact("Guarded.Guarded:void()").l) { case List(constructor) =>
+        constructor.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PROTECTED)
+      }
+    }
+
+    "be private for an unlabelled member of a class" in {
+      inside(cpg.method.fullNameExact("DefaultPrivate.DefaultPrivate:void()").l) { case List(constructor) =>
+        constructor.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PRIVATE)
+      }
+    }
+
+    "be public for an unlabelled member of a struct" in {
+      inside(cpg.method.fullNameExact("Opened.Opened:void()").l) { case List(constructor) =>
+        constructor.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PUBLIC)
+      }
+    }
+  }
+
+  "A constructor declared without a definition" should {
+    val cpg = code(
+      """
+        |class Hidden {
+        |  Hidden();
+        |
+        |public:
+        |  Hidden(int);
+        |};
+        |""".stripMargin,
+      "test.cpp"
+    )
+
+    "still carry its access modifier" in {
+      inside(cpg.method.fullNameExact("Hidden.Hidden:void()").l) { case List(constructor) =>
+        constructor.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PRIVATE)
+      }
+      inside(cpg.method.fullNameExact("Hidden.Hidden:void(int)").l) { case List(constructor) =>
+        constructor.modifier.modifierType.l shouldBe List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PUBLIC)
+      }
+    }
+  }
+
+  "A deleted private constructor" should {
+    val cpg = code(
+      """
+        |class NoCopy {
+        |  NoCopy(const NoCopy&) = delete;
+        |
+        |public:
+        |  NoCopy() = default;
+        |};
+        |""".stripMargin,
+      "test.cpp"
+    )
+
+    "carry both the access and the deleted modifier" in {
+      inside(cpg.method.fullNameExact("NoCopy.NoCopy:void(NoCopy&)").l) { case List(constructor) =>
+        constructor.modifier.modifierType.l shouldBe
+          List(ModifierTypes.CONSTRUCTOR, ModifierTypes.PRIVATE, Defines.ModifierDeleted)
       }
     }
   }

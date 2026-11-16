@@ -259,7 +259,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
             val fullName      = s"$classFullName.$name:$signature"
 
             val (dispatchType, receiver) =
-              if (method.isVirtual || method.isPureVirtual) {
+              if (isVirtual(method)) {
                 (DispatchTypes.DYNAMIC_DISPATCH, Some(instanceAst))
               } else {
                 (DispatchTypes.STATIC_DISPATCH, None)
@@ -311,7 +311,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
             val fullName     = s"$classFullName.$operatorName:$functionSignature"
             val dispatchType = safeCdtCall(evaluation.getOverload) match {
               case Some(method: ICPPMethod) =>
-                if (method.isVirtual || method.isPureVirtual) {
+                if (isVirtual(method)) {
                   DispatchTypes.DYNAMIC_DISPATCH
                 } else {
                   DispatchTypes.STATIC_DISPATCH
@@ -653,7 +653,10 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   private def astForDeleteExpression(delExpression: ICPPASTDeleteExpression): Ast = {
-    val name          = Operators.delete
+    // [expr.delete]: the array form deallocates an array and calls `operator delete[]`, a different function.
+    val name =
+      if (delExpression.isVectored) { Defines.OperatorDeleteArray }
+      else { Operators.delete }
     val cpgDeleteNode =
       callNode(
         delExpression,

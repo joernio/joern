@@ -142,6 +142,7 @@ class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val
     case n: (MemberExpression | OptionalMemberExpression) => astForMemberExpression(n)
     case n: MetaProperty                                  => astForMetaProperty(n)
     case n: (CallExpression | OptionalCallExpression)     => astForCallExpression(n)
+    case n: ImportExpression                              => astForImportExpression(n)
     case n: SequenceExpression                            => astForSequenceExpression(n)
     case n: (AssignmentExpression | AssignmentPattern)    => astForAssignmentExpression(n)
     case n: BinaryExpression                              => astForBinaryExpression(n)

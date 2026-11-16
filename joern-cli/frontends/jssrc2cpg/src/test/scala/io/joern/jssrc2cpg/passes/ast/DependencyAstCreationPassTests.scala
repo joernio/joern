@@ -83,9 +83,33 @@ class DependencyAstCreationPassTests extends JsSrc2CpgSuite {
       localPath.referencingIdentifiers.head.name shouldBe "path"
 
       val List(reqCall) = cpg.call.codeExact("require(\"path\")").l
-      reqCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-      reqCall.receiver.head.code shouldBe "require"
+      reqCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      reqCall.methodFullName shouldBe "require"
+      reqCall.receiver.size shouldBe 0
+      reqCall.argument.argumentIndex.l shouldBe List(1)
       reqCall.argument.argumentIndex(1).head.code shouldBe "\"path\""
+    }
+
+    "have correct require calls for ES imports" in {
+      val cpg = code("""
+        |import a from "depA";
+        |import {b as c} from "depB";
+        |import * as d from "depD";
+        |import "depE";
+        |""".stripMargin)
+      val requireCalls = cpg.call.nameExact("require").l
+      requireCalls.code.l shouldBe List(
+        "require(\"depA\")",
+        "require(\"depB\")",
+        "require(\"depD\")",
+        "require(\"depE\")"
+      )
+      requireCalls.foreach { call =>
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        call.methodFullName shouldBe "require"
+        call.receiver.size shouldBe 0
+        call.argument.argumentIndex.l shouldBe List(1)
+      }
     }
 
     "have correct import nodes" in {

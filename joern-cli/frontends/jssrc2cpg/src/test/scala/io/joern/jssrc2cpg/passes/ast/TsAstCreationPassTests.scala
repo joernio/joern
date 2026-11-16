@@ -41,13 +41,28 @@ class TsAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
         |}
         |""".stripMargin)
       cpg.assignment.code.l shouldBe List(
-        "_tmp_1 = [1, 2]",
-        "_tmp_0 = __ecma.Array.factory()",
-        "a = _tmp_1[0]",
-        "b = _tmp_1[1]",
-        "exports.a = a",
-        "exports.b = b"
+        "M = {}",
+        "_tmp_2 = [1, 2]",
+        "_tmp_1 = __ecma.Array.factory()",
+        "a = _tmp_2[0]",
+        "b = _tmp_2[1]",
+        "M.a = a",
+        "M.b = b"
       )
+    }
+
+    "not leak the parameters of overloaded function signatures into the surrounding scope" in {
+      val cpg = code("""
+        |function over(a: string): void;
+        |function over(a: any): void {}
+        |class C {
+        |  m(a: string): void;
+        |  m(a: any): void {}
+        |}
+        |over(this);
+        |""".stripMargin)
+      cpg.method.nameExact(":program").ast.isIdentifier.nameExact("this").refsTo.method.fullName.toSet shouldBe
+        Set("Test0.ts::program")
     }
 
     "have correct structure for binding pattern" in {
@@ -95,6 +110,40 @@ class TsAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
       models.code shouldBe "import models = require('../models/index')"
       models.importedEntity shouldBe Option("../models/index")
       models.importedAs shouldBe Option("models")
+    }
+
+    "have correct structure for exported import assignments" in {
+      val cpg = code("""
+        |export import fs = require('fs');
+        |export import shape = A.B;
+        |""".stripMargin)
+      cpg.local.code.l shouldBe List("fs", "shape")
+      val List(fs, shape) = cpg.imports.l
+      fs.code shouldBe "export import fs = require('fs')"
+      fs.importedEntity shouldBe Option("fs")
+      fs.importedAs shouldBe Option("fs")
+      shape.code shouldBe "export import shape = A.B"
+      shape.importedEntity shouldBe Option("A.B")
+      shape.importedAs shouldBe Option("shape")
+    }
+
+    "export the binding of exported import assignments" in {
+      val cpg = code("""
+        |export import fs = require('fs');
+        |export import shape = A.B;
+        |import local = require('path');
+        |""".stripMargin)
+      cpg.assignment.code("exports\\..*").code.l shouldBe List("exports.fs = fs", "exports.shape = shape")
+      val List(exportFs, exportShape) = cpg.assignment.code("exports\\..*").l
+      exportFs.argument(1).code shouldBe "exports.fs"
+      exportFs.argument(2).code shouldBe "fs"
+      exportFs.lineNumber shouldBe Some(2)
+      exportShape.lineNumber shouldBe Some(3)
+      cpg.call.nameExact("require").inCall.isAssignment.code.l shouldBe List(
+        "var fs = require(\"fs\")",
+        "var shape = require(\"A.B\")",
+        "var local = require(\"path\")"
+      )
     }
 
     "have correct structure for declared functions" in {

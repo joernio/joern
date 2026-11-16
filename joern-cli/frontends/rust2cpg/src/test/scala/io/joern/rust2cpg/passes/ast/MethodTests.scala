@@ -28,6 +28,50 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
     "have no modifiers" in {
       cpg.method.name("main").modifier shouldBe empty
     }
+
+    "have correct inheritsFrom" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::main::{fn}").inheritsFromTypeFullName.l shouldBe List(
+        "core::ops::async_function::AsyncFn",
+        "core::ops::async_function::AsyncFnMut",
+        "core::ops::async_function::AsyncFnOnce",
+        "core::ops::function::Fn",
+        "core::ops::function::FnMut",
+        "core::ops::function::FnOnce"
+      )
+    }
+
+    "have correct bindings" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::main::{fn}").methodBinding.sortBy(_.name).l) {
+        case Binding(name = "", signature = "", methodFullName = "rust2cpgtest::main") ::
+            Binding(
+              name = "async_call",
+              signature = "core::ops::async_function::AsyncFn",
+              methodFullName = "rust2cpgtest::main"
+            ) ::
+            Binding(
+              name = "async_call_mut",
+              signature = "core::ops::async_function::AsyncFnMut",
+              methodFullName = "rust2cpgtest::main"
+            ) ::
+            Binding(
+              name = "async_call_once",
+              signature = "core::ops::async_function::AsyncFnOnce",
+              methodFullName = "rust2cpgtest::main"
+            ) ::
+            Binding(name = "call", signature = "core::ops::function::Fn", methodFullName = "rust2cpgtest::main") ::
+            Binding(
+              name = "call_mut",
+              signature = "core::ops::function::FnMut",
+              methodFullName = "rust2cpgtest::main"
+            ) ::
+            Binding(
+              name = "call_once",
+              signature = "core::ops::function::FnOnce",
+              methodFullName = "rust2cpgtest::main"
+            ) :: Nil =>
+          succeed
+      }
+    }
   }
 
   "a fn with a single parameter and a tail expression" should {
@@ -409,6 +453,17 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
         thenCall.methodFullName shouldBe "rust2cpgtest::outer::inner#1"
         elseCall.methodFullName shouldBe "rust2cpgtest::outer::inner#2"
       }
+    }
+  }
+
+  "same-named mod and fn" should {
+    val cpg = code("""
+        |mod foo { static K: i32 = 1;}
+        |fn foo() {}
+        |""".stripMargin)
+
+    "have correct typeDecl fullNames" in {
+      cpg.typeDecl.nameExact("foo").fullName.sorted.l shouldBe List("rust2cpgtest::foo", "rust2cpgtest::foo::{fn}")
     }
   }
 

@@ -166,13 +166,46 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
       case Defines.OperatorsNew =>
         call.astChildren.l match {
           case ::(fa: Call, ::(id: Identifier, _)) if fa.name == Operators.fieldAccess =>
-            val constructorTypes = visitIdentifierAssignedToFieldLoad(id, fa.asInstanceOf[FieldAccess])
+            val constructorTypes = constructorTypesOfFieldLoad(id, fa.asInstanceOf[FieldAccess])
             // the identifier holds the allocated instance and thus must not be typed with the constructor
             symbolTable.put(id, symbolTable.get(id).map(_.stripSuffix(s"$pathSep$ConstructorMethodName")))
             symbolTable.append(call, constructorTypes.map(withConstructorSuffix))
           case _ => Set.empty
         }
       case _ => super.visitIdentifierAssignedToOperator(i, call, operation)
+    }
+  }
+
+  /** The constructors of the classes of this file that are assigned to a field, by the name of the field. */
+  private lazy val classesAssignedToFields: Map[String, Set[String]] =
+    assignments
+      .flatMap { assignment =>
+        assignment.argumentOut.l match {
+          case List(fieldAccess: Call, typeRef: TypeRef) if fieldAccess.name == Operators.fieldAccess =>
+            fieldAccess.argumentOut.l.lastOption.collect { case field: FieldIdentifier =>
+              field.canonicalName -> typeRef.typeFullName
+            }
+          case _ => None
+        }
+      }
+      .toList
+      .groupMap { case (fieldName, _) => fieldName } { case (_, typeFullName) => typeFullName }
+      .view
+      .mapValues(_.toSet)
+      .toMap
+
+  /** The types that are loaded by the field access of a constructor, e.g. `new A.B.Foo()`. The types of a path of
+    * nested objects cannot be resolved from the types of its parts. In that case the constructor is the class that is
+    * assigned to the field in this file, e.g. `A.B.Foo = class Foo {}`.
+    */
+  private def constructorTypesOfFieldLoad(i: Identifier, fa: FieldAccess): Set[String] = {
+    val loadedTypes = visitIdentifierAssignedToFieldLoad(i, fa)
+    if (loadedTypes.nonEmpty && !loadedTypes.forall(XTypeRecovery.isDummyType)) loadedTypes
+    else {
+      val assignedClasses = fa.argumentOut.l.lastOption.collect { case field: FieldIdentifier =>
+        classesAssignedToFields.getOrElse(field.canonicalName, Set.empty[String])
+      }
+      assignedClasses.filter(_.nonEmpty).getOrElse(loadedTypes)
     }
   }
 

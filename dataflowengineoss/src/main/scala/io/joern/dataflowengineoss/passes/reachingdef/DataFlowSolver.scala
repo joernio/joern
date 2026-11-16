@@ -13,6 +13,13 @@ class DataFlowSolver {
     var in                = problem.inOutInit.initIn
     val workList          = mutable.ListBuffer[Node]()
     workList ++= problem.flowGraph.allNodesReversePostOrder
+    // in(m) is the meet of out(p) over pred(m), so a change to out(p) must re-queue the nodes that read it.
+    val nodesThatRead = mutable.HashMap.empty[Node, mutable.ArrayBuffer[Node]]
+    problem.flowGraph.allNodesReversePostOrder.foreach { node =>
+      problem.flowGraph.pred(node).iterator.foreach { predecessor =>
+        nodesThatRead.getOrElseUpdate(predecessor, mutable.ArrayBuffer.empty) += node
+      }
+    }
 
     while (workList.nonEmpty) {
       val newEntries = workList.flatMap { n =>
@@ -28,7 +35,7 @@ class DataFlowSolver {
         val changed = !old.equals(newSet)
         out += n -> newSet
         if (changed) {
-          problem.flowGraph.succ(n)
+          nodesThatRead.getOrElse(n, Nil)
         } else
           List()
       }

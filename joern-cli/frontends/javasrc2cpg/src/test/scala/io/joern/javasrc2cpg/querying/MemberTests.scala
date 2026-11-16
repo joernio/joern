@@ -108,7 +108,7 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
         |
         |  void foo() {}
         |}""".stripMargin)
-    cpg.member.size shouldBe 1
+    cpg.member.size shouldBe 3
     cpg.member.name("x").astChildren.size shouldBe 0
   }
 

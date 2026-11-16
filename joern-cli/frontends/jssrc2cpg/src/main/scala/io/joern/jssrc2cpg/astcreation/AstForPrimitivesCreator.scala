@@ -9,6 +9,10 @@ import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForIdentifier(ident: Identifier, maybePossibleType: Option[String] = None): Ast = {
+    astForModuleMemberReference(ident).getOrElse(astForVariableReference(ident, maybePossibleType))
+  }
+
+  private def astForVariableReference(ident: Identifier, maybePossibleType: Option[String]): Ast = {
     val name         = ejsOutputCallName(ident).getOrElse(ident.name)
     val identNode    = identifierNode(ident, name)
     val possibleType = maybePossibleType match {

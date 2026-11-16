@@ -16,68 +16,37 @@ import scala.util.matching.Regex
 
 object AstGenRunner {
 
-  private val LineLengthThreshold: Int = 10000
-
-  private val TypeDefinitionFileExtensions = List(".t.ts", ".d.ts")
-
-  private val MinifiedPathRegex: Regex = ".*([.-]min\\..*js|bundle\\.js)".r
-
-  private val SourceFileExtensions =
-    Set(".js", ".jsx", ".cjs", ".mjs", ".xsjs", ".xsjslib", ".ts", ".tsx", ".vue", ".ejs")
-
-  val AstGenDefaultIgnoreRegex: Seq[Regex] =
-    List(
-      "(conf|test|spec|[.-]min|\\.d)\\.(js|jsx|cjs|mjs|xsjs|xsjslib|ts|tsx)$".r,
-      s"node_modules${Pattern.quote(java.io.File.separator)}.*".r,
-      s"venv${Pattern.quote(java.io.File.separator)}.*".r,
-      s"docs${Pattern.quote(java.io.File.separator)}.*".r,
-      s"test${Pattern.quote(java.io.File.separator)}.*".r,
-      s"tests${Pattern.quote(java.io.File.separator)}.*".r,
-      s"e2e${Pattern.quote(java.io.File.separator)}.*".r,
-      s"e2e-beta${Pattern.quote(java.io.File.separator)}.*".r,
-      s"examples${Pattern.quote(java.io.File.separator)}.*".r,
-      s"cypress${Pattern.quote(java.io.File.separator)}.*".r,
-      s"jest-cache${Pattern.quote(java.io.File.separator)}.*".r,
-      s"eslint-rules${Pattern.quote(java.io.File.separator)}.*".r,
-      s"codemods${Pattern.quote(java.io.File.separator)}.*".r,
-      s"flow-typed${Pattern.quote(java.io.File.separator)}.*".r,
-      s"i18n${Pattern.quote(java.io.File.separator)}.*".r,
-      s"vendor${Pattern.quote(java.io.File.separator)}.*".r,
-      s"www${Pattern.quote(java.io.File.separator)}.*".r,
-      s"dist${Pattern.quote(java.io.File.separator)}.*".r,
-      s"build${Pattern.quote(java.io.File.separator)}.*".r
-    )
-
-  private val IgnoredTestsRegex: Seq[Regex] =
-    List(
-      ".*[.-]spec\\.js".r,
-      ".*[.-]mock\\.js".r,
-      ".*[.-]e2e\\.js".r,
-      ".*[.-]test\\.js".r,
-      ".*cypress\\.json".r,
-      ".*test.*\\.json".r
-    )
-
-  private val IgnoredFilesRegex: Seq[Regex] = List(
-    ".*jest\\.config.*".r,
-    ".*webpack\\..*\\.js".r,
-    ".*vue\\.config\\.js".r,
-    ".*babel\\.config\\.js".r,
-    ".*chunk-vendors.*\\.js".r, // commonly found in webpack / vue.js projects
-    ".*app~.*\\.js".r,          // commonly found in webpack / vue.js projects
-    ".*\\.chunk\\.js".r,
-    ".*\\.babelrc.*".r,
-    ".*\\.eslint.*".r,
-    ".*\\.tslint.*".r,
-    ".*\\.stylelintrc\\.js".r,
-    ".*rollup\\.config.*".r,
-    ".*\\.types\\.js".r,
-    ".*\\.cjs\\.js".r,
-    ".*eslint-local-rules\\.js".r,
-    ".*\\.devcontainer\\.json".r,
-    ".*Gruntfile\\.js".r,
-    ".*i18n.*\\.json".r
+  /** Directory names that javascript-astgen never descends into (`IGNORE_DIRS` in its `Defaults.ts`).
+    *
+    * astgen only sees the original source tree for plain JS / TS / Vue files. `.ejs` files are found and preprocessed
+    * here, before astgen runs, so this runner has to skip these directories itself for them.
+    */
+  private val IgnoredDirectoryNames = List(
+    "node_modules",
+    "venv",
+    "docs",
+    "test",
+    "tests",
+    "e2e",
+    "e2e-beta",
+    "examples",
+    "cypress",
+    "jest-cache",
+    "eslint-rules",
+    "codemods",
+    "flow-typed",
+    "i18n",
+    "vendor",
+    "www",
+    "dist",
+    "build"
   )
+
+  /** Matches any file below an ignored directory, at any depth, with the path relative to the input directory. */
+  val AstGenDefaultIgnoreRegex: Seq[Regex] = {
+    val separator = Pattern.quote(java.io.File.separator)
+    IgnoredDirectoryNames.map(dir => s"(?i)(.*$separator)?${Pattern.quote(dir)}$separator.*".r)
+  }
 
   private object astGenMetaData
       extends AstGenProgramMetaData(
@@ -101,8 +70,7 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
     } else {
       Seq.empty
     }
-    val ignoreFileArgs =
-      if (config.ignoredFiles.nonEmpty) Seq("--exclude-file") ++ config.ignoredFiles.map(f => s"\"$f\"") else Seq.empty
+    val ignoreFileArgs = config.ignoredFiles.flatMap(file => Seq("--exclude-file", file))
     tsArgs ++ ignoredFilesRegex ++ ignoreFileArgs
   }
 
@@ -121,19 +89,18 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
     skipped.flatten
   }
 
+  /** Applies the filters that astgen cannot: user configuration for the `.ejs` sources it never sees, and the removal
+    * of transpiled output. Test files, bundles, minified files, tooling configuration and type definitions are already
+    * skipped by astgen itself, so no JSON is ever produced for them.
+    */
   override protected def fileFilter(file: String, out: Path): Boolean = {
     Try {
       val filePath = file.stripSuffix(".json").replace(out.toString, config.inputPath)
-      // The minified and transpiled checks both need the file's lines; read them at most once per invocation and only
-      // when a check actually forces this lazy val (i.e. for existing .js files).
+      // Read the file's lines at most once per invocation and only when the transpiled check forces this lazy val
+      // (i.e. for existing .js files).
       lazy val fileLines = IOUtils.readLinesInFile(Paths.get(filePath))
       filePath match {
-        // We are not interested in JS / TS type definition files at this stage.
-        // TODO: maybe we can enable that later on and use the type definitions there
-        //  for enhancing the CPG with additional type information for functions
-        case _ if TypeDefinitionFileExtensions.exists(filePath.endsWith)               => false
         case _ if isIgnoredByUserConfig(filePath)                                      => false
-        case _ if isIgnoredByDefault(filePath, fileLines)                              => false
         case _ if isTranspiledFile(filePath, fileLines) && !hasEjsSourceFile(filePath) => false
         case _                                                                         => true
       }
@@ -142,31 +109,6 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
       case Failure(exception) =>
         logger.warn(s"An error occurred while processing file path $file during filtering stage : ", exception)
         false
-    }
-  }
-
-  private def isMinifiedFile(filePath: String, fileLines: => Seq[String]): Boolean = filePath match {
-    case _ if MinifiedPathRegex.matches(filePath)                           => true
-    case _ if Files.exists(Paths.get(filePath)) && filePath.endsWith(".js") =>
-      val lines             = fileLines
-      val linesOfCode       = lines.size
-      val longestLineLength = if (lines.isEmpty) 0 else lines.map(_.length).max
-      if (longestLineLength >= LineLengthThreshold && linesOfCode <= 50) {
-        logger.debug(s"'$filePath' seems to be a minified file (contains a line with length $longestLineLength)")
-        true
-      } else false
-    case _ => false
-  }
-
-  private def isIgnoredByDefault(filePath: String, fileLines: => Seq[String]): Boolean = {
-    lazy val isIgnored     = IgnoredFilesRegex.exists(_.matches(filePath))
-    lazy val isIgnoredTest = IgnoredTestsRegex.exists(_.matches(filePath))
-    lazy val isMinified    = isMinifiedFile(filePath, fileLines)
-    if (isIgnored || isIgnoredTest || isMinified) {
-      logger.debug(s"'$filePath' ignored by default")
-      true
-    } else {
-      false
     }
   }
 
@@ -273,20 +215,9 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
   }
 
   private def vueFiles(in: Path, out: Path): Try[Seq[String]] = {
-    val files = SourceFiles.determine(
-      in.toString,
-      Set(".vue"),
-      ignoredDefaultRegex = Some(AstGenDefaultIgnoreRegex),
-      ignoredFilesRegex = Some(config.ignoredFilesRegex),
-      ignoredFilesPath = Some(config.ignoredFiles)
-    )
-    if (files.nonEmpty) {
-      ExternalCommand
-        .run((astGenCommand +: executableArgs) ++ Seq("-t", "vue", "-o", out.toString), workingDir = Option(in))
-        .toTry
-    } else {
-      Success(Seq.empty)
-    }
+    ExternalCommand
+      .run((astGenCommand +: executableArgs) ++ Seq("-t", "vue", "-o", out.toString), workingDir = Option(in))
+      .toTry
   }
 
   private def jsFiles(in: Path, out: Path): Try[Seq[String]] = {
@@ -304,12 +235,14 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
     } yield jsResult ++ vueResult ++ ejsResult
   }
 
-  private def checkParsedFiles(files: List[String], in: Path): List[String] = {
+  private def checkParsedFiles(files: List[String]): List[String] = {
     val numOfParsedFiles = files.size
     logger.info(s"Parsed $numOfParsedFiles files.")
     if (numOfParsedFiles == 0) {
-      logger.warn("You may want to check the DEBUG logs for a list of files that are ignored by default.")
-      SourceFiles.determine(in.toString, SourceFileExtensions, ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex))
+      logger.warn(
+        "No files were parsed. By default, test files, minified files, bundles, tooling configuration and " +
+          "folders like 'node_modules', 'dist', 'build' or 'test' are ignored."
+      )
     }
     files
   }
@@ -318,12 +251,12 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
     val in = Paths.get(config.inputPath)
     runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString(), "") match {
       case Success(result) =>
-        val parsed  = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString, Set(".json")), out), in)
+        val parsed  = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString, Set(".json")), out))
         val skipped = skippedFiles(in, result.toList)
         DefaultAstGenRunnerResult(parsed, skipped)
       case Failure(f) =>
         logger.error("\t- running astgen failed!", f)
-        val parsed = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString, Set(".json")), out), in)
+        val parsed = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString, Set(".json")), out))
         DefaultAstGenRunnerResult(parsed, List.empty)
     }
   }

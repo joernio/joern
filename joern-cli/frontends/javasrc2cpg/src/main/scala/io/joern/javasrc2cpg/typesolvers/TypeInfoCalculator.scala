@@ -262,6 +262,7 @@ object TypeInfoCalculator {
     val Char: String     = "char"
     val Boolean: String  = "boolean"
     val Object: String   = "java.lang.Object"
+    val String: String   = "java.lang.String"
     val Class: String    = "java.lang.Class"
     val Iterator: String = "java.util.Iterator"
     val Enum: String     = "java.lang.Enum"

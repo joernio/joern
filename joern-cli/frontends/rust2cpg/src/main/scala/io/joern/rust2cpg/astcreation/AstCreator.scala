@@ -106,6 +106,15 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     }
   }
 
+  protected def addDetachedFnTraitBindingAsts(typeDecl: NewTypeDecl, method: NewMethod): Unit = {
+    val fnTraitBindings = RustFullNames.FnTraitMethodNames.toSeq.sorted.map { case (fnTrait, methodName) =>
+      bindingNode(methodName, fnTrait, method.fullName)
+    }
+    val emptyBinding = bindingNode("", "", method.fullName)
+    val bindings     = emptyBinding +: fnTraitBindings
+    bindings.foreach(binding => addDetachedAst(Ast(binding).withBindsEdge(typeDecl, binding)))
+  }
+
   protected def withMacroCall[T](macroCall: RustNode)(body: => T): T = {
     if (outermostMacroCall.isDefined) {
       body
@@ -304,6 +313,19 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     )
   }
 
+  protected def typeDeclForClosure(closureExpr: RustNodeSyntax.ClosureExpr, method: NewMethod): NewTypeDecl = {
+    typeDeclNode(
+      node = closureExpr,
+      name = method.name,
+      fullName = method.fullName,
+      filename = parseResult.filename,
+      code = code(closureExpr),
+      astParentType = contextStack.astParentType,
+      astParentFullName = contextStack.astParentFullName,
+      inherits = RustFullNames.FnTraitMethodNames.keys.toSeq.sorted
+    )
+  }
+
   protected def memberForAssocConst(const: RustNodeSyntax.Const): NewMember = {
     val member = memberNode(
       node = const,
@@ -325,6 +347,19 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
       astParentType = contextStack.astParentType,
       astParentFullName = contextStack.astParentFullName,
       alias = typeAlias.typ.map(typeFullNameForType)
+    )
+  }
+
+  protected def typeDeclForFn(fn: RustNodeSyntax.Fn, method: NewMethod): NewTypeDecl = {
+    typeDeclNode(
+      node = fn,
+      name = method.name,
+      fullName = RustFullNames.fnTypeFullName(method.fullName),
+      filename = parseResult.filename,
+      code = code(fn),
+      astParentType = contextStack.astParentType,
+      astParentFullName = contextStack.astParentFullName,
+      inherits = RustFullNames.FnTraitMethodNames.keys.toSeq.sorted
     )
   }
 

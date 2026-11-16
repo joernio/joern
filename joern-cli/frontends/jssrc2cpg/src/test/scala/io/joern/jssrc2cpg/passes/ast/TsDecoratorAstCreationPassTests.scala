@@ -46,6 +46,21 @@ class TsDecoratorAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
       }
     }
 
+    "create annotations correctly for overload signatures and abstract methods" in {
+      val cpg = code("""
+        |abstract class Greeter {
+        |  @a()
+        |  greet(x: number): string;
+        |  greet(x: any): string {
+        |    return "Hello";
+        |  }
+        |  @b
+        |  abstract bye(): void;
+        |}""".stripMargin)
+      cpg.typeDecl.name("Greeter").method.name("greet").annotation.code.l shouldBe List("@a()")
+      cpg.typeDecl.name("Greeter").method.name("bye").annotation.code.l shouldBe List("@b")
+    }
+
     "create annotations correctly for method parameter" in {
       val cpg = code("""
         |class Greeter {

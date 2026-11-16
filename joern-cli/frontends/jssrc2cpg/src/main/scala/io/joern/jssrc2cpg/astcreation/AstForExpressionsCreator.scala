@@ -13,11 +13,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForExpressionStatement(exprStmt: ExpressionStatement): Ast =
     astForNodeWithFunctionReference(exprStmt.expression)
 
+  private val ImportCallName = "import"
+
   private type CallLike = CallExpression | OptionalCallExpression | NewExpression
 
-  private def argumentsOf(callLike: CallLike): Seq[BabelNode] = callLike match {
+  private def argumentsOf(callLike: CallLike | ImportExpression): Seq[BabelNode] = callLike match {
     case c: CallExpression         => c.arguments
     case c: OptionalCallExpression => c.arguments
+    case c: ImportExpression       => c.source +: c.options.toSeq
     case c: NewExpression          => c.arguments
   }
 
@@ -104,6 +107,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val callName = ejsOutputCallName(callLike).getOrElse(callLike.code)
         CallExpressionInfo(receiverAst, thisNode, callName)
     }
+  }
+
+  /** `import(...)` loads a module like `require(...)`: it is statically dispatched and has neither receiver nor base.
+    */
+  protected def astForImportExpression(importExpr: ImportExpression): Ast = {
+    val callNode_ = callNode(importExpr, importExpr.code, ImportCallName, DispatchTypes.STATIC_DISPATCH)
+    callAst(callNode_, astForNodes(argumentsOf(importExpr)))
   }
 
   protected def astForCallExpression(callExpr: CallExpression | OptionalCallExpression): Ast = {

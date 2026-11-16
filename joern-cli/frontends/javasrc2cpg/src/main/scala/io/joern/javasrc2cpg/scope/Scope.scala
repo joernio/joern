@@ -46,7 +46,9 @@ class Scope(implicit withSchemaValidation: ValidationMode, disableTypeFallback: 
     isStatic: Boolean,
     outerClassGenericSignature: Option[String] = None,
     methodNames: Set[String] = Set.empty,
-    recordParameters: List[Parameter] = Nil
+    recordParameters: List[Parameter] = Nil,
+    isEnum: Boolean = false,
+    enumConstructorParameters: List[Parameter] = Nil
   ): Unit = {
     val captures       = getCapturesForNewScope(isStatic)
     val outerClassType = scopeStack.takeUntil(_.isInstanceOf[TypeDeclScope]) match {
@@ -73,7 +75,9 @@ class Scope(implicit withSchemaValidation: ValidationMode, disableTypeFallback: 
       outerClassType,
       outerClassGenericSignature,
       methodNames,
-      recordParameters
+      recordParameters,
+      isEnum,
+      enumConstructorParameters
     ) :: scopeStack
   }
 

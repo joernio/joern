@@ -3,6 +3,7 @@ package io.joern.c2cpg.passes.ast
 import io.joern.c2cpg.testfixtures.AstC2CpgSuite
 
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.importresolver.EvaluatedImport
 
 class DependencyTests extends AstC2CpgSuite {
 
@@ -30,6 +31,39 @@ class DependencyTests extends AstC2CpgSuite {
           ioImport.importedAs shouldBe Option("io.h")
           ioImport._dependencyViaImportsOut.head shouldBe ioDep
         }
+      }
+    }
+
+    "mark an active include that could not be resolved" in {
+      val cpg = code("""
+        |#include "missing.h"
+        |""".stripMargin)
+      inside(cpg.imports.l) { case List(missingImport) =>
+        missingImport.importedEntity shouldBe Option("missing.h")
+        missingImport.tag.name.l shouldBe List(EvaluatedImport.UNKNOWN_IMPORT)
+        missingImport.tag.value.l shouldBe List("missing.h")
+      }
+    }
+
+    "not mark an include that was resolved" in {
+      val cpg = code("""
+        |#include "present.h"
+        |""".stripMargin).moreCode("int presentFn();", "present.h")
+      inside(cpg.imports.l) { case List(presentImport) =>
+        presentImport.importedEntity shouldBe Option("present.h")
+        presentImport.tag.l shouldBe empty
+      }
+    }
+
+    "not mark an include the preprocessor never performed" in {
+      val cpg = code("""
+        |#if 0
+        |#include "missing.h"
+        |#endif
+        |""".stripMargin)
+      inside(cpg.imports.l) { case List(inactiveImport) =>
+        inactiveImport.importedEntity shouldBe Option("missing.h")
+        inactiveImport.tag.l shouldBe empty
       }
     }
   }
