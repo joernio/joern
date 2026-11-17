@@ -30,7 +30,7 @@ object ParserConfig {
     val defaultDefines =
       DefaultDefines.MSVC_INTEGER_TYPES ++ DefaultDefines.ALIGNMENT_SPECIFIER ++ DefaultDefines.C11_KEYWORDS
     // User defines take precedence over these defaults but not over the calling conventions (as before).
-    val definedSymbols = defaultDefines ++ config.defines.map { define =>
+    val definedSymbols = defaultDefines ++ DefaultDefines.STANDARD_TYPE_MACROS ++ config.defines.map { define =>
       if (define.contains("=")) {
         // Only the first `=` separates name from value: a value may itself contain `=`, or be empty.
         val split = define.split("=", 2)
