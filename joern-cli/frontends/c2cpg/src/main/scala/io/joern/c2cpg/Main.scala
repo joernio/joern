@@ -1,7 +1,7 @@
 package io.joern.c2cpg
 
 import io.joern.c2cpg.Frontend.*
-import io.joern.x2cpg.{SourceFiles, X2CpgConfig, X2CpgMain}
+import io.joern.x2cpg.{Defines, SourceFiles, X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
 final case class Config(
@@ -15,6 +15,7 @@ final case class Config(
   skipFunctionBodies: Boolean = false,
   withPreprocessedFiles: Boolean = false,
   compilationDatabaseFilename: Option[String] = None,
+  byValueArguments: Boolean = Defines.byValueArgumentsEnabled,
   override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig()
 ) extends X2CpgConfig[Config] {
 
@@ -54,6 +55,14 @@ final case class Config(
 
   def withPreprocessedFiles(value: Boolean): Config = {
     this.copy(withPreprocessedFiles = value)
+  }
+
+  /** Whether each parameter's evaluation strategy is decided from its type (see `ParameterEvaluationStrategy`) and a
+    * macro's parameters are `BY_REFERENCE`. Off by default, every parameter is `BY_VALUE`; the system property
+    * `joern.byValueArguments` sets the default.
+    */
+  def withByValueArguments(value: Boolean): Config = {
+    this.copy(byValueArguments = value)
   }
 
   def withCompilationDatabase(value: String): Config = {

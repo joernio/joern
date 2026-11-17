@@ -118,6 +118,9 @@ trait MacroHandler { this: AstCreator =>
     callAst(callNode_, argAsts)
   }
 
+  /** With `config.byValueArguments`, the parameters are `BY_REFERENCE`: a macro's expansion may assign an argument, as
+    * `#define RESET(x) x = 0` does.
+    */
   private def createMacroMethodStub(
     name: String,
     fullName: String,
@@ -148,7 +151,8 @@ trait MacroHandler { this: AstCreator =>
         code = nameAndCode,
         index = index,
         isVariadic = false,
-        evaluationStrategy = EvaluationStrategies.BY_VALUE,
+        evaluationStrategy =
+          if (config.byValueArguments) EvaluationStrategies.BY_REFERENCE else EvaluationStrategies.BY_VALUE,
         lineNumber = lineNumber,
         columnNumber = columnNumber,
         typeFullName = Defines.Any
