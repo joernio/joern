@@ -637,10 +637,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) exte
           }
         }
     }
-
-    val lastChildNotReturnExpression = !expr.getBodyExpression.getLastChild.isInstanceOf[KtReturnExpression]
-    val needsReturnExpression        = lastChildNotReturnExpression
-    val bodyAst                      = Option(expr.getBodyExpression)
+    val bodyExpression        = Option(expr.getBodyExpression)
+    val lastStatementIsReturn = bodyExpression
+      .flatMap(body => body.getStatements.asScala.lastOption)
+      .exists(_.isInstanceOf[KtReturnExpression])
+    val needsReturnExpression = !lastStatementIsReturn
+    val bodyAst               = Option(expr.getBodyExpression)
       .map(
         astForBlock(
           _,

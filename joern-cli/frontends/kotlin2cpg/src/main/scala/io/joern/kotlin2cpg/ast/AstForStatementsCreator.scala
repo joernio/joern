@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPsiUtil
 import org.jetbrains.kotlin.psi.KtThrowExpression
 import org.jetbrains.kotlin.psi.KtTryExpression
+import org.jetbrains.kotlin.psi.KtWhenConditionInRange
 import org.jetbrains.kotlin.psi.KtWhenConditionWithExpression
 import org.jetbrains.kotlin.psi.KtWhenEntry
 import org.jetbrains.kotlin.psi.KtWhenExpression
@@ -365,13 +366,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val argAsts = expr.getEntries.asScala.toList.map { e =>
       val block         = blockNode(e, "", "")
-      val conditionAsts =
-        e.getConditions
-          .flatMap(_.getChildren)
-          .collect { case e: KtExpression => e }
-          .map(astsForExpression(_))
-          .toList
-          .flatten
+      val conditionAsts = e.getConditions.toList.flatMap {
+        case cond: KtWhenConditionWithExpression =>
+          Option(cond.getExpression).toSeq.flatMap(astsForExpression(_))
+        case cond: KtWhenConditionInRange =>
+          Option(cond.getRangeExpression).toSeq.flatMap(astsForExpression(_))
+        case _ => Seq.empty
+      }
       val bodyAsts = astsForExpression(e.getExpression)
       blockAst(block, conditionAsts ++ bodyAsts)
     }
