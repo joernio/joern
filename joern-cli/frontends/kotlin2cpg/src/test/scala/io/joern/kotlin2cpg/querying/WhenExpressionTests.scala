@@ -143,4 +143,37 @@ class WhenExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = false)
     cpg.graph
   }
 
+  "CPG for `when`-expression with `in` and `!in` conditions" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun myfun(x: Int): Int {
+        |  val foo = when (x) {
+        |      in 1..10 -> 1
+        |      !in 20..30 -> 2
+        |      else -> 3
+        |  }
+        |  foo
+        |}
+        | """.stripMargin)
+
+    "should not contain an UNKNOWN node for the `in` or `!in` keyword" in {
+      cpg.unknown.codeExact("in", "!in").l shouldBe empty
+    }
+
+    "should contain one block per entry with the range call and the literal" in {
+      val whenCalls = cpg.call("<operator>.when").l
+      whenCalls.code.l shouldBe List("<operator>.when")
+      val entries = whenCalls.head.argument.l
+      entries.map(_.astChildren.map(child => s"${child.label}:${child.code}").toList) shouldBe List(
+        List(s"${NodeTypes.IDENTIFIER}:x"),
+        List(s"${NodeTypes.CALL}:1..10", s"${NodeTypes.LITERAL}:1"),
+        List(s"${NodeTypes.CALL}:20..30", s"${NodeTypes.LITERAL}:2"),
+        List(s"${NodeTypes.LITERAL}:3")
+      )
+      entries(1).astChildren.isCall.methodFullName.l shouldBe List(Operators.range)
+      entries(2).astChildren.isCall.methodFullName.l shouldBe List(Operators.range)
+    }
+  }
+
 }
