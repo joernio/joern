@@ -2062,6 +2062,12 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val bodyAst = blockAst(blockNode(node), List(Ast(local), allocAssignAst, initCallAst, retAst))
     contextStack.pop()
 
+    // The ctor can also be passed as a fn pointer/methodRef, so it needs the ::{fn} typeDecl
+    // like any other fn.
+    val fnTypeDecl = typeDeclForFn(node, method)
+    addDetachedAst(Ast(fnTypeDecl))
+    addDetachedFnTraitBindingAsts(fnTypeDecl, method)
+
     methodAst(method, fieldParams.map(Ast(_)), bodyAst, methodReturnNode(node, returnTypeFullName))
   }
 

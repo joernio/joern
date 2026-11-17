@@ -350,13 +350,13 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     )
   }
 
-  protected def typeDeclForFn(fn: RustNodeSyntax.Fn, method: NewMethod): NewTypeDecl = {
+  protected def typeDeclForFn(node: RustNode, method: NewMethod): NewTypeDecl = {
     typeDeclNode(
-      node = fn,
+      node = node,
       name = method.name,
       fullName = RustFullNames.fnTypeFullName(method.fullName),
       filename = parseResult.filename,
-      code = code(fn),
+      code = code(node),
       astParentType = contextStack.astParentType,
       astParentFullName = contextStack.astParentFullName,
       inherits = RustFullNames.FnTraitMethodNames.keys.toSeq.sorted

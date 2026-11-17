@@ -81,11 +81,11 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
     val cpg     = code("struct Pair(i32, bool);")
 
     "have a crate-prefixed fullName TYPE_DECL" in {
-      cpg.typeDecl.nameExact("Pair").fullName.l shouldBe List("rust2cpgtest::Pair")
+      cpg.typeDecl.nameExact("Pair").fullName.sorted.l shouldBe List("rust2cpgtest::Pair", "rust2cpgtest::Pair::{fn}")
     }
 
     "be parented by the crate namespace block" in {
-      inside(cpg.typeDecl.nameExact("Pair").l) { case pair :: Nil =>
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::Pair").l) { case pair :: Nil =>
         pair.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
         pair.astParentFullName shouldBe s"$libPath:rust2cpgtest"
       }
@@ -153,6 +153,39 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
 
+    "have correct ctor wrapper bindings" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::Pair::{fn}").methodBinding.sortBy(_.name).l) {
+        case Binding(name = "", signature = "", methodFullName = "rust2cpgtest::Pair") ::
+            Binding(
+              name = "async_call",
+              signature = "core::ops::async_function::AsyncFn",
+              methodFullName = "rust2cpgtest::Pair"
+            ) ::
+            Binding(
+              name = "async_call_mut",
+              signature = "core::ops::async_function::AsyncFnMut",
+              methodFullName = "rust2cpgtest::Pair"
+            ) ::
+            Binding(
+              name = "async_call_once",
+              signature = "core::ops::async_function::AsyncFnOnce",
+              methodFullName = "rust2cpgtest::Pair"
+            ) ::
+            Binding(name = "call", signature = "core::ops::function::Fn", methodFullName = "rust2cpgtest::Pair") ::
+            Binding(
+              name = "call_mut",
+              signature = "core::ops::function::FnMut",
+              methodFullName = "rust2cpgtest::Pair"
+            ) ::
+            Binding(
+              name = "call_once",
+              signature = "core::ops::function::FnOnce",
+              methodFullName = "rust2cpgtest::Pair"
+            ) :: Nil =>
+          succeed
+      }
+    }
+
     "have correct ctor wrapper parameters" in {
       inside(cpg.method.nameExact("Pair").parameter.sortBy(_.index).l) { case param0 :: param1 :: Nil =>
         param0.name shouldBe "0"
@@ -204,7 +237,10 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
     val cpg = code("struct Empty();")
 
     "have a crate-prefixed fullName TYPE_DECL" in {
-      cpg.typeDecl.nameExact("Empty").fullName.l shouldBe List("rust2cpgtest::Empty")
+      cpg.typeDecl.nameExact("Empty").fullName.sorted.l shouldBe List(
+        "rust2cpgtest::Empty",
+        "rust2cpgtest::Empty::{fn}"
+      )
     }
 
     "have no members" in {
