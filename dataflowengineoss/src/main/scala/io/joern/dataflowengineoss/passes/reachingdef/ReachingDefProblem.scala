@@ -20,9 +20,13 @@ object Definition {
 }
 
 object ReachingDefProblem {
-  def create(method: Method): DataFlowProblem[CfgNode, mutable.BitSet] = {
+
+  /** The reaching-definition problem of `method`. With `byValueArguments`, a call does not define an argument its
+    * callee receives by value (see [[ByValueArguments]]).
+    */
+  def create(method: Method, byValueArguments: Boolean = false): DataFlowProblem[CfgNode, mutable.BitSet] = {
     val flowGraph = new ReachingDefFlowGraph(method)
-    create(flowGraph, new OptimizedReachingDefTransferFunction(flowGraph))
+    create(flowGraph, new OptimizedReachingDefTransferFunction(flowGraph, byValueArguments))
   }
 
   /** The problem of `flowGraph` with `transfer`, whose `gen` is built when the solver first reads it. */
@@ -162,7 +166,8 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[CfgNode] {
 
 /** For each node of the graph, this transfer function defines how it affects the propagation of definitions.
   */
-class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends TransferFunction[CfgNode, mutable.BitSet] {
+class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph, byValueArguments: Boolean = false)
+    extends TransferFunction[CfgNode, mutable.BitSet] {
 
   private val nodeToNumber = flowGraph.nodeToNumber
 
@@ -225,13 +230,20 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
   private def definingCalls(method: Method): List[Call] =
     method.call.filterNot(call => isFieldAccess(call.name)).l
 
-  /** The definitions `call` generates: its own, and its identifier and call arguments' unless it is a ternary. */
+  private lazy val argumentsPassedByValue = Option.when(byValueArguments)(new ByValueArguments(method))
+
+  /** The definitions `call` generates: its own, and its identifier and call arguments' unless it is a ternary or, with
+    * `byValueArguments`, the callee receives the argument by value (see [[ByValueArguments]]).
+    */
   private[reachingdef] def definitionsOf(call: Call): List[Definition] = {
     val retVal = List(call)
     // Ternary only reads its operands; gen on args kills prior defs.
     val args =
       if (isReadOnlyShortCircuitOperator(call)) Iterator.empty
-      else call.argument.filter(hasValidGenType)
+      else
+        call.argument
+          .filter(hasValidGenType)
+          .filterNot(argument => argumentsPassedByValue.exists(_.isPassedByValue(call, argument)))
     (retVal ++ args).collect {
       case node if nodeToNumber.contains(node) =>
         Definition.fromNode(node.asInstanceOf[CfgNode], nodeToNumber)
@@ -359,8 +371,8 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends Trans
   * need not be propagated through the entire graph only to determine that they reach the exit node. Instead, when
   * creating reaching definition edges, we simply create edges from the identifier to the exit node.
   */
-class OptimizedReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
-    extends ReachingDefTransferFunction(flowGraph) {
+class OptimizedReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph, byValueArguments: Boolean = false)
+    extends ReachingDefTransferFunction(flowGraph, byValueArguments) {
 
   lazy val loneIdentifiers: Map[Call, List[Definition]] = {
     val identifiersInReturns = method._returnViaContainsOut.ast.isIdentifier.name.l
