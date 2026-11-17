@@ -288,7 +288,10 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
         |""".stripMargin)
 
     "have correct fullName" in {
-      cpg.typeDecl.nameExact("Rgb").fullName.l shouldBe List("rust2cpgtest::Color::Rgb")
+      cpg.typeDecl.nameExact("Rgb").fullName.l shouldBe List(
+        "rust2cpgtest::Color::Rgb",
+        "rust2cpgtest::Color::Rgb::{fn}"
+      )
     }
 
     "have correct inheritsFrom" in {
@@ -349,6 +352,45 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
         ctor.modifier shouldBe empty
         ctor.methodReturn.typeFullName shouldBe "rust2cpgtest::Color"
       }
+    }
+
+    "have correct ctor wrapper bindings" in {
+      inside(cpg.typeDecl.fullNameExact("rust2cpgtest::Color::Rgb::{fn}").methodBinding.sortBy(_.name).l) {
+        case Binding(name = "", signature = "", methodFullName = "rust2cpgtest::Color::Rgb") ::
+            Binding(
+              name = "async_call",
+              signature = "core::ops::async_function::AsyncFn",
+              methodFullName = "rust2cpgtest::Color::Rgb"
+            ) ::
+            Binding(
+              name = "async_call_mut",
+              signature = "core::ops::async_function::AsyncFnMut",
+              methodFullName = "rust2cpgtest::Color::Rgb"
+            ) ::
+            Binding(
+              name = "async_call_once",
+              signature = "core::ops::async_function::AsyncFnOnce",
+              methodFullName = "rust2cpgtest::Color::Rgb"
+            ) ::
+            Binding(
+              name = "call",
+              signature = "core::ops::function::Fn",
+              methodFullName = "rust2cpgtest::Color::Rgb"
+            ) ::
+            Binding(
+              name = "call_mut",
+              signature = "core::ops::function::FnMut",
+              methodFullName = "rust2cpgtest::Color::Rgb"
+            ) ::
+            Binding(
+              name = "call_once",
+              signature = "core::ops::function::FnOnce",
+              methodFullName = "rust2cpgtest::Color::Rgb"
+            ) :: Nil =>
+          succeed
+
+      }
+
     }
 
     "have correct ctor wrapper parameters" in {
@@ -416,7 +458,10 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
         |""".stripMargin)
 
     "have correct variant fullName" in {
-      cpg.typeDecl.nameExact("One").fullName.l shouldBe List("rust2cpgtest::Wrapper<T>::One")
+      cpg.typeDecl.nameExact("One").fullName.l shouldBe List(
+        "rust2cpgtest::Wrapper<T>::One",
+        "rust2cpgtest::Wrapper<T>::One::{fn}"
+      )
     }
 
     "have correct inheritsFrom" in {
@@ -630,8 +675,14 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "have correct variant fullNames" in {
-      cpg.typeDecl.nameExact("Red").fullName.l shouldBe List("rust2cpgtest::outer::Inner#1::Red")
-      cpg.typeDecl.nameExact("Green").fullName.l shouldBe List("rust2cpgtest::outer::Inner#2::Green")
+      cpg.typeDecl.nameExact("Red").fullName.l shouldBe List(
+        "rust2cpgtest::outer::Inner#1::Red",
+        "rust2cpgtest::outer::Inner#1::Red::{fn}"
+      )
+      cpg.typeDecl.nameExact("Green").fullName.l shouldBe List(
+        "rust2cpgtest::outer::Inner#2::Green",
+        "rust2cpgtest::outer::Inner#2::Green::{fn}"
+      )
     }
 
     "have correct ctor wrapper fullNames" in {
