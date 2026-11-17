@@ -148,7 +148,7 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
         ctor.fullName shouldBe "rust2cpgtest::Pair"
         ctor.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
         ctor.astParentFullName shouldBe s"$libPath:rust2cpgtest"
-        ctor.modifier shouldBe empty
+        ctor.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL)
         ctor.methodReturn.typeFullName shouldBe "rust2cpgtest::Pair"
       }
     }

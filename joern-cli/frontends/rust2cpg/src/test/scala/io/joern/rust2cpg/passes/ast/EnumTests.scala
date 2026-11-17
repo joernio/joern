@@ -349,7 +349,7 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
     "have correct ctor wrapper" in {
       inside(cpg.method.nameExact("Rgb").l) { case ctor :: Nil =>
         ctor.fullName shouldBe "rust2cpgtest::Color::Rgb"
-        ctor.modifier shouldBe empty
+        ctor.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL)
         ctor.methodReturn.typeFullName shouldBe "rust2cpgtest::Color"
       }
     }
