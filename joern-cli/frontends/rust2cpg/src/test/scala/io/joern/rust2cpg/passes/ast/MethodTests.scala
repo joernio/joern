@@ -1,7 +1,7 @@
 package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.FileUtil.*
@@ -25,8 +25,8 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
 
-    "have no modifiers" in {
-      cpg.method.name("main").modifier shouldBe empty
+    "have correct modifiers" in {
+      cpg.method.name("main").modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL)
     }
 
     "have correct inheritsFrom" in {

@@ -39,8 +39,8 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.typeDecl.nameExact("Foo").method.nameExact("bar").fullName.l shouldBe List("rust2cpgtest::Foo::bar")
     }
 
-    "have no modifiers" in {
-      cpg.method.nameExact("bar").modifier shouldBe empty
+    "have correct modifiers" in {
+      cpg.method.nameExact("bar").modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL)
     }
 
     "not create a duplicate TYPE_DECL" in {
