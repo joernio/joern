@@ -2,8 +2,9 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, MethodParameterIn, MethodRef}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, MethodParameterIn, MethodRef}
 import io.shiftleft.semanticcpg.language.*
 
 class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
@@ -608,7 +609,8 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
           |}
           |""".stripMargin)
 
-    lazy val syntheticTypeDecls = cpg.typeDecl.fullName(".*Calculator.*Function2Impl.*").filter(_.astParentType == "").l
+    lazy val syntheticTypeDecls =
+      cpg.typeDecl.fullName(".*Calculator.*Function2Impl.*").filter(_.astParentType == NodeTypes.TYPE_DECL).l
 
     "only have ONE synthetic type declaration for Calculator::add with Function2<Int, Int, Int>" in {
       syntheticTypeDecls.size shouldBe 1
@@ -677,7 +679,8 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       "ThirdFile.kt"
     )
 
-    lazy val syntheticTypeDecls = cpg.typeDecl.fullName(".*Calculator.*Function2Impl.*").filter(_.astParentType == "").l
+    lazy val syntheticTypeDecls =
+      cpg.typeDecl.fullName(".*Calculator.*Function2Impl.*").filter(_.astParentType == NodeTypes.TYPE_DECL).l
 
     "only have ONE synthetic type declaration across all files" in {
       syntheticTypeDecls.size shouldBe 1

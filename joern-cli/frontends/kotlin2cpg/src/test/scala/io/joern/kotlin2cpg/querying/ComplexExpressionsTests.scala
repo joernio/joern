@@ -1,6 +1,7 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.edges.Argument
 import io.shiftleft.semanticcpg.language.*
@@ -87,6 +88,15 @@ class ComplexExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
         .filter(!_.outE.exists { x => x.isInstanceOf[Argument] })
         .code
         .l shouldBe Seq()
+    }
+
+    "should attach the synthetic SAM type declaration to the file <global> type" in {
+      val List(samTypeDecl) = cpg.typeDecl.fullName(".*isLetterOrDigit.*Function1Impl.*").l
+      samTypeDecl.astParentType shouldBe NodeTypes.TYPE_DECL
+
+      val List(parent) = samTypeDecl.astIn.isTypeDecl.l
+      parent.name shouldBe "<global>"
+      parent.fullName shouldBe samTypeDecl.astParentFullName
     }
   }
 }
