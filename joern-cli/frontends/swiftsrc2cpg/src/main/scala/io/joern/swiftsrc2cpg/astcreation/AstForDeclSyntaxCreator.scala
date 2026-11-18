@@ -57,6 +57,12 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     else { allMembers.filterNot(isConstructor) }
   }
 
+  private def flattenIfConfigMembers(decl: DeclSyntax): Seq[DeclSyntax] = decl match {
+    case ifConfigDecl: IfConfigDeclSyntax =>
+      declSyntaxFromIfConfigDeclSyntax(ifConfigDecl).flatMap(flattenIfConfigMembers)
+    case other => Seq(other)
+  }
+
   private def isInitializedMember(node: DeclSyntax): Boolean = node match {
     case v: VariableDeclSyntax =>
       v.bindings.children.exists(c =>
@@ -322,7 +328,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.pushNewTypeDeclScope(typeName, typeFullName)
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
-    val allClassMembers                                    = declMembers(node, withConstructor = false).toList
+    val allClassMembers = declMembers(node, withConstructor = false).flatMap(flattenIfConfigMembers).toList
     val (initializedMembers, classMethodsAndUninitialized) = allClassMembers.partition(isInitializedMember)
     val (staticMemberInits, memberInits)                   = initializedMembers.partition(isStaticMember)
 
