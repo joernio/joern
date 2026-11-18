@@ -42,7 +42,7 @@ class FullNameUniquenessPass(cpg: Cpg) extends CpgPass(cpg) {
     val methodFullNameMap = generateStableFullNameMapping(cpg.method.nameNot(NamespaceTraversal.globalNamespaceName))
     methodFullNameMap.foreach { case (fullName, methods) =>
       logDuplicates(methods, fullName)
-      val sortedMethods      = sortNodesByLocation(methods)
+      val sortedMethods      = sortMethodsPreferringDefinitions(methods)
       lazy val callsAffected =
         cpg.call.methodFullNameExact(fullName).filterNot(_.file.exists(_.name == sortedMethods.head.filename)).l
       lazy val bindingsAffected = cpg.binding.methodFullNameExact(fullName).l
@@ -80,6 +80,17 @@ class FullNameUniquenessPass(cpg: Cpg) extends CpgPass(cpg) {
       .filter(_._2.size > 1)
       // sort for stable output
       .sortBy(_._1)
+  }
+
+  /** Orders methods sharing a fullName so that one with a body comes first and keeps the canonical fullName.
+    *
+    * Both arms of an `#ifdef`/`#else` reach the CPG under the same fullName because we parse inactive code, and only
+    * the active arm has a body. Ordering by location alone hands the canonical fullName to whichever arm comes first in
+    * the file, which leaves calls resolved to a method with no body.
+    */
+  private def sortMethodsPreferringDefinitions(methods: List[Method]): List[Method] = {
+    val (definitions, declarations) = sortNodesByLocation(methods).partition(_.block.astChildren.nonEmpty)
+    definitions ++ declarations
   }
 
   private def sortNodesByLocation[T <: AffectedNodeType](nodes: List[T]): List[T] = {

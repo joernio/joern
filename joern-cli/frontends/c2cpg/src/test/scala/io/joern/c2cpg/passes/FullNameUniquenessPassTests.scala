@@ -135,6 +135,30 @@ class FullNameUniquenessPassTests extends C2CpgSuite {
         "sf<duplicate>0 in main.c -> CALL -> sf<duplicate>0 in main.c" // fixed call here
       )
     }
+
+    "prefer the method with a body when two methods share a fullName" in {
+      val cpg = code(
+        """
+          |void sink(char c);
+          |#ifdef USE_SAFE
+          |void handle(char* s, int n) { char b[4]; if (n < 4) { sink(b[n]); } }
+          |#else
+          |void handle(char* s, int n) { char b[4]; sink(b[n]); }
+          |#endif
+          |void caller(char* s) { handle(s, 99); }
+          |""".stripMargin,
+        "main.c"
+      )
+      cpg.method.fullName.size shouldBe cpg.method.fullName.toSet.size
+      val List(defined) = cpg.method.fullNameExact("handle").l
+      defined.lineNumber shouldBe Some(6)
+      defined.block.astChildren.size shouldBe 3
+      val List(inactive) = cpg.method.fullNameExact("handle<duplicate>0").l
+      inactive.lineNumber shouldBe Some(4)
+      inactive.block.astChildren.size shouldBe 0
+      val List(resolved) = cpg.call.nameExact("handle").staticCallOut.l
+      resolved.lineNumber shouldBe Some(6)
+    }
   }
 
 }
