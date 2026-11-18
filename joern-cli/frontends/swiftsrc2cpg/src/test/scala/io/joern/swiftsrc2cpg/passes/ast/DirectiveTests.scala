@@ -77,6 +77,42 @@ class DirectiveTests extends SwiftSrc2CpgSuite {
       cpg.call.code.l shouldBe List("foo.bar().oneMore(x: 1)", "foo.bar()")
     }
 
+    "testConfigAroundInitializedMembers (closure initializers must stay attached to the AST)" in {
+      val source = """
+        |class Foo {
+        |  #if CONFIG1
+        |    public static let shared: Bar = { Bar() }()
+        |  #else
+        |    private static let shared: Bar = { Baz() }()
+        |  #endif
+        |  #if CONFIG1
+        |    var instance: Bar = { Bar() }()
+        |  #else
+        |    var instance: Bar = { Baz() }()
+        |  #endif
+        |  #if CONFIG1
+        |    #if CONFIG2
+        |      var nested: Bar = { Nested() }()
+        |    #endif
+        |  #endif
+        |}
+        |""".stripMargin
+
+      val cpgWithDefines = code(source).withConfig(Config(Set("CONFIG1", "CONFIG2")))
+      cpgWithDefines.methodRef.filter(_.astIn.isEmpty).l shouldBe empty
+      cpgWithDefines.methodRef.size shouldBe 3
+      cpgWithDefines.method
+        .nameExact(io.joern.x2cpg.Defines.StaticInitMethodName)
+        .call
+        .code
+        .l should contain("{ Bar() }()")
+      cpgWithDefines.method.nameExact("init").call.code.l should contain("{ Bar() }()")
+
+      val cpgWithoutDefines = code(source)
+      cpgWithoutDefines.methodRef.filter(_.astIn.isEmpty).l shouldBe empty
+      cpgWithoutDefines.methodRef.size shouldBe 2
+    }
+
     "testSourceLocation1" in {
       val cpg = code("#sourceLocation()")
       // #sourceLocation is a parser-only directive — it must not produce CPG calls/locals.
