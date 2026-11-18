@@ -123,10 +123,40 @@ trait AstForExpressionsCreator { this: AstCreator =>
     callAst(call, List(cond, message))
   }
 
+  /** The non-member function a C++ binary operator resolves to, if it resolves to one.
+    *
+    * A member overload is excluded: its call would need a receiver, which this lowering does not build. A built-in
+    * operator has no overload and yields None.
+    */
+  private def resolvedFreeOperator(bin: IASTBinaryExpression): Option[ICPPFunction] = bin match {
+    case cppBin: ICPPASTBinaryExpression =>
+      safeCdtCall(cppBin.getOverload).collect {
+        case function: ICPPFunction if !function.isInstanceOf[ICPPMethod] => function
+      }
+    case _ => None
+  }
+
   private def astForBinaryExpression(bin: IASTBinaryExpression): Ast = {
     val op        = OperatorMap.getOrElse(bin.getOperator, Defines.OperatorUnknown)
-    val callNode_ =
-      callNode(bin, code(bin), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+    val callNode_ = resolvedFreeOperator(bin) match {
+      case Some(overload) =>
+        val signature = safeCdtCall(overload.getType)
+          .map(functionTypeToSignature)
+          .getOrElse(X2CpgDefines.UnresolvedSignature)
+        val name =
+          stripTemplateTags(replaceOperator(StringUtils.normalizeSpace(overload.getQualifiedName.mkString("."))))
+        callNode(
+          bin,
+          code(bin),
+          op,
+          s"$name:$signature",
+          DispatchTypes.STATIC_DISPATCH,
+          Some(signature),
+          Some(registerType(safeGetExpressionType(bin)))
+        )
+      case None =>
+        callNode(bin, code(bin), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+    }
     val left  = nullSafeAst(bin.getOperand1)
     val right = nullSafeAst(bin.getOperand2)
     callAst(callNode_, List(left, right))

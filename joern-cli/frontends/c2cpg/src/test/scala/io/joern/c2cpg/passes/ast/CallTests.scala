@@ -707,6 +707,41 @@ class CallTests extends C2CpgSuite {
 
   "Overloaded operator calls" should {
 
+    "link an infix call to a free overloaded operator to its declaration" in {
+      val cpg = code(
+        """
+          |struct A {
+          |  int v;
+          |};
+          |int operator+(const A& lhs, const A& rhs) { return lhs.v + rhs.v; }
+          |int main() {
+          |  A a, b;
+          |  int overloaded = a + b;
+          |  int builtin = 1 + 2;
+          |  return overloaded + builtin;
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      val List(method) = cpg.method.nameExact("+").l
+      method.fullName shouldBe "+:int(A&,A&)"
+
+      val List(call) = cpg.call.codeExact("a + b").l
+      call.name shouldBe Operators.addition
+      call.methodFullName shouldBe "+:int(A&,A&)"
+      call.signature shouldBe "int(A&,A&)"
+      call.typeFullName shouldBe "int"
+      call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      call.callee.l shouldBe List(method)
+      method.callIn.l shouldBe List(call)
+
+      val List(builtin) = cpg.call.codeExact("1 + 2").l
+      builtin.name shouldBe Operators.addition
+      builtin.methodFullName shouldBe Operators.addition
+      builtin.signature shouldBe ""
+      builtin.typeFullName shouldBe "ANY"
+    }
+
     "link an implicit operator() call to its declaration" in {
       val cpg = code(
         """
