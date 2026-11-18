@@ -25,6 +25,14 @@ package object language {
   implicit def toDdgNodeDotSingle(method: Method): DdgNodeDot =
     new DdgNodeDot(Iterator.single(method))
 
+  implicit def toConditionalReachabilityMethodsTrav(
+    traversal: IterableOnce[Method]
+  ): MethodConditionalReachabilityTraversal =
+    new MethodConditionalReachabilityTraversal(traversal.iterator)
+
+  implicit def toConditionalReachabilityMethods(method: Method): MethodConditionalReachabilityTraversal =
+    new MethodConditionalReachabilityTraversal(Iterator.single(method))
+
   implicit def toExtendedPathsTrav[NodeType <: Path](traversal: IterableOnce[NodeType]): PassesExt =
     new PassesExt(traversal.iterator)
 
