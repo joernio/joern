@@ -20,7 +20,7 @@ import scala.collection.{Set, mutable}
   *   - only the steps that compute something (a union at a node with several predecessors, a transfer at a node that
   *     generates or kills) are in the work list, and a step is queued again only when a set it reads grew.
   *
-  * The layout of a set, with `chunkWords` = `1 << chunkShift` (64 by default):
+  * The layout of a set, with `chunkWords` = `1 << chunkShift` (32 by default):
   * {{{
   *   position p:  word w = p >>> 6, bit = p & 63
   *   word w:      chunk = w >>> chunkShift, word in the chunk = w & (chunkWords - 1)
@@ -45,8 +45,8 @@ private[reachingdef] object CompactReachingDefSets {
   /** A set of positions: slot `c` holds chunk `c`, or `null` when the set has no position in it. */
   type ChunkedSet = Array[Chunk]
 
-  /** log2 of the number of words in a chunk: 64 words, 4096 definitions. */
-  val defaultChunkShift: Int = 6
+  /** log2 of the number of words in a chunk: 32 words, 2048 definitions. */
+  val defaultChunkShift: Int = 5
 
   /** The `in` sets of `problem`'s solution, read in place: each is a view of a solved set that translates a definition
     * when it is read, and nodes that share a set share its view. A chunk holds `1 << chunkShift` words; `chunkShift` is
