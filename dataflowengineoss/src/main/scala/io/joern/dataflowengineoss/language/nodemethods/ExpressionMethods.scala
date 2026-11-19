@@ -9,31 +9,13 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
 
   /** Determine whether evaluation of the call this argument is a part of results in usage of this argument.
     */
-  def isUsed(implicit semantics: Semantics): Boolean = {
-    val s = semanticsForCallByArg
-    s.isEmpty || s.exists(_.mappings.exists {
-      case FlowMapping(ParameterNode(_, Some(srcName)), _) if node.argumentName.isDefined =>
-        srcName == node.argumentName.get
-      case FlowMapping(ParameterNode(srcIndex, _), _)    => srcIndex == node.argumentIndex
-      case PassThroughMapping if node.argumentIndex != 0 => true
-      case _                                             => false
-    })
-  }
+  def isUsed(implicit semantics: Semantics): Boolean =
+    ArgumentFlows.isUsed(semanticsForCallByArg.toList, node)
 
   /** Determine whether evaluation of the call this argument is a part of results in definition of this argument.
     */
-  def isDefined(implicit semantics: Semantics): Boolean = {
-    val s = semanticsForCallByArg.l
-    s.isEmpty || s.exists { semantic =>
-      semantic.mappings.exists {
-        case FlowMapping(_, ParameterNode(_, Some(dstName))) if node.argumentName.isDefined =>
-          dstName == node.argumentName.get
-        case FlowMapping(_, ParameterNode(dstIndex, _))    => dstIndex == node.argumentIndex
-        case PassThroughMapping if node.argumentIndex != 0 => true
-        case _                                             => false
-      }
-    }
-  }
+  def isDefined(implicit semantics: Semantics): Boolean =
+    ArgumentFlows.isDefined(semanticsForCallByArg.toList, node)
 
   /** Determines if this node and the given target node are arguments to the same call.
     * @param other
@@ -52,9 +34,51 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
     * @return
     *   true if there is flow defined between the two nodes, false if otherwise.
     */
-  def hasDefinedFlowTo(tgt: Expression)(implicit semantics: Semantics): Boolean = {
-    val s = semanticsForCallByArg.l
-    s.isEmpty || s.exists { semantic =>
+  def hasDefinedFlowTo(tgt: Expression)(implicit semantics: Semantics): Boolean =
+    ArgumentFlows.hasDefinedFlow(semanticsForCallByArg.toList, node, tgt)
+
+  /** Retrieve flow semantic for the call this argument is a part of.
+    */
+  def semanticsForCallByArg(implicit semantics: Semantics): Iterator[FlowSemantic] = {
+    argToMethods(node).flatMap(semantics.forMethod)
+  }
+
+  private def argToMethods(arg: Expression): Iterator[Method] = {
+    arg.inCall.flatMap { call =>
+      NoResolve.getCalledMethods(call)
+    }
+  }
+
+}
+
+/** How flow semantics map the arguments of a call: the matching behind [[ExpressionMethods.isUsed]],
+  * [[ExpressionMethods.isDefined]] and [[ExpressionMethods.hasDefinedFlowTo]], for callers that hold the semantics of
+  * the call already. `semantics` is the list of semantics for the call `node` is an argument of.
+  */
+private[dataflowengineoss] object ArgumentFlows {
+
+  def isUsed(semantics: List[FlowSemantic], node: Expression): Boolean =
+    semantics.isEmpty || semantics.exists(_.mappings.exists {
+      case FlowMapping(ParameterNode(_, Some(srcName)), _) if node.argumentName.isDefined =>
+        srcName == node.argumentName.get
+      case FlowMapping(ParameterNode(srcIndex, _), _)    => srcIndex == node.argumentIndex
+      case PassThroughMapping if node.argumentIndex != 0 => true
+      case _                                             => false
+    })
+
+  def isDefined(semantics: List[FlowSemantic], node: Expression): Boolean =
+    semantics.isEmpty || semantics.exists { semantic =>
+      semantic.mappings.exists {
+        case FlowMapping(_, ParameterNode(_, Some(dstName))) if node.argumentName.isDefined =>
+          dstName == node.argumentName.get
+        case FlowMapping(_, ParameterNode(dstIndex, _))    => dstIndex == node.argumentIndex
+        case PassThroughMapping if node.argumentIndex != 0 => true
+        case _                                             => false
+      }
+    }
+
+  def hasDefinedFlow(semantics: List[FlowSemantic], node: Expression, tgt: Expression): Boolean =
+    semantics.isEmpty || semantics.exists { semantic =>
       semantic.mappings.exists {
         case FlowMapping(ParameterNode(_, Some(srcName)), ParameterNode(_, Some(dstName)))
             if node.argumentName.isDefined && tgt.argumentName.isDefined =>
@@ -69,18 +93,4 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
         case _                  => false
       }
     }
-  }
-
-  /** Retrieve flow semantic for the call this argument is a part of.
-    */
-  def semanticsForCallByArg(implicit semantics: Semantics): Iterator[FlowSemantic] = {
-    argToMethods(node).flatMap(semantics.forMethod)
-  }
-
-  private def argToMethods(arg: Expression): Iterator[Method] = {
-    arg.inCall.flatMap { call =>
-      NoResolve.getCalledMethods(call)
-    }
-  }
-
 }

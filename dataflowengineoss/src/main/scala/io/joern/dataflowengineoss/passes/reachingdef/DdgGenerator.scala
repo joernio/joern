@@ -61,7 +61,8 @@ class DdgGenerator(semantics: Semantics) {
     in: Map[CfgNode, Set[Definition]],
     transfer: TransferFunction[CfgNode, mutable.BitSet]
   ): Unit = {
-    implicit val implicitDst: DiffGraphBuilder = dstGraph
+    implicit val implicitDst: DiffGraphBuilder  = dstGraph
+    implicit val validator: CachedEdgeValidator = new CachedEdgeValidator
 
     val numberToNode = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
     val gen          = transfer.asInstanceOf[ReachingDefTransferFunction].gen
@@ -242,7 +243,9 @@ class DdgGenerator(semantics: Semantics) {
   }
 
   /** Intraprocedural only: one address-of operand per Local/param; no heap or interprocedural tracking. */
-  private def addAddressDerefEdges(method: Method)(implicit dstGraph: DiffGraphBuilder): Unit = {
+  private def addAddressDerefEdges(
+    method: Method
+  )(implicit dstGraph: DiffGraphBuilder, validator: CachedEdgeValidator): Unit = {
     val addressOfMap: Map[Long, CfgNode] = method.ast.isCall
       .nameExact(Operators.assignment)
       .flatMap { assign =>
@@ -299,13 +302,14 @@ class DdgGenerator(semantics: Semantics) {
   }
 
   private def addEdge(fromNode: CfgNode, toNode: CfgNode, variable: String = "")(implicit
-    dstGraph: DiffGraphBuilder
+    dstGraph: DiffGraphBuilder,
+    validator: CachedEdgeValidator
   ): Unit = {
     if (fromNode.isInstanceOf[Unknown] || toNode.isInstanceOf[Unknown])
       return
 
     (fromNode, toNode) match {
-      case (parentNode: CfgNode, childNode: CfgNode) if EdgeValidator.isValidEdge(childNode, parentNode) =>
+      case (parentNode: CfgNode, childNode: CfgNode) if validator.isValidEdge(childNode, parentNode) =>
         dstGraph.addEdge(fromNode, toNode, EdgeTypes.REACHING_DEF, variable)
       case _ =>
 
