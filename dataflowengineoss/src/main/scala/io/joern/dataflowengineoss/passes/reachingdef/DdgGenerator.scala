@@ -33,6 +33,11 @@ class DdgGenerator private[reachingdef] (semantics: Semantics, graphHasModules: 
 
   implicit val s: Semantics = semantics
 
+  /** Calls generating more definitions than this get their pairs from [[CachedEdgeValidator.edgeTargets]]; for fewer,
+    * building the index costs more than checking every pair.
+    */
+  private val minDefinitionsToIndex = 16
+
   /** Once reaching definitions have been computed, we create a data dependence graph by checking which reaching
     * definitions are relevant, meaning that a symbol is propagated that is used by the target node.
     *
@@ -129,11 +134,12 @@ class DdgGenerator private[reachingdef] (semantics: Semantics, graphHasModules: 
       // taint corresponding output arguments
       // and the return value. We filter invalid
       // edges at query time (according to the given semantic).
+      val defs    = gen(call).iterator.map(numberToNode).toArray
+      val targets = Option.when(defs.length > minDefinitionsToIndex)(validator.edgeTargets(defs))
       usageAnalyzer.uses(call).foreach { use =>
-        gen(call).foreach { g =>
-          val genNode = numberToNode(g)
-          if (use != genNode && isDdgNode(use)) {
-            addEdge(use, genNode, nodeToEdgeLabel(use))
+        if (isDdgNode(use)) {
+          targets.fold(defs.iterator)(_.candidates(use)).foreach { genNode =>
+            if (use != genNode) addEdge(use, genNode, nodeToEdgeLabel(use))
           }
         }
       }
