@@ -18,7 +18,14 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000)(implicit s: 
   // If there are any regex method full names, load them early
   s.initialize(cpg)
 
-  override def generateParts(): Array[Method] = cpg.method.toArray
+  /** Whether any method is a module: [[io.joern.dataflowengineoss.globalFromLiteral]] finds literals in modules only.
+    */
+  private lazy val graphHasModules: Boolean = cpg.method.isModule.nonEmpty
+
+  override def generateParts(): Array[Method] = {
+    graphHasModules
+    cpg.method.toArray
+  }
 
   override def runOnPart(dstGraph: DiffGraphBuilder, method: Method): Unit = {
     logger.info("Calculating reaching definitions for: {} in {}", method.fullName, method.filename)
@@ -29,7 +36,7 @@ class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000)(implicit s: 
     }
 
     val solution     = new DataFlowSolver().calculateMopSolutionForwards(problem)
-    val ddgGenerator = new DdgGenerator(s)
+    val ddgGenerator = new DdgGenerator(s, graphHasModules)
     ddgGenerator.addReachingDefEdges(dstGraph, method, problem, solution)
   }
 

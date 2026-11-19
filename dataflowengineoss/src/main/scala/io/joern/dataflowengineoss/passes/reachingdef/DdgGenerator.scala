@@ -22,8 +22,14 @@ import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import scala.collection.{Set, mutable}
 
 /** Creation of data dependence edges based on solution of the ReachingDefProblem.
+  *
+  * @param graphHasModules
+  *   whether any method of the graph is a module. Without one, no literal is the right-hand side of an assignment to a
+  *   global, so the edges from globals to their first usages in closures are not looked for.
   */
-class DdgGenerator(semantics: Semantics) {
+class DdgGenerator private[reachingdef] (semantics: Semantics, graphHasModules: Boolean) {
+
+  def this(semantics: Semantics) = this(semantics, true)
 
   implicit val s: Semantics = semantics
 
@@ -215,10 +221,12 @@ class DdgGenerator(semantics: Semantics) {
       // modelling data-flow is unsound as the engine assumes REACHING_DEF edges are intraprocedural.
       // See PR #3735 on Joern for details
       val globalIdentifiers =
-        (method._callViaContainsOut ++ method._returnViaContainsOut).ast.isLiteral
-          .flatMap(globalFromLiteral(_))
-          .collectAll[Identifier]
-          .l
+        if (!graphHasModules) Nil
+        else
+          (method._callViaContainsOut ++ method._returnViaContainsOut).ast.isLiteral
+            .flatMap(globalFromLiteral(_))
+            .collectAll[Identifier]
+            .l
       globalIdentifiers
         .foreach { global =>
           identifierToFirstUsages(global).map { identifier =>
