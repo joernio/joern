@@ -8,11 +8,11 @@ import io.shiftleft.semanticcpg.language.*
 
 import scala.collection.mutable
 
-/** Solving with [[CompactReachingDefSets]] must reach the fixpoint [[DataFlowSolver]]'s work list reaches: the same
-  * `in` at every node, read through its views, in the same order, and the same edges written from it, in the same
-  * order. Each program is solved with the default chunks and with chunks of one word, so that its sets span several
-  * chunks. The solution [[DataFlowSolver]] returns for a problem of [[ReachingDefProblem.create]] must hold the work
-  * list's `in` and `out` at every node and lead to the same edges.
+/** [[CompactReachingDefSets]] must find the reaching definitions of a problem of [[ReachingDefProblem.create]]: at
+  * every node, the `in` set its views hold, read in ascending order, must be the set found from the definition of
+  * reaching definitions, and the edges written from the views must be those written from that set. Each program is
+  * solved with the default chunks and with chunks of one word, so that its sets span several chunks. The solution
+  * [[DataFlowSolver]] returns for such a problem must hold the same `in` and `out` sets.
   */
 class CompactReachingDefSetsTests extends DataFlowCodeToCpgSuite {
 
@@ -113,16 +113,47 @@ class CompactReachingDefSetsTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin
   )
 
-  /** `problem` as a problem of no particular kind, which [[DataFlowSolver]] solves with its work list. */
-  private def general(problem: DataFlowProblem[CfgNode, mutable.BitSet]): DataFlowProblem[CfgNode, mutable.BitSet] =
-    new DataFlowProblem(
-      problem.flowGraph,
-      problem.transferFunction,
-      problem.meet,
-      problem.inOutInit,
-      problem.forward,
-      problem.empty
-    )
+  /** The `in` and `out` sets of `problem`, found from the definition of reaching definitions rather than by solving: a
+    * definition generated at node `g` reaches node `n` when a path along the flow graph, which leads from each `p` in
+    * `pred(n)` to `n`, goes from `g` to `n` and every node strictly between them passes the definition on. A node
+    * reached from the method's entry passes on what it generates and what it does not kill; any other node passes on
+    * only what it generates, so its `out` is its `gen`. `in` holds the reached nodes, added in reverse post-order;
+    * `out` every node of the flow graph.
+    */
+  private def reachingDefinitions(
+    problem: DataFlowProblem[CfgNode, mutable.BitSet]
+  ): (Map[CfgNode, mutable.BitSet], Map[CfgNode, mutable.BitSet]) = {
+    val flowGraph  = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph]
+    val transfer   = problem.transferFunction.asInstanceOf[ReachingDefTransferFunction]
+    val nodes      = flowGraph.numberToNode.toSeq.sortBy(_._1).map(_._2)
+    val reached    = flowGraph.allNodesReversePostOrder.toSet
+    val successors = nodes.map(node => node -> mutable.ArrayBuffer.empty[CfgNode]).toMap
+    flowGraph.allNodesReversePostOrder.foreach { node =>
+      flowGraph.pred(node).iterator.filter(successors.contains).foreach(pred => successors(pred) += node)
+    }
+    def passesOn(node: CfgNode, definition: Definition): Boolean =
+      transfer.gen(node).contains(definition) || (reached(node) && !transfer.kill(node).contains(definition))
+    val in = nodes.map(node => node -> mutable.BitSet()).toMap
+    for {
+      generator  <- nodes
+      definition <- transfer.gen(generator)
+    } {
+      val visited = mutable.Set.empty[CfgNode]
+      val next    = mutable.Queue.from(successors(generator))
+      while (next.nonEmpty) {
+        val node = next.dequeue()
+        if (visited.add(node)) {
+          in(node) += definition
+          if (passesOn(node, definition)) next ++= successors(node)
+        }
+      }
+    }
+    val out = nodes.map { node =>
+      node -> (if (reached(node)) transfer.gen(node) | (in(node) &~ transfer.kill(node))
+               else transfer.gen(node).clone())
+    }.toMap
+    (flowGraph.allNodesReversePostOrder.map(node => node -> in(node)).toMap, out)
+  }
 
   /** The edges `add` writes, in the order it writes them. */
   private def edgesWritten(add: DiffGraphBuilder => Unit): List[(DNodeOrNode, DNodeOrNode, String, Any)] = {
@@ -136,6 +167,17 @@ class CompactReachingDefSetsTests extends DataFlowCodeToCpgSuite {
     add(builder)
     edges.toList
   }
+
+  /** The edges [[DdgGenerator]] writes for `method` from `in`. */
+  private def edgesFrom(
+    method: io.shiftleft.codepropertygraph.generated.nodes.Method,
+    problem: DataFlowProblem[CfgNode, mutable.BitSet],
+    in: Map[CfgNode, scala.collection.Set[Definition]]
+  ): List[(DNodeOrNode, DNodeOrNode, String, Any)] =
+    edgesWritten(
+      new DdgGenerator(context.semantics)
+        .addReachingDefEdges(_, method, problem, in.withDefaultValue(Set.empty), problem.transferFunction)
+    )
 
   "the compact dense sets of DataFlowSolver" should {
     "be tested on a method with more than two words of definitions" in {
@@ -152,51 +194,51 @@ class CompactReachingDefSetsTests extends DataFlowCodeToCpgSuite {
       CompactReachingDefSets.solveIn(problem, 20) should not be empty
     }
 
+    "let the last definition of a variable in a loop reach its next use, through the loop's back edge" in {
+      val method     = code(programs("a loop whose definitions fill more than two words")).method.name("f").head
+      val problem    = ReachingDefProblem.create(method)
+      val numberOf   = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].nodeToNumber
+      val transfer   = problem.transferFunction.asInstanceOf[ReachingDefTransferFunction]
+      val views      = CompactReachingDefSets.solveIn(problem)
+      val last       = method.call.codeExact("y = z + 50").head
+      val definition = numberOf(last.argument(1))
+      transfer.gen(last) should contain(definition)
+      Seq("n > 0" -> true, "y + 1" -> true, "x + y" -> true, "x = 0" -> false).foreach { (at, reaches) =>
+        withClue(s"at $at: ") {
+          views(method.call.codeExact(at).head).contains(definition) shouldBe reaches
+        }
+      }
+    }
+
     for {
       (name, program) <- programs.toSeq.sortBy(_._1)
       (chunks, shift) <- Seq("default chunks" -> CompactReachingDefSets.defaultChunkShift, "one-word chunks" -> 0)
     } {
-      s"reach the fixpoint of DataFlowSolver with $chunks, in: $name" in {
+      s"hold the reaching definitions at every node with $chunks, in: $name" in {
         code(program).method.isExternal(false).l.foreach { method =>
-          val problem  = ReachingDefProblem.create(method)
-          val expected = new DataFlowSolver().calculateMopSolutionForwards(general(problem))
-          val views    = CompactReachingDefSets.solveIn(problem, shift)
-          problem.flowGraph.allNodesReversePostOrder.foreach { node =>
+          val problem       = ReachingDefProblem.create(method)
+          val (expected, _) = reachingDefinitions(problem)
+          val definitions = problem.transferFunction.asInstanceOf[ReachingDefTransferFunction].gen.values.flatten.toSet
+          val views       = CompactReachingDefSets.solveIn(problem, shift)
+          views.keySet shouldBe expected.keySet
+          expected.foreach { (node, set) =>
             withClue(s"${method.name}, at ${node.code}: ") {
-              views(node) shouldBe expected.in(node)
-              views(node).toList shouldBe expected.in(node).toList
-              views(node).size shouldBe expected.in(node).size
-              expected.in(node).foreach(definition => views(node).contains(definition) shouldBe true)
+              views(node) shouldBe set
+              views(node).toList shouldBe set.toList
+              views(node).size shouldBe set.size
+              definitions.foreach(definition => views(node).contains(definition) shouldBe set.contains(definition))
             }
           }
         }
       }
 
-      s"lead to the edges of DataFlowSolver's solution, in the same order, with $chunks, in: $name" in {
+      s"lead to the edges of the reaching definitions, in the same order, with $chunks, in: $name" in {
         code(program).method.isExternal(false).l.foreach { method =>
-          val problem   = ReachingDefProblem.create(method)
-          val generator = new DdgGenerator(context.semantics)
-          val expected  = edgesWritten(
-            generator
-              .addReachingDefEdges(
-                _,
-                method,
-                problem,
-                new DataFlowSolver().calculateMopSolutionForwards(general(problem))
-              )
-          )
-          val actual = edgesWritten(
-            generator
-              .addReachingDefEdges(
-                _,
-                method,
-                problem,
-                CompactReachingDefSets.solveIn(problem, shift),
-                problem.transferFunction
-              )
-          )
+          val problem       = ReachingDefProblem.create(method)
+          val (expected, _) = reachingDefinitions(problem)
           withClue(s"${method.name}: ") {
-            actual shouldBe expected
+            edgesFrom(method, problem, CompactReachingDefSets.solveIn(problem, shift)) shouldBe
+              edgesFrom(method, problem, expected)
           }
         }
       }
@@ -205,50 +247,47 @@ class CompactReachingDefSetsTests extends DataFlowCodeToCpgSuite {
     for ((name, program) <- programs.toSeq.sortBy(_._1)) {
       s"be what DataFlowSolver solves a ReachingDefProblem with, in: $name" in {
         code(program).method.isExternal(false).l.foreach { method =>
-          val problem  = ReachingDefProblem.create(method)
-          val expected = new DataFlowSolver().calculateMopSolutionForwards(general(problem))
-          val actual   = new DataFlowSolver().calculateMopSolutionForwards(problem)
+          val problem                   = ReachingDefProblem.create(method)
+          val (expectedIn, expectedOut) = reachingDefinitions(problem)
+          val actual                    = new DataFlowSolver().calculateMopSolutionForwards(problem)
           withClue(s"${method.name}: ") {
             actual.in shouldBe a[SolvedIn]
-            actual.in.toList shouldBe expected.in.toList
-            actual.out.toList shouldBe expected.out.toList
-            actual.in shouldBe expected.in
-            actual.out shouldBe expected.out
-            actual.in(method) shouldBe expected.in(method)
-            actual.out(method) shouldBe expected.out(method)
+            actual.in.keySet shouldBe expectedIn.keySet
+            expectedOut.keys.foreach { node =>
+              withClue(s"at ${node.code}: ") {
+                actual.in(node) shouldBe expectedIn.getOrElse(node, mutable.BitSet())
+                actual.out(node) shouldBe expectedOut(node)
+              }
+            }
             val generator = new DdgGenerator(context.semantics)
             edgesWritten(generator.addReachingDefEdges(_, method, problem, actual)) shouldBe
-              edgesWritten(generator.addReachingDefEdges(_, method, problem, expected))
+              edgesFrom(method, problem, expectedIn)
           }
         }
       }
     }
 
-    "give the empty set for a node without a set in the maps built from the solution, as the work list does" in {
-      val cpg     = code(programs("straight line and a branch"))
-      val method  = cpg.method.name("f").head
-      val other   = cpg.method.name("<global>").head
-      val node    = method.methodReturn
-      val problem = ReachingDefProblem.create(method)
-      def built(solution: Solution[CfgNode, mutable.BitSet]): Seq[(String, Map[CfgNode, mutable.BitSet])] =
-        Seq("in" -> solution.in, "out" -> solution.out).flatMap { (name, map) =>
-          Seq(
-            s"$name.updated"   -> map.updated(node, mutable.BitSet(1)),
-            s"$name.removed"   -> map.removed(node),
-            s"$name.concat"    -> map.concat(Map(node -> mutable.BitSet(1))),
-            s"$name.filter"    -> map.filter(_ => true),
-            s"$name.filterNot" -> map.filterNot(_._1 == node),
-            s"$name.empty"     -> map.empty
-          )
-        }
-      val expected = built(new DataFlowSolver().calculateMopSolutionForwards(general(problem)))
-      val actual   = built(new DataFlowSolver().calculateMopSolutionForwards(problem))
-      actual.map(_._1) shouldBe expected.map(_._1)
-      actual.zip(expected).foreach { case ((name, map), (_, expectedMap)) =>
-        withClue(s"$name: ") {
-          expectedMap(other) shouldBe mutable.BitSet()
-          map(other) shouldBe mutable.BitSet()
-          map.toList shouldBe expectedMap.toList
+    "give the empty set for a node without a set in the maps built from the solution" in {
+      val cpg      = code(programs("straight line and a branch"))
+      val method   = cpg.method.name("f").head
+      val other    = cpg.method.name("<global>").head
+      val node     = method.methodReturn
+      val problem  = ReachingDefProblem.create(method)
+      val solution = new DataFlowSolver().calculateMopSolutionForwards(problem)
+      Seq("in" -> solution.in, "out" -> solution.out).foreach { (name, map) =>
+        val plain = Map.from(map)
+        Seq(
+          s"$name.updated" -> (map.updated(node, mutable.BitSet(1)), plain.updated(node, mutable.BitSet(1))),
+          s"$name.removed" -> (map.removed(node), plain.removed(node)),
+          s"$name.concat" -> (map.concat(Map(node -> mutable.BitSet(1))), plain.concat(Map(node -> mutable.BitSet(1)))),
+          s"$name.filter" -> (map.filter(_ => true), plain),
+          s"$name.filterNot" -> (map.filterNot(_._1 == node), plain.filterNot(_._1 == node)),
+          s"$name.empty"     -> (map.empty, Map.empty[CfgNode, mutable.BitSet])
+        ).foreach { case (built, (actual, expected)) =>
+          withClue(s"$built: ") {
+            actual(other) shouldBe mutable.BitSet()
+            actual shouldBe expected
+          }
         }
       }
     }
