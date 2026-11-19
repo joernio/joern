@@ -96,15 +96,21 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[CfgNode] {
     }.toMap
   }
 
+  /** The predecessors of the body's first node: the last parameter (or the method, when there is none), followed by the
+    * node's CFG predecessors other than the method, such as the back edge of a loop the body begins with.
+    */
+  private def lastParamOrEntryAndCfgPrev(first: CfgNode): List[CfgNode] =
+    lastParam.getOrElse(method) :: first.cfgPrev.filterNot(_ == method).l
+
   /** Create a map that allows CFG predecessors to be retrieved for each node
     */
   private def initPred(ns: List[CfgNode], method: Method): Map[CfgNode, List[CfgNode]] = {
     ns.map {
       case param: MethodParameterIn     => param    -> previousParamOrEntry(param)
       case paramOut: MethodParameterOut => paramOut -> previousOutputParamOrLastNodeOfBody(paramOut)
-      case n: CfgNode if method.cfgFirst.headOption.contains(n) => n -> List(lastParam.getOrElse(method))
-      case n if n == exitNode                                   => n -> lastOutputParamOrLastNodeOfBody()
-      case n @ (cfgNode: CfgNode)                               => n -> cfgNode.cfgPrev.l
+      case n: CfgNode if method.cfgFirst.headOption.contains(n) => n    -> lastParamOrEntryAndCfgPrev(n)
+      case node if node == exitNode                             => node -> lastOutputParamOrLastNodeOfBody()
+      case node @ (cfgNode: CfgNode)                            => node -> cfgNode.cfgPrev.l
     }.toMap
   }
 

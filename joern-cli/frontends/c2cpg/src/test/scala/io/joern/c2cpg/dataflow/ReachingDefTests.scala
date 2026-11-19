@@ -1,6 +1,7 @@
 package io.joern.c2cpg.dataflow
 
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
+import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.passes.reachingdef.ReachingDefFlowGraph
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language.*
@@ -146,6 +147,39 @@ class ReachingDefTests extends DataFlowCodeToCpgSuite {
       flowGraph.numberToNode.size shouldBe flowGraph.nodeToNumber.size
       reachable.map(flowGraph.nodeToNumber) shouldBe reachable.indices.toList
       flowGraph.nodeToNumber(assignment) should be >= reachable.size
+    }
+  }
+
+  "ReachingDefTest5" should {
+    val cpg = code("""
+      |int foo(int n) {
+      | while (n > 0) {
+      |   n = n - 1;
+      | }
+      | return n;
+      |}
+      |""".stripMargin)
+
+    val fooMethod                   = cpg.method("foo").head
+    val flowGraph                   = new ReachingDefFlowGraph(fooMethod)
+    val assignment                  = cpg.call.codeExact("n = n - 1").head
+    val List(condition: Identifier) = cpg.call.codeExact("n > 0").argument(1).l: @unchecked
+
+    "give the first node of the body the loop's back edge as a predecessor" in {
+      fooMethod.cfgFirst.l shouldBe List(condition)
+      flowGraph.pred(condition).iterator.to(Set) shouldBe Set(fooMethod.parameter.head, assignment)
+    }
+
+    "let the definition in the loop reach the loop condition" in {
+      condition.ddgIn.l should contain(assignment.argument(1))
+    }
+
+    "find the flow from the loop body to the return" in {
+      val source = cpg.call.codeExact("n - 1")
+      val sink   = cpg.method("foo").ast.isReturn
+      sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
+        List(("n - 1", 4), ("n = n - 1", 4), ("n > 0", 3), ("return n;", 6))
+      )
     }
   }
 }
