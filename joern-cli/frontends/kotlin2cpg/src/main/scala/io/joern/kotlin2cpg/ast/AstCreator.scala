@@ -205,10 +205,10 @@ class AstCreator(
     (fullName, signature)
   }
 
-  protected def getCalleeExpr(expr: KtExpression): KtExpression = {
-    expr match {
+  protected def getCalleeExpr(expr: KtQualifiedExpression): KtExpression = {
+    expr.getSelectorExpression match {
       case qualifiedExpression: KtQualifiedExpression =>
-        getCalleeExpr(qualifiedExpression.getSelectorExpression)
+        getCalleeExpr(qualifiedExpression)
       case callExpr: KtCallExpression =>
         callExpr.getCalleeExpression
     }
@@ -537,7 +537,7 @@ class AstCreator(
     val astDerivedMethodFullName = expr.getSelectorExpression match {
       case expression: KtCallExpression =>
         val receiverPlaceholderType = Defines.UnresolvedNamespace
-        val shortName               = expression.getFirstChild.getText
+        val shortName               = expression.getCalleeExpression.getText
         s"$receiverPlaceholderType.$shortName"
       case _: KtNameReferenceExpression =>
         Operators.fieldAccess

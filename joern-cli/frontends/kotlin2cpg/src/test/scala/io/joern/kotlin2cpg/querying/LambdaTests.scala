@@ -1372,4 +1372,40 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       binding2.bindingTypeDecl shouldBe lambdaTypeDecl
     }
   }
+
+  "CPG for a lambda whose explicit return is followed by a comment" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun mapped(xs: List<Int>): List<Int> {
+        |  xs.map { x ->
+        |    return@map x + 1 // c
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should contain one RETURN in the lambda and no nested RETURN" in {
+      val returns = cpg.method.fullName(".*lambda.*").ast.isReturn.l
+      returns.size shouldBe 1
+      returns.flatMap(_.astChildren.isReturn.l) shouldBe empty
+    }
+  }
+
+  "CPG for a lambda whose explicit return is followed by a semicolon" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun mapped(xs: List<Int>): List<Int> {
+        |  xs.map { x ->
+        |    return@map x;
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should contain one RETURN in the lambda and no nested RETURN" in {
+      val returns = cpg.method.fullName(".*lambda.*").ast.isReturn.l
+      returns.size shouldBe 1
+      returns.flatMap(_.astChildren.isReturn.l) shouldBe empty
+    }
+  }
 }

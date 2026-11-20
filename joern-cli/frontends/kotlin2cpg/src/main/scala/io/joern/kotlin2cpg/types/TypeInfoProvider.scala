@@ -15,7 +15,6 @@ import org.jetbrains.kotlin.load.java.structure.impl.classFiles.BinaryJavaMethod
 import org.jetbrains.kotlin.psi.{
   Call,
   KtArrayAccessExpression,
-  KtBinaryExpression,
   KtCallExpression,
   KtElement,
   KtExpression,
@@ -67,22 +66,15 @@ class TypeInfoProvider(val bindingContext: BindingContext) {
       .exists(_.contains(BindingContext.SHORT_REFERENCE_TO_COMPANION_OBJECT.getKey))
   }
 
-  private def subexpressionForResolvedCallInfo(expr: KtExpression): KtExpression = {
+  private def subexpressionForResolvedCallInfo(expr: KtCallExpression | KtQualifiedExpression): KtExpression = {
     expr match {
-      case typedExpr: KtCallExpression =>
-        Option(typedExpr.getFirstChild)
-          .collect { case expr: KtExpression => expr }
-          .getOrElse(expr)
-      case typedExpr: KtQualifiedExpression =>
-        Option(typedExpr.getSelectorExpression)
-          .collect { case expr: KtCallExpression => expr }
-          .map(subexpressionForResolvedCallInfo)
-          .getOrElse(typedExpr)
-      case typedExpr: KtBinaryExpression =>
-        Option(typedExpr.getChildren.toList(1))
-          .collect { case expr: KtExpression => expr }
-          .getOrElse(expr)
-      case _ => expr
+      case callExpr: KtCallExpression =>
+        Option(callExpr.getCalleeExpression).getOrElse(callExpr)
+      case qualifiedExpr: KtQualifiedExpression =>
+        Option(qualifiedExpr.getSelectorExpression)
+          .collect { case callExpr: KtCallExpression => callExpr }
+          .map(callExpr => Option(callExpr.getCalleeExpression).getOrElse(callExpr))
+          .getOrElse(qualifiedExpr)
     }
   }
 
@@ -94,7 +86,7 @@ class TypeInfoProvider(val bindingContext: BindingContext) {
     descMaybe.collect { case desc: PropertyDescriptor => desc }
   }
 
-  private def resolvedCallDescriptor(expr: KtExpression): Option[FunctionDescriptor] = {
+  private def resolvedCallDescriptor(expr: KtCallExpression | KtQualifiedExpression): Option[FunctionDescriptor] = {
     val relevantSubexpression = subexpressionForResolvedCallInfo(expr)
     val descMaybe             = for {
       callForSubexpression         <- Option(bindingContext.get(BindingContext.CALL, relevantSubexpression))
@@ -115,8 +107,8 @@ class TypeInfoProvider(val bindingContext: BindingContext) {
 
   def isConstructorCall(expr: KtExpression): Option[Boolean] = {
     expr match {
-      case _: KtCallExpression | _: KtQualifiedExpression =>
-        resolvedCallDescriptor(expr) match {
+      case callOrQualified: (KtCallExpression | KtQualifiedExpression) =>
+        resolvedCallDescriptor(callOrQualified) match {
           case Some(desc) if isConstructorDescriptor(desc) => Some(true)
           case _                                           => Some(false)
         }
