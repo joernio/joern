@@ -370,9 +370,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       val block         = blockNode(e, "", "")
       val conditionAsts = e.getConditions.toList.flatMap {
         case cond: KtWhenConditionWithExpression =>
-          Option(cond.getExpression).toSeq.flatMap(astsForExpression(_))
+          astsForExpression(cond.getExpression)
         case cond: KtWhenConditionInRange =>
-          Option(cond.getRangeExpression).toSeq.flatMap(astsForExpression(_))
+          astsForExpression(cond.getRangeExpression)
         case _ => Seq.empty
       }
       val bodyAsts = astsForExpression(e.getExpression)
