@@ -489,7 +489,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val (fullName, signature) =
       calleeFullnameAndSignature(
-        getCalleeExpr(expr),
+        expr.getCalleeExpression,
         Defines.UnresolvedNamespace,
         s"${Defines.UnresolvedSignature}(${expr.getValueArguments.size()})"
       )

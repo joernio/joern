@@ -445,7 +445,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         val argAsts               = astsForKtCallExpressionArguments(call)
         val (fullName, signature) =
           calleeFullnameAndSignature(
-            getCalleeExpr(rhsCall),
+            call.getCalleeExpression,
             Defines.UnresolvedNamespace,
             s"${Defines.UnresolvedSignature}(${call.getValueArguments.size()})"
           )
@@ -752,7 +752,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
       val (fullName, signature) =
         calleeFullnameAndSignature(
-          getCalleeExpr(callExpr),
+          callExpr.getCalleeExpression,
           Defines.UnresolvedNamespace,
           s"${Defines.UnresolvedSignature}(${callExpr.getValueArguments.size()})"
         )
