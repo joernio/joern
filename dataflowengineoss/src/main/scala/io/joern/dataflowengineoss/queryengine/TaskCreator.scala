@@ -2,7 +2,7 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.queryengine.Engine.argToOutputParams
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
+import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, Languages}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -90,9 +90,18 @@ class TaskCreator(context: EngineContext) {
     val cpg  = new Cpg(param.graph)
     def trav = cpg.methodRef.methodFullNameExact(param.method.fullName).inCall
     cpg.metaData.language.headOption match {
-      // Kotlin higher-level functions are often static and don't have the arg0 recv
-      case Some(Languages.KOTLIN) => trav.argument(1).l
-      case _                      => trav.argument(0).l
+      // Dynamic qualified calls (`c.m(::fn)`) put the receiver at argument 0. Static calls and extension calls pass
+      // the value whose method reference receives the parameter at argument 1.
+      case Some(Languages.KOTLIN) =>
+        trav.flatMap { call =>
+          val receiver = call.receiver.l
+          if (call.dispatchType == DispatchTypes.DYNAMIC_DISPATCH && receiver.nonEmpty) {
+            receiver
+          } else {
+            call.argument(1).toList
+          }
+        }.l
+      case _ => trav.argument(0).l
     }
   }
 

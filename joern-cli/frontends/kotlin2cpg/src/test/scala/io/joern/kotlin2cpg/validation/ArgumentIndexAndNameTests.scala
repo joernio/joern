@@ -169,6 +169,10 @@ class ArgumentIndexAndNameTests extends KotlinCode2CpgFixture(withOssDataflow = 
         |fun binaryOperator(c: C) { c.m(1 + 2) }
         |fun objectReference(c: C) { c.m(O) }
         |fun ctorCall(c: C) { c.m(C()) }
+        |fun bar() {}
+        |fun callableReference(c: C) { c.m(::bar) }
+        |fun lambdaArgument(c: C) { c.m({ 1 }) }
+        |fun anonymousFunction(c: C) { c.m(fun() = 1) }
         |""".stripMargin)
 
     val loweringOfEachKind = List(
@@ -187,7 +191,10 @@ class ArgumentIndexAndNameTests extends KotlinCode2CpgFixture(withOssDataflow = 
       "objectLiteral"      -> "BLOCK", // tmp_obj = alloc; tmp_obj.<init>(); tmp_obj
       "binaryOperator"     -> s"CALL ${Operators.addition}",
       "objectReference"    -> "TYPE_REF",
-      "ctorCall"           -> "BLOCK"  // tmp = alloc; tmp.<init>(); tmp
+      "ctorCall"           -> "BLOCK", // tmp = alloc; tmp.<init>(); tmp
+      "callableReference"  -> "METHOD_REF",
+      "lambdaArgument"     -> "METHOD_REF",
+      "anonymousFunction"  -> "METHOD_REF"
     )
 
     "give the receiver index 0 and the unnamed argument index 1" in {
@@ -242,18 +249,129 @@ class ArgumentIndexAndNameTests extends KotlinCode2CpgFixture(withOssDataflow = 
         |""".stripMargin)
 
     "keep the receiver as argument 0 and the METHOD_REF as argument 1" in {
-      pendingUntilFixed {
-        val calls = cpg.call.nameExact("m").l
-        calls.size shouldBe 3
-        calls.foreach { call =>
-          withClue(s"${call.code}: ") {
-            call.argument.argumentIndex.sorted.l shouldBe List(0, 1)
-            call.argument(0).code shouldBe "c"
-            call.argument(1) shouldBe a[MethodRef]
-            call.receiver.code.l shouldBe List("c")
-          }
+      val calls = cpg.call.nameExact("m").l
+      calls.size shouldBe 3
+      calls.foreach { call =>
+        withClue(s"${call.code}: ") {
+          call.argument.argumentIndex.sorted.l shouldBe List(0, 1)
+          call.argument.argumentIndex(0).code.l shouldBe List("c")
+          call.argument.argumentIndex(1).collect { case ref: MethodRef => ref }.size shouldBe 1
+          call.receiver.code.l shouldBe List("c")
         }
       }
     }
   }
+
+  "CPG for a when statement whose subject is a variable declaration" should {
+    lazy val cpg = code("""
+        |package mypkg
+        |fun source(): Int = 1
+        |fun sink(x: Int) {}
+        |fun g() { when (val y = source()) { 1 -> sink(y); else -> sink(0) } }
+        |""".stripMargin)
+
+    "keep the initializer of the subject variable" in {
+      cpg.method.nameExact("g").call.nameExact("source").size shouldBe 1
+      cpg.method.nameExact("g").local.nameExact("y").size shouldBe 1
+      val List(assignment) = cpg.method.nameExact("g").call.nameExact(Operators.assignment).l
+      assignment.argument.isCall.nameExact("source").size shouldBe 1
+      val List(condition: Block) = cpg.method
+        .nameExact("g")
+        .controlStructure
+        .controlStructureTypeExact(ControlStructureTypes.SWITCH)
+        .condition
+        .l: @unchecked
+      condition.astChildren.isLocal.nameExact("y").size shouldBe 1
+      condition.astChildren.isCall.nameExact(Operators.assignment).size shouldBe 1
+    }
+  }
+
+  "CPG for a when statement with a subject" should {
+    lazy val cpg = code("""
+        |package mypkg
+        |fun f(x: Int) {
+        |    when (x) {
+        |        1 -> println(1)
+        |        else -> println(2)
+        |    }
+        |}
+        |""".stripMargin)
+
+    "name the jump target of the else entry `default` and the others `case`" in {
+      cpg.jumpTarget.code("else.*").name.l shouldBe List("default")
+      val caseTargets = cpg.jumpTarget.code("1 ->.*").l
+      caseTargets should not be empty
+      caseTargets.foreach(_.name should startWith("case"))
+    }
+
+    "leave entry bodies at the default argument index" in {
+      cpg.call.nameExact("println").argumentIndex.l.distinct shouldBe List(-1)
+    }
+  }
+
+  "CPG for an annotation on a throw expression" should {
+    lazy val cpg = code("""
+        |package mypkg
+        |@Target(AnnotationTarget.EXPRESSION)
+        |@Retention(AnnotationRetention.SOURCE)
+        |annotation class Fancy
+        |fun fn1() { @Fancy throw IllegalStateException() }
+        |""".stripMargin)
+
+    "contain an ANNOTATION node for the annotation" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for an annotation on a callable reference" should {
+    lazy val cpg = code("""
+        |package mypkg
+        |@Target(AnnotationTarget.EXPRESSION)
+        |@Retention(AnnotationRetention.SOURCE)
+        |annotation class Fancy
+        |fun bar() {}
+        |fun sink(f: Any) {}
+        |fun fn1() { sink(@Fancy ::bar) }
+        |""".stripMargin)
+
+    "contain an ANNOTATION node for the annotation" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for a parenthesized callable reference" should {
+    lazy val cpg = code("""
+        |package mypkg
+        |fun bar() {}
+        |fun sink(f: () -> Unit) {}
+        |fun fn1() { sink((::bar)) }
+        |""".stripMargin)
+
+    "keep the parameter function type on the METHOD_REF" in {
+      val refs = cpg.methodRef.code(".*::bar.*").l
+      refs should not be empty
+      refs.foreach { ref => ref.typeFullName should include("Function0") }
+    }
+  }
+
+  "CPG for a qualified call" should {
+    lazy val cpg = code("""
+        |package mypkg
+        |import java.lang.Math
+        |fun staticJava(a: Int, b: Int): Int = Math.max(a, b)
+        |fun unresolved(a: Int, b: Int) { Foo.bar(a, b) }
+        |""".stripMargin)
+
+    "give the receiver index 0 and the real arguments the following indices" in {
+      val List(maxCall) = cpg.method.nameExact("staticJava").call.nameExact("max").l
+      maxCall.argument.l.sortBy(_.argumentIndex).map(arg => (arg.code, arg.argumentIndex)) shouldBe
+        List(("Math", 0), ("a", 1), ("b", 2))
+      maxCall.receiver.code.l shouldBe List("Math")
+      val List(barCall) = cpg.method.nameExact("unresolved").call.nameExact("bar").l
+      barCall.argument.l.sortBy(_.argumentIndex).map(arg => (arg.code, arg.argumentIndex)) shouldBe
+        List(("Foo", 0), ("a", 1), ("b", 2))
+      barCall.receiver.code.l shouldBe List("Foo")
+    }
+  }
+
 }
