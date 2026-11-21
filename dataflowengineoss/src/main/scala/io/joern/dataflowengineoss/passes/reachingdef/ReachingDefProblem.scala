@@ -36,10 +36,18 @@ object ReachingDefProblem {
     def meet: (mutable.BitSet, mutable.BitSet) => mutable.BitSet =
       (x: mutable.BitSet, y: mutable.BitSet) => { x.union(y) }
 
-    new DataFlowProblem(flowGraph, transfer, meet, init, true, mutable.BitSet())
+    new ReachingDefDataFlowProblem(flowGraph, transfer, meet, init)
   }
 
 }
+
+/** A problem [[ReachingDefProblem.create]] built, which [[DataFlowSolver]] solves with [[CompactReachingDefSets]]. */
+private[reachingdef] final class ReachingDefDataFlowProblem(
+  flowGraph: ReachingDefFlowGraph,
+  transfer: ReachingDefTransferFunction,
+  meet: (mutable.BitSet, mutable.BitSet) => mutable.BitSet,
+  init: InOutInit[CfgNode, mutable.BitSet]
+) extends DataFlowProblem[CfgNode, mutable.BitSet](flowGraph, transfer, meet, init, true, mutable.BitSet())
 
 /** The control flow graph as viewed by the data flow solver.
   */
