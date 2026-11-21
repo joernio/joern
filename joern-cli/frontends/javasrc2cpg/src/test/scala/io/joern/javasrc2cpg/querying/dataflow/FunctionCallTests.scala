@@ -87,6 +87,104 @@ class NewFunctionCallTests extends JavaSrcCode2CpgFixture(withOssDataflow = true
       }
     }
   }
+
+  "Dataflow through a call to a class that implements an interface" should {
+    def program(applyBody: String) = s"""
+         |class Foo {
+         |  interface Op { String apply(String s); }
+         |  static class Impl implements Op { public String apply(String s) { $applyBody } }
+         |  static void sink(String s) {}
+         |  static void test(String input) {
+         |    sink(new Impl().apply(input));
+         |  }
+         |}
+         |""".stripMargin
+
+    "not find a path when the implementation returns a constant" in {
+      val cpg    = code(program("return \"constant\";"))
+      def source = cpg.method.name("test").parameter.name("input")
+      def sink   = cpg.method.name("sink").parameter.index(1)
+      sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe empty
+    }
+
+    "find a path when the implementation returns its argument" in {
+      val cpg    = code(program("return s;"))
+      def source = cpg.method.name("test").parameter.name("input")
+      def sink   = cpg.method.name("sink").parameter.index(1)
+      sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
+        List(
+          ("test(String input)", Some(6)),
+          ("new Impl().apply(input)", Some(7)),
+          ("apply(this, String s)", Some(4)),
+          ("return s;", Some(4)),
+          ("RET", Some(4)),
+          ("new Impl().apply(input)", Some(7)),
+          ("sink(String s)", Some(5))
+        )
+      )
+    }
+
+    "still pass taint through an interface method that has no implementation" in {
+      val cpg = code("""
+          |class Foo {
+          |  interface Op { String apply(String s); }
+          |  static void sink(String s) {}
+          |  static void test(Op op, String input) {
+          |    sink(op.apply(input));
+          |  }
+          |}
+          |""".stripMargin)
+      def source = cpg.method.name("test").parameter.name("input")
+      def sink   = cpg.method.name("sink").parameter.index(1)
+      sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
+        List(
+          ("test(Op op, String input)", Some(5)),
+          ("op.apply(input)", Some(6)),
+          ("apply(this, String s)", Some(3)),
+          ("RET", Some(3)),
+          ("op.apply(input)", Some(6)),
+          ("sink(String s)", Some(4))
+        )
+      )
+    }
+
+    "find a path through a lambda when another implementation returns a constant" in {
+      val cpg = code("""
+          |class Foo {
+          |  interface Op { String apply(String s); }
+          |  static class Impl implements Op { public String apply(String s) { return "constant"; } }
+          |  static void sink(String s) {}
+          |  static void test(String input) {
+          |    Op op = s -> s;
+          |    sink(op.apply(input));
+          |  }
+          |}
+          |""".stripMargin)
+      def source = cpg.method.name("test").parameter.name("input")
+      def sink   = cpg.method.name("sink").parameter.index(1)
+      sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
+        List(("test(String input)", Some(6)), ("op.apply(input)", Some(8)), ("sink(String s)", Some(5)))
+      )
+    }
+
+    "find a path through an interface-typed parameter when one implementation returns a constant" in {
+      val cpg = code("""
+          |class Foo {
+          |  interface Op { String apply(String s); }
+          |  static class Impl implements Op { public String apply(String s) { return "constant"; } }
+          |  static void sink(String s) {}
+          |  static void test(Op op, String input) {
+          |    sink(op.apply(input));
+          |  }
+          |}
+          |""".stripMargin)
+      def source = cpg.method.name("test").parameter.name("input")
+      def sink   = cpg.method.name("sink").parameter.index(1)
+      sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
+        List(("test(Op op, String input)", Some(6)), ("op.apply(input)", Some(7)), ("sink(String s)", Some(5)))
+      )
+    }
+  }
 }
 
 class FunctionCallTests extends JavaDataflowFixture {
