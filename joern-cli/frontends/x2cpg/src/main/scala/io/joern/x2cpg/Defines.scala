@@ -26,6 +26,14 @@ object Defines {
   // and C++.
   val StorageClassTag = "STORAGE_CLASS"
 
+  // Name of the system property that turns on the evaluation strategies c2cpg decides from each parameter's type and
+  // the reaching-definition rule that a call does not define an argument its callee receives by value. Both are off
+  // unless the property is `true`, as in `-Djoern.byValueArguments=true`.
+  val ByValueArgumentsProperty = "joern.byValueArguments"
+
+  // Whether the system property named by `ByValueArgumentsProperty` is `true`.
+  def byValueArgumentsEnabled: Boolean = sys.props.get(ByValueArgumentsProperty).contains("true")
+
   // Name of the synthetic, static method that contains the initialization of member variables.
   val StaticInitMethodName = "<clinit>"
 

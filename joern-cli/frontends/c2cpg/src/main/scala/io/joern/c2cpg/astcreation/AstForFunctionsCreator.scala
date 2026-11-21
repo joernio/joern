@@ -523,7 +523,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
   /** [dcl.fct]: an ellipsis is not a parameter-declaration and has no type of its own. It is modelled as a parameter
     * node all the same, so that `isVariadic` and variadic argument absorption have something to find. It may stand
     * alone, as in `int f(...)`, where no preceding parameter exists to take an index, an evaluation strategy or a
-    * position from; the implicit `this` of a member function does not count as one.
+    * position from; the implicit `this` of a member function does not count as one. The arguments an ellipsis absorbs
+    * are received by value, and those a parameter pack absorbs as the pack is declared.
     */
   private def ellipsisParameter(
     index: Int,
@@ -556,7 +557,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
     precedingParam match {
       case Some(param) =>
         param.isVariadic = false
-        Seq(ellipsisParameter(param.index + 1, param.evaluationStrategy, param.lineNumber, param.columnNumber))
+        val evaluationStrategy = if (isVariadic(func)) EvaluationStrategies.BY_VALUE else param.evaluationStrategy
+        Seq(ellipsisParameter(param.index + 1, evaluationStrategy, param.lineNumber, param.columnNumber))
       case None if isVariadic(func) =>
         Seq(ellipsisParameter(1, EvaluationStrategies.BY_VALUE, line(func), column(func)))
       case None => Seq.empty
@@ -576,7 +578,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
     precedingParam match {
       case Some(param) =>
         param.isVariadic = false
-        Seq(ellipsisParameter(param.index + 1, param.evaluationStrategy, param.lineNumber, param.columnNumber))
+        val evaluationStrategy = if (isVariadic(func)) EvaluationStrategies.BY_VALUE else param.evaluationStrategy
+        Seq(ellipsisParameter(param.index + 1, evaluationStrategy, param.lineNumber, param.columnNumber))
       case None if isVariadic(func) =>
         Seq(ellipsisParameter(1, EvaluationStrategies.BY_VALUE, line(func), column(func)))
       case None => Seq.empty
@@ -633,15 +636,31 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
   }
 
+  /** The evaluation strategy of the parameter `declarator` declares: from its type with `config.byValueArguments`, and
+    * otherwise `BY_VALUE`.
+    */
+  private def parameterEvaluationStrategy(declarator: IASTDeclarator): String =
+    if (config.byValueArguments) ParameterEvaluationStrategy.of(declarator) else EvaluationStrategies.BY_VALUE
+
+  /** The evaluation strategy of a parameter without a declarator to decide it from. */
+  private def unresolvedParameterEvaluationStrategy: String =
+    if (config.byValueArguments) EvaluationStrategies.BY_SHARING else EvaluationStrategies.BY_VALUE
+
   private def parameterNodeInfo(parameter: IASTNode, paramIndex: Int): FunctionDeclNodePass.ParameterInfo = {
-    val (name, codeString, tpe, variadic) = parameter match {
+    val (name, codeString, tpe, variadic, evaluationStrategy) = parameter match {
       case p: CASTParameterDeclaration =>
-        (shortName(p.getDeclarator), code(p), typeForDeclSpecifier(p.getDeclSpecifier), false)
+        (
+          shortName(p.getDeclarator),
+          code(p),
+          typeForDeclSpecifier(p.getDeclSpecifier),
+          false,
+          parameterEvaluationStrategy(p.getDeclarator)
+        )
       case p: CPPASTParameterDeclaration =>
         val paramName  = shortName(p.getDeclarator)
         val tpe        = typeForDeclSpecifier(p.getDeclSpecifier)
         val isVariadic = paramIsVariadic(p) || paramIsPackExpansion(p)
-        (paramName, code(p), tpe, isVariadic)
+        (paramName, code(p), tpe, isVariadic, parameterEvaluationStrategy(p.getDeclarator))
       case s: IASTSimpleDeclaration =>
         (
           s.getDeclarators.headOption
@@ -649,17 +668,18 @@ trait AstForFunctionsCreator { this: AstCreator =>
             .getOrElse(scopeLocalUniqueName("param")),
           code(s),
           typeForDeclSpecifier(s),
-          false
+          false,
+          s.getDeclarators.headOption.map(parameterEvaluationStrategy).getOrElse(unresolvedParameterEvaluationStrategy)
         )
       case other =>
-        (code(other), code(other), typeForDeclSpecifier(other), false)
+        (code(other), code(other), typeForDeclSpecifier(other), false, unresolvedParameterEvaluationStrategy)
     }
     new FunctionDeclNodePass.ParameterInfo(
       name,
       codeString,
       paramIndex,
       variadic,
-      EvaluationStrategies.BY_VALUE,
+      evaluationStrategy,
       lineNumber = line(parameter),
       columnNumber = column(parameter),
       typeFullName = registerType(tpe)
