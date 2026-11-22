@@ -438,7 +438,8 @@ private object PointerAliasMap {
   */
 private[reachingdef] class UsageAnalyzer(
   problem: DataFlowProblem[CfgNode, mutable.BitSet],
-  in: Map[CfgNode, Set[Definition]]
+  in: Map[CfgNode, Set[Definition]],
+  longListLength: Int = UsageAnalyzer.defaultLongListLength
 ) {
 
   val numberToNode: Map[Definition, CfgNode] = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
@@ -450,6 +451,14 @@ private[reachingdef] class UsageAnalyzer(
 
   private def rootDeclOf(node: CfgNode): Option[Long] =
     rootDeclCache.getOrElseUpdate(node, PointerAliasMap.rootDeclarationId(node))
+
+  /** Each call's tracked base and access path, by node id, built when first read by `isAlias` or `aliasKey` and kept
+    * while the method's edges are written, during which the graph does not change.
+    */
+  private val accessPaths = mutable.LongMap.empty[(TrackedBase, AccessPath)]
+
+  private def accessPathOf(call: Call): (TrackedBase, AccessPath) =
+    accessPaths.getOrElseUpdate(call.id(), toTrackedBaseAndAccessPathSimple(call))
 
   private val allNodes     = in.keys.toList
   private val containerSet =
@@ -493,6 +502,11 @@ private[reachingdef] class UsageAnalyzer(
     }
   }
 
+  /** Each index list of at least `longListLength` definitions, laid out as the words of the solution's sets; laid out
+    * again if a view of another solution is read.
+    */
+  private val chunkedLists = new java.util.IdentityHashMap[mutable.ArrayBuffer[Definition], ChunkedList]()
+
   val usedIncomingDefs: Map[CfgNode, Map[CfgNode, Set[Definition]]] = initUsedIncomingDefs()
 
   def initUsedIncomingDefs(): Map[CfgNode, Map[CfgNode, Set[Definition]]] = {
@@ -501,19 +515,25 @@ private[reachingdef] class UsageAnalyzer(
     }.toMap
   }
 
+  /** For each use of `node`, the definitions in `in(node)` that it uses: read from the use's candidate lists or, when
+    * reading them would cost more than `in(node)` has definitions, filtered from all of `in(node)`. Both give the same
+    * set, since `isUsing` only matches definitions that share a key with the use. Lists that cost at most
+    * `longListLength` to read in all are read without counting `in(node)`.
+    */
   private def usedIncomingDefsForNode(node: CfgNode): Map[CfgNode, Set[Definition]] = {
     val incoming          = in(node)
     lazy val incomingSize = incoming.size
     uses(node).map { use =>
-      val candidates = candidatesFor(use)
+      val lists = candidateListsFor(use)
+      val cost  = lists.iterator.map(list => readCost(list, incoming)).sum
       use -> {
-        if (candidates.length > incomingSize) {
+        if (cost > longListLength && cost > incomingSize) {
           incoming.filter { inElement =>
             val inElemNode = numberToNode(inElement)
             isUsing(use, inElemNode)
           }
         } else {
-          usedAmong(candidates, use, incoming)
+          usedAmong(lists, use, incoming)
         }
       }
     }.toMap
@@ -521,18 +541,53 @@ private[reachingdef] class UsageAnalyzer(
 
   /** The definitions of `incoming` that `use` uses, found among its candidates. */
   private[reachingdef] def usedByIndex(use: CfgNode, incoming: Set[Definition]): Set[Definition] =
-    usedAmong(candidatesFor(use), use, incoming)
+    usedAmong(candidateListsFor(use), use, incoming)
 
-  private def usedAmong(candidates: Array[Definition], use: CfgNode, incoming: Set[Definition]): Set[Definition] = {
-    val used = mutable.BitSet()
-    candidates.foreach { candidate =>
-      if (incoming.contains(candidate) && isUsing(use, numberToNode(candidate))) used.add(candidate)
+  /** The definitions in `lists` that `incoming` holds and `use` uses. When `incoming` is a view of
+    * [[CompactReachingDefSets]], a list of at least `longListLength` definitions is read through its [[ChunkedList]];
+    * any other list is tested definition by definition.
+    */
+  private def usedAmong(
+    lists: Iterable[mutable.ArrayBuffer[Definition]],
+    use: CfgNode,
+    incoming: Set[Definition]
+  ): Set[Definition] = {
+    val view = incoming match {
+      case view: ChunkedDefinitions => view
+      case _                        => null
+    }
+    val used                              = mutable.BitSet()
+    def test(candidate: Definition): Unit =
+      if (!used.contains(candidate) && isUsing(use, numberToNode(candidate))) used.add(candidate)
+    lists.foreach { list =>
+      if (view != null && list.length >= longListLength) chunkedListOf(list, view).foreachHeld(view)(test)
+      else list.foreach(candidate => if (incoming.contains(candidate)) test(candidate))
     }
     used
   }
 
-  /** The definitions that share a key with `use` (see [[definitionsByString]]), with repeats. */
-  private def candidatesFor(use: CfgNode): Array[Definition] = {
+  /** The cost of reading `list` against `incoming`: the words of its [[ChunkedList]] for a list of at least
+    * `longListLength` definitions and a view, else its length.
+    */
+  private def readCost(list: mutable.ArrayBuffer[Definition], incoming: Set[Definition]): Int =
+    incoming match {
+      case view: ChunkedDefinitions if list.length >= longListLength => chunkedListOf(list, view).wordCount
+      case _                                                         => list.length
+    }
+
+  private def chunkedListOf(list: mutable.ArrayBuffer[Definition], view: ChunkedDefinitions): ChunkedList = {
+    var chunked = chunkedLists.get(list)
+    if (chunked == null || !chunked.sameSolution(view)) {
+      chunked = new ChunkedList(list, view)
+      chunkedLists.put(list, chunked)
+    }
+    chunked
+  }
+
+  /** The index lists of the definitions that share a key with `use` (see [[definitionsByString]]); a definition can be
+    * in more than one.
+    */
+  private def candidateListsFor(use: CfgNode): Seq[mutable.ArrayBuffer[Definition]] = {
     val useString = nodeToString(use)
     val parts     = use match {
       case call: Call if containerSet.contains(call.name) =>
@@ -544,7 +599,7 @@ private[reachingdef] class UsageAnalyzer(
       case _          => None
     }
     val sameOrContainer = useString.flatMap(definitionsByString.get) ++ containersByBaseString.get(useString)
-    (sameOrContainer ++ parts ++ aliases).flatten.toArray
+    (sameOrContainer ++ parts ++ aliases).toSeq
   }
 
   /** Returns the field and index accesses rooted at a variable that `call`'s root aliases through a pointer. */
@@ -555,7 +610,7 @@ private[reachingdef] class UsageAnalyzer(
 
   /** Returns `call`'s tracked base and its access path without the trailing address-of and pointer shifts. */
   private def aliasKey(call: Call): (TrackedBase, Seq[AccessElement]) = {
-    val (base, accessPath) = toTrackedBaseAndAccessPathSimple(call)
+    val (base, accessPath) = accessPathOf(call)
     (base, AliasKeys.head(accessPath.elements))
   }
 
@@ -609,8 +664,8 @@ private[reachingdef] class UsageAnalyzer(
       case useCall: Call =>
         inElement match {
           case inCall: Call =>
-            val (useBase, useAccessPath) = toTrackedBaseAndAccessPathSimple(useCall)
-            val (inBase, inAccessPath)   = toTrackedBaseAndAccessPathSimple(inCall)
+            val (useBase, useAccessPath) = accessPathOf(useCall)
+            val (inBase, inAccessPath)   = accessPathOf(inCall)
             if (useBase == inBase && useAccessPath.matchAndDiff(inAccessPath.elements)._1 == MatchResult.EXACT_MATCH) {
               sameRoot(useCall, inCall)
             } else {
@@ -694,6 +749,13 @@ private[reachingdef] class UsageAnalyzer(
     }
   }
 
+}
+
+private[reachingdef] object UsageAnalyzer {
+
+  /** The length from which a candidate list is read through its [[ChunkedList]] rather than definition by definition.
+    */
+  val defaultLongListLength: Int = 64
 }
 
 private[reachingdef] object AliasKeys {

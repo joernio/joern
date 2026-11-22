@@ -387,16 +387,20 @@ private[reachingdef] object CompactReachingDefSets {
   * ascending order, as this set does.
   */
 private[reachingdef] final class ChunkedDefinitions(
-  chunks: CompactReachingDefSets.ChunkedSet,
-  chunkShift: Int,
-  definitions: Array[Definition],
-  positionOf: Array[Int]
+  private[reachingdef] val chunks: CompactReachingDefSets.ChunkedSet,
+  private[reachingdef] val chunkShift: Int,
+  private[reachingdef] val definitions: Array[Definition],
+  private[reachingdef] val positionOf: Array[Int]
 ) extends scala.collection.AbstractSet[Definition] {
 
   private val wordMask = (1 << chunkShift) - 1
 
+  /** `definition`'s position, or -1 if no set of this solution can hold it. */
+  private[reachingdef] def positionIn(definition: Definition): Int =
+    if (definition >= 0 && definition < positionOf.length) positionOf(definition) else -1
+
   override def contains(definition: Definition): Boolean = {
-    val position = if (definition >= 0 && definition < positionOf.length) positionOf(definition) else -1
+    val position = positionIn(definition)
     position >= 0 && {
       val word  = position >>> 6
       val chunk = chunks(word >>> chunkShift)
@@ -500,4 +504,57 @@ private[reachingdef] final class SolvedOut(in: SolvedIn, problem: DataFlowProble
   override def contains(node: CfgNode): Boolean              = keySet.contains(node)
   override def size: Int                                     = keySet.size
   override def knownSize: Int                                = keySet.size
+}
+
+/** A fixed list of definitions, laid out as the words of one solution's sets: for each word that holds one of them, the
+  * list's bits in it. A view is read with one AND per such word of a chunk the view has; a chunk the view does not have
+  * is skipped. Built once per list and solution.
+  */
+private[reachingdef] final class ChunkedList(list: Iterable[Definition], view: ChunkedDefinitions) {
+  private val positionOf = view.positionOf
+  private val chunkShift = view.chunkShift
+  private val wordMask   = (1 << chunkShift) - 1
+
+  /** The words that hold a position of the list, in ascending order (`words`, counted across chunks), and the list's
+    * bits in each (`bits`). Definitions that no set of the solution can hold are left out.
+    */
+  private val (words, bits) = {
+    val positions = list.iterator.map(view.positionIn).filter(_ >= 0).toArray.distinct.sorted
+    val wordsOut  = mutable.ArrayBuilder.make[Int]
+    val bitsOut   = mutable.ArrayBuilder.make[Long]
+    var i         = 0
+    while (i < positions.length) {
+      val word = positions(i) >>> 6
+      var mask = 0L
+      while (i < positions.length && (positions(i) >>> 6) == word) { mask |= 1L << (positions(i) & 63); i += 1 }
+      wordsOut += word
+      bitsOut += mask
+    }
+    (wordsOut.result(), bitsOut.result())
+  }
+
+  /** The number of words that hold a definition of the list: the most words a read looks at. */
+  def wordCount: Int = words.length
+
+  /** Whether `set` is a view of the solution this was laid out for: the same positions and chunk size. */
+  def sameSolution(set: ChunkedDefinitions): Boolean = (set.positionOf eq positionOf) && set.chunkShift == chunkShift
+
+  /** Calls `visit` on each definition of the list that `set` holds, by ascending position. */
+  def foreachHeld(set: ChunkedDefinitions)(visit: Definition => Unit): Unit = {
+    var i = 0
+    while (i < words.length) {
+      val slot  = words(i) >>> chunkShift
+      val chunk = set.chunks(slot)
+      while (i < words.length && (words(i) >>> chunkShift) == slot) {
+        if (chunk != null) {
+          var held = chunk(words(i) & wordMask) & bits(i)
+          while (held != 0) {
+            visit(set.definitions((words(i) << 6) + java.lang.Long.numberOfTrailingZeros(held)))
+            held &= held - 1
+          }
+        }
+        i += 1
+      }
+    }
+  }
 }
