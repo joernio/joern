@@ -98,6 +98,10 @@ def dependencySettings: Seq[Setting[?]] = Def.settings(
 def testAndRunSettings: Seq[Setting[?]] = Def.settings(
   ThisBuild / Test / fork               := true,
   ThisBuild / Test / testForkedParallel := true,
+  // sbt 2.1.0 runs up to 2 forked test JVMs concurrently (sbt 2.0 and 1.x: 1), each with a thread pool sized to the
+  // CPU count. That overloads the CI runners ("Process completed with exit code 143"), see
+  // https://github.com/sbt/sbt/issues/10078
+  Global / workerMaxInstances := 1,
   // sbt 2.x defaults to exportJars := true, putting internal subprojects on each other's classpaths as
   // (potentially CAS-cached, extension-less) jars. That breaks tests which load resources as files
   // (Paths.get(getResource(...).toURI) -> FileSystemNotFoundException) and in-process script compilation
