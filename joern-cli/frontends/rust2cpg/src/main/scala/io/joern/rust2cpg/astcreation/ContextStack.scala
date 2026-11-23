@@ -22,7 +22,7 @@ object ContextStack {
 
   final class NamespaceContext(val namespaceBlock: NewNamespaceBlock) extends Context
   final class TypeDeclContext(val typeDecl: NewTypeDecl)              extends Context
-  final class BlockContext(val items: mutable.Map[String, NewLocal])  extends Context
+  final class BlockContext                                            extends Context
   final class LocalContext(val local: NewLocal)                       extends Context
 
   class MethodContext(
@@ -68,11 +68,7 @@ object ContextStack {
         } else {
           lookup(name, tail, capturingClosures)
         }
-      case (ctx: BlockContext) :: tail =>
-        ctx.items.get(name) match {
-          case Some(decl) => Some((decl, capturingClosures))
-          case None       => lookup(name, tail, capturingClosures)
-        }
+      case (_: BlockContext) :: tail     => lookup(name, tail, capturingClosures)
       case (ctx: ClosureContext) :: tail =>
         ctx.parameters.get(name) match {
           case Some(param) => Some((param, capturingClosures))
@@ -104,7 +100,7 @@ class ContextStack {
   }
 
   def pushBlock(): Unit = {
-    push(new BlockContext(mutable.Map.empty))
+    push(new BlockContext)
   }
 
   def pushMethod(method: NewMethod): Unit = {
