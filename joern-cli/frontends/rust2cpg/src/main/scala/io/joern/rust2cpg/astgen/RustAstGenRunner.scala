@@ -28,7 +28,17 @@ class RustAstGenRunner(config: Config) extends AstGenRunner(RustAstGenRunner.ast
     val resolveCfgArgs = if (config.noResolveCfg) Seq.empty[String] else Seq("--resolve-cfg")
     val procMacroArgs  = if (config.expandProcMacros) Seq("--expand-proc-macros") else Seq.empty[String]
     val args           = baseArgs ++ sysRootArgs ++ resolveCfgArgs ++ procMacroArgs
-    val result         = ExternalCommand.run(args).logIfFailed()
+
+    // See https://github.com/rust-lang/rust-analyzer/pull/21249.
+    // Needed to support the bidirectional proc-macro server protocol.
+    // TODO(rust_ast_gen): remove once the api allows setting it programmaticaly.
+    val procMacroEnv = if (config.expandProcMacros) {
+      Map("RUST_ANALYZER_USE_POSTCARD" -> "1")
+    } else {
+      Map.empty[String, String]
+    }
+
+    val result = ExternalCommand.run(args, extraEnv = procMacroEnv).logIfFailed()
     if (result.successful) {
       result.stdErr.foreach(RustAstGenRunner.logger.info)
     }
