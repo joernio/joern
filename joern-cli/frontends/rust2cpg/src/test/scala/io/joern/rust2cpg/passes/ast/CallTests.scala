@@ -901,6 +901,36 @@ class CallTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
     }
   }
 
+  "call on parenthesized returned closure" should {
+    val cpg = code("""
+        |fn f() -> impl Fn(i32) -> i32 { |x| x }
+        |fn main() { ((f()))(3); }
+        |""".stripMargin)
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("call").l) { case call :: Nil =>
+        call.code shouldBe "((f()))(3)"
+        call.methodFullName shouldBe "core::ops::function::Fn::call"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        call.signature shouldBe "core::ops::function::Fn"
+      }
+    }
+
+    "have correct receiver" in {
+      inside(cpg.call.nameExact("call").receiver.l) { case (receiver: Call) :: Nil =>
+        receiver.methodFullName shouldBe "rust2cpgtest::f"
+        // TODO(rust_ast_gen): might change later.
+        receiver.typeFullName shouldBe "impl core::ops::function::Fn + core::marker::Sized"
+      }
+    }
+
+    "have correct arguments" in {
+      inside(cpg.call.nameExact("call").argument.l) { case Literal(code = "3", argumentIndex = 1) :: Nil =>
+        succeed
+      }
+    }
+  }
+
   "call on impl Fn parameter" should {
     val cpg = code("""
         |fn f(g: impl Fn(i32) -> i32) -> i32 { g(3) }

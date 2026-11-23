@@ -934,14 +934,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val args = callExpr.argList.expr.map(visitExpr)
 
     // NB: with sysroot, there's a `&` adjustment, making the receiver have type `&T` instead of `T`, and
-    // we only add bindings to `T`.
-    @tailrec
-    def calleeWithoutAdjustment(callee: Expr): Ast = callee match {
-      case parenExpr: ParenExpr => calleeWithoutAdjustment(parenExpr.expr)
-      case _                    => dispatchVisitExpr(callee)
-    }
-
-    callAst(call, args, receiver = Some(calleeWithoutAdjustment(callee)))
+    // we only add bindings to `T`. Hence dispatchVisitExpr instead of visitExpr.
+    callAst(call, args, receiver = Some(dispatchVisitExpr(callee)))
   }
 
   private def lowerPathExprCall(callExpr: CallExpr, pathExpr: PathExpr): Ast = {
