@@ -20,7 +20,16 @@ class Rust2Cpg extends X2CpgFrontend {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       FileUtil.usingTemporaryDirectory("rust2cpgOut") { tmpDir =>
         val astGenResult = new RustAstGenRunner(config).execute(tmpDir)
-        val hash         = HashUtil.sha256(astGenResult.parsedFiles.map(Paths.get(_)))
+        if (astGenResult.generatorFailed) {
+          // Without this the frontend writes a CPG holding zero methods and exits 0, so a caller
+          // that checks the exit code is told the parse succeeded. Every downstream query then
+          // reports that the code contains nothing, which is indistinguishable from a clean result.
+          throw new RuntimeException(
+            s"rust_ast_gen failed to run on '${config.inputPath}'; see the logged error above. " +
+              "Refusing to write an empty CPG."
+          )
+        }
+        val hash = HashUtil.sha256(astGenResult.parsedFiles.map(Paths.get(_)))
         new MetaDataPass(cpg, Languages.RUST, config.inputPath, Option(hash)).createAndApply()
         new AstCreationPass(cpg, astGenResult.parsedFiles, config)(config.schemaValidation).createAndApply()
         new RustTypeNodePass(cpg).createAndApply()

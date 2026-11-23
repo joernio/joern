@@ -20,6 +20,15 @@ object AstGenRunner {
   trait AstGenRunnerResult {
     def parsedFiles: List[String]
     def skippedFiles: List[String]
+
+    /** Whether the AST generator itself failed to run.
+      *
+      * Concrete with a default so that existing implementors continue to compile unchanged. An
+      * empty `parsedFiles` is ambiguous on its own: it means either that the input held no files
+      * this frontend handles, or that the generator could not be run at all. A caller that cannot
+      * tell those apart has no choice but to treat a failed run as an empty project.
+      */
+    def generatorFailed: Boolean = false
   }
 
   /** @param parsedFiles
@@ -27,8 +36,11 @@ object AstGenRunner {
     * @param skippedFiles
     *   the files skipped by the runner.
     */
-  case class DefaultAstGenRunnerResult(parsedFiles: List[String] = List.empty, skippedFiles: List[String] = List.empty)
-      extends AstGenRunnerResult
+  case class DefaultAstGenRunnerResult(
+    parsedFiles: List[String] = List.empty,
+    skippedFiles: List[String] = List.empty,
+    override val generatorFailed: Boolean = false
+  ) extends AstGenRunnerResult
 
   /** @param name
     *   the name of the AST gen executable, e.g., goastgen, dotnetastgen, swiftastgen, etc.
@@ -252,7 +264,7 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
         DefaultAstGenRunnerResult(parsed, skipped)
       case Failure(f) =>
         logger.error(s"\t- running ${metaData.name} failed!", f)
-        DefaultAstGenRunnerResult()
+        DefaultAstGenRunnerResult(generatorFailed = true)
     }
   }
 
