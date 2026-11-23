@@ -44,6 +44,9 @@ class AstCreator(
 
   protected var parseLevel: AstParseLevel = AstParseLevel.FULL_AST
 
+  /** The property declaration whose accessor is being lowered, used to resolve the C# 14 `field` keyword. */
+  protected var surroundingProperty: Option[DotNetNodeInfo] = None
+
   override protected def offsetSource: Option[OffsetUtils.OffsetSourceType] = None
 
   override protected def unadjustedOffset(node: BaseNodeInfo[?]): Option[(Int, Int)] = None

@@ -40,6 +40,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case SuppressNullableWarningExpression => astForSuppressNullableWarningExpression(expr)
       case _: BaseLambdaExpression           => astForSimpleLambdaExpression(expr)
       case ParenthesizedExpression           => astForParenthesizedExpression(expr)
+      case FieldExpression                   => astForFieldExpression(expr)
       case _                                 => notHandledYet(expr)
     }
   }
@@ -298,6 +299,24 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       fieldName = field.name,
       fieldTypeFullName = field.typeFullName
     ) :: Nil
+  }
+
+  /** Lowers the C# 14 `field` keyword into a field access to the compiler-synthesized backing field of the surrounding
+    * property `P`, i.e. `this.<P>k__BackingField`, or `T.<P>k__BackingField` if `P` is static.
+    */
+  private def astForFieldExpression(fieldExpr: DotNetNodeInfo): Seq[Ast] = {
+    surroundingProperty match {
+      case None               => notHandledYet(fieldExpr)
+      case Some(propertyDecl) =>
+        val fieldName      = s"<${nameFromNode(propertyDecl)}>k__BackingField"
+        val fieldType      = nodeTypeFullName(propertyDecl)
+        val typeDeclName   = scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
+        val isStaticAccess = propertyDecl.json(ParserKeys.Modifiers).arr.exists(_(ParserKeys.Value).str == "static")
+        val baseAst        =
+          if (isStaticAccess) Ast(identifierNode(fieldExpr, typeDeclName, typeDeclName, typeDeclName))
+          else astForThisReceiver(fieldExpr)
+        fieldAccessAst(fieldExpr, fieldExpr, baseAst, code(fieldExpr), fieldName, fieldType) :: Nil
+    }
   }
 
   protected def astForUnaryExpression(unaryExpr: DotNetNodeInfo): Seq[Ast] = {
@@ -776,6 +795,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     expression.copy(node = InvocationExpression, json = json)
   }
 
+  private def makeAssignment(assignment: DotNetNodeInfo, target: DotNetNodeInfo): DotNetNodeInfo = {
+    val json = assignment.json.transform(ujson.Value)
+    json(ParserKeys.Left) = target.json.transform(ujson.Value)
+
+    assignment.copy(json = json)
+  }
+
   /** Traverses the "spine" of a chained `?.`/`.` expression. For instance, `x?.y.z?.w` becomes [x, y, z, w]. Notice
     * that, whereas `.` is left-associative, `?.` is right-associative.
     */
@@ -794,10 +820,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  /** Given a sequence of nodes [x, y, z, w], creates the corresponding [[DotNetNodeInfo]] for `x.y.z.w`.
+  /** Given a sequence of nodes [x, y, z, w], creates the corresponding [[DotNetNodeInfo]] for `x.y.z.w`. A trailing
+    * assignment, as in the C# 14 null-conditional assignment `x?.y = v`, becomes the assignment `x.y = v`.
     */
   private def rebuildSpineAsMemberAccesses(spine: Seq[DotNetNodeInfo]): Option[DotNetNodeInfo] = {
     def combine(lhs: DotNetNodeInfo, rhs: DotNetNodeInfo): DotNetNodeInfo = rhs.node match {
+      case _: AssignmentExpr =>
+        val target = createDotNetNodeInfo(rhs.json(ParserKeys.Left))
+        makeAssignment(rhs, traverseConditionalAccessSpine(target).foldLeft(lhs)(combine))
       case MemberBindingExpression =>
         val name = createDotNetNodeInfo(rhs.json(ParserKeys.Name))
         makeMemberAccess(lhs, name)
@@ -824,6 +854,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case None =>
         logger.warn(s"Failed to rewrite ${code(condAccExpr)}. Skipping")
         Nil
+      case Some(rewritten @ DotNetNodeInfo(_: AssignmentExpr, _, _, _, _, _, _)) =>
+        astForNode(
+          rewritten.copy(
+            code = condAccExpr.code,
+            lineNumber = condAccExpr.lineNumber,
+            columnNumber = condAccExpr.columnNumber,
+            lineNumberEnd = condAccExpr.lineNumberEnd,
+            columnNumberEnd = condAccExpr.columnNumberEnd
+          )
+        )
       case Some(rewritten) => astForNode(rewritten)
     }
 

@@ -586,12 +586,23 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val parameters = Option.unless(isStatic)(astForThisParameter(propertyDecl)).toList :+ valueParam
     val signature  = composeMethodLikeSignature(returnType, parameters)
     val fullName   = composeMethodFullName(baseType, name, signature)
-    val body       =
+    val body       = withSurroundingProperty(propertyDecl) {
       Try(astForBlock(createDotNetNodeInfo(accessorDecl.json(ParserKeys.Body)))).getOrElse(Ast(blockNode(accessorDecl)))
+    }
     val methodReturn = methodReturnNode(accessorDecl, returnType)
     val methodNode_  = methodNode(accessorDecl, name, fullName, signature, relativeFileName)
 
     methodAst(methodNode_, parameters, body, methodReturn, modifiers) :: Nil
+  }
+
+  private def withSurroundingProperty[T](propertyDecl: DotNetNodeInfo)(thunk: => T): T = {
+    val previous = surroundingProperty
+    surroundingProperty = Some(propertyDecl)
+    try {
+      thunk
+    } finally {
+      surroundingProperty = previous
+    }
   }
 
   private def astForGetAccessorDeclaration(accessorDecl: DotNetNodeInfo, propertyDecl: DotNetNodeInfo): Seq[Ast] = {
