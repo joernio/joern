@@ -20,8 +20,8 @@ class EdgeTargetsTests extends DataFlowCodeToCpgSuite {
       |}
       |""".stripMargin)
 
-  /** For each call of `method` and each of its uses, the accepted definitions among the candidates, after checking that
-    * they are, in order, the definitions accepted among all that the call generates.
+  /** Checks the arguments of every call in `method` against their candidates from `edgeTargets`, and also against all
+    * the definitions the call generates, to ensure that both accept the same definitions and the order is unchanged.
     */
   private def accepted(method: Method): Map[String, Seq[String]] = {
     val problem   = ReachingDefProblem.create(method)
