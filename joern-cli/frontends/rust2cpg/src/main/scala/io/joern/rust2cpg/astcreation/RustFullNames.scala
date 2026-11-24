@@ -99,6 +99,8 @@ trait RustFullNames { this: AstCreator =>
         s"(${tupleType.typ.map(typeFullNameForType).mkString(", ")})"
       case parenType: RustNodeSyntax.ParenType =>
         typeFullNameForType(parenType.typ)
+      case patternType: RustNodeSyntax.PatternType =>
+        typeFullNameForType(patternType.typ)
       case _: RustNodeSyntax.NeverType =>
         "!"
       case macroType: RustNodeSyntax.MacroType =>

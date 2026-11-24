@@ -857,4 +857,15 @@ class MacroTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
       }
     }
   }
+
+  "pattern type alias" should {
+    val cpg = code("""
+        |#![feature(pattern_types, pattern_type_macro)]
+        |type A = std::pat::pattern_type!(u32 is 1..);
+        |""".stripMargin)
+
+    "have correct aliasTypeFullName" in {
+      cpg.typeDecl.nameExact("A").aliasTypeFullName.l shouldBe List("u32")
+    }
+  }
 }
