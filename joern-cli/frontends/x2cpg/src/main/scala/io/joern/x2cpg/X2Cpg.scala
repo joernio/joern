@@ -309,7 +309,9 @@ object X2Cpg {
         .text("files or folders to exclude during CPG generation (paths relative to <input-dir> or absolute paths)"),
       opt[String]("exclude-regex")
         .action { (x, c) => c.withIgnoredFilesRegex(x) }
-        .text("a regex specifying files to exclude during CPG generation (paths relative to <input-dir> are matched)"),
+        .text(
+          "a regex specifying files to exclude during CPG generation (must fully match the path relative to <input-dir>)"
+        ),
       opt[Unit]("no-default-exclude").action { (_, c) => c.withDefaultIgnoredFilesRegex(Nil) }.hidden(),
       opt[Unit]("enable-early-schema-checking")
         .action((_, c) => c.withSchemaValidation(ValidationMode.Enabled))
