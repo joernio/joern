@@ -2,7 +2,7 @@ package io.joern.csharpsrc2cpg.querying.ast
 
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, TypeRef}
 import io.shiftleft.semanticcpg.language.*
 
 class PropertySetterTests extends CSharpCode2CpgFixture {
@@ -522,8 +522,8 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
         case fieldAccess :: Nil =>
           fieldAccess.typeFullName shouldBe "System.String"
           fieldAccess.fieldIdentifier.canonicalName.l shouldBe List("<Name>k__BackingField")
-          inside(fieldAccess.argument(1)) { case base: Identifier =>
-            base.name shouldBe "C"
+          inside(fieldAccess.argument(1)) { case base: TypeRef =>
+            base.code shouldBe "C"
             base.typeFullName shouldBe "C"
           }
       }

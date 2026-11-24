@@ -283,10 +283,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def createImplicitBaseFieldAccess(fieldNode: DotNetNodeInfo, field: FieldDecl): Seq[Ast] = {
-    // TODO: Maybe this should be a TypeRef, like we recently started doing for javasrc?
     val baseNode = if (field.isStatic) {
       val name = scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
-      identifierNode(fieldNode, name, name, field.typeFullName)
+      typeRefNode(fieldNode, name, name)
     } else {
       identifierNode(fieldNode, Constants.This, Constants.This, field.typeFullName)
     }
@@ -313,7 +312,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val typeDeclName   = scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
         val isStaticAccess = propertyDecl.json(ParserKeys.Modifiers).arr.exists(_(ParserKeys.Value).str == "static")
         val baseAst        =
-          if (isStaticAccess) Ast(identifierNode(fieldExpr, typeDeclName, typeDeclName, typeDeclName))
+          if (isStaticAccess) Ast(typeRefNode(fieldExpr, typeDeclName, typeDeclName))
           else astForThisReceiver(fieldExpr)
         fieldAccessAst(fieldExpr, fieldExpr, baseAst, code(fieldExpr), fieldName, fieldType) :: Nil
     }
@@ -598,7 +597,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private def astForSimpleMemberAccessExpression(accessExpr: DotNetNodeInfo): Seq[Ast] = {
     val fieldIdentifierName = nameFromNode(accessExpr)
-    val baseAst             = astForNode(createDotNetNodeInfo(accessExpr.json(ParserKeys.Expression))).head
+    val baseExpr            = createDotNetNodeInfo(accessExpr.json(ParserKeys.Expression))
+    val baseAst             = astForNode(baseExpr).head
     val baseTypeFullName    = getTypeFullNameFromAstNode(baseAst)
 
     // The typical field access resolving mechanism
@@ -619,7 +619,28 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .getOrElse((Defines.Any, false))
 
     if (isGetter) astForMemberAccessGetterExpression(byPropertyName.get, baseAst, baseTypeFullName, accessExpr)
-    else fieldAccessAst(accessExpr, accessExpr, baseAst, code(accessExpr), fieldIdentifierName, typeFullName) :: Nil
+    else {
+      // A static field is accessed on the type itself, so the receiver is a TYPE_REF rather than an IDENTIFIER
+      val receiverAst = staticTypeReceiver(baseExpr).map(Ast(_)).getOrElse(baseAst)
+      fieldAccessAst(accessExpr, accessExpr, receiverAst, code(accessExpr), fieldIdentifierName, typeFullName) :: Nil
+    }
+  }
+
+  /** If `baseExpr` is a plain name that is not a variable or field but resolves to a known type, returns a TYPE_REF to
+    * it.
+    */
+  private def staticTypeReceiver(baseExpr: DotNetNodeInfo): Option[NewTypeRef] = {
+    Option
+      .when(baseExpr.node == IdentifierName) {
+        val name = nameFromNode(baseExpr)
+        Option
+          .when(scope.lookupVariable(name).isEmpty && scope.findFieldInScope(name).isEmpty)(
+            scope.tryResolveTypeReference(name)
+          )
+          .flatten
+          .map(typeRef => typeRefNode(baseExpr, code(baseExpr), typeRef.name))
+      }
+      .flatten
   }
 
   protected def astForElementAccessExpression(elementAccessExpression: DotNetNodeInfo): Seq[Ast] = {
