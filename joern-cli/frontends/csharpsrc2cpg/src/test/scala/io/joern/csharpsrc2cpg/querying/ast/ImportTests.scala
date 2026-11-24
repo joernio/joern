@@ -39,7 +39,7 @@ class ImportTests extends CSharpCode2CpgFixture {
     }
 
     "allow for the type of `Console` to be known" in {
-      inside(cpg.identifier.nameExact("Console").l) { case textImport :: Nil =>
+      inside(cpg.typeRef.codeExact("Console").l) { case textImport :: Nil =>
         textImport.typeFullName shouldBe "System.Console"
       }
     }

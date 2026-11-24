@@ -40,6 +40,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case SuppressNullableWarningExpression => astForSuppressNullableWarningExpression(expr)
       case _: BaseLambdaExpression           => astForSimpleLambdaExpression(expr)
       case ParenthesizedExpression           => astForParenthesizedExpression(expr)
+      case FieldExpression                   => astForFieldExpression(expr)
       case _                                 => notHandledYet(expr)
     }
   }
@@ -282,10 +283,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def createImplicitBaseFieldAccess(fieldNode: DotNetNodeInfo, field: FieldDecl): Seq[Ast] = {
-    // TODO: Maybe this should be a TypeRef, like we recently started doing for javasrc?
     val baseNode = if (field.isStatic) {
       val name = scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
-      identifierNode(fieldNode, name, name, field.typeFullName)
+      typeRefNode(fieldNode, name, name)
     } else {
       identifierNode(fieldNode, Constants.This, Constants.This, field.typeFullName)
     }
@@ -298,6 +298,24 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       fieldName = field.name,
       fieldTypeFullName = field.typeFullName
     ) :: Nil
+  }
+
+  /** Lowers the C# 14 `field` keyword into a field access to the compiler-synthesized backing field of the surrounding
+    * property `P`, i.e. `this.<P>k__BackingField`, or `T.<P>k__BackingField` if `P` is static.
+    */
+  private def astForFieldExpression(fieldExpr: DotNetNodeInfo): Seq[Ast] = {
+    surroundingProperty match {
+      case None               => notHandledYet(fieldExpr)
+      case Some(propertyDecl) =>
+        val fieldName      = s"<${nameFromNode(propertyDecl)}>k__BackingField"
+        val fieldType      = nodeTypeFullName(propertyDecl)
+        val typeDeclName   = scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
+        val isStaticAccess = propertyDecl.json(ParserKeys.Modifiers).arr.exists(_(ParserKeys.Value).str == "static")
+        val baseAst        =
+          if (isStaticAccess) Ast(typeRefNode(fieldExpr, typeDeclName, typeDeclName))
+          else astForThisReceiver(fieldExpr)
+        fieldAccessAst(fieldExpr, fieldExpr, baseAst, code(fieldExpr), fieldName, fieldType) :: Nil
+    }
   }
 
   protected def astForUnaryExpression(unaryExpr: DotNetNodeInfo): Seq[Ast] = {
@@ -497,13 +515,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .tryResolveMethodInvocation(callName, argTypes)
       .orElse(scope.tryResolveMethodInvocation(callName, argTypes, scope.surroundingTypeDeclFullName)) match {
       case Some(methodMetaData) if methodMetaData.isStatic =>
-        // If static, create implicit type identifier explicitly
+        // If static, there is no receiver: the declaring type is part of the methodFullName
         val typeMetaData = scope.typeForMethod(methodMetaData)
-        val typeName     = typeMetaData.flatMap(_.name.split("[.]").lastOption).getOrElse(Defines.Any)
         val typeFullName = typeMetaData.map(_.name)
-        val receiverNode = Ast(identifierNode(invocationExpr, typeName, typeName, typeFullName.getOrElse(Defines.Any)))
         val arguments    = astForArgumentList(argumentList, typeFullName)
-        (Option(receiverNode), typeFullName, Option(methodMetaData), arguments)
+        (None, typeFullName, Option(methodMetaData), arguments)
       case Some(methodMetaData) =>
         // If dynamic, create implicit `this` identifier explicitly
         val typeMetaData = scope.typeForMethod(methodMetaData)
@@ -525,8 +541,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     expression.node match {
       case SimpleMemberAccessExpression | SuppressNullableWarningExpression =>
-        val baseAst = astForNode(createDotNetNodeInfo(expression.json(ParserKeys.Expression)))
-        astForMemberAccessInvocation(invocationExpr, baseAst.headOption, argumentList, callName)
+        val baseAst = astForReceiverExpression(createDotNetNodeInfo(expression.json(ParserKeys.Expression)))
+        astForMemberAccessInvocation(invocationExpr, Option(baseAst), argumentList, callName)
       case IdentifierName | MemberBindingExpression =>
         astForIdentifierInvocation(invocationExpr, argumentList, callName)
       case x =>
@@ -543,11 +559,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     getter: CSharpMethod,
     baseAst: Ast,
     baseTypeFullName: String,
-    accessExpr: DotNetNodeInfo
+    accessExpr: DotNetNodeInfo,
+    baseExpr: DotNetNodeInfo
   ): Seq[Ast] = {
     if (getter.isStatic) {
       val signature      = composeMethodLikeSignature(getter.returnType, Nil)
       val methodFullName = composeMethodFullName(baseTypeFullName, getter.name, signature)
+      // The static getter is invoked on the type itself, so the receiver is a TYPE_REF
+      val receiverAst = baseAst.root match {
+        case Some(_: NewTypeRef) => baseAst
+        case _                   => Ast(typeRefNode(accessExpr, baseTypeFullName.split('.').last, baseTypeFullName))
+      }
       callAst(
         callNode(
           accessExpr,
@@ -557,7 +579,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           DispatchTypes.STATIC_DISPATCH,
           Option(signature),
           Option(getter.returnType)
-        )
+        ),
+        base = Some(receiverAst)
       ) :: Nil
     } else {
       val signature      = composeMethodLikeSignature(getter.returnType, baseTypeFullName :: Nil)
@@ -578,8 +601,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForSimpleMemberAccessExpression(accessExpr: DotNetNodeInfo): Seq[Ast] = {
+    // A qualified type name, e.g. `System.Console`, is a type reference and not a member access
+    staticTypeReceiver(accessExpr) match {
+      case Some(typeRef) => Ast(typeRef) :: Nil
+      case None          => astForNonTypeMemberAccessExpression(accessExpr)
+    }
+  }
+
+  private def astForNonTypeMemberAccessExpression(accessExpr: DotNetNodeInfo): Seq[Ast] = {
     val fieldIdentifierName = nameFromNode(accessExpr)
-    val baseAst             = astForNode(createDotNetNodeInfo(accessExpr.json(ParserKeys.Expression))).head
+    val baseExpr            = createDotNetNodeInfo(accessExpr.json(ParserKeys.Expression))
+    val baseAst             = astForReceiverExpression(baseExpr)
     val baseTypeFullName    = getTypeFullNameFromAstNode(baseAst)
 
     // The typical field access resolving mechanism
@@ -588,20 +620,43 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     // Getters look like fields, but are underneath `get_`-prefixed methods
     lazy val byPropertyName = scope.tryResolveGetterInvocation(fieldIdentifierName, Some(baseTypeFullName))
 
-    // accessExpr might be a qualified name e.g. `System.Console`, in which case `System` (baseAst) is not a type
-    // but a namespace. In this scenario, we look up the entire expression
-    lazy val byQualifiedName = scope.tryResolveTypeReference(accessExpr.code)
-
     val (typeFullName, isGetter) = byFieldAccess
       .map(x => (x.typeName, false))
       .orElse(byPropertyName.map(x => (x.returnType, true)))
-      .orElse(byQualifiedName.map(x => (x.name, false)))
       .map((typeName, isGetter) => (scope.tryResolveTypeReference(typeName).map(_.name).getOrElse(typeName), isGetter))
       .getOrElse((Defines.Any, false))
 
-    if (isGetter) astForMemberAccessGetterExpression(byPropertyName.get, baseAst, baseTypeFullName, accessExpr)
+    if (isGetter)
+      astForMemberAccessGetterExpression(byPropertyName.get, baseAst, baseTypeFullName, accessExpr, baseExpr)
     else fieldAccessAst(accessExpr, accessExpr, baseAst, code(accessExpr), fieldIdentifierName, typeFullName) :: Nil
   }
+
+  /** If `baseExpr` names a type, either plainly (`T`) or qualified (`System.Console`), and is not a variable or field,
+    * returns a TYPE_REF to it. Static members (fields, getters, methods) are accessed on this node.
+    */
+  private def staticTypeReceiver(baseExpr: DotNetNodeInfo): Option[NewTypeRef] = {
+    def rootIsVariable(expr: DotNetNodeInfo): Boolean = expr.node match {
+      case IdentifierName =>
+        val name = nameFromNode(expr)
+        scope.lookupVariable(name).isDefined || scope.findFieldInScope(name).isDefined
+      case SimpleMemberAccessExpression =>
+        rootIsVariable(createDotNetNodeInfo(expr.json(ParserKeys.Expression)))
+      case _ => true
+    }
+    Option
+      .when(!rootIsVariable(baseExpr))(scope.tryResolveTypeReference(nameOrCode(baseExpr)))
+      .flatten
+      .map(typeRef => typeRefNode(baseExpr, code(baseExpr), typeRef.name))
+  }
+
+  private def nameOrCode(expr: DotNetNodeInfo): String = expr.node match {
+    case IdentifierName => nameFromNode(expr)
+    case _              => expr.code
+  }
+
+  /** The AST of the expression a member is accessed on: a TYPE_REF if the expression names a type. */
+  private def astForReceiverExpression(baseExpr: DotNetNodeInfo): Ast =
+    staticTypeReceiver(baseExpr).map(Ast(_)).getOrElse(astForNode(baseExpr).head)
 
   protected def astForElementAccessExpression(elementAccessExpression: DotNetNodeInfo): Seq[Ast] = {
     val exprAst = astForExpression(createDotNetNodeInfo(elementAccessExpression.json(ParserKeys.Expression)))
@@ -776,6 +831,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     expression.copy(node = InvocationExpression, json = json)
   }
 
+  private def makeAssignment(assignment: DotNetNodeInfo, target: DotNetNodeInfo): DotNetNodeInfo = {
+    val json = assignment.json.transform(ujson.Value)
+    json(ParserKeys.Left) = target.json.transform(ujson.Value)
+
+    assignment.copy(json = json)
+  }
+
   /** Traverses the "spine" of a chained `?.`/`.` expression. For instance, `x?.y.z?.w` becomes [x, y, z, w]. Notice
     * that, whereas `.` is left-associative, `?.` is right-associative.
     */
@@ -794,10 +856,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  /** Given a sequence of nodes [x, y, z, w], creates the corresponding [[DotNetNodeInfo]] for `x.y.z.w`.
+  /** Given a sequence of nodes [x, y, z, w], creates the corresponding [[DotNetNodeInfo]] for `x.y.z.w`. A trailing
+    * assignment, as in the C# 14 null-conditional assignment `x?.y = v`, becomes the assignment `x.y = v`.
     */
   private def rebuildSpineAsMemberAccesses(spine: Seq[DotNetNodeInfo]): Option[DotNetNodeInfo] = {
     def combine(lhs: DotNetNodeInfo, rhs: DotNetNodeInfo): DotNetNodeInfo = rhs.node match {
+      case _: AssignmentExpr =>
+        val target = createDotNetNodeInfo(rhs.json(ParserKeys.Left))
+        makeAssignment(rhs, traverseConditionalAccessSpine(target).foldLeft(lhs)(combine))
       case MemberBindingExpression =>
         val name = createDotNetNodeInfo(rhs.json(ParserKeys.Name))
         makeMemberAccess(lhs, name)
@@ -824,6 +890,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case None =>
         logger.warn(s"Failed to rewrite ${code(condAccExpr)}. Skipping")
         Nil
+      case Some(rewritten @ DotNetNodeInfo(_: AssignmentExpr, _, _, _, _, _, _)) =>
+        astForNode(
+          rewritten.copy(
+            code = condAccExpr.code,
+            lineNumber = condAccExpr.lineNumber,
+            columnNumber = condAccExpr.columnNumber,
+            lineNumberEnd = condAccExpr.lineNumberEnd,
+            columnNumberEnd = condAccExpr.columnNumberEnd
+          )
+        )
       case Some(rewritten) => astForNode(rewritten)
     }
 

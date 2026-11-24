@@ -2,7 +2,7 @@ package io.joern.csharpsrc2cpg.querying.ast
 
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, TypeRef}
 import io.shiftleft.semanticcpg.language.*
 
 class PropertySetterTests extends CSharpCode2CpgFixture {
@@ -478,6 +478,55 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
     "not raise a schema violation on method.block / method.local" in {
       noException should be thrownBy cpg.method.nameExact("set_MyProperty").block.l
       noException should be thrownBy cpg.method.nameExact("set_MyProperty").local.l
+    }
+  }
+
+  "set accessor using the C# 14 `field` keyword" should {
+    val cpg = code("""
+        |class C
+        |{
+        |  public int Age { get; set { field = value; } }
+        |}
+        |""".stripMargin)
+
+    "lower `field` into a field access to the property's backing field" in {
+      inside(cpg.assignment.where(_.method.nameExact("set_Age")).l) { case assign :: Nil =>
+        assign.code shouldBe "field = value"
+        inside(assign.target.start.isCall.isFieldAccess.l) { case fieldAccess :: Nil =>
+          fieldAccess.code shouldBe "field"
+          fieldAccess.typeFullName shouldBe "System.Int32"
+          fieldAccess.fieldIdentifier.canonicalName.l shouldBe List("<Age>k__BackingField")
+          inside(fieldAccess.argument(1)) { case base: Identifier =>
+            base.name shouldBe "this"
+            base.typeFullName shouldBe "C"
+          }
+        }
+      }
+    }
+
+    "not produce UNKNOWN nodes" in {
+      cpg.unknown shouldBe empty
+    }
+  }
+
+  "static set accessor using the C# 14 `field` keyword" should {
+    val cpg = code("""
+        |class C
+        |{
+        |  public static string Name { get; set { field = value; } }
+        |}
+        |""".stripMargin)
+
+    "lower `field` into a field access to the property's backing field on the type" in {
+      inside(cpg.assignment.where(_.method.nameExact("set_Name")).target.isCall.isFieldAccess.l) {
+        case fieldAccess :: Nil =>
+          fieldAccess.typeFullName shouldBe "System.String"
+          fieldAccess.fieldIdentifier.canonicalName.l shouldBe List("<Name>k__BackingField")
+          inside(fieldAccess.argument(1)) { case base: TypeRef =>
+            base.code shouldBe "C"
+            base.typeFullName shouldBe "C"
+          }
+      }
     }
   }
 

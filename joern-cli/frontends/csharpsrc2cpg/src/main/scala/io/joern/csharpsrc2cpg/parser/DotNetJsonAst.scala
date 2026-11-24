@@ -280,6 +280,9 @@ object DotNetJsonAst {
 
   object ParenthesizedExpression extends BaseExpr
 
+  /** The C# 14 `field` keyword, referring to the backing field of the surrounding property. */
+  object FieldExpression extends BaseExpr
+
   object Unknown extends DotNetParserNode
 
   object AccessorList extends DotNetParserNode

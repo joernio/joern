@@ -2,7 +2,7 @@ package io.joern.csharpsrc2cpg.querying.ast
 
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, TypeRef}
 import io.shiftleft.semanticcpg.language.*
 
 class PropertyGetterTests extends CSharpCode2CpgFixture {
@@ -21,7 +21,11 @@ class PropertyGetterTests extends CSharpCode2CpgFixture {
       inside(cpg.call.code("System.Console.Out").l) { case consoleOut :: Nil =>
         consoleOut.name shouldBe "get_Out"
         consoleOut.methodFullName shouldBe "System.Console.get_Out:System.IO.TextWriter()"
-        consoleOut.argument shouldBe empty
+        inside(consoleOut.argument.l) { case (base: TypeRef) :: Nil =>
+          base.code shouldBe "System.Console"
+          base.typeFullName shouldBe "System.Console"
+          base.argumentIndex shouldBe 0
+        }
         consoleOut.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         consoleOut.typeFullName shouldBe "System.IO.TextWriter"
       }
@@ -236,7 +240,9 @@ class PropertyGetterTests extends CSharpCode2CpgFixture {
     }
 
     "have correct arguments to the get_* call" in {
-      cpg.call.codeExact("c.MyProperty").argument shouldBe empty
+      inside(cpg.call.codeExact("c.MyProperty").argument.l) { case (base: TypeRef) :: Nil =>
+        base.typeFullName shouldBe "C"
+      }
     }
 
     "have correct typeFullName for the assignment" in {
