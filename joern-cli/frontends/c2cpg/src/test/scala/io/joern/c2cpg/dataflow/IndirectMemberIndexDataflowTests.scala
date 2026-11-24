@@ -2,6 +2,7 @@ package io.joern.c2cpg.dataflow
 
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language.*
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
 class IndirectMemberIndexDataflowTests extends DataFlowCodeToCpgSuite {
@@ -57,6 +58,32 @@ class IndirectMemberIndexDataflowTests extends DataFlowCodeToCpgSuite {
       val source                                = cpg.method.name("nested_member_index").parameter.name("a1")
       val sink = cpg.method.name("nested_member_index").call.code("sink\\(info->attrs\\[1\\]\\)").argument(1)
       sink.reachableByFlows(source).size shouldBe 0
+    }
+  }
+
+  "field access as the direct base of an index access" should {
+    val cpg = code("""
+        |struct S { char **arr; };
+        |void sink(char *p);
+        |
+        |void nested(struct S *s, int i) { sink(s->arr[i]); }
+        |void via_local(struct S *s, int i) { char **a = s->arr; sink(a[i]); }
+        |""".stripMargin)
+
+    "flow from the field access to the index access sink when nested" in {
+      implicit val callResolver: NoResolve.type = NoResolve
+      val source = cpg.method.nameExact("nested").ast.isCall.nameExact(Operators.indirectFieldAccess)
+      val sink   = cpg.method.nameExact("nested").ast.isCall.nameExact("sink").argument
+      val flows  = sink.reachableByFlows(source).l
+      flows.map(flowToResultPairs).toSetMutable shouldBe Set(List(("sink(s->arr[i])", 5)))
+    }
+
+    "flow from the field access to the index access sink via a local" in {
+      implicit val callResolver: NoResolve.type = NoResolve
+      val source = cpg.method.nameExact("via_local").ast.isCall.nameExact(Operators.indirectFieldAccess)
+      val sink   = cpg.method.nameExact("via_local").ast.isCall.nameExact("sink").argument
+      val flows  = sink.reachableByFlows(source).l
+      flows.map(flowToResultPairs).toSetMutable shouldBe Set(List(("a = s->arr", 6), ("sink(a[i])", 6)))
     }
   }
 
