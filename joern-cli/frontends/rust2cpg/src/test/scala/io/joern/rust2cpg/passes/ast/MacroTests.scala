@@ -440,6 +440,14 @@ class MacroTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
           |    output.extend(item);
           |    output
           |}
+          |
+          |#[proc_macro_attribute]
+          |pub fn require_source_text(_attr: TokenStream, item: TokenStream) -> TokenStream {
+          |    match item.clone().into_iter().next().and_then(|token| token.span().source_text()) {
+          |        Some(_) => item,
+          |        None => "compile_error!(\"no source text\");".parse().unwrap(),
+          |    }
+          |}
           |""".stripMargin,
         fileName = (Paths.get("pm") / "src" / "lib.rs").toString
       )
@@ -793,6 +801,31 @@ class MacroTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
       inside(cpg.call.nameExact("h").l) { case call :: Nil =>
         call.methodFullName shouldBe "rust2cpgtest::h"
         call.lineNumber shouldBe Some(7)
+      }
+    }
+  }
+
+  "proc-macro in fn attribute with Span::source_text" should {
+    val cpg = withProcMacroCrate(code("""
+        |#[pm::require_source_text]
+        |fn h() {}
+        |
+        |fn k() {
+        | h();
+        |}
+        |""".stripMargin))
+
+    "have correct method" in {
+      inside(cpg.method.nameExact("h").l) { case method :: Nil =>
+        method.fullName shouldBe "rust2cpgtest::h"
+        method.lineNumber shouldBe Some(2)
+      }
+    }
+
+    "have correct call" in {
+      inside(cpg.call.nameExact("h").l) { case call :: Nil =>
+        call.methodFullName shouldBe "rust2cpgtest::h"
+        call.lineNumber shouldBe Some(6)
       }
     }
   }
