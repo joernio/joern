@@ -12,6 +12,9 @@ class ExcludeRegexTests extends GoCodeToCpgSuite {
   private val mainFile = "main.go"
   private val libFile  = Seq("pkg", "a", "a.go").mkString(File.separator)
 
+  /** Relative paths use the native separator, so regexes must accept both `/` and `\\`. */
+  private val sep = "[/\\\\]"
+
   private def cpgWithExcludeRegex(regex: String): Cpg = {
     code("module example.com/m\ngo 1.18\n", "go.mod")
       .moreCode("package main\nfunc main() {}\n", mainFile)
@@ -27,24 +30,24 @@ class ExcludeRegexTests extends GoCodeToCpgSuite {
     }
 
     "exclude all files below a matching directory" in {
-      userMethods(cpgWithExcludeRegex("pkg/a/.*")) shouldBe Set("main")
+      userMethods(cpgWithExcludeRegex(s"pkg${sep}a$sep.*")) shouldBe Set("main")
     }
 
     "support lookaheads that are not understood by goastgen" in {
-      userMethods(cpgWithExcludeRegex("(?!pkg/a/.*$).*\\.go")) shouldBe Set("Foo")
+      userMethods(cpgWithExcludeRegex(s"(?!pkg${sep}a$sep.*$$).*\\.go")) shouldBe Set("Foo")
     }
   }
 
   "A regex that only matches part of the relative path of a file" should {
     "not exclude anything" in {
       userMethods(cpgWithExcludeRegex("ain")) shouldBe Set("main", "Foo")
-      userMethods(cpgWithExcludeRegex("kg/a")) shouldBe Set("main", "Foo")
+      userMethods(cpgWithExcludeRegex(s"kg${sep}a")) shouldBe Set("main", "Foo")
     }
   }
 
   "A regex that only matches the absolute path of a file" should {
     "not exclude anything" in {
-      userMethods(cpgWithExcludeRegex(".*/main\\.go")) shouldBe Set("main", "Foo")
+      userMethods(cpgWithExcludeRegex(s".*${sep}main\\.go")) shouldBe Set("main", "Foo")
     }
   }
 }
