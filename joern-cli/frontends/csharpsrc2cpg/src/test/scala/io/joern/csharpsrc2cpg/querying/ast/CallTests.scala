@@ -253,10 +253,11 @@ class CallTests extends CSharpCode2CpgFixture {
       }
     }
 
-    "have a TYPE_REF receiver for the implicit static call `M()`" in {
-      inside(cpg.method.nameExact("N").call.nameExact("M").argument.l) { case (base: TypeRef) :: Nil =>
-        base.typeFullName shouldBe "T"
-        base.argumentIndex shouldBe 0
+    "have no receiver for the implicit static call `M()`" in {
+      inside(cpg.method.nameExact("N").call.nameExact("M").l) { case call :: Nil =>
+        call.receiver shouldBe empty
+        call.argument shouldBe empty
+        call.methodFullName shouldBe "T.M:System.Void()"
       }
     }
 

@@ -515,13 +515,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .tryResolveMethodInvocation(callName, argTypes)
       .orElse(scope.tryResolveMethodInvocation(callName, argTypes, scope.surroundingTypeDeclFullName)) match {
       case Some(methodMetaData) if methodMetaData.isStatic =>
-        // If static, create implicit type identifier explicitly
+        // If static, there is no receiver: the declaring type is part of the methodFullName
         val typeMetaData = scope.typeForMethod(methodMetaData)
-        val typeName     = typeMetaData.flatMap(_.name.split("[.]").lastOption).getOrElse(Defines.Any)
         val typeFullName = typeMetaData.map(_.name)
-        val receiverNode = Ast(typeRefNode(invocationExpr, typeName, typeFullName.getOrElse(Defines.Any)))
         val arguments    = astForArgumentList(argumentList, typeFullName)
-        (Option(receiverNode), typeFullName, Option(methodMetaData), arguments)
+        (None, typeFullName, Option(methodMetaData), arguments)
       case Some(methodMetaData) =>
         // If dynamic, create implicit `this` identifier explicitly
         val typeMetaData = scope.typeForMethod(methodMetaData)
