@@ -28,7 +28,7 @@ class FieldAccessTests extends CSharpCode2CpgFixture {
     }
 
     "have Console correctly set" in {
-      inside(cpg.call.nameExact("WriteLine").argument(0).isIdentifier.l) { case console :: Nil =>
+      inside(cpg.call.nameExact("WriteLine").argument(0).isTypeRef.l) { case console :: Nil =>
         console.code shouldBe "Console"
         console.typeFullName shouldBe "System.Console"
       }
@@ -56,11 +56,9 @@ class FieldAccessTests extends CSharpCode2CpgFixture {
     }
 
     "have System.Console correctly set" in {
-      inside(cpg.call.nameExact("WriteLine").argument(0).isCall.isFieldAccess.l) { case sysConsole :: Nil =>
+      inside(cpg.call.nameExact("WriteLine").argument(0).isTypeRef.l) { case sysConsole :: Nil =>
         sysConsole.typeFullName shouldBe "System.Console"
         sysConsole.code shouldBe "System.Console"
-        sysConsole.fieldIdentifier.code.l shouldBe List("Console")
-        sysConsole.fieldIdentifier.canonicalName.l shouldBe List("Console")
       }
     }
   }
@@ -85,11 +83,9 @@ class FieldAccessTests extends CSharpCode2CpgFixture {
     }
 
     "have System.Console correctly set" in {
-      inside(cpg.call.nameExact("WriteLine").argument(0).isCall.isFieldAccess.l) { case sysConsole :: Nil =>
+      inside(cpg.call.nameExact("WriteLine").argument(0).isTypeRef.l) { case sysConsole :: Nil =>
         sysConsole.typeFullName shouldBe "System.Console"
         sysConsole.code shouldBe "System.Console"
-        sysConsole.fieldIdentifier.code.l shouldBe List("Console")
-        sysConsole.fieldIdentifier.canonicalName.l shouldBe List("Console")
       }
     }
   }

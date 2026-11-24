@@ -519,7 +519,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val typeMetaData = scope.typeForMethod(methodMetaData)
         val typeName     = typeMetaData.flatMap(_.name.split("[.]").lastOption).getOrElse(Defines.Any)
         val typeFullName = typeMetaData.map(_.name)
-        val receiverNode = Ast(identifierNode(invocationExpr, typeName, typeName, typeFullName.getOrElse(Defines.Any)))
+        val receiverNode = Ast(typeRefNode(invocationExpr, typeName, typeFullName.getOrElse(Defines.Any)))
         val arguments    = astForArgumentList(argumentList, typeFullName)
         (Option(receiverNode), typeFullName, Option(methodMetaData), arguments)
       case Some(methodMetaData) =>
@@ -543,8 +543,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     expression.node match {
       case SimpleMemberAccessExpression | SuppressNullableWarningExpression =>
-        val baseAst = astForNode(createDotNetNodeInfo(expression.json(ParserKeys.Expression)))
-        astForMemberAccessInvocation(invocationExpr, baseAst.headOption, argumentList, callName)
+        val baseAst = astForReceiverExpression(createDotNetNodeInfo(expression.json(ParserKeys.Expression)))
+        astForMemberAccessInvocation(invocationExpr, Option(baseAst), argumentList, callName)
       case IdentifierName | MemberBindingExpression =>
         astForIdentifierInvocation(invocationExpr, argumentList, callName)
       case x =>
@@ -561,11 +561,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     getter: CSharpMethod,
     baseAst: Ast,
     baseTypeFullName: String,
-    accessExpr: DotNetNodeInfo
+    accessExpr: DotNetNodeInfo,
+    baseExpr: DotNetNodeInfo
   ): Seq[Ast] = {
     if (getter.isStatic) {
       val signature      = composeMethodLikeSignature(getter.returnType, Nil)
       val methodFullName = composeMethodFullName(baseTypeFullName, getter.name, signature)
+      // The static getter is invoked on the type itself, so the receiver is a TYPE_REF
+      val receiverAst = baseAst.root match {
+        case Some(_: NewTypeRef) => baseAst
+        case _                   => Ast(typeRefNode(accessExpr, baseTypeFullName.split('.').last, baseTypeFullName))
+      }
       callAst(
         callNode(
           accessExpr,
@@ -575,7 +581,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           DispatchTypes.STATIC_DISPATCH,
           Option(signature),
           Option(getter.returnType)
-        )
+        ),
+        base = Some(receiverAst)
       ) :: Nil
     } else {
       val signature      = composeMethodLikeSignature(getter.returnType, baseTypeFullName :: Nil)
@@ -596,9 +603,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForSimpleMemberAccessExpression(accessExpr: DotNetNodeInfo): Seq[Ast] = {
+    // A qualified type name, e.g. `System.Console`, is a type reference and not a member access
+    staticTypeReceiver(accessExpr) match {
+      case Some(typeRef) => Ast(typeRef) :: Nil
+      case None          => astForNonTypeMemberAccessExpression(accessExpr)
+    }
+  }
+
+  private def astForNonTypeMemberAccessExpression(accessExpr: DotNetNodeInfo): Seq[Ast] = {
     val fieldIdentifierName = nameFromNode(accessExpr)
     val baseExpr            = createDotNetNodeInfo(accessExpr.json(ParserKeys.Expression))
-    val baseAst             = astForNode(baseExpr).head
+    val baseAst             = astForReceiverExpression(baseExpr)
     val baseTypeFullName    = getTypeFullNameFromAstNode(baseAst)
 
     // The typical field access resolving mechanism
@@ -607,41 +622,43 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     // Getters look like fields, but are underneath `get_`-prefixed methods
     lazy val byPropertyName = scope.tryResolveGetterInvocation(fieldIdentifierName, Some(baseTypeFullName))
 
-    // accessExpr might be a qualified name e.g. `System.Console`, in which case `System` (baseAst) is not a type
-    // but a namespace. In this scenario, we look up the entire expression
-    lazy val byQualifiedName = scope.tryResolveTypeReference(accessExpr.code)
-
     val (typeFullName, isGetter) = byFieldAccess
       .map(x => (x.typeName, false))
       .orElse(byPropertyName.map(x => (x.returnType, true)))
-      .orElse(byQualifiedName.map(x => (x.name, false)))
       .map((typeName, isGetter) => (scope.tryResolveTypeReference(typeName).map(_.name).getOrElse(typeName), isGetter))
       .getOrElse((Defines.Any, false))
 
-    if (isGetter) astForMemberAccessGetterExpression(byPropertyName.get, baseAst, baseTypeFullName, accessExpr)
-    else {
-      // A static field is accessed on the type itself, so the receiver is a TYPE_REF rather than an IDENTIFIER
-      val receiverAst = staticTypeReceiver(baseExpr).map(Ast(_)).getOrElse(baseAst)
-      fieldAccessAst(accessExpr, accessExpr, receiverAst, code(accessExpr), fieldIdentifierName, typeFullName) :: Nil
-    }
+    if (isGetter)
+      astForMemberAccessGetterExpression(byPropertyName.get, baseAst, baseTypeFullName, accessExpr, baseExpr)
+    else fieldAccessAst(accessExpr, accessExpr, baseAst, code(accessExpr), fieldIdentifierName, typeFullName) :: Nil
   }
 
-  /** If `baseExpr` is a plain name that is not a variable or field but resolves to a known type, returns a TYPE_REF to
-    * it.
+  /** If `baseExpr` names a type, either plainly (`T`) or qualified (`System.Console`), and is not a variable or field,
+    * returns a TYPE_REF to it. Static members (fields, getters, methods) are accessed on this node.
     */
   private def staticTypeReceiver(baseExpr: DotNetNodeInfo): Option[NewTypeRef] = {
+    def rootIsVariable(expr: DotNetNodeInfo): Boolean = expr.node match {
+      case IdentifierName =>
+        val name = nameFromNode(expr)
+        scope.lookupVariable(name).isDefined || scope.findFieldInScope(name).isDefined
+      case SimpleMemberAccessExpression =>
+        rootIsVariable(createDotNetNodeInfo(expr.json(ParserKeys.Expression)))
+      case _ => true
+    }
     Option
-      .when(baseExpr.node == IdentifierName) {
-        val name = nameFromNode(baseExpr)
-        Option
-          .when(scope.lookupVariable(name).isEmpty && scope.findFieldInScope(name).isEmpty)(
-            scope.tryResolveTypeReference(name)
-          )
-          .flatten
-          .map(typeRef => typeRefNode(baseExpr, code(baseExpr), typeRef.name))
-      }
+      .when(!rootIsVariable(baseExpr))(scope.tryResolveTypeReference(nameOrCode(baseExpr)))
       .flatten
+      .map(typeRef => typeRefNode(baseExpr, code(baseExpr), typeRef.name))
   }
+
+  private def nameOrCode(expr: DotNetNodeInfo): String = expr.node match {
+    case IdentifierName => nameFromNode(expr)
+    case _              => expr.code
+  }
+
+  /** The AST of the expression a member is accessed on: a TYPE_REF if the expression names a type. */
+  private def astForReceiverExpression(baseExpr: DotNetNodeInfo): Ast =
+    staticTypeReceiver(baseExpr).map(Ast(_)).getOrElse(astForNode(baseExpr).head)
 
   protected def astForElementAccessExpression(elementAccessExpression: DotNetNodeInfo): Seq[Ast] = {
     val exprAst = astForExpression(createDotNetNodeInfo(elementAccessExpression.json(ParserKeys.Expression)))

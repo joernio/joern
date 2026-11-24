@@ -1,7 +1,7 @@
 package io.joern.csharpsrc2cpg.querying.ast
 
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal, TypeRef}
 import io.shiftleft.semanticcpg.language.*
 
 class CallTests extends CSharpCode2CpgFixture {
@@ -17,9 +17,8 @@ class CallTests extends CSharpCode2CpgFixture {
         writeLine.typeFullName shouldBe "System.Void"
         writeLine.code shouldBe "Console.WriteLine(\"Hello, world!\")"
 
-        inside(writeLine.argument.l) { case (base: Identifier) :: (strArg: Literal) :: Nil =>
+        inside(writeLine.argument.l) { case (base: TypeRef) :: (strArg: Literal) :: Nil =>
           base.typeFullName shouldBe "System.Console"
-          base.name shouldBe "Console"
           base.code shouldBe "Console"
           base.argumentIndex shouldBe 0
 
@@ -227,4 +226,52 @@ class CallTests extends CSharpCode2CpgFixture {
     }
   }
 
+  "static method calls on a user-defined type" should {
+    val cpg = code("""
+        |class T
+        |{
+        |  public static int P { get; set; }
+        |  public static void M() { }
+        |  public static void N() { M(); }
+        |  public void I() { }
+        |}
+        |class C
+        |{
+        |  void Run(T t)
+        |  {
+        |    T.M();
+        |    var x = T.P;
+        |    t.I();
+        |  }
+        |}""".stripMargin)
+
+    "have a TYPE_REF receiver for `T.M()`" in {
+      inside(cpg.call.codeExact("T.M()").argument.l) { case (base: TypeRef) :: Nil =>
+        base.code shouldBe "T"
+        base.typeFullName shouldBe "T"
+        base.argumentIndex shouldBe 0
+      }
+    }
+
+    "have a TYPE_REF receiver for the implicit static call `M()`" in {
+      inside(cpg.method.nameExact("N").call.nameExact("M").argument.l) { case (base: TypeRef) :: Nil =>
+        base.typeFullName shouldBe "T"
+        base.argumentIndex shouldBe 0
+      }
+    }
+
+    "have a TYPE_REF receiver for the static getter `T.P`" in {
+      inside(cpg.call.codeExact("T.P").argument.l) { case (base: TypeRef) :: Nil =>
+        base.code shouldBe "T"
+        base.typeFullName shouldBe "T"
+      }
+    }
+
+    "still have an IDENTIFIER receiver for the instance call `t.I()`" in {
+      inside(cpg.call.codeExact("t.I()").argument.l) { case (base: Identifier) :: Nil =>
+        base.name shouldBe "t"
+        base.typeFullName shouldBe "T"
+      }
+    }
+  }
 }
