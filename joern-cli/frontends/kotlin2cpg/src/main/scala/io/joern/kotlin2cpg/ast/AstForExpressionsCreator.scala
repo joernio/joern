@@ -112,8 +112,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     )
     val name =
       if (operatorOption.isDefined) operatorOption.get
-      else if (expr.getChildren.toList.sizeIs >= 2) expr.getChildren.toList(1).getText
-      else expr.getName
+      else opRef.getText
     val node = callNode(
       expr,
       code(expr),
@@ -161,7 +160,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val (fullName, signature)       = calleeFullnameAndSignature(getCalleeExpr(expr), astFullName, astSignature)
 
     val retType    = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
-    val methodName = expr.getSelectorExpression.getFirstChild.getText
+    val methodName = getCalleeExpr(expr).getText
     val node       =
       callNode(expr, code(expr), methodName, fullName, DispatchTypes.STATIC_DISPATCH, Some(signature), Some(retType))
 
@@ -177,7 +176,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val (fullName, signature)       = calleeFullnameAndSignature(getCalleeExpr(expr), astFullName, astSignature)
 
     val retType    = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
-    val methodName = expr.getSelectorExpression.getFirstChild.getText
+    val methodName = getCalleeExpr(expr).getText
     val node       =
       callNode(expr, code(expr), methodName, fullName, DispatchTypes.STATIC_DISPATCH, Some(signature), Some(retType))
     receiverAsts.dropRight(1) :+ callAst(node, argAsts, Option(receiverAst))
@@ -241,7 +240,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val (astFullName, astSignature) = astDerivedFullNameWithSignature(expr, argAsts)
     val (fullName, signature)       = calleeFullnameAndSignature(getCalleeExpr(expr), astFullName, astSignature)
     val retType                     = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
-    val methodName                  = expr.getSelectorExpression.getFirstChild.getText
+    val methodName                  = getCalleeExpr(expr).getText
     val node                        =
       callNode(expr, code(expr), methodName, fullName, DispatchTypes.STATIC_DISPATCH, Some(signature), Some(retType))
 
@@ -260,7 +259,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val (astFullName, astSignature) = astDerivedFullNameWithSignature(expr, argAsts)
     val (fullName, signature)       = calleeFullnameAndSignature(getCalleeExpr(expr), astFullName, astSignature)
     val retType                     = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
-    val methodName                  = expr.getSelectorExpression.getFirstChild.getText
+    val methodName                  = getCalleeExpr(expr).getText
 
     val node =
       if (fullName.startsWith("<operator>.")) {
@@ -339,9 +338,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val argAsts = astsForKtCallExpressionArguments(expr)
 
     // TODO: add tests for the empty `referencedName` here
-    val referencedName = Option(expr.getFirstChild)
-      .collect { case expr: KtNameReferenceExpression => expr }
-      .map(_.getText)
+    val referencedName = Option(expr.getCalleeExpression)
+      .collect { case name: KtNameReferenceExpression => name.getText }
       .getOrElse("")
     val nameToClass =
       expr.getContainingKtFile.getDeclarations.asScala.collect { case c: KtClass => c.getName -> c }.toMap
@@ -467,7 +465,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val (fullName, signature) =
       calleeFullnameAndSignature(
-        getCalleeExpr(expr),
+        expr.getCalleeExpression,
         Defines.UnresolvedNamespace,
         s"${Defines.UnresolvedSignature}(${expr.getValueArguments.size()})"
       )
