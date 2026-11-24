@@ -198,6 +198,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     case x: NeverType     => notHandledYet(x)
     case x: ParenType     => notHandledYet(x)
     case x: PathType      => notHandledYet(x)
+    case x: PatternType   => notHandledYet(x)
     case x: PtrType       => notHandledYet(x)
     case x: RefType       => notHandledYet(x)
     case x: SliceType     => notHandledYet(x)
@@ -685,6 +686,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         case Some(pat: Pat) => collectPatternBindings(pat)
         case _              => Nil
       }
+    case notNull: NotNull     => Nil
     case orPat: OrPat         => orPat.pat.headOption.map(collectPatternBindings).getOrElse(Nil)
     case parenPat: ParenPat   => collectPatternBindings(parenPat.pat)
     case pathPat: PathPat     => Nil
