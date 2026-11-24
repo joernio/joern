@@ -209,9 +209,15 @@ class DependencyDownloader(
     *   a summary of all the dependencies.
     */
   private def summarizeDependencies(targetDir: Path): CSharpProgramSummary = {
-    val astGenRunner       = new DotNetAstGenRunner(config.withInputPath(targetDir.toString))
-    val astGenRunnerResult = astGenRunner.execute(targetDir)
-    val summaries          = astGenRunnerResult.parsedFiles
+    val astGenRunner = new DotNetAstGenRunner(config.withInputPath(targetDir.toString))
+    // Summaries of third-party dependencies are best-effort: a failing astgen must not fail the analysis of the project.
+    val parsedFiles = Try(astGenRunner.execute(targetDir)) match {
+      case Success(astGenRunnerResult) => astGenRunnerResult.parsedFiles
+      case Failure(exception)          =>
+        logger.warn(s"Unable to summarize dependencies in '$targetDir', skipping", exception)
+        List.empty
+    }
+    val summaries = parsedFiles
       .map(path => Paths.get(path))
       .flatMap { file =>
         Using.resource(Files.newInputStream(file)) { fis =>

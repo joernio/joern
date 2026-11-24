@@ -2,7 +2,6 @@ package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.Config
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenProgramMetaData
-import io.joern.x2cpg.utils.Environment
 import io.joern.x2cpg.utils.Environment.{ArchitectureType, OperatingSystemType}
 import org.slf4j.LoggerFactory
 

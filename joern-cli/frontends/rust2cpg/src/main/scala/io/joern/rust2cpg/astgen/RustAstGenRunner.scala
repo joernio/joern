@@ -22,7 +22,7 @@ class RustAstGenRunner(config: Config) extends AstGenRunner(RustAstGenRunner.ast
     astGenOut.collect { case s"Skipped: $filePath" => filePath }
   }
 
-  override def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {
+  override protected def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {
     val baseArgs       = Seq(astGenCommand, "-i", in, "-o", out.toString)
     val sysRootArgs    = if (config.noSysRoot) Seq("--no-sysroot") else Seq.empty[String]
     val resolveCfgArgs = if (config.noResolveCfg) Seq.empty[String] else Seq("--resolve-cfg")

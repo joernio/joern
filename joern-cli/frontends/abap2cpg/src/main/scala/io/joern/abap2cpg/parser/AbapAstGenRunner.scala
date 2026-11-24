@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Path
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 object AbapAstGenRunner {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -36,7 +36,7 @@ class AbapAstGenRunner(config: Config) extends AstGenRunner(AbapAstGenRunner.ast
     }.flatten
   }
 
-  override def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {
+  override protected def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {
     ExternalCommand.run(Seq(astGenCommand, in, out.toString)).toTry
   }
 }

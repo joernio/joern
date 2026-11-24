@@ -248,17 +248,10 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
   }
 
   override def execute(out: Path): DefaultAstGenRunnerResult = {
-    val in = Paths.get(config.inputPath)
-    runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString(), "") match {
-      case Success(result) =>
-        val parsed  = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString, Set(".json")), out))
-        val skipped = skippedFiles(in, result.toList)
-        DefaultAstGenRunnerResult(parsed, skipped)
-      case Failure(f) =>
-        logger.error("\t- running astgen failed!", f)
-        val parsed = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString, Set(".json")), out))
-        DefaultAstGenRunnerResult(parsed, List.empty)
-    }
+    val in     = Paths.get(config.inputPath)
+    val result = runAstGen(config.inputPath, out, config.ignoredFilesRegex.toString(), "")
+    val parsed = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString, Set(".json")), out))
+    DefaultAstGenRunnerResult(parsed, skippedFiles(in, result.toList))
   }
 
 }

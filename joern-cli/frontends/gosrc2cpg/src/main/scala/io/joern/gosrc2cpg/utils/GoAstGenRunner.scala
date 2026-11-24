@@ -1,21 +1,18 @@
 package io.joern.gosrc2cpg.utils
 
-import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
-import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult}
-import io.joern.x2cpg.astgen
+import io.joern.gosrc2cpg.Config
+import io.joern.x2cpg.{SourceFiles, astgen}
 import io.joern.x2cpg.astgen.AstGenRunner
-import io.joern.x2cpg.utils.Environment.ArchitectureType
-import io.joern.x2cpg.utils.Environment.OperatingSystemType
+import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult}
 import io.joern.x2cpg.utils.Environment
+import io.joern.x2cpg.utils.Environment.{ArchitectureType, OperatingSystemType}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Path, Paths}
 import scala.collection.mutable.ListBuffer
-import scala.util.matching.Regex
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 object GoAstGenRunner {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -76,7 +73,7 @@ class GoAstGenRunner(config: Config, includeFileRegex: String = "")
     }
   }
 
-  override def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {
+  override protected def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {
     val excludeCommand = if (exclude.isEmpty) Seq.empty else Seq("-exclude", exclude)
     val includeCommand = if (include.isEmpty) Seq.empty else Seq("-include-packages", include)
     ExternalCommand
@@ -87,22 +84,17 @@ class GoAstGenRunner(config: Config, includeFileRegex: String = "")
   def executeForGo(out: Path): List[GoAstGenRunnerResult] = {
     val in = Paths.get(config.inputPath)
     logger.info(s"Running goastgen in '$config.inputPath' ...")
-    runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString(), includeFileRegex) match {
-      case Success(result) =>
-        val srcFiles = SourceFiles.determine(
-          out.toString,
-          Set(".json"),
-          ignoredFilesRegex = Option(config.ignoredFilesRegex),
-          ignoredFilesPath = Option(config.ignoredFiles)
-        )
-        val parsedModFile = filterModFile(srcFiles, out)
-        val parsed        = filterFiles(srcFiles, out)
-        val skipped       = skippedFiles(in, result.toList)
-        segregateByModule(config.inputPath, out.toString, parsedModFile, parsed, skipped)
-      case Failure(f) =>
-        logger.error("\t- running astgen failed!", f)
-        List()
-    }
+    val result   = runAstGen(config.inputPath, out, config.ignoredFilesRegex.toString(), includeFileRegex)
+    val srcFiles = SourceFiles.determine(
+      out.toString,
+      Set(".json"),
+      ignoredFilesRegex = Option(config.ignoredFilesRegex),
+      ignoredFilesPath = Option(config.ignoredFiles)
+    )
+    val parsedModFile = filterModFile(srcFiles, out)
+    val parsed        = filterFiles(srcFiles, out)
+    val skipped       = skippedFiles(in, result.toList)
+    segregateByModule(config.inputPath, out.toString, parsedModFile, parsed, skipped)
   }
 
   /** Segregate all parsed files including go.mod files under separate modules. This will also segregate modules defined
