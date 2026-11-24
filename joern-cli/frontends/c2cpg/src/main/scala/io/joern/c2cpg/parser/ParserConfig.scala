@@ -36,7 +36,8 @@ object ParserConfig {
         val split = define.split("=", 2)
         split.head -> split(1)
       } else {
-        define -> ""
+        // Like `-DNAME` for GCC and Clang, which is equivalent to `-DNAME=1`.
+        define -> "1"
       }
     }.toMap ++ DefaultDefines.DEFAULT_CALL_CONVENTIONS
     ParserConfig(

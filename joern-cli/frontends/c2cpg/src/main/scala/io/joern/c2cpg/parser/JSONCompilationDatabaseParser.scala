@@ -104,7 +104,8 @@ object JSONCompilationDatabaseParser {
         val split = s.split("=", 2)
         (split.head, split(1))
       } else {
-        (s, "")
+        // Like `-DNAME` for GCC and Clang, which is equivalent to `-DNAME=1`.
+        (s, "1")
       }
     }
   }
