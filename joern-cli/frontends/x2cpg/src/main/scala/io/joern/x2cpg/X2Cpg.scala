@@ -308,11 +308,9 @@ object X2Cpg {
         .action { (x, c) => c.withIgnoredFiles(c.ignoredFiles ++ x) }
         .text("files or folders to exclude during CPG generation (paths relative to <input-dir> or absolute paths)"),
       opt[String]("exclude-regex")
-        .action { (regex, config) => config.withIgnoredFilesRegex(regex) }
-        .text(
-          "a regex specifying files to exclude during CPG generation (must fully match the path relative to <input-dir>)"
-        ),
-      opt[Unit]("no-default-exclude").action { (_, config) => config.withDefaultIgnoredFilesRegex(Nil) }.hidden(),
+        .action { (x, c) => c.withIgnoredFilesRegex(x) }
+        .text("a regex specifying files to exclude during CPG generation (paths relative to <input-dir> are matched)"),
+      opt[Unit]("no-default-exclude").action { (_, c) => c.withDefaultIgnoredFilesRegex(Nil) }.hidden(),
       opt[Unit]("enable-early-schema-checking")
         .action((_, c) => c.withSchemaValidation(ValidationMode.Enabled))
         .text("enables early schema validation during AST creation (disabled by default)"),

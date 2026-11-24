@@ -53,7 +53,7 @@ Usage: C2Cpg [options] input-dir
   input-dir                source directory
   -o, --output <value>     output filename
   --exclude <file1>        files or folders to exclude during CPG generation (paths relative to <input-dir> or absolute paths)
-  --exclude-regex <value>  a regex specifying files to exclude during CPG generation (must fully match the path relative to <input-dir>)
+  --exclude-regex <value>  a regex specifying files to exclude during CPG generation (paths relative to <input-dir> are matched)
   --enable-early-schema-checking
                            enables early schema validation during AST creation (disabled by default)
   --enable-file-content    add the raw source code to the content field of FILE nodes to allow for method source retrieval via offset fields (disabled by default)

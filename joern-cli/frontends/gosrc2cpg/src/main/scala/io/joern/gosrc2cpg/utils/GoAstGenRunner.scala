@@ -59,6 +59,9 @@ class GoAstGenRunner(config: Config, includeFileRegex: String = "")
     skipped.flatten
   }
 
+  override protected def isIgnoredByUserRegex(filePath: String): Boolean =
+    config.ignoredFilesRegex.matches(SourceFiles.toRelativePath(filePath, config.inputPath))
+
   override def fileFilter(file: String, out: Path): Boolean = {
     file.stripSuffix(".json").replace(out.toString, config.inputPath) match {
       case filePath if isIgnoredByUserConfig(filePath) => false
