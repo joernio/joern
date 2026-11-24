@@ -114,7 +114,7 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
         commandObjects.flatMap(_.defines()) shouldBe Set(
           ("SOMEDEFA", "With spaces, quotes and \\-es."),
           ("SOMEDEFB", "\"With spaces, quotes and \\-es.\""),
-          ("SOMEDEFC", "")
+          ("SOMEDEFC", "1")
         )
         commandObjects.flatMap(_.includes()) shouldBe Set("/usr/include", "./include", "/home/user/project/includes")
       }

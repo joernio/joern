@@ -18,6 +18,26 @@ class DefineValueTests extends C2CpgSuite {
     }
   }
 
+  "a define without a value" should {
+    val cpg = code("""
+        |#if FOO == 1
+        |int gated(void) { return 1; }
+        |#endif
+        |#if BAR
+        |int gatedBare(void) { return 1; }
+        |#endif
+        |int always(void) { return 0; }
+        |""".stripMargin).withConfig(Config().withDefines(Set("FOO", "BAR")))
+
+    "expand to 1, like -DFOO does in GCC and Clang" in {
+      cpg.method.isExternal(false).name.filterNot(_.startsWith("<")).l.sorted shouldBe List(
+        "always",
+        "gated",
+        "gatedBare"
+      )
+    }
+  }
+
   "a define with an empty value" should {
     val cpg = code("""
         |int f(void) { return 1 EMPTY; }
