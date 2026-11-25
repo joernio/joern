@@ -32,6 +32,14 @@ class ScanReportTests extends AnyWordSpec with Matchers {
             problem.message should not include "broken.rb"
           }
           report.allProblems.filter(_.file.exists(_.endsWith("good.rb"))) shouldBe empty
+
+          val files = report.fileEntries.map(entry => entry.path -> entry).toMap
+          files.keySet shouldBe Set("good.rb", Paths.get("sub", "broken.rb").toString)
+          files("good.rb").loc shouldBe Some(1)
+          files("good.rb").parsed shouldBe true
+          files("good.rb").cpgGenerated shouldBe true
+          files(Paths.get("sub", "broken.rb").toString).parsed shouldBe false
+          files(Paths.get("sub", "broken.rb").toString).cpgGenerated shouldBe false
         } finally {
           frontend.close()
         }
