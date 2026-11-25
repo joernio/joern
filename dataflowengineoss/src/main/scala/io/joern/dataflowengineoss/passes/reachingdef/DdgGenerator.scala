@@ -17,6 +17,7 @@ import io.shiftleft.semanticcpg.accesspath.{
   VariablePointerShift
 }
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.MemberAccess.isFieldAccess
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
 import scala.collection.{Set, mutable}
@@ -144,9 +145,24 @@ class DdgGenerator private[reachingdef] (semantics: Semantics, graphHasModules: 
         }
       }
 
+      addEdgesFromNestedCallsToMemberAccess(call)
+
       // This handles `foo(new Bar())`, which is lowered to
       // `foo({Bar tmp = Bar.alloc(); tmp.init(); tmp})`
       call.argument.isBlock.foreach { block => addEdgeForBlock(block, call) }
+    }
+
+    /** Member and index accesses generate no definitions, so the loop in [[addEdgesToCallSite]] adds no edge from their
+      * arguments to the access itself. Add those from arguments that are calls, so that a value such as `s->arr` flows
+      * on to `s->arr[i]` when it is nested in it. Whether the semantics of the access allow the flow is left to
+      * [[CachedEdgeValidator]].
+      */
+    def addEdgesFromNestedCallsToMemberAccess(call: Call): Unit = {
+      if (isFieldAccess(call.name)) {
+        call.argument.isCall.foreach { argument =>
+          if (argument != call) addEdge(argument, call, nodeToEdgeLabel(argument))
+        }
+      }
     }
 
     def addEdgesToReturn(ret: Return): Unit = {
