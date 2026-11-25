@@ -1,12 +1,13 @@
 package io.joern.x2cpg.report
 
+import flatgraph.help.Table
+import flatgraph.help.Table.ConstantWidth
 import io.joern.x2cpg.X2CpgConfig
 import io.joern.x2cpg.utils.TimeUtils
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{AtomicMoveNotSupportedException, Files, Path, Paths, StandardCopyOption, StandardOpenOption}
-import java.util.UUID
+import java.nio.file.{Files, Path, Paths}
 import java.util.concurrent.ConcurrentLinkedQueue
 import scala.collection.concurrent.TrieMap
 import scala.jdk.CollectionConverters.*
@@ -183,29 +184,6 @@ object ScanReport {
         problem.exception.flatMap(_.message).getOrElse("")
       )
     )
-
-  private def formatTable(table: Seq[Seq[String]]): String = {
-    if (table.isEmpty) ""
-    else {
-      // Get column widths based on the maximum cell width in each column (+2 for a one character padding on each side)
-      val colWidths =
-        table.transpose.map(_.map(cell => if (cell == null) 0 else cell.length).max + 2)
-      // Format each row
-      val rows = table.map(
-        _.zip(colWidths)
-          .map { case (item, size) => s" %-${size - 1}s".format(item) }
-          .mkString("|", "|", "|")
-      )
-      // Formatted separator row, used to separate the header and draw table borders
-      val separator = colWidths.map("-" * _).mkString("+", "+", "+")
-      // Put the table together and return
-      val header  = rows.head
-      val content = rows.tail.take(rows.tail.size - 1)
-      val footer  = rows.tail.last
-      (separator +: header +: separator +: content :+ separator :+ footer :+ separator)
-        .mkString("\n")
-    }
-  }
 }
 
 /** Collects what happened during one run of a frontend: the outcome per file and all non-fatal [[Problem]]s.
@@ -279,19 +257,18 @@ class ScanReport extends ProblemSink {
   }
 
   private def table(entries: Seq[FileEntry]): String = {
-    val rows   = entries.zipWithIndex.map { case (entry, index) => entry.tableRow(index + 1) }
-    val header = Seq(Seq("#", "File", "LOC", "Parsed", "Got a CPG", "Duration"))
-    val footer = Seq(
-      Seq(
-        "Total",
-        "",
-        s"${entries.flatMap(_.loc).sum}",
-        s"${entries.count(_.parsed)}/${entries.size}",
-        s"${entries.count(_.cpgGenerated)}/${entries.size}",
-        ""
-      )
+    val rows  = entries.zipWithIndex.map { case (entry, index) => entry.tableRow(index + 1) }
+    val total = Seq(
+      "Total",
+      "",
+      s"${entries.flatMap(_.loc).sum}",
+      s"${entries.count(_.parsed)}/${entries.size}",
+      s"${entries.count(_.cpgGenerated)}/${entries.size}",
+      ""
     )
-    formatTable(header ++ rows ++ footer)
+    Table(Seq("#", "File", "LOC", "Parsed", "Got a CPG", "Duration"), rows :+ total).render(using
+      ConstantWidth(Int.MaxValue)
+    )
   }
 
   /** Logs the file table and the problem summary. Logs nothing if there is nothing to report. */
@@ -354,26 +331,11 @@ class ScanReport extends ProblemSink {
       Option.when(entry.durationNanos > 0)("durationMs" -> ujson.Num(math.round(entry.durationNanos / 1e3) / 1e3))
   )
 
-  /** Writes the report as JSON. The file either contains the full report or is not touched. */
+  /** Writes the report as JSON, replacing an existing file. */
   def writeJson(path: Path, metadata: Metadata): Unit = {
     val target = path.toAbsolutePath.normalize()
-    val parent = target.getParent
-    Files.createDirectories(parent)
-    // Not createTempFile: it creates files readable by the owner only, unlike the CPG next to the report.
-    val tmp = parent.resolve(s".scan-report-${UUID.randomUUID()}.tmp")
-    try {
-      Files.writeString(
-        tmp,
-        ujson.write(toJson(metadata), indent = 2),
-        StandardCharsets.UTF_8,
-        StandardOpenOption.CREATE_NEW
-      )
-      Try(Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)).recover {
-        case _: AtomicMoveNotSupportedException => Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING)
-      }.get
-    } finally {
-      Files.deleteIfExists(tmp)
-    }
+    Files.createDirectories(target.getParent)
+    Files.writeString(target, ujson.write(toJson(metadata), indent = 2), StandardCharsets.UTF_8)
   }
 
   /** Reports the outcome of the run: logs the table and writes the JSON file if requested by the configuration. Never

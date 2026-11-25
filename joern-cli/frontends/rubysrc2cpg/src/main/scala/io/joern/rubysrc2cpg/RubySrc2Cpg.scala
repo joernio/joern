@@ -26,21 +26,12 @@ class RubySrc2Cpg(sharedJRubyEnv: Option[JRubyEnvironment] = None) extends X2Cpg
   override type ConfigType = Config
   override val defaultConfig: Config = Config()
 
-  private val logger                                  = LoggerFactory.getLogger(this.getClass)
-  private var ownedJRubyEnv: Option[JRubyEnvironment] = None
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
-  /** The JRuby environment is expensive to set up. It is shared by all runs of this frontend, but every run gets its
-    * own [[RubyAstGenRunner]], which reports to the [[ScanReport]] of that run.
+  /** The JRuby environment is expensive to set up, so it is created on first use, unless one is shared with this
+    * frontend.
     */
-  private def jrubyEnv: JRubyEnvironment = sharedJRubyEnv.getOrElse {
-    synchronized {
-      ownedJRubyEnv.getOrElse {
-        val environment = JRubyEnvironment()
-        ownedJRubyEnv = Option(environment)
-        environment
-      }
-    }
-  }
+  private lazy val jrubyEnv: JRubyEnvironment = sharedJRubyEnv.getOrElse(JRubyEnvironment())
 
   override def createCpg(config: Config): Try[Cpg] = createCpg(config, new ScanReport())
 
@@ -104,10 +95,13 @@ class RubySrc2Cpg(sharedJRubyEnv: Option[JRubyEnvironment] = None) extends X2Cpg
 
   }
 
+  /** Only closes the JRuby environment if this frontend created it. */
   override def close(): Unit = {
-    val closeTask = Try(ownedJRubyEnv.foreach(_.close()))
-    if (closeTask.isFailure) {
-      logger.error("Error occurred while cleaning up the JRuby environment!", closeTask.failed.get)
+    if (sharedJRubyEnv.isEmpty) {
+      val closeTask = Try(jrubyEnv.close())
+      if (closeTask.isFailure) {
+        logger.error("Error occurred while cleaning up the JRuby environment!", closeTask.failed.get)
+      }
     }
   }
 

@@ -5,7 +5,7 @@ import org.slf4j.Logger
 
 private[dependency] object DependencyProblems {
 
-  /** Logs the problem on `logger` as before and records it as a [[Category.DependencyResolution]] warning. */
+  /** Logs the problem on `logger` and records it as a [[Category.DependencyResolution]] warning. */
   def warn(problems: ProblemSink, logger: Logger, message: String, cause: Option[Throwable] = None): Unit =
     problems.warn(Category.DependencyResolution, message, cause = cause, logger = logger)
 }

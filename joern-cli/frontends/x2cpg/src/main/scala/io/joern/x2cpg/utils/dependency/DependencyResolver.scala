@@ -66,7 +66,7 @@ object DependencyResolver {
             Severity.Warning,
             Category.DependencyResolution,
             s"Could not retrieve the coordinates of the Gradle project at path `$projectDir`",
-            exception = Some(ExceptionInfo(exception.getClass.getName))
+            exception = Some(ExceptionInfo.of(exception))
           )
         )
         Seq.empty

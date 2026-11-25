@@ -49,18 +49,17 @@ object AstGenRunner {
     IgnoredDirectoryNames.map(dir => s"(?i)(.*$separator)?${Pattern.quote(dir)}$separator.*".r)
   }
 
-  private val ParseFailureSeparator = " : "
-
   /** Splits a `Parsing <file> : <reason>` line of astgen into the file and the reason.
     *
     * The file is delimited by the separator and not by the first colon, which is the one after the drive letter of an
     * absolute Windows path.
     */
   private[jssrc2cpg] def parseFailure(line: String): Option[(String, String)] = {
-    val prefix    = "Parsing "
-    val separator = line.indexOf(ParseFailureSeparator)
+    val prefix           = "Parsing "
+    val failureSeparator = " : "
+    val separator        = line.indexOf(failureSeparator)
     Option.when(line.startsWith(prefix) && separator >= prefix.length) {
-      (line.substring(prefix.length, separator), line.substring(separator + ParseFailureSeparator.length))
+      (line.substring(prefix.length, separator), line.substring(separator + failureSeparator.length))
     }
   }
 
