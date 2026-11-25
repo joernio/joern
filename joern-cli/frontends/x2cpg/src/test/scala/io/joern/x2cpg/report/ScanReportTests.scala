@@ -357,5 +357,10 @@ class ScanReportTests extends AnyWordSpec with Matchers {
         noException should be thrownBy new PlainFrontend().run(config)
       }
     }
+
+    "not fail the run if the report path is invalid" in {
+      val config = StubConfig().withReportMode(ReportMode.Json(Some("invalid\u0000path.json")))
+      noException should be thrownBy new PlainFrontend().run(config)
+    }
   }
 }

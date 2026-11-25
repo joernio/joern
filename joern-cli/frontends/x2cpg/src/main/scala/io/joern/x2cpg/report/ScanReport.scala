@@ -346,12 +346,15 @@ class ScanReport extends ProblemSink {
     config.reportMode match {
       case ReportMode.Log                =>
       case ReportMode.Json(explicitPath) =>
-        val path     = explicitPath.map(Paths.get(_)).getOrElse(defaultJsonPath(config.outputPath))
         val cpgPath  = Option.when(config.outputPath.nonEmpty)(config.outputPath)
         val metadata = Metadata(frontendName, joernVersion, config.inputPath, cpgPath, status)
-        Try(writeJson(path, metadata)) match {
-          case Success(_)         => logger.info(s"Wrote the scan report to '${path.toAbsolutePath.normalize()}'")
-          case Failure(exception) => logger.warn(s"Failed to write the scan report to '$path'", exception)
+        Try {
+          val path = explicitPath.map(Paths.get(_)).getOrElse(defaultJsonPath(config.outputPath))
+          writeJson(path, metadata)
+          path.toAbsolutePath.normalize()
+        } match {
+          case Success(written)   => logger.info(s"Wrote the scan report to '$written'")
+          case Failure(exception) => logger.warn("Failed to write the scan report:", exception)
         }
     }
   }
