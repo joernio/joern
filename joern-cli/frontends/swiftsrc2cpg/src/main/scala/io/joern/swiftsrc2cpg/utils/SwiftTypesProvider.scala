@@ -3,6 +3,7 @@ package io.joern.swiftsrc2cpg.utils
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.astcreation.AstCreatorHelper
 import io.joern.swiftsrc2cpg.utils.ExternalCommand.*
+import io.joern.x2cpg.report.{Category, ProblemSink}
 import io.joern.x2cpg.utils.Environment
 import io.shiftleft.semanticcpg.utils.FileUtil.PathExt
 import io.shiftleft.utils.IOUtils
@@ -207,16 +208,18 @@ object SwiftTypesProvider {
     * @return
     *   Some(SwiftTypesProvider) if Swift environment is valid, None otherwise
     */
-  def apply(config: Config): Option[SwiftTypesProvider] = {
+  def apply(config: Config, problems: ProblemSink = ProblemSink.LogOnly): Option[SwiftTypesProvider] = {
     if (!config.swiftBuild) {
       logger.debug(
         "Swift build disabled (--swift-build was not provided). CPG will not contain any type information from the Swift compiler."
       )
       return None
     }
-    if (!isValidEnvironment(config)) {
-      logger.warn(
-        "No valid Swift environment found (swift and swiftc executables). CPG will not contain any type information from the Swift compiler."
+    if (!isValidEnvironment(config, problems)) {
+      problems.warn(
+        Category.ExternalTool,
+        "No valid Swift environment found (swift and swiftc executables). CPG will not contain any type information from the Swift compiler.",
+        logger = logger
       )
       return None
     }
@@ -292,9 +295,13 @@ object SwiftTypesProvider {
     * @return
     *   true if the environment has all required tools with compatible versions, false otherwise
     */
-  private def isValidEnvironment(config: Config): Boolean = {
+  private def isValidEnvironment(config: Config, problems: ProblemSink): Boolean = {
     if (config.buildLogPath.isEmpty && !Paths.get(config.inputPath, "Package.swift").toFile.canRead) {
-      logger.warn("Package.swift not found or can not be read. This does not look like a valid SwiftPM project.")
+      problems.warn(
+        Category.ExternalTool,
+        "Package.swift not found or can not be read. This does not look like a valid SwiftPM project.",
+        logger = logger
+      )
       return false
     }
 
@@ -310,17 +317,21 @@ object SwiftTypesProvider {
           val swiftVersion = outLine.substring(outLine.indexOf("Swift version ") + 14, outLine.indexOf(" ("))
           val isCompatible = Try(VersionHelper.compare(swiftVersion, MinimumSwiftVersion)).toOption.getOrElse(-1) >= 0
           if (!isCompatible) {
-            logger.warn(s"Found Swift version '$swiftVersion' but '$MinimumSwiftVersion' is required!")
+            problems.warn(
+              Category.ExternalTool,
+              s"Found Swift version '$swiftVersion' but '$MinimumSwiftVersion' is required!",
+              logger = logger
+            )
           }
           isCompatible
         case None =>
-          logger.warn("Unable to determine a Swift version on this system!")
+          problems.warn(Category.ExternalTool, "Unable to determine a Swift version on this system!", logger = logger)
           false
       }
     }
     val hasSwiftDemangle = findInStdOut(swiftDemangleVersionCommand()).isDefined
     if (!hasSwiftDemangle) {
-      logger.warn("Unable to find swift-demangle on this system!")
+      problems.warn(Category.ExternalTool, "Unable to find swift-demangle on this system!", logger = logger)
     }
     hasSwift && hasSwiftDemangle
   }

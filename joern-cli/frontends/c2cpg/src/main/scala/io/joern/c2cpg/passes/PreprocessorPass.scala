@@ -23,7 +23,7 @@ class PreprocessorPass(config: Config) {
   private val logger = LoggerFactory.getLogger(classOf[PreprocessorPass])
 
   private val compilationDatabase: Option[CompilationDatabase] =
-    config.compilationDatabaseFilename.flatMap(JSONCompilationDatabaseParser.parse)
+    config.compilationDatabaseFilename.flatMap(JSONCompilationDatabaseParser.parse(_))
 
   private val headerFileFinder = new HeaderFileFinder(config)
   private val parser           = new CdtParser(config, headerFileFinder, compilationDatabase)

@@ -1,6 +1,7 @@
 package io.joern.c2cpg.parser
 
 import io.joern.x2cpg.SourceFiles
+import io.joern.x2cpg.report.{Category, ProblemSink}
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import ujson.Value
@@ -31,7 +32,7 @@ object JSONCompilationDatabaseParser {
     */
   private val includeInCommandPattern = """-I(\S+)""".r
 
-  def parse(compileCommandsJson: String): Option[CompilationDatabase] = {
+  def parse(compileCommandsJson: String, problems: ProblemSink = ProblemSink.LogOnly): Option[CompilationDatabase] = {
     try {
       val jsonContent       = IOUtils.readEntireFile(Paths.get(compileCommandsJson))
       val json              = ujson.read(jsonContent)
@@ -41,7 +42,13 @@ object JSONCompilationDatabaseParser {
       }))
     } catch {
       case NonFatal(e) =>
-        logger.warn(s"Could not parse '$compileCommandsJson'", e)
+        problems.warn(
+          Category.FileParse,
+          "Could not parse the compilation database",
+          Some(compileCommandsJson),
+          Some(e),
+          logger
+        )
         None
     }
   }

@@ -92,7 +92,7 @@ class AstCreationPass(
   }
 
   override def generateParts(): Array[FileAndTypesMap] = {
-    val typesMap = SwiftTypesProvider(config).map(_.retrieveMappings()).getOrElse(new MutableSwiftTypeMapping())
+    val typesMap = SwiftTypesProvider(config, report).map(_.retrieveMappings()).getOrElse(new MutableSwiftTypeMapping())
     if (typesMap.isEmpty) {
       // early return to skip the readRelativeFilePath calls completely
       astGenRunnerResult.parsedFiles.map(FileAndTypesMap(_, Map.empty)).toArray

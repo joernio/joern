@@ -86,7 +86,7 @@ class AstCreationPass(
   import AstCreationPass.Accumulator
 
   private val compilationDatabase: Option[CompilationDatabase] =
-    config.compilationDatabaseFilename.flatMap(JSONCompilationDatabaseParser.parse)
+    config.compilationDatabaseFilename.flatMap(JSONCompilationDatabaseParser.parse(_, report))
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
@@ -166,7 +166,12 @@ class AstCreationPass(
           )
           .toArray
       case None =>
-        logger.warn(s"'$compilationDatabaseFile' contains no source files. CPG will be empty.")
+        report.warn(
+          Category.Other,
+          "The compilation database contains no source files. CPG will be empty.",
+          Some(compilationDatabaseFile),
+          logger = logger
+        )
         Array.empty
     }
   }

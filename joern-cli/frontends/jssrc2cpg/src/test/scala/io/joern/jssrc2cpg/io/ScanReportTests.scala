@@ -51,5 +51,16 @@ class ScanReportTests extends AnyWordSpec with Matchers {
       json("problems").arr.map(_("file").str).toSeq should contain("broken.js")
       json("summary")("warnings").num should be >= 1.0
     }
+
+    "report an input without parsable files as a problem" in {
+      FileUtil.usingTemporaryDirectory("jssrc2cpgScanReport") { dir =>
+        val report = new ScanReport()
+        new JsSrc2Cpg().createCpg(Config(tsTypes = false).withInputPath(dir.toString), report).get.close()
+
+        val problem = report.allProblems.find(_.message.startsWith("No files were parsed")).getOrElse(fail("none"))
+        problem.severity shouldBe Severity.Warning
+        problem.category shouldBe Category.Other
+      }
+    }
   }
 }

@@ -1,6 +1,7 @@
 package io.joern.swiftsrc2cpg.passes
 
 import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg.report.{Category, ScanReport}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
@@ -12,7 +13,7 @@ import org.slf4j.LoggerFactory
 
 /** Creation of DEPENDENCY nodes from "Package.swift" files.
   */
-class DependenciesPass(cpg: Cpg) extends CpgPass(cpg) {
+class DependenciesPass(cpg: Cpg, report: ScanReport = new ScanReport()) extends CpgPass(cpg) {
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
@@ -44,7 +45,11 @@ class DependenciesPass(cpg: Cpg) extends CpgPass(cpg) {
           val dep     = NewDependency().name(name).version(version)
           diffGraph.addNode(dep)
         case args =>
-          logger.warn(s"Unknown dependency specification: '${args.mkString(", ")}'")
+          report.warn(
+            Category.DependencyResolution,
+            s"Unknown dependency specification: '${args.mkString(", ")}'",
+            logger = logger
+          )
       }
     }
   }

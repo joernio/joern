@@ -4,7 +4,7 @@ import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.preprocessing.EjsPreprocessor
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, DefaultAstGenRunnerResult}
-import io.joern.x2cpg.report.ProblemSink
+import io.joern.x2cpg.report.{Category, ProblemSink}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import io.shiftleft.utils.IOUtils
@@ -109,7 +109,18 @@ class AstGenRunner(config: Config, problemSink: ProblemSink = ProblemSink.LogOnl
     } match {
       case Success(result)    => result
       case Failure(exception) =>
-        logger.warn(s"An error occurred while processing file path $file during filtering stage : ", exception)
+        problems.warn(
+          Category.FileProcessing,
+          "An error occurred while processing the file during the filtering stage",
+          Some(
+            SourceFiles.toRelativePathIfBelow(
+              file.stripSuffix(".json").replace(out.toString, config.inputPath),
+              config.inputPath
+            )
+          ),
+          Some(exception),
+          logger
+        )
         false
     }
   }
@@ -241,9 +252,11 @@ class AstGenRunner(config: Config, problemSink: ProblemSink = ProblemSink.LogOnl
     val numOfParsedFiles = files.size
     logger.info(s"Parsed $numOfParsedFiles files.")
     if (numOfParsedFiles == 0) {
-      logger.warn(
+      problems.warn(
+        Category.Other,
         "No files were parsed. By default, test files, minified files, bundles, tooling configuration and " +
-          "folders like 'node_modules', 'dist', 'build' or 'test' are ignored."
+          "folders like 'node_modules', 'dist', 'build' or 'test' are ignored.",
+        logger = logger
       )
     }
     files

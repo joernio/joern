@@ -1,6 +1,7 @@
 package io.joern.c2cpg.io
 
-import io.joern.c2cpg.Main
+import io.joern.c2cpg.{C2Cpg, Config, Main}
+import io.joern.x2cpg.report.{Category, ScanReport}
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.scalatest.matchers.should.Matchers
@@ -53,6 +54,21 @@ class ScanReportTests extends AnyWordSpec with Matchers {
 
       Files.exists(out / "cpg.bin") shouldBe true
       Files.exists(out / "cpg.bin.report.json") shouldBe false
+    }
+
+    "report a compilation database that cannot be parsed as a problem" in withProject { (src, out) =>
+      Files.createDirectories(out)
+      val compilationDatabase = out / "compile_commands.json"
+      Files.writeString(compilationDatabase, "{ this is not json")
+
+      val report = new ScanReport()
+      val config = Config().withInputPath(src.toString).withCompilationDatabase(compilationDatabase.toString)
+      new C2Cpg().createCpg(config, report).get.close()
+
+      val problem = report.allProblems.find(_.message.contains("Could not parse")).getOrElse(fail("no problem"))
+      problem.category shouldBe Category.FileParse
+      problem.file shouldBe Some(compilationDatabase.toString)
+      problem.exception should not be empty
     }
   }
 }
