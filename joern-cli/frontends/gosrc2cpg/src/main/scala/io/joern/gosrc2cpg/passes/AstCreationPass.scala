@@ -7,7 +7,8 @@ import io.joern.gosrc2cpg.model.GoModHelper
 import io.joern.gosrc2cpg.parser.GoAstJsonParser
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.ParserResult
-import io.joern.x2cpg.utils.{Report, TimeUtils}
+import io.joern.x2cpg.report.{Category, ScanReport}
+import io.joern.x2cpg.utils.TimeUtils
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.utils.IOUtils
@@ -23,7 +24,7 @@ class AstCreationPass(
   goMod: GoModHelper,
   goGlobal: GoGlobal,
   tmpDir: Path,
-  report: Report
+  report: ScanReport
 ) extends BasePassForAstProcessing(cpg, astFiles, config, goMod, goGlobal, tmpDir) {
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
   override def processAst(diffGraph: DiffGraphBuilder, astCreator: AstCreator): Unit = {
@@ -35,7 +36,13 @@ class AstCreationPass(
         diffGraph.absorb(localDiff)
       } match {
         case Failure(exception) =>
-          logger.warn(s"Failed to process '${astCreator.parserResult.fullPath}'", exception)
+          report.warn(
+            Category.FileProcessing,
+            "Failed to process the file",
+            Some(astCreator.relPathFileName),
+            Some(exception),
+            logger
+          )
           (false, astCreator.relPathFileName)
         case Success(_) =>
           logger.debug(s"Processed '${astCreator.parserResult.fullPath}'")

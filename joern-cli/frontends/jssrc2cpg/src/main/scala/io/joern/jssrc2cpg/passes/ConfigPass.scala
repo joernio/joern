@@ -3,7 +3,8 @@ package io.joern.jssrc2cpg.passes
 import io.joern.jssrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
-import io.joern.x2cpg.utils.{Report, TimeUtils}
+import io.joern.x2cpg.report.ScanReport
+import io.joern.x2cpg.utils.TimeUtils
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewConfigFile
 import io.shiftleft.passes.ForkJoinParallelCpgPass
@@ -12,7 +13,8 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.{Path, Paths}
 
-class ConfigPass(cpg: Cpg, config: Config, report: Report = new Report()) extends ForkJoinParallelCpgPass[Path](cpg) {
+class ConfigPass(cpg: Cpg, config: Config, report: ScanReport = new ScanReport())
+    extends ForkJoinParallelCpgPass[Path](cpg) {
 
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 

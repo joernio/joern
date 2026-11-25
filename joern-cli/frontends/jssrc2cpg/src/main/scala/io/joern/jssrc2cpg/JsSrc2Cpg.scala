@@ -6,7 +6,8 @@ import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.callgraph.{MethodRefLinker, NaiveCallLinker}
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
-import io.joern.x2cpg.utils.{HashUtil, Report}
+import io.joern.x2cpg.report.ScanReport
+import io.joern.x2cpg.utils.HashUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
@@ -19,10 +20,11 @@ class JsSrc2Cpg extends X2CpgFrontend {
   override type ConfigType = Config
   override val defaultConfig: Config = Config()
 
-  def createCpg(config: Config): Try[Cpg] = {
+  def createCpg(config: Config): Try[Cpg] = createCpg(config, new ScanReport())
+
+  override def createCpg(config: Config, report: ScanReport): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       FileUtil.usingTemporaryDirectory("jssrc2cpgOut") { tmpDir =>
-        val report       = new Report()
         val astGenResult = new AstGenRunner(config).execute(tmpDir)
         val hash         = HashUtil.sha256(astGenResult.parsedFiles.map(Paths.get(_)))
 
@@ -35,8 +37,6 @@ class JsSrc2Cpg extends X2CpgFrontend {
         new ConfigPass(cpg, config, report).createAndApply()
         new PrivateKeyFilePass(cpg, config, report).createAndApply()
         new ImportsPass(cpg).createAndApply()
-
-        report.print()
       }
     }
   }

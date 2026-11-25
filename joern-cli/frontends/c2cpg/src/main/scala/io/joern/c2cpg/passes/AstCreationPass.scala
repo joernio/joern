@@ -10,7 +10,8 @@ import io.joern.c2cpg.parser.HeaderFileFinder
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CompilationDatabase
 import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.utils.{Report, TimeUtils}
+import io.joern.x2cpg.report.{Category, Problem, ScanReport, Severity}
+import io.joern.x2cpg.utils.TimeUtils
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
 import org.apache.commons.lang3.StringUtils
@@ -79,7 +80,7 @@ class AstCreationPass(
   fileExtensions: Set[String],
   config: Config,
   previousAccumulator: Option[AstCreationPass.Accumulator] = None,
-  report: Report = new Report()
+  report: ScanReport = new ScanReport()
 ) extends ForkJoinParallelCpgPassWithAccumulator[(Path, ILanguage), AstCreationPass.Accumulator](cpg) {
 
   import AstCreationPass.Accumulator
@@ -204,13 +205,15 @@ class AstCreationPass(
                 *   - `StackOverflowError` is a `VirtualMachineError`. Without an explicit catch, failing type analysis
                 *     in a single problematic file would crash the whole process.
                 */
-              logger.warn(s"Failed to process ‘$relPath’", s)
+              report.warn(Category.FileProcessing, "Failed to process the file", Some(relPath), Some(s), logger)
               false
             case other: Throwable =>
-              logger.warn(s"Failed to process ‘$relPath’", other)
+              report.warn(Category.FileProcessing, "Failed to process the file", Some(relPath), Some(other), logger)
               false
           }
         case None =>
+          // CdtParser already logged the reason
+          report.record(Problem(Severity.Warning, Category.FileParse, "Failed to parse the file", Some(relPath)))
           false
       }
     }

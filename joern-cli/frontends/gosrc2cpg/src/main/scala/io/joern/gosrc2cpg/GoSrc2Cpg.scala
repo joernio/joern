@@ -9,7 +9,7 @@ import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenProgramMetaData
 import io.joern.x2cpg.passes.frontend.MetaDataPass
-import io.joern.x2cpg.utils.Report
+import io.joern.x2cpg.report.ScanReport
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import io.shiftleft.semanticcpg.utils.FileUtil
 
@@ -20,10 +20,11 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Option(GoGlobal())) extends X
   override type ConfigType = Config
   override val defaultConfig = Config()
 
-  private val report: Report = new Report()
+  private var goMod: Option[GoModHelper] = None
 
-  private var goMod: Option[GoModHelper]  = None
-  def createCpg(config: Config): Try[Cpg] = {
+  def createCpg(config: Config): Try[Cpg] = createCpg(config, new ScanReport())
+
+  override def createCpg(config: Config, report: ScanReport): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       FileUtil.usingTemporaryDirectory("gosrc2cpgOut") { tmpDir =>
         MetaDataPass(cpg, Languages.GOLANG, config.inputPath).createAndApply()
@@ -52,7 +53,6 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Option(GoGlobal())) extends X
               }
               AstCreationPass(cpg, astGenResult.parsedFiles, config, goMod.get, goGlobal, tmpDir, report)
                 .createAndApply()
-              report.print()
             }
         }
       }

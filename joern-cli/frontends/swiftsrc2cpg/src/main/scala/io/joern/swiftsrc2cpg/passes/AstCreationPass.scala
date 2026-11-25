@@ -9,7 +9,8 @@ import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{MutableSwiftTypeMapping, SwiftFileLocalTypeMapping}
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
-import io.joern.x2cpg.utils.{Report, TimeUtils}
+import io.joern.x2cpg.report.{Category, Problem, ScanReport, Severity}
+import io.joern.x2cpg.utils.TimeUtils
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
 import io.shiftleft.utils.IOUtils
@@ -21,9 +22,13 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
-class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: Config, report: Report = new Report())(
-  implicit withSchemaValidation: ValidationMode
-) extends ForkJoinParallelCpgPassWithAccumulator[FileAndTypesMap, AstCreationPass.Accumulator](cpg) {
+class AstCreationPass(
+  cpg: Cpg,
+  astGenRunnerResult: AstGenRunnerResult,
+  config: Config,
+  report: ScanReport = new ScanReport()
+)(implicit withSchemaValidation: ValidationMode)
+    extends ForkJoinParallelCpgPassWithAccumulator[FileAndTypesMap, AstCreationPass.Accumulator](cpg) {
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
@@ -112,6 +117,15 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
           -1
       }
       report.addReportInfo(skippedFile, fileLOC)
+      // the AstGenRunner already logged the reason
+      report.record(
+        Problem(
+          Severity.Warning,
+          Category.FileSkipped,
+          "Skipped by the AST generator, see the log for the reason",
+          Some(skippedFile)
+        )
+      )
     }
   }
 
@@ -154,14 +168,26 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
             diffGraph.absorb(localDiff)
           } match {
             case Failure(exception) =>
-              logger.warn(s"Failed to process '${parseResult.filename}'", exception)
+              report.warn(
+                Category.FileProcessing,
+                "Failed to process the file",
+                Some(parseResult.filename),
+                Some(exception),
+                logger
+              )
               (false, parseResult.filename)
             case Success(_) =>
               logger.debug(s"Processed '${parseResult.filename}'")
               (true, parseResult.filename)
           }
         case Failure(exception) =>
-          logger.warn(s"Failed to read '${part.filename}'", exception)
+          report.warn(
+            Category.FileParse,
+            "Failed to read the parse result of the AST generator",
+            Some(part.filename),
+            Some(exception),
+            logger
+          )
           (false, part.filename)
       }
     }

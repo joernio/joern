@@ -1,0 +1,382 @@
+package io.joern.x2cpg.report
+
+import io.joern.x2cpg.X2CpgConfig
+import io.joern.x2cpg.utils.TimeUtils
+import org.slf4j.{Logger, LoggerFactory}
+
+import java.nio.charset.StandardCharsets
+import java.nio.file.{AtomicMoveNotSupportedException, Files, Path, Paths, StandardCopyOption, StandardOpenOption}
+import java.util.UUID
+import java.util.concurrent.ConcurrentLinkedQueue
+import scala.collection.concurrent.TrieMap
+import scala.jdk.CollectionConverters.*
+import scala.util.{Failure, Success, Try}
+
+enum Severity {
+  case Warning, Error
+}
+
+/** What kind of non-fatal problem was encountered. The names are part of the JSON report format that downstream tools
+  * rely on and must therefore stay stable.
+  */
+enum Category {
+
+  /** A source file could not be parsed. */
+  case FileParse
+
+  /** A parsed source file could not be turned into a CPG. */
+  case FileProcessing
+
+  /** A source file was skipped, e.g., by the AST generator. */
+  case FileSkipped
+
+  /** Dependencies of the analyzed project could not be resolved or fetched. */
+  case DependencyResolution
+
+  /** An external tool (AST generator, compiler, package manager, ...) failed. */
+  case ExternalTool
+  case Other
+}
+
+/** The exception that caused a [[Problem]]. Stack traces are only logged.
+  *
+  * @param className
+  *   the fully qualified class name of the exception.
+  * @param message
+  *   the message of the exception, if it has one.
+  */
+final case class ExceptionInfo(className: String, message: Option[String] = None)
+
+object ExceptionInfo {
+  def of(throwable: Throwable): ExceptionInfo =
+    ExceptionInfo(throwable.getClass.getName, Option(throwable.getMessage).filter(_.nonEmpty))
+}
+
+/** A non-fatal problem of a frontend run.
+  *
+  * @param message
+  *   what went wrong. It does not repeat `file`, which is reported (and logged) next to it.
+  * @param file
+  *   the affected file, relative to the input path where possible.
+  * @param exception
+  *   the cause, if any.
+  */
+final case class Problem(
+  severity: Severity,
+  category: Category,
+  message: String,
+  file: Option[String] = None,
+  exception: Option[ExceptionInfo] = None
+)
+
+/** Collects [[Problem]]s. Utilities that run without access to a full [[ScanReport]] (e.g., dependency resolution)
+  * accept this narrower interface.
+  */
+trait ProblemSink {
+
+  /** Only records the problem. Use this if the problem is already logged elsewhere. */
+  def record(problem: Problem): Unit
+
+  /** Logs the problem on the given logger, prefixed with the file if there is one, and records it. */
+  final def problem(
+    severity: Severity,
+    category: Category,
+    message: String,
+    file: Option[String] = None,
+    cause: Option[Throwable] = None,
+    logger: Logger = ProblemSink.defaultLogger
+  ): Unit = {
+    val logText = file.map(affected => s"$affected: $message").getOrElse(message)
+    severity match {
+      case Severity.Warning => logger.warn(logText, cause.orNull)
+      case Severity.Error   => logger.error(logText, cause.orNull)
+    }
+    record(Problem(severity, category, message, file, cause.map(ExceptionInfo.of)))
+  }
+
+  final def warn(
+    category: Category,
+    message: String,
+    file: Option[String] = None,
+    cause: Option[Throwable] = None,
+    logger: Logger = ProblemSink.defaultLogger
+  ): Unit = problem(Severity.Warning, category, message, file, cause, logger)
+
+  final def error(
+    category: Category,
+    message: String,
+    file: Option[String] = None,
+    cause: Option[Throwable] = None,
+    logger: Logger = ProblemSink.defaultLogger
+  ): Unit = problem(Severity.Error, category, message, file, cause, logger)
+}
+
+object ProblemSink {
+
+  private val defaultLogger: Logger = LoggerFactory.getLogger(classOf[ProblemSink])
+
+  /** Does not keep anything. Problems logged through [[ProblemSink.problem]] still show up in the log. */
+  val LogOnly: ProblemSink = new ProblemSink {
+    override def record(problem: Problem): Unit = {}
+  }
+}
+
+/** How a frontend reports the outcome of a run. The table is always logged. */
+sealed trait ReportMode
+
+object ReportMode {
+
+  /** Only log the report. */
+  case object Log extends ReportMode
+
+  /** Additionally write the report as JSON. If no path is given, it is written next to the CPG. */
+  final case class Json(path: Option[String] = None) extends ReportMode
+}
+
+enum RunStatus {
+  case Completed, Failed
+}
+
+/** Result of processing one file. `loc` is unknown if the file could not even be read. */
+final case class FileEntry(
+  path: String,
+  loc: Option[Int],
+  parsed: Boolean,
+  cpgGenerated: Boolean,
+  durationNanos: Long
+) {
+  private def toRow: Seq[String] = {
+    val lines = loc.map(_.toString).getOrElse("-")
+    val dur   = if (durationNanos == 0) "-" else TimeUtils.pretty(durationNanos)
+    Seq(lines, if (parsed) "yes" else "no", if (cpgGenerated) "yes" else "no", dur)
+  }
+
+  private[report] def tableRow(index: Int): Seq[String] = s"$index" +: path +: toRow
+}
+
+object ScanReport {
+
+  private val logger = LoggerFactory.getLogger(classOf[ScanReport])
+
+  /** @param cpgPath
+    *   where the CPG was written, if it was persisted at all.
+    */
+  final case class Metadata(
+    frontend: String,
+    joernVersion: String,
+    inputPath: String,
+    cpgPath: Option[String],
+    status: RunStatus
+  )
+
+  /** `<cpg>.report.json`. Without a CPG output path the frontend writes to `cpg.bin`, so the report goes there. */
+  def defaultJsonPath(outputPath: String): Path = {
+    val cpgPath = Paths.get(if (outputPath.isEmpty) "cpg.bin" else outputPath).toAbsolutePath.normalize()
+    cpgPath.resolveSibling(s"${cpgPath.getFileName}.report.json")
+  }
+
+  private val ProblemOrdering: Ordering[Problem] =
+    Ordering.by(problem =>
+      (
+        problem.file.getOrElse(""),
+        problem.category.ordinal,
+        problem.severity.ordinal,
+        problem.message,
+        problem.exception.map(_.className).getOrElse(""),
+        problem.exception.flatMap(_.message).getOrElse("")
+      )
+    )
+
+  private def formatTable(table: Seq[Seq[String]]): String = {
+    if (table.isEmpty) ""
+    else {
+      // Get column widths based on the maximum cell width in each column (+2 for a one character padding on each side)
+      val colWidths =
+        table.transpose.map(_.map(cell => if (cell == null) 0 else cell.length).max + 2)
+      // Format each row
+      val rows = table.map(
+        _.zip(colWidths)
+          .map { case (item, size) => s" %-${size - 1}s".format(item) }
+          .mkString("|", "|", "|")
+      )
+      // Formatted separator row, used to separate the header and draw table borders
+      val separator = colWidths.map("-" * _).mkString("+", "+", "+")
+      // Put the table together and return
+      val header  = rows.head
+      val content = rows.tail.take(rows.tail.size - 1)
+      val footer  = rows.tail.last
+      (separator +: header +: separator +: content :+ separator :+ footer :+ separator)
+        .mkString("\n")
+    }
+  }
+}
+
+/** Collects what happened during one run of a frontend: the outcome per file and all non-fatal [[Problem]]s.
+  *
+  * Thread safe. One instance belongs to exactly one run; `X2CpgFrontend.run` creates it and calls [[finish]] at the
+  * end, which logs the report and, if requested via [[ReportMode.Json]], writes it to disk.
+  */
+class ScanReport extends ProblemSink {
+  import ScanReport.*
+
+  private val files    = TrieMap.empty[String, FileEntry]
+  private val problems = new ConcurrentLinkedQueue[Problem]()
+
+  override def record(problem: Problem): Unit = problems.add(problem)
+
+  def addReportInfo(
+    fileName: String,
+    loc: Int,
+    parsed: Boolean = false,
+    cpgGen: Boolean = false,
+    duration: Long = 0
+  ): Unit = files(fileName) = FileEntry(fileName, Option.when(loc >= 0)(loc), parsed, cpgGen, duration)
+
+  def updateReport(fileName: String, cpg: Boolean, duration: Long): Unit =
+    files.updateWith(fileName) {
+      case Some(existing) => Some(existing.copy(cpgGenerated = cpg, durationNanos = duration))
+      // files whose parse result could not be read never got an addReportInfo call; still record them
+      case None => Some(FileEntry(fileName, loc = None, parsed = false, cpgGenerated = cpg, durationNanos = duration))
+    }
+
+  /** All files, sorted by path. */
+  def fileEntries: Seq[FileEntry] = {
+    // files is a concurrent TrieMap: entries are sorted by their unique path, so encounter order is irrelevant.
+    files.values.toSeq.sortBy(_.path) // scalafix:ok UnorderedIteration
+  }
+
+  /** All problems in a deterministic order, independent of the order in which threads reported them. */
+  def allProblems: Seq[Problem] = problems.asScala.toSeq.sorted(ProblemOrdering)
+
+  private def problemSummary(allProblems: Seq[Problem]): Option[String] = {
+    Option
+      .when(allProblems.nonEmpty) {
+        val errors     = allProblems.count(_.severity == Severity.Error)
+        val warnings   = allProblems.count(_.severity == Severity.Warning)
+        val byCategory = allProblems
+          .groupBy(_.category)
+          .toSeq
+          .sortBy(_._1.ordinal)
+          .map { case (category, inCategory) => s"  $category: ${inCategory.size}" }
+        s"Problems: $errors error(s), $warnings warning(s)" +: byCategory
+      }
+      .map(_.mkString(System.lineSeparator()))
+  }
+
+  private def table(entries: Seq[FileEntry]): String = {
+    val rows   = entries.zipWithIndex.map { case (entry, index) => entry.tableRow(index + 1) }
+    val header = Seq(Seq("#", "File", "LOC", "Parsed", "Got a CPG", "Duration"))
+    val footer = Seq(
+      Seq(
+        "Total",
+        "",
+        s"${entries.flatMap(_.loc).sum}",
+        s"${entries.count(_.parsed)}/${entries.size}",
+        s"${entries.count(_.cpgGenerated)}/${entries.size}",
+        ""
+      )
+    )
+    formatTable(header ++ rows ++ footer)
+  }
+
+  /** Logs the file table and the problem summary. Logs nothing if there is nothing to report. */
+  def print(): Unit = {
+    val entries = fileEntries
+    val parts   = Option.when(entries.nonEmpty)(table(entries)).toSeq ++ problemSummary(allProblems)
+    if (parts.nonEmpty) {
+      logger.info(s"Report:${System.lineSeparator()}${parts.mkString(System.lineSeparator())}")
+    }
+  }
+
+  def toJson(metadata: Metadata): ujson.Obj = {
+    val entries  = fileEntries
+    val problems = allProblems
+    val summary  = ujson.Obj(
+      "files"        -> entries.size,
+      "parsed"       -> entries.count(_.parsed),
+      "cpgGenerated" -> entries.count(_.cpgGenerated),
+      // ujson would render a Long as a string
+      "loc"      -> ujson.Num(entries.flatMap(_.loc).map(_.toDouble).sum),
+      "errors"   -> problems.count(_.severity == Severity.Error),
+      "warnings" -> problems.count(_.severity == Severity.Warning)
+    )
+    ujson.Obj.from(
+      Seq[(String, ujson.Value)](
+        "schemaVersion" -> 1,
+        "frontend"      -> metadata.frontend,
+        "joernVersion"  -> metadata.joernVersion,
+        "inputPath"     -> metadata.inputPath
+      ) ++
+        metadata.cpgPath.map(path => "cpgPath" -> ujson.Str(path)) ++
+        Seq[(String, ujson.Value)](
+          "status"   -> metadata.status.toString,
+          "summary"  -> summary,
+          "problems" -> ujson.Arr.from(problems.map(problemJson)),
+          "files"    -> ujson.Arr.from(entries.map(fileJson))
+        )
+    )
+  }
+
+  /** Fields that are not available are left out. */
+  private def problemJson(problem: Problem): ujson.Obj = ujson.Obj.from(
+    Seq[(String, ujson.Value)]("severity" -> problem.severity.toString, "category" -> problem.category.toString) ++
+      problem.file.map(file => "file" -> ujson.Str(file)) ++
+      Seq[(String, ujson.Value)]("message" -> problem.message) ++
+      problem.exception.map(exception => "exception" -> exceptionJson(exception))
+  )
+
+  private def exceptionJson(exception: ExceptionInfo): ujson.Obj = ujson.Obj.from(
+    Seq[(String, ujson.Value)]("type" -> exception.className) ++
+      exception.message.map(message => "message" -> ujson.Str(message))
+  )
+
+  /** Fields that are not available (LOC if the file was not readable, a duration that was not measured) are left out.
+    */
+  private def fileJson(entry: FileEntry): ujson.Obj = ujson.Obj.from(
+    Seq[(String, ujson.Value)]("path" -> entry.path) ++
+      entry.loc.map(loc => "loc" -> ujson.Num(loc)) ++
+      Seq[(String, ujson.Value)]("parsed" -> entry.parsed, "cpgGenerated" -> entry.cpgGenerated) ++
+      Option.when(entry.durationNanos > 0)("durationMs" -> ujson.Num(math.round(entry.durationNanos / 1e3) / 1e3))
+  )
+
+  /** Writes the report as JSON. The file either contains the full report or is not touched. */
+  def writeJson(path: Path, metadata: Metadata): Unit = {
+    val target = path.toAbsolutePath.normalize()
+    val parent = target.getParent
+    Files.createDirectories(parent)
+    // Not createTempFile: it creates files readable by the owner only, unlike the CPG next to the report.
+    val tmp = parent.resolve(s".scan-report-${UUID.randomUUID()}.tmp")
+    try {
+      Files.writeString(
+        tmp,
+        ujson.write(toJson(metadata), indent = 2),
+        StandardCharsets.UTF_8,
+        StandardOpenOption.CREATE_NEW
+      )
+      Try(Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)).recover {
+        case _: AtomicMoveNotSupportedException => Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING)
+      }.get
+    } finally {
+      Files.deleteIfExists(tmp)
+    }
+  }
+
+  /** Reports the outcome of the run: logs the table and writes the JSON file if requested by the configuration. Never
+    * throws; failing to write the report must not turn a successful run into a failed one.
+    */
+  def finish(frontendName: String, joernVersion: String, config: X2CpgConfig[?], status: RunStatus): Unit = {
+    print()
+    config.reportMode match {
+      case ReportMode.Log                =>
+      case ReportMode.Json(explicitPath) =>
+        val path     = explicitPath.map(Paths.get(_)).getOrElse(defaultJsonPath(config.outputPath))
+        val cpgPath  = Option.when(config.outputPath.nonEmpty)(config.outputPath)
+        val metadata = Metadata(frontendName, joernVersion, config.inputPath, cpgPath, status)
+        Try(writeJson(path, metadata)) match {
+          case Success(_)         => logger.info(s"Wrote the scan report to '${path.toAbsolutePath.normalize()}'")
+          case Failure(exception) => logger.warn(s"Failed to write the scan report to '$path'", exception)
+        }
+    }
+  }
+
+}

@@ -16,7 +16,8 @@ import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
 import io.joern.x2cpg.astgen.ParserResult
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.x2cpg.utils.{ConcurrentTaskUtil, Environment, HashUtil, Report}
+import io.joern.x2cpg.report.ScanReport
+import io.joern.x2cpg.utils.{ConcurrentTaskUtil, Environment, HashUtil}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
@@ -32,10 +33,11 @@ class CSharpSrc2Cpg extends X2CpgFrontend {
   override type ConfigType = Config
   override val defaultConfig: Config = Config()
 
-  private val logger         = LoggerFactory.getLogger(classOf[CSharpSrc2Cpg])
-  private val report: Report = new Report()
+  private val logger = LoggerFactory.getLogger(classOf[CSharpSrc2Cpg])
 
-  override def createCpg(config: Config): Try[Cpg] = {
+  override def createCpg(config: Config): Try[Cpg] = createCpg(config, new ScanReport())
+
+  override def createCpg(config: Config, report: ScanReport): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       FileUtil.usingTemporaryDirectory("csharpsrc2cpgOut") { tmpDir =>
         val astGenResult = new DotNetAstGenRunner(config).execute(tmpDir)
@@ -58,7 +60,6 @@ class CSharpSrc2Cpg extends X2CpgFrontend {
         }
         new AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary)), report).createAndApply()
         TypeNodePass.withTypesFromCpg(cpg).createAndApply()
-        report.print()
       }
     }
   }
