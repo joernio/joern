@@ -164,12 +164,14 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
     }
   }
 
+  protected def isIgnoredByUserRegex(filePath: String): Boolean = config.ignoredFilesRegex.matches(filePath)
+
   protected def isIgnoredByUserConfig(filePath: String): Boolean = {
     lazy val isInIgnoredFiles = config.ignoredFiles.exists {
       case ignorePath if Files.isDirectory(Paths.get(ignorePath)) => filePath.startsWith(ignorePath)
       case ignorePath                                             => filePath == ignorePath
     }
-    lazy val isInIgnoredFileRegex = config.ignoredFilesRegex.matches(filePath)
+    lazy val isInIgnoredFileRegex = isIgnoredByUserRegex(filePath)
     if (isInIgnoredFiles || isInIgnoredFileRegex) {
       logger.debug(s"'$filePath' ignored by user configuration")
       true
