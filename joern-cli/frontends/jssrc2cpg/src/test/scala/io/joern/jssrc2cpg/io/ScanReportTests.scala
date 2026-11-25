@@ -1,5 +1,6 @@
 package io.joern.jssrc2cpg.io
 
+import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.joern.x2cpg.report.{Category, ReportMode, ScanReport, Severity}
 import io.shiftleft.semanticcpg.utils.FileUtil
@@ -50,6 +51,21 @@ class ScanReportTests extends AnyWordSpec with Matchers {
       json("status").str shouldBe "Completed"
       json("problems").arr.map(_("file").str).toSeq should contain("broken.js")
       json("summary")("warnings").num should be >= 1.0
+    }
+
+    "split a parse failure of astgen into the file and the reason" in {
+      AstGenRunner.parseFailure("Parsing /in/broken.js : Unterminated string constant. (1:12)") shouldBe
+        Some(("/in/broken.js", "Unterminated string constant. (1:12)"))
+    }
+
+    "not mistake the drive letter of a Windows path for the end of the file" in {
+      AstGenRunner.parseFailure("Parsing C:\\in\\broken.js : Unexpected token (1:1)") shouldBe
+        Some(("C:\\in\\broken.js", "Unexpected token (1:1)"))
+    }
+
+    "ignore lines of astgen that do not describe a parse failure" in {
+      AstGenRunner.parseFailure("Parsing without a reason") shouldBe None
+      AstGenRunner.parseFailure("Converted /in/good.js") shouldBe None
     }
 
     "report an input without parsable files as a problem" in {

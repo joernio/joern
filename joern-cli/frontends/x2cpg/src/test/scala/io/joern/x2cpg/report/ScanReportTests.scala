@@ -239,7 +239,8 @@ class ScanReportTests extends AnyWordSpec with Matchers {
 
   "ScanReport.defaultJsonPath" should {
     "be located next to the CPG" in {
-      ScanReport.defaultJsonPath("/some/dir/my.cpg") shouldBe Paths.get("/some/dir/my.cpg.report.json")
+      ScanReport.defaultJsonPath("/some/dir/my.cpg") shouldBe
+        Paths.get("/some/dir/my.cpg.report.json").toAbsolutePath.normalize()
     }
 
     "fall back to the default CPG name if the CPG is not persisted" in {
