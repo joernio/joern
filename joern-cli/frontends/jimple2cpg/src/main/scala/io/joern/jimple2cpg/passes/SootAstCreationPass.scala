@@ -2,6 +2,7 @@ package io.joern.jimple2cpg.passes
 
 import io.joern.jimple2cpg.Config
 import io.joern.jimple2cpg.astcreation.AstCreator
+import io.joern.x2cpg.report.{Category, ScanReport}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
 import org.slf4j.LoggerFactory
@@ -11,7 +12,7 @@ import scala.util.control.NonFatal
 
 /** Creates the AST layer from the given class file and stores all types in the given global parameter.
   */
-class SootAstCreationPass(cpg: Cpg, config: Config)
+class SootAstCreationPass(cpg: Cpg, config: Config, report: ScanReport = new ScanReport())
     extends ForkJoinParallelCpgPassWithAccumulator[SootClass, AstCreationPass.Accumulator](cpg) {
 
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
@@ -41,7 +42,8 @@ class SootAstCreationPass(cpg: Cpg, config: Config)
       logger.debug(s"Processed '$jimpleFile'")
     } catch {
       case NonFatal(e) =>
-        logger.warn(s"Failed to process '$jimpleFile'", e)
+        // classes from dex files have no class file, so they are identified by their name
+        report.warn(Category.FileProcessing, "Failed to process the class", Some(part.getName), Some(e), logger)
     }
   }
 

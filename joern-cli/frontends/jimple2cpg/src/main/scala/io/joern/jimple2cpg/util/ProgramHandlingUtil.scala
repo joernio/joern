@@ -7,6 +7,7 @@ import java.io.{BufferedInputStream, FileInputStream}
 import java.nio.file.StandardCopyOption
 import org.objectweb.asm.ClassReader.SKIP_CODE
 import org.objectweb.asm.{ClassReader, ClassVisitor, Opcodes}
+import io.joern.x2cpg.report.{Category, ProblemSink}
 import org.slf4j.LoggerFactory
 
 import java.io.InputStream
@@ -111,10 +112,11 @@ object ProgramHandlingUtil {
   private def unfoldArchives[A](
     src: Path,
     emitOrUnpack: Path => Either[A, Map[Boolean, List[Path]]],
-    maxDepth: Int
+    maxDepth: Int,
+    problems: ProblemSink
   ): IterableOnce[A] = {
     if (maxDepth < -1) {
-      logger.warn("Maximum recursion depth reached.")
+      problems.warn(Category.Other, "Maximum recursion depth reached", logger = logger)
       Seq()
     } else {
       emitOrUnpack(src) match {
@@ -122,7 +124,8 @@ object ProgramHandlingUtil {
         case Right(disposeFiles) =>
           disposeFiles.flatMap(x =>
             x._2.flatMap(f =>
-              if (x._1) unfoldArchives(f, emitOrUnpack, maxDepth - 1) else unfoldArchives(f, emitOrUnpack, maxDepth)
+              if (x._1) unfoldArchives(f, emitOrUnpack, maxDepth - 1, problems)
+              else unfoldArchives(f, emitOrUnpack, maxDepth, problems)
             )
           )
       }
@@ -155,32 +158,42 @@ object ProgramHandlingUtil {
     isClass: Entry => Boolean,
     isConfigFile: Entry => Boolean,
     recurse: Boolean,
-    depth: Int
+    depth: Int,
+    problems: ProblemSink
   ): IterableOnce[EntryFile] = {
 
     // filter archive file unless recurse was enabled
-    def shouldExtract(e: Entry) =
-      !e.isZipSlip && e.maybeRegularFile() && ((isArchive(e) && recurse) || isClass(e) || isConfigFile(e))
+    def shouldExtract(entry: Entry) =
+      !entry.isZipSlip && entry.maybeRegularFile() &&
+        ((isArchive(entry) && recurse) || isClass(entry) || isConfigFile(entry))
     val subOfSrc = src.walk().filterNot(_ == src).filterNot(Files.isDirectory(_)).toList
     unfoldArchives(
       src,
       {
-        case f if isClass(Entry(f)) =>
-          Left(ClassFile(f))
-        case f if isConfigFile(Entry(f)) =>
-          Left(ConfigFile(f))
-        case f if Files.isDirectory(f) =>
-          val files = f.walk().filterNot(_ == src).filterNot(Files.isDirectory(_)).toList
+        case file if isClass(Entry(file)) =>
+          Left(ClassFile(file, problems))
+        case file if isConfigFile(Entry(file)) =>
+          Left(ConfigFile(file))
+        case file if Files.isDirectory(file) =>
+          val files = file.walk().filterNot(_ == src).filterNot(Files.isDirectory(_)).toList
           Right(Map(false -> files))
-        case f if isArchive(Entry(f)) && (f == src || (Files.isDirectory(src) && subOfSrc.contains(f)) || recurse) =>
+        case file
+            if isArchive(Entry(file)) && (file == src || (Files.isDirectory(src) && subOfSrc
+              .contains(file)) || recurse) =>
           val xTmp = Files.createTempDirectory(tmpDir, "extract-archive-")
 
           val unzipDirs =
-            Using.resource(new ZipFile(f.absolutePathAsString)) { zipFile =>
-              Try(f.unzipTo(xTmp, e => shouldExtract(Entry(e, zipFile)))) match {
-                case Success(dir) => List(dir)
-                case Failure(e)   =>
-                  logger.warn(s"Failed to extract archive", e)
+            Using.resource(new ZipFile(file.absolutePathAsString)) { zipFile =>
+              Try(file.unzipTo(xTmp, zipEntry => shouldExtract(Entry(zipEntry, zipFile)))) match {
+                case Success(dir)       => List(dir)
+                case Failure(exception) =>
+                  problems.warn(
+                    Category.FileProcessing,
+                    "Failed to extract archive",
+                    Some(file.absolutePathAsString),
+                    Some(exception),
+                    logger
+                  )
                   List.empty
               }
             }
@@ -189,7 +202,8 @@ object ProgramHandlingUtil {
         case _ =>
           Right(Map(false -> List.empty))
       },
-      depth
+      depth,
+      problems
     )
   }
 
@@ -221,11 +235,17 @@ object ProgramHandlingUtil {
       * @return
       *   The package path if successfully retrieved
       */
-    private def getPackagePathFromByteCode(file: Path): Option[String] =
+    private def getPackagePathFromByteCode(file: Path, problems: ProblemSink): Option[String] =
       Using.resource(new FileInputStream(file.absolutePathAsString)) { fis =>
         Try(getPackagePathFromByteCode(fis))
           .recover { case e: Throwable =>
-            logger.error(s"Error reading class file ${file.absolutePathAsString}", e)
+            problems.error(
+              Category.FileProcessing,
+              "Error reading class file",
+              Some(file.absolutePathAsString),
+              Some(e),
+              logger
+            )
             None
           }
           .getOrElse(None)
@@ -246,7 +266,7 @@ object ProgramHandlingUtil {
       * @return
       *   The class file at the destination if the package path could be retrieved from the its bytecode
       */
-    def copyToPackageLayoutIn(destDir: Path): Option[EntryFile] = {
+    def copyToPackageLayoutIn(destDir: Path, problems: ProblemSink = ProblemSink.LogOnly): Option[EntryFile] = {
       packagePath
         .map { path =>
           val destFile = this match {
@@ -273,8 +293,11 @@ object ProgramHandlingUtil {
           ClassFile(destFile, packagePath)
         }
         .orElse {
-          logger.warn(
-            s"Missing package path for ${file.absolutePathAsString}. Failed to copy to ${destDir.absolutePathAsString}"
+          problems.warn(
+            Category.FileProcessing,
+            s"Missing package path. Failed to copy to ${destDir.absolutePathAsString}",
+            Some(file.absolutePathAsString),
+            logger = logger
           )
           None
         }
@@ -292,7 +315,7 @@ object ProgramHandlingUtil {
 
   sealed class ClassFile(val file: Path, val packagePath: Option[String]) extends EntryFile {
 
-    def this(file: Path) = this(file, ClassFile.getPackagePathFromByteCode(file))
+    def this(file: Path, problems: ProblemSink) = this(file, ClassFile.getPackagePathFromByteCode(file, problems))
 
     private val components: Option[Array[String]] = packagePath.map(_.split("/"))
 
@@ -327,12 +350,22 @@ object ProgramHandlingUtil {
     isArchive: Entry => Boolean,
     isConfigFile: Entry => Boolean,
     recurse: Boolean,
-    depth: Int
+    depth: Int,
+    problems: ProblemSink = ProblemSink.LogOnly
   ): List[ClassFile] =
     FileUtil
       .usingTemporaryDirectory("extract-classes-") { tmpDir =>
-        extractClassesToTmp(src, tmpDir, isArchive, isClass, isConfigFile, recurse: Boolean, depth: Int).iterator
-          .flatMap(_.copyToPackageLayoutIn(destDir))
+        extractClassesToTmp(
+          src,
+          tmpDir,
+          isArchive,
+          isClass,
+          isConfigFile,
+          recurse: Boolean,
+          depth: Int,
+          problems
+        ).iterator
+          .flatMap(_.copyToPackageLayoutIn(destDir, problems))
           .collect { case x: ClassFile => x }
           .toList
       }

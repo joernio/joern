@@ -3,6 +3,7 @@ package io.joern.jimple2cpg.passes
 import io.joern.jimple2cpg.Config
 import io.joern.jimple2cpg.astcreation.AstCreator
 import io.joern.jimple2cpg.util.ProgramHandlingUtil.ClassFile
+import io.joern.x2cpg.report.{Category, ScanReport}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
@@ -22,7 +23,7 @@ import scala.util.control.NonFatal
   * @param cpg
   *   The CPG to add to
   */
-class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg, config: Config)
+class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg, config: Config, report: ScanReport = new ScanReport())
     extends ForkJoinParallelCpgPassWithAccumulator[ClassFile, AstCreationPass.Accumulator](cpg) {
 
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
@@ -72,7 +73,15 @@ class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg, config: Config)
       logger.debug(s"Processed '${classFile.file.absolutePathAsString}'")
     } catch {
       case NonFatal(e) =>
-        logger.warn(s"Failed to process '${classFile.file.absolutePathAsString}'", e)
+        report.warn(
+          Category.FileProcessing,
+          "Failed to process the class file",
+          Some(
+            classFile.fullyQualifiedClassName.map(_.replace('.', '/') + ".class").getOrElse(classFile.file.toString)
+          ),
+          Some(e),
+          logger
+        )
         Iterator()
     }
   }
