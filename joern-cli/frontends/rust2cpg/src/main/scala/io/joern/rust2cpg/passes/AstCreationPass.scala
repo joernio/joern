@@ -5,6 +5,7 @@ import io.joern.rust2cpg.astcreation.AstCreator
 import io.joern.rust2cpg.parser.RustJsonParser
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.report.{Category, ScanReport}
+import io.joern.x2cpg.utils.TimeUtils
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
@@ -23,21 +24,27 @@ class AstCreationPass(cpg: Cpg, parsedFiles: Seq[String], config: Config, report
   override def runOnPart(diffGraph: DiffGraphBuilder, jsonPath: String): Unit = {
     RustJsonParser.readFile(Paths.get(jsonPath)) match {
       case Success(parseResult) =>
-        Try {
-          val localDiff = new AstCreator(config, parseResult).createAst()
-          diffGraph.absorb(localDiff)
-        } match {
-          case Success(_) =>
-            logger.debug(s"Processed '${parseResult.filename}'")
-          case Failure(exception) =>
-            report.warn(
-              Category.FileProcessing,
-              "Failed to process the file",
-              Some(parseResult.filename),
-              Some(exception),
-              logger
-            )
+        report.addReportInfo(parseResult.filename, parseResult.loc, parsed = true)
+        val (gotCpg, duration) = TimeUtils.time {
+          Try {
+            val localDiff = new AstCreator(config, parseResult).createAst()
+            diffGraph.absorb(localDiff)
+          } match {
+            case Success(_) =>
+              logger.debug(s"Processed '${parseResult.filename}'")
+              true
+            case Failure(exception) =>
+              report.warn(
+                Category.FileProcessing,
+                "Failed to process the file",
+                Some(parseResult.filename),
+                Some(exception),
+                logger
+              )
+              false
+          }
         }
+        report.updateReport(parseResult.filename, gotCpg, duration)
       case Failure(exception) =>
         report.warn(
           Category.FileParse,

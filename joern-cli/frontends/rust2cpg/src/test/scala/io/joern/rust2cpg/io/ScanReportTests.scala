@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.nio.file.Files
+import java.nio.file.{Files, Paths}
 
 class ScanReportTests extends AnyWordSpec with Matchers {
 
@@ -31,6 +31,8 @@ class ScanReportTests extends AnyWordSpec with Matchers {
         new Rust2Cpg().createCpg(Config().withInputPath(dir.toString).withNoSysRoot(true), report).get.close()
 
         report.allProblems shouldBe empty
+        report.fileEntries.map(entry => (entry.path, entry.loc, entry.parsed, entry.cpgGenerated)) shouldBe
+          Seq((Paths.get("src", "lib.rs").toString, Some(1), true, true))
       }
     }
   }
