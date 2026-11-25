@@ -25,7 +25,7 @@ class AstCreationPass(
   goGlobal: GoGlobal,
   tmpDir: Path,
   report: ScanReport
-) extends BasePassForAstProcessing(cpg, astFiles, config, goMod, goGlobal, tmpDir) {
+) extends BasePassForAstProcessing(cpg, astFiles, config, goMod, goGlobal, tmpDir, report) {
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
   override def processAst(diffGraph: DiffGraphBuilder, astCreator: AstCreator): Unit = {
     val ((gotCpg, filename), duration) = TimeUtils.time {

@@ -42,13 +42,14 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Option(GoGlobal())) extends X
                 )
               )
               goGlobal.mainModule = goMod.flatMap(modHelper => modHelper.getModMetaData().map(mod => mod.module.name))
-              InitialMainSrcPass(cpg, astGenResult.parsedFiles, config, goMod.get, goGlobal, tmpDir).createAndApply()
+              InitialMainSrcPass(cpg, astGenResult.parsedFiles, config, goMod.get, goGlobal, tmpDir, report)
+                .createAndApply()
               if (goGlobal.pkgLevelVarAndConstantAstMap.size() > 0) {
                 PackageCtorCreationPass(cpg, config, goGlobal).createAndApply()
               }
               if (config.fetchDependencies) {
                 goGlobal.processingDependencies = true
-                DownloadDependenciesPass(cpg, goMod.get, goGlobal, config).process()
+                DownloadDependenciesPass(cpg, goMod.get, goGlobal, config, report).process()
                 goGlobal.processingDependencies = false
               }
               AstCreationPass(cpg, astGenResult.parsedFiles, config, goMod.get, goGlobal, tmpDir, report)

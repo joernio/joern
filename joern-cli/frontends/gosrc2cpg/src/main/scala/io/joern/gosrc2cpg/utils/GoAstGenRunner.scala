@@ -45,6 +45,10 @@ class GoAstGenRunner(config: Config, includeFileRegex: String = "", problemSink:
 
   override def skippedFiles(in: Path, astGenOut: List[String]): List[String] = {
     val skipped = astGenOut.collect {
+      case out if out.startsWith("Failed to generate AST for ") =>
+        val filename = out.stripPrefix("Failed to generate AST for ").strip()
+        reportParseProblem(logger, filename, "Failed to generate an AST")
+        Option(filename)
       case out if !out.startsWith("Converted") =>
         val filename = out.substring(0, out.indexOf(" "))
         val reason   = out.substring(out.indexOf(" ") + 1)
