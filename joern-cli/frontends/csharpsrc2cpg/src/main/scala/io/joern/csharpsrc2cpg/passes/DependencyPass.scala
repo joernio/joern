@@ -1,17 +1,24 @@
 package io.joern.csharpsrc2cpg.passes
 
+import io.joern.x2cpg.SourceFiles
+import io.joern.x2cpg.report.{Category, ScanReport}
 import io.shiftleft.semanticcpg.utils.SecureXmlParsing
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewDependency
 import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Path, Paths}
 import scala.util.{Failure, Try}
 
-class DependencyPass(cpg: Cpg, buildFiles: List[String], registerPackageId: String => ?)
-    extends ForkJoinParallelCpgPass[Path](cpg) {
+class DependencyPass(
+  cpg: Cpg,
+  buildFiles: List[String],
+  registerPackageId: String => ?,
+  report: ScanReport = new ScanReport()
+) extends ForkJoinParallelCpgPass[Path](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -51,13 +58,28 @@ class DependencyPass(cpg: Cpg, buildFiles: List[String], registerPackageId: Stri
                 builder.addNode(dependencyNode)
               } match {
                 case Failure(exception) =>
-                  logger.error(s"Unable to parse $packageReference for package name and version information", exception)
+                  report.error(
+                    Category.FileParse,
+                    s"Unable to parse $packageReference for package name and version information",
+                    Some(relativeBuildFile(part)),
+                    Some(exception),
+                    logger
+                  )
                 case _ =>
               }
           }
       case Some(_) =>
-      case None    => logger.error(s"Failed to parse build file ${part.toString}")
+      case None    =>
+        report.error(
+          Category.FileParse,
+          "Failed to parse the build file",
+          Some(relativeBuildFile(part)),
+          logger = logger
+        )
     }
   }
+
+  private def relativeBuildFile(buildFile: Path): String =
+    SourceFiles.toRelativePathIfBelow(buildFile.toString, cpg.metaData.root.headOption.getOrElse(""))
 
 }

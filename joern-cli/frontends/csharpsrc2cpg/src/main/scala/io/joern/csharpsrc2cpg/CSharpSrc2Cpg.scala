@@ -51,10 +51,10 @@ class CSharpSrc2Cpg extends X2CpgFrontend {
         new MetaDataPass(cpg, Languages.CSHARPSRC, config.inputPath, Option(hash)).createAndApply()
 
         val packageIds = mutable.HashSet.empty[String]
-        new DependencyPass(cpg, buildFiles, packageIds.add).createAndApply()
+        new DependencyPass(cpg, buildFiles, packageIds.add, report).createAndApply()
         // If "download dependencies" is enabled, then fetch dependencies and resolve their symbols for additional types
         val programSummary = if (config.downloadDependencies) {
-          DependencyDownloader(cpg, config, localSummary, packageIds.toSet).download()
+          DependencyDownloader(cpg, config, localSummary, packageIds.toSet, report).download()
         } else {
           localSummary
         }

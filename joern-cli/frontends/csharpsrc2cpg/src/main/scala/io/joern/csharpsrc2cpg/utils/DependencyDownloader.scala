@@ -2,6 +2,7 @@ package io.joern.csharpsrc2cpg.utils
 
 import io.joern.csharpsrc2cpg.Config
 import io.joern.csharpsrc2cpg.datastructures.CSharpProgramSummary
+import io.joern.x2cpg.report.{Category, ScanReport}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Dependency
@@ -27,7 +28,8 @@ class DependencyDownloader(
   cpg: Cpg,
   config: Config,
   internalProgramSummary: CSharpProgramSummary,
-  internalPackages: Set[String] = Set.empty
+  internalPackages: Set[String] = Set.empty,
+  report: ScanReport = new ScanReport()
 ) {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -107,7 +109,11 @@ class DependencyDownloader(
         downloadPackage(targetDir, dependency, createUrl("package", version))
         downloadPackage(targetDir, dependency, createUrl("symbolpackage", version))
       case None =>
-        logger.error(s"Unable to determine package version for ${dependencyName}, skipping")
+        report.error(
+          Category.DependencyResolution,
+          s"Unable to determine package version for ${dependencyName}, skipping",
+          logger = logger
+        )
     }
   }
 
@@ -150,21 +156,32 @@ class DependencyDownloader(
                 }
               } match {
                 case Failure(exception) =>
-                  logger.error(
+                  report.error(
+                    Category.DependencyResolution,
                     s"Exception occurred while downloading $fileName (${dependency.name}:${dependency.version})",
-                    exception
+                    cause = Some(exception),
+                    logger = logger
                   )
                 case Success(_) =>
                   logger.info(s"Successfully downloaded dependency ${dependency.name}:${dependency.version}")
               }
             case Some(conn: HttpURLConnection) =>
-              logger.error(s"Connection to $url responded with non-200 code ${conn.getResponseCode}")
+              report.error(
+                Category.DependencyResolution,
+                s"Connection to $url responded with non-200 code ${conn.getResponseCode}",
+                logger = logger
+              )
             case _ =>
-              logger.error(s"Unknown URL connection made, aborting")
+              report.error(Category.DependencyResolution, "Unknown URL connection made, aborting", logger = logger)
           }
         } catch {
           case exception: Throwable =>
-            logger.error(s"Unable to download dependency ${dependency.name}:${dependency.version}", exception)
+            report.error(
+              Category.DependencyResolution,
+              s"Unable to download dependency ${dependency.name}:${dependency.version}",
+              cause = Some(exception),
+              logger = logger
+            )
         } finally {
           connection.foreach(_.disconnect())
         }
@@ -214,7 +231,12 @@ class DependencyDownloader(
     val parsedFiles = Try(astGenRunner.execute(targetDir)) match {
       case Success(astGenRunnerResult) => astGenRunnerResult.parsedFiles
       case Failure(exception)          =>
-        logger.warn(s"Unable to summarize dependencies in '$targetDir', skipping", exception)
+        report.warn(
+          Category.DependencyResolution,
+          s"Unable to summarize dependencies in '$targetDir', skipping",
+          cause = Some(exception),
+          logger = logger
+        )
         List.empty
     }
     val summaries = parsedFiles
@@ -223,7 +245,12 @@ class DependencyDownloader(
         Using.resource(Files.newInputStream(file)) { fis =>
           CSharpProgramSummary.jsonToInitialMapping(fis) match {
             case Failure(exception) =>
-              logger.error(s"Unable to parse JSON program summary at $file", exception)
+              report.error(
+                Category.DependencyResolution,
+                s"Unable to parse JSON program summary at $file",
+                cause = Some(exception),
+                logger = logger
+              )
               None
             case Success(parsedJson) =>
               Option(parsedJson)
