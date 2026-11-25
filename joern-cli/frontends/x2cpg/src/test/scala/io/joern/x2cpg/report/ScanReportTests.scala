@@ -115,6 +115,38 @@ class ScanReportTests extends AnyWordSpec with Matchers {
       report.fileEntries.size shouldBe 200
     }
 
+    "list the files of file problems that were not registered" in {
+      val report = new ScanReport()
+      report.addReportInfo("registered.c", 10, parsed = true)
+      report.updateReport("registered.c", cpg = true, 1000)
+      report.warn(Category.FileParse, "cannot be parsed", Some("unparsable.c"))
+      report.warn(Category.FileProcessing, "cannot be processed", Some("unprocessable.c"))
+      report.warn(Category.FileProcessing, "cannot be processed twice", Some("unprocessable.c"))
+      report.warn(Category.FileParse, "parse", Some("both.c"))
+      report.warn(Category.FileProcessing, "process", Some("both.c"))
+      report.warn(Category.FileParse, "registered anyway", Some("registered.c"))
+      report.warn(Category.DependencyResolution, "not a source file", Some("lib.jar"))
+      report.warn(Category.Other, "not about a file")
+
+      report.fileEntries.map(entry => (entry.path, entry.loc, entry.parsed, entry.cpgGenerated)) shouldBe Seq(
+        ("both.c", None, false, false),
+        ("registered.c", Some(10), true, true),
+        ("unparsable.c", None, false, false),
+        ("unprocessable.c", None, true, false)
+      )
+      report.toJson(metadata)("summary")("files").num shouldBe 4
+    }
+
+    "not list a file that could not be processed as a file that got a CPG" in {
+      val report = new ScanReport()
+      report.addReportInfo("recovered.c", 10, parsed = true)
+      report.updateReport("recovered.c", cpg = true, 1000)
+      report.warn(Category.FileProcessing, "recovered with an empty AST", Some("recovered.c"))
+
+      report.fileEntries.map(entry => (entry.path, entry.parsed, entry.cpgGenerated)) shouldBe
+        Seq(("recovered.c", true, false))
+    }
+
     "leave out the message of an exception that has none in the JSON" in {
       val report = new ScanReport()
       report.warn(Category.Other, "oops", cause = Some(new StackOverflowError()))

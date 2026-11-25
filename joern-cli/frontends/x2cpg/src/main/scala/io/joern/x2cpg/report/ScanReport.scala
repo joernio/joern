@@ -236,10 +236,28 @@ class ScanReport extends ProblemSink {
       case None => Some(FileEntry(fileName, loc = None, parsed = false, cpgGenerated = cpg, durationNanos = duration))
     }
 
-  /** All files, sorted by path. */
+  /** All files, sorted by path.
+    *
+    * Besides the files that were registered, this contains the files that a [[Category.FileParse]] or
+    * [[Category.FileProcessing]] problem is about, if they were not registered: frontends need not keep track of the
+    * files they fail on. A file that could not be parsed was not parsed, a file that could not be processed was. A file
+    * that could not be processed did not get a CPG, even if its frontend registered that it did, e.g., because it
+    * recovered from the failure with an empty AST.
+    */
   def fileEntries: Seq[FileEntry] = {
     // files is a concurrent TrieMap: entries are sorted by their unique path, so encounter order is irrelevant.
-    files.values.toSeq.sortBy(_.path) // scalafix:ok UnorderedIteration
+    val registered     = files.values.toSeq // scalafix:ok UnorderedIteration
+    val fileProblems   = allProblems.collect { case Problem(_, category, _, Some(file), _) => file -> category }
+    val processingFail = fileProblems.collect { case (file, Category.FileProcessing) => file }.toSet
+    val parseFail      = fileProblems.collect { case (file, Category.FileParse) => file }.toSet
+    val known          = registered.map(_.path).toSet
+    val unregistered   = (processingFail ++ parseFail).diff(known).toSeq.sorted.map { file =>
+      FileEntry(file, None, parsed = !parseFail.contains(file), cpgGenerated = false, 0)
+    }
+    val corrected = registered.map { entry =>
+      if (processingFail.contains(entry.path)) entry.copy(cpgGenerated = false) else entry
+    }
+    (corrected ++ unregistered).sortBy(_.path)
   }
 
   /** All problems in a deterministic order, independent of the order in which threads reported them. */
