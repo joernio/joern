@@ -3,6 +3,7 @@ package io.joern.kotlin2cpg.passes
 import io.joern.kotlin2cpg.KtFileWithMeta
 import io.joern.kotlin2cpg.ast.AstCreator
 import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.report.{Category, ScanReport}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
 import org.jetbrains.kotlin.resolve.BindingContext
@@ -16,7 +17,8 @@ class AstCreationPass(
   filesWithMeta: Iterable[KtFileWithMeta],
   bindingContext: BindingContext,
   cpg: Cpg,
-  disableFileContent: Boolean
+  disableFileContent: Boolean,
+  report: ScanReport = new ScanReport()
 )(implicit withSchemaValidation: ValidationMode)
     extends ForkJoinParallelCpgPassWithAccumulator[KtFileWithMeta, AstCreationPass.Accumulator](cpg) {
 
@@ -81,7 +83,13 @@ class AstCreationPass(
       logger.debug(s"Processed '${fileWithMeta.f.getVirtualFilePath}'")
     } catch {
       case NonFatal(e) =>
-        logger.warn(s"Failed to process '${fileWithMeta.f.getVirtualFilePath}'", e)
+        report.warn(
+          Category.FileProcessing,
+          "Failed to process the file",
+          Some(fileWithMeta.relativizedPath),
+          Some(e),
+          logger
+        )
     }
   }
 
