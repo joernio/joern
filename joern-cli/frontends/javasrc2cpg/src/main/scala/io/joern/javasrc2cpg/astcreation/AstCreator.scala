@@ -67,7 +67,8 @@ class AstCreator(
   accumulator: AstCreationPass.Accumulator,
   val symbolSolver: JavaSymbolSolver,
   protected val keepTypeArguments: Boolean,
-  val loggedExceptionCounts: scala.collection.concurrent.Map[Class[?], Int]
+  val loggedExceptionCounts: scala.collection.concurrent.Map[Class[?], Int],
+  sourceMap: DelombokSourceMap = DelombokSourceMap.Identity
 )(implicit withSchemaValidation: ValidationMode, disableTypeFallback: Boolean)
     extends AstCreatorBase[Node, AstCreator](filename)
     with AstForDeclarationsCreator
@@ -138,11 +139,30 @@ class AstCreator(
     .removeOption(new DefaultConfigurationOption(ConfigOption.PRINT_COMMENTS))
     .removeOption(new DefaultConfigurationOption(ConfigOption.PRINT_JAVADOC))
 
-  protected def line(node: Node): Option[Int]      = node.getBegin.map(_.line).toScala
-  protected def column(node: Node): Option[Int]    = node.getBegin.map(_.column).toScala
-  protected def lineEnd(node: Node): Option[Int]   = node.getEnd.map(_.line).toScala
-  protected def columnEnd(node: Node): Option[Int] = node.getEnd.map(_.column).toScala
-  protected def code(node: Node): String           = node.toString(codePrinterOptions).replaceAll("\r\n", "\n")
+  protected def line(node: Node): Option[Int] =
+    node.getBegin.map(_.line).toScala.map(sourceMap.translateLine)
+
+  protected def column(node: Node): Option[Int] =
+    for {
+      begin <- node.getBegin.toScala
+      lineNumber = sourceMap.translateLine(begin.line)
+      column <- Option(sourceMap.translateColumn(begin.line, begin.column))
+    } yield column
+
+  protected def lineEnd(node: Node): Option[Int] = {
+    val translatedEnd = node.getEnd.map(_.line).toScala.map(sourceMap.translateLine)
+    translatedEnd.map { endLine =>
+      val startLine = line(node).getOrElse(endLine)
+      math.max(endLine, startLine)
+    }
+  }
+
+  protected def columnEnd(node: Node): Option[Int] =
+    for {
+      end <- node.getEnd.toScala
+      column = sourceMap.translateColumn(end.line, end.column)
+    } yield column
+  protected def code(node: Node): String = node.toString(codePrinterOptions).replaceAll("\r\n", "\n")
 
   private val lineOffsetTable = OffsetUtils.getLineOffsetTable(fileContent)
 

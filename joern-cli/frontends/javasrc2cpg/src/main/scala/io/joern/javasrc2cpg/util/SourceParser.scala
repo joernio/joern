@@ -24,10 +24,16 @@ class SourceParser(
   val relativeFilenames: List[String],
   analysisRoot: Path,
   typesRoot: Path,
-  dirToDelete: Option[Path]
+  dirToDelete: Option[Path],
+  inputPath: Path,
+  sourceMapsByRelativePath: Map[String, DelombokSourceMap],
+  analysisUsesDelombokedRoot: Boolean
 ) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
+
+  def sourceMap(relativeFilename: String): DelombokSourceMap =
+    sourceMapsByRelativePath.getOrElse(relativeFilename, DelombokSourceMap.Identity)
 
   /** Parse the given file into a JavaParser CompliationUnit that will be used for creating the CPG AST.
     *
@@ -44,12 +50,14 @@ class SourceParser(
     // Need to store tokens for position information.
     fileIfExists(analysisFilename).flatMap { file =>
       val compilationUnit = parse(file, storeTokens = true)
+      val contentPath     = if (analysisUsesDelombokedRoot) inputPath.resolve(relativeFilename) else file
       val fileContent     = Option
         .when(saveFileContent) {
-          Try(IOUtils.readEntireFile(file))
-            .orElse(Try(file.fileContent(Charset.defaultCharset())))
-            .orElse(Try(file.fileContent(StandardCharsets.ISO_8859_1)))
+          Try(IOUtils.readEntireFile(contentPath))
+            .orElse(Try(contentPath.fileContent(Charset.defaultCharset())))
+            .orElse(Try(contentPath.fileContent(StandardCharsets.ISO_8859_1)))
             .toOption
+            .map(_.replaceAll("\r\n", "\n"))
         }
         .flatten
 
@@ -175,6 +183,39 @@ object SourceParser {
       case DelombokMode.RunDelombok => (delombokDir, delombokDir)
     }
 
-    new SourceParser(fileInfo.map(_.relativePath.toString), analysisRoot, typesRoot, dirToDelete)
+    val sourceMapsByRelativePath =
+      if (analysisRoot != inputPath) {
+        fileInfo.flatMap { file =>
+          val relativePath   = file.relativePath.toString
+          val originalPath   = inputPath.resolve(file.relativePath)
+          val delombokedPath = analysisRoot.resolve(file.relativePath)
+          if (!Files.exists(originalPath) || !Files.exists(delombokedPath)) {
+            None
+          } else if (java.util.Arrays.equals(Files.readAllBytes(originalPath), Files.readAllBytes(delombokedPath))) {
+            None
+          } else {
+            val originalContent   = IOUtils.readEntireFile(originalPath)
+            val delombokedContent = IOUtils.readEntireFile(delombokedPath)
+            DelombokSourceMap.build(originalContent, delombokedContent) match {
+              case Some(sourceMap) => Some(relativePath -> sourceMap)
+              case None            =>
+                logger.warn(s"Could not align delomboked positions for '$relativePath'; using delomboked line numbers.")
+                None
+            }
+          }
+        }.toMap
+      } else {
+        Map.empty[String, DelombokSourceMap]
+      }
+
+    new SourceParser(
+      fileInfo.map(_.relativePath.toString),
+      analysisRoot,
+      typesRoot,
+      dirToDelete,
+      inputPath,
+      sourceMapsByRelativePath,
+      analysisUsesDelombokedRoot = analysisRoot != inputPath
+    )
   }
 }
