@@ -2,6 +2,7 @@ package io.joern.pysrc2cpg
 
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
+import io.joern.x2cpg.report.ScanReport
 import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder}
 import io.shiftleft.codepropertygraph.generated.Languages
 import flatgraph.DiffGraphApplier
@@ -24,8 +25,15 @@ object Py2Cpg {
   *   The configured name of the requirements txt file.
   * @param schemaValidationMode
   *   The boolean switch for enabling or disabling early schema checking during AST creation.
+  * @param report
+  *   Receives the non-fatal problems.
   */
-class Py2Cpg(inputProviders: Iterable[Py2Cpg.InputProvider], outputCpg: Cpg, config: Py2CpgOnFileSystemConfig) {
+class Py2Cpg(
+  inputProviders: Iterable[Py2Cpg.InputProvider],
+  outputCpg: Cpg,
+  config: Py2CpgOnFileSystemConfig,
+  report: ScanReport = new ScanReport()
+) {
   private val diffGraph   = Cpg.newDiffGraphBuilder
   private val nodeBuilder = new NodeBuilder(diffGraph)
   private val edgeBuilder = new EdgeBuilder(diffGraph)
@@ -41,7 +49,8 @@ class Py2Cpg(inputProviders: Iterable[Py2Cpg.InputProvider], outputCpg: Cpg, con
       nodeBuilder.typeDeclNode(Constants.ANY, Constants.ANY, "N/A", Nil, LineAndColumn(1, 1, 1, 1, 1, 1))
     edgeBuilder.astEdge(anyTypeDecl, globalNamespaceBlock, 0)
     DiffGraphApplier.applyDiff(outputCpg.graph, diffGraph)
-    new CodeToCpg(outputCpg, inputProviders, config.schemaValidation, !config.disableFileContent).createAndApply()
+    new CodeToCpg(outputCpg, inputProviders, config.schemaValidation, !config.disableFileContent, report)
+      .createAndApply()
     new ConfigFileCreationPass(outputCpg, config).createAndApply()
     new DependenciesFromRequirementsTxtPass(outputCpg).createAndApply()
   }

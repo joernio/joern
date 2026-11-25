@@ -8,6 +8,7 @@ import io.joern.pythonparser.{AstPrinter, ast}
 import io.joern.pythonparser.ast.{Arguments, AsyncFunctionDef, FunctionDef, MatchAs, iast, iexpr, istmt}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
 import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
+import io.joern.x2cpg.report.{Category, ProblemSink}
 import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier, NewNode, NewTypeDecl}
@@ -33,7 +34,8 @@ class PythonAstVisitor(
   relFileName: String,
   protected val nodeToCode: NodeToCode,
   version: PythonVersion,
-  enableFileContent: Boolean
+  enableFileContent: Boolean,
+  problems: ProblemSink = ProblemSink.LogOnly
 )(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase[ast.iast, PythonAstVisitor](relFileName)
     with PythonAstVisitorHelpers {
@@ -1409,9 +1411,12 @@ class PythonAstVisitor(
     val code   = nodeToCode.getCode(errorStatement)
     val line   = errorStatement.attributeProvider.lineno
     val column = errorStatement.attributeProvider.col_offset
-    logger.warn(
-      s"Could not parse file $relFileName at line $line column $column. Invalid code: $code" +
-        s"\nParser exception message: ${errorStatement.exception.getMessage}"
+    problems.warn(
+      Category.FileParse,
+      s"Could not parse at line $line column $column. Invalid code: $code" +
+        s"\nParser exception message: ${errorStatement.exception.getMessage}",
+      Some(relFileName),
+      logger = logger
     )
     nodeBuilder.unknownNode(errorStatement.toString, errorStatement.getClass.getName, lineAndColOf(errorStatement))
   }

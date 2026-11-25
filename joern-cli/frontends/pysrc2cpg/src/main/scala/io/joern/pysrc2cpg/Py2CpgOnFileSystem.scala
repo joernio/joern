@@ -1,6 +1,7 @@
 package io.joern.pysrc2cpg
 
 import io.joern.x2cpg.passes.frontend.TypeRecoveryParserConfig
+import io.joern.x2cpg.report.ScanReport
 import io.joern.x2cpg.{SourceFiles, X2Cpg, X2CpgConfig, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.utils.IOUtils
@@ -58,7 +59,9 @@ class Py2CpgOnFileSystem extends X2CpgFrontend {
     * @param config
     *   Configuration for cpg generation.
     */
-  override def createCpg(config: Py2CpgOnFileSystemConfig): Try[Cpg] = {
+  override def createCpg(config: Py2CpgOnFileSystemConfig): Try[Cpg] = createCpg(config, new ScanReport())
+
+  override def createCpg(config: Py2CpgOnFileSystemConfig, report: ScanReport): Try[Cpg] = {
     logConfiguration(config)
 
     X2Cpg.withNewEmptyCpg(config.outputPath, config) { (cpg, _) =>
@@ -92,7 +95,7 @@ class Py2CpgOnFileSystem extends X2CpgFrontend {
           Py2Cpg.InputPair(content, inputPath.relativize(inputFile).toString)
         }
       }
-      val py2Cpg = new Py2Cpg(inputProviders, cpg, config)
+      val py2Cpg = new Py2Cpg(inputProviders, cpg, config, report)
       py2Cpg.buildCpg()
     }
   }
