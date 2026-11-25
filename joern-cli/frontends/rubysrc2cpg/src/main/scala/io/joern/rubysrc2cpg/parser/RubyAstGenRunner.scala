@@ -1,24 +1,22 @@
 package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.Config
-import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.{ExecutionEnvironment, JRubyEnvironment, astGenMetaData}
+import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.{JRubyEnvironment, astGenMetaData}
 import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult, DefaultAstGenRunnerResult}
 import io.joern.x2cpg.astgen.AstGenRunner
+import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult, DefaultAstGenRunnerResult}
 import io.joern.x2cpg.utils.{Environment, JoernRunfilesLocator}
 import org.jruby.RubyInstanceConfig
 import org.jruby.embed.{LocalContextScope, LocalVariableBehavior, PathType, ScriptingContainer}
 import org.slf4j.LoggerFactory
 
-import java.io.File.separator
 import java.io.{ByteArrayOutputStream, InputStream, PrintStream}
 import java.nio.file.*
-import java.util
 import java.util.jar.JarFile
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try, Using}
+import scala.util.{Failure, Try, Using}
 
 /** Creates a JRuby scripting environment using `ruby_ast_gen` within a temporary directory allowing for re-usable
   * execution.
@@ -89,7 +87,7 @@ class RubyAstGenRunner(config: Config, sharedJRubyEnv: Option[JRubyEnvironment] 
     }.toList
   }
 
-  override def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {
+  override protected def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {
     val scriptTarget = Files.createTempFile("ruby_driver", ".rb")
     try {
       // We use the URI format as this is the best in terms of language agnostic importing
@@ -160,22 +158,17 @@ class RubyAstGenRunner(config: Config, sharedJRubyEnv: Option[JRubyEnvironment] 
         ""
       }
 
-    runAstGenNative(specifiedConfig.inputPath, out, combineIgnoreRegex, "") match {
-      case Success(result) =>
-        val srcFiles = SourceFiles.determine(
-          out.toString(),
-          Set(".json"),
-          ignoredDefaultRegex = Option(specifiedConfig.defaultIgnoredFilesRegex),
-          ignoredFilesRegex = Option(specifiedConfig.ignoredFilesRegex),
-          ignoredFilesPath = Option(specifiedConfig.ignoredFiles)
-        )
-        val parsed  = filterFiles(srcFiles, out)
-        val skipped = skippedFiles(in, result.toList)
-        DefaultAstGenRunnerResult(parsed, skipped)
-      case Failure(f) =>
-        logger.error(s"\t- running ${astGenMetaData.name} failed!", f)
-        DefaultAstGenRunnerResult()
-    }
+    val result   = runAstGen(specifiedConfig.inputPath, out, combineIgnoreRegex, "")
+    val srcFiles = SourceFiles.determine(
+      out.toString(),
+      Set(".json"),
+      ignoredDefaultRegex = Option(specifiedConfig.defaultIgnoredFilesRegex),
+      ignoredFilesRegex = Option(specifiedConfig.ignoredFilesRegex),
+      ignoredFilesPath = Option(specifiedConfig.ignoredFiles)
+    )
+    val parsed  = filterFiles(srcFiles, out)
+    val skipped = skippedFiles(in, result.toList)
+    DefaultAstGenRunnerResult(parsed, skipped)
   }
 
   // The scripting container (and its output/error streams) may be shared between runners, so executions on the same

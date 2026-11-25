@@ -5,9 +5,9 @@ import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.model.{GoModDependency, GoModHelper}
 import io.joern.gosrc2cpg.parser.GoAstJsonParser
 import io.joern.gosrc2cpg.utils.GoAstGenRunner
-import io.joern.gosrc2cpg.utils.GoAstGenRunner.{GoAstGenRunnerResult, getClass}
-import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
+import io.joern.gosrc2cpg.utils.GoAstGenRunner.GoAstGenRunnerResult
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.LoggerFactory
 
 import java.io.File as JFile
@@ -81,10 +81,14 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
           .withInputPath(dependencyLocation)
           .withIgnoredFilesRegex(config.ignoredFilesRegex.toString())
           .withIgnoredFiles(config.ignoredFiles.toList)
-        val astGenResult = new GoAstGenRunner(depConfig, dependency.getIncludePackagesList())
-          .executeForGo(astLocation)
-          .headOption
-          .getOrElse(GoAstGenRunnerResult())
+        // Third-party dependencies are best-effort: a failing astgen must not fail the analysis of the project.
+        val astGenResult =
+          Try(new GoAstGenRunner(depConfig, dependency.getIncludePackagesList()).executeForGo(astLocation)) match {
+            case Success(results)   => results.headOption.getOrElse(GoAstGenRunnerResult())
+            case Failure(exception) =>
+              logger.warn(s"Unable to process dependency '${dependency.dependencyStr()}', skipping", exception)
+              GoAstGenRunnerResult()
+          }
         val goMod = new GoModHelper(
           Some(dependencyLocation),
           astGenResult.parsedModFile.flatMap(modFile => GoAstJsonParser.readModFile(Paths.get(modFile)).map(x => x))

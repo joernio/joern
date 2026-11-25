@@ -17,6 +17,15 @@ object AstGenRunner {
 
   private val logger = LoggerFactory.getLogger(classOf[AstGenRunner])
 
+  /** Thrown if an AST generator ran but failed without producing any output.
+    *
+    * This is different from an input that contains no parsable files (astgen exits successfully, there is simply
+    * nothing to report) and from individual files that astgen could not parse (astgen exits successfully and lists them
+    * as skipped files). Silently continuing after such a failure would yield an empty CPG that is indistinguishable
+    * from the CPG of a project without any code.
+    */
+  final class AstGenFailedException(message: String, cause: Throwable) extends RuntimeException(message, cause)
+
   trait AstGenRunnerResult {
     def parsedFiles: List[String]
     def skippedFiles: List[String]
@@ -236,24 +245,48 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
     case _                                          => None
   }
 
+  /** Runs astgen via [[runAstGenNative]] and decides what the outcome means. This is the single place that does so:
+    * implementations must call this instead of [[runAstGenNative]] and never deal with a failed run themselves.
+    *
+    *   - astgen succeeded: its output lines are returned. Files it could not parse are part of them and are reported
+    *     through [[skippedFiles]]; a project without any parsable files is valid and not a failure.
+    *   - astgen failed but wrote at least one JSON file: the run is partial. A warning is logged and the files that
+    *     exist are used. No output lines are available in this case.
+    *   - astgen failed and wrote nothing: an [[AstGenRunner.AstGenFailedException]] is thrown.
+    *
+    * A missing or non-executable astgen binary is not covered here, see `resolveAstGenPath`.
+    *
+    * @param in
+    *   the input directory handed to astgen
+    * @param out
+    *   the directory astgen writes its JSON files to
+    * @return
+    *   the output lines of astgen, to be passed to [[skippedFiles]]
+    */
+  protected def runAstGen(in: String, out: Path, exclude: String, include: String): Seq[String] = {
+    runAstGenNative(in, out, exclude, include) match {
+      case Success(output)                                                          => output
+      case Failure(f) if SourceFiles.determine(out.toString, Set(".json")).nonEmpty =>
+        logger.warn(s"\t- running ${metaData.name} failed, continuing with the files it did produce", f)
+        Seq.empty
+      case Failure(f) =>
+        throw new AstGenFailedException(s"Running ${metaData.name} on '$in' failed without producing any output", f)
+    }
+  }
+
   def execute(out: Path): AstGenRunnerResult = {
     val in = Paths.get(config.inputPath)
     logger.info(s"Running ${metaData.name} on '${config.inputPath}'")
-    runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString(), "") match {
-      case Success(result) =>
-        val srcFiles = SourceFiles.determine(
-          out.toString,
-          Set(".json"),
-          ignoredFilesRegex = Option(config.ignoredFilesRegex),
-          ignoredFilesPath = Option(config.ignoredFiles)
-        )
-        val parsed  = filterFiles(srcFiles, out)
-        val skipped = skippedFiles(in, result.toList)
-        DefaultAstGenRunnerResult(parsed, skipped)
-      case Failure(f) =>
-        logger.error(s"\t- running ${metaData.name} failed!", f)
-        DefaultAstGenRunnerResult()
-    }
+    val result   = runAstGen(config.inputPath, out, config.ignoredFilesRegex.toString(), "")
+    val srcFiles = SourceFiles.determine(
+      out.toString,
+      Set(".json"),
+      ignoredFilesRegex = Option(config.ignoredFilesRegex),
+      ignoredFilesPath = Option(config.ignoredFiles)
+    )
+    val parsed  = filterFiles(srcFiles, out)
+    val skipped = skippedFiles(in, result.toList)
+    DefaultAstGenRunnerResult(parsed, skipped)
   }
 
   def executableDir: String =
