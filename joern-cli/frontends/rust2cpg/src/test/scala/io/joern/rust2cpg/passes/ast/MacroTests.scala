@@ -868,4 +868,21 @@ class MacroTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
       cpg.typeDecl.nameExact("A").aliasTypeFullName.l shouldBe List("u32")
     }
   }
+
+  "include_bytes! call" should {
+    val cpg = code(
+      """
+        |static B: &[u8; 2] = include_bytes!("b.bin");
+        |""".stripMargin,
+      fileName = (Paths.get("src") / "lib.rs").toString
+    ).moreCode("foo", fileName = (Paths.get("src") / "b.bin").toString)
+
+    // TODO: since 0.28.3 this macro is no longer expanded, but a built-in.
+    // Unknown for now, to be rewritten later as needed.
+    "become an unknown node" in {
+      inside(cpg.unknown.l) { case includeBytes :: Nil =>
+        includeBytes.code shouldBe "builtin #include_bytes"
+      }
+    }
+  }
 }

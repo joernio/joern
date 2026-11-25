@@ -107,6 +107,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     case forExpr: ForExpr               => visitForExpr(forExpr)
     case formatArgsExpr: FormatArgsExpr => visitFormatArgsExpr(formatArgsExpr)
     case ifExpr: IfExpr                 => visitIfExpr(ifExpr, visitExpr)
+    case includeBytes: IncludeBytesExpr => visitIncludeBytesExpr(includeBytes)
     case indexExpr: IndexExpr           => visitIndexExpr(indexExpr)
     case literal: Literal               => visitLiteral(literal)
     case loopExpr: LoopExpr             => visitLoopExpr(loopExpr)
@@ -730,6 +731,12 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   private def visitLiteral(lit: Literal): Ast = {
     val typeFullName = typeFullNameForLiteral(lit)
     Ast(literalNode(lit, code(lit), typeFullName))
+  }
+
+  // IncludeBytesExpr =
+  //  'builtin' '#' 'include_bytes'
+  private def visitIncludeBytesExpr(includeBytesExpr: IncludeBytesExpr): Ast = {
+    notHandledYet(includeBytesExpr)
   }
 
   // Fn =
@@ -1841,15 +1848,20 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
   // Variant =
   //  Attr* Visibility?
-  //  Name FieldList? ('=' ConstArg)?
-  private def lowerVariant(variant: Variant, enumFullName: String): Seq[Ast] = variant.fieldList match {
-    case None                                   => lowerUnitVariant(variant, enumFullName) :: Nil
-    case Some(recordFieldList: RecordFieldList) => lowerRecordVariant(variant, enumFullName, recordFieldList) :: Nil
-    case Some(tupleFieldList: TupleFieldList)   => lowerTupleVariant(variant, enumFullName, tupleFieldList)
+  //  (Name | '_') FieldList? ('=' ConstArg)?
+  private def lowerVariant(variant: Variant, enumFullName: String): Seq[Ast] = {
+    (variant.name, variant.fieldList) match {
+      case (None, _)                                            => notHandledYet(variant) :: Nil
+      case (Some(name), None)                                   => lowerUnitVariant(variant, name, enumFullName) :: Nil
+      case (Some(name), Some(recordFieldList: RecordFieldList)) =>
+        lowerRecordVariant(variant, name, enumFullName, recordFieldList) :: Nil
+      case (Some(name), Some(tupleFieldList: TupleFieldList)) =>
+        lowerTupleVariant(variant, name, enumFullName, tupleFieldList)
+    }
   }
 
-  private def lowerUnitVariant(variant: Variant, enumFullName: String): Ast = {
-    val typeDecl   = typeDeclForVariant(variant, enumFullName)
+  private def lowerUnitVariant(variant: Variant, name: Name, enumFullName: String): Ast = {
+    val typeDecl   = typeDeclForVariant(variant, name, enumFullName)
     val attributes = variant.attr.map(visitAttr)
 
     contextStack.pushTypeDecl(typeDecl)
@@ -1859,8 +1871,13 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     Ast(typeDecl).withChild(ctorAst).withChildren(attributes)
   }
 
-  private def lowerRecordVariant(variant: Variant, enumFullName: String, recordFieldList: RecordFieldList): Ast = {
-    val typeDecl   = typeDeclForVariant(variant, enumFullName)
+  private def lowerRecordVariant(
+    variant: Variant,
+    name: Name,
+    enumFullName: String,
+    recordFieldList: RecordFieldList
+  ): Ast = {
+    val typeDecl   = typeDeclForVariant(variant, name, enumFullName)
     val attributes = variant.attr.map(visitAttr)
 
     contextStack.pushTypeDecl(typeDecl)
@@ -1872,8 +1889,13 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       .withChildren(attributes)
   }
 
-  private def lowerTupleVariant(variant: Variant, enumFullName: String, tupleFieldList: TupleFieldList): Seq[Ast] = {
-    val typeDecl     = typeDeclForVariant(variant, enumFullName)
+  private def lowerTupleVariant(
+    variant: Variant,
+    name: Name,
+    enumFullName: String,
+    tupleFieldList: TupleFieldList
+  ): Seq[Ast] = {
+    val typeDecl     = typeDeclForVariant(variant, name, enumFullName)
     val fields       = tupleStructFieldData(tupleFieldList)
     val ctorFullName = variant.methodFullName.getOrElse(typeDecl.fullName)
     val attributes   = variant.attr.map(visitAttr)

@@ -690,4 +690,18 @@ class EnumTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.method.nameExact("Green").fullName.l shouldBe List("rust2cpgtest::outer::Inner#2::Green")
     }
   }
+
+  "underscore variant" should {
+    val cpg = code("""
+        |enum Color { Red, _ }
+        |""".stripMargin)
+
+    // TODO: support underscore variant. Unknown for now.
+    "become an unknown node" in {
+      inside(cpg.typeDecl.nameExact("Color").astChildren.l) { case (red: TypeDecl) :: (underscore: Unknown) :: Nil =>
+        red.fullName shouldBe "rust2cpgtest::Color::Red"
+        underscore.code shouldBe "_"
+      }
+    }
+  }
 }
