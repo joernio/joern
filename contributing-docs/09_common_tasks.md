@@ -33,7 +33,7 @@ report as JSON with `--report-json` (next to the CPG) or `--report-json-file <fi
   the problem. Use the method that matches the level of the log statement you replace: never change a log level when
   you migrate a call site. Use `report.record(Problem(...))` if the problem is already logged somewhere else, with the
   severity that matches that log statement.
-- Pick the `Category` that fits: `FileParse`, `FileProcessing`, `FileSkipped`, `DependencyResolution`, `ExternalTool`
+- Pick the `Category` that fits: `FileParse`, `FileProcessing`, `DependencyResolution`, `ExternalTool`
   or `Other`. The category names are part of the JSON format, do not rename them.
 - Do not repeat the file in the `message`. Pass it as `file`, relative to the input path: it is a field of its own in
   the JSON report, and it is added in front of the message when the problem is logged.

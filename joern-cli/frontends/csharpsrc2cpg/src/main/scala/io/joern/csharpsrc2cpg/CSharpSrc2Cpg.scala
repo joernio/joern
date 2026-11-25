@@ -40,7 +40,7 @@ class CSharpSrc2Cpg extends X2CpgFrontend {
   override def createCpg(config: Config, report: ScanReport): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       FileUtil.usingTemporaryDirectory("csharpsrc2cpgOut") { tmpDir =>
-        val astGenResult = new DotNetAstGenRunner(config).execute(tmpDir)
+        val astGenResult = new DotNetAstGenRunner(config, report).execute(tmpDir)
         val astCreators  = CSharpSrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config)
         val buildFiles   = findBuildFiles(config)
         val localSummary = ProgramSummaryCreator

@@ -21,14 +21,11 @@ enum Severity {
   */
 enum Category {
 
-  /** A source file could not be parsed. */
+  /** A source file could not be parsed, or only with problems, e.g., by the AST generator. */
   case FileParse
 
   /** A parsed source file could not be turned into a CPG. */
   case FileProcessing
-
-  /** A source file was skipped, e.g., by the AST generator. */
-  case FileSkipped
 
   /** Dependencies of the analyzed project could not be resolved or fetched. */
   case DependencyResolution

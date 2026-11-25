@@ -1,5 +1,6 @@
 package io.joern.x2cpg.utils.dependency
 
+import io.joern.x2cpg.report.ProblemSink
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.slf4j.LoggerFactory
@@ -32,7 +33,7 @@ private[joern] object AarExtractor {
   /** Extracts `classes.jar` from `aar` into `cacheDir`. Returns the path to the materialized jar, or None if no
     * `classes.jar` was found or extraction failed.
     */
-  def extractClassesJar(aar: Path, cacheDir: Path): Option[Path] = {
+  def extractClassesJar(aar: Path, cacheDir: Path, problems: ProblemSink = ProblemSink.LogOnly): Option[Path] = {
     if (!aar.toString.endsWith("." + aarExtension)) {
       logger.debug(s"Refusing to extract non-aar path: $aar")
       None
@@ -47,7 +48,7 @@ private[joern] object AarExtractor {
         try {
           Try(aar.unzipTo(scratch)) match {
             case Failure(ex) =>
-              logger.warn(s"Failed to unzip aar at $aar: ${ex.getMessage}")
+              DependencyProblems.warn(problems, logger, s"Failed to unzip aar at $aar: ${ex.getMessage}")
               None
             case Success(_) =>
               val classesJarCandidates = Try {
@@ -93,9 +94,9 @@ private[joern] object AarExtractor {
   /** Replaces every `.aar` entry in `paths` with the path to its extracted `classes.jar`. Non-aar entries pass through
     * unchanged. Aar entries that cannot be extracted are dropped, with a logged warning.
     */
-  def materializeJars(paths: Iterable[Path], cacheDir: Path): Set[Path] = {
+  def materializeJars(paths: Iterable[Path], cacheDir: Path, problems: ProblemSink = ProblemSink.LogOnly): Set[Path] = {
     paths.flatMap { path =>
-      if (path.toString.endsWith("." + aarExtension)) extractClassesJar(path, cacheDir)
+      if (path.toString.endsWith("." + aarExtension)) extractClassesJar(path, cacheDir, problems)
       else Some(path)
     }.toSet
   }

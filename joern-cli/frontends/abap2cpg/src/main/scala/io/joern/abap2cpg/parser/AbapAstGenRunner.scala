@@ -3,6 +3,7 @@ package io.joern.abap2cpg.parser
 import io.joern.abap2cpg.Config
 import io.joern.x2cpg.astgen.AstGenRunner
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenProgramMetaData
+import io.joern.x2cpg.report.ProblemSink
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
@@ -15,7 +16,8 @@ object AbapAstGenRunner {
   private object astGenMetaData extends AstGenProgramMetaData(name = "abapgen", configPrefix = "abap2cpg")
 }
 
-class AbapAstGenRunner(config: Config) extends AstGenRunner(AbapAstGenRunner.astGenMetaData, config) {
+class AbapAstGenRunner(config: Config, problemSink: ProblemSink = ProblemSink.LogOnly)
+    extends AstGenRunner(AbapAstGenRunner.astGenMetaData, config, problemSink) {
   import AbapAstGenRunner.*
 
   // abapgen binaries use the standard naming from AstGenRunner base class:
@@ -28,7 +30,7 @@ class AbapAstGenRunner(config: Config) extends AstGenRunner(AbapAstGenRunner.ast
     astGenOut.collect {
       case line if line.startsWith("ERR ") =>
         val filename = line.stripPrefix("ERR ").takeWhile(_ != ':')
-        logger.warn(s"\t- failed to parse '$filename'")
+        reportParseProblem(logger, filename, "Failed to parse")
         Some(filename)
       case line =>
         logger.debug(s"\t+ $line")

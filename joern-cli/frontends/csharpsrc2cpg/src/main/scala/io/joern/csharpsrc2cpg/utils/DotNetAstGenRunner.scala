@@ -4,6 +4,7 @@ import io.joern.csharpsrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenProgramMetaData
+import io.joern.x2cpg.report.ProblemSink
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
@@ -14,7 +15,8 @@ import scala.util.Try
 object DotNetAstGenRunner {
   private object astGenMetaData extends AstGenProgramMetaData(name = "dotnetastgen", configPrefix = "csharpsrc2cpg")
 }
-class DotNetAstGenRunner(config: Config) extends AstGenRunner(DotNetAstGenRunner.astGenMetaData, config) {
+class DotNetAstGenRunner(config: Config, problemSink: ProblemSink = ProblemSink.LogOnly)
+    extends AstGenRunner(DotNetAstGenRunner.astGenMetaData, config, problemSink) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -62,7 +64,11 @@ class DotNetAstGenRunner(config: Config) extends AstGenRunner(DotNetAstGenRunner
         logger.debug(s"Successfully parsed '$filename'")
         None
       case (filename, diagnostics) =>
-        logger.warn(s"Failed to parse '$filename':\n${diagnostics.map(x => s" - $x").mkString("\n")}")
+        reportParseProblem(
+          logger,
+          filename,
+          s"Failed to parse:\n${diagnostics.map(diagnostic => s" - $diagnostic").mkString("\n")}"
+        )
         Option(filename)
     }.toList
   }

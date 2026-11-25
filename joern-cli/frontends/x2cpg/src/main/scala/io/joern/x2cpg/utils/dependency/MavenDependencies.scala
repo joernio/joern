@@ -1,6 +1,7 @@
 package io.joern.x2cpg.utils.dependency
 
 import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
+import io.joern.x2cpg.report.ProblemSink
 import org.slf4j.LoggerFactory
 
 import java.io.File
@@ -37,8 +38,10 @@ object MavenDependencies {
     cli.toStrings.toIndexedSeq.filterNot(optionsToStrip.contains) ++ fetchArgs
   }
 
-  private def logErrors(output: String): Unit = {
-    logger.warn(
+  private def logErrors(output: String, problems: ProblemSink): Unit = {
+    DependencyProblems.warn(
+      problems,
+      logger,
       s"Retrieval of compile class path via maven return with error.\n" +
         "The compile class path may be missing or partial.\n" +
         "Results will suffer from poor type information.\n" +
@@ -48,18 +51,18 @@ object MavenDependencies {
     logger.debug(s"Full maven error output:\n$output")
   }
 
-  private[dependency] def get(projectDir: Path): Option[collection.Seq[String]] = {
+  private[dependency] def get(projectDir: Path, problems: ProblemSink): Option[collection.Seq[String]] = {
     val lines = ExternalCommand
       .run(command = fetchCommandWithOpts, workingDir = Option(projectDir), isShellCommand = isWin)
       .logIfFailed()
       .toTry match {
       case Success(lines) =>
         if (lines.contains("[INFO] Build failures were ignored.")) {
-          logErrors(lines.mkString(System.lineSeparator()))
+          logErrors(lines.mkString(System.lineSeparator()), problems)
         }
         lines
       case Failure(exception) =>
-        logErrors(exception.getMessage)
+        logErrors(exception.getMessage, problems)
         // exception message is the program output - and we still want to look for potential partial results
         exception.getMessage.linesIterator.toSeq
     }
@@ -87,10 +90,10 @@ object MavenDependencies {
     * the off chance that `.aar` files appear in the classpath. In practice a Maven classpath is jar-only, so the
     * directory will sit empty.
     */
-  private[dependency] def getGraph(projectDir: Path): DependencyGraph = {
+  private[dependency] def getGraph(projectDir: Path, problems: ProblemSink): DependencyGraph = {
     val cacheDir = Files.createTempDirectory("x2cpgMavenDeps")
     FileUtil.deleteOnExit(cacheDir)
-    val artifacts = get(projectDir)
+    val artifacts = get(projectDir, problems)
       .getOrElse(Nil)
       .map { pathStr =>
         val path     = Paths.get(pathStr)

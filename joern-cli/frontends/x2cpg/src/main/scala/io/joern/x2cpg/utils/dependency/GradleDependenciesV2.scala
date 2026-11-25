@@ -1,5 +1,6 @@
 package io.joern.x2cpg.utils.dependency
 
+import io.joern.x2cpg.report.ProblemSink
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.apache.commons.text.StringEscapeUtils
@@ -110,7 +111,12 @@ object GradleDependenciesV2 {
     connector.connect()
   }
 
-  private def runGradleTask(connection: ProjectConnection, taskName: String, initScriptPath: String): Boolean = {
+  private def runGradleTask(
+    connection: ProjectConnection,
+    taskName: String,
+    initScriptPath: String,
+    problems: ProblemSink
+  ): Boolean = {
     Using.resources(new ByteArrayOutputStream, new ByteArrayOutputStream) { case (stdoutStream, stderrStream) =>
       Option(System.getenv("ANDROID_HOME")) match {
         case Some(androidHome) => logger.debug(s"Found ANDROID_HOME set to $androidHome")
@@ -134,10 +140,17 @@ object GradleDependenciesV2 {
         case Success(_) =>
           true
         case Failure(ex) =>
-          logger.warn(s"Caught exception while executing Gradle task: ${ex.getMessage}", ex)
+          DependencyProblems.warn(
+            problems,
+            logger,
+            s"Caught exception while executing Gradle task: ${ex.getMessage}",
+            Some(ex)
+          )
           val androidSdkError = "Define a valid SDK location with an ANDROID_HOME environment variable"
           if (stderrStream.toString.contains(androidSdkError)) {
-            logger.warn(
+            DependencyProblems.warn(
+              problems,
+              logger,
               "A missing Android SDK configuration caused gradle dependency fetching failures. Please define a valid SDK location with an ANDROID_HOME environment variable or by setting the sdk.dir path in your project's local properties file"
             )
           }
@@ -171,10 +184,10 @@ object GradleDependenciesV2 {
   // `Try`'s for-comprehension short-circuits on the first Failure, so the connection is only
   // opened when the temp file was created successfully. Failures are logged once here; the caller
   // just checks Success/Failure.
-  private def acquireInitTmpFileAndConn(projectDir: Path): Try[(Path, ProjectConnection)] = {
+  private def acquireInitTmpFileAndConn(projectDir: Path, problems: ProblemSink): Try[(Path, ProjectConnection)] = {
     def attempt[T](stage: String)(thunk: => T): Try[T] =
       Try(thunk).recoverWith { case ex =>
-        logger.warn(s"$stage failed: ${ex.getMessage}")
+        DependencyProblems.warn(problems, logger, s"$stage failed: ${ex.getMessage}")
         logger.debug("Full exception: ", ex)
         Failure(ex)
       }
@@ -198,10 +211,11 @@ object GradleDependenciesV2 {
     projectDir: Path,
     destinationDir: Path,
     configurationNameOverride: Option[String],
-    androidVariantOverride: Option[String] = None
+    androidVariantOverride: Option[String] = None,
+    problems: ProblemSink = ProblemSink.LogOnly
   ): Boolean = {
     logger.info(s"Fetching Gradle project information at path `$projectDir`.")
-    acquireInitTmpFileAndConn(projectDir) match {
+    acquireInitTmpFileAndConn(projectDir, problems) match {
       case Failure(_)                            => false
       case Success((initScriptFile, connection)) =>
         Using.resource(connection) { conn =>
@@ -210,7 +224,7 @@ object GradleDependenciesV2 {
           val initScript     =
             makeInitScript(destinationDir, gradleVersion, configurationNameOverride, androidVariant)
           Files.writeString(initScriptFile, initScript.contents)
-          val ranOk = runGradleTask(conn, initScript.taskName, initScriptFile.toString)
+          val ranOk = runGradleTask(conn, initScript.taskName, initScriptFile.toString, problems)
           if (!ranOk) {
             logger.info(
               s"Gradle dependency fetch did not complete cleanly for $projectDir; any JSONs written so far still contribute."

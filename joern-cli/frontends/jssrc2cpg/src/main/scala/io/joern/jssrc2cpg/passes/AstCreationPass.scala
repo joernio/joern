@@ -3,9 +3,9 @@ package io.joern.jssrc2cpg.passes
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.astcreation.AstCreator
 import io.joern.jssrc2cpg.parser.BabelJsonParser
-import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.{SourceFiles, ValidationMode}
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
-import io.joern.x2cpg.report.{Category, Problem, ScanReport, Severity}
+import io.joern.x2cpg.report.{Category, ScanReport}
 import io.joern.x2cpg.utils.TimeUtils
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
@@ -42,18 +42,10 @@ class AstCreationPass(
 
   override def finish(): Unit = {
     astGenRunnerResult.skippedFiles.foreach { fileName =>
-      val filePath = Paths.get(config.inputPath, fileName)
+      // astgen prints absolute paths, which `resolve` keeps as they are
+      val filePath = Paths.get(config.inputPath).resolve(fileName)
       val fileLOC  = Try(IOUtils.readLinesInFile(filePath)).map(_.size).getOrElse(-1)
-      report.addReportInfo(fileName, fileLOC)
-      // the AstGenRunner already logged the reason
-      report.record(
-        Problem(
-          Severity.Warning,
-          Category.FileSkipped,
-          "Skipped by the AST generator, see the log for the reason",
-          Some(fileName)
-        )
-      )
+      report.addReportInfo(SourceFiles.toRelativePathIfBelow(fileName, config.inputPath), fileLOC)
     }
   }
 

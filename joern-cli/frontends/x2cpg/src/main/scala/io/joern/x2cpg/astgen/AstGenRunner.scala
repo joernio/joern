@@ -2,11 +2,12 @@ package io.joern.x2cpg.astgen
 
 import com.typesafe.config.ConfigFactory
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenProgramMetaData
+import io.joern.x2cpg.report.{Category, ProblemSink}
 import io.joern.x2cpg.utils.Environment.{ArchitectureType, OperatingSystemType}
 import io.joern.x2cpg.utils.{Environment, JoernRunfilesLocator}
 import io.joern.x2cpg.{SourceFiles, X2CpgConfig}
 import io.shiftleft.semanticcpg.utils.ExternalCommand
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 import versionsort.VersionHelper
 
 import java.net.URL
@@ -89,7 +90,14 @@ object AstGenRunner {
   }
 }
 
-abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig[?]) {
+/** @param problems
+  *   receives the non-fatal problems of a run, e.g., files the AST generator could not parse.
+  */
+abstract class AstGenRunner(
+  metaData: AstGenProgramMetaData,
+  config: X2CpgConfig[?],
+  protected val problems: ProblemSink = ProblemSink.LogOnly
+) {
 
   import io.joern.x2cpg.astgen.AstGenRunner.*
 
@@ -189,6 +197,23 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
 
   protected def skippedFiles(in: Path, astGenOut: List[String]): List[String]
 
+  /** Logs on `logger` and records that the AST generator could not parse `file`, or only parsed it with problems.
+    * Implementations of [[skippedFiles]] call this for every such file.
+    *
+    * @param file
+    *   the file as printed by the AST generator, absolute or relative to the input path.
+    * @param message
+    *   what went wrong. It must not repeat `file`, which is logged and reported next to it.
+    */
+  protected def reportParseProblem(logger: Logger, file: String, message: String): Unit = {
+    problems.warn(
+      Category.FileParse,
+      message,
+      Some(SourceFiles.toRelativePathIfBelow(file, config.inputPath)),
+      logger = logger
+    )
+  }
+
   protected def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]]
 
   // Lazy so path resolution and the version probe run at most once per runner instance.
@@ -267,7 +292,12 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
     runAstGenNative(in, out, exclude, include) match {
       case Success(output)                                                          => output
       case Failure(f) if SourceFiles.determine(out.toString, Set(".json")).nonEmpty =>
-        logger.warn(s"\t- running ${metaData.name} failed, continuing with the files it did produce", f)
+        problems.warn(
+          Category.ExternalTool,
+          s"Running ${metaData.name} failed, continuing with the files it did produce",
+          cause = Some(f),
+          logger = logger
+        )
         Seq.empty
       case Failure(f) =>
         throw new AstGenFailedException(s"Running ${metaData.name} on '$in' failed without producing any output", f)

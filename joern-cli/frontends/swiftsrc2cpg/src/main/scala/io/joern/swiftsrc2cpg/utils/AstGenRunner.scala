@@ -2,6 +2,7 @@ package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.Config
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenProgramMetaData
+import io.joern.x2cpg.report.ProblemSink
 import io.joern.x2cpg.utils.Environment.{ArchitectureType, OperatingSystemType}
 import org.slf4j.LoggerFactory
 
@@ -32,7 +33,8 @@ object AstGenRunner {
       )
 }
 
-class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(AstGenRunner.astGenMetaData, config) {
+class AstGenRunner(config: Config, problemSink: ProblemSink = ProblemSink.LogOnly)
+    extends io.joern.x2cpg.astgen.AstGenRunner(AstGenRunner.astGenMetaData, config, problemSink) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -53,7 +55,7 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
       case out if !out.startsWith("Generated") =>
         val filename = out.substring(out.indexOf(": `") + 3, out.indexOf("swift`") + 5)
         val reason   = out.substring(out.indexOf("` ") + 2)
-        logger.warn(s"\t- failed to parse '$filename': '$reason'")
+        reportParseProblem(logger, filename, s"Failed to parse: $reason")
         Option(filename)
       case out =>
         logger.debug(s"\t+ $out")

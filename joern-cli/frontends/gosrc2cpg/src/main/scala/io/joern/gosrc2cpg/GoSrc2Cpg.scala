@@ -28,7 +28,7 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Option(GoGlobal())) extends X
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       FileUtil.usingTemporaryDirectory("gosrc2cpgOut") { tmpDir =>
         MetaDataPass(cpg, Languages.GOLANG, config.inputPath).createAndApply()
-        val astGenResults = new GoAstGenRunner(config).executeForGo(tmpDir)
+        val astGenResults = new GoAstGenRunner(config, problemSink = report).executeForGo(tmpDir)
         astGenResults.foreach { astGenResult =>
           goGlobalOption
             .orElse(Option(GoGlobal()))

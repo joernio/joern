@@ -24,7 +24,7 @@ class SwiftSrc2Cpg extends X2CpgFrontend {
   override def createCpg(config: Config, report: ScanReport): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       FileUtil.usingTemporaryDirectory("swiftsrc2cpgOut") { tmpDir =>
-        val astGenResult = new AstGenRunner(config).execute(tmpDir)
+        val astGenResult = new AstGenRunner(config, report).execute(tmpDir)
         val hash         = HashUtil.sha256(astGenResult.parsedFiles.map(file => Paths.get(file)))
 
         val astCreationPass = new AstCreationPass(cpg, astGenResult, config, report)(config.schemaValidation)

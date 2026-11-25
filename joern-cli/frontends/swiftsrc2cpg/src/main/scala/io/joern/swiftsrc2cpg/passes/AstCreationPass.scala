@@ -7,9 +7,9 @@ import io.joern.swiftsrc2cpg.passes.AstCreationPass.FileAndTypesMap
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{MutableSwiftTypeMapping, SwiftFileLocalTypeMapping}
-import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.{SourceFiles, ValidationMode}
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
-import io.joern.x2cpg.report.{Category, Problem, ScanReport, Severity}
+import io.joern.x2cpg.report.{Category, ScanReport}
 import io.joern.x2cpg.utils.TimeUtils
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
@@ -116,16 +116,7 @@ class AstCreationPass(
           logger.warn(s"Failed to read file: '$filePath'", exception)
           -1
       }
-      report.addReportInfo(skippedFile, fileLOC)
-      // the AstGenRunner already logged the reason
-      report.record(
-        Problem(
-          Severity.Warning,
-          Category.FileSkipped,
-          "Skipped by the AST generator, see the log for the reason",
-          Some(skippedFile)
-        )
-      )
+      report.addReportInfo(SourceFiles.toRelativePathIfBelow(skippedFile, config.inputPath), fileLOC)
     }
   }
 

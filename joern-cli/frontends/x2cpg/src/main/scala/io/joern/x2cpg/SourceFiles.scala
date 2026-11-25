@@ -326,4 +326,22 @@ object SourceFiles {
     }
   }
 
+  /** Makes `file` relative to `rootPath` if it is an absolute path below it, and returns it unaltered otherwise.
+    *
+    * Unlike [[toRelativePath]] this also matches if only one of the two paths contains a symbolic link, e.g., `/var` on
+    * macOS. This is the case for the canonical paths printed by external tools.
+    */
+  def toRelativePathIfBelow(file: String, rootPath: String): String = {
+    val path = Paths.get(file).normalize()
+    if (!path.isAbsolute) {
+      file
+    } else {
+      val root  = Paths.get(rootPath)
+      val roots = Seq(root, Try(root.toRealPath()).getOrElse(root))
+      roots
+        .collectFirst { case candidate if path.startsWith(candidate) => candidate.relativize(path).toString }
+        .getOrElse(file)
+    }
+  }
+
 }
