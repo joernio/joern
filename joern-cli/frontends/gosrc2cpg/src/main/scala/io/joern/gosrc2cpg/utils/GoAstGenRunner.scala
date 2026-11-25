@@ -10,7 +10,9 @@ import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.LoggerFactory
 
+import java.io.File
 import java.nio.file.{Path, Paths}
+import java.util.regex.Pattern
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
@@ -81,16 +83,20 @@ class GoAstGenRunner(config: Config, includeFileRegex: String = "")
       .toTry
   }
 
+  private def astGenExcludeRegex: String = {
+    config.ignoredFilesRegex.toString match {
+      case ""    => ""
+      case regex =>
+        val inputDirPrefix = config.inputPath.stripSuffix(File.separator) + File.separator
+        s"^${Pattern.quote(inputDirPrefix)}(?:$regex)$$"
+    }
+  }
+
   def executeForGo(out: Path): List[GoAstGenRunnerResult] = {
     val in = Paths.get(config.inputPath)
     logger.info(s"Running goastgen in '$config.inputPath' ...")
-    val result   = runAstGen(config.inputPath, out, config.ignoredFilesRegex.toString(), includeFileRegex)
-    val srcFiles = SourceFiles.determine(
-      out.toString,
-      Set(".json"),
-      ignoredFilesRegex = Option(config.ignoredFilesRegex),
-      ignoredFilesPath = Option(config.ignoredFiles)
-    )
+    val result   = runAstGen(config.inputPath, out, astGenExcludeRegex, includeFileRegex)
+    val srcFiles = SourceFiles.determine(out.toString, Set(".json"), ignoredFilesPath = Option(config.ignoredFiles))
     val parsedModFile = filterModFile(srcFiles, out)
     val parsed        = filterFiles(srcFiles, out)
     val skipped       = skippedFiles(in, result.toList)

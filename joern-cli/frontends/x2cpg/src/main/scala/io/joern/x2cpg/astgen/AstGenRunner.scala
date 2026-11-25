@@ -169,7 +169,8 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
       case ignorePath if Files.isDirectory(Paths.get(ignorePath)) => filePath.startsWith(ignorePath)
       case ignorePath                                             => filePath == ignorePath
     }
-    lazy val isInIgnoredFileRegex = config.ignoredFilesRegex.matches(filePath)
+    lazy val isInIgnoredFileRegex =
+      config.ignoredFilesRegex.matches(SourceFiles.toRelativePath(filePath, config.inputPath))
     if (isInIgnoredFiles || isInIgnoredFileRegex) {
       logger.debug(s"'$filePath' ignored by user configuration")
       true
