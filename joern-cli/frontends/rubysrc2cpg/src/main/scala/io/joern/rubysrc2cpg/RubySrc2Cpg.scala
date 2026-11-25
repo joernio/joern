@@ -8,6 +8,7 @@ import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.JRubyEnvironment
 import io.joern.rubysrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass, DependencyPass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
+import io.joern.x2cpg.report.{Category, ScanReport}
 import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
@@ -25,60 +26,88 @@ class RubySrc2Cpg(sharedJRubyEnv: Option[JRubyEnvironment] = None) extends X2Cpg
   override type ConfigType = Config
   override val defaultConfig: Config = Config()
 
-  private val logger                                     = LoggerFactory.getLogger(this.getClass)
-  private var rubyAstGenRunner: Option[RubyAstGenRunner] = None
+  private val logger                                  = LoggerFactory.getLogger(this.getClass)
+  private var ownedJRubyEnv: Option[JRubyEnvironment] = None
 
-  override def createCpg(config: Config): Try[Cpg] = {
+  /** The JRuby environment is expensive to set up. It is shared by all runs of this frontend, but every run gets its
+    * own [[RubyAstGenRunner]], which reports to the [[ScanReport]] of that run.
+    */
+  private def jrubyEnv: JRubyEnvironment = sharedJRubyEnv.getOrElse {
+    synchronized {
+      ownedJRubyEnv.getOrElse {
+        val environment = JRubyEnvironment()
+        ownedJRubyEnv = Option(environment)
+        environment
+      }
+    }
+  }
+
+  override def createCpg(config: Config): Try[Cpg] = createCpg(config, new ScanReport())
+
+  override def createCpg(config: Config, report: ScanReport): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
       new ConfigFileCreationPass(cpg, config).createAndApply()
       new DependencyPass(cpg).createAndApply()
-      createCpgAction(cpg, config)
+      createCpgAction(cpg, config, report)
     }
   }
 
-  private def createCpgAction(cpg: Cpg, config: Config): Unit = {
+  private def createCpgAction(cpg: Cpg, config: Config, report: ScanReport): Unit = {
     FileUtil.usingTemporaryDirectory("rubysrc2cpgOut") { tmpDir =>
-      val astGenResult = rubyAstGenRunner match {
-        case Some(astGenRunner) =>
-          astGenRunner.execute(tmpDir, config)
-        case None =>
-          val astGenRunner = RubyAstGenRunner(config, sharedJRubyEnv)
-          rubyAstGenRunner = Option(astGenRunner)
-          astGenRunner.execute(tmpDir, config)
-      }
+      val astGenResult = RubyAstGenRunner(config, Option(jrubyEnv), report).execute(tmpDir, config)
 
-      val astCreators = ConcurrentTaskUtil
-        .runUsingThreadPool(
-          RubySrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config, cpg.metaData.root.headOption)
+      val astCreators = astGenResult.parsedFiles
+        .zip(
+          ConcurrentTaskUtil.runUsingThreadPool(
+            RubySrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config, cpg.metaData.root.headOption)
+          )
         )
         .flatMap {
-          case Failure(exception)  => logger.warn(s"Unable to parse Ruby file, skipping -", exception); None
-          case Success(astCreator) => Option(astCreator)
+          case (astFile, Failure(exception)) =>
+            // astgen writes `<tmpDir>/<relative source file>.json`
+            val sourceFile = astFile.stripSuffix(".json").replace(tmpDir.toString, config.inputPath)
+            report.warn(
+              Category.FileParse,
+              "Unable to parse Ruby file, skipping",
+              Some(SourceFiles.toRelativePathIfBelow(sourceFile, config.inputPath)),
+              Some(exception),
+              logger
+            )
+            None
+          case (_, Success(astCreator)) => Option(astCreator)
         }
         .filter { x =>
           if (x.fileContent.isBlank) { logger.info(s"File content empty, skipping - ${x.fileName}") }
           !x.fileContent.isBlank || x.fileName.endsWith(".html.erb")
         }
 
-      val internalProgramSummary = ConcurrentTaskUtil
-        .runUsingThreadPool(astCreators.map(x => () => x.summarize()).iterator)
+      val internalProgramSummary = astCreators
+        .zip(ConcurrentTaskUtil.runUsingThreadPool(astCreators.map(creator => () => creator.summarize()).iterator))
         .flatMap {
-          case Failure(exception) => logger.warn(s"Unable to pre-parse Ruby file, skipping - ", exception); None
-          case Success(summary)   => Option(summary)
+          case (astCreator, Failure(exception)) =>
+            report.warn(
+              Category.FileProcessing,
+              "Unable to pre-parse Ruby file, skipping",
+              Some(astCreator.relativeFileName),
+              Some(exception),
+              logger
+            )
+            None
+          case (_, Success(summary)) => Option(summary)
         }
         .foldLeft(RubyProgramSummary(RubyProgramSummary.BuiltinTypes(config)))(_ ++= _)
 
-      AstCreationPass(cpg, astCreators.map(_.withSummary(internalProgramSummary))).createAndApply()
+      AstCreationPass(cpg, astCreators.map(_.withSummary(internalProgramSummary)), report).createAndApply()
       TypeNodePass.withTypesFromCpg(cpg).createAndApply()
     }
 
   }
 
   override def close(): Unit = {
-    val closeTask = Try(rubyAstGenRunner.foreach(_.close))
+    val closeTask = Try(ownedJRubyEnv.foreach(_.close()))
     if (closeTask.isFailure) {
-      logger.error("Error occurred while cleaning up RubyAstGenRunner!", closeTask.failed.get)
+      logger.error("Error occurred while cleaning up the JRuby environment!", closeTask.failed.get)
     }
   }
 

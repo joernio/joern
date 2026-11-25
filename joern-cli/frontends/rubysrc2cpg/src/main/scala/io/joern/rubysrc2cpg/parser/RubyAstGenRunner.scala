@@ -67,6 +67,9 @@ class RubyAstGenRunner(
     }
 
     astGenOut.map(_.strip()).foreach {
+      // Prism is only the first parser to be tried. If it fails, ruby_ast_gen falls back to another one.
+      case s"[WARN] Prism parser failed: $_"           =>
+      case s"[WARN] Skipping $fileName: $reason"       => addReason(reason, Option(fileName))
       case s"[WARN] $reason - $fileName"               => addReason(reason, Option(fileName))
       case s"[ERR] '$fileName' - $reason"              => addReason(reason, Option(fileName))
       case s"[ERR] Failed to parse $fileName: $reason" =>

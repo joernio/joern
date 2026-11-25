@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.passes
 
 import flatgraph.DiffGraphApplier
 import io.joern.rubysrc2cpg.astcreation.AstCreator
+import io.joern.x2cpg.report.{Category, ScanReport}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
@@ -11,7 +12,8 @@ import org.slf4j.LoggerFactory
 
 import scala.util.control.NonFatal
 
-class AstCreationPass(cpg: Cpg, astCreators: List[AstCreator]) extends ForkJoinParallelCpgPass[AstCreator](cpg) {
+class AstCreationPass(cpg: Cpg, astCreators: List[AstCreator], report: ScanReport = new ScanReport())
+    extends ForkJoinParallelCpgPass[AstCreator](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -44,7 +46,13 @@ class AstCreationPass(cpg: Cpg, astCreators: List[AstCreator]) extends ForkJoinP
       logger.debug(s"Processed '${astCreator.fileName}'")
     } catch {
       case NonFatal(ex) =>
-        logger.warn(s"Failed to process '${astCreator.fileName}'", ex)
+        report.warn(
+          Category.FileProcessing,
+          "Failed to process the file",
+          Some(astCreator.relativeFileName),
+          Some(ex),
+          logger
+        )
     }
   }
 }
