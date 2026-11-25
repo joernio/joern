@@ -41,7 +41,9 @@ report as JSON with `--report-json` (next to the CPG) or `--report-json-file <fi
   JSON report, they are never `null`. The `exception` is an object with the `type` (class name) and, if the exception has
   one, its `message`.
 - Per-file results (lines of code, parsed, CPG created, duration) are recorded
-  with `report.addReportInfo` and `report.updateReport`.
+  with `report.addReportInfo` and `report.updateReport`: register every file your pass analyzes, with the same
+  relative path as in its problems. The files that a `FileParse` or `FileProcessing` problem is about are added by the
+  report if you did not register them.
 - Test it with a frontend whose input triggers the problem and assert on `report.allProblems`.
 
 Add a CPG pass

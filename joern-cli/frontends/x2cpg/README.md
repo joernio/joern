@@ -77,7 +77,7 @@ run fails, then with the status `Failed`. Failing to write the report only logs 
 | `status` | `Completed`, or `Failed` if the run ended with an exception. |
 | `summary` | Totals over `files` and `problems`. `loc` only counts files that could be read. |
 | `problems` | All non-fatal problems, see below. |
-| `files` | One entry per file the frontend knows about, sorted by `path`, see below. |
+| `files` | One entry per file the frontend analyzed, sorted by `path`, see below. |
 
 A **problem** has the following fields:
 
@@ -116,8 +116,11 @@ Some things to rely on, or not to rely on:
 - The category names are stable. New categories, fields and frontends may be added, so ignore what you do not know.
 - Which problems a frontend reports differs. A missing problem is no guarantee that everything was fine.
 - The `message` is meant for people. Do not parse it.
-- Only `c2cpg`, `jssrc2cpg`, `swiftsrc2cpg`, `gosrc2cpg` and `csharpsrc2cpg` list the processed files. The other
-  frontends leave `files` empty and only report problems.
+- Every frontend except `ghidra2cpg`, which does not report yet, lists the files it analyzed. A file that a
+  `FileParse` or `FileProcessing` problem is about is listed too, as not parsed or as without a CPG.
+- A file that could not be processed never has `cpgGenerated` set, even if its frontend recovered with an empty AST.
+- `jimple2cpg` lists the classes: the `path` is the path of the class inside the archive or directory (the name of
+  the class for dex files), and `loc` is only there if the class was decompiled.
 
 To report problems from a frontend, see
 [Report a non-fatal problem from a frontend](../../../contributing-docs/09_common_tasks.md#report-a-non-fatal-problem-from-a-frontend).
