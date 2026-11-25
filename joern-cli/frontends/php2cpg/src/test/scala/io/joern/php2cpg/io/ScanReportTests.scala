@@ -25,6 +25,8 @@ class ScanReportTests extends AnyWordSpec with Matchers {
         new Php2Cpg().createCpg(Config().withInputPath(dir.toString), report).get.close()
 
         report.allProblems shouldBe empty
+        report.fileEntries.map(entry => (entry.path, entry.loc, entry.parsed, entry.cpgGenerated)) shouldBe
+          Seq(("good.php", Some(2), true, true))
       }
     }
 
