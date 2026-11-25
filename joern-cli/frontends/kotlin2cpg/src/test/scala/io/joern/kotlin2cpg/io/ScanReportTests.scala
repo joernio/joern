@@ -30,6 +30,9 @@ class ScanReportTests extends AnyWordSpec with Matchers with LoneElement {
         val problem = report.allProblems.find(_.message.contains("No jars found")).getOrElse(fail("no problem"))
         problem.severity shouldBe Severity.Warning
         problem.category shouldBe Category.DependencyResolution
+
+        report.fileEntries.map(entry => (entry.path, entry.loc, entry.parsed, entry.cpgGenerated)) shouldBe
+          Seq(("Main.kt", Some(1), true, true))
       }
     }
 

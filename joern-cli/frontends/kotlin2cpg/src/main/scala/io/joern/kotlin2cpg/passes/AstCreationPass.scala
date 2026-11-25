@@ -4,6 +4,7 @@ import io.joern.kotlin2cpg.KtFileWithMeta
 import io.joern.kotlin2cpg.ast.AstCreator
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.report.{Category, ScanReport}
+import io.joern.x2cpg.utils.TimeUtils
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
 import org.jetbrains.kotlin.resolve.BindingContext
@@ -78,19 +79,26 @@ class AstCreationPass(
         accumulator.samInfoEntriesByImplClass,
         disableFileContent
       )
-    try {
-      diffGraph.absorb(astCreator.createAst())
-      logger.debug(s"Processed '${fileWithMeta.f.getVirtualFilePath}'")
-    } catch {
-      case NonFatal(e) =>
-        report.warn(
-          Category.FileProcessing,
-          "Failed to process the file",
-          Some(fileWithMeta.relativizedPath),
-          Some(e),
-          logger
-        )
+    // the Kotlin compiler has parsed the file already
+    report.addReportInfo(fileWithMeta.relativizedPath, fileWithMeta.f.getText.linesIterator.size, parsed = true)
+    val (gotCpg, duration) = TimeUtils.time {
+      try {
+        diffGraph.absorb(astCreator.createAst())
+        logger.debug(s"Processed '${fileWithMeta.f.getVirtualFilePath}'")
+        true
+      } catch {
+        case NonFatal(e) =>
+          report.warn(
+            Category.FileProcessing,
+            "Failed to process the file",
+            Some(fileWithMeta.relativizedPath),
+            Some(e),
+            logger
+          )
+          false
+      }
     }
+    report.updateReport(fileWithMeta.relativizedPath, gotCpg, duration)
   }
 
 }
