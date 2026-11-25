@@ -32,5 +32,17 @@ class ScanReportTests extends AnyWordSpec with Matchers {
         report.allProblems.filter(_.file.exists(_.endsWith("good.py"))) shouldBe empty
       }
     }
+
+    "list the processed files" in {
+      FileUtil.usingTemporaryDirectory("pysrc2cpgScanReport") { dir =>
+        Files.writeString(dir / "good.py", "x = 1\ny = 2\n")
+
+        val report = new ScanReport()
+        new Py2CpgOnFileSystem().createCpg(Py2CpgOnFileSystemConfig().withInputPath(dir.toString), report).get.close()
+
+        report.fileEntries.map(entry => (entry.path, entry.loc, entry.parsed, entry.cpgGenerated)) shouldBe
+          Seq(("good.py", Some(2), true, true))
+      }
+    }
   }
 }
