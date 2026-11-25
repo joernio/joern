@@ -32,5 +32,23 @@ class ScanReportTests extends AnyWordSpec with Matchers {
         report.allProblems.filter(_.file.exists(_.endsWith("Good.java"))) shouldBe empty
       }
     }
+
+    "list the processed files" in {
+      FileUtil.usingTemporaryDirectory("javasrc2cpgScanReport") { dir =>
+        Files.writeString(dir / "Good.java", "public class Good {\n  void f() {}\n}\n")
+        Files.writeString(dir / "Broken.java", "public class Broken { void f( { }")
+
+        val report = new ScanReport()
+        new JavaSrc2Cpg().createCpg(Config().withInputPath(dir.toString), report).get.close()
+
+        val files = report.fileEntries.map(entry => entry.path -> entry).toMap
+        files.keySet shouldBe Set("Good.java", "Broken.java")
+        files("Good.java").loc shouldBe Some(3)
+        files("Good.java").parsed shouldBe true
+        files("Good.java").cpgGenerated shouldBe true
+        files("Broken.java").parsed shouldBe false
+        files("Broken.java").cpgGenerated shouldBe false
+      }
+    }
   }
 }

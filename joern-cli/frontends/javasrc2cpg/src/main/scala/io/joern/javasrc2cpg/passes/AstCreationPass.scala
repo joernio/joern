@@ -9,6 +9,7 @@ import io.joern.javasrc2cpg.passes.AstCreationPass.*
 import io.joern.javasrc2cpg.typesolvers.{EagerSourceTypeSolver, JarTypeSolver, SimpleCombinedTypeSolver}
 import io.joern.javasrc2cpg.util.SourceParser
 import io.joern.x2cpg.report.{Category, ScanReport}
+import io.joern.x2cpg.utils.TimeUtils
 import io.joern.x2cpg.utils.dependency.DependencyResolver
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
@@ -20,6 +21,7 @@ import java.nio.file.{Files, Paths}
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
+import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Failure, Success, Try}
 
 class AstCreationPass(
@@ -55,28 +57,39 @@ class AstCreationPass(
     filename: String,
     accumulator: AstCreationPass.Accumulator
   ): Unit = {
-    sourceParser.parseAnalysisFile(filename, !config.disableFileContent) match {
-      case Some(compilationUnit, fileContent) =>
-        symbolSolver.inject(compilationUnit)
-        val contentToUse = if (!config.disableFileContent) fileContent.map(_.replaceAll("\r\n", "\n")) else None
+    val (gotCpg, duration) = TimeUtils.time {
+      sourceParser.parseAnalysisFile(filename, !config.disableFileContent) match {
+        case Some(compilationUnit, fileContent) =>
+          val linesOfCode = fileContent
+            .map(_.linesIterator.size)
+            .orElse(compilationUnit.getRange.toScala.map(_.end.line))
+          report.addReportInfo(filename, linesOfCode.getOrElse(-1), parsed = true)
 
-        diffGraph.absorb(
-          new AstCreator(
-            filename,
-            compilationUnit,
-            contentToUse,
-            accumulator,
-            symbolSolver,
-            config.keepTypeArguments,
-            loggedExceptionCounts,
-            report
-          )(config.schemaValidation, config.disableTypeFallback)
-            .createAst()
-        )
-        logger.debug(s"Processed '$filename'")
+          symbolSolver.inject(compilationUnit)
+          val contentToUse = if (!config.disableFileContent) fileContent.map(_.replaceAll("\r\n", "\n")) else None
 
-      case None => report.warn(Category.FileParse, "Failed to process the file", Some(filename), logger = logger)
+          diffGraph.absorb(
+            new AstCreator(
+              filename,
+              compilationUnit,
+              contentToUse,
+              accumulator,
+              symbolSolver,
+              config.keepTypeArguments,
+              loggedExceptionCounts,
+              report
+            )(config.schemaValidation, config.disableTypeFallback)
+              .createAst()
+          )
+          logger.debug(s"Processed '$filename'")
+          true
+
+        case None =>
+          report.warn(Category.FileParse, "Failed to process the file", Some(filename), logger = logger)
+          false
+      }
     }
+    report.updateReport(filename, gotCpg, duration)
   }
 
   /** Clear JavaParser caches. Should only be invoked after we no longer need JavaParser, e.g. as soon as we've built
