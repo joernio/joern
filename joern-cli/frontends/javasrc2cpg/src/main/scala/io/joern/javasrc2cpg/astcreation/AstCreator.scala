@@ -26,6 +26,7 @@ import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.{
   RegularClassDeclaration
 }
 import io.joern.javasrc2cpg.util.*
+import io.joern.x2cpg.report.{Category, ProblemSink}
 import io.joern.x2cpg.utils.OffsetUtils
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
@@ -67,7 +68,8 @@ class AstCreator(
   accumulator: AstCreationPass.Accumulator,
   val symbolSolver: JavaSymbolSolver,
   protected val keepTypeArguments: Boolean,
-  val loggedExceptionCounts: scala.collection.concurrent.Map[Class[?], Int]
+  val loggedExceptionCounts: scala.collection.concurrent.Map[Class[?], Int],
+  problems: ProblemSink = ProblemSink.LogOnly
 )(implicit withSchemaValidation: ValidationMode, disableTypeFallback: Boolean)
     extends AstCreatorBase[Node, AstCreator](filename)
     with AstForDeclarationsCreator
@@ -228,10 +230,16 @@ class AstCreator(
       Ast(namespaceBlock).withChildren(typeDeclAsts).withChildren(importNodes)
     } catch {
       case exception: UnsolvedSymbolException =>
-        logger.warn(s"Unsolved symbol exception caught in '$filename'", exception)
+        problems.warn(
+          Category.FileProcessing,
+          "Unsolved symbol exception caught",
+          Some(filename),
+          Some(exception),
+          logger
+        )
         Ast()
       case t: Throwable =>
-        logger.warn(s"Failed to process '$filename'", t)
+        problems.warn(Category.FileProcessing, "Failed to process the file", Some(filename), Some(t), logger)
         Ast()
     }
   }

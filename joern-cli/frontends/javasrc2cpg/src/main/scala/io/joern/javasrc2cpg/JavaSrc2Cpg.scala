@@ -6,6 +6,7 @@ import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.frontend.{JavaConfigFileCreationPass, MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.frontendspecific.javasrc2cpg.JvmDefaultIgnoredFolders
+import io.joern.x2cpg.report.ScanReport
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
@@ -20,10 +21,12 @@ class JavaSrc2Cpg extends X2CpgFrontend {
   override type ConfigType = Config
   override val defaultConfig = DefaultConfig
 
-  override def createCpg(config: Config): Try[Cpg] = {
+  override def createCpg(config: Config): Try[Cpg] = createCpg(config, new ScanReport())
+
+  override def createCpg(config: Config, report: ScanReport): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
       new MetaDataPass(cpg, language, config.inputPath).createAndApply()
-      val astCreationPass = new AstCreationPass(config, cpg)
+      val astCreationPass = new AstCreationPass(config, cpg, report = report)
       astCreationPass.createAndApply()
       astCreationPass.sourceParser.cleanupDelombokOutput()
       astCreationPass.clearJavaParserCaches()
