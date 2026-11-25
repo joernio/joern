@@ -3,6 +3,7 @@ package io.joern.jimple2cpg.passes
 import io.joern.jimple2cpg.Config
 import io.joern.jimple2cpg.astcreation.AstCreator
 import io.joern.x2cpg.report.{Category, ScanReport}
+import io.joern.x2cpg.utils.TimeUtils
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
 import org.slf4j.LoggerFactory
@@ -35,16 +36,22 @@ class SootAstCreationPass(cpg: Cpg, config: Config, report: ScanReport = new Sca
 
   override def runOnPart(builder: DiffGraphBuilder, part: SootClass, accumulator: AstCreationPass.Accumulator): Unit = {
     val jimpleFile = SourceLocator.v().getSourceForClass(part.getName)
-    try {
-      // sootClass.setApplicationClass()
-      val localDiff = new AstCreator(jimpleFile, part, accumulator)(config.schemaValidation).createAst()
-      builder.absorb(localDiff)
-      logger.debug(s"Processed '$jimpleFile'")
-    } catch {
-      case NonFatal(e) =>
-        // classes from dex files have no class file, so they are identified by their name
-        report.warn(Category.FileProcessing, "Failed to process the class", Some(part.getName), Some(e), logger)
+    // classes from dex files have no class file, so they are identified by their name
+    report.addReportInfo(part.getName, -1, parsed = true)
+    val (gotCpg, duration) = TimeUtils.time {
+      try {
+        // sootClass.setApplicationClass()
+        val localDiff = new AstCreator(jimpleFile, part, accumulator)(config.schemaValidation).createAst()
+        builder.absorb(localDiff)
+        logger.debug(s"Processed '$jimpleFile'")
+        true
+      } catch {
+        case NonFatal(e) =>
+          report.warn(Category.FileProcessing, "Failed to process the class", Some(part.getName), Some(e), logger)
+          false
+      }
     }
+    report.updateReport(part.getName, gotCpg, duration)
   }
 
 }
