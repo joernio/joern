@@ -36,7 +36,7 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
         with:
-          toolchain: 1.97.1
+          toolchain: 1.100.0
           components: rust-src
       - run: sbt --server --batch "scalafmtCheck ; testFull"
       - name: Integration tests
