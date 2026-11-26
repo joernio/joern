@@ -90,11 +90,28 @@ class ExcludeRegexTests extends AnyWordSpec with Matchers {
       withProject { dir => ExcludeRegex.matchesLegacyAbsolute("".r, (dir / "a.js").toString) shouldBe false }
     }
 
-    "never match regexes with a negative lookaround, as they would exclude everything" in {
+    "not match a regex that starts with a negative lookaround, as it is meant for the relative path" in {
       withProject { dir =>
-        val file = (dir / "sub" / "deep" / "c.js").toString
-        ExcludeRegex.matchesLegacyAbsolute(s"(?!sub${sep}deep$sep.*$$).*\\.js".r, file) shouldBe false
-        ExcludeRegex.matchesLegacyAbsolute(".*(?<!c)\\.js".r, file) shouldBe false
+        val keepDeep = s"(?!sub${sep}deep$sep.*$$).*\\.js".r
+        ExcludeRegex.matchesRelative(keepDeep, (dir / "sub" / "deep" / "c.js").toString, dir.toString) shouldBe false
+        ExcludeRegex.matchesLegacyAbsolute(keepDeep, (dir / "sub" / "deep" / "c.js").toString) shouldBe false
+        ExcludeRegex.matchesLegacyAbsolute(keepDeep, (dir / "sub" / "b.js").toString) shouldBe false
+      }
+    }
+
+    "match a regex with a negative lookaround that starts with the absolute path" in {
+      withProject { dir =>
+        val regex = (Pattern.quote(dir.toString) + sep + "(?!sub" + sep + "deep" + sep + ").*").r
+        ExcludeRegex.matchesLegacyAbsolute(regex, (dir / "sub" / "b.js").toString) shouldBe true
+        ExcludeRegex.matchesLegacyAbsolute(regex, (dir / "sub" / "deep" / "c.js").toString) shouldBe false
+      }
+    }
+
+    "match a regex with a negative lookaround that starts with .*" in {
+      withProject { dir =>
+        val regex = ".*(?<!c)\\.js".r
+        ExcludeRegex.matchesLegacyAbsolute(regex, (dir / "sub" / "b.js").toString) shouldBe true
+        ExcludeRegex.matchesLegacyAbsolute(regex, (dir / "sub" / "deep" / "c.js").toString) shouldBe false
       }
     }
   }

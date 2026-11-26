@@ -3,6 +3,7 @@ package io.joern.x2cpg.utils
 import io.joern.x2cpg.SourceFiles
 
 import java.nio.file.Paths
+import java.util.regex.Pattern
 import scala.util.matching.Regex
 
 /** The single definition of how the `--exclude-regex` option is matched.
@@ -29,12 +30,13 @@ object ExcludeRegex {
     * This is deprecated: use [[matchesRelative]]. It only exists so that callers can warn if it is the only matcher
     * that matches.
     *
-    * Regexes with a negative lookaround, e.g., `(?!src/keep/).*\.js`, are never matched against the absolute path: they
-    * are satisfied by nearly every absolute path and would exclude everything instead of just the paths that the regex
-    * is meant to select. They are only meaningful relative to the input directory.
+    * A regex with a negative lookaround, e.g., `(?!src/keep/).*\.js`, is only matched against the absolute path if it
+    * starts with something that pins it to an absolute path: `/`, a drive letter, or `.*`. Otherwise, it is meant for
+    * the relative path: the lookaround is evaluated at the start of the absolute path, where it is trivially true, and
+    * the regex would exclude the very files it is meant to keep.
     */
   def matchesLegacyAbsolute(regex: Regex, path: String): Boolean =
-    nonEmpty(regex) && !hasNegativeLookaround(regex) &&
+    nonEmpty(regex) && (!hasNegativeLookaround(regex) || startsWithAbsolutePrefix(regex)) &&
       regex.matches(Paths.get(path).toAbsolutePath.normalize().toString)
 
   private def nonEmpty(regex: Regex): Boolean = regex.pattern.pattern().nonEmpty
@@ -43,5 +45,10 @@ object ExcludeRegex {
     val pattern = regex.pattern.pattern()
     pattern.contains("(?!") || pattern.contains("(?<!")
   }
+
+  private val AbsolutePrefix = Pattern.compile("""\^?(?:\\Q)?(?:/|[A-Za-z]:|\.\*)""")
+
+  private def startsWithAbsolutePrefix(regex: Regex): Boolean =
+    AbsolutePrefix.matcher(regex.pattern.pattern()).lookingAt()
 
 }
