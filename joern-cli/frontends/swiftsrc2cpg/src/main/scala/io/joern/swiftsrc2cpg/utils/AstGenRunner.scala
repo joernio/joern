@@ -36,6 +36,8 @@ object AstGenRunner {
 class AstGenRunner(config: Config, problemSink: ProblemSink = ProblemSink.LogOnly)
     extends io.joern.x2cpg.astgen.AstGenRunner(AstGenRunner.astGenMetaData, config, problemSink) {
 
+  override protected def allowLegacyAbsoluteExcludeRegex: Boolean = true
+
   private val logger = LoggerFactory.getLogger(getClass)
 
   // SwiftAstGen ships a single universal macOS binary, so x86 and ARM map to the same suffix.

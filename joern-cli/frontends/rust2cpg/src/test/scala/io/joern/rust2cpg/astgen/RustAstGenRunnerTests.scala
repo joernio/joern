@@ -173,6 +173,45 @@ class RustAstGenRunnerTests extends AnyWordSpec with Matchers {
       }
     }
 
+    "match ignored files regex against the whole path relative to the input directory" in {
+
+      /** Relative paths use the separator of the operating system, so regexes must accept both `/` and `\`. */
+      val sep = "[/\\\\]"
+      FileUtil.usingTemporaryDirectory("rust2cpgTestInput") { inputDir =>
+        writeFile(
+          inputDir / "Cargo.toml",
+          """[package]
+            |name = "mylib"
+            |version = "0.1.0"
+            |edition = "2021"
+            |""".stripMargin
+        )
+        writeFile(inputDir / "src" / "lib.rs", "pub fn lib_fn() -> bool { true }")
+        writeFile(inputDir / "tests" / "integration.rs", "#[test] fn it_works() { assert!(mylib::lib_fn()); }")
+        writeFile(inputDir / "benches" / "bench.rs", "fn main() {}")
+
+        def parsed(regex: String): Seq[String] = FileUtil.usingTemporaryDirectory("rust2cpgTestOut") { outputDir =>
+          val config = Config().withInputPath(inputDir.toString).withOutputPath(outputDir.toString)
+          new RustAstGenRunner(config.withIgnoredFilesRegex(regex))
+            .execute(outputDir)
+            .parsedFiles
+            .map(file =>
+              outputDir.relativize(java.nio.file.Paths.get(file)).toString.replace(java.io.File.separator, "/")
+            )
+            .sorted
+        }
+
+        parsed(s"benches$sep.*") shouldBe Seq("src/lib.rs.json", "tests/integration.rs.json")
+        parsed("benches") shouldBe Seq("src/lib.rs.json", "tests/integration.rs.json")
+        parsed(s"(?!src$sep.*$$).*\\.rs") shouldBe Seq("src/lib.rs.json")
+        parsed("ench") shouldBe Seq("benches/bench.rs.json", "src/lib.rs.json", "tests/integration.rs.json")
+        // a regex that only matches the absolute path does not exclude anything
+        val absolute = inputDir.toString.replaceAll("([^A-Za-z0-9_/])", "\\\\$1")
+        parsed(s"$absolute${sep}benches$sep.*") shouldBe
+          Seq("benches/bench.rs.json", "src/lib.rs.json", "tests/integration.rs.json")
+      }
+    }
+
     "skip out-of-crate file" in {
       FileUtil.usingTemporaryDirectory("rust2cpgTestInput") { inputDir =>
         writeFile(

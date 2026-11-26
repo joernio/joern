@@ -11,6 +11,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Path, Paths}
+import java.util.regex.Pattern
 import scala.util.{Failure, Success, Try}
 
 object AstGenRunnerTests {
@@ -29,10 +30,13 @@ object AstGenRunnerTests {
     config: StubConfig,
     jsonFiles: Seq[String],
     outcome: Try[Seq[String]],
-    problemSink: ProblemSink = ProblemSink.LogOnly
+    problemSink: ProblemSink = ProblemSink.LogOnly,
+    legacyAbsoluteExcludeRegex: Boolean = true
   ) extends AstGenRunner(StubMetaData, config, problemSink) {
 
     private val logger = LoggerFactory.getLogger(getClass)
+
+    override protected def allowLegacyAbsoluteExcludeRegex: Boolean = legacyAbsoluteExcludeRegex
 
     override protected def skippedFiles(in: Path, astGenOut: List[String]): List[String] =
       astGenOut.collect {
@@ -48,7 +52,10 @@ object AstGenRunnerTests {
       exclude: String,
       include: String
     ): Try[Seq[String]] = {
-      jsonFiles.foreach(file => Files.writeString(out / file, "{}"))
+      jsonFiles.foreach { file =>
+        Files.createDirectories((out / file).getParent)
+        Files.writeString(out / file, "{}")
+      }
       outcome
     }
   }
@@ -148,6 +155,89 @@ class AstGenRunnerTests extends AnyWordSpec with Matchers with LoneElement {
         exception.getCause shouldBe cause
         exception.getMessage should include("stubastgen")
       }
+    }
+  }
+
+  "AstGenRunner.execute with --exclude-regex" should {
+
+    /** Relative paths use the separator of the operating system, so regexes must accept both `/` and `\`. */
+    val sep = "[/\\\\]"
+
+    val sources = Seq("a.js", "sub/b.js", "sub/deep/c.js")
+
+    /** Runs the stub on `sources` in a fresh input directory and returns the parsed ones, relative to it. */
+    def parsedSources(
+      regex: Path => String,
+      report: ProblemSink = ProblemSink.LogOnly,
+      legacyAbsoluteExcludeRegex: Boolean = true
+    ): Seq[String] = {
+      FileUtil.usingTemporaryDirectory("astgenRunnerIn") { inputDir =>
+        FileUtil.usingTemporaryDirectory("astgenRunnerOut") { outputDir =>
+          sources.foreach { source =>
+            Files.createDirectories((inputDir / source).getParent)
+            Files.writeString(inputDir / source, "")
+          }
+          val config = StubConfig().withInputPath(inputDir.toString).withIgnoredFilesRegex(regex(inputDir))
+          val runner = new StubAstGenRunner(
+            config,
+            sources.map(_ + ".json"),
+            Success(Seq.empty),
+            report,
+            legacyAbsoluteExcludeRegex
+          )
+          runner
+            .execute(outputDir)
+            .parsedFiles
+            .map(file => outputDir.relativize(Paths.get(file)).toString.stripSuffix(".json"))
+            .map(_.replace(java.io.File.separator, "/"))
+            .sorted
+        }
+      }
+    }
+
+    def absolute(inputDir: Path): String = Pattern.quote(inputDir.toString)
+
+    "exclude the files whose relative path fully matches" in {
+      parsedSources(_ => "a\\.js") shouldBe Seq("sub/b.js", "sub/deep/c.js")
+    }
+
+    "exclude everything below a directory whose relative path fully matches" in {
+      parsedSources(_ => "sub") shouldBe Seq("a.js")
+      parsedSources(_ => s"sub$sep.*") shouldBe Seq("a.js")
+    }
+
+    "support lookaheads" in {
+      parsedSources(_ => s"(?!sub${sep}deep$sep.*$$).*\\.js") shouldBe Seq("sub/deep/c.js")
+    }
+
+    "not exclude anything if the regex only matches a part of the relative path" in {
+      parsedSources(_ => "ub") shouldBe sources.sorted
+      parsedSources(_ => "b\\.js") shouldBe sources.sorted
+    }
+
+    "be case-sensitive" in {
+      parsedSources(_ => "A\\.JS") shouldBe sources.sorted
+    }
+
+    "not report anything if the regex matches the relative path" in {
+      val report = new ScanReport()
+      parsedSources(_ => s"sub$sep.*", report) shouldBe Seq("a.js")
+      report.allProblems shouldBe empty
+    }
+
+    "still exclude if the regex only matches the absolute path, and report once that this is deprecated" in {
+      val report = new ScanReport()
+      parsedSources(inputDir => s"${absolute(inputDir)}$sep(sub$sep.*)", report) shouldBe Seq("a.js")
+      val problem = report.allProblems.loneElement
+      problem.severity shouldBe Severity.Warning
+      problem.category shouldBe Category.Other
+      problem.message should include("deprecated")
+      problem.message should include("absolute")
+    }
+
+    "not exclude if the regex only matches the absolute path and that is not allowed" in {
+      parsedSources(inputDir => s"${absolute(inputDir)}$sep.*", legacyAbsoluteExcludeRegex = false) shouldBe
+        sources.sorted
     }
   }
 

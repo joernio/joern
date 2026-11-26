@@ -77,6 +77,8 @@ class AstGenRunner(config: Config, problemSink: ProblemSink = ProblemSink.LogOnl
 
   import io.joern.jssrc2cpg.utils.AstGenRunner.*
 
+  override protected def allowLegacyAbsoluteExcludeRegex: Boolean = true
+
   private val logger = LoggerFactory.getLogger(getClass)
 
   private val executableArgs = {

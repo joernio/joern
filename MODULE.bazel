@@ -121,9 +121,9 @@ http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_
 
 http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
-JSSRC2CPG_ASTGEN_VERSION = "3.55.0"
+JSSRC2CPG_ASTGEN_VERSION = "3.57.0"
 
-SWIFTSRC2CPG_ASTGEN_VERSION = "0.4.4"
+SWIFTSRC2CPG_ASTGEN_VERSION = "0.4.6"
 
 RUBYSRC2CPG_ASTGEN_VERSION = "0.59.8"
 
@@ -137,42 +137,42 @@ PHP_PARSER_VERSION = "4.15.10"
 http_file(
     name = "jssrc2cpg_astgen_macos_arm",
     executable = True,
-    sha256 = "a837bb7ab921c8fc30feb7d9b395cf44570d51d0c9c0c76413e9af7a4611a237",
+    sha256 = "22fc64e1383668b0315839ef147768194a4f5f4f5a7f9b2790b84a730a9ba077",
     url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv{}/astgen-macos-arm".format(JSSRC2CPG_ASTGEN_VERSION),
 )
 
 http_file(
     name = "jssrc2cpg_astgen_macos_x86",
     executable = True,
-    sha256 = "bdfbc4cce6219d134b104b967c57c54052fc98e065d3c3960df5caef3a6de205",
+    sha256 = "44923f7ffe2845df7c092c4e21512cce211f9d8f1de563705edad0af87198da3",
     url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv{}/astgen-macos".format(JSSRC2CPG_ASTGEN_VERSION),
 )
 
 http_file(
     name = "jssrc2cpg_astgen_linux_arm",
     executable = True,
-    sha256 = "0afde5ad7d48bfc941b4dfccb7d5ccf54d26bbf04c6787a59e429bd1844a0220",
+    sha256 = "06f8781561a512364ff90f1160635035073084448fbb4aaf86dac432081eb409",
     url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2fv{}/astgen-linux-arm".format(JSSRC2CPG_ASTGEN_VERSION),
 )
 
 http_file(
     name = "jssrc2cpg_astgen_linux_x86",
     executable = True,
-    sha256 = "cadc0ed51f42c3ec49afaa34f67eed41d5fd5ba2f5d0de4d6d2fd555eb419482",
+    sha256 = "78c2171e461cd6354a86a8e8c9ab2d81cffe9291c849a19c70ef9e1ea2cd0ea1",
     url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv{}/astgen-linux".format(JSSRC2CPG_ASTGEN_VERSION),
 )
 
 http_file(
     name = "jssrc2cpg_astgen_win_x86",
     executable = True,
-    sha256 = "08f82ce55004b0cd2df0e6b123ed05bb3627d87ac65ad386aa7c5ea9d001b454",
+    sha256 = "d33cc8c7bce794e691f12d2abd350042d17e771df41fa572052a140b6c5d5348",
     url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv{}/astgen-win.exe".format(JSSRC2CPG_ASTGEN_VERSION),
 )
 
 http_file(
     name = "jssrc2cpg_astgen_win_arm",
     executable = True,
-    sha256 = "103089d4216ffed0f4acbd075bacce6f1f09da5d50642a93e59895c62cd824f2",
+    sha256 = "1fa1dd96812c14e3620c2e252b2cbbacbf3ed2729fa9ccaee31a158db86fe2ee",
     url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv{}/astgen-win-arm.exe".format(JSSRC2CPG_ASTGEN_VERSION),
 )
 
@@ -180,28 +180,28 @@ http_file(
 http_file(
     name = "swiftsrc2cpg_astgen_macos",
     executable = True,
-    sha256 = "af6c202b40247bbd8bd50dd15d9f8c635290227af3dabff96c743ffc63c19374",
+    sha256 = "dbf8e999aea9abc5bbfdea989f1621b9ae589bec5d1144be0d2a3e9da394899f",
     url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv{}/SwiftAstGen-mac".format(SWIFTSRC2CPG_ASTGEN_VERSION),
 )
 
 http_file(
     name = "swiftsrc2cpg_astgen_linux_arm",
     executable = True,
-    sha256 = "8892eaf8a48c0753d70794f59efaf4c2f38b7660ee5dec06775bd09217afb056",
+    sha256 = "64faddfd946fec0bf0bef34b69aa380a6f56d8537fbd5911ef38fded1ca34870",
     url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv{}/SwiftAstGen-linux-arm64".format(SWIFTSRC2CPG_ASTGEN_VERSION),
 )
 
 http_file(
     name = "swiftsrc2cpg_astgen_linux_x86",
     executable = True,
-    sha256 = "e14e6f03a892f53aeecf164e57531b3096faec0a85e343f0dab1fd5c2d718d6f",
+    sha256 = "255b9f4089701d85ab8db331b7a58b1450232bf1c2c2489b863866d38c3473a7",
     url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv{}/SwiftAstGen-linux".format(SWIFTSRC2CPG_ASTGEN_VERSION),
 )
 
 http_file(
     name = "swiftsrc2cpg_astgen_win_x86",
     executable = True,
-    sha256 = "c6d903853611432209eaf13161406a36ddf85fd3560748966744fdee81e88942",
+    sha256 = "23e48aae3e4ed3e3069ff251cf51c9e6f77c3f66b4f67395778c30c4823f214c",
     url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv{}/SwiftAstGen-win.exe".format(SWIFTSRC2CPG_ASTGEN_VERSION),
 )
 

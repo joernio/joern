@@ -89,7 +89,7 @@ Usage: swiftsrc2cpg [options] input-dir
   input-dir                source directory
   -o, --output <value>     output filename
   --exclude <file1>        files or folders to exclude during CPG generation (paths relative to <input-dir> or absolute paths)
-  --exclude-regex <value>  a regex specifying files to exclude during CPG generation (paths relative to <input-dir> are matched)
+  --exclude-regex <value>  a regex specifying files to exclude during CPG generation (has to match the whole path relative to <input-dir>)
   --report-json            additionally write the scan report (processed files and non-fatal problems) as JSON next to the CPG
   --report-json-file <file>
                            like --report-json, but write the JSON report to <file>

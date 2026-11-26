@@ -1,5 +1,6 @@
 package io.joern.x2cpg
 
+import io.joern.x2cpg.utils.ExcludeRegex
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.slf4j.LoggerFactory
 
@@ -109,10 +110,8 @@ object SourceFiles {
   }
 
   private def isIgnoredByRegex(filePath: String, inputPath: String, ignoredFilesRegex: Regex): Boolean = {
-    val relPath               = toRelativePath(filePath, inputPath)
-    val isInIgnoredFilesRegex = ignoredFilesRegex.matches(relPath)
-    if (isInIgnoredFilesRegex) {
-      logger.debug(s"'$relPath' ignored (--exclude-regex)")
+    if (ExcludeRegex.matchesRelative(ignoredFilesRegex, filePath, inputPath)) {
+      logger.debug(s"'${toRelativePath(filePath, inputPath)}' ignored (--exclude-regex)")
       true
     } else {
       false
