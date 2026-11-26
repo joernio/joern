@@ -2254,7 +2254,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // FormatArgsArg =
-  //  arg_name:FormatArgsArgName? Expr
+  //  (Name '=')? Expr
   private def visitFormatArgsArg(formatArgsArg: FormatArgsArg): Ast = {
     val typeFullName = typeFullNameForExpr(formatArgsArg.expr)
     val callNode = operatorCallNode(formatArgsArg, code(formatArgsArg), Operators.formattedValue, Some(typeFullName))
