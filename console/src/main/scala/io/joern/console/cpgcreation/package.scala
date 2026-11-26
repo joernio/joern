@@ -1,6 +1,7 @@
 package io.joern.console
 
 import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.joern.x2cpg.frontendspecific.ErlangLanguage
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.utils.FileUtil
 
@@ -40,6 +41,7 @@ package object cpgcreation {
       case Languages.RUBYSRC   => Some(RubyCpgGenerator(conf, rootPath))
       case Languages.SWIFTSRC  => Some(SwiftSrcCpgGenerator(conf, rootPath))
       case Languages.RUST      => Some(RustCpgGenerator(conf, rootPath))
+      case ErlangLanguage      => Some(ErlangCpgGenerator(conf, rootPath))
       case Languages.ABAP      => Some(AbapSrcCpgGenerator(conf, rootPath))
       case _                   => None
     }
@@ -116,6 +118,7 @@ package object cpgcreation {
       case fileName if isLlvmFile(fileName)        => Some(Languages.LLVM)
       case fileName if isCFile(fileName)           => Some(Languages.NEWC)
       case fileName if isRustFile(fileName)        => Some(Languages.RUST)
+      case fileName if fileName.endsWith(".erl")   => Some(ErlangLanguage)
       case fileName if fileName.endsWith(".abap")  => Some(Languages.ABAP)
       case _                                       => None
     }

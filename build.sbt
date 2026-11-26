@@ -19,6 +19,7 @@ lazy val rubysrc2cpg       = Projects.rubysrc2cpg
 lazy val gosrc2cpg         = Projects.gosrc2cpg
 lazy val swiftsrc2cpg      = Projects.swiftsrc2cpg
 lazy val csharpsrc2cpg     = Projects.csharpsrc2cpg
+lazy val erlang2cpg        = Projects.erlang2cpg
 lazy val abap2cpg          = Projects.abap2cpg
 lazy val rust2cpg          = Projects.rust2cpg
 lazy val integrationTests  = Projects.integrationTests
@@ -143,6 +144,7 @@ lazy val root = project
     gosrc2cpg,
     swiftsrc2cpg,
     csharpsrc2cpg,
+    erlang2cpg,
     abap2cpg,
     rust2cpg,
     linterRules

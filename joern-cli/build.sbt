@@ -42,6 +42,7 @@ lazy val joerncli = (project in file("."))
     Compile / packageDoc / mappings := Seq(),
 
     Universal / mappings ++= frontendMappings("kotlin2cpg",   (Projects.kotlin2cpg / stage).value,          fileConverter.value),
+    Universal / mappings ++= frontendMappings("erlang2cpg",   (Projects.erlang2cpg / stage).value,           fileConverter.value),
     Universal / mappings ++= frontendMappings("abap2cpg",     (Projects.abap2cpg / stage).value,             fileConverter.value),
     Universal / mappings ++= frontendMappings("javasrc2cpg",  (Projects.javasrc2cpg / stage).value,          fileConverter.value),
     Universal / mappings ++= frontendMappings("c2cpg",        (Projects.c2cpg / stage).value,       fileConverter.value),

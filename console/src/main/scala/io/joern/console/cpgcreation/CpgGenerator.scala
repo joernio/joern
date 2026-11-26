@@ -27,6 +27,8 @@ abstract class CpgGenerator() {
     */
   def generate(inputPath: String, outputPath: String = "cpg.bin.zip"): Try[String]
 
+  protected def reportFrontendStderr: Boolean = false
+
   protected def runShellCommand(program: String, arguments: Seq[String]): Try[Unit] =
     Try {
       assert(Files.exists(Paths.get(program)), s"CPG generator does not exist at: $program")
@@ -45,7 +47,9 @@ abstract class CpgGenerator() {
            |""".stripMargin
       )
 
-      ExternalCommand.run(cmd, additionalContext = cmd.toString).logIfFailed().verifySuccess()
+      val result = ExternalCommand.run(cmd, additionalContext = cmd.toString).logIfFailed()
+      result.verifySuccess()
+      if (reportFrontendStderr) result.stdErr.foreach(System.err.println)
     }
 
   protected lazy val maxMemoryParameter = {

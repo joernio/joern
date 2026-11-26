@@ -12,7 +12,7 @@ object DefaultSemantics {
     *   a default set of common external procedure calls for all languages.
     */
   def apply(): FullNameSemantics = {
-    val list = operatorFlows ++ cFlows ++ javaFlows
+    val list = operatorFlows ++ cFlows ++ javaFlows ++ erlangFlows
     FullNameSemantics.fromList(list)
   }
 
@@ -76,6 +76,19 @@ object DefaultSemantics {
     PTF("<operator>.setLiteral"),
     PTF("<operator>.listLiteral")
   )
+
+  /** Sending returns the message. Spawning returns a fresh process identity, independent of arguments captured by
+    * the spawned process.
+    */
+  def erlangFlows: List[FlowSemantic] =
+    List(
+      F("<operator>.erlangSend", List(2 -> -1)),
+      F("erlang:send/2", List(2 -> -1)),
+      F("erlang:send/3", Nil)
+    ) ++ (for {
+      name  <- List("spawn", "spawn_link", "spawn_monitor", "spawn_opt")
+      arity <- if (name == "spawn_opt") 2 to 5 else 1 to 4
+    } yield F(s"erlang:$name/$arity", Nil))
 
   /** Semantic summaries for common external C/C++ calls.
     *

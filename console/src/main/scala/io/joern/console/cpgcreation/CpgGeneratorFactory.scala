@@ -2,6 +2,7 @@ package io.joern.console.cpgcreation
 
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
+import io.joern.x2cpg.frontendspecific.ErlangLanguage
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.console.{ConsoleConfig, CpgConverter}
 import io.shiftleft.semanticcpg.utils.FileUtil
@@ -27,6 +28,7 @@ object CpgGeneratorFactory {
     Languages.JAVASRC,
     Languages.SWIFTSRC,
     Languages.RUST,
+    ErlangLanguage,
     Languages.ABAP
   )
 }
