@@ -29,6 +29,8 @@ class RubyAstGenRunner(
 ) extends AstGenRunner(RubyAstGenRunner.astGenMetaData, config, problemSink)
     with AutoCloseable {
 
+  override protected def allowLegacyAbsoluteExcludeRegex: Boolean = true
+
   private val logger = LoggerFactory.getLogger(getClass)
 
   private val ownsEnvironment            = sharedJRubyEnv.isEmpty

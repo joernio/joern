@@ -42,6 +42,14 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
     "index.js"
   )
 
+  /** Relative paths use the separator of the operating system, so regexes must accept both `/` and `\`. */
+  private val sep = "[/\\\\]"
+
+  /** Escapes a path for a regex that is also passed to the native AST generator. `Pattern.quote` is not an option, as
+    * `\Q...\E` is only understood by Java.
+    */
+  private def escaped(path: Path): String = path.toString.replaceAll("([^A-Za-z0-9_/])", "\\\\$1")
+
   private val projectUnderTest: Path = {
     val dir = Files.createTempDirectory("jssrc2cpgTestsExcludeTest")
     testFiles.foreach { testFile =>
@@ -139,6 +147,36 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
         s".*${Pattern.quote(java.io.File.separator)}?folder${Pattern.quote(java.io.File.separator)}.*",
         Set("index.js", "a.js", "foo.bar/d.js")
       ),
+      (
+        "exclude a complete folder with a --exclude-regex that is relative to the input directory",
+        Seq.empty,
+        s"folder$sep.*",
+        Set("index.js", "a.js", "foo.bar/d.js")
+      ),
+      (
+        "exclude a folder by its name with --exclude-regex",
+        Seq.empty,
+        "folder",
+        Set("index.js", "a.js", "foo.bar/d.js")
+      ),
+      (
+        "exclude files with a --exclude-regex using a lookahead",
+        Seq.empty,
+        s"(?!folder$sep.*$$).*\\.js",
+        Set("folder/b.js", "folder/c.js")
+      ),
+      (
+        "not exclude anything if --exclude-regex only matches a part of the path",
+        Seq.empty,
+        "index",
+        Set("index.js", "a.js", "folder/b.js", "folder/c.js", "foo.bar/d.js")
+      ),
+      (
+        "still exclude files with a deprecated --exclude-regex that only matches the absolute path",
+        Seq.empty,
+        s"${escaped(projectUnderTest)}$sep(folder$sep.*)",
+        Set("index.js", "a.js", "foo.bar/d.js")
+      ),
       // --
       // Tests for mixed arguments
       (
@@ -173,6 +211,19 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
   }
 
   "Forwarding --exclude-regex to astgen" should {
+    "prevent the binary from emitting a JSON for files below a folder matched relative to the input directory" in {
+      FileUtil.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
+        val config = Config()
+          .withInputPath(projectUnderTest.toString)
+          .withOutputPath(tmpDir.toString)
+          .withIgnoredFilesRegex(s"folder$sep.*")
+        new AstGenRunner(config).execute(tmpDir)
+        val emittedJsons = tmpDir.listFiles().map(_.getFileName.toString).toSet
+        emittedJsons should contain("a.js.json")
+        emittedJsons should not contain "folder"
+      }
+    }
+
     "prevent the binary from emitting a JSON for an excluded file" in {
       // Verifies that the regex actually reaches the binary: post-filtering in
       // execute() would also drop the file from the CPG, so we inspect the raw

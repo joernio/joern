@@ -18,6 +18,8 @@ object DotNetAstGenRunner {
 class DotNetAstGenRunner(config: Config, problemSink: ProblemSink = ProblemSink.LogOnly)
     extends AstGenRunner(DotNetAstGenRunner.astGenMetaData, config, problemSink) {
 
+  override protected def allowLegacyAbsoluteExcludeRegex: Boolean = true
+
   private val logger = LoggerFactory.getLogger(getClass)
 
   // The x86 variant seems to run well enough on MacOS M-family chips, whereas the ARM build crashes

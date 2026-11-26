@@ -4,7 +4,7 @@ import com.typesafe.config.ConfigFactory
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenProgramMetaData
 import io.joern.x2cpg.report.{Category, ProblemSink}
 import io.joern.x2cpg.utils.Environment.{ArchitectureType, OperatingSystemType}
-import io.joern.x2cpg.utils.{Environment, JoernRunfilesLocator}
+import io.joern.x2cpg.utils.{Environment, ExcludeRegex, JoernRunfilesLocator}
 import io.joern.x2cpg.{SourceFiles, X2CpgConfig}
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.{Logger, LoggerFactory}
@@ -172,7 +172,41 @@ abstract class AstGenRunner(
     }
   }
 
-  protected def isIgnoredByUserRegex(filePath: String): Boolean = config.ignoredFilesRegex.matches(filePath)
+  /** Whether a `--exclude-regex` that only matches the absolute path still excludes a file. This is deprecated.
+    *
+    * Disabled by default, so that a regex is only interpreted relative to the input path. Override with `true` to keep
+    * accepting absolute paths.
+    */
+  protected def allowLegacyAbsoluteExcludeRegex: Boolean = false
+
+  private var legacyAbsoluteExcludeRegexWarned = false
+
+  /** Whether `--exclude-regex` excludes `filePath`, see [[io.joern.x2cpg.utils.ExcludeRegex]].
+    *
+    * @param filePath
+    *   the path of the source file, below the input path.
+    */
+  protected def isIgnoredByUserRegex(filePath: String): Boolean = {
+    val regex = config.ignoredFilesRegex
+    if (ExcludeRegex.matchesRelative(regex, filePath, config.inputPath)) {
+      true
+    } else if (allowLegacyAbsoluteExcludeRegex && ExcludeRegex.matchesLegacyAbsolute(regex, filePath)) {
+      if (!legacyAbsoluteExcludeRegexWarned) {
+        legacyAbsoluteExcludeRegexWarned = true
+        val relativePath = SourceFiles.toRelativePath(filePath, config.inputPath)
+        problems.warn(
+          Category.Other,
+          s"--exclude-regex '$regex' only matches the absolute path of '$relativePath'. " +
+            "This is deprecated. The regex has to match the whole path relative to the input directory, " +
+            "e.g., '.*/generated/.*' or 'src/generated/.*'.",
+          logger = logger
+        )
+      }
+      true
+    } else {
+      false
+    }
+  }
 
   protected def isIgnoredByUserConfig(filePath: String): Boolean = {
     lazy val isInIgnoredFiles = config.ignoredFiles.exists {

@@ -341,7 +341,9 @@ object X2Cpg {
         .text("files or folders to exclude during CPG generation (paths relative to <input-dir> or absolute paths)"),
       opt[String]("exclude-regex")
         .action { (x, c) => c.withIgnoredFilesRegex(x) }
-        .text("a regex specifying files to exclude during CPG generation (paths relative to <input-dir> are matched)"),
+        .text(
+          "a regex specifying files to exclude during CPG generation (has to match the whole path relative to <input-dir>)"
+        ),
       opt[Unit]("report-json")
         .action { (_, config) =>
           config.withReportMode(config.reportMode match {
