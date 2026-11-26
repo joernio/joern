@@ -3,9 +3,10 @@ package io.joern.jssrc2cpg.passes
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.astcreation.AstCreator
 import io.joern.jssrc2cpg.parser.BabelJsonParser
-import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.{SourceFiles, ValidationMode}
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
-import io.joern.x2cpg.utils.{Report, TimeUtils}
+import io.joern.x2cpg.report.{Category, ScanReport}
+import io.joern.x2cpg.utils.TimeUtils
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
 import io.shiftleft.utils.IOUtils
@@ -15,9 +16,13 @@ import java.nio.file.Paths
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: Config, report: Report = new Report())(
-  implicit withSchemaValidation: ValidationMode
-) extends ForkJoinParallelCpgPassWithAccumulator[String, mutable.HashSet[String]](cpg) {
+class AstCreationPass(
+  cpg: Cpg,
+  astGenRunnerResult: AstGenRunnerResult,
+  config: Config,
+  report: ScanReport = new ScanReport()
+)(implicit withSchemaValidation: ValidationMode)
+    extends ForkJoinParallelCpgPassWithAccumulator[String, mutable.HashSet[String]](cpg) {
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
@@ -37,9 +42,10 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
 
   override def finish(): Unit = {
     astGenRunnerResult.skippedFiles.foreach { fileName =>
-      val filePath = Paths.get(config.inputPath, fileName)
+      // astgen prints absolute paths, which `resolve` keeps as they are
+      val filePath = Paths.get(config.inputPath).resolve(fileName)
       val fileLOC  = Try(IOUtils.readLinesInFile(filePath)).map(_.size).getOrElse(-1)
-      report.addReportInfo(fileName, fileLOC)
+      report.addReportInfo(SourceFiles.toRelativePathIfBelow(fileName, config.inputPath), fileLOC)
     }
   }
 
@@ -58,7 +64,13 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
             diffGraph.absorb(localDiff)
           } match {
             case Failure(exception) =>
-              logger.warn(s"Failed to process '${parseResult.filename}'", exception)
+              report.warn(
+                Category.FileProcessing,
+                "Failed to process the file",
+                Some(parseResult.filename),
+                Some(exception),
+                logger
+              )
               (false, parseResult.filename)
             case Success(_) =>
               logger.debug(s"Processed '${parseResult.filename}'")
@@ -66,7 +78,13 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
           }
         case Failure(exception) =>
           val pathOfFailedFile = BabelJsonParser.stripExtension(jsonFilename)
-          logger.warn(s"Failed to read json parse result for: '$pathOfFailedFile'", exception)
+          report.warn(
+            Category.FileParse,
+            "Failed to read the parse result of the AST generator",
+            Some(pathOfFailedFile),
+            Some(exception),
+            logger
+          )
           (false, pathOfFailedFile)
       }
     }

@@ -6,13 +6,16 @@ import io.joern.pysrc2cpg.PythonVersion.PythonV2AndV3
 import io.joern.pysrc2cpg.Py2Cpg.InputProvider
 import io.joern.pythonparser.PyParser
 import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.report.{Category, ScanReport}
+import io.joern.x2cpg.utils.TimeUtils
 import org.slf4j.LoggerFactory
 
 class CodeToCpg(
   cpg: Cpg,
   inputProvider: Iterable[InputProvider],
   schemaValidationMode: ValidationMode,
-  enableFileContent: Boolean
+  enableFileContent: Boolean,
+  report: ScanReport = new ScanReport()
 ) extends ForkJoinParallelCpgPass[InputProvider](cpg) {
   import CodeToCpg.logger
 
@@ -22,21 +25,30 @@ class CodeToCpg(
     val inputPair              = inputProvider()
     val parser                 = new PyParser()
     val lineBreakCorrectedCode = inputPair.content.replace("\r\n", "\n").replace("\r", "\n")
-    try {
-      val astRoot    = parser.parse(lineBreakCorrectedCode)
-      val nodeToCode = new NodeToCode(lineBreakCorrectedCode)
-      val astVisitor = new PythonAstVisitor(inputPair.relFileName, nodeToCode, PythonV2AndV3, enableFileContent)(
-        schemaValidationMode
-      )
-      astVisitor.convert(astRoot)
+    val linesOfCode            = lineBreakCorrectedCode.linesIterator.size
+    report.addReportInfo(inputPair.relFileName, linesOfCode)
+    val (gotCpg, duration) = TimeUtils.time {
+      try {
+        val astRoot = parser.parse(lineBreakCorrectedCode)
+        report.addReportInfo(inputPair.relFileName, linesOfCode, parsed = true)
+        val nodeToCode = new NodeToCode(lineBreakCorrectedCode)
+        val astVisitor =
+          new PythonAstVisitor(inputPair.relFileName, nodeToCode, PythonV2AndV3, enableFileContent, report)(
+            schemaValidationMode
+          )
+        astVisitor.convert(astRoot)
 
-      diffGraph.absorb(astVisitor.createAst())
-      logger.debug(s"Processed '${inputPair.relFileName}'")
-    } catch {
-      case exception: Throwable =>
-        val lineBreakWasCorrected = lineBreakCorrectedCode != inputPair.content
-        handleParsingError(inputPair.relFileName, lineBreakCorrectedCode, lineBreakWasCorrected, exception, diffGraph)
+        diffGraph.absorb(astVisitor.createAst())
+        logger.debug(s"Processed '${inputPair.relFileName}'")
+        true
+      } catch {
+        case exception: Throwable =>
+          val lineBreakWasCorrected = lineBreakCorrectedCode != inputPair.content
+          handleParsingError(inputPair.relFileName, lineBreakCorrectedCode, lineBreakWasCorrected, exception, diffGraph)
+          false
+      }
     }
+    report.updateReport(inputPair.relFileName, gotCpg, duration)
   }
 
   def handleParsingError(
@@ -56,7 +68,7 @@ class CodeToCpg(
     val nodeBuilder = new NodeBuilder(diffGraph)
     nodeBuilder.fileNode(relFileName, contentOption)
 
-    logger.warn(s"Failed to process '$relFileName'", exception)
+    report.warn(Category.FileProcessing, "Failed to process the file", Some(relFileName), Some(exception), logger)
   }
 }
 

@@ -5,6 +5,7 @@ import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain.PhpOperators
 import io.joern.php2cpg.passes.Composer
 import io.joern.php2cpg.passes.PsrStringOrArray.{PsrArray, PsrString}
+import io.joern.x2cpg.report.{Category, ScanReport}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Dependency
@@ -22,7 +23,7 @@ import scala.jdk.CollectionConverters.*
 
 /** Queries <a href="https://packagist.org">Packgist</a> for dependencies and downloads them.
   */
-class DependencyDownloader(cpg: Cpg, config: Config) {
+class DependencyDownloader(cpg: Cpg, config: Config, report: ScanReport = new ScanReport()) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -68,16 +69,30 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
       }
     } match {
       case Failure(_: IOException) =>
-        logger.error(s"Unable to resolve package information for `$vendor/$pack`, skipping...`")
+        report.error(
+          Category.DependencyResolution,
+          s"Unable to resolve package information for `$vendor/$pack`, skipping...`",
+          logger = logger
+        )
         None
       case Failure(e) =>
-        logger.error(s"Unable to handle package information `$vendor/$pack`, skipping...`", e)
+        report.error(
+          Category.DependencyResolution,
+          s"Unable to handle package information `$vendor/$pack`, skipping...`",
+          cause = Some(e),
+          logger = logger
+        )
         None
       case Success(x) =>
         x.packages.flatMap(_._2).find { x =>
           Try(dependencyRange.valid(x.version)) match {
             case Failure(exception) =>
-              logger.error(s"Unable to determine if $x is valid for given range $dependencyRange", exception)
+              report.error(
+                Category.DependencyResolution,
+                s"Unable to determine if $x is valid for given range $dependencyRange",
+                cause = Some(exception),
+                logger = logger
+              )
               false
             case Success(value) => value
           }
@@ -97,7 +112,12 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
       }
     } match {
       case Failure(exception) =>
-        logger.error("Exception encountered while downloading and unzipping dependency.", exception)
+        report.error(
+          Category.DependencyResolution,
+          s"Exception encountered while downloading and unzipping dependency ${dependency.name}:${dependency.version}",
+          cause = Some(exception),
+          logger = logger
+        )
       case Success(_) => logger.info(s"Successfully downloaded $vendor/$packName")
     }
   }

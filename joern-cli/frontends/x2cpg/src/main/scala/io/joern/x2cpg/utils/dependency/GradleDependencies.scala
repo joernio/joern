@@ -1,5 +1,6 @@
 package io.joern.x2cpg.utils.dependency
 
+import io.joern.x2cpg.report.ProblemSink
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.apache.commons.text.StringEscapeUtils
@@ -121,7 +122,7 @@ object GradleDependencies {
     connector.connect()
   }
 
-  private def dependencyMapFromOutputDir(outputDir: Path): List[(String, List[String])] = {
+  private def dependencyMapFromOutputDir(outputDir: Path, problems: ProblemSink): List[(String, List[String])] = {
     val dependencyMap = mutable.Map.empty[String, List[String]]
 
     Try(Files.walk(outputDir)) match {
@@ -140,7 +141,11 @@ object GradleDependencies {
             }
         }
       case Failure(e: Throwable) =>
-        logger.warn(s"Encountered exception while walking dependency fetcher output: ${e.getMessage}")
+        DependencyProblems.warn(
+          problems,
+          logger,
+          s"Encountered exception while walking dependency fetcher output: ${e.getMessage}"
+        )
     }
 
     dependencyMap.toList.sortBy(_._1)
@@ -150,7 +155,8 @@ object GradleDependencies {
     connection: ProjectConnection,
     taskName: String,
     destinationDir: Path,
-    initScriptPath: String
+    initScriptPath: String,
+    problems: ProblemSink
   ): List[(String, List[String])] = {
     Using.resources(new ByteArrayOutputStream, new ByteArrayOutputStream) { case (stdoutStream, stderrStream) =>
       Option(System.getenv("ANDROID_HOME")) match {
@@ -173,15 +179,22 @@ object GradleDependencies {
           .run()
       ) match {
         case Success(_) =>
-          val result          = dependencyMapFromOutputDir(destinationDir)
+          val result          = dependencyMapFromOutputDir(destinationDir, problems)
           val dependencyCount = result.flatMap(_._2).size
           logger.info(s"Task $taskName resolved `$dependencyCount` dependency files.")
           result
         case Failure(ex) =>
-          logger.warn(s"Caught exception while executing Gradle task: ${ex.getMessage}", ex)
+          DependencyProblems.warn(
+            problems,
+            logger,
+            s"Caught exception while executing Gradle task: ${ex.getMessage}",
+            Some(ex)
+          )
           val androidSdkError = "Define a valid SDK location with an ANDROID_HOME environment variable"
           if (stderrStream.toString.contains(androidSdkError)) {
-            logger.warn(
+            DependencyProblems.warn(
+              problems,
+              logger,
               "A missing Android SDK configuration caused gradle dependency fetching failures. Please define a valid SDK location with an ANDROID_HOME environment variable or by setting the sdk.dir path in your project's local properties file"
             )
           }
@@ -237,7 +250,8 @@ object GradleDependencies {
   private[dependency] def get(
     projectDir: Path,
     projectNameOverride: Option[String],
-    configurationNameOverride: Option[String]
+    configurationNameOverride: Option[String],
+    problems: ProblemSink
   ): List[(String, collection.Seq[String])] = {
     logger.info(s"Fetching Gradle project information at path `$projectDir`.")
     Try(Files.createTempDirectory(tempDirPrefix)) match {
@@ -253,7 +267,7 @@ object GradleDependencies {
                   val initScript    =
                     makeInitScript(destinationDir, gradleVersion, projectNameOverride, configurationNameOverride)
                   Files.writeString(initScriptFile, initScript.contents)
-                  runGradleTask(c, initScript.taskName, destinationDir, initScriptFile.toString).map {
+                  runGradleTask(c, initScript.taskName, destinationDir, initScriptFile.toString, problems).map {
                     case (projectName, dependencies) =>
                       projectName -> dependencies.map { dependency =>
                         if (!dependency.endsWith(aarFileExtension))
@@ -267,17 +281,29 @@ object GradleDependencies {
                   }
                 }
               case Failure(ex) =>
-                logger.warn(s"Caught exception while trying to establish a Gradle connection: ${ex.getMessage}")
+                DependencyProblems.warn(
+                  problems,
+                  logger,
+                  s"Caught exception while trying to establish a Gradle connection: ${ex.getMessage}"
+                )
                 logger.debug(s"Full exception: ", ex)
                 List.empty
             }
           case Failure(ex) =>
-            logger.warn(s"Could not create temporary file for Gradle init script: ${ex.getMessage}")
+            DependencyProblems.warn(
+              problems,
+              logger,
+              s"Could not create temporary file for Gradle init script: ${ex.getMessage}"
+            )
             logger.debug(s"Full exception: ", ex)
             List.empty
         }
       case Failure(ex) =>
-        logger.warn(s"Could not create temporary directory for saving dependency files: ${ex.getMessage}")
+        DependencyProblems.warn(
+          problems,
+          logger,
+          s"Could not create temporary directory for saving dependency files: ${ex.getMessage}"
+        )
         logger.debug("Full exception: ", ex)
         List.empty
     }

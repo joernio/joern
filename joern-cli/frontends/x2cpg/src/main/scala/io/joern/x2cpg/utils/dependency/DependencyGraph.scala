@@ -1,5 +1,6 @@
 package io.joern.x2cpg.utils.dependency
 
+import io.joern.x2cpg.report.ProblemSink
 import io.joern.x2cpg.utils.dependency.DependencyGraph.logger
 import org.apache.maven.artifact.versioning.ComparableVersion
 import org.slf4j.LoggerFactory
@@ -44,7 +45,8 @@ private[joern] case class DependencyGraph(
 ) {
 
   private[joern] def transitiveDependenciesForProjectsInDir(
-    inputDir: Path
+    inputDir: Path,
+    problems: ProblemSink = ProblemSink.LogOnly
   ): DependencyResolverV2.DependencyResolutionResult = {
     val checked     = mutable.Set[String]()
     val toCheck     = mutable.Stack[String]()
@@ -92,7 +94,7 @@ private[joern] case class DependencyGraph(
     }
 
     val artifactPaths = artifacts.valuesIterator.map(_.path).toSet
-    (sourcePaths.toSet, AarExtractor.materializeJars(artifactPaths, cacheDir))
+    (sourcePaths.toSet, AarExtractor.materializeJars(artifactPaths, cacheDir, problems))
   }
 
 }
@@ -136,7 +138,7 @@ private[joern] object DependencyGraph {
     obj.value.get(key).flatMap(value => if (value.isNull) None else Some(value.str))
   }
 
-  private def parseJson(path: Path): Option[ProjectNode] = {
+  private def parseJson(path: Path, problems: ProblemSink): Option[ProjectNode] = {
     logger.info(s"Attempting to parse dependency fetcher JSON from $path")
     Try {
       val projectMap = ujson.read(path).obj
@@ -168,20 +170,29 @@ private[joern] object DependencyGraph {
         Option(node)
 
       case Failure(ex) =>
-        logger.warn(s"Encountered exception attempting to parse dependency json at $path", ex)
+        DependencyProblems.warn(
+          problems,
+          logger,
+          s"Encountered exception attempting to parse dependency json at $path",
+          Some(ex)
+        )
         None
     }
   }
 
-  def fromJson(cacheDir: Path, jsonPaths: Array[Path]): DependencyGraph = {
+  def fromJson(cacheDir: Path, jsonPaths: Array[Path], problems: ProblemSink = ProblemSink.LogOnly): DependencyGraph = {
     val nodes        = mutable.Map[String, ProjectNode]()
     val dependents   = mutable.Map[String, Set[String]]()
     val dependencies = mutable.Map[String, Set[String]]()
 
-    jsonPaths.flatMap(parseJson).foreach { project =>
+    jsonPaths.flatMap(parseJson(_, problems)).foreach { project =>
       val projectName = project.projectName
       if (nodes.contains(projectName)) {
-        logger.warn(s"Encountered duplicate project definition: $projectName. Overwriting")
+        DependencyProblems.warn(
+          problems,
+          logger,
+          s"Encountered duplicate project definition: $projectName. Overwriting"
+        )
       }
       nodes.put(projectName, project)
 

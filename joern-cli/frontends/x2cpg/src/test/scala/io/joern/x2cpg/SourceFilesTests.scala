@@ -341,4 +341,35 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
     }
   }
 
+  "toRelativePathIfBelow" should {
+
+    "relativize a file below the root" in {
+      FileUtil.usingTemporaryDirectory("sourceFilesBelow") { dir =>
+        val file = dir / "sub" / "a.c"
+        SourceFiles.toRelativePathIfBelow(file.toString, dir.toString) shouldBe Paths.get("sub", "a.c").toString
+      }
+    }
+
+    "keep relative files" in {
+      SourceFiles.toRelativePathIfBelow("sub/a.c", "/some/root") shouldBe "sub/a.c"
+    }
+
+    "keep files outside of the root" in {
+      FileUtil.usingTemporaryDirectory("sourceFilesBelow") { dir =>
+        val other = FileUtil.newTemporaryFile("other").toAbsolutePath.toString
+        SourceFiles.toRelativePathIfBelow(other, dir.toString) shouldBe other
+      }
+    }
+
+    "match a canonical file path against a root that contains a symbolic link" taggedAs UnixOnly in {
+      FileUtil.usingTemporaryDirectory("sourceFilesBelow") { dir =>
+        val real = Files.createDirectories(dir / "real")
+        val link = Try(Files.createSymbolicLink(dir / "link", real))
+        assume(link.isSuccess, "symbolic links are not supported")
+        val canonicalFile = Files.createFile(real / "a.c").toRealPath().toString
+        SourceFiles.toRelativePathIfBelow(canonicalFile, link.get.toString) shouldBe "a.c"
+      }
+    }
+  }
+
 }

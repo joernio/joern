@@ -5,6 +5,7 @@ import io.joern.php2cpg.parser.ClassParser.*
 import io.joern.php2cpg.parser.Domain.MethodDelimiter
 import io.joern.x2cpg.ValidationMode.Disabled
 import io.joern.x2cpg.passes.base.MethodStubCreator
+import io.joern.x2cpg.report.{Category, ScanReport}
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewTypeDecl}
 import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, NodeTypes}
@@ -20,8 +21,11 @@ import scala.util.{Failure, Success}
   *   the code property graph.
   * @param dependencyDir
   *   the directory holding the downloaded dependencies.
+  * @param report
+  *   receives the problems.
   */
-class DependencySymbolsPass(cpg: Cpg, dependencyDir: Path) extends ForkJoinParallelCpgPass[ClassParserClass](cpg) {
+class DependencySymbolsPass(cpg: Cpg, dependencyDir: Path, report: ScanReport = new ScanReport())
+    extends ForkJoinParallelCpgPass[ClassParserClass](cpg) {
 
   private val logger                          = LoggerFactory.getLogger(this.getClass)
   implicit val validationMode: ValidationMode = ValidationMode.Disabled
@@ -29,7 +33,12 @@ class DependencySymbolsPass(cpg: Cpg, dependencyDir: Path) extends ForkJoinParal
   override def generateParts(): Array[ClassParserClass] = new ClassParser(dependencyDir).parse() match {
     case Success(classes)   => classes.toArray
     case Failure(exception) =>
-      logger.error("Exception encountered while parsing symbols from dependencies", exception)
+      report.error(
+        Category.DependencyResolution,
+        "Exception encountered while parsing symbols from dependencies",
+        cause = Some(exception),
+        logger = logger
+      )
       Array.empty
   }
 

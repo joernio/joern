@@ -5,6 +5,7 @@ import io.joern.abap2cpg.passes.{AbapTypeInferencePass, AstCreationPass, RefEdge
 import io.joern.x2cpg.{X2Cpg, X2CpgFrontend}
 import io.joern.x2cpg.passes.base.{ContainsEdgePass, TypeEvalPass}
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
+import io.joern.x2cpg.report.{Category, ScanReport}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import io.shiftleft.semanticcpg.utils.FileUtil
 
@@ -14,25 +15,31 @@ class Abap2Cpg extends X2CpgFrontend {
   override type ConfigType = Config
   override val defaultConfig: Config = Config()
 
-  override def createCpg(config: Config): Try[Cpg] = {
+  override def createCpg(config: Config): Try[Cpg] = createCpg(config, new ScanReport())
+
+  override def createCpg(config: Config, report: ScanReport): Try[Cpg] = {
     X2Cpg.withNewEmptyCpg(config.outputPath, config) { (cpg, _) =>
       FileUtil.usingTemporaryDirectory("abap2cpgOut") { tmpDir =>
         MetaDataPass(cpg, Languages.ABAP, config.inputPath).createAndApply()
 
-        val runner = new AbapAstGenRunner(config)
+        val runner = new AbapAstGenRunner(config, report)
         val result = runner.execute(tmpDir)
 
         val parsed  = result.parsedFiles
         val skipped = result.skippedFiles
 
         if (parsed.isEmpty) {
-          logger.warn("No ABAP files were parsed. Check that the input path contains .abap files.")
+          report.warn(
+            Category.Other,
+            "No ABAP files were parsed. Check that the input path contains .abap files.",
+            logger = logger
+          )
         }
         if (skipped.nonEmpty) {
           logger.warn(s"Skipped ${skipped.size} file(s) due to parse errors.")
         }
 
-        new AstCreationPass(cpg, parsed, config).createAndApply()
+        new AstCreationPass(cpg, parsed, config, report).createAndApply()
         new ContainsEdgePass(cpg).createAndApply()
         TypeNodePass.withTypesFromCpg(cpg).createAndApply()
         new TypeDeclStubPass(cpg).createAndApply()

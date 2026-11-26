@@ -6,6 +6,7 @@ import io.joern.php2cpg.passes.SymbolSummaryPass.SymbolSummary
 import io.joern.php2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
+import io.joern.x2cpg.report.ScanReport
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.semanticcpg.utils.FileUtil
@@ -41,7 +42,9 @@ class Php2Cpg extends X2CpgFrontend {
     }
   }
 
-  override def createCpg(config: Config): Try[Cpg] = {
+  override def createCpg(config: Config): Try[Cpg] = createCpg(config, new ScanReport())
+
+  override def createCpg(config: Config, report: ScanReport): Try[Cpg] = {
     val errorMessages = mutable.ListBuffer[String]()
 
     if (!isPhpVersionSupported) {
@@ -54,12 +57,12 @@ class Php2Cpg extends X2CpgFrontend {
           case Some(parser) =>
             withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
               new MetaDataPass(cpg, Languages.PHP, config.inputPath).createAndApply()
-              new DependencyPass(cpg, buildFiles(config)).createAndApply()
+              new DependencyPass(cpg, buildFiles(config), report).createAndApply()
               if (config.downloadDependencies) {
                 FileUtil.usingTemporaryDirectory("joern-php2cpg-deps") { dependencyDir =>
-                  DependencyDownloader(cpg, config).download(dependencyDir)
+                  DependencyDownloader(cpg, config, report).download(dependencyDir)
                   // Parse dependencies and add high-level nodes to the CPG
-                  new DependencySymbolsPass(cpg, dependencyDir).createAndApply()
+                  new DependencySymbolsPass(cpg, dependencyDir, report).createAndApply()
                 }
               }
               // The following block parses the code twice, once to summarize all symbols across various namespaces, and
@@ -68,7 +71,7 @@ class Php2Cpg extends X2CpgFrontend {
               // memory was prioritized.
               var buffer = Option.empty[Map[String, Seq[SymbolSummary]]]
               new SymbolSummaryPass(config, cpg, parser, summary => buffer = Option(summary)).createAndApply()
-              new AstCreationPass(config, cpg, parser, buffer.getOrElse(Map.empty)).createAndApply()
+              new AstCreationPass(config, cpg, parser, buffer.getOrElse(Map.empty), report).createAndApply()
               new FullNameUniquenessPass(cpg).createAndApply()
               TypeNodePass.withTypesFromCpg(cpg).createAndApply()
             }

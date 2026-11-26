@@ -8,6 +8,8 @@ import io.joern.javasrc2cpg.astcreation.AstCreator
 import io.joern.javasrc2cpg.passes.AstCreationPass.*
 import io.joern.javasrc2cpg.typesolvers.{EagerSourceTypeSolver, JarTypeSolver, SimpleCombinedTypeSolver}
 import io.joern.javasrc2cpg.util.SourceParser
+import io.joern.x2cpg.report.{Category, ScanReport}
+import io.joern.x2cpg.utils.TimeUtils
 import io.joern.x2cpg.utils.dependency.DependencyResolver
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
@@ -19,10 +21,15 @@ import java.nio.file.{Files, Paths}
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
+import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Failure, Success, Try}
 
-class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[String]] = None)
-    extends ForkJoinParallelCpgPassWithAccumulator[String, AstCreationPass.Accumulator](cpg) {
+class AstCreationPass(
+  config: Config,
+  cpg: Cpg,
+  sourcesOverride: Option[List[String]] = None,
+  report: ScanReport = new ScanReport()
+) extends ForkJoinParallelCpgPassWithAccumulator[String, AstCreationPass.Accumulator](cpg) {
 
   private val logger                = LoggerFactory.getLogger(classOf[AstCreationPass])
   private val loggedExceptionCounts = new ConcurrentHashMap[Class[?], Int]().asScala
@@ -50,27 +57,39 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     filename: String,
     accumulator: AstCreationPass.Accumulator
   ): Unit = {
-    sourceParser.parseAnalysisFile(filename, !config.disableFileContent) match {
-      case Some(compilationUnit, fileContent) =>
-        symbolSolver.inject(compilationUnit)
-        val contentToUse = if (!config.disableFileContent) fileContent.map(_.replaceAll("\r\n", "\n")) else None
+    val (gotCpg, duration) = TimeUtils.time {
+      sourceParser.parseAnalysisFile(filename, !config.disableFileContent) match {
+        case Some(compilationUnit, fileContent) =>
+          val linesOfCode = fileContent
+            .map(_.linesIterator.size)
+            .orElse(compilationUnit.getRange.toScala.map(_.end.line))
+          report.addReportInfo(filename, linesOfCode.getOrElse(-1), parsed = true)
 
-        diffGraph.absorb(
-          new AstCreator(
-            filename,
-            compilationUnit,
-            contentToUse,
-            accumulator,
-            symbolSolver,
-            config.keepTypeArguments,
-            loggedExceptionCounts
-          )(config.schemaValidation, config.disableTypeFallback)
-            .createAst()
-        )
-        logger.debug(s"Processed '$filename'")
+          symbolSolver.inject(compilationUnit)
+          val contentToUse = if (!config.disableFileContent) fileContent.map(_.replaceAll("\r\n", "\n")) else None
 
-      case None => logger.warn(s"Failed to process '$filename'")
+          diffGraph.absorb(
+            new AstCreator(
+              filename,
+              compilationUnit,
+              contentToUse,
+              accumulator,
+              symbolSolver,
+              config.keepTypeArguments,
+              loggedExceptionCounts,
+              report
+            )(config.schemaValidation, config.disableTypeFallback)
+              .createAst()
+          )
+          logger.debug(s"Processed '$filename'")
+          true
+
+        case None =>
+          report.warn(Category.FileParse, "Failed to process the file", Some(filename), logger = logger)
+          false
+      }
     }
+    report.updateReport(filename, gotCpg, duration)
   }
 
   /** Clear JavaParser caches. Should only be invoked after we no longer need JavaParser, e.g. as soon as we've built
@@ -87,7 +106,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
 
   private def initParserAndUtils(config: Config): (SourceParser, JavaSymbolSolver, SimpleCombinedTypeSolver) = {
     val dependencies                   = getDependencyList(config.inputPath)
-    val sourceParser                   = SourceParser(config, sourcesOverride, dependencies)
+    val sourceParser                   = SourceParser(config, sourcesOverride, dependencies, report)
     val (symbolSolver, combinedSolver) = createSymbolSolver(config, dependencies, sourceParser)
     (sourceParser, symbolSolver, combinedSolver)
   }
@@ -109,10 +128,10 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     }
 
     if (shouldFetch) {
-      DependencyResolver.getDependencies(Paths.get(inputPath)) match {
+      DependencyResolver.getDependencies(Paths.get(inputPath), problems = report) match {
         case Some(deps) => deps.toList
         case None       =>
-          logger.warn(s"Could not fetch dependencies for project at path $inputPath")
+          report.warn(Category.DependencyResolution, "Could not fetch the dependencies of the project", logger = logger)
           List()
       }
     } else {
@@ -167,7 +186,11 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     if (config.inferenceJarPaths.isEmpty) {
       logger.debug("No inference jar paths given")
     } else if (jarsList.isEmpty) {
-      logger.warn(s"Could not find any inference jars at provided paths: ${config.inferenceJarPaths.mkString(",")}")
+      report.warn(
+        Category.DependencyResolution,
+        s"Could not find any inference jars at the provided paths: ${config.inferenceJarPaths.mkString(",")}",
+        logger = logger
+      )
     } else {
       logger.debug(s"Using inference jars: ${jarsList.mkString(":")}")
     }
@@ -180,9 +203,12 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
               logger.debug(s"Added JarTypeSolver for jar at $path")
             }
           case Failure(exception) =>
-            logger.warn(
-              s"Could not create type solver for archive at $path (${exception.getMessage}). " +
-                s"Types from this archive may be unresolved."
+            report.warn(
+              Category.DependencyResolution,
+              s"Could not create type solver for the archive (${exception.getMessage}). " +
+                s"Types from this archive may be unresolved.",
+              Some(path),
+              logger = logger
             )
             logger.debug(s"Could not create type solver for archive at $path", exception)
         }

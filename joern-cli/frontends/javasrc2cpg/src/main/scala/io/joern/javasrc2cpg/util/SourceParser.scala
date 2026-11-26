@@ -8,6 +8,7 @@ import io.joern.javasrc2cpg.util.Delombok.DelombokMode
 import io.joern.javasrc2cpg.util.SourceParser.fileIfExists
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.SourceFiles
+import io.joern.x2cpg.report.{Category, ProblemSink}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.utils.IOUtils
@@ -24,7 +25,8 @@ class SourceParser(
   val relativeFilenames: List[String],
   analysisRoot: Path,
   typesRoot: Path,
-  dirToDelete: Option[Path]
+  dirToDelete: Option[Path],
+  problems: ProblemSink = ProblemSink.LogOnly
 ) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -43,7 +45,7 @@ class SourceParser(
     val analysisFilename = analysisRoot.resolve(relativeFilename).toString
     // Need to store tokens for position information.
     fileIfExists(analysisFilename).flatMap { file =>
-      val compilationUnit = parse(file, storeTokens = true)
+      val compilationUnit = parse(file, storeTokens = true, problems, Some(relativeFilename))
       val fileContent     = Option
         .when(saveFileContent) {
           Try(IOUtils.readEntireFile(file))
@@ -65,10 +67,20 @@ class SourceParser(
     */
   def parseTypesFile(relativeFilename: String): Option[CompilationUnit] = {
     val typesFilename = typesRoot.resolve(relativeFilename).toString
-    fileIfExists(typesFilename).flatMap(parse(_, storeTokens = false))
+    fileIfExists(typesFilename).flatMap(parse(_, storeTokens = false, ProblemSink.LogOnly, None))
   }
 
-  private def parse(file: Path, storeTokens: Boolean): Option[CompilationUnit] = {
+  /** @param sink
+    *   receives the problems of the file. The files that are only parsed to read type information are not reported.
+    * @param relativeFilename
+    *   the file as reported, if it is reported.
+    */
+  private def parse(
+    file: Path,
+    storeTokens: Boolean,
+    sink: ProblemSink,
+    relativeFilename: Option[String]
+  ): Option[CompilationUnit] = {
     val javaParserConfig =
       new ParserConfiguration()
         .setLanguageLevel(LanguageLevel.JAVA_25)
@@ -76,10 +88,13 @@ class SourceParser(
     val parseResult = new JavaParser(javaParserConfig).parse(file)
 
     parseResult.getProblems.asScala.toList match {
-      case Nil      => // Just carry on as usual
-      case problems =>
-        logger.warn(
-          s"Encountered problems while parsing '${file.fileName}': ${problems.map(_.getMessage).mkString("; ")}"
+      case Nil            => // Just carry on as usual
+      case parserProblems =>
+        sink.warn(
+          Category.FileParse,
+          s"Encountered problems while parsing: ${parserProblems.map(_.getMessage).mkString("; ")}",
+          Some(relativeFilename.getOrElse(file.fileName)),
+          logger = logger
         )
     }
 
@@ -137,7 +152,12 @@ object SourceParser {
     checkExists(file)
   }
 
-  def apply(config: Config, filenamesOverride: Option[List[String]], dependencies: List[String] = Nil): SourceParser = {
+  def apply(
+    config: Config,
+    filenamesOverride: Option[List[String]],
+    dependencies: List[String] = Nil,
+    problems: ProblemSink = ProblemSink.LogOnly
+  ): SourceParser = {
     val inputPath = Path.of(config.inputPath)
 
     val fileInfo = filenamesOverride
@@ -155,7 +175,7 @@ object SourceParser {
     val usesLombok = fileInfo.exists(_.usesLombok)
 
     var dirToDelete: Option[Path] = None
-    lazy val delombokResult       = Delombok.run(inputPath, fileInfo, config.delombokJavaHome, dependencies)
+    lazy val delombokResult       = Delombok.run(inputPath, fileInfo, config.delombokJavaHome, dependencies, problems)
     lazy val delombokDir          = {
       dirToDelete = Option.when(delombokResult.isDelombokedPath)(delombokResult.path)
       delombokResult.path
@@ -175,6 +195,6 @@ object SourceParser {
       case DelombokMode.RunDelombok => (delombokDir, delombokDir)
     }
 
-    new SourceParser(fileInfo.map(_.relativePath.toString), analysisRoot, typesRoot, dirToDelete)
+    new SourceParser(fileInfo.map(_.relativePath.toString), analysisRoot, typesRoot, dirToDelete, problems)
   }
 }

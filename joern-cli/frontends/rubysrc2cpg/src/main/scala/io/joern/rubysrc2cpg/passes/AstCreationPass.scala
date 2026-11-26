@@ -2,6 +2,8 @@ package io.joern.rubysrc2cpg.passes
 
 import flatgraph.DiffGraphApplier
 import io.joern.rubysrc2cpg.astcreation.AstCreator
+import io.joern.x2cpg.report.{Category, ScanReport}
+import io.joern.x2cpg.utils.TimeUtils
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
@@ -11,7 +13,8 @@ import org.slf4j.LoggerFactory
 
 import scala.util.control.NonFatal
 
-class AstCreationPass(cpg: Cpg, astCreators: List[AstCreator]) extends ForkJoinParallelCpgPass[AstCreator](cpg) {
+class AstCreationPass(cpg: Cpg, astCreators: List[AstCreator], report: ScanReport = new ScanReport())
+    extends ForkJoinParallelCpgPass[AstCreator](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -38,13 +41,26 @@ class AstCreationPass(cpg: Cpg, astCreators: List[AstCreator]) extends ForkJoinP
   }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, astCreator: AstCreator): Unit = {
-    try {
-      val ast = astCreator.createAst()
-      diffGraph.absorb(ast)
-      logger.debug(s"Processed '${astCreator.fileName}'")
-    } catch {
-      case NonFatal(ex) =>
-        logger.warn(s"Failed to process '${astCreator.fileName}'", ex)
+    // the file was parsed when the AstCreator was created
+    report.addReportInfo(astCreator.relativeFileName, astCreator.fileContent.linesIterator.size, parsed = true)
+    val (gotCpg, duration) = TimeUtils.time {
+      try {
+        val ast = astCreator.createAst()
+        diffGraph.absorb(ast)
+        logger.debug(s"Processed '${astCreator.fileName}'")
+        true
+      } catch {
+        case NonFatal(ex) =>
+          report.warn(
+            Category.FileProcessing,
+            "Failed to process the file",
+            Some(astCreator.relativeFileName),
+            Some(ex),
+            logger
+          )
+          false
+      }
     }
+    report.updateReport(astCreator.relativeFileName, gotCpg, duration)
   }
 }

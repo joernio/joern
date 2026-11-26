@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.util
 
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode.*
+import io.joern.x2cpg.report.{Category, Problem, ProblemSink, Severity}
 import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
@@ -46,7 +47,8 @@ object Delombok {
     outputDir: Path,
     analysisJavaHome: Option[String],
     dependencies: List[String],
-    peerSourceRoots: Seq[Path]
+    peerSourceRoots: Seq[Path],
+    problems: ProblemSink
   ) = {
     val javaPath = analysisJavaHome.getOrElse(systemJavaPath)
     // In SBT 2.x forked tests, java.class.path only contains SBT worker jars; the real test/compile
@@ -81,9 +83,11 @@ object Delombok {
       case None => (Nil, ownEntries)
     }
     if (bundledLombokEntry.isEmpty) {
-      logger.warn(
+      problems.warn(
+        Category.ExternalTool,
         "Could not locate joern's bundled lombok jar on the classpath. If a project dependency supplies a " +
-          "lombok version incompatible with the analysis JDK, delombok may fail."
+          "lombok version incompatible with the analysis JDK, delombok may fail.",
+        logger = logger
       )
     }
     // Prepend the bundled lombok so the classloader resolves it before any project-supplied lombok in
@@ -97,9 +101,11 @@ object Delombok {
         s"@${file.absolutePathAsString}"
 
       case Failure(t) =>
-        logger.warn(
-          s"Failed to create classpath file for delombok execution. Results may be missing on Windows systems",
-          t
+        problems.warn(
+          Category.ExternalTool,
+          "Failed to create classpath file for delombok execution. Results may be missing on Windows systems",
+          cause = Some(t),
+          logger = logger
         )
         fullClasspath
     }
@@ -117,9 +123,11 @@ object Delombok {
             Seq(s"@${file.absolutePathAsString}")
 
           case Failure(t) =>
-            logger.warn(
-              s"Failed to create sourcepath file for delombok execution. Results may be missing on Windows systems",
-              t
+            problems.warn(
+              Category.ExternalTool,
+              "Failed to create sourcepath file for delombok execution. Results may be missing on Windows systems",
+              cause = Some(t),
+              logger = logger
             )
             Seq("--sourcepath", fullSourcePath)
         }
@@ -142,7 +150,8 @@ object Delombok {
     delombokInvocation: DelombokInvocation,
     delombokTempDir: Path,
     analysisJavaHome: Option[String],
-    dependencies: List[String]
+    dependencies: List[String],
+    problems: ProblemSink = ProblemSink.LogOnly
   ): Try[String] = {
     val rootIsFile = Files.isRegularFile(delombokInvocation.projectDir.resolve(delombokInvocation.relativePackageRoot))
     val relativeOutputPath =
@@ -160,12 +169,22 @@ object Delombok {
             packageOutputDir,
             analysisJavaHome,
             dependencies,
-            delombokInvocation.absPeerRoots
+            delombokInvocation.absPeerRoots,
+            problems
           )
         )
       if (!result.successful) {
         // Always log the unfiltered stdout/stderr if delombok exited with a non-zero code
         result.logIfFailed()
+        // already logged by `logIfFailed`
+        problems.record(
+          Problem(
+            Severity.Warning,
+            Category.ExternalTool,
+            "Delombok failed",
+            Some(delombokInvocation.relativePackageRoot.toString)
+          )
+        )
       } else {
         // Exit 0: filter out error logs that reference peer roots (these will be logged anyways when the peer is
         // delomboked), then log the remainder as a DEBUG if non-empty.
@@ -184,19 +203,26 @@ object Delombok {
     inputPath: Path,
     fileInfo: List[SourceParser.FileInfo],
     analysisJavaHome: Option[String],
-    dependencies: List[String]
+    dependencies: List[String],
+    problems: ProblemSink = ProblemSink.LogOnly
   ): DelombokRunResult = {
     if (dependencies.isEmpty) {
-      logger.warn(
+      problems.warn(
+        Category.ExternalTool,
         "Running delombok without any project dependencies on the classpath. Delombok may fail to resolve " +
           "symbols from third-party libraries used in Lombok-annotated code. If you did not pass " +
           "--fetch-dependencies, re-run with it. If you did, dependency resolution may have failed — " +
-          "check earlier logs."
+          "check earlier logs.",
+        logger = logger
       )
     }
     Try(Files.createTempDirectory("delombok")) match {
       case Failure(_) =>
-        logger.warn(s"Could not create temporary directory for delombok output. Scanning original sources instead")
+        problems.warn(
+          Category.ExternalTool,
+          "Could not create temporary directory for delombok output. Scanning original sources instead",
+          logger = logger
+        )
         DelombokRunResult(inputPath, false)
 
       case Success(tempDir) =>
@@ -210,7 +236,8 @@ object Delombok {
             DelombokInvocation(inputPath, relativeRoot, absoluteRoot, absolutePeerRoots),
             tempDir,
             analysisJavaHome,
-            dependencies
+            dependencies,
+            problems
           )
         }
         DelombokRunResult(tempDir, true)

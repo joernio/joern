@@ -5,6 +5,7 @@ import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.parser.{Domain, PhpParser}
 import io.joern.php2cpg.passes.SymbolSummaryPass.{PhpNamespace, SymbolSummary}
 import io.joern.x2cpg.passes.frontend.MetaDataPass
+import io.joern.x2cpg.report.ProblemSink
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import scala.jdk.CollectionConverters.*
@@ -21,7 +22,8 @@ class SymbolSummaryPass(
   parser: PhpParser,
   captureSummary: Map[String, Seq[SymbolSummary]] => Unit
 ) extends ForkJoinParallelCpgPass[BatchOfPhpScripts](cpg)
-    with AstParsingPass(config, parser) {
+    // The files are parsed again, and reported, by the AstCreationPass
+    with AstParsingPass(config, parser, ProblemSink.LogOnly) {
 
   private val summary = new java.util.concurrent.ConcurrentLinkedQueue[SymbolSummary]()
 

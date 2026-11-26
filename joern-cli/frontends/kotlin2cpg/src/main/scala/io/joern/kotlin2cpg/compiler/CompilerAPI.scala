@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.cli.common.messages.{
   MessageCollector
 }
 import org.jetbrains.kotlin.com.intellij.openapi.diagnostic.Logger
+import io.joern.x2cpg.report.{Category, ProblemSink}
 import org.slf4j.LoggerFactory
 
 object CompilerAPI {
@@ -25,7 +26,8 @@ object CompilerAPI {
     forDirectories: Seq[String],
     javaSourceRoots: Seq[String],
     defaultContentRootJarPaths: Seq[DefaultContentRootJarPath] = List(),
-    messageCollector: MessageCollector
+    messageCollector: MessageCollector,
+    problems: ProblemSink = ProblemSink.LogOnly
   ): KotlinCoreEnvironment = {
     Logger.setFactory(classOf[NoAssertionErrorLoggerFactory])
 
@@ -45,7 +47,12 @@ object CompilerAPI {
           config.add(CLIConfigurationKeys.CONTENT_ROOTS, new JvmClasspathRoot(f))
           logger.debug(s"Added dependency from path `${path.path}`.")
         } else {
-          logger.warn(s"Path to dependency does not point to existing file `${path.path}`.")
+          problems.warn(
+            Category.DependencyResolution,
+            "Path to dependency does not point to an existing file",
+            Some(path.path),
+            logger = logger
+          )
         }
       } else {
         // We have to copy the resource file to a proper file in the file system in order
@@ -68,7 +75,12 @@ object CompilerAPI {
           config.add(CLIConfigurationKeys.CONTENT_ROOTS, new JvmClasspathRoot(tempFile))
           logger.debug(s"Added dependency from resources `${path.path}`.")
         } else {
-          logger.warn(s"Path to default dependency does not point to existing resource `${path.path}`.")
+          problems.warn(
+            Category.DependencyResolution,
+            "Path to default dependency does not point to an existing resource",
+            Some(path.path),
+            logger = logger
+          )
         }
       }
     }

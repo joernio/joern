@@ -1,9 +1,12 @@
 package io.joern.php2cpg.passes
 
 import io.joern.php2cpg.parser.Domain.PhpOperators
+import io.joern.x2cpg.SourceFiles
+import io.joern.x2cpg.report.{Category, ScanReport}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewDependency, NewTag}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import upickle.default.*
 
@@ -15,7 +18,8 @@ import PsrStringOrArray.*
 
 /** Parses the `composer.json` file for all `require` dependencies.
   */
-class DependencyPass(cpg: Cpg, composerPaths: List[String]) extends ForkJoinParallelCpgPass[Path](cpg) {
+class DependencyPass(cpg: Cpg, composerPaths: List[String], report: ScanReport = new ScanReport())
+    extends ForkJoinParallelCpgPass[Path](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -27,7 +31,13 @@ class DependencyPass(cpg: Cpg, composerPaths: List[String]) extends ForkJoinPara
         Try(read[Composer](ujson.Readable.fromByteArray(is.readAllBytes())))
       } match {
         case Failure(exception) =>
-          logger.error(s"Unable to deserialize `${composerFile.toString}`", exception)
+          report.error(
+            Category.FileParse,
+            "Unable to deserialize the composer file",
+            Some(SourceFiles.toRelativePathIfBelow(composerFile.toString, cpg.metaData.root.headOption.getOrElse(""))),
+            Some(exception),
+            logger
+          )
           Composer()
         case Success(composer) => composer
       }

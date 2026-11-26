@@ -4,6 +4,7 @@ import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.preprocessing.EjsPreprocessor
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, DefaultAstGenRunnerResult}
+import io.joern.x2cpg.report.{Category, ProblemSink}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import io.shiftleft.utils.IOUtils
@@ -48,6 +49,20 @@ object AstGenRunner {
     IgnoredDirectoryNames.map(dir => s"(?i)(.*$separator)?${Pattern.quote(dir)}$separator.*".r)
   }
 
+  /** Splits a `Parsing <file> : <reason>` line of astgen into the file and the reason.
+    *
+    * The file is delimited by the separator and not by the first colon, which is the one after the drive letter of an
+    * absolute Windows path.
+    */
+  private[jssrc2cpg] def parseFailure(line: String): Option[(String, String)] = {
+    val prefix           = "Parsing "
+    val failureSeparator = " : "
+    val separator        = line.indexOf(failureSeparator)
+    Option.when(line.startsWith(prefix) && separator >= prefix.length) {
+      (line.substring(prefix.length, separator), line.substring(separator + failureSeparator.length))
+    }
+  }
+
   private object astGenMetaData
       extends AstGenProgramMetaData(
         name = "astgen",
@@ -57,7 +72,8 @@ object AstGenRunner {
       )
 }
 
-class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(AstGenRunner.astGenMetaData, config) {
+class AstGenRunner(config: Config, problemSink: ProblemSink = ProblemSink.LogOnly)
+    extends io.joern.x2cpg.astgen.AstGenRunner(AstGenRunner.astGenMetaData, config, problemSink) {
 
   import io.joern.jssrc2cpg.utils.AstGenRunner.*
 
@@ -78,10 +94,14 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
     val skipped = astGenOut.collect {
       // javascript-astgen prefixes every relevant log statement with 'Parsing'
       case out if out.startsWith("Parsing") =>
-        val filename = out.substring(out.indexOf(" ") + 1, out.indexOf(":") - 1)
-        val reason   = out.substring(out.indexOf(":") + 2)
-        logger.warn(s"- failed to parse '$filename': '$reason'")
-        Option(filename)
+        parseFailure(out) match {
+          case Some((filename, reason)) =>
+            reportParseProblem(logger, filename, s"Failed to parse: $reason")
+            Option(filename)
+          case None =>
+            logger.debug(s"- $out")
+            None
+        }
       case out =>
         logger.debug(s"- $out")
         None
@@ -107,7 +127,18 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
     } match {
       case Success(result)    => result
       case Failure(exception) =>
-        logger.warn(s"An error occurred while processing file path $file during filtering stage : ", exception)
+        problems.warn(
+          Category.FileProcessing,
+          "An error occurred while processing the file during the filtering stage",
+          Some(
+            SourceFiles.toRelativePathIfBelow(
+              file.stripSuffix(".json").replace(out.toString, config.inputPath),
+              config.inputPath
+            )
+          ),
+          Some(exception),
+          logger
+        )
         false
     }
   }
@@ -239,9 +270,11 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
     val numOfParsedFiles = files.size
     logger.info(s"Parsed $numOfParsedFiles files.")
     if (numOfParsedFiles == 0) {
-      logger.warn(
+      problems.warn(
+        Category.Other,
         "No files were parsed. By default, test files, minified files, bundles, tooling configuration and " +
-          "folders like 'node_modules', 'dist', 'build' or 'test' are ignored."
+          "folders like 'node_modules', 'dist', 'build' or 'test' are ignored.",
+        logger = logger
       )
     }
     files

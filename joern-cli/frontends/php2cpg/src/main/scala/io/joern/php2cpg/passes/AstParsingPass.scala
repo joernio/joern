@@ -3,6 +3,7 @@ package io.joern.php2cpg.passes
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.{Domain, PhpParseResult, PhpParser}
 import io.joern.x2cpg.SourceFiles
+import io.joern.x2cpg.report.{Category, ProblemSink}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -10,7 +11,8 @@ import java.nio.file.Paths
 
 private[php2cpg] type BatchOfPhpScripts = Array[String]
 
-trait AstParsingPass(config: Config, parser: PhpParser) { this: ForkJoinParallelCpgPass[BatchOfPhpScripts] =>
+trait AstParsingPass(config: Config, parser: PhpParser, problems: ProblemSink) {
+  this: ForkJoinParallelCpgPass[BatchOfPhpScripts] =>
 
   protected val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
@@ -44,7 +46,12 @@ trait AstParsingPass(config: Config, parser: PhpParser) { this: ForkJoinParallel
     parser.parseFiles(part).foreach {
       case PhpParseResult(fileName, Some(result), _) => processPart(builder, fileName, result)
       case PhpParseResult(fileName, None, _)         =>
-        logger.warn(s"Failed to process '$fileName'")
+        problems.warn(
+          Category.FileParse,
+          "Failed to process the file",
+          Some(SourceFiles.toRelativePathIfBelow(fileName, config.inputPath)),
+          logger = logger
+        )
         None
     }
   }

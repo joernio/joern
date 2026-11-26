@@ -3,6 +3,7 @@ package io.joern.rust2cpg.astgen
 import io.joern.rust2cpg.Config
 import io.joern.x2cpg.astgen.AstGenRunner
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenProgramMetaData
+import io.joern.x2cpg.report.ProblemSink
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
@@ -15,11 +16,15 @@ object RustAstGenRunner {
   private object astGenMetaData extends AstGenProgramMetaData(name = "rust_ast_gen", configPrefix = "rust2cpg")
 }
 
-class RustAstGenRunner(config: Config) extends AstGenRunner(RustAstGenRunner.astGenMetaData, config) {
+class RustAstGenRunner(config: Config, problemSink: ProblemSink = ProblemSink.LogOnly)
+    extends AstGenRunner(RustAstGenRunner.astGenMetaData, config, problemSink) {
 
   override def skippedFiles(in: Path, astGenOut: List[String]): List[String] = {
     // rust_ast_gen prints to stdout "Skipped: <full-file-path>" for files it failed to process.
-    astGenOut.collect { case s"Skipped: $filePath" => filePath }
+    astGenOut.collect { case s"Skipped: $filePath" =>
+      reportParseProblem(RustAstGenRunner.logger, filePath, "Failed to parse")
+      filePath
+    }
   }
 
   override protected def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {

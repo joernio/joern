@@ -4,6 +4,8 @@ import io.joern.rust2cpg.Config
 import io.joern.rust2cpg.astcreation.AstCreator
 import io.joern.rust2cpg.parser.RustJsonParser
 import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.report.{Category, ScanReport}
+import io.joern.x2cpg.utils.TimeUtils
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
@@ -11,8 +13,9 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Paths
 import scala.util.{Try, Success, Failure}
 
-class AstCreationPass(cpg: Cpg, parsedFiles: Seq[String], config: Config)(implicit withSchemaValidation: ValidationMode)
-    extends ForkJoinParallelCpgPass[String](cpg) {
+class AstCreationPass(cpg: Cpg, parsedFiles: Seq[String], config: Config, report: ScanReport = new ScanReport())(
+  implicit withSchemaValidation: ValidationMode
+) extends ForkJoinParallelCpgPass[String](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -21,17 +24,35 @@ class AstCreationPass(cpg: Cpg, parsedFiles: Seq[String], config: Config)(implic
   override def runOnPart(diffGraph: DiffGraphBuilder, jsonPath: String): Unit = {
     RustJsonParser.readFile(Paths.get(jsonPath)) match {
       case Success(parseResult) =>
-        Try {
-          val localDiff = new AstCreator(config, parseResult).createAst()
-          diffGraph.absorb(localDiff)
-        } match {
-          case Success(_) =>
-            logger.debug(s"Processed '${parseResult.filename}'")
-          case Failure(exception) =>
-            logger.warn(s"Failed to process '${parseResult.fullPath}'", exception)
+        report.addReportInfo(parseResult.filename, parseResult.loc, parsed = true)
+        val (gotCpg, duration) = TimeUtils.time {
+          Try {
+            val localDiff = new AstCreator(config, parseResult).createAst()
+            diffGraph.absorb(localDiff)
+          } match {
+            case Success(_) =>
+              logger.debug(s"Processed '${parseResult.filename}'")
+              true
+            case Failure(exception) =>
+              report.warn(
+                Category.FileProcessing,
+                "Failed to process the file",
+                Some(parseResult.filename),
+                Some(exception),
+                logger
+              )
+              false
+          }
         }
+        report.updateReport(parseResult.filename, gotCpg, duration)
       case Failure(exception) =>
-        logger.warn(s"Failed to parse rust_ast_gen output '$jsonPath'", exception)
+        report.warn(
+          Category.FileParse,
+          "Failed to parse the output of rust_ast_gen",
+          Some(jsonPath),
+          Some(exception),
+          logger
+        )
     }
   }
 }

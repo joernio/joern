@@ -4,6 +4,7 @@ import com.dd.plist.PropertyListParser
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.utils.AstGenRunner
 import io.joern.x2cpg.passes.frontend.XConfigFileCreationPass
+import io.joern.x2cpg.report.{Category, ScanReport}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewConfigFile
 import io.shiftleft.semanticcpg.utils.FileUtil.*
@@ -13,7 +14,7 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Path
 import scala.util.{Failure, Success, Try}
 
-class ConfigFileCreationPass(cpg: Cpg, config: Config)
+class ConfigFileCreationPass(cpg: Cpg, config: Config, report: ScanReport = new ScanReport())
     extends XConfigFileCreationPass(
       cpg,
       config = config.withDefaultIgnoredFilesRegex(AstGenRunner.AstGenDefaultIgnoreRegex)
@@ -50,7 +51,13 @@ class ConfigFileCreationPass(cpg: Cpg, config: Config)
         logger.debug(s"Adding config file $name")
         diffGraph.addNode(configNode)
       case Failure(error) =>
-        logger.warn(s"Unable to create config file node for ${file.toAbsolutePath}: $error")
+        report.warn(
+          Category.FileProcessing,
+          "Unable to create config file node",
+          Some(configFileName(file)),
+          Some(error),
+          logger
+        )
     }
   }
 }

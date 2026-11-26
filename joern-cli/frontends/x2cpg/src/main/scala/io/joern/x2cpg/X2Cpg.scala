@@ -2,6 +2,7 @@ package io.joern.x2cpg
 
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import io.joern.x2cpg.report.{ReportMode, RunStatus, ScanReport}
 import io.joern.x2cpg.utils.Environment
 import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -28,7 +29,8 @@ object X2CpgConfig {
     ignoredFilesRegex: Regex = "".r,
     ignoredFiles: Seq[String] = Seq.empty,
     schemaValidation: ValidationMode = ValidationMode.Disabled,
-    disableFileContent: Boolean = true
+    disableFileContent: Boolean = true,
+    reportMode: ReportMode = ReportMode.Log
   ) {}
 
 }
@@ -46,6 +48,7 @@ trait X2CpgConfig[T <: X2CpgConfig[?]] {
   final def ignoredFiles: Seq[String]            = genericConfig.ignoredFiles
   final def schemaValidation: ValidationMode     = genericConfig.schemaValidation
   final def disableFileContent: Boolean          = genericConfig.disableFileContent
+  final def reportMode: ReportMode               = genericConfig.reportMode
 
   protected def withGenericConfig(value: X2CpgConfig.GenericConfig): OwnType
 
@@ -93,6 +96,10 @@ trait X2CpgConfig[T <: X2CpgConfig[?]] {
   final def withDisableFileContent(value: Boolean): OwnType = {
     withGenericConfig(genericConfig.copy(disableFileContent = value))
   }
+
+  final def withReportMode(value: ReportMode): OwnType = {
+    withGenericConfig(genericConfig.copy(reportMode = value))
+  }
 }
 
 /** Enables the configuration to specify if dependencies should be downloaded for additional symbol information.
@@ -139,11 +146,9 @@ abstract class X2CpgMain(val frontend: X2CpgFrontend, val cmdLineParser: OParser
   import X2CpgMain.*
 
   private def logVersionAndArgs(args: Array[String]): Unit = {
-    val frontendName = frontend.getClass.getSimpleName.stripSuffix("$")
-    val joernVersion =
-      // We only have a proper version there if joern was build using sbt assembly. Otherwise, it might be null.
-      Option(frontend.getClass.getPackage.getImplementationVersion).map(v => s"v$v").getOrElse("local build")
-    val logText = s"Executing $frontendName ($joernVersion) with arguments: ${args.mkString(" ")}"
+    val frontendName = X2CpgFrontend.name(frontend)
+    val joernVersion = X2CpgFrontend.version(frontend)
+    val logText      = s"Executing $frontendName ($joernVersion) with arguments: ${args.mkString(" ")}"
     logger.debug(logText)
   }
 
@@ -228,21 +233,36 @@ trait X2CpgFrontend extends AutoCloseable {
     */
   def createCpg(config: ConfigType): Try[Cpg]
 
+  /** Create a CPG according to the given configuration and record non-fatal problems and per-file results in `report`.
+    *
+    * Frontends that report override this method. The default delegates to [[createCpg(config:ConfigType)*]] and leaves
+    * `report` empty.
+    */
+  def createCpg(config: ConfigType, report: ScanReport): Try[Cpg] = createCpg(config)
+
   /** Create CPG according to given configuration, printing errors to the console if they occur. The CPG is closed and
     * not returned.
+    *
+    * Creates the [[ScanReport]] of this run and reports it at the end, also if CPG creation fails.
     */
   @throws[Throwable]("if createCpg throws any Throwable")
   def run(config: ConfigType): Unit = {
-    createCpg(config).map { cpg =>
-      cpg.close() // persists to disk
-    } match {
-      case Failure(exception) =>
-        // We explicitly rethrow the exception so that every frontend will
-        // terminate with exit code 1 if there was an exception during createCpg.
-        // Frontend maintainer may want to catch that RuntimeException on their end
-        // to add custom error handling.
-        throw exception
-      case Success(_) => // this is fine
+    val report = new ScanReport()
+    var status = RunStatus.Failed
+    try {
+      createCpg(config, report).map { cpg =>
+        cpg.close() // persists to disk
+      } match {
+        case Failure(exception) =>
+          // We explicitly rethrow the exception so that every frontend will
+          // terminate with exit code 1 if there was an exception during createCpg.
+          // Frontend maintainer may want to catch that RuntimeException on their end
+          // to add custom error handling.
+          throw exception
+        case Success(_) => status = RunStatus.Completed
+      }
+    } finally {
+      report.finish(X2CpgFrontend.name(this), X2CpgFrontend.version(this), config, status)
     }
   }
 
@@ -259,6 +279,18 @@ trait X2CpgFrontend extends AutoCloseable {
   /** For frontends that create and manage resources during AST generation, they can clean up these resources here.
     */
   override def close(): Unit = {}
+}
+
+object X2CpgFrontend {
+
+  def name(frontend: X2CpgFrontend): String = frontend.getClass.getSimpleName.stripSuffix("$")
+
+  def version(frontend: X2CpgFrontend): String = {
+    // We only have a proper version there if joern was build using sbt assembly. Otherwise, it might be null.
+    Option(frontend.getClass.getPackage.getImplementationVersion)
+      .map(implVersion => s"v$implVersion")
+      .getOrElse("local build")
+  }
 }
 
 object X2Cpg {
@@ -310,7 +342,19 @@ object X2Cpg {
       opt[String]("exclude-regex")
         .action { (x, c) => c.withIgnoredFilesRegex(x) }
         .text("a regex specifying files to exclude during CPG generation (paths relative to <input-dir> are matched)"),
-      opt[Unit]("no-default-exclude").action { (_, c) => c.withDefaultIgnoredFilesRegex(Nil) }.hidden(),
+      opt[Unit]("report-json")
+        .action { (_, config) =>
+          config.withReportMode(config.reportMode match {
+            case json: ReportMode.Json => json
+            case _                     => ReportMode.Json()
+          })
+        }
+        .text("additionally write the scan report (processed files and non-fatal problems) as JSON next to the CPG"),
+      opt[String]("report-json-file")
+        .valueName("<file>")
+        .action((file, config) => config.withReportMode(ReportMode.Json(Some(file))))
+        .text("like --report-json, but write the JSON report to <file>"),
+      opt[Unit]("no-default-exclude").action { (_, config) => config.withDefaultIgnoredFilesRegex(Nil) }.hidden(),
       opt[Unit]("enable-early-schema-checking")
         .action((_, c) => c.withSchemaValidation(ValidationMode.Enabled))
         .text("enables early schema validation during AST creation (disabled by default)"),

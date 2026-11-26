@@ -1,14 +1,14 @@
 package io.joern.jssrc2cpg.passes
 
 import io.joern.jssrc2cpg.Config
-import io.joern.x2cpg.utils.Report
+import io.joern.x2cpg.report.ScanReport
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.utils.IOUtils
 
 import java.nio.file.Path
 import scala.util.matching.Regex
 
-class PrivateKeyFilePass(cpg: Cpg, config: Config, report: Report = new Report())
+class PrivateKeyFilePass(cpg: Cpg, config: Config, report: ScanReport = new ScanReport())
     extends ConfigPass(cpg, config, report) {
 
   private val PrivateKeyRegex: Regex = """.*RSA\sPRIVATE\sKEY.*""".r

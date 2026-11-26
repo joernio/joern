@@ -3,14 +3,18 @@ package io.joern.abap2cpg.passes
 import io.joern.abap2cpg.Config
 import io.joern.abap2cpg.parser.AbapJsonParser
 import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.report.{Category, ScanReport}
+import io.joern.x2cpg.utils.TimeUtils
+import io.shiftleft.utils.IOUtils
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
-class AstCreationPass(cpg: Cpg, jsonFiles: List[String], config: Config) extends ForkJoinParallelCpgPass[String](cpg) {
+class AstCreationPass(cpg: Cpg, jsonFiles: List[String], config: Config, report: ScanReport = new ScanReport())
+    extends ForkJoinParallelCpgPass[String](cpg) {
 
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
   private val parser = AbapJsonParser()
@@ -22,12 +26,23 @@ class AstCreationPass(cpg: Cpg, jsonFiles: List[String], config: Config) extends
 
     parser.parseFile(Paths.get(jsonFile)) match {
       case Success(program) =>
-        val astCreator = new AstCreator(program, program.fileName)
-        val generated  = astCreator.createAst()
-        diffGraph.absorb(generated)
+        val linesOfCode = Try(IOUtils.readLinesInFile(Paths.get(config.inputPath).resolve(program.fileName)).size)
+        report.addReportInfo(program.fileName, linesOfCode.getOrElse(-1), parsed = true)
+        val (_, duration) = TimeUtils.time {
+          val astCreator = new AstCreator(program, program.fileName)
+          val generated  = astCreator.createAst()
+          diffGraph.absorb(generated)
+        }
+        report.updateReport(program.fileName, cpg = true, duration)
         logger.debug(s"Processed '${program.fileName}'")
       case Failure(exception) =>
-        logger.warn(s"Failed to process '$jsonFile'", exception)
+        report.warn(
+          Category.FileParse,
+          "Failed to read the output of the AST generator",
+          Some(jsonFile),
+          Some(exception),
+          logger
+        )
     }
   }
 }

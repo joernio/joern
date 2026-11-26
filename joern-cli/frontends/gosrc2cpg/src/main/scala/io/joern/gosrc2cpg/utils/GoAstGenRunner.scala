@@ -4,6 +4,7 @@ import io.joern.gosrc2cpg.Config
 import io.joern.x2cpg.{SourceFiles, astgen}
 import io.joern.x2cpg.astgen.AstGenRunner
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult}
+import io.joern.x2cpg.report.ProblemSink
 import io.joern.x2cpg.utils.Environment
 import io.joern.x2cpg.utils.Environment.{ArchitectureType, OperatingSystemType}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
@@ -26,8 +27,8 @@ object GoAstGenRunner {
   private object astGenMetaData extends AstGenProgramMetaData(name = "goastgen", configPrefix = "gosrc2cpg")
 }
 
-class GoAstGenRunner(config: Config, includeFileRegex: String = "")
-    extends AstGenRunner(GoAstGenRunner.astGenMetaData, config) {
+class GoAstGenRunner(config: Config, includeFileRegex: String = "", problemSink: ProblemSink = ProblemSink.LogOnly)
+    extends AstGenRunner(GoAstGenRunner.astGenMetaData, config, problemSink) {
   import io.joern.gosrc2cpg.utils.GoAstGenRunner.*
 
   override val WinX86   = "windows.exe"
@@ -44,10 +45,14 @@ class GoAstGenRunner(config: Config, includeFileRegex: String = "")
 
   override def skippedFiles(in: Path, astGenOut: List[String]): List[String] = {
     val skipped = astGenOut.collect {
+      case out if out.startsWith("Failed to generate AST for ") =>
+        val filename = out.stripPrefix("Failed to generate AST for ").strip()
+        reportParseProblem(logger, filename, "Failed to generate an AST")
+        Option(filename)
       case out if !out.startsWith("Converted") =>
         val filename = out.substring(0, out.indexOf(" "))
         val reason   = out.substring(out.indexOf(" ") + 1)
-        logger.warn(s"\t- failed to parse '${in / filename}': '$reason'")
+        reportParseProblem(logger, (in / filename).toString, s"Failed to parse: $reason")
         Option(filename)
       case out =>
         logger.debug(s"\t+ $out")

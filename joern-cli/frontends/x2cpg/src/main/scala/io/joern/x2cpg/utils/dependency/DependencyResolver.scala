@@ -2,6 +2,7 @@ package io.joern.x2cpg.utils.dependency
 
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.frontendspecific.javasrc2cpg.JvmDefaultIgnoredFolders
+import io.joern.x2cpg.report.{Category, ExceptionInfo, Problem, ProblemSink, Severity}
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
@@ -25,7 +26,8 @@ object DependencyResolver {
 
   def getCoordinates(
     projectDir: Path,
-    params: DependencyResolverParams = new DependencyResolverParams
+    params: DependencyResolverParams = new DependencyResolverParams,
+    problems: ProblemSink = ProblemSink.LogOnly
   ): Option[collection.Seq[String]] = {
     val coordinates = findSupportedBuildFiles(projectDir).flatMap { buildFile =>
       if (isMavenBuildFile(buildFile))
@@ -33,9 +35,9 @@ object DependencyResolver {
         None
       else if (isGradleBuildFile(buildFile)) {
         // TODO: Don't limit this to the default configuration name
-        getCoordinatesForGradleProject(buildFile.getParent, "compileClasspath")
+        getCoordinatesForGradleProject(buildFile.getParent, "compileClasspath", problems)
       } else {
-        logger.warn(s"Found unsupported build file $buildFile")
+        DependencyProblems.warn(problems, logger, s"Found unsupported build file $buildFile")
         Nil
       }
     }.flatten
@@ -45,7 +47,8 @@ object DependencyResolver {
 
   private def getCoordinatesForGradleProject(
     projectDir: Path,
-    configuration: String
+    configuration: String,
+    problems: ProblemSink
   ): Option[collection.Seq[String]] = {
     val lines = ExternalCommand
       .run(
@@ -54,8 +57,20 @@ object DependencyResolver {
         additionalContext = "trying to retrieve dependencies for Gradle project at path `$projectDir`"
       )
       .logIfFailed()
-      .successOption
-      .getOrElse(Seq.empty)
+      .toTry match {
+      case Success(output)    => output
+      case Failure(exception) =>
+        // already logged by `logIfFailed`
+        problems.record(
+          Problem(
+            Severity.Warning,
+            Category.DependencyResolution,
+            s"Could not retrieve the coordinates of the Gradle project at path `$projectDir`",
+            exception = Some(ExceptionInfo.of(exception))
+          )
+        )
+        Seq.empty
+    }
 
     val coordinates = MavenCoordinates.fromGradleOutput(lines)
     logger.info("Got {} Maven coordinates", coordinates.size)
@@ -64,15 +79,16 @@ object DependencyResolver {
 
   def getDependencies(
     projectDir: Path,
-    params: DependencyResolverParams = new DependencyResolverParams
+    params: DependencyResolverParams = new DependencyResolverParams,
+    problems: ProblemSink = ProblemSink.LogOnly
   ): Option[Seq[String]] = {
     val dependencies = findSupportedBuildFiles(projectDir).flatMap { buildFile =>
       if (isMavenBuildFile(buildFile)) {
-        MavenDependencies.get(buildFile.getParent)
+        MavenDependencies.get(buildFile.getParent, problems)
       } else if (isGradleBuildFile(buildFile)) {
-        getDepsForGradleProject(params, buildFile.getParent)
+        getDepsForGradleProject(params, buildFile.getParent, problems)
       } else {
-        logger.warn(s"Found unsupported build file $buildFile")
+        DependencyProblems.warn(problems, logger, s"Found unsupported build file $buildFile")
         Nil
       }
     }.flatten
@@ -85,17 +101,22 @@ object DependencyResolver {
 
   private def getDepsForGradleProject(
     params: DependencyResolverParams,
-    projectDir: Path
+    projectDir: Path,
+    problems: ProblemSink
   ): Option[collection.Seq[String]] = {
     logger.info("resolving Gradle dependencies at {}", projectDir)
     val maybeProjectNameOverride   = params.forGradle.get(GradleConfigKeys.ProjectName)
     val maybeConfigurationOverride = params.forGradle.get(GradleConfigKeys.ConfigurationName)
-    GradleDependencies.get(projectDir, maybeProjectNameOverride, maybeConfigurationOverride) match {
+    GradleDependencies.get(projectDir, maybeProjectNameOverride, maybeConfigurationOverride, problems) match {
       case dependencies if dependencies.exists(_._2.nonEmpty) =>
         val allDependencies = dependencies.flatMap(_._2)
         Option(allDependencies.distinctBy(path => new java.io.File(path).getName))
       case _ =>
-        logger.warn(s"Could not download Gradle dependencies for project at path `$projectDir`")
+        DependencyProblems.warn(
+          problems,
+          logger,
+          s"Could not download Gradle dependencies for project at path `$projectDir`"
+        )
         None
     }
   }

@@ -50,7 +50,7 @@ class AstCreator(
 
   override protected def unadjustedOffset(node: RubyExpression): Option[(Int, Int)] = node.offset
 
-  protected val relativeFileName: String =
+  val relativeFileName: String =
     projectRoot
       .map(fileName.stripPrefix)
       .map(_.stripPrefix(java.io.File.separator))

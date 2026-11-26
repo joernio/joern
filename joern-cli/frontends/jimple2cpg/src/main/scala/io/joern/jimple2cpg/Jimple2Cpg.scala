@@ -6,6 +6,7 @@ import io.joern.jimple2cpg.util.ProgramHandlingUtil.{ClassFile, extractClassesIn
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.frontend.{JavaConfigFileCreationPass, MetaDataPass, TypeNodePass}
+import io.joern.x2cpg.report.ScanReport
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.utils.FileUtil
@@ -55,7 +56,13 @@ class Jimple2Cpg extends X2CpgFrontend {
     *   The list of extracted class files whose package path could be extracted, placed on that package path relative to
     *   [[tmpDir]]
     */
-  private def loadClassFiles(src: Path, tmpDir: Path, recurse: Boolean, depth: Int): List[ClassFile] = {
+  private def loadClassFiles(
+    src: Path,
+    tmpDir: Path,
+    recurse: Boolean,
+    depth: Int,
+    report: ScanReport
+  ): List[ClassFile] = {
     extractClassesInPackageLayout(
       src,
       tmpDir,
@@ -63,7 +70,8 @@ class Jimple2Cpg extends X2CpgFrontend {
       isArchive = e => e.isZipFile,
       isConfigFile = e => e.isConfigFile,
       recurse,
-      depth
+      depth,
+      report
     )
   }
 
@@ -77,10 +85,10 @@ class Jimple2Cpg extends X2CpgFrontend {
     * @param depth
     *   Maximum depth of recursion
     */
-  private def sootLoad(input: Path, tmpDir: Path, recurse: Boolean, depth: Int): List[ClassFile] = {
+  private def sootLoad(input: Path, tmpDir: Path, recurse: Boolean, depth: Int, report: ScanReport): List[ClassFile] = {
     Options.v().set_soot_classpath(tmpDir.absolutePathAsString)
     Options.v().set_prepend_classpath(true)
-    val classFiles               = loadClassFiles(input, tmpDir, recurse, depth)
+    val classFiles               = loadClassFiles(input, tmpDir, recurse, depth, report)
     val fullyQualifiedClassNames = classFiles.flatMap(_.fullyQualifiedClassName)
     logger.info(s"Loading ${classFiles.size} program files")
     logger.debug(s"Source files are: ${classFiles.map(_.file.absolutePathAsString)}")
@@ -95,7 +103,7 @@ class Jimple2Cpg extends X2CpgFrontend {
     * @param tmpDir
     *   A temporary directory that will be used as the classpath for extracted class files
     */
-  private def cpgApplyPasses(cpg: Cpg, config: Config, tmpDir: Path): Unit = {
+  private def cpgApplyPasses(cpg: Cpg, config: Config, tmpDir: Path, report: ScanReport): Unit = {
     val input = Paths.get(config.inputPath)
     configureSoot(config, tmpDir)
     new MetaDataPass(cpg, language, config.inputPath).createAndApply()
@@ -103,16 +111,16 @@ class Jimple2Cpg extends X2CpgFrontend {
       case Some(".apk" | ".dex") if Files.isRegularFile(input) =>
         sootLoadApk(input, config.android)
         { () =>
-          val astCreator = SootAstCreationPass(cpg, config)
+          val astCreator = SootAstCreationPass(cpg, config, report)
           astCreator.createAndApply()
           astCreator.usedTypes()
         }
       case _ =>
-        val classFiles = sootLoad(input, tmpDir, config.recurse, config.depth)
+        val classFiles = sootLoad(input, tmpDir, config.recurse, config.depth, report)
         decompileClassFiles(classFiles, !config.disableFileContent)
 
         { () =>
-          val astCreator = AstCreationPass(classFiles, cpg, config)
+          val astCreator = AstCreationPass(classFiles, cpg, config, report)
           astCreator.createAndApply()
           astCreator.usedTypes()
         }
@@ -147,11 +155,13 @@ class Jimple2Cpg extends X2CpgFrontend {
     }
   }
 
-  override def createCpg(config: Config): Try[Cpg] =
+  override def createCpg(config: Config): Try[Cpg] = createCpg(config, new ScanReport())
+
+  override def createCpg(config: Config, report: ScanReport): Try[Cpg] =
     try {
       withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
         FileUtil.usingTemporaryDirectory("jimple2cpg-") { tmpDir =>
-          cpgApplyPasses(cpg, config, tmpDir)
+          cpgApplyPasses(cpg, config, tmpDir, report)
         }
       }
     } finally {

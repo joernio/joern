@@ -2,12 +2,15 @@ package io.joern.x2cpg.astgen
 
 import io.joern.x2cpg.X2CpgConfig
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenFailedException, AstGenProgramMetaData}
+import io.joern.x2cpg.report.{Category, ExceptionInfo, ProblemSink, ScanReport, Severity}
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
+import org.scalatest.LoneElement
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.slf4j.LoggerFactory
 
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, Paths}
 import scala.util.{Failure, Success, Try}
 
 object AstGenRunnerTests {
@@ -22,11 +25,22 @@ object AstGenRunnerTests {
   /** An AST generator that does not run any process. It writes the given JSON files to the output directory and then
     * returns the given outcome.
     */
-  final class StubAstGenRunner(config: StubConfig, jsonFiles: Seq[String], outcome: Try[Seq[String]])
-      extends AstGenRunner(StubMetaData, config) {
+  final class StubAstGenRunner(
+    config: StubConfig,
+    jsonFiles: Seq[String],
+    outcome: Try[Seq[String]],
+    problemSink: ProblemSink = ProblemSink.LogOnly
+  ) extends AstGenRunner(StubMetaData, config, problemSink) {
+
+    private val logger = LoggerFactory.getLogger(getClass)
 
     override protected def skippedFiles(in: Path, astGenOut: List[String]): List[String] =
-      astGenOut.collect { case line if line.startsWith("Skipped: ") => line.stripPrefix("Skipped: ") }
+      astGenOut.collect {
+        case line if line.startsWith("Skipped: ") =>
+          val file = line.stripPrefix("Skipped: ")
+          reportParseProblem(logger, file, "Failed to parse")
+          file
+      }
 
     override protected def runAstGenNative(
       in: String,
@@ -40,14 +54,18 @@ object AstGenRunnerTests {
   }
 }
 
-class AstGenRunnerTests extends AnyWordSpec with Matchers {
+class AstGenRunnerTests extends AnyWordSpec with Matchers with LoneElement {
   import AstGenRunnerTests.*
 
-  private def withRunner[T](jsonFiles: Seq[String], outcome: Try[Seq[String]])(f: (StubAstGenRunner, Path) => T): T = {
+  private def withRunner[T](
+    jsonFiles: Seq[String],
+    outcome: Try[Seq[String]],
+    problems: ProblemSink = ProblemSink.LogOnly
+  )(f: (StubAstGenRunner, Path) => T): T = {
     FileUtil.usingTemporaryDirectory("astgenRunnerIn") { inputDir =>
       FileUtil.usingTemporaryDirectory("astgenRunnerOut") { outputDir =>
         val config = StubConfig().withInputPath(inputDir.toString)
-        f(new StubAstGenRunner(config, jsonFiles, outcome), outputDir)
+        f(new StubAstGenRunner(config, jsonFiles, outcome, problems), outputDir)
       }
     }
   }
@@ -84,6 +102,43 @@ class AstGenRunnerTests extends AnyWordSpec with Matchers {
         result.parsedFiles shouldBe List((out / "a.json").toString)
         result.skippedFiles shouldBe empty
       }
+    }
+
+    "report a partially failed run as a problem of the external tool" in {
+      val report = new ScanReport()
+      withRunner(Seq("a.json"), Failure(new RuntimeException("exit code 1")), report) { (runner, out) =>
+        runner.execute(out)
+      }
+      val problem = report.allProblems.loneElement
+      problem.severity shouldBe Severity.Warning
+      problem.category shouldBe Category.ExternalTool
+      problem.message should include("stubastgen")
+      problem.exception shouldBe Some(ExceptionInfo("java.lang.RuntimeException", Some("exit code 1")))
+    }
+
+    "report the files that could not be parsed" in {
+      val report = new ScanReport()
+      withRunner(Seq("a.json"), Success(Seq("Skipped: rel/b.js")), report) { (runner, out) => runner.execute(out) }
+      report.allProblems.map(problem => (problem.severity, problem.category, problem.file)) shouldBe
+        Seq((Severity.Warning, Category.FileParse, Some("rel/b.js")))
+    }
+
+    "report files printed with an absolute path relative to the input path" in {
+      FileUtil.usingTemporaryDirectory("astgenRunnerIn") { inputDir =>
+        FileUtil.usingTemporaryDirectory("astgenRunnerOut") { outputDir =>
+          val report = new ScanReport()
+          val config = StubConfig().withInputPath(inputDir.toString)
+          val output = Success(Seq(s"Skipped: ${inputDir / "sub" / "c.js"}"))
+          new StubAstGenRunner(config, Seq("a.json"), output, report).execute(outputDir)
+          report.allProblems.map(_.file) shouldBe Seq(Some(Paths.get("sub", "c.js").toString))
+        }
+      }
+    }
+
+    "not report anything if every file could be parsed" in {
+      val report = new ScanReport()
+      withRunner(Seq("a.json"), Success(Seq("Generated: a.json")), report) { (runner, out) => runner.execute(out) }
+      report.allProblems shouldBe empty
     }
 
     "throw if the run failed without producing any output" in {

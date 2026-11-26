@@ -6,7 +6,8 @@ import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
-import io.joern.x2cpg.utils.{HashUtil, Report}
+import io.joern.x2cpg.report.ScanReport
+import io.joern.x2cpg.utils.HashUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.semanticcpg.utils.FileUtil
@@ -18,12 +19,12 @@ class SwiftSrc2Cpg extends X2CpgFrontend {
   override type ConfigType = Config
   override val defaultConfig = Config()
 
-  def createCpg(config: Config): Try[Cpg] = {
+  def createCpg(config: Config): Try[Cpg] = createCpg(config, new ScanReport())
+
+  override def createCpg(config: Config, report: ScanReport): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       FileUtil.usingTemporaryDirectory("swiftsrc2cpgOut") { tmpDir =>
-        val report: Report = new Report()
-
-        val astGenResult = new AstGenRunner(config).execute(tmpDir)
+        val astGenResult = new AstGenRunner(config, report).execute(tmpDir)
         val hash         = HashUtil.sha256(astGenResult.parsedFiles.map(file => Paths.get(file)))
 
         val astCreationPass = new AstCreationPass(cpg, astGenResult, config, report)(config.schemaValidation)
@@ -33,8 +34,8 @@ class SwiftSrc2Cpg extends X2CpgFrontend {
         new BuiltinTypesPass(cpg).createAndApply()
         SwiftTypeNodePass.withRegisteredTypes(astCreationPass.typesSeen(), cpg).createAndApply()
 
-        new ConfigFileCreationPass(cpg, config).createAndApply()
-        new DependenciesPass(cpg).createAndApply()
+        new ConfigFileCreationPass(cpg, config, report).createAndApply()
+        new DependenciesPass(cpg, report).createAndApply()
 
         val extensionsPass = new ExtensionsPass(
           cpg,
@@ -49,8 +50,6 @@ class SwiftSrc2Cpg extends X2CpgFrontend {
         new ObjcCallFullNamePass(cpg).createAndApply()
         new ClosureBindingsPass(cpg).createAndApply()
         new FullNameUniquenessPass(cpg).createAndApply()
-
-        report.print()
       }
     }
   }

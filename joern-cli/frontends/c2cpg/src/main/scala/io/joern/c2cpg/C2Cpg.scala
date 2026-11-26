@@ -5,7 +5,7 @@ import io.joern.c2cpg.passes.*
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.x2cpg.utils.Report
+import io.joern.x2cpg.report.ScanReport
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import org.slf4j.LoggerFactory
 
@@ -20,9 +20,10 @@ class C2Cpg extends X2CpgFrontend {
 
   private val logger = LoggerFactory.getLogger(classOf[C2Cpg])
 
-  def createCpg(config: Config): Try[Cpg] = {
+  def createCpg(config: Config): Try[Cpg] = createCpg(config, new ScanReport())
+
+  override def createCpg(config: Config, report: ScanReport): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
-      val report = new Report()
       new MetaDataPass(cpg, Languages.NEWC, config.inputPath).createAndApply()
 
       val preprocessedFiles    = allPreprocessedFiles(config)
@@ -46,7 +47,6 @@ class C2Cpg extends X2CpgFrontend {
       new TypeDeclNodePass(cpg, config).createAndApply()
       new FunctionDeclNodePass(cpg, headerPass.unhandledMethodDeclarations(), config).createAndApply()
       new FullNameUniquenessPass(cpg).createAndApply()
-      report.print()
     }
   }
 

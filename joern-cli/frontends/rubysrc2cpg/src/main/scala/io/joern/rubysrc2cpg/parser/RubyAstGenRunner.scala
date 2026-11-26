@@ -5,6 +5,7 @@ import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.{JRubyEnvironment, astGenMet
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult, DefaultAstGenRunnerResult}
+import io.joern.x2cpg.report.ProblemSink
 import io.joern.x2cpg.utils.{Environment, JoernRunfilesLocator}
 import org.jruby.RubyInstanceConfig
 import org.jruby.embed.{LocalContextScope, LocalVariableBehavior, PathType, ScriptingContainer}
@@ -21,8 +22,11 @@ import scala.util.{Failure, Try, Using}
 /** Creates a JRuby scripting environment using `ruby_ast_gen` within a temporary directory allowing for re-usable
   * execution.
   */
-class RubyAstGenRunner(config: Config, sharedJRubyEnv: Option[JRubyEnvironment] = None)
-    extends AstGenRunner(RubyAstGenRunner.astGenMetaData, config)
+class RubyAstGenRunner(
+  config: Config,
+  sharedJRubyEnv: Option[JRubyEnvironment] = None,
+  problemSink: ProblemSink = ProblemSink.LogOnly
+) extends AstGenRunner(RubyAstGenRunner.astGenMetaData, config, problemSink)
     with AutoCloseable {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -63,6 +67,9 @@ class RubyAstGenRunner(config: Config, sharedJRubyEnv: Option[JRubyEnvironment] 
     }
 
     astGenOut.map(_.strip()).foreach {
+      // Prism is only the first parser to be tried. If it fails, ruby_ast_gen falls back to another one.
+      case s"[WARN] Prism parser failed: $_"           =>
+      case s"[WARN] Skipping $fileName: $reason"       => addReason(reason, Option(fileName))
       case s"[WARN] $reason - $fileName"               => addReason(reason, Option(fileName))
       case s"[ERR] '$fileName' - $reason"              => addReason(reason, Option(fileName))
       case s"[ERR] Failed to parse $fileName: $reason" =>
@@ -80,8 +87,10 @@ class RubyAstGenRunner(config: Config, sharedJRubyEnv: Option[JRubyEnvironment] 
         logger.debug(s"Skipped '$filename' due to file filter")
         Option(filename)
       case (filename, diagnostics) =>
-        logger.warn(
-          s"Parsed '$filename' with the following diagnostics:\n${diagnostics.map(x => s" - $x").mkString("\n")}"
+        reportParseProblem(
+          logger,
+          filename,
+          s"Parsed with the following diagnostics:\n${diagnostics.map(diagnostic => s" - $diagnostic").mkString("\n")}"
         )
         Option(filename)
     }.toList

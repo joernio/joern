@@ -5,6 +5,7 @@ import io.joern.rust2cpg.passes.{AstCreationPass, RustConfigFileCreationPass, Ru
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.frontend.MetaDataPass
+import io.joern.x2cpg.report.ScanReport
 import io.joern.x2cpg.utils.HashUtil
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import io.shiftleft.semanticcpg.utils.FileUtil
@@ -16,13 +17,15 @@ class Rust2Cpg extends X2CpgFrontend {
   override type ConfigType = Config
   override val defaultConfig: Config = Config()
 
-  def createCpg(config: Config): Try[Cpg] = {
+  def createCpg(config: Config): Try[Cpg] = createCpg(config, new ScanReport())
+
+  override def createCpg(config: Config, report: ScanReport): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       FileUtil.usingTemporaryDirectory("rust2cpgOut") { tmpDir =>
-        val astGenResult = new RustAstGenRunner(config).execute(tmpDir)
+        val astGenResult = new RustAstGenRunner(config, report).execute(tmpDir)
         val hash         = HashUtil.sha256(astGenResult.parsedFiles.map(Paths.get(_)))
         new MetaDataPass(cpg, Languages.RUST, config.inputPath, Option(hash)).createAndApply()
-        new AstCreationPass(cpg, astGenResult.parsedFiles, config)(config.schemaValidation).createAndApply()
+        new AstCreationPass(cpg, astGenResult.parsedFiles, config, report)(config.schemaValidation).createAndApply()
         new RustTypeNodePass(cpg).createAndApply()
         new RustConfigFileCreationPass(cpg, config).createAndApply()
       }

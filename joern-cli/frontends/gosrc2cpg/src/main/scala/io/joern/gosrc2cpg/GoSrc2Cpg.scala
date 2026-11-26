@@ -9,7 +9,7 @@ import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenProgramMetaData
 import io.joern.x2cpg.passes.frontend.MetaDataPass
-import io.joern.x2cpg.utils.Report
+import io.joern.x2cpg.report.ScanReport
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import io.shiftleft.semanticcpg.utils.FileUtil
 
@@ -20,14 +20,15 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Option(GoGlobal())) extends X
   override type ConfigType = Config
   override val defaultConfig = Config()
 
-  private val report: Report = new Report()
+  private var goMod: Option[GoModHelper] = None
 
-  private var goMod: Option[GoModHelper]  = None
-  def createCpg(config: Config): Try[Cpg] = {
+  def createCpg(config: Config): Try[Cpg] = createCpg(config, new ScanReport())
+
+  override def createCpg(config: Config, report: ScanReport): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       FileUtil.usingTemporaryDirectory("gosrc2cpgOut") { tmpDir =>
         MetaDataPass(cpg, Languages.GOLANG, config.inputPath).createAndApply()
-        val astGenResults = new GoAstGenRunner(config).executeForGo(tmpDir)
+        val astGenResults = new GoAstGenRunner(config, problemSink = report).executeForGo(tmpDir)
         astGenResults.foreach { astGenResult =>
           goGlobalOption
             .orElse(Option(GoGlobal()))
@@ -41,18 +42,18 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Option(GoGlobal())) extends X
                 )
               )
               goGlobal.mainModule = goMod.flatMap(modHelper => modHelper.getModMetaData().map(mod => mod.module.name))
-              InitialMainSrcPass(cpg, astGenResult.parsedFiles, config, goMod.get, goGlobal, tmpDir).createAndApply()
+              InitialMainSrcPass(cpg, astGenResult.parsedFiles, config, goMod.get, goGlobal, tmpDir, report)
+                .createAndApply()
               if (goGlobal.pkgLevelVarAndConstantAstMap.size() > 0) {
                 PackageCtorCreationPass(cpg, config, goGlobal).createAndApply()
               }
               if (config.fetchDependencies) {
                 goGlobal.processingDependencies = true
-                DownloadDependenciesPass(cpg, goMod.get, goGlobal, config).process()
+                DownloadDependenciesPass(cpg, goMod.get, goGlobal, config, report).process()
                 goGlobal.processingDependencies = false
               }
               AstCreationPass(cpg, astGenResult.parsedFiles, config, goMod.get, goGlobal, tmpDir, report)
                 .createAndApply()
-              report.print()
             }
         }
       }

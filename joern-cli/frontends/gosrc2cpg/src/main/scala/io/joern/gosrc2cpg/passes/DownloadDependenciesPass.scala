@@ -6,6 +6,7 @@ import io.joern.gosrc2cpg.model.{GoModDependency, GoModHelper}
 import io.joern.gosrc2cpg.parser.GoAstJsonParser
 import io.joern.gosrc2cpg.utils.GoAstGenRunner
 import io.joern.gosrc2cpg.utils.GoAstGenRunner.GoAstGenRunnerResult
+import io.joern.x2cpg.report.{Category, ScanReport}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.LoggerFactory
@@ -16,7 +17,13 @@ import java.util.concurrent.LinkedBlockingQueue
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
-class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoGlobal, config: Config) {
+class DownloadDependenciesPass(
+  cpg: Cpg,
+  parentGoMod: GoModHelper,
+  goGlobal: GoGlobal,
+  config: Config,
+  report: ScanReport = new ScanReport()
+) {
   private val logger  = LoggerFactory.getLogger(getClass)
   def process(): Unit = {
     val processor       = new DependencyProcessorQueue()
@@ -38,11 +45,21 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
                       print(". ")
                       processor.queue.put(Some(dependency))
                     case Failure(f) =>
-                      logger.error(s"\t- command '$cmd' failed", f)
+                      report.error(
+                        Category.DependencyResolution,
+                        s"Command '${cmd.mkString(" ")}' failed",
+                        cause = Some(f),
+                        logger = logger
+                      )
                   }
                 }
             case Failure(f) =>
-              logger.error("\t- command 'go mod init joern.io/temp' failed", f)
+              report.error(
+                Category.DependencyResolution,
+                "Command 'go mod init joern.io/temp' failed",
+                cause = Some(f),
+                logger = logger
+              )
           }
         }
     }
@@ -68,7 +85,12 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
       } catch {
         case exception: InterruptedException => logger.warn("Interrupted WriterThread", exception)
         case NonFatal(exc)                   =>
-          logger.error("error in writer thread, ", exc)
+          report.error(
+            Category.DependencyResolution,
+            "Error while processing the downloaded dependencies",
+            cause = Some(exc),
+            logger = logger
+          )
       }
     }
 
@@ -86,7 +108,12 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
           Try(new GoAstGenRunner(depConfig, dependency.getIncludePackagesList()).executeForGo(astLocation)) match {
             case Success(results)   => results.headOption.getOrElse(GoAstGenRunnerResult())
             case Failure(exception) =>
-              logger.warn(s"Unable to process dependency '${dependency.dependencyStr()}', skipping", exception)
+              report.warn(
+                Category.DependencyResolution,
+                s"Unable to process dependency '${dependency.dependencyStr()}', skipping",
+                cause = Some(exception),
+                logger = logger
+              )
               GoAstGenRunnerResult()
           }
         val goMod = new GoModHelper(

@@ -1,6 +1,7 @@
 package io.joern.x2cpg.utils.dependency
 
 import io.joern.x2cpg.utils.dependency.DependencyResolver.{findSupportedBuildFiles, isGradleBuildFile, isMavenBuildFile}
+import io.joern.x2cpg.report.ProblemSink
 import io.shiftleft.semanticcpg.utils.FileUtil
 import org.slf4j.LoggerFactory
 
@@ -49,23 +50,36 @@ object DependencyResolverV2 {
 
   def resolve(
     inputPath: String,
-    params: DependencyResolverParams = new DependencyResolverParams
+    params: DependencyResolverParams = new DependencyResolverParams,
+    problems: ProblemSink = ProblemSink.LogOnly
   ): Option[DependencyResolutionResult] = {
     val projectDir = Paths.get(inputPath).toAbsolutePath
 
-    getDependencyGraph(projectDir, params) match {
+    getDependencyGraph(projectDir, params, problems) match {
       case None =>
-        logger.warn(s"V2 dependency fetcher: no supported build file found at $inputPath. Falling back.")
+        DependencyProblems.warn(
+          problems,
+          logger,
+          s"V2 dependency fetcher: no supported build file found at $inputPath. Falling back."
+        )
         None
 
       case Some(graph) if graph.nodes.isEmpty =>
-        logger.warn(s"V2 dependency fetcher: graph is empty for $inputPath. Falling back.")
+        DependencyProblems.warn(
+          problems,
+          logger,
+          s"V2 dependency fetcher: graph is empty for $inputPath. Falling back."
+        )
         None
 
       case Some(graph) =>
-        val result = graph.transitiveDependenciesForProjectsInDir(projectDir)
+        val result = graph.transitiveDependenciesForProjectsInDir(projectDir, problems)
         if (result.sourceDirs.isEmpty) {
-          logger.warn(s"V2 dependency fetcher: no source directories resolved for $inputPath. Falling back.")
+          DependencyProblems.warn(
+            problems,
+            logger,
+            s"V2 dependency fetcher: no source directories resolved for $inputPath. Falling back."
+          )
           None
         } else {
           logger.info(
@@ -87,18 +101,21 @@ object DependencyResolverV2 {
     */
   def getDependencyGraph(
     projectDir: Path,
-    params: DependencyResolverParams = new DependencyResolverParams
+    params: DependencyResolverParams = new DependencyResolverParams,
+    problems: ProblemSink = ProblemSink.LogOnly
   ): Option[DependencyGraph] = {
     val buildFiles                     = findSupportedBuildFiles(projectDir)
     val (gradleBuildFiles, otherFiles) = buildFiles.partition(isGradleBuildFile)
     val mavenBuildFiles                = otherFiles.filter(isMavenBuildFile)
     otherFiles.filterNot(isMavenBuildFile).foreach { unsupported =>
-      logger.warn(s"Found unsupported build file $unsupported")
+      DependencyProblems.warn(problems, logger, s"Found unsupported build file $unsupported")
     }
 
     if (gradleBuildFiles.nonEmpty) {
       if (mavenBuildFiles.nonEmpty) {
-        logger.warn(
+        DependencyProblems.warn(
+          problems,
+          logger,
           s"V2 dependency fetcher: ${mavenBuildFiles.size} Maven build file(s) coexist with Gradle peers; skipping Maven."
         )
       }
@@ -106,7 +123,11 @@ object DependencyResolverV2 {
       val maybeAndroidVariant        = params.forGradle.get(GradleConfigKeys.AndroidVariant)
       Try(Files.createTempDirectory(GradleDependenciesV2.tempDirPrefix)) match {
         case Failure(ex) =>
-          logger.warn(s"Could not create temporary directory for saving dependency files: ${ex.getMessage}")
+          DependencyProblems.warn(
+            problems,
+            logger,
+            s"Could not create temporary directory for saving dependency files: ${ex.getMessage}"
+          )
           logger.debug("Full exception: ", ex)
           None
         case Success(destinationDir) =>
@@ -117,15 +138,16 @@ object DependencyResolverV2 {
               buildFile.getParent,
               destinationDir,
               maybeConfigurationOverride,
-              maybeAndroidVariant
+              maybeAndroidVariant,
+              problems
             )
           }
           val jsonPaths = GradleDependenciesV2.listDependencyInfoFiles(dependencyInfoDir)
           logger.info(s"Loaded ${jsonPaths.length} project dependency info files from $dependencyInfoDir.")
-          Some(DependencyGraph.fromJson(destinationDir, jsonPaths))
+          Some(DependencyGraph.fromJson(destinationDir, jsonPaths, problems))
       }
     } else {
-      mavenBuildFiles.headOption.map(buildFile => MavenDependencies.getGraph(buildFile.getParent))
+      mavenBuildFiles.headOption.map(buildFile => MavenDependencies.getGraph(buildFile.getParent, problems))
     }
   }
 }

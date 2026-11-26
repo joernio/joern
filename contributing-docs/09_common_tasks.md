@@ -16,6 +16,36 @@ Fix a frontend bug
    anything you changed in `x2cpg`.
 5. Open the PR as `[{frontend}] Description`, see [pull requests](08_pull_requests.md).
 
+Report a non-fatal problem from a frontend
+------------------------------------------
+
+Problems that do not abort the run (a file that cannot be parsed, dependencies that cannot be fetched, a crashing
+helper tool) go into the `ScanReport` of the run, so that downstream tools do not have to grep the logs. Users get the
+report as JSON with `--report-json` (next to the CPG) or `--report-json-file <file>`. The format is described in the
+[x2cpg README](../joern-cli/frontends/x2cpg/README.md#scan-report).
+
+- `X2CpgFrontend.run` creates one `ScanReport` per run and reports it at the end. Frontends receive it by overriding
+  `createCpg(config, report)`. Define `createCpg(config)` as `createCpg(config, new ScanReport())`.
+- Pass the report to the passes that process files, see `c2cpg/passes/AstCreationPass`. Utilities that only need to
+  report problems take a `ProblemSink` (a `ScanReport` is one).
+- Replace the `logger.warn` or `logger.error` of the problem by
+  `report.warn(category, message, file, cause, logger)` or `report.error(...)`. This logs exactly as before and records
+  the problem. Use the method that matches the level of the log statement you replace: never change a log level when
+  you migrate a call site. Use `report.record(Problem(...))` if the problem is already logged somewhere else, with the
+  severity that matches that log statement.
+- Pick the `Category` that fits: `FileParse`, `FileProcessing`, `DependencyResolution`, `ExternalTool`
+  or `Other`. The category names are part of the JSON format, do not rename them.
+- Do not repeat the file in the `message`. Pass it as `file`, relative to the input path: it is a field of its own in
+  the JSON report, and it is added in front of the message when the problem is logged.
+- Fields that are not available (`file`, `exception`, the lines of code of an unreadable file, ...) are left out of the
+  JSON report, they are never `null`. The `exception` is an object with the `type` (class name) and, if the exception has
+  one, its `message`.
+- Per-file results (lines of code, parsed, CPG created, duration) are recorded
+  with `report.addReportInfo` and `report.updateReport`: register every file your pass analyzes, with the same
+  relative path as in its problems. The files that a `FileParse` or `FileProcessing` problem is about are added by the
+  report if you did not register them.
+- Test it with a frontend whose input triggers the problem and assert on `report.allProblems`.
+
 Add a CPG pass
 --------------
 
