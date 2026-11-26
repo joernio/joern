@@ -24,7 +24,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // SourceFile =
   //  '#shebang'?
   //  '#frontmatter'?
-  //  Attr*
+  //  AnyAttr*
   //  Item*
   protected def visitSourceFile(sourceFile: SourceFile): Ast = {
     val fileNode = NewFile().name(parseResult.filename).order(0)
@@ -207,7 +207,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // Module =
-  //  Attr* Visibility?
+  //  AnyAttr* Visibility?
   //  'mod' Name (ItemList | ';')
   private def visitModule(module: Module): Seq[Ast] = {
     module.itemList match {
@@ -348,7 +348,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // Const =
-  //  Attr* Visibility?
+  //  AnyAttr* Visibility?
   //  'default'?
   //  'const' (Name | '_') GenericParamList? ':' Type
   //  ('=' body:Expr)?
@@ -367,7 +367,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // Static =
-  //  Attr* Visibility?
+  //  AnyAttr* Visibility?
   //  'unsafe'? 'safe'? 'static' 'mut'? Name ':' Type
   //  ('=' Expr)? ';'
   private def visitStatic(static: Static): Seq[Ast] = {
@@ -380,7 +380,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // LetStmt =
-  //  Attr* 'super'? 'let' Pat (':' Type)?
+  //  AnyAttr* 'super'? 'let' Pat (':' Type)?
   //  '=' initializer:Expr?
   //  LetElse?
   //  ';'
@@ -740,7 +740,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // Fn =
-  // Attr* Visibility?
+  // AnyAttr* Visibility?
   // 'default'? 'const'? 'async'? 'gen'? 'unsafe'? 'safe'? Abi?
   // 'fn' Name GenericParamList? ParamList RetType? WhereClause?
   // (body:BlockExpr | ';')
@@ -753,7 +753,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
     // NB: Virtual as long as we emit typeDeclForFn.
     val methodMods = Seq(modifierNode(fn, ModifierTypes.VIRTUAL))
-    val attributes = fn.attr.map(visitAttr)
+    val attributes = fn.anyAttr.flatMap(visitAnyAttr)
 
     contextStack.pushMethod(method)
     val (paramAsts, paramAssignmentAsts) = lowerParamList(fn.paramList)
@@ -797,7 +797,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // Impl =
-  //  Attr* Visibility?
+  //  AnyAttr* Visibility?
   //  'default'? 'unsafe'?
   //  'impl' GenericParamList? ('const'? '!'? Type 'for')? Type WhereClause?
   //  AssocItemList
@@ -824,10 +824,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         val methodAsts      = impl.assocItemList.assocItem.collect { case fn: Fn => fn }.flatMap(visitAssocFn)
         val constMemberAsts = impl.assocItemList.assocItem.collect {
           case const: Const if const.name.isDefined =>
-            Ast(memberForAssocConst(const)).withChildren(const.attr.map(visitAttr))
+            Ast(memberForAssocConst(const)).withChildren(const.anyAttr.flatMap(visitAnyAttr))
         }
         contextStack.pop()
-        val attributes = impl.attr.map(visitAttr)
+        val attributes = impl.anyAttr.flatMap(visitAnyAttr)
         addDetachedBindingAsts(typeDecl, methodAsts, signature = typeFullNameForType(implTrait))
         Ast(typeDecl).withChildren(methodAsts ++ attributes ++ constMemberAsts)
       case _ => notHandledYet(impl)
@@ -842,7 +842,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val itemAsts = impl.assocItemList.assocItem.collect {
       case fn: Fn                               => visitAssocFn(fn)
       case const: Const if const.name.isDefined =>
-        Ast(memberForAssocConst(const)).withChildren(const.attr.map(visitAttr)) :: Nil
+        Ast(memberForAssocConst(const)).withChildren(const.anyAttr.flatMap(visitAnyAttr)) :: Nil
     }
     contextStack.pop()
     itemAsts.flatten.foreach(addDetachedAst)
@@ -858,7 +858,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // Trait =
-  //  Attr* Visibility?
+  //  AnyAttr* Visibility?
   //  'unsafe'? 'auto'?
   //  ImplRestriction?
   //  'trait' Name GenericParamList?
@@ -880,16 +880,16 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val methodAsts = trait_.assocItemList.toSeq.flatMap(_.assocItem).collect { case fn: Fn => fn }.flatMap(visitAssocFn)
     val constMemberAsts = trait_.assocItemList.toSeq.flatMap(_.assocItem).collect {
       case const: Const if const.name.isDefined =>
-        Ast(memberForAssocConst(const)).withChildren(const.attr.map(visitAttr))
+        Ast(memberForAssocConst(const)).withChildren(const.anyAttr.flatMap(visitAnyAttr))
     }
     contextStack.pop()
-    val attributes = trait_.attr.map(visitAttr)
+    val attributes = trait_.anyAttr.flatMap(visitAnyAttr)
     addDetachedBindingAsts(typeDecl, methodAsts, signature = fullName)
     Ast(typeDecl).withChildren(methodAsts).withChildren(attributes).withChildren(constMemberAsts)
   }
 
   // BlockExpr =
-  //  Attr* Label? (TryBlockModifier | 'unsafe' | ('async' 'move'?) | ('gen' 'move'?) | 'const') StmtList
+  //  AnyAttr* Label? (TryBlockModifier | 'unsafe' | ('async' 'move'?) | ('gen' 'move'?) | 'const') StmtList
   private def visitBlockExpr(blockExpr: BlockExpr, lowerTail: Expr => Ast = visitExpr): Ast = {
     contextStack.pushBlock()
     val stmts = visitStmtList(blockExpr.stmtList, lowerTail)
@@ -899,7 +899,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // ReturnExpr =
-  //  Attr* 'return' Expr?
+  //  AnyAttr* 'return' Expr?
   private def visitReturnExpr(returnExpr: ReturnExpr): Ast = {
     val ret     = returnNode(returnExpr, code(returnExpr))
     val exprAst = returnExpr.expr.map(visitRhsExpr)
@@ -907,7 +907,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // CallExpr =
-  //  Attr* Expr ArgList
+  //  AnyAttr* Expr ArgList
   private def visitCallExpr(callExpr: CallExpr): Ast = {
     lowerCallExpr(callExpr, callExpr.expr)
   }
@@ -998,7 +998,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
   // StmtList =
   //  '{'
-  //    Attr*
+  //    AnyAttr*
   //    statements:Stmt*
   //    tail_expr:Expr?
   //  '}'
@@ -1025,7 +1025,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         case Some(pat) if collectPatternBindings(pat).nonEmpty       => (code(pat), Some(pat))
         case pat                                                     => (contextStack.nextTmpName(), pat)
       }
-      val attributes   = param.attr.map(visitAttr)
+      val attributes   = param.anyAttr.flatMap(visitAnyAttr)
       val typeFullName = typeFullNameForParam(param)
       val paramNode    = parameterInNode(
         node = param,
@@ -1049,9 +1049,9 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // SelfParam =
-  //  Attr* ( ('&' Lifetime?)? 'mut'? Name | 'mut'? Name ':' Type )
+  //  AnyAttr* ( ('&' Lifetime?)? 'mut'? Name | 'mut'? Name ':' Type )
   private def visitSelfParam(selfParam: SelfParam): Ast = {
-    val attributes         = selfParam.attr.map(visitAttr)
+    val attributes         = selfParam.anyAttr.flatMap(visitAnyAttr)
     val typeFullName       = typeFullNameForSelfParam(selfParam)
     val evaluationStrategy =
       if (selfParam.ampToken.isDefined) EvaluationStrategies.BY_SHARING else EvaluationStrategies.BY_VALUE
@@ -1069,7 +1069,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // PathExpr =
-  //  Attr* Path
+  //  AnyAttr* Path
   private def visitPathExpr(pathExpr: PathExpr): Ast = {
     // A path has `methodFullName` if it denotes a method reference, or `ctorTypeFullName` if it denotes a unit
     // constructor. Otherwise, it's some other identifier.
@@ -1133,7 +1133,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // BinExpr =
-  //  Attr*
+  //  AnyAttr*
   //  lhs:Expr
   //  op:(
   //    '||' | '&&'
@@ -1156,7 +1156,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // PrefixExpr =
-  //  Attr* op:('-' | '!' | '*') Expr
+  //  AnyAttr* op:('-' | '!' | '*') Expr
   private def visitPrefixExpr(prefixExpr: PrefixExpr): Ast = {
     operatorNameFor(prefixExpr) match {
       case Some(opName) =>
@@ -1169,7 +1169,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // RefExpr =
-  //  Attr* '&' ('raw' 'const' | 'raw' 'mut' | 'mut')? Expr
+  //  AnyAttr* '&' ('raw' 'const' | 'raw' 'mut' | 'mut')? Expr
   private def visitRefExpr(refExpr: RefExpr): Ast = {
     val typeFullName = typeFullNameForExpr(refExpr)
     val callNode     = operatorCallNode(refExpr, code(refExpr), Operators.addressOf, Some(typeFullName))
@@ -1178,7 +1178,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // IfExpr =
-  //  Attr* 'if' condition:Expr then_branch:BlockExpr
+  //  AnyAttr* 'if' condition:Expr then_branch:BlockExpr
   //  ('else' else_branch:(IfExpr | BlockExpr))?
   private def visitIfExpr(ifExpr: IfExpr, lowerTail: Expr => Ast): Ast = {
     ifExpr.expr match {
@@ -1389,7 +1389,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // CastExpr =
-  //  Attr* Expr 'as' Type
+  //  AnyAttr* Expr 'as' Type
   private def visitCastExpr(castExpr: CastExpr): Ast = {
     val typeFullName = typeFullNameForType(castExpr.typ)
     val castNode     = operatorCallNode(castExpr, code(castExpr), Operators.cast, Some(typeFullName))
@@ -1400,7 +1400,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // WhileExpr =
-  //  Attr* Label? 'while' condition:Expr
+  //  AnyAttr* Label? 'while' condition:Expr
   //  loop_body:BlockExpr
   private def visitWhileExpr(whileExpr: WhileExpr): Ast = {
     whileExpr.expr match {
@@ -1480,7 +1480,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // LoopExpr =
-  //  Attr* Label? 'loop'
+  //  AnyAttr* Label? 'loop'
   //  loop_body:BlockExpr
   private def visitLoopExpr(loopExpr: LoopExpr): Ast = {
     val conditionAst = Ast(literalNode(loopExpr.loopKwToken, "true", "bool"))
@@ -1489,7 +1489,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // ForExpr =
-  //  Attr* Label? 'for' Pat 'in' iterable:Expr
+  //  AnyAttr* Label? 'for' Pat 'in' iterable:Expr
   //  loop_body:BlockExpr
   //
   // Lowering `for pat in y` as follows:
@@ -1584,20 +1584,20 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // ContinueExpr =
-  //  Attr* 'continue' Lifetime?
+  //  AnyAttr* 'continue' Lifetime?
   private def visitContinueExpr(continueExpr: ContinueExpr): Ast = {
     continueAst(continueExpr, code(continueExpr))
   }
 
   // BreakExpr =
-  //  Attr* 'break' Lifetime? Expr?
+  //  AnyAttr* 'break' Lifetime? Expr?
   private def visitBreakExpr(breakExpr: BreakExpr): Ast = {
     // TODO: break expr is meant to return expr
     breakAst(breakExpr, code(breakExpr))
   }
 
   // IndexExpr =
-  //  Attr* base:Expr '[' index:Expr ']'
+  //  AnyAttr* base:Expr '[' index:Expr ']'
   private def visitIndexExpr(indexExpr: IndexExpr): Ast = {
     val typeFullName = typeFullNameForExpr(indexExpr)
     val callNode     = operatorCallNode(indexExpr, code(indexExpr), Operators.indexAccess, Some(typeFullName))
@@ -1607,7 +1607,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // TupleExpr =
-  //  Attr* '(' (Expr (',' Expr)* ','?)? ')'
+  //  AnyAttr* '(' (Expr (',' Expr)* ','?)? ')'
   private def visitTupleExpr(tupleExpr: TupleExpr): Ast = {
     if (tupleExpr.expr.isEmpty) {
       Ast(literalNode(tupleExpr, code(tupleExpr), "()"))
@@ -1620,7 +1620,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // RecordExpr =
-  //  Attr* Path RecordExprFieldList
+  //  AnyAttr* Path RecordExprFieldList
   private def visitRecordExpr(recordExpr: RecordExpr): Ast = {
     recordExpr.recordExprFieldList.expr match {
       case None       => recordCtorCallAst(recordExpr)
@@ -1732,7 +1732,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // ArrayExpr =
-  //  Attr* '[' (
+  //  AnyAttr* '[' (
   //    (Expr (',' Expr)* ','?)?
   //  | Expr ';' Expr
   //  )']'
@@ -1766,7 +1766,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // FieldExpr =
-  //  Attr* Expr '.' NameRef
+  //  AnyAttr* Expr '.' NameRef
   private def visitFieldExpr(fieldExpr: FieldExpr): Ast = {
     val baseAst      = visitExpr(fieldExpr.expr)
     val typeFullName = typeFullNameForExpr(fieldExpr)
@@ -1776,7 +1776,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // MethodCallExpr =
-  //  Attr* receiver:Expr '.' NameRef GenericArgList? ArgList
+  //  AnyAttr* receiver:Expr '.' NameRef GenericArgList? ArgList
   private def visitMethodCallExpr(methodCallExpr: MethodCallExpr): Ast = {
     val methodName            = code(methodCallExpr.nameRef)
     val methodFullName        = methodFullNameForMethodCallExpr(methodCallExpr)
@@ -1811,7 +1811,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // AwaitExpr =
-  //  Attr* Expr '.' 'await'
+  //  AnyAttr* Expr '.' 'await'
   private def visitAwaitExpr(awaitExpr: AwaitExpr): Ast = {
     val typeFullName = typeFullNameForExpr(awaitExpr)
     val callNode     = operatorCallNode(awaitExpr, code(awaitExpr), RustOperators.await, Some(typeFullName))
@@ -1820,7 +1820,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // TryExpr =
-  //  Attr* Expr '?'
+  //  AnyAttr* Expr '?'
   private def visitTryExpr(tryExpr: TryExpr): Ast = {
     val typeFullName = typeFullNameForExpr(tryExpr)
     val callNode     = operatorCallNode(tryExpr, code(tryExpr), RustOperators.tryUnwrap, Some(typeFullName))
@@ -1829,7 +1829,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // Enum =
-  //  Attr* Visibility?
+  //  AnyAttr* Visibility?
   //  'enum' Name GenericParamList? WhereClause?
   //  VariantList
   private def visitEnum(enum_ : Enum): Ast = {
@@ -1837,7 +1837,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val enumFullName      = typeFullNameForEnum(enum_)
     val inheritsFrom      = implementedTraits.map(traitFullName => s"<$enumFullName as $traitFullName>")
     val typeDecl          = typeDeclForEnum(enum_, inheritsFrom)
-    val attributes        = enum_.attr.map(visitAttr)
+    val attributes        = enum_.anyAttr.flatMap(visitAnyAttr)
 
     contextStack.pushTypeDecl(typeDecl)
     val variantAsts = enum_.variantList.variant.flatMap(lowerVariant(_, typeDecl.fullName))
@@ -1847,7 +1847,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // Variant =
-  //  Attr* Visibility?
+  //  AnyAttr* Visibility?
   //  (Name | '_') FieldList? ('=' ConstArg)?
   private def lowerVariant(variant: Variant, enumFullName: String): Seq[Ast] = {
     (variant.name, variant.fieldList) match {
@@ -1862,7 +1862,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
   private def lowerUnitVariant(variant: Variant, name: Name, enumFullName: String): Ast = {
     val typeDecl   = typeDeclForVariant(variant, name, enumFullName)
-    val attributes = variant.attr.map(visitAttr)
+    val attributes = variant.anyAttr.flatMap(visitAnyAttr)
 
     contextStack.pushTypeDecl(typeDecl)
     val ctorAst = structCtorMethodAst(variant, typeDecl, Nil)
@@ -1878,7 +1878,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     recordFieldList: RecordFieldList
   ): Ast = {
     val typeDecl   = typeDeclForVariant(variant, name, enumFullName)
-    val attributes = variant.attr.map(visitAttr)
+    val attributes = variant.anyAttr.flatMap(visitAnyAttr)
 
     contextStack.pushTypeDecl(typeDecl)
     val ctorAst = structCtorMethodAst(variant, typeDecl, recordFieldData(recordFieldList))
@@ -1898,7 +1898,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val typeDecl     = typeDeclForVariant(variant, name, enumFullName)
     val fields       = tupleStructFieldData(tupleFieldList)
     val ctorFullName = variant.methodFullName.getOrElse(typeDecl.fullName)
-    val attributes   = variant.attr.map(visitAttr)
+    val attributes   = variant.anyAttr.flatMap(visitAnyAttr)
 
     contextStack.pushTypeDecl(typeDecl)
     val ctorAst = structCtorMethodAst(variant, typeDecl, fields)
@@ -1914,7 +1914,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // Struct =
-  //  Attr* Visibility?
+  //  AnyAttr* Visibility?
   //  'struct' Name GenericParamList? (
   //    WhereClause? (RecordFieldList | ';')
   //  | TupleFieldList WhereClause? ';'
@@ -1935,7 +1935,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val structFullName    = typeFullNameForStruct(struct)
     val inheritsFrom      = implementedTraits.map(traitFullName => s"<$structFullName as $traitFullName>")
     val typeDecl          = typeDeclForStruct(struct, inheritsFrom)
-    val attributes        = struct.attr.map(visitAttr)
+    val attributes        = struct.anyAttr.flatMap(visitAnyAttr)
 
     contextStack.pushTypeDecl(typeDecl)
     val ctorAst = structCtorMethodAst(struct, typeDecl, Nil)
@@ -1957,7 +1957,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val structFullName    = typeFullNameForStruct(struct)
     val inheritsFrom      = implementedTraits.map(traitFullName => s"<$structFullName as $traitFullName>")
     val typeDecl          = typeDeclForStruct(struct, inheritsFrom)
-    val attributes        = struct.attr.map(visitAttr)
+    val attributes        = struct.anyAttr.flatMap(visitAnyAttr)
 
     contextStack.pushTypeDecl(typeDecl)
     val ctorAst = structCtorMethodAst(struct, typeDecl, recordFieldData(recordFieldList))
@@ -1991,7 +1991,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val inheritsFrom      = implementedTraits.map(traitFullName => s"<$structFullName as $traitFullName>")
     val typeDecl          = typeDeclForStruct(struct, inheritsFrom)
     val fields            = tupleStructFieldData(tupleFieldList)
-    val attributes        = struct.attr.map(visitAttr)
+    val attributes        = struct.anyAttr.flatMap(visitAnyAttr)
 
     contextStack.pushTypeDecl(typeDecl)
     val ctorAst = structCtorMethodAst(struct, typeDecl, fields)
@@ -2164,10 +2164,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // RecordField =
-  //  Attr* Visibility? 'unsafe'?
+  //  AnyAttr* Visibility? 'unsafe'?
   //  Name ':' Type ('=' default_val:ConstArg)?
   private def visitRecordField(recordField: RecordField): Ast = {
-    val attributes = recordField.attr.map(visitAttr)
+    val attributes = recordField.anyAttr.flatMap(visitAnyAttr)
     Ast(memberNode(recordField, code(recordField.name), code(recordField), typeFullNameForType(recordField.typ)))
       .withChildren(attributes)
   }
@@ -2179,10 +2179,10 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // TupleField =
-  //  Attr* Visibility?
+  //  AnyAttr* Visibility?
   //  Type
   private def visitTupleField(tupleField: TupleField, index: Int): Ast = {
-    val attributes = tupleField.attr.map(visitAttr)
+    val attributes = tupleField.anyAttr.flatMap(visitAnyAttr)
     Ast(memberNode(tupleField, index.toString, code(tupleField), typeFullNameForType(tupleField.typ)))
       .withChildren(attributes)
   }
@@ -2203,7 +2203,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // MacroCall =
-  //  Attr* Path '!' TokenTree ';'?
+  //  AnyAttr* Path '!' TokenTree ';'?
   private def visitMacroCall(macroCall: MacroCall): Seq[Ast] = {
     withMacroCall(macroCall) {
       macroCall.macroExpansion match {
@@ -2238,7 +2238,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // FormatArgsExpr =
-  //  Attr* 'builtin' '#' 'format_args' '('
+  //  AnyAttr* 'builtin' '#' 'format_args' '('
   //  template:Expr
   //  (',' args:(FormatArgsArg (',' FormatArgsArg)* ','?)? )?
   //  ')'
@@ -2265,7 +2265,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // RangeExpr =
-  //  Attr* start:Expr? op:('..' | '..=') end:Expr?
+  //  AnyAttr* start:Expr? op:('..' | '..=') end:Expr?
   private def visitRangeExpr(rangeExpr: RangeExpr): Ast = {
     (rangeExpr.start, rangeExpr.end, rangeExpr.isInclusive) match {
       // NB: RangeInclusive (a..=b) has private start/end fields + a `new` constructor, whereas
@@ -2299,7 +2299,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // MatchExpr =
-  //  Attr* 'match' Expr MatchArmList
+  //  AnyAttr* 'match' Expr MatchArmList
   //
   // `match e { pat => body, ... }` becomes:
   //
@@ -2374,7 +2374,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // ClosureExpr =
-  //  Attr* ForBinder? 'const'? 'static'? 'async'? 'gen'? 'move'?  ParamList RetType?
+  //  AnyAttr* ForBinder? 'const'? 'static'? 'async'? 'gen'? 'move'?  ParamList RetType?
   //  body:Expr
   private def visitClosureExpr(closureExpr: ClosureExpr): Ast = {
     val closureName = nextClosureName()
@@ -2400,7 +2400,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   private def lowerClosureExprAsDetachedAst(closureExpr: ClosureExpr, method: NewMethod, block: NewBlock): Unit = {
-    val attributes                       = closureExpr.attr.map(visitAttr)
+    val attributes                       = closureExpr.anyAttr.flatMap(visitAnyAttr)
     val (paramAsts, paramAssignmentAsts) = lowerParamList(closureExpr.paramList)
     val bodyAst                          = closureExpr.expr match {
       case blockExpr: BlockExpr => lowerFnBody(blockExpr, block, paramAssignmentAsts)
@@ -2416,7 +2416,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // Use =
-  //  Attr* Visibility?
+  //  AnyAttr* Visibility?
   //  'use' UseTree ';'
   //
   // UseTree =
@@ -2463,12 +2463,21 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // ExternCrate =
-  //  Attr* Visibility?
+  //  AnyAttr* Visibility?
   //  'extern' 'crate' NameRef Rename? ';'
   private def visitExternCrate(externCrate: ExternCrate): Ast = {
     val name      = code(externCrate.nameRef)
     val renamedAs = externCrate.rename.flatMap(rename => rename.name.orElse(rename.underscoreToken)).map(code)
     Ast(newImportNode(code(externCrate), name, renamedAs.getOrElse(name), externCrate))
+  }
+
+  // AnyAttr =
+  //  Attr | DocComment
+  private def visitAnyAttr(anyAttr: AnyAttr): Option[Ast] = {
+    anyAttr match {
+      case attr: Attr => Some(visitAttr(attr))
+      case _          => None
+    }
   }
 
   // Attr =
@@ -2488,13 +2497,13 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   }
 
   // TypeAlias =
-  //  Attr* Visibility?
+  //  AnyAttr* Visibility?
   //  'default'?
   //  'type' Name GenericParamList? (':' TypeBoundList?)? WhereClause?
   //  ('=' Type)? ';'
   private def visitTypeAlias(typeAlias: TypeAlias): Ast = {
     val typeDecl   = typeDeclForTypeAlias(typeAlias)
-    val attributes = typeAlias.attr.map(visitAttr)
+    val attributes = typeAlias.anyAttr.flatMap(visitAnyAttr)
     Ast(typeDecl).withChildren(attributes)
   }
 

@@ -475,7 +475,7 @@ class MacroTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
         // The specific methods that vec! expands to are not "public", in the sense they can change
         // depending on the sysroot/platform. But the arrayInitializer should be safe to assert.
         inside(rhs.astChildren.isCall.astChildren.isCall.nameExact(Operators.arrayInitializer).l) { case array :: Nil =>
-          array.code shouldBe "[1,2,3]"
+          array.code shouldBe "[1, 2, 3]"
           array.typeFullName shouldBe "[i32; 3]"
           array.argument.isLiteral.sortBy(_.argumentIndex).code.l shouldBe List("1", "2", "3")
         }
