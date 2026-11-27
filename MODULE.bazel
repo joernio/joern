@@ -50,7 +50,7 @@ maven.install(
         "org.gradle:gradle-tooling-api:8.3",
         "com.lihaoyi:ujson_3:4.4.3",
         "com.lihaoyi:upickle_3:4.4.3",
-        "com.michaelpollmeier:scala-repl-pp_3.9.0:0.6.5",
+        "com.michaelpollmeier:scala-repl-pp_3.9.0:0.6.6",
         "commons-io:commons-io:2.22.0",
         "org.apache.commons:commons-lang3:3.14.0",
         "org.apache.commons:commons-text:1.12.0",
