@@ -89,13 +89,8 @@ class GoAstGenRunner(config: Config, includeFileRegex: String = "", problemSink:
   def executeForGo(out: Path): List[GoAstGenRunnerResult] = {
     val in = Paths.get(config.inputPath)
     logger.info(s"Running goastgen in '$config.inputPath' ...")
-    val result   = runAstGen(config.inputPath, out, config.ignoredFilesRegex.toString(), includeFileRegex)
-    val srcFiles = SourceFiles.determine(
-      out.toString,
-      Set(".json"),
-      ignoredFilesRegex = Option(config.ignoredFilesRegex),
-      ignoredFilesPath = Option(config.ignoredFiles)
-    )
+    val result        = runAstGen(config.inputPath, out, config.ignoredFilesRegex.toString(), includeFileRegex)
+    val srcFiles      = astGenOutputFiles(out)
     val parsedModFile = filterModFile(srcFiles, out)
     val parsed        = filterFiles(srcFiles, out)
     val skipped       = skippedFiles(in, result.toList)

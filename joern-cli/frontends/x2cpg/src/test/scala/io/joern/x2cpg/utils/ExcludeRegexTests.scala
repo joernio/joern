@@ -36,12 +36,26 @@ class ExcludeRegexTests extends AnyWordSpec with Matchers {
       excluded("a", "a.js") shouldBe false
       excluded("\\.js", "a.js") shouldBe false
       excluded(s"ub${sep}b\\.js", "sub/b.js") shouldBe false
-      excluded("sub", "sub/b.js") shouldBe false
+      excluded("b\\.js", "sub/b.js") shouldBe false
+      excluded("deep", "sub/deep/c.js") shouldBe false
     }
 
     "match directories" in {
       excluded("sub", "sub") shouldBe true
       excluded(s"sub${sep}deep", "sub/deep") shouldBe true
+    }
+
+    "match a directory between the input directory and the file" in {
+      excluded("sub", "sub/b.js") shouldBe true
+      excluded("sub", "sub/deep/c.js") shouldBe true
+      excluded(s"sub${sep}deep", "sub/deep/c.js") shouldBe true
+    }
+
+    "not match the input directory itself" in {
+      withProject { dir =>
+        val regex = Pattern.quote(dir.getFileName.toString).r
+        ExcludeRegex.matchesRelative(regex, (dir / "a.js").toString, dir.toString) shouldBe false
+      }
     }
 
     "be case-sensitive" in {

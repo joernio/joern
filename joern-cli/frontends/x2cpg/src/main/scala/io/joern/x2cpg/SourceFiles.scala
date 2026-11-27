@@ -299,11 +299,18 @@ object SourceFiles {
     * include sources from the subprojects dependencies.
     */
   def toRelativePath(path: String, rootPath: String, allowParentTraversal: Boolean = false): String = {
-    // Helper to resolve path, using toRealPath() if file exists (which resolves Windows 8.3 short names),
-    // otherwise fall back to toAbsolutePath.normalize()
-    def resolvePath(p: String): Path = {
-      val pathObj = Paths.get(p)
-      Try(pathObj.toRealPath(LinkOption.NOFOLLOW_LINKS)).getOrElse(pathObj.toAbsolutePath.normalize())
+    // Helper to resolve path, using toRealPath() on the part that exists (which resolves Windows 8.3 short names),
+    // and keeping the remaining names as they are. A file that does not exist, e.g., because an external tool
+    // changed its extension, must resolve in the same way as its directory.
+    def resolvePath(pathString: String): Path = {
+      val normalized = Paths.get(pathString).toAbsolutePath.normalize()
+      Iterator
+        .iterate[Path](normalized)(_.getParent)
+        .takeWhile(_ != null)
+        .collectFirst { case existing if Files.exists(existing, LinkOption.NOFOLLOW_LINKS) => existing }
+        .flatMap(existing => Try(existing.toRealPath(LinkOption.NOFOLLOW_LINKS)).toOption.map((existing, _)))
+        .map { case (existing, real) => real.resolve(existing.relativize(normalized)) }
+        .getOrElse(normalized)
     }
 
     // Convert to absolute, normalized paths for proper comparison

@@ -215,6 +215,12 @@ class AstGenRunnerTests extends AnyWordSpec with Matchers with LoneElement {
       parsedSources(_ => "b\\.js") shouldBe sources.sorted
     }
 
+    "not match the suffix of the generated JSON files" in {
+      parsedSources(_ => ".*json.*") shouldBe sources.sorted
+      parsedSources(_ => ".*\\.js\\.json") shouldBe sources.sorted
+      parsedSources(_ => "a\\.js\\.json") shouldBe sources.sorted
+    }
+
     "be case-sensitive" in {
       parsedSources(_ => "A\\.JS") shouldBe sources.sorted
     }

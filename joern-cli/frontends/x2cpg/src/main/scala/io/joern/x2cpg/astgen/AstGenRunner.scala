@@ -12,6 +12,7 @@ import versionsort.VersionHelper
 
 import java.net.URL
 import java.nio.file.{Files, Path, Paths}
+import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 object AstGenRunner {
@@ -222,6 +223,23 @@ abstract class AstGenRunner(
     }
   }
 
+  /** The JSON files the AST generator wrote to `out`.
+    *
+    * `--exclude-regex` is deliberately not applied here: the names of these files end with `.json`, so a regex could
+    * match them although it does not match the source file. [[fileFilter]] applies it to the path of the source file.
+    */
+  protected def astGenOutputFiles(
+    out: Path,
+    ignoredDefaultRegex: Option[Seq[Regex]] = None,
+    ignoredFiles: Seq[String] = config.ignoredFiles
+  ): List[String] =
+    SourceFiles.determine(
+      out.toString,
+      Set(".json"),
+      ignoredDefaultRegex = ignoredDefaultRegex,
+      ignoredFilesPath = Option(ignoredFiles)
+    )
+
   protected def filterFiles(files: List[String], out: Path): List[String] = files.filter(fileFilter(_, out))
 
   protected def fileFilter(file: String, out: Path): Boolean = {
@@ -343,14 +361,8 @@ abstract class AstGenRunner(
   def execute(out: Path): AstGenRunnerResult = {
     val in = Paths.get(config.inputPath)
     logger.info(s"Running ${metaData.name} on '${config.inputPath}'")
-    val result   = runAstGen(config.inputPath, out, config.ignoredFilesRegex.toString(), "")
-    val srcFiles = SourceFiles.determine(
-      out.toString,
-      Set(".json"),
-      ignoredFilesRegex = Option(config.ignoredFilesRegex),
-      ignoredFilesPath = Option(config.ignoredFiles)
-    )
-    val parsed  = filterFiles(srcFiles, out)
+    val result  = runAstGen(config.inputPath, out, config.ignoredFilesRegex.toString(), "")
+    val parsed  = filterFiles(astGenOutputFiles(out), out)
     val skipped = skippedFiles(in, result.toList)
     DefaultAstGenRunnerResult(parsed, skipped)
   }
