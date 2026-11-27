@@ -219,6 +219,15 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
       }
     }
 
+    "resolve a file that does not exist like its directory" in {
+      FileUtil.usingTemporaryDirectory("toRelativePath") { dir =>
+        Files.createDirectories(dir / "sub")
+        val missing = (dir / "sub" / "missing").toString
+        SourceFiles.toRelativePath(missing, dir.toString) shouldBe Paths.get("sub", "missing").toString
+        SourceFiles.toRelativePath(missing, (dir / "sub").toString) shouldBe "missing"
+      }
+    }
+
     "handle Windows 8.3 short file names" when {
 
       "path contains 8.3 format directory names" taggedAs WindowsOnly in {
