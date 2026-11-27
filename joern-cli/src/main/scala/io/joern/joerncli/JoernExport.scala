@@ -180,25 +180,28 @@ object JoernExport {
 
   /** @param windowsFilenameDeduplicationHelper
     *   utility map to ensure we don't override output files for identical method names
+    * @param isWindows
+    *   selects the Windows specific naming strategy; exposed so it can be tested on any platform
     */
   private[joerncli] def sanitizedFileName(
     methodName: String,
     methodFilename: String,
     fileExtension: String,
-    windowsFilenameDeduplicationHelper: mutable.Set[String]
+    windowsFilenameDeduplicationHelper: mutable.Set[String],
+    isWindows: Boolean = scala.util.Properties.isWin
   ): String = {
     val sanitizedMethodName = methodName.replaceAll("[^a-zA-Z0-9-_\\.]", "_")
     val sanitizedFilename   =
-      if (scala.util.Properties.isWin) {
+      if (isWindows) {
         // windows has some quirks in it's file system, e.g. we need to ensure paths aren't too long - so we're using a
         // different strategy to sanitize windows file names: first occurrence of a given method uses the method name
-        // any methods with the same name afterwards get a `_` suffix
-        if (windowsFilenameDeduplicationHelper.contains(sanitizedMethodName)) {
-          sanitizedFileName(s"${methodName}_", methodFilename, fileExtension, windowsFilenameDeduplicationHelper)
-        } else {
-          windowsFilenameDeduplicationHelper.add(sanitizedMethodName)
-          sanitizedMethodName
-        }
+        // any methods with the same name afterwards get one more `_` suffix each
+        val uniqueName = Iterator
+          .iterate(sanitizedMethodName)(_ + "_")
+          .find(candidate => !windowsFilenameDeduplicationHelper.contains(candidate))
+          .get
+        windowsFilenameDeduplicationHelper.add(uniqueName)
+        uniqueName
       } else { // non-windows
         // handle leading `/` to ensure we're not writing outside of the output directory
         val sanitizedPath =

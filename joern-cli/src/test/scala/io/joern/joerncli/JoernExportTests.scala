@@ -1,6 +1,7 @@
 package io.joern.joerncli
 
 import flatgraph.formats.dot.DotExporter
+import flatgraph.formats.neo4jcsv.Neo4jCsvExporter
 import io.joern.joerncli.JoernExport.Representation
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.scalatest.matchers.should.Matchers
@@ -43,6 +44,42 @@ class JoernExportTests extends AnyWordSpec with Matchers with AbstractJoernCliTe
         ) shouldBe "_root_/methodName2.dot"
 
       }
+    }
+  }
+
+  "file name sanitization with windows semantics" should {
+    "append the file extension exactly once, even for many methods with the same name" in {
+      val deduplicationHelper = mutable.Set.empty[String]
+      val fileExtension       = Neo4jCsvExporter.defaultFileExtension
+
+      val fileNames = (1 to 60).map { _ =>
+        JoernExport.sanitizedFileName(
+          methodName = "<init>",
+          methodFilename = "file1.java",
+          fileExtension,
+          deduplicationHelper,
+          isWindows = true
+        )
+      }
+
+      fileNames.distinct.size shouldBe 60
+      fileNames.foreach { fileName =>
+        fileName should endWith(s".$fileExtension")
+        fileName.stripSuffix(s".$fileExtension") should not include "."
+      }
+      fileNames.head shouldBe s"_init_.$fileExtension"
+      fileNames(1) shouldBe s"_init__.$fileExtension"
+    }
+
+    "not clash for method names that only differ in characters that are sanitized" in {
+      val deduplicationHelper = mutable.Set.empty[String]
+      val fileExtension       = Neo4jCsvExporter.defaultFileExtension
+
+      val fileNames = Seq("<init>", "_init_", "<init>").map { methodName =>
+        JoernExport.sanitizedFileName(methodName, "file1.java", fileExtension, deduplicationHelper, isWindows = true)
+      }
+
+      fileNames.distinct.size shouldBe 3
     }
   }
 
