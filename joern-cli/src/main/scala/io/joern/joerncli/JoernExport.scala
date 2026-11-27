@@ -17,6 +17,7 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.*
 
 import java.nio.file.{Files, Path, Paths}
+import java.util.Locale
 import scala.collection.mutable
 import scala.util.Using
 
@@ -147,15 +148,11 @@ object JoernExport {
       case Representation.Cpg if cpg.graph.nodeCount(NodeTypes.METHOD) == 0 =>
         emptyExportResult
       case Representation.Cpg =>
-        val windowsFilenameDeduplicationHelper = mutable.Set.empty[String]
+        val usedPaths = mutable.Set.empty[Path]
         splitByMethod(cpg)
           .map { case subGraph @ MethodSubGraph(methodName, methodFilename, nodes) =>
-            val relativeFilename = sanitizedFileName(
-              methodName,
-              methodFilename,
-              exporter.defaultFileExtension,
-              windowsFilenameDeduplicationHelper
-            )
+            val relativeFilename =
+              sanitizedFileName(methodName, methodFilename, exporter.defaultFileExtension, usedPaths)
             val outFileName = outDir.resolve(relativeFilename)
             Files.createDirectories(outFileName)
             exporter.runExport(cpg.graph.schema, nodes, subGraph.edges, outFileName)
@@ -178,40 +175,49 @@ object JoernExport {
     }
   }
 
-  /** @param windowsFilenameDeduplicationHelper
-    *   utility map to ensure we don't override output files for identical method names
+  /** Relative output path (below the export directory) for the given method.
+    *
+    * On Windows, paths must stay short, so only the method name is used. On other platforms, the file name of the
+    * method is used as directory, with separators of any platform normalized, drive letters and `..` segments removed
+    * and absolute paths moved below `_root_`, so we never write outside of the output directory.
+    *
+    * The result is unique among all `usedPaths`, regardless of platform: methods with the same name get one more `_`
+    * suffix each. Uniqueness is checked case-insensitively, since the file system might be.
+    *
+    * @param usedPaths
+    *   state to ensure we don't override output files for identical method names
     * @param isWindows
-    *   selects the Windows specific naming strategy; exposed so it can be tested on any platform
+    *   selects the Windows specific layout; exposed so it can be tested on any platform
     */
   private[joerncli] def sanitizedFileName(
     methodName: String,
     methodFilename: String,
     fileExtension: String,
-    windowsFilenameDeduplicationHelper: mutable.Set[String],
+    usedPaths: mutable.Set[Path],
     isWindows: Boolean = scala.util.Properties.isWin
-  ): String = {
+  ): Path = {
     val sanitizedMethodName = methodName.replaceAll("[^a-zA-Z0-9-_\\.]", "_")
-    val sanitizedFilename   =
-      if (isWindows) {
-        // windows has some quirks in it's file system, e.g. we need to ensure paths aren't too long - so we're using a
-        // different strategy to sanitize windows file names: first occurrence of a given method uses the method name
-        // any methods with the same name afterwards get one more `_` suffix each
-        val uniqueName = Iterator
-          .iterate(sanitizedMethodName)(_ + "_")
-          .find(candidate => !windowsFilenameDeduplicationHelper.contains(candidate))
-          .get
-        windowsFilenameDeduplicationHelper.add(uniqueName)
-        uniqueName
-      } else { // non-windows
-        // handle leading `/` to ensure we're not writing outside of the output directory
-        val sanitizedPath =
-          if (methodFilename.isEmpty) "_root_"
-          else if (methodFilename.startsWith("/")) s"_root_/$methodFilename"
-          else methodFilename
-        s"$sanitizedPath/$sanitizedMethodName"
-      }
+    val directory           = if (isWindows) Paths.get("") else sanitizedDirectory(methodFilename)
+    Iterator
+      .iterate(sanitizedMethodName)(_ + "_")
+      .map(name => directory.resolve(s"$name.$fileExtension"))
+      .find(candidate => usedPaths.add(Paths.get(candidate.toString.toLowerCase(Locale.ROOT))))
+      .get
+  }
 
-    s"$sanitizedFilename.$fileExtension"
+  private def sanitizedDirectory(methodFilename: String): Path = {
+    val isAbsolute = methodFilename.startsWith("/") || methodFilename.startsWith("\\")
+    val segments   = methodFilename
+      .replace('\\', '/')
+      .replace(':', '_')
+      .split('/')
+      .filterNot(segment => segment.isEmpty || segment == "." || segment == "..")
+      .toSeq
+    val parts = if (isAbsolute) "_root_" +: segments else segments
+    parts match {
+      case Seq()            => Paths.get("_root_")
+      case Seq(head, tail*) => Paths.get(head, tail*)
+    }
   }
 
   private def plus(resultA: ExportResult, resultB: ExportResult): ExportResult = {
