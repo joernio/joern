@@ -101,6 +101,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     case breakExpr: BreakExpr           => visitBreakExpr(breakExpr)
     case callExpr: CallExpr             => visitCallExpr(callExpr)
     case castExpr: CastExpr             => visitCastExpr(castExpr)
+    case cfgPredExpr: CfgPredExpr       => notHandledYet(cfgPredExpr)
     case closureExpr: ClosureExpr       => visitClosureExpr(closureExpr)
     case continueExpr: ContinueExpr     => visitContinueExpr(continueExpr)
     case fieldExpr: FieldExpr           => visitFieldExpr(fieldExpr)
@@ -671,6 +672,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
 
   private def collectPatternBindings(pat: Pat): Seq[(IdentToken, String)] = pat match {
     case boxPat: BoxPat               => collectPatternBindings(boxPat.pat)
+    case cfgPredPat: CfgPredPat       => Nil
     case constBlockPat: ConstBlockPat => Nil
     case derefPat: DerefPat           => collectPatternBindings(derefPat.pat)
     case identPat: IdentPat           =>

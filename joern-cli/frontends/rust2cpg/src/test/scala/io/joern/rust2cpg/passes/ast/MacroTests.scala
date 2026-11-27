@@ -885,4 +885,39 @@ class MacroTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
       }
     }
   }
+
+  "cfg! call" should {
+    val cpg = code("""
+        |fn f() -> bool {
+        |  cfg!(unix)
+        |}
+        |""".stripMargin)
+
+    // TODO: since 0.28.7 this macro is no longer expanded, but a built-in.
+    // Unknown for now, to be rewritten later as needed.
+    "become an unknown node" in {
+      inside(cpg.unknown.l) { case cfg :: Nil =>
+        cfg.code shouldBe "builtin #cfg(unix)"
+      }
+    }
+  }
+
+  "cfg! pattern" should {
+    val cpg = code("""
+        |fn f(b: bool) {
+        |  match b {
+        |    cfg!(unix) => {}
+        |    _ => {}
+        |  }
+        |}
+        |""".stripMargin)
+
+    // TODO: since 0.28.7 this macro is no longer expanded, but a built-in.
+    // Unknown for now, to be rewritten later as needed.
+    "become an unknown node" in {
+      inside(cpg.unknown.l) { case cfg :: Nil =>
+        cfg.code shouldBe "builtin #cfg(unix)"
+      }
+    }
+  }
 }
