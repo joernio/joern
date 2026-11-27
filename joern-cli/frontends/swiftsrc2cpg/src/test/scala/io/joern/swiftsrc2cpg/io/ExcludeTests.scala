@@ -162,6 +162,12 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
         Set("folder/b.swift", "folder/c.swift")
       ),
       (
+        "not exclude anything if --exclude-regex only matches the name of the generated JSON files",
+        Seq.empty,
+        ".*json.*",
+        Set("index.swift", "a.swift", "folder/b.swift", "folder/c.swift", "foo.bar/d.swift")
+      ),
+      (
         "not exclude anything if --exclude-regex only matches a part of the path",
         Seq.empty,
         "index",

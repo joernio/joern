@@ -2,7 +2,7 @@ package io.joern.x2cpg.utils
 
 import io.joern.x2cpg.SourceFiles
 
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 import java.util.regex.Pattern
 import scala.util.matching.Regex
 
@@ -19,11 +19,26 @@ import scala.util.matching.Regex
 object ExcludeRegex {
 
   /** @return
-    *   true if `regex` fully matches the path of `path` relative to `inputPath`. The empty regex, i.e., the default,
-    *   never excludes anything.
+    *   true if `regex` fully matches the path of `path` relative to `inputPath`, or one of the directories between
+    *   `inputPath` and `path`. The latter is how a matching directory excludes everything below it, also for callers
+    *   that only see the files. The empty regex, i.e., the default, never excludes anything.
+    *
+    * A `path` that is not below `inputPath` cannot be made relative, see [[SourceFiles.toRelativePath]]. It is matched
+    * as a whole, without its parents: they are not between `inputPath` and `path`.
     */
-  def matchesRelative(regex: Regex, path: String, inputPath: String): Boolean =
-    nonEmpty(regex) && regex.matches(SourceFiles.toRelativePath(path, inputPath))
+  def matchesRelative(regex: Regex, path: String, inputPath: String): Boolean = {
+    nonEmpty(regex) && {
+      val relativeOrOutside = Paths.get(SourceFiles.toRelativePath(path, inputPath))
+      if (relativeOrOutside.isAbsolute) {
+        regex.matches(relativeOrOutside.toString)
+      } else {
+        Iterator
+          .iterate[Path](relativeOrOutside)(_.getParent)
+          .takeWhile(_ != null)
+          .exists(part => regex.matches(part.toString))
+      }
+    }
+  }
 
   /** Matches `regex` against the absolute, normalized path of `path`.
     *

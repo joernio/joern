@@ -38,6 +38,13 @@ class ExcludeRegexTests extends GoCodeToCpgSuite {
     }
   }
 
+  "A regex that only matches the name of the generated JSON files" should {
+    "not exclude anything" in {
+      userMethods(cpgWithExcludeRegex(".*json.*")) shouldBe Set("main", "Foo")
+      userMethods(cpgWithExcludeRegex(".*\\.go\\.json")) shouldBe Set("main", "Foo")
+    }
+  }
+
   "A regex that only matches part of the relative path of a file" should {
     "not exclude anything" in {
       userMethods(cpgWithExcludeRegex("ain")) shouldBe Set("main", "Foo")

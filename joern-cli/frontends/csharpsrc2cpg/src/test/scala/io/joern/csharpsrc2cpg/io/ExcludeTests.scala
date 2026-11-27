@@ -61,6 +61,11 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
       ("exclude a file by its relative path", s"other${sep}e\\.cs", relative("a.cs", "b.cs", "sub/c.cs", "sub/d.cs")),
       ("exclude files with a lookahead", s"(?!sub$sep.*$$).*\\.cs", relative("sub/c.cs", "sub/d.cs")),
       (
+        "not exclude anything if only the name of the generated JSON files matches",
+        ".*json.*",
+        relative("a.cs", "b.cs", "sub/c.cs", "sub/d.cs", "other/e.cs")
+      ),
+      (
         "not exclude anything if only a part of the path matches",
         "ub",
         relative("a.cs", "b.cs", "sub/c.cs", "sub/d.cs", "other/e.cs")

@@ -204,6 +204,7 @@ class RustAstGenRunnerTests extends AnyWordSpec with Matchers {
         parsed(s"benches$sep.*") shouldBe Seq("src/lib.rs.json", "tests/integration.rs.json")
         parsed("benches") shouldBe Seq("src/lib.rs.json", "tests/integration.rs.json")
         parsed(s"(?!src$sep.*$$).*\\.rs") shouldBe Seq("src/lib.rs.json")
+        parsed(".*json.*") shouldBe Seq("benches/bench.rs.json", "src/lib.rs.json", "tests/integration.rs.json")
         parsed("ench") shouldBe Seq("benches/bench.rs.json", "src/lib.rs.json", "tests/integration.rs.json")
         // a regex that only matches the absolute path does not exclude anything
         val absolute = inputDir.toString.replaceAll("([^A-Za-z0-9_/])", "\\\\$1")

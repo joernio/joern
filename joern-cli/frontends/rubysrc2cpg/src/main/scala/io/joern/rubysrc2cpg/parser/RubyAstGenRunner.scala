@@ -170,12 +170,10 @@ class RubyAstGenRunner(
       }
 
     val result   = runAstGen(specifiedConfig.inputPath, out, combineIgnoreRegex, "")
-    val srcFiles = SourceFiles.determine(
-      out.toString(),
-      Set(".json"),
+    val srcFiles = astGenOutputFiles(
+      out,
       ignoredDefaultRegex = Option(specifiedConfig.defaultIgnoredFilesRegex),
-      ignoredFilesRegex = Option(specifiedConfig.ignoredFilesRegex),
-      ignoredFilesPath = Option(specifiedConfig.ignoredFiles)
+      ignoredFiles = specifiedConfig.ignoredFiles
     )
     val parsed  = filterFiles(srcFiles, out)
     val skipped = skippedFiles(in, result.toList)
