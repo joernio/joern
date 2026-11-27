@@ -16,7 +16,7 @@
     "com.lihaoyi:requests_3": -1275628490,
     "com.lihaoyi:ujson_3": 1182647324,
     "com.lihaoyi:upickle_3": -1872367730,
-    "com.michaelpollmeier:scala-repl-pp_3.9.0": 1447708322,
+    "com.michaelpollmeier:scala-repl-pp_3.9.0": -359746141,
     "com.michaelpollmeier:versionsort": 605653562,
     "com.squareup.tools.build:maven-archeologist": 943047605,
     "com.typesafe:config": 324143406,
@@ -103,10 +103,10 @@
     "com.lihaoyi:upickle-implicits_3:jar:sources": -1321765235,
     "com.lihaoyi:upickle_3": 1093385801,
     "com.lihaoyi:upickle_3:jar:sources": -687406193,
-    "com.michaelpollmeier:scala-repl-pp-shaded-libs_3": -1722982981,
-    "com.michaelpollmeier:scala-repl-pp-shaded-libs_3:jar:sources": -1112206690,
-    "com.michaelpollmeier:scala-repl-pp_3.9.0": 154441704,
-    "com.michaelpollmeier:scala-repl-pp_3.9.0:jar:sources": -507998847,
+    "com.michaelpollmeier:scala-repl-pp-shaded-libs_3": -2111911728,
+    "com.michaelpollmeier:scala-repl-pp-shaded-libs_3:jar:sources": 1749069882,
+    "com.michaelpollmeier:scala-repl-pp_3.9.0": -1722782427,
+    "com.michaelpollmeier:scala-repl-pp_3.9.0:jar:sources": 826437,
     "com.michaelpollmeier:versionsort": -622706408,
     "com.michaelpollmeier:versionsort:jar:sources": 1574286880,
     "com.squareup.moshi:moshi": 814263932,
@@ -496,17 +496,17 @@
     },
     "com.michaelpollmeier:scala-repl-pp-shaded-libs_3": {
       "shasums": {
-        "jar": "1457619b87db51752324c70e98bc63dd8004cb5de2f0f4faa93c70d29b4736d8",
-        "sources": "929314a3d2fb7980b4d77b2973b49335cf0f6114a097541a82e523e551d82ab0"
+        "jar": "52c31294f67fa66eda9ab99f340d439a1c2eb81bed341807fbabc0a6abb2ffec",
+        "sources": "27289c390a9425b80090e227b3622ce4666c405ea53deae9bdd495860a648a83"
       },
-      "version": "0.6.5"
+      "version": "0.6.6"
     },
     "com.michaelpollmeier:scala-repl-pp_3.9.0": {
       "shasums": {
-        "jar": "2b92b259574c64eaa45d9daba039c6bbc639a7c3d3b8f570d17085e5c58534ed",
-        "sources": "9a8b1cc381228467bb1da648db0fc78fee5d321aed578b88bdaea174130e3cfb"
+        "jar": "b3acb0822592d869f3c9bdf28ee9ae43809d539a75f219b952d6270c55225e93",
+        "sources": "0176700abd02d303cf3f2af558f131bfb953ce84cc742e8ab694ab76cc2d8742"
       },
-      "version": "0.6.5"
+      "version": "0.6.6"
     },
     "com.michaelpollmeier:versionsort": {
       "shasums": {
