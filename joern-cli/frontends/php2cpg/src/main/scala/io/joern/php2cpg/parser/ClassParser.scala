@@ -8,8 +8,6 @@ import scala.util.{Failure, Success, Try, Using}
 import java.nio.file.{Files, Path}
 import upickle.default.*
 
-import scala.collection.mutable
-
 /** Parses the high-level symbol information of a project.
   */
 class ClassParser(targetDir: Path) {
@@ -26,17 +24,23 @@ class ClassParser(targetDir: Path) {
         Files.writeString(scriptFile, br.getLines().mkString("\n"))
       }
 
-      ExternalCommand
-        .run(Seq("php", scriptFile.toString, targetDir.toString), Option(inputDirectory))
-        .toTry
-        .map(_.reverse) match {
+      val result = ExternalCommand.run(Seq("php", scriptFile.toString, targetDir.toString), Option(inputDirectory))
+      result.toTry.map(_.reverse) match {
         case Success(output) =>
+          logDiagnostics(result.stdErr)
           Try(read[List[ClassParserClass]](output.mkString("\n")))
         case Failure(exception) =>
-          logger.error(s"Failure running `ClassParser.php`", exception.getMessage)
+          logger.error(s"Failure running `ClassParser.php`: ${exception.getMessage}")
           Failure(exception)
       }
     }
+  }
+
+  /** Forwards the script's stderr (skipped files, excluded directories, the final summary) to the log. The script caps
+    * the number of lines, so this stays short even for large dependency trees.
+    */
+  private def logDiagnostics(stdErr: Seq[String]): Unit = {
+    stdErr.filter(_.nonEmpty).foreach(line => logger.info(s"ClassParser.php: $line"))
   }
 
 }
@@ -51,15 +55,17 @@ object ClassParser {
         namespace = json("namespace").str,
         relativeFile = json("file").str,
         modifiers = json.obj.get("modifiers").map(read[List[String]](_)).getOrElse(Nil),
+        kind = json.obj.get("kind").map(_.str).getOrElse("class"),
         functions = json.obj.get("functions") match {
           case Some(jsonFuncs) =>
-            val functionMap = read[mutable.Map[String, ClassParserFunction]](jsonFuncs)
-            if (!functionMap.contains("__construct")) {
-              functionMap.put("__construct", ClassParserFunction("", "public" :: Nil))
+            // ujson objects keep insertion order, so the order of the script output reaches the CPG unchanged.
+            val declared = jsonFuncs.obj.toList.map { case (name, func) =>
+              ClassParserFunction(name, func.obj.get("modifiers").map(read[List[String]](_)).getOrElse(Nil))
             }
-            functionMap.map { case (name, func) =>
-              func.copy(name = name)
-            }.toList
+            val kind = json.obj.get("kind").map(_.str).getOrElse("class")
+            if (kind == "class" && !declared.exists(_.name == "__construct")) {
+              declared :+ ClassParserFunction("__construct", "public" :: Nil)
+            } else declared
           case None => Nil
         }
       )
@@ -70,8 +76,13 @@ object ClassParser {
     namespace: String,
     relativeFile: String,
     modifiers: List[String],
+    kind: String,
     functions: List[ClassParserFunction]
-  )
+  ) {
+
+    /** The full name of the type, without a leading backslash for the global namespace. */
+    def fullName: String = if (namespace.isEmpty) name else s"$namespace\\$name"
+  }
 
   case class ClassParserFunction(name: String = "", modifiers: List[String]) derives ReadWriter
 

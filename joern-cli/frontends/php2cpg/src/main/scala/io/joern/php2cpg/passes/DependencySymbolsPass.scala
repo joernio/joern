@@ -31,7 +31,7 @@ class DependencySymbolsPass(cpg: Cpg, dependencyDir: Path, report: ScanReport = 
   implicit val validationMode: ValidationMode = ValidationMode.Disabled
 
   override def generateParts(): Array[ClassParserClass] = new ClassParser(dependencyDir).parse() match {
-    case Success(classes)   => classes.toArray
+    case Success(classes)   => mergeDuplicates(classes).toArray
     case Failure(exception) =>
       report.error(
         Category.DependencyResolution,
@@ -42,9 +42,22 @@ class DependencySymbolsPass(cpg: Cpg, dependencyDir: Path, report: ScanReport = 
       Array.empty
   }
 
+  /** Declarations with the same full name become one type. Order of first appearance is kept. The first declaration
+    * wins per method name, which is compared case-insensitively like PHP does.
+    */
+  private def mergeDuplicates(classes: List[ClassParserClass]): List[ClassParserClass] = {
+    val groups = classes.groupBy(_.fullName)
+    classes.map(_.fullName).distinct.map { fullName =>
+      val group     = groups(fullName)
+      val seen      = scala.collection.mutable.Set.empty[String]
+      val functions = group.flatMap(_.functions).filter(function => seen.add(function.name.toLowerCase))
+      group.head.copy(functions = functions)
+    }
+  }
+
   override def runOnPart(builder: DiffGraphBuilder, clazz: ClassParserClass): Unit = {
     val className     = clazz.name
-    val classFullName = s"${clazz.namespace}\\$className"
+    val classFullName = clazz.fullName
     val typeDecl      = NewTypeDecl()
       .name(clazz.name)
       .fullName(classFullName)
