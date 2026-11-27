@@ -475,7 +475,7 @@ class MacroTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
         // The specific methods that vec! expands to are not "public", in the sense they can change
         // depending on the sysroot/platform. But the arrayInitializer should be safe to assert.
         inside(rhs.astChildren.isCall.astChildren.isCall.nameExact(Operators.arrayInitializer).l) { case array :: Nil =>
-          array.code shouldBe "[1,2,3]"
+          array.code shouldBe "[1, 2, 3]"
           array.typeFullName shouldBe "[i32; 3]"
           array.argument.isLiteral.sortBy(_.argumentIndex).code.l shouldBe List("1", "2", "3")
         }
@@ -882,6 +882,41 @@ class MacroTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
     "become an unknown node" in {
       inside(cpg.unknown.l) { case includeBytes :: Nil =>
         includeBytes.code shouldBe "builtin #include_bytes"
+      }
+    }
+  }
+
+  "cfg! call" should {
+    val cpg = code("""
+        |fn f() -> bool {
+        |  cfg!(unix)
+        |}
+        |""".stripMargin)
+
+    // TODO: since 0.28.7 this macro is no longer expanded, but a built-in.
+    // Unknown for now, to be rewritten later as needed.
+    "become an unknown node" in {
+      inside(cpg.unknown.l) { case cfg :: Nil =>
+        cfg.code shouldBe "builtin #cfg(unix)"
+      }
+    }
+  }
+
+  "cfg! pattern" should {
+    val cpg = code("""
+        |fn f(b: bool) {
+        |  match b {
+        |    cfg!(unix) => {}
+        |    _ => {}
+        |  }
+        |}
+        |""".stripMargin)
+
+    // TODO: since 0.28.7 this macro is no longer expanded, but a built-in.
+    // Unknown for now, to be rewritten later as needed.
+    "become an unknown node" in {
+      inside(cpg.unknown.l) { case cfg :: Nil =>
+        cfg.code shouldBe "builtin #cfg(unix)"
       }
     }
   }

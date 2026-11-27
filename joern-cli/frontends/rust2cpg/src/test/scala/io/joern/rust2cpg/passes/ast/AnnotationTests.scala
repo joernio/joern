@@ -160,6 +160,22 @@ class AnnotationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "struct with doc comment and attribute" should {
+    val cpg = code("""
+        |/// foobar
+        |#[derive(Debug)]
+        |struct Foo;
+        |""".stripMargin)
+
+    "have correct annotation" in {
+      inside(cpg.typeDecl.nameExact("Foo").annotation.l) { case attr :: Nil =>
+        attr.name shouldBe "derive"
+        attr.fullName shouldBe "derive"
+        attr.code shouldBe "#[derive(Debug)]"
+      }
+    }
+  }
+
   "fn with two attributes" should {
     val cpg = code("""
         |#[inline]
