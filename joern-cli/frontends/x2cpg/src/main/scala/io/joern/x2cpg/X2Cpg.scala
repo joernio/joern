@@ -243,7 +243,8 @@ trait X2CpgFrontend extends AutoCloseable {
   /** Create CPG according to given configuration, printing errors to the console if they occur. The CPG is closed and
     * not returned.
     *
-    * Creates the [[ScanReport]] of this run and reports it at the end, also if CPG creation fails.
+    * Creates the [[io.joern.x2cpg.report.ScanReport]] of this run and reports it at the end, also if CPG creation
+    * fails.
     */
   @throws[Throwable]("if createCpg throws any Throwable")
   def run(config: ConfigType): Unit = {

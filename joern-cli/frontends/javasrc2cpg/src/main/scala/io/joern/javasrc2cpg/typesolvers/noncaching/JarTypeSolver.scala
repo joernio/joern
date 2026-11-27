@@ -268,9 +268,9 @@ object JarTypeSolver {
     * type full name is for JavaParser names with multiple parts, so this method returns all possibilities, for example
     * for a.b.Foo.Bar, it will return:
     *   - a.b.Foo.Bar
-    *   - a.b.Foo$Bar
-    *   - a.b$Foo$Bar
-    *   - a$b$Foo$Bar
+    *   - a.b.Foo\$Bar
+    *   - a.b\$Foo\$Bar
+    *   - a\$b\$Foo\$Bar
     */
   def possibleStandardNamesForJavaParser(javaParserName: String): List[String] = {
     val nameParts = javaParserName.split('.')
