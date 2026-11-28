@@ -4,13 +4,14 @@ import flatgraph.formats.dot.DotExporter
 import flatgraph.formats.neo4jcsv.Neo4jCsvExporter
 import io.joern.joerncli.JoernExport.Representation
 import io.shiftleft.codepropertygraph.generated.Cpg
+import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import collection.mutable
 
 import java.nio.file.{Path, Paths}
 
-class JoernExportTests extends AnyWordSpec with Matchers with AbstractJoernCliTest {
+class JoernExportTests extends AnyWordSpec with Matchers with OptionValues with AbstractJoernCliTest {
 
   "export to graphson, for example code 'testcode/free'" should withTestCpg(
     Paths.get(getClass.getClassLoader.getResource("testcode/free").toURI)
@@ -20,6 +21,39 @@ class JoernExportTests extends AnyWordSpec with Matchers with AbstractJoernCliTe
       JoernExport.exportCpg(cpg, Representation.Cpg, JoernExport.Format.Graphson, tempDir.toNIO)
       val exportedFiles = os.walk(tempDir).filter(_.toIO.isFile)
       exportedFiles.size shouldBe 7
+    }
+  }
+
+  "validation of representation and format" should {
+    import JoernExport.Format
+
+    "accept every representation for the dot format" in {
+      for (repr <- Representation.values) {
+        JoernExport.unsupportedCombination(repr, Format.Dot) shouldBe None
+      }
+    }
+
+    for (format <- Seq(Format.Neo4jCsv, Format.Graphml, Format.Graphson)) {
+      s"accept only `all` and `cpg` for $format" in {
+        for (repr <- Representation.values) {
+          val result = JoernExport.unsupportedCombination(repr, format)
+          if (repr == Representation.All || repr == Representation.Cpg) {
+            result shouldBe None
+          } else {
+            result.value should include(s"repr=${repr.toString.toLowerCase}")
+            result.value should include("all, cpg")
+          }
+        }
+      }
+    }
+
+    "reject an unsupported combination before creating the output directory" in {
+      val tempDir = os.temp.dir(prefix = "joern-export-test")
+      val outDir  = tempDir / "out"
+      val config  = JoernExport.Config(outDir = outDir.toString, repr = Representation.Ddg, format = Format.Neo4jCsv)
+
+      JoernExport.validate(config).isLeft shouldBe true
+      os.exists(outDir) shouldBe false
     }
   }
 
