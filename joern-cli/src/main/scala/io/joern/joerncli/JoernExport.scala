@@ -65,13 +65,31 @@ object JoernExport {
       val outDir = config.outDir
       exitIfInvalid(outDir, config.cpgFileName)
       val outDirPath = Paths.get(outDir)
-      Files.createDirectory(outDirPath)
 
       Using.resource(CpgBasedTool.loadFromFile(config.cpgFileName)) { cpg =>
+        Files.createDirectory(outDirPath)
         exportCpg(cpg, config.repr, config.format, outDirPath.toAbsolutePath)
       }
     }
   }
+
+  /** Describes why the given combination can not be exported, or `None` if it is supported. The flatgraph based formats
+    * can only export the entire graph or the graph split by method; only dot supports all representations.
+    */
+  private[joerncli] def unsupportedCombination(repr: Representation, format: Format): Option[String] = {
+    val supportedReprs = format match {
+      case Format.Dot => Representation.values.toSeq
+      case _          => Seq(Representation.All, Representation.Cpg)
+    }
+    Option.when(!supportedReprs.contains(repr)) {
+      s"repr=${repr.toString.toLowerCase} is not supported for format=${format.toString.toLowerCase} " +
+        s"(supported: ${supportedReprs.map(_.toString.toLowerCase).sorted.mkString(", ")})"
+    }
+  }
+
+  /** Checks the config for problems that can be detected before touching the file system. */
+  private[joerncli] def validate(config: Config): Either[String, Unit] =
+    unsupportedCombination(config.repr, config.format).toLeft(())
 
   private def parseConfig(args: Array[String]): Option[Config] = {
     new scopt.OptionParser[Config]("joern-export") {
@@ -92,8 +110,9 @@ object JoernExport {
       opt[String]("format")
         .action((x, c) => c.copy(format = Format.withNameIgnoreCase(x)))
         .text(
-          s"export format, one of [${Format.values.toSeq.map(_.toString.toLowerCase).sorted.mkString("|")}] - defaults to `${Format.Dot}`"
+          s"export format, one of [${Format.values.toSeq.map(_.toString.toLowerCase).sorted.mkString("|")}] - defaults to `${Format.Dot}`. Formats other than dot only support representations `all` and `cpg`"
         )
+      checkConfig(validate)
     }.parse(args, Config())
   }
 
@@ -117,8 +136,6 @@ object JoernExport {
         exportWithFlatgraphFormat(cpg, representation, outDir, GraphMLExporter)
       case Format.Graphson =>
         exportWithFlatgraphFormat(cpg, representation, outDir, GraphSONExporter)
-      case null =>
-        throw new NotImplementedError(s"repr=$representation not yet supported for format=$format")
     }
   }
 
