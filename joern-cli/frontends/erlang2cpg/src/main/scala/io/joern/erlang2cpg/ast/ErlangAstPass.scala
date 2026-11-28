@@ -49,6 +49,7 @@ private[ast] final class Scope(
 private[ast] final class ModuleAst(root: Path, unit: ParsedModule, val index: CallIndex)
     extends AstCreatorBase[Term, ModuleAst](unit.file.toString)(using ValidationMode.Disabled)
     with ErlangControl
+    with ErlangCatch
     with ErlangPatterns
     with ErlangFuns
     with ErlangProcesses {
@@ -72,6 +73,7 @@ private[ast] final class ModuleAst(root: Path, unit: ParsedModule, val index: Ca
     case "map_field_assoc"            => s"${code(node(2))} => ${code(node(3))}"
     case "map"                        => node.items.last.items.map(code).mkString("#{", ", ", "}")
     case "remote"                     => s"${code(node(2))}:${code(node(3))}"
+    case "catch"                      => "catch " + code(node(2))
     case "call"                       => code(node(2)) + node(3).items.map(code).mkString("(", ", ", ")")
     case "match"                      => s"${code(node(2))} = ${code(node(3))}"
     case "op" if node.items.size == 5 => s"${code(node(3))} ${node(2).text} ${code(node(4))}"
@@ -240,19 +242,28 @@ private[ast] final class ModuleAst(root: Path, unit: ParsedModule, val index: Ca
     operator(term, "<operator>." + term.tag, args, code(term))
   }
 
+  def addModelTag(ast: Ast, name: String, value: String): Unit = ast.root.foreach { node =>
+    val tag = NewTag().name(name).value(value)
+    diffGraph.addNode(tag)
+    diffGraph.addEdge(node, tag, io.shiftleft.codepropertygraph.generated.EdgeTypes.TAGGED_BY)
+  }
+
   private def unknown(term: Term, kind: String): Ast = {
     unsupported.updateWith(kind)(prior => Some(prior.getOrElse(0) + 1))
     Ast(unknownNode(term, kind).parserTypeName(kind))
   }
 
-  def expr(term: Term, scope: Scope, tail: Boolean = false): Ast =
-    process(term, scope, tail).orElse(control(term, scope, tail)).getOrElse {
+  def expr(term: Term, scope: Scope, tail: Boolean = false): Ast = {
+    // A try expression has its own handler and after regions; crossing those with a lexical catch jump is unsound.
+    def controlled = if (term.tag == "try") withoutCatch(control(term, scope, tail)) else control(term, scope, tail)
+    process(term, scope, tail).orElse(controlled).getOrElse {
       val result = term.tag match {
         case "var" => reference(term, term(2).text, scope.lookup(term(2).text))
         case "atom" | "integer" | "float" | "char" | "string" | "nil" =>
           Ast(literalNode(term, code(term), term.tag))
         case "match"             => matched(term, scope)
-        case "fun" | "named_fun" => fun(term, scope)
+        case "fun" | "named_fun" => withoutCatch(fun(term, scope))
+        case "catch"             => catchExpr(term, scope)
         case "block"             => block(term, statements(term(2).items, scope, tail = false))
         case "tuple" | "bin"     => composite(term, term(2).items, scope)
         case "cons" | "map_field_assoc" | "map_field_exact" => composite(term, term.items.drop(2), scope)
@@ -276,7 +287,12 @@ private[ast] final class ModuleAst(root: Path, unit: ParsedModule, val index: Ca
           index.target(module, callee, args.size) match {
             case Some(target) =>
               val name = if (callee.tag == "remote") callee(3)(2).text else callee(2).text
-              callAst(callNode(term, code(term), name, target, DispatchTypes.STATIC_DISPATCH), args.map(expr(_, scope)))
+              capturedRaise(term, scope, target, name).getOrElse {
+                callAst(
+                  callNode(term, code(term), name, target, DispatchTypes.STATIC_DISPATCH),
+                  args.map(expr(_, scope))
+                )
+              }
             case None =>
               val receiver =
                 if (callee.tag == "remote")
@@ -298,4 +314,5 @@ private[ast] final class ModuleAst(root: Path, unit: ParsedModule, val index: Ca
       }
       if (tail) returned(term, result) else result
     }
+  }
 }

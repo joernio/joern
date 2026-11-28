@@ -30,6 +30,8 @@ Method identities use `module:function/arity`. A dynamic module or function expr
 
 The renderer normalizes expression text and omits source trivia. Locations are one-based where epp supplies them. Case and if expressions expose bindings shared by every clause. The frontend approximates bindings across receive and exception-handling branches. Exception transfer in a multi-expression try body uses the standard Joern CFG approximation.
 
+A `catch Expr` retains the operand's executable AST and its result. Within that expression, explicit calls to `erlang:throw/1`, `erlang:exit/1` and `erlang:error/1` transfer their class-specific result to the nearest enclosing catch. Error results include an opaque stacktrace. Exceptional control flow from arbitrary callees and across nested try/after expressions is incomplete.
+
 To run the external CLI checks, obtain `lib/stdlib/src/proplists.erl` from OTP commit `05737d130706c7189a8e6750d9c2252d2cc7987e` (tag `OTP-27.3`). From the repository root run:
 
 ```sh
