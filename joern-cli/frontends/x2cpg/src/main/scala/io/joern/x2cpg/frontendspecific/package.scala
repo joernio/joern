@@ -11,6 +11,8 @@ package io.joern.x2cpg
   * issues with things like OSGI and JPMS.
   */
 package object frontendspecific {
+  final val ErlangLanguage = "ERLANG"
+
   // Special string used to separate joern-parse opts from frontend-specific opts
   val FrontendArgsDelimitor = "--frontend-args"
 }
